@@ -1,0 +1,70 @@
+<!-- landing fragment: qwnw-red-file-plan-edit-never-strands -->
+<section id="qwnw-red-file-plan-edit-never-strands-landing">
+<h3>A plan edit never strands a queued request: the named file was already green at the base revision</h3>
+<p><code>tests/test_plan_edit_never_strands.py</code> was red at revision <code>8d50b0333f</code> with nine failures. It passes in full at the base revision this node was dispatched on (<code>d0d77f07</code>) and at the head it delivers (<code>0f6fb393</code>, the merge of the current <code>origin/main</code>). No product code and no test was changed by this node: the one cause had already been repaired on the primary branch before the node started.</p>
+<h4>Cause and verdict</h4>
+<p>One cause, nine failures, all the same refusal: at <code>8d50b0333f</code> the queue writer rejected every request with <code>CrewError: node n-sN is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation</code>, raised at <code>reckon/crew/dispatching/requests.py</code>.</p>
+<p><strong>Verdict: product wrong.</strong> The test states the rule the system now keeps, that a queued request is given its durable manifest before the request is validated, and the product violated it. The repair is commit <code>c3933bacfb</code> (fix(queue): assign durable manifests before validating requests): four added lines in <code>reckon/crew/dispatching/requests.py</code>, and this test file is byte-identical between <code>8d50b0333f</code> and <code>d0d77f07</code>, so its own diff is empty. No assertion was deleted or weakened.</p>
+<h4>Head: the named file passes in full</h4>
+<pre>
+# revision: 0f6fb393ae6cd14a4c4be8bcc7c18f21e353af79
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-plan-edit-never-strands
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_edit_never_strands.py
+.........                                                                [100%]
+9 passed in 40.31s
+EXIT=0
+</pre>
+<h4>Base revision: the same file, already green</h4>
+<pre>
+# revision: d0d77f07e2dcc64d74713755aebe748602f9a06f
+# tree: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/base-d0d77f07 (sparse checkout of d0d77f07, docs/state excluded)
+# module: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/base-d0d77f07/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/base-d0d77f07
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_edit_never_strands.py
+.........                                                                [100%]
+9 passed in 42.59s
+EXIT=0
+</pre>
+<h4>Negative control: the recorded red reproduced at its own revision</h4>
+<p>The base revision is green, so the red this node is named for was reproduced one revision back, at <code>8d50b0333f</code>, the revision whose failures the recorded suite log lists. The full capture, ids included, is <code>docs/evidence/fragments/queued-work-needs-no-workaround/red-file-plan-edit-never-strands.html</code>.</p>
+<pre>
+# revision: 8d50b0333fe3fbdb17199253225f73730d22207d
+# tree: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/red-8d50b0333f (sparse checkout, docs/state excluded)
+# module: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/red-8d50b0333f/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/red-8d50b0333f
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_edit_never_strands.py
+FFFFFFFFF                                                                [100%]
+...
+FAILED tests/test_plan_edit_never_strands.py::test_an_edit_elsewhere_lets_its_neighbour_launch - reckon.crew.CrewError: node 'n-s2' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_an_edit_holding_two_sections_reads_as_one_plan_row - reckon.crew.CrewError: node 'n-s2' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_a_hand_held_request_stays_held_through_the_releasing_pass - reckon.crew.CrewError: node 'n-s4' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_releases_a_waiting_request - reckon.crew.CrewError: node 'n-s3' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_rewrites_the_stored_refs_before_launch - reckon.crew.CrewError: node 'n-s3' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_an_after_ref_survives_the_same_pass - reckon.crew.CrewError: node 'n-up' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_a_widened_wait_sends_a_queued_request_back - reckon.crew.CrewError: node 'n-s4' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_a_blocked_upstream_keeps_its_waiter_waiting - reckon.crew.CrewError: node 'n-up' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+FAILED tests/test_plan_edit_never_strands.py::test_a_discarded_upstream_blocks_its_waiter - reckon.crew.CrewError: node 'n-up' is refused at queue time: no manifest path is named, so completion could only be judged by reading the implementation
+9 failed in 5.91s
+EXIT=1
+</pre>
+<h4>Suite arms over the write scope test files</h4>
+<p>Both arms run the promotion template resolved over their own tree. The node changed no test file, so the two commands are identical and neither arm adds a failure.</p>
+<pre>
+# revision: d0d77f07e2dcc64d74713755aebe748602f9a06f
+# tree: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/base-d0d77f07 (sparse checkout of d0d77f07, docs/state excluded)
+# module: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/base-d0d77f07/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T224751501038-qwnw-red-file-plan-edit-never-strands/base-d0d77f07
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 56.53s
+EXIT=0
+</pre>
+<pre>
+# revision: 0f6fb393ae6cd14a4c4be8bcc7c18f21e353af79
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-plan-edit-never-strands
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 60.70s (0:01:00)
+EXIT=0
+</pre>
+</section>

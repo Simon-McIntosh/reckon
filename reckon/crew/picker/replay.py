@@ -67,7 +67,7 @@ def replay(
             node = TaskNode(
                 id=str(record.get("node") or record["run_id"]),
                 goal=str(definition.get("goal") or ""),
-                plan=str(record.get("plan") or ""),
+                plan=ledger.row_plan(record),
                 section=str(record.get("section") or ""),
                 role=str(record["role"]),
                 spec_level=str(record["spec_level"]),

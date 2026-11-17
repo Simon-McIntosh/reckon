@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:973 _moved_primary_keeps_the_measurement",
+    "reckon/crew/queue_landing.py:817 _stored_measurement",
+    "reckon/crew/queue_landing.py:1242 _scheduled_measurement",
+    "reckon/crew/queue_landing.py:1746 _verified_measurement",
+    "reckon/crew/queue_landing.py:2314 _land_deliveries"
+  ],
+  "completed_at": "2026-11-15T20:00:47.790Z",
+  "dispatched_at": "2026-11-15T19:59:17Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "deferred",
+      "recorded_at": "2026-11-15T20:21:04.641114+00:00",
+      "rule": "landing-defers-non-blocking-findings",
+      "run": "r-20261114T151253041536-wave4-omp-local-a-landing-survives-a-mov-s2"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_landing_survives_a_moving_main.py",
+      "line": "340",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_a_docs_only_move_is_judged_on_the_merge_onto_the_current_primary asserts verified.head == delivery[\"head\"] and verified.population[\"main_sha\"] == delivery[\"base\"], both values the test itself handed to _record() two lines earlier, so the assertions are read-back of what the test wrote rather than an independent source, and nothing in the case asserts the merge onto the current primary its docstring claims; it already passed at base 9fcf1375 and therefore contributes no coverage to the section's measure."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver section s2 as its done-when states; the landed diff repairs the measurement fixture at tests/test_a_landing_survives_a_moving_main.py:255-259 so the focused file finally reaches the reuse guard, and records the result at docs/evidence/fragments/a-landing-survives-a-moving-main/wave4-omp-local-a-landing-survives-a-mov-s2.html:1-55, adding no product source because reckon/crew/queue_landing.py:973 _moved_primary_keeps_the_measurement already implements the deliverable.\nVERDICT done_when: the done_when's four claims are each carried by a case at tests/test_a_landing_survives_a_moving_main.py:308 (docs-only move lands without re-measurement, re-measure stubbed to refuse), :344 (a reckon/ move re-measures, `assert calls`), :369 (a stale measurement with a real conflict is refused, `CrewError` \"no longer merges cleanly\"), :431 (deferred ids carry non-empty reasons); the gate command in the manifest runs that file with two template files, and the manifest records the focused arm at 6 passed EXIT=0 against 3 failed, 3 passed EXIT=1 at 9fcf1375.\nVERDICT write_paths: the node's declared write_paths is the single path reckon/crew/queue_landing.py, while the done_when's own closing sentence names \"reckon/crew/queue_landing.py and the new test\"; the diff touches tests/test_a_landing_survives_a_moving_main.py and docs/evidence/fragments/a-landing-survives-a-moving-main/wave4-omp-local-a-landing-survives-a-mov-s2.html, so the test path lies outside the machine write_paths and inside the done_when's stated scope, and the worker recorded that mismatch under outside_scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T151253041536-wave4-omp-local-a-landing-survives-a-mov-s2/manifest.md; it states both suite arms with revision, exit_status, completed and failure ids, names five log paths plus the negative control log, and its stated figures match the logs I opened: baseline-three.log \"3 failed, 58 passed\" EXIT=1 at 9fcf1375, after-three.log \"61 passed\" EXIT=0 at a4c98f5c, negative-control.log \"4 failed, 2 passed\" EXIT=1 under the mutation \"measured_main == primary\"; the manifest records no ruff run on the staged paths, which I ran myself at head and both checks are clean.\nVERDICT diff: read the three commits a199d42c9d, c1521ef477 and a4c98f5c29 against base 9fcf1375abfdb1148fa3086ead9cdb64c87ed544; the whole change is four added and one removed line in the test fixture (empty directory replaced by a detached worktree of the fixture repository at tests/test_a_landing_survives_a_moving_main.py:259) plus 55 lines of evidence fragment, with no product source touched.\nCALL_SITES: reckon/crew/queue_landing.py:973 _moved_primary_keeps_the_measurement, reckon/crew/queue_landing.py:817 _stored_measurement, reckon/crew/queue_landing.py:1242 _scheduled_measurement, reckon/crew/queue_landing.py:1746 _verified_measurement, reckon/crew/queue_landing.py:2314 _land_deliveries\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the deliverable the done_when names is exercised end to end at tests/test_a_landing_survives_a_moving_main.py:308-461 after the fixture repair, but the behaviour and all six cases pre-date the reviewed base and this diff delivers no new product capability, so the node lands as the repair of the guard rather than as the feature.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline-three.log and after-three.log carry their own revision, tree, module.__file__, cwd, command and a bare EXIT= line at 9fcf1375 (3 failed EXIT=1) and a4c98f5c (61 passed EXIT=0), and negative-control.log is red with 4 failed EXIT=1 under the declared mutation; the done_when's ruff claim has no recorded run in the manifest.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff touches tests/test_a_landing_survives_a_moving_main.py:259, which the done_when names but the node's machine write_paths omits, and docs/evidence/fragments/a-landing-survives-a-moving-main/wave4-omp-local-a-landing-survives-a-mov-s2.html, which the orientation grant covers, so every changed path is justified while one sits outside the fence the field declares.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the removed fixture line (an empty prepared tree instead of the detached worktree at tests/test_a_landing_survives_a_moving_main.py:259) is exactly the base arm, which reddens three cases with CalledProcessError in baseline-three.log, so the repair is guarded by a demonstrated reversal, though the diff itself adds no assertion and the guarded claims were written by earlier work.\nSCORE fit: 18\nJUSTIFICATION fit: the added line uses the module's own _git helper and the repository's established `worktree add --detach` idiom seen across tests/, and the fragment follows the sibling evidence-fragment shape with a conventional commit subject and body.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it reuses reckon/crew/queue_landing.py:973 unchanged and calls the file's existing _git helper, and a search of tests/ for a shared fixture-repository or worktree helper found none, each module carrying its own _git.\nFINDING tests/test_a_landing_survives_a_moving_main.py:340 non-blocking: test_a_docs_only_move_is_judged_on_the_merge_onto_the_current_primary asserts verified.head == delivery[\"head\"] and verified.population[\"main_sha\"] == delivery[\"base\"], both values the test itself handed to _record() two lines earlier, so the assertions are read-back of what the test wrote rather than an independent source, and nothing in the case asserts the merge onto the current primary its docstring claims; it already passed at base 9fcf1375 and therefore contributes no coverage to the section's measure, which matters because the manifest counts it among the claims the fixture repair made reachable.\n",
+  "review_run_id": "r-20261115T195417624195-review-of-wave4-omp-local-a-landing-survives-a-mov-s2-a4c98f5c2973",
+  "reviewed_base_sha": "9fcf1375abfdb1148fa3086ead9cdb64c87ed544",
+  "reviewed_head_sha": "a4c98f5c2973662c0f2aeffddbe6bb1bb3f486d9",
+  "reviewed_run_id": "r-20261114T151253041536-wave4-omp-local-a-landing-survives-a-mov-s2",
+  "reviewer_run_id": "r-20261115T195417624195-review-of-wave4-omp-local-a-landing-survives-a-mov-s2-a4c98f5c2973",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T20:08:31.564642+00:00",
+  "total": 102
+}

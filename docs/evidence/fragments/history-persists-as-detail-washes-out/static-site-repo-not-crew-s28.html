@@ -1,0 +1,34 @@
+<section id="static-site-repo-not-crew-s28-record">
+  <h2>Static build output does not establish crew ownership</h2>
+  <p>Both standalone guards, CLI guard installation and shadow-dispatch fallback
+  recognise a <code>reviews/</code> directory, <code>flight.yaml</code> or
+  <code>crew.json</code> under a project's state directory. Static-site output
+  alone (<code>index.json</code>, <code>project.json</code> and
+  <code>timeline.html</code>) does not establish crew ownership. Review history
+  remains sufficient without ledger, flight or run files.</p>
+  <table id="static-site-repo-not-crew-s28-recognition">
+    <caption>All four discovery paths agree on the two repository fixtures.</caption>
+    <thead><tr><th>Discovery path</th><th>Static output only</th><th>With review history</th></tr></thead>
+    <tbody>
+      <tr><td>Native-agent guard</td><td>Allowed</td><td>Refused</td></tr>
+      <tr><td>Worker-message guard, with a matching live worker</td><td>Allowed</td><td>Refused</td></tr>
+      <tr><td>CLI crew recognition</td><td>False</td><td>True</td></tr>
+      <tr><td>Shadow discovery fallback</td><td>No ledger read</td><td>Project resolved</td></tr>
+    </tbody>
+  </table>
+  <p>At base <code>a70244fcaf771a224d819576cb40162689c62cd4</code>, the
+  regression file reports <strong>6 failed, 6 passed</strong>. The two guards
+  incorrectly return <code>["sample"]</code> for the static-site fixture. At
+  repair <code>7edfd7adf63c93a211ba5ca2e96cfc9844ad060e</code>, the focused regression and ledger-removal
+  checks report <strong>17 passed</strong>. The scoped gate on
+  <code>all_debug</code> changes from <strong>63 passed</strong> at base to
+  <strong>75 passed</strong> with the twelve added cases.</p>
+  <p>The declared negative control restores <code>index.json</code> in all
+  four marker checks in memory: <strong>6 failed, 6 passed</strong>, exit 1.
+  Every failing case passes at the repaired head; the review-history cases
+  stay green. This proves that the test detects the forbidden recognition.</p>
+  <p>The same eleven importer test files run on <code>all_debug</code> at
+  base and repair: <strong>102 passed, 7 failed</strong> in each arm,
+  <strong>0 added failures</strong>. Full commands, failure identities and
+  cause details remain in the worker manifest and durable run logs.</p>
+</section>

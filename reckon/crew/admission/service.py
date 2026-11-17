@@ -22,6 +22,7 @@ from .shared import (
     os,
     runs,
     sys,
+    threading,
     time,
 )
 
@@ -98,7 +99,7 @@ def _checkout_code_is_trusted() -> bool:
     from reckon import checkout_trust
 
     stamp = _admit_code_stamp()
-    root = _source_root()
+    root = Path(os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(_source_root())))
     dirty, _detail = checkout_trust.tracked_reckon_tree_is_dirty(root)
     if dirty:
         return False
@@ -128,26 +129,188 @@ def _reexec_into_current_code() -> None:
     disk. The launcher leads with the sys.path root that supplied this import,
     so the replacement loads the checkout rather than whatever argv[0] named.
     """
-    root = str(_source_root())
-    launcher = (
-        f"import sys; sys.path.insert(0, {root!r}); from reckon.cli import main; main()"
-    )
-    # An admission pass runs on this service's threads, and one between taking a
-    # node's dispatch claim and starting its worker would be cut off by the
-    # replacement, leaving that claim with no worker behind it. Wait, bounded.
-    from reckon.crew import dispatch_claims
+    from reckon import checkout_trust
+    from reckon.crew import dispatch_claims, follower_reload
 
-    dispatch_claims.wait_for_dispatches_in_flight()
-    os.execve(
-        sys.executable,
-        [sys.executable, "-c", launcher, *sys.argv[1:]],
-        dict(os.environ),
+    imported_root = _source_root()
+    source_root = Path(
+        os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(imported_root))
     )
+    pin = None
+    root = imported_root
+    environment = dict(os.environ)
+    if source_root != imported_root:
+        current = _admit_code_stamp()
+        root, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
+            source_root, current, active_root=imported_root
+        )
+        imports, reason = checkout_trust.reckon_imports(root)
+        if not imports:
+            os.close(pin)
+            raise RuntimeError(f"admission reload image does not import: {reason}")
+        environment = follower_reload.image_reexec_environment(
+            source_root, current, pin
+        )
+    launcher = f"import sys; sys.path.insert(0, {str(root)!r}); from reckon.cli import main; main()"
+    # A replacement must not cut off the thread between claiming and launching.
+    dispatch_claims.wait_for_dispatches_in_flight()
+    try:
+        os.execve(
+            sys.executable,
+            [sys.executable, "-c", launcher, *sys.argv[1:]],
+            environment,
+        )
+    finally:
+        if pin is not None:
+            os.close(pin)
 
 
 def _pause(seconds: float) -> None:
     """Wait out the interval between two admission passes."""
     time.sleep(seconds)
+
+
+#: The reads a pass makes while it releases waiters and resolves holds, each
+#: named as the receipt reports it: the module that performs the read, the
+#: callable there, and the label a reader of the receipt recognises. A reader
+#: not named here is not measured, so this table is the receipt's vocabulary
+#: rather than a list of every call the stages make.
+_READ_SOURCES: tuple[tuple[str, str, str], ...] = (
+    ("reckon.crew.runs", "list_live", "live pointers"),
+    ("reckon.crew.runs", "read_pointer", "run pointers"),
+    ("reckon.crew.runs", "_mutate_pointer", "pointer writes"),
+    (
+        "reckon.crew.runs",
+        "_mounted_project_roots_and_failure",
+        "mount registry",
+    ),
+    ("reckon.crew.admission.wait_refs", "derive_wait_refs", "plan wait refs"),
+    ("reckon.crew.admission.readiness", "_readiness_rows", "readiness rows"),
+    ("reckon.crew.plan_review", "section_readiness_rows", "plan readiness"),
+    ("reckon.crew.plan_review", "_readiness_inventory", "plan inventory"),
+    ("reckon.crew.promotion", "discard_recorded", "discard records"),
+    ("reckon.crew.admission.release", "_dead_sections", "live pointer scan"),
+    ("reckon.crew.admission.release", "_live_runs_on", "live runs a wait names"),
+    ("reckon.crew.admission.readiness", "section_hold", "section holds"),
+    ("reckon.crew.admission.holds", "_session_allowance_read", "session allowance"),
+    ("reckon.crew.admission.holds", "_record_pass_hold", "hold records"),
+    ("reckon.crew.admission.launching", "_node_from_pointer", "request definitions"),
+    ("reckon.crew.admission.wait_refs", "section_waits_for", "request waits"),
+    ("reckon.crew.admission.wait_refs", "wait_projects_for", "wait projects"),
+    ("reckon.crew.open_run_index", "review_paths", "review paths"),
+    ("reckon.crew.admission.verdicts", "_record_readiness_verdicts", "readiness scan"),
+    ("reckon.crew.admission.reviews", "_release_plan_review_holds", "review-hold scan"),
+    ("reckon.crew.admission.release", "_rederive_waits", "request wait rewrite"),
+)
+
+
+class _ReadTally:
+    """The reads one stage made, each with how many and how long.
+
+    A stage is measured as a whole, so an entry's seconds are the read's own: a
+    read performed inside another leaves its time to the outer read and adds
+    only its count, and the named times then sum to the time the stage spent
+    reading rather than counting a nested read twice. Only the thread that
+    opened the tally is measured, because the landing thread shares these
+    readers and its reads belong to the landing.
+
+    The readers are replaced on their own modules for the stage's duration and
+    restored afterwards, so a measurement costs nothing outside its stage and a
+    reader missing from the receipt is one the stage never called.
+    """
+
+    def __init__(self) -> None:
+        self._thread = threading.get_ident()
+        self._entries: dict[str, dict[str, Any]] = {}
+        self._children: list[float] = []
+        self._patched: list[tuple[Any, str, Any]] = []
+
+    @contextmanager
+    def reading(self, label: str):
+        """Measure one read of ``label``, or pass through when it is not ours."""
+        if threading.get_ident() != self._thread:
+            yield
+            return
+        started = time.monotonic()
+        self._children.append(0.0)
+        try:
+            yield
+        finally:
+            spent = time.monotonic() - started
+            nested = self._children.pop()
+            if self._children:
+                self._children[-1] += spent
+            entry = self._entries.setdefault(
+                label, {"read": label, "count": 0, "seconds": 0.0}
+            )
+            entry["count"] = int(entry["count"]) + 1
+            entry["seconds"] = float(entry["seconds"]) + max(0.0, spent - nested)
+
+    def entries(self) -> list[dict[str, Any]]:
+        """Each named read, heaviest first, so the largest read is the first row."""
+        return [
+            {
+                "read": str(entry["read"]),
+                "count": int(entry["count"]),
+                "seconds": round(float(entry["seconds"]), 3),
+            }
+            for entry in sorted(
+                self._entries.values(), key=lambda row: -float(row["seconds"])
+            )
+        ]
+
+
+@contextmanager
+def _read_tally():
+    """Measure every named read made inside the block, then restore them.
+
+    A stage wraps its own body in this, so the entries are that stage's reads
+    and no other stage's; the readers are put back however the body ends.
+    """
+    import functools
+    import importlib
+
+    tally = _ReadTally()
+    try:
+        for module_name, attribute, label in _READ_SOURCES:
+            module = importlib.import_module(module_name)
+            original = getattr(module, attribute, None)
+            if not callable(original):
+                continue
+
+            def timed(
+                *arguments: Any,
+                __original: Any = original,
+                __label: str = label,
+                **keywords: Any,
+            ) -> Any:
+                with tally.reading(__label):
+                    return __original(*arguments, **keywords)
+
+            # ``original`` and ``label`` are captured at definition, so each wrapper
+            # measures the reader it names rather than whichever the loop holds last.
+            functools.update_wrapper(timed, original)
+            setattr(module, attribute, timed)
+            tally._patched.append((module, attribute, original))
+        yield tally
+    finally:
+        for module, attribute, original in tally._patched:
+            setattr(module, attribute, original)
+        tally._patched.clear()
+
+
+def _record_stage_reads(result: dict[str, Any], stage: str, tally: _ReadTally) -> None:
+    """Attach one stage's reads to the pass result.
+
+    The receipt reports a stage by its seconds; the entries here say what those
+    seconds were spent reading, so a pass that took 80 s can name the reads that
+    took it rather than only how long it took.
+    """
+    reads = result.get("reads")
+    if not isinstance(reads, dict):
+        reads = {}
+        result["reads"] = reads
+    reads[stage] = tally.entries()
 
 
 def _record_stage_timings(
@@ -211,16 +374,10 @@ def admit_until_stopped(
     was working. ``--once`` returns its pass to the caller instead and prints
     nothing here, because the verb reports that pass itself.
 
-    The code stamp is compared at the head of every pass, before the pass runs.
-    A pass must never validate or launch a queued request with code older than
-    the checkout it launches from, and the checkout can move during the wait
-    between passes: checking afterwards would let one more pass run on the old
-    code before the move was noticed. So a stamp the checkout has moved past, on
-    a checkout the trusted test accepts, re-executes this process in place before
-    the next pass begins, and the failure guard's code fingerprint retries
-    work held before re-exec. A stamp on a checkout the trusted test refuses
-    leaves the service on its current code, so a tree mid-merge never replaces a
-    running service.
+    The shared reload window observes the checkout at the head of each pass.
+    Code changes coalesce until its deadline and until this image has finished
+    and published a pass. An immediate request bypasses the deadline, while
+    the trust check and the drain still protect every replacement.
 
     A replacement ends every thread this process started, so a stamp that has
     moved no longer re-executes at once: the loop starts no further promotion or
@@ -234,14 +391,14 @@ def admit_until_stopped(
     from reckon import flight
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
     from reckon.crew.fleet_supervisor import service_pass
+    from reckon.crew.follower_reload import ReloadWindow
     from reckon.crew.promotion_requests import PromotionService
     from reckon.crew.resumption import _promotion_settings
 
     _adopt_launched_workers_from_reexec()
     promotion_width, _ = _promotion_settings(flight.resolve().config)
-    # The stamp is what the drain watches to stop starting work on code the
-    # service is about to replace in place.
-    promotions = PromotionService(width=promotion_width, code_stamp=_admit_code_stamp)
+    # The window owns the decision to drain; a moved stamp alone keeps work flowing.
+    promotions = PromotionService(width=promotion_width)
     admission_options: dict[str, Any] = {"lane": lane}
     if launcher is not None:
         admission_options["launcher"] = launcher
@@ -257,9 +414,12 @@ def admit_until_stopped(
         # A manual pass reports the landing it started, so it waits for it; the
         # service loop below does not.
         started_at = _utc_now()
-        started = time.monotonic()
-        release = _release._release_tick()
-        released = time.monotonic()
+        # The tally is opened before the stage's clock starts, so the cost of
+        # measuring the stage is not charged to the stage.
+        with _read_tally() as release_reads:
+            started = time.monotonic()
+            release = _release._release_tick()
+            released = time.monotonic()
         worker.tick()
         promotions.tick()
         landing = worker.settle()
@@ -268,6 +428,7 @@ def admit_until_stopped(
         ended = time.monotonic()
         result["release"] = release
         result["landing"] = landing
+        _record_stage_reads(result, "release", release_reads)
         _record_stage_timings(
             result,
             started_at=started_at,
@@ -279,37 +440,61 @@ def admit_until_stopped(
         _verdicts._record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
     passes = 0
-    code_stamp = _admit_code_stamp()
+    from reckon import checkout_trust
+
+    code_stamp = (
+        checkout_trust.running_code_identity(_source_root() / "reckon")
+        if checkout_trust.published_reload_image(_source_root())
+        else _admit_code_stamp()
+    )
+    service_name = Path(
+        os.environ.get("RECKON_SERVICE_PASS_PATH", "admission.pass")
+    ).stem
+    reload_window = ReloadWindow(service_name, code_stamp)
     worker = _landing._LandingWorker(lander)
     # The queue refills itself between passes.
     promotions.start_refill()
+    # A delivered run owes a review before it can land, and its coordinator may
+    # not be there to dispatch it, so the service dispatches owed reviews on a
+    # clock of its own.
+    from .review_sweep import ReviewSweep
+
+    reviews = ReviewSweep()
+    reviews.start()
     try:
         while True:
             with service_pass():
-                if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
+                newest_code = _admit_code_stamp()
+                if reload_window.due(newest_code) and _checkout_code_is_trusted():
                     # Replacing this image ends every thread it started, and the
                     # promotions and landings run on those threads. So no new
                     # one starts once the stamp has moved: the loop drains the
                     # work in flight, and only then replaces the process.
                     promotions.begin_drain()
+                    reviews.stop()
                     promotions.wait_for_in_flight()
                     worker.settle()
-                    _reexec_into_current_code()
+                    with reload_window.replacement(newest_code):
+                        _reexec_into_current_code()
                 started_at = _utc_now()
-                started = time.monotonic()
                 # The landing runs in its own thread under its own lock, so this
                 # pass proceeds whether or not one is in flight, and the landing
                 # holds only the next landing.
                 worker.tick()
                 promotions.tick()
-                release = _release._release_tick()
-                released = time.monotonic()
+                # Opened before the stage's clock starts, so the cost of
+                # measuring the stage is not charged to the stage.
+                with _read_tally() as release_reads:
+                    started = time.monotonic()
+                    release = _release._release_tick()
+                    released = time.monotonic()
                 with runs.resolution_scope():
                     admitted = _selection.admit_once(**admission_options)
                 ended = time.monotonic()
                 landing = worker.last
                 admitted["release"] = release
                 admitted["landing"] = landing
+                _record_stage_reads(admitted, "release", release_reads)
                 _record_stage_timings(
                     admitted,
                     started_at=started_at,
@@ -323,10 +508,12 @@ def admit_until_stopped(
                         admitted, lane=lane, code_stamp=code_stamp
                     )
                 )
+                reload_window.exported()
                 passes += 1
             _pause(interval)
     except KeyboardInterrupt:
         return {"passes": passes}
     finally:
         promotions.stop_refill()
+        reviews.stop(timeout=5.0)
         worker.stop()

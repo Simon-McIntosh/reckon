@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T12:00:55.275Z",
+  "dispatched_at": "2026-11-17T11:59:29Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T115646547504-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:147",
+      "id": "reasoning-1",
+      "reason": "without naming which of \u00a77's landed clauses failed, s16's deliverable restates \u00a77's first two clauses and its node is dispatched against a section the plan declares complete, so either duplicate work is built or a real gap in \u00a77's done-when goes unreported.",
+      "text": "\u00a716's Why records that a repaired head's pending landing keeps the old head and that nothing requests a review of the new head, while \u00a77 (plan.html:92) is declared `done` and its deliverable already states \"A reviewed head whose merge with the current primary branch is textually clean lands with no coordinator move\" and \"a repair round ... re-enters the queue when repaired, with its review covering only the repair\"; s16 cites no \u00a77 clause that failed, so a worker reading the plan sees the endpoint declared delivered and cannot tell whether s16 is new scope or \u00a77's landing did not honour its own measure",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T115646547504-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:149",
+      "id": "reasoning-2",
+      "reason": "a plan that fixes the module and the test file converts a guess the worker would have tested against the code into a constraint, and these two sections' targets were authored after the standing finding on write paths was recorded, so the defect is new in these units rather than a repetition of the recorded claim.",
+      "text": "s16 (plan.html:149) and s17 (plan.html:155) each close with \"Write paths:\" naming the modules to change (`reckon/crew/pending_landing.py`, `reckon/crew/queue_landing.py`, `reckon/crew/recovery_review_dispatch.py`, `reckon/crew/promotion_checks.py`, `reckon/crew/promotion_evidence.py`) and their test files, which is the reuse map the node brief owns, not the plan",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261117T115646547504-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:24",
+      "id": "wiring-1",
+      "reason": "the table is the only record of what s16 waits on, so a dispatch gate cannot hold it behind \u00a76 and \u00a77 and an incomplete node can be queued ahead of the behaviour it measures.",
+      "text": "the depends-on table carries no key for s16 or s17, although s16's endpoint presupposes \u00a76's unattended promoter and \u00a77's repair round and s10 now lists both new sections as its own upstream",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d52c17e92857d9621bae254e4f5e86fe2d5e244b",
+  "plan_fingerprint": "f3f1a5f4e68cf3770546851214b20c4c3e16afdef4230721a5d3ba8705bb343f",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261117T115646547504-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "e7c2ea6aaa12510f9f4643b88bd824eec63e3ef0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every module named in s16's and s17's write paths (`reckon/crew/pending_landing.py`, `reckon/crew/queue_landing.py`, `reckon/crew/recovery_review_dispatch.py`, `reckon/crew/promotion_checks.py`, `reckon/crew/promotion_evidence.py`) exists in the tree at 1f70778c58; s16 and s17 carry no other citation to resolve.",
+    "done_when": "pass \u2014 s16 (plan.html:149) states a three-population fixture with per-run outcomes, and s16 and s17 (plan.html:155) each declare a negative control that can fail at the base revision.",
+    "evidence_paths": "pass \u2014 both done-whens run in a temporary crew home and add no scratchpad path; the gate is the project's `all_debug` importer set, whose logs sit on the run's own record.",
+    "naming": "pass \u2014 both headings and done-whens state a mechanism (redelivered head, base failure at the merged revision) with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 s16 asks for a landing behaviour \u00a77 already declares delivered and cites no relationship to it, and both new sections prescribe implementation by naming target modules.",
+    "single_goal": "pass \u2014 s16 delivers one mechanism (a redelivered head is reviewed and landed, and each non-landing becomes one obligation) and s17 one rule for base failures.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (plan.html:24) leaves s16 and s17 with no entry while s10 now names both as upstream and s16's endpoint presupposes \u00a76's unattended promoter and \u00a77's repair round."
+  },
+  "section_digests": {
+    "_document": "2ad8c050275db1b476a871af73f4d00758b561da7f5374f6b168b1315de377de",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:14:59.606019+00:00",
+  "total": null
+}

@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: logs/suite-base-69fab1372f.log records 58 passed EXIT=0 at 69fab1372f16686ce6acdb6094a357c6f6bfe18d and logs/suite-head-94250afbda.log records 58 passed EXIT=0 at 94250afbda7717280ed70c0badeb717daab5091c, each with no FAILED or ERROR line, so the head-minus-base id set difference is empty (0); the importing arm over 216 files agrees, logs/importing-tests-head.ids minus logs/importing-tests-base.ids is empty.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3214 (dispatch_review_for_run classifies the run and refuses at :3221 unless it reads scoring)",
+    "reckon/crew/recovery_review_acceptance.py:1676",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/crew/query.py:448",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-16T15:34:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html",
+      "id": "f280e22b3d8",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm's ids are quoted inside the fragment and neither arm's log path is named anywhere in the deliverable, while the plan asks the base run be logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/, so a reader of the fragment cannot open either run to check it."
+    },
+    {
+      "file": "logs/gate-head-94250afbda.log",
+      "id": "f6997bcc9e8",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate header names revision, tree, cwd, command and module.__file__ but no job or SLURM_JOB_ID state, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" is not evidenced by the artefact; the measure itself reproduces, since the same file reads 4 passed with SLURM_JOB_ID unset in the source worktree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from 69fab1372f; 9593a3e401 adds one clause to the pre_spawn_waiting gate at reckon/crew/recovery_classification.py:1836-1839 with an expanded comment and nothing else, and 94250afbda adds only the 57-line evidence fragment, so the change is one predicate and one record.",
+    "done_when": "the done_when asks the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset, each cause carry a product-or-test verdict, the importing arm add no failure, and the base run's ids be logged under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records the head run (4 passed, EXIT=0) and its base arm (3 failed, 1 passed, EXIT=1) with the same three failing ids inside the fragment at line 29, states one cause as product wrong, and its importing arm at logs/importing-tests-{base,head}.ids diffs to 0 added and 16 fixed over 216 files, but no log header states the job or the SLURM_JOB_ID condition, so that one conjunct of the measure is not evidenced by the artefact.",
+    "goal": "the goal is that tests/test_a_review_never_runs_in_harness.py passes in full; at head 94250afbda I ran that file in the source worktree with SLURM_JOB_ID unset and it reads \"4 passed\", and commit 9593a3e401 changes reckon/crew/recovery_classification.py:1836-1839 so a pre-spawn pointer with a terminal manifest is no longer held at running, which is the rule that made the file red; the commits are not yet merged to the primary branch, which landing does.",
+    "manifest": "read at the run directory; it reports status complete, commits 9593a3e401 and 94250afbda, the gate command and its four logs, a base arm of 3 failed/1 passed against a head arm of 4 passed, both suite arms at 58 passed EXIT=0, and the 216-file importing arm; I confirmed each quoted summary line against the log files it names.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its slug file, and the figures directory for the slug; the two changed paths reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html are both inside that fence, and no test file was touched."
+  },
+  "justifications": {
+    "durability": "the three gate tests redden on the reinstated regression as logs/gate-base-69fab1372f.log shows (test_a_review_whose_only_lane_is_in_harness_is_held_with_a_reason, test_a_review_never_lands_on_the_owning_runs_in_harness_backend, test_a_spawnable_lane_is_still_composed_when_one_exists), and each asserts a dispatch outcome the test did not supply, so the guard is independent of its input.",
+    "evidence": "logs/gate-head-94250afbda.log records 4 passed EXIT=0 and logs/gate-base-69fab1372f.log the three base ids, but the head log's header names no job or SLURM_JOB_ID state, so the done_when's all_debug conjunct rests on the worker's word rather than the receipt.",
+    "fit": "the added clause sits inside the existing pre_spawn_waiting expression at reckon/crew/recovery_classification.py:1836 and uses the shared TERMINAL_MANIFEST_STATUSES constant from reckon/crew/reports.py:127 exactly as the sibling gate at reckon/crew/recovery_classification.py:1459-1462 does.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1836-1839 stops holding a delivered pre-spawn pointer at running, and the named file reads 4 passed at head 94250afbda in my own run with SLURM_JOB_ID unset.",
+    "reuse": "the diff adds no definition and reuses the owner constant, but the rule it applies is the one reckon/crew/recovery_liveness.py:72 _observed_phase already states and it is restated inline here rather than factored, which is the idiom this file already uses.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery_classification.py and the evidence fragment, both inside the write paths declared at the manifest's orientation_write_paths, and adds no test edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_a_review_never_runs_in_harness.py passes in full; at head 94250afbda I ran that file in the source worktree with SLURM_JOB_ID unset and it reads \"4 passed\", and commit 9593a3e401 changes reckon/crew/recovery_classification.py:1836-1839 so a pre-spawn pointer with a terminal manifest is no longer held at running, which is the rule that made the file red; the commits are not yet merged to the primary branch, which landing does.\nVERDICT done_when: the done_when asks the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset, each cause carry a product-or-test verdict, the importing arm add no failure, and the base run's ids be logged under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records the head run (4 passed, EXIT=0) and its base arm (3 failed, 1 passed, EXIT=1) with the same three failing ids inside the fragment at line 29, states one cause as product wrong, and its importing arm at logs/importing-tests-{base,head}.ids diffs to 0 added and 16 fixed over 216 files, but no log header states the job or the SLURM_JOB_ID condition, so that one conjunct of the measure is not evidenced by the artefact.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its slug file, and the figures directory for the slug; the two changed paths reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html are both inside that fence, and no test file was touched.\nVERDICT manifest: read at the run directory; it reports status complete, commits 9593a3e401 and 94250afbda, the gate command and its four logs, a base arm of 3 failed/1 passed against a head arm of 4 passed, both suite arms at 58 passed EXIT=0, and the 216-file importing arm; I confirmed each quoted summary line against the log files it names.\nVERDICT diff: read commit by commit from 69fab1372f; 9593a3e401 adds one clause to the pre_spawn_waiting gate at reckon/crew/recovery_classification.py:1836-1839 with an expanded comment and nothing else, and 94250afbda adds only the 57-line evidence fragment, so the change is one predicate and one record.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3214 (dispatch_review_for_run classifies the run and refuses at :3221 unless it reads scoring), reckon/crew/recovery_review_acceptance.py:1676, reckon/crew/recovery_watch.py:750, reckon/crew/query.py:448, reckon/serve.py:902\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1836-1839 stops holding a delivered pre-spawn pointer at running, and the named file reads 4 passed at head 94250afbda in my own run with SLURM_JOB_ID unset.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head-94250afbda.log records 4 passed EXIT=0 and logs/gate-base-69fab1372f.log the three base ids, but the head log's header names no job or SLURM_JOB_ID state, so the done_when's all_debug conjunct rests on the worker's word rather than the receipt.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/recovery_classification.py and the evidence fragment, both inside the write paths declared at the manifest's orientation_write_paths, and adds no test edit.\nSCORE durability: 19\nJUSTIFICATION durability: the three gate tests redden on the reinstated regression as logs/gate-base-69fab1372f.log shows (test_a_review_whose_only_lane_is_in_harness_is_held_with_a_reason, test_a_review_never_lands_on_the_owning_runs_in_harness_backend, test_a_spawnable_lane_is_still_composed_when_one_exists), and each asserts a dispatch outcome the test did not supply, so the guard is independent of its input.\nSCORE fit: 19\nJUSTIFICATION fit: the added clause sits inside the existing pre_spawn_waiting expression at reckon/crew/recovery_classification.py:1836 and uses the shared TERMINAL_MANIFEST_STATUSES constant from reckon/crew/reports.py:127 exactly as the sibling gate at reckon/crew/recovery_classification.py:1459-1462 does.\nSCORE reuse: 18\nJUSTIFICATION reuse: the diff adds no definition and reuses the owner constant, but the rule it applies is the one reckon/crew/recovery_liveness.py:72 _observed_phase already states and it is restated inline here rather than factored, which is the idiom this file already uses.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html:29 non-blocking: the base arm's ids are quoted inside the fragment and neither arm's log path is named anywhere in the deliverable, while the plan asks the base run be logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/, so a reader of the fragment cannot open either run to check it.\nFINDING logs/gate-head-94250afbda.log:1 non-blocking: the head gate header names revision, tree, cwd, command and module.__file__ but no job or SLURM_JOB_ID state, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" is not evidenced by the artefact; the measure itself reproduces, since the same file reads 4 passed with SLURM_JOB_ID unset in the source worktree.",
+  "review_node": "review-of-qwnw-red-file-a-review-never-runs-in-harness-94250afbda77",
+  "review_run_id": "r-20261116T164729270148-review-of-qwnw-red-file-a-review-never-runs-in-harness",
+  "reviewed_base_sha": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "reviewed_head_sha": "94250afbda7717280ed70c0badeb717daab5091c",
+  "reviewed_run_id": "r-20261116T105126521019-qwnw-red-file-a-review-never-runs-in-harness",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T164729270148-review-of-qwnw-red-file-a-review-never-runs-in-harness"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:19:06.452359+00:00",
+  "total": 109
+}

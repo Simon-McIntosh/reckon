@@ -121,6 +121,31 @@ def test_one_lane_reading_composes_one_allowance(monkeypatch, tmp_path) -> None:
     }
 
 
+def test_an_unroutable_local_route_leaves_every_row_readable(
+    monkeypatch, tmp_path
+) -> None:
+    """A host with no declared local route still serves its live view.
+
+    ``local_backend`` absent is a valid host configuration — the schema says it
+    means this host has no local worker route — and selecting one is a dispatch
+    concern. Resolving the rows' configuration raised that refusal out of the
+    read, so a view of five hundred queued requests answered ``crew_error``
+    instead of a row per request.
+    """
+    crew_home = tmp_path / "config"
+    crew_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(crew_home))
+    records = [
+        {**record, "local": True, "repo": str(tmp_path / "repo")}
+        for record in _records()
+    ]
+
+    rows = query.project_live_rows(records, fields=("run_id", "detail"))
+
+    assert [row["run_id"] for row in rows] == ["r-0", "r-1", "r-2"]
+    assert all(row["detail"] for row in rows)
+
+
 def test_each_stored_sentence_is_shown_with_its_recorded_time(
     monkeypatch, tmp_path
 ) -> None:

@@ -2820,6 +2820,13 @@ def _crew(
     ``session``, with optional ``reason``),
     each refusing a request that has left the waiting phases. A
     refused ``complete`` or ``land`` carries every failing guard in ``guards``.
+    ``decisions`` reads all open questions waiting on the lead across mounted
+    projects, ordered by the number of held requests and sections. Each row
+    carries its question, context, options with the recommendation first,
+    owning project/session/plan/section, recording time, and held request ids
+    and section names. Unanswered plan decisions join the same read; missing
+    historical ownership or recording time is null. Omit ``project`` or pass
+    ``"*"`` for every mount, or name one to narrow the read.
     ``directory`` reads every live coordinator across the workstation, or one
     project's coordinators, and resolves a run or human node id to its owner.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —

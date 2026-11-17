@@ -143,9 +143,21 @@ def _write_pointer(
 
 
 def _write_suite_manifest(
-    path: Path, *, baseline: dict[str, object], after: dict[str, object]
+    path: Path,
+    *,
+    baseline: dict[str, object],
+    after: dict[str, object],
+    commits: str,
 ) -> None:
-    lines = ["node: node-a", "status: complete", "commits: abc123", "tests: done"]
+    """Write the suite record for a run that cites the commit it made.
+
+    A promotion resolves every commit a manifest names against the run's
+    repository, so the citation is the repository's own head rather than a
+    placeholder: a citation-shaped value that names nothing is refused by
+    value, and a run whose worktree holds a commit and cites none is refused
+    too. Neither rule is this file's subject, so the record satisfies both.
+    """
+    lines = ["node: node-a", "status: complete", f"commits: {commits}", "tests: done"]
     lines.append("baseline_suite: " + json.dumps(baseline))
     lines.append("after_suite: " + json.dumps(after))
     path.write_text("\n".join(lines) + "\n")
@@ -185,8 +197,6 @@ def _complete(run_id: str, root: Path):
             "0",
             "--gate-log-path",
             "/durable/gate.log",
-            "--no-commit",
-            "report-only fixture",
         ],
     )
 
@@ -229,6 +239,7 @@ def test_a_pair_resolved_per_tree_is_accepted_though_no_arm_matches_the_scope(
         manifest,
         baseline=_observation(at_base, base_sha),
         after=_observation(at_head, head_sha),
+        commits=head_sha,
     )
     _write_pointer(
         run_id,
@@ -270,6 +281,7 @@ def test_an_after_arm_left_naming_no_test_file_is_refused_as_unmeasured(
             head_sha,
             exit_status=4,
         ),
+        commits=head_sha,
     )
     _write_pointer(
         run_id,
@@ -303,6 +315,7 @@ def test_an_arm_that_exited_having_collected_no_test_is_refused(
         manifest,
         baseline=_observation(at_base, base_sha),
         after=_observation(at_head, head_sha, exit_status=4),
+        commits=head_sha,
     )
     _write_pointer(
         run_id,
@@ -337,6 +350,7 @@ def test_a_scope_whose_tests_the_change_creates_records_an_empty_baseline(
         # run dispatched before the per-tree rule records.
         baseline=_observation(at_head, base_sha, exit_status=4),
         after=_observation(at_head, head_sha),
+        commits=head_sha,
     )
     _write_pointer(
         run_id,

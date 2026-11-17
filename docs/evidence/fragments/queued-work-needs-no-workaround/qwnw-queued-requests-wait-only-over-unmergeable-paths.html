@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-queued-requests-wait-only-over-unmergeable-paths</title>
+</head>
+<body>
+<article class="r-evidence" id="qwnw-queued-requests-wait-only-over-unmergeable-paths-record">
+  <h2 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-title">A queued request waits only over a path a merge cannot reconcile</h2>
+
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-change">The admission pre-check compared two queued requests' declared write paths by
+  containment alone, whatever class those paths were, so a request declaring a repository-wide
+  directory such as <code>reckon</code> parked every request queued behind it. The pre-check now
+  reads the sharing rule the live-claim check, the fence and the write-time audit already use
+  (<code>runs._claim_paths_share</code>), so only the class git cannot reconcile holds one request
+  behind another: a plan document, generated state, a cumulative evidence record, a figure topic
+  directory, a dependency lock or a binary receipt. The pass's exclusive-path policy is resolved
+  once per request and handed to every comparison, so the pass keeps its one resolution per request.</p>
+
+  <table id="qwnw-queued-requests-wait-only-over-unmergeable-paths-cases">
+    <thead><tr><th>Case</th><th>Declared paths</th><th>Head</th><th>Base 281c0359</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>two requests, two free slots</td>
+        <td><code>reckon</code>, <code>tests</code> on both</td>
+        <td>both launched on one pass, nothing held</td>
+        <td>second held behind the first</td>
+      </tr>
+      <tr>
+        <td>one plan document on both</td>
+        <td><code>docs/plans/plan-a.html</code> on both</td>
+        <td>second held, queued, no failure</td>
+        <td>second held (unchanged)</td>
+      </tr>
+      <tr>
+        <td>a plan document, then a directory covering it</td>
+        <td><code>docs/plans/plan-a.html</code>, then <code>docs</code></td>
+        <td>second held, queued, no failure</td>
+        <td>second held (unchanged)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-negative-control">Negative control</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-red">The first case run against a base-revision extraction, with the head's test file copied into that
+  tree, fails on <code>assert ['r-later'] == []</code>: the second request is held behind the first
+  although the two share only <code>reckon</code> and <code>tests</code>. The run is recorded at
+  <code>docs/evidence/fragments/queued-work-needs-no-workaround/s23.html</code>.</p>
+
+<h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-failures">The five head-gate failures</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-failures-body">All five reproduce at the base revision in the same all_debug job, so none is caused by this
+  change; each encodes an endpoint the code no longer has, and each was updated:</p>
+  <ul>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f1">a working or starting claim over
+      a live path now refuses a second writer only over a path a merge cannot reconcile, so the case
+      names a plan document and still reads exit 7 with <code>scope-conflict</code>;</li>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f2">a dispatch at the session cap
+      queues rather than refusing with <code>queue-full</code>, so the case reads the queued request
+      and its phase;</li>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f3">the two queued-claim dispatch
+      cases name the exclusive class, and the payload helper reads the JSON document a dispatch prints
+      after its progress lines;</li>
+    <li id="qwnw-queued-requests-wait-only-over-unmergeable-paths-f4">the claim-hold case gives the
+      stopped holder a claim on generated state, which is the class the claim still fences.</li>
+  </ul>
+
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-repair">The record itself</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-repair-body">A review found this run's manifest carried unsubstituted placeholders, so no gate command and no arm
+  could be read from it. The record is completed, and both arms are measured with the fence's own
+  command, <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>:
+  base 281c0359 reads <code>58 passed</code> with <code>EXIT=0</code>, and the head reads
+  <code>58 passed</code> with <code>EXIT=0</code>. The base tree is a <code>git archive</code> of the
+  revision with a local commit, because the suite reads <code>git ls-tree HEAD</code> and an archive
+  alone carries no history.</p>
+
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms">Suite arms</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-arms-body">Both arms ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset. Base 281c0359 over the
+  two touched test files: <code>6 failed, 12 passed</code>, <code>EXIT=1</code>. Head 072aa36b over
+  those two files plus the new one: <code>21 passed</code>, <code>EXIT=0</code>. The head adds no
+  failing id, and the six base failures — the five listed above and the promoted-earlier case — pass
+  at the head. The negative control, the node's own test over the base tree, reads
+  <code>1 failed, 2 passed</code>, <code>EXIT=1</code>.</p>
+  <h3 id="qwnw-queued-requests-wait-only-over-unmergeable-paths-merge">After the merge with the primary branch</h3>
+  <p id="qwnw-queued-requests-wait-only-over-unmergeable-paths-merge-body">The primary branch had reworked
+  the admission pass into a batch that launches independent requests concurrently, and had already
+  retargeted the claim cases to the dependency manifest. The merge keeps that pass verbatim and passes
+  this section's policy into it as one argument, so the overlap check and the live-claim check judge a
+  pair with the same rule. Three queued-hold cases still named a source file and so asserted the
+  endpoint this section retires; they now name the manifest, the same class the claim cases use, and the
+  gate over the merged head reads <code>21 passed</code> with <code>EXIT=0</code>.</p>
+</article>
+</body>
+</html>

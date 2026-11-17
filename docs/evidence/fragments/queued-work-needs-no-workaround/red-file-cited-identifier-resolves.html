@@ -1,0 +1,67 @@
+<section id="qwnw-red-file-cited-identifier-resolves-second-launch-red-file-cited-identifier-resolves">
+  <h2>The citation test file passes at head, measured against its base run</h2>
+
+  <p><strong>What was measured.</strong> <code>tests/test_cited_identifier_resolves.py</code>
+  on the primary branch. At revision <code>0e0f25b0f941</code> it reported
+  <strong>10 failed</strong> of 10, and it reports <strong>10 passed</strong>
+  after this node's change. Both runs are the same command, resolved over the
+  tree each names:</p>
+
+  <table id="qwnw-red-file-cited-identifier-resolves-second-launch-red-file-cited-identifier-resolves-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree, module
+    and command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base — the negative control</td>
+        <td><code>0e0f25b0f941</code>, a scratch tree extracted from that revision</td>
+        <td>10 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>head — this node's tree</td>
+        <td><code>0e0f25b0f941</code> plus this node's two commits</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base run's failing ids, which are the negative control's own record:
+  <code>test_a_full_commit_sha_that_resolves_is_admitted</code>,
+  <code>test_an_abbreviated_commit_sha_that_resolves_is_admitted</code>,
+  <code>test_a_citation_naming_a_tag_is_admitted</code>,
+  <code>test_the_measured_fabricated_sha_is_refused</code>,
+  <code>test_a_well_formed_sha_with_no_object_behind_it_is_refused</code>,
+  <code>test_a_citation_that_is_not_hexadecimal_at_all_is_refused</code>,
+  <code>test_the_refusal_turns_on_resolvability_and_not_on_the_spelling</code>,
+  <code>test_a_declared_absence_is_not_read_as_a_citation</code>,
+  <code>test_a_manifest_with_no_commits_line_is_unaffected</code> and
+  <code>test_the_refusal_leaves_no_row_behind_it</code> — all ten, read from
+  the log's own <code>FAILED</code> lines.</p>
+
+  <h3 id="qwnw-red-file-cited-identifier-resolves-second-launch-red-file-cited-identifier-resolves-causes">Causes and verdicts</h3>
+
+  <table id="qwnw-red-file-cited-identifier-resolves-second-launch-red-file-cited-identifier-resolves-verdicts">
+    <thead><tr><th>cause</th><th>cases</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr><td>The fixture promoted through <code>crew complete</code> and read
+        the call's own result, while the command now records a promotion
+        request and lets the station carry it out.</td>
+        <td>all 10</td>
+        <td>test wrong — the helper now passes <code>--wait</code>, the flag that
+        performs the promotion in the call, which the rest of the promotion
+        suite already does, including its dry-run and its review cases.</td></tr>
+      <tr><td>Two commitless cases started the run at a base the worktree had
+        already left, so the commitless guard refused the tree for holding a
+        commit the record did not name.</td>
+        <td><code>test_a_declared_absence_is_not_read_as_a_citation</code>,
+        <code>test_a_manifest_with_no_commits_line_is_unaffected</code></td>
+        <td>test wrong — a run that cites no commit starts at its own HEAD. The
+        guard is unchanged, and it still refuses a moved worktree.</td></tr>
+      <tr><td>The citation list a manifest declares was assembled without the
+        declaration reader, so <code>commits: none (repository worktree
+        remained clean)</code> reached the figure-twin check as a citation and
+        was refused by the value that declares its absence.</td>
+        <td><code>test_a_declared_absence_is_not_read_as_a_citation</code></td>
+        <td>product wrong — repaired in
+        <code>reckon/crew/promotion_scope.py</code>, where
+        <code>_declared_manifest_commits</code> now asks the same per-entry
+        reader <code>_unresolved_citations</code> already asks.</td></tr>
+    </tbody>
+  </table>
+</section>

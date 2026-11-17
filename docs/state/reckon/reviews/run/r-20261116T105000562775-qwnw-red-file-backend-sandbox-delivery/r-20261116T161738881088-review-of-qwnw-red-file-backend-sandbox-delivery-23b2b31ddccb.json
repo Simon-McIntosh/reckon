@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:739 launch_plan",
+    "reckon/crew/resumption.py:689 launch_plan",
+    "reckon/crew/dispatch_sessions.py:1344 launch_plan",
+    "reckon/crew/dispatch_sessions.py:1879 launch_plan"
+  ],
+  "completed_at": "2026-11-16T16:19:31.433Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "Non-blocking duplication of the probe answer that tests/conftest.py owns. The run was resumed because its own gate fails one case at its head, and a new review will judge the repaired head, so this finding is not carried against the superseded head.",
+      "recorded_at": "2026-11-16T22:00:55.615870+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-16T16:19:07Z",
+  "findings": [
+    {
+      "file": "tests/test_backend_sandbox_delivery.py",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: commit 53b822e845 re-adds CODEX and CLAUDE at :20-21 immediately above identical definitions at :62-63, leaving a dead duplicate pair in a file the node rewrote; ruff does not flag it because the first binding is used before the second, so the copy survives until a reader edits the wrong one."
+    },
+    {
+      "file": "tests/test_backend_sandbox_delivery.py",
+      "line": "208",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected vector embeds hook_command read from the product's own worker_inbox_group(), the same source the code under test composes that option from, so the two sides move together and a change to the inbox command's script path cannot redden the assertion at :232-234; only the option's presence is guarded, not the command it carries."
+    },
+    {
+      "file": "tests/test_backend_sandbox_delivery.py",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: _inbox_trust_answer re-implements the hooks/list probe answer that tests/conftest.py:495 _isolated_probe_answer already owns and installs through the autouse no_live_account_probe fixture; it neither calls nor extends that owner, so the reply's shape now exists in two places that must agree."
+    },
+    {
+      "file": "tests/test_backend_sandbox_delivery.py",
+      "line": "167",
+      "severity": "non-blocking",
+      "text": "non-blocking: passing fence=False narrows test_claude_read_only_grant_excludes_the_worktree so that the retained assert str(worktree) not in plan.argv at :172 no longer inspects the fence's bwrap vector, the path that made the test red; the assertion text survives but its reach does not, so nothing in this test now asserts how the fence names the worktree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "The landed change is a test of reckon/_backends.py:3004 launch_plan; the four production callers of it are reckon/crew/dispatching/launch.py:739, reckon/crew/resumption.py:689, reckon/crew/dispatch_sessions.py:1344 and reckon/crew/dispatch_sessions.py:1879.",
+    "diff": "Read both commits against 69fab1372f; 53b822e845 changes only tests/test_backend_sandbox_delivery.py plus two fragments, and 23b2b31ddccb adds only the head-run and arm record to docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html.",
+    "done_when": "The done_when asks for the named file passing in full as a job on all_debug with SLURM_JOB_ID unset, each cause given a product-or-test verdict, an importer arm adding no failure, and the base red log stored beside the head run; the manifest carries both verdicts, the arm pair, logs/head-backend-sandbox.log and logs/red-file-backend-sandbox-delivery.log, and I recomputed the arm's id difference myself, but the run was in place rather than submitted to all_debug, which the reviewed manifest's evidence_inputs states.",
+    "goal": "The node's goal is that tests/test_backend_sandbox_delivery.py passes in full on the primary branch; commit 53b822e845 repairs its two red tests (tests/test_backend_sandbox_delivery.py:139-174 and :175-247) and nothing else, and the head run of the file reads 4 passed EXIT=0.",
+    "manifest": "Read; status complete, commits 53b822e8450eb4a03998b9a16425dd360b28effc and 23b2b31ddccb, changed_paths the three landed files, tests the env -u SLURM_JOB_ID pytest command, test_logs naming the base and head gate logs and both importer arms, baseline_suite at 69fab1372f with 0 failures and after_suite at 53b822e845 with 0 failures, and rubric lines for all six dimensions.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two subpaths; git diff --stat 69fab1372f..23b2b31ddccb lists tests/test_backend_sandbox_delivery.py and two fragments under that directory, with nothing outside and nothing under reckon/."
+  },
+  "justifications": {
+    "durability": "The expected vector at tests/test_backend_sandbox_delivery.py:210-231 pins the mcp_servers={} table, the hooks.PostToolUse definition and the hooks.state trust pair independently of the product, so dropping any option pair reddens it, but the hook command it embeds is read from the product at :208 and guards only that option's presence.",
+    "evidence": "logs/head-backend-sandbox.log's header names the recorded gate command and reads 4 passed EXIT=0, and the importer arm's ids reconcile (base 16 minus the two repaired equals head 14, none added), but the done-when's as-a-job-on-all_debug condition was not met and the reviewed manifest discloses that under evidence_inputs.",
+    "fit": "The repair follows the file's own idiom (module-level CODEX/CLAUDE dicts, _read_only helper, monkeypatched probe) and its description-first docstrings at tests/test_backend_sandbox_delivery.py:139-152, but the commit re-adds CODEX and CLAUDE at :20-21 above identical definitions at :62-63.",
+    "goal_fidelity": "The goal is tests/test_backend_sandbox_delivery.py passing in full, and the two red tests at tests/test_backend_sandbox_delivery.py:139 and :175 are the only tests repaired, with the head run of the file reading 4 passed EXIT=0.",
+    "reuse": "The added _inbox_trust_answer at tests/test_backend_sandbox_delivery.py:28 re-implements the hooks/list probe answer that tests/conftest.py:495 _isolated_probe_answer already owns and installs autouse, without extending it.",
+    "scope_discipline": "git diff 69fab1372f..23b2b31ddccb touches only tests/test_backend_sandbox_delivery.py and two files under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside the declared write paths, and no product line under reckon/ changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_backend_sandbox_delivery.py passes in full on the primary branch; commit 53b822e845 repairs its two red tests (tests/test_backend_sandbox_delivery.py:139-174 and :175-247) and nothing else, and the head run of the file reads 4 passed EXIT=0.\nVERDICT done_when: the done_when asks for the named file passing in full as a job on all_debug with SLURM_JOB_ID unset, each cause given a product-or-test verdict, an importer arm adding no failure, and the base red log stored beside the head run; the manifest carries both verdicts, the arm pair, logs/head-backend-sandbox.log and logs/red-file-backend-sandbox-delivery.log, and I recomputed the arm's id difference myself, but the run was in place rather than submitted to all_debug, which the reviewed manifest's evidence_inputs states.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two subpaths; git diff --stat 69fab1372f..23b2b31ddccb lists tests/test_backend_sandbox_delivery.py and two fragments under that directory, with nothing outside and nothing under reckon/.\nVERDICT manifest: read; status complete, commits 53b822e8450eb4a03998b9a16425dd360b28effc and 23b2b31ddccb, changed_paths the three landed files, tests the env -u SLURM_JOB_ID pytest command, test_logs naming the base and head gate logs and both importer arms, baseline_suite at 69fab1372f with 0 failures and after_suite at 53b822e845 with 0 failures, and rubric lines for all six dimensions.\nVERDICT diff: read both commits against 69fab1372f; 53b822e845 changes only tests/test_backend_sandbox_delivery.py plus two fragments, and 23b2b31ddccb adds only the head-run and arm record to docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html.\nCALL_SITES: reckon/crew/dispatching/launch.py:739 launch_plan, reckon/crew/resumption.py:689 launch_plan, reckon/crew/dispatch_sessions.py:1344 launch_plan, reckon/crew/dispatch_sessions.py:1879 launch_plan\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal is tests/test_backend_sandbox_delivery.py passing in full, and the two red tests at tests/test_backend_sandbox_delivery.py:139 and :175 are the only tests repaired, with the head run of the file reading 4 passed EXIT=0.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-backend-sandbox.log's header names the recorded gate command and reads 4 passed EXIT=0, and the arm's ids reconcile (base 16 minus the two repaired equals head 14, none added), but the done-when's as-a-job-on-all_debug condition was not met and the manifest discloses that under evidence_inputs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 69fab1372f..23b2b31ddccb touches only tests/test_backend_sandbox_delivery.py and two files under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside the declared write paths, and no product line under reckon/ changed.\nSCORE durability: 16\nJUSTIFICATION durability: the expected vector at tests/test_backend_sandbox_delivery.py:210-231 pins the mcp_servers={} table, the hooks.PostToolUse definition and the hooks.state trust pair independently of the product, so dropping any option pair reddens it, but the hook command it embeds is read from the product at :208 and guards only that option's presence.\nSCORE fit: 15\nJUSTIFICATION fit: the repair follows the file's own idiom (module-level CODEX/CLAUDE dicts, _read_only helper, monkeypatched probe) and its description-first docstrings at tests/test_backend_sandbox_delivery.py:139-152, but the commit re-adds CODEX and CLAUDE at :20-21 above identical definitions at :62-63.\nSCORE reuse: 5\nJUSTIFICATION reuse: the added _inbox_trust_answer at tests/test_backend_sandbox_delivery.py:28 re-implements the hooks/list probe answer that tests/conftest.py:495 _isolated_probe_answer already owns and installs autouse, without extending it.\nFINDING tests/test_backend_sandbox_delivery.py:20 non-blocking: commit 53b822e845 re-adds CODEX and CLAUDE at :20-21 immediately above identical definitions at :62-63, leaving a dead duplicate pair in a file the node rewrote; ruff does not flag it because the first binding is used before the second, so the copy survives until a reader edits the wrong one.\nFINDING tests/test_backend_sandbox_delivery.py:208 non-blocking: the expected vector embeds hook_command read from the product's own worker_inbox_group(), the same source the code under test composes that option from, so the two sides move together and a change to the inbox command's script path cannot redden the assertion at :232-234; only the option's presence is guarded, not the command it carries.\nFINDING tests/test_backend_sandbox_delivery.py:28 non-blocking: _inbox_trust_answer re-implements the hooks/list probe answer that tests/conftest.py:495 _isolated_probe_answer already owns and installs through the autouse no_live_account_probe fixture; it neither calls nor extends that owner, so the reply's shape now exists in two places that must agree.\nFINDING tests/test_backend_sandbox_delivery.py:167 non-blocking: passing fence=False narrows test_claude_read_only_grant_excludes_the_worktree so that the retained assert str(worktree) not in plan.argv at :172 no longer inspects the fence's bwrap vector, the path that made the test red; the assertion text survives but its reach does not, so nothing in this test now asserts how the fence names the worktree.",
+  "review_run_id": "r-20261116T161738881088-review-of-qwnw-red-file-backend-sandbox-delivery-23b2b31ddccb",
+  "reviewed_base_sha": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "reviewed_head_sha": "23b2b31ddccb5627ab394fc160f2dd4dd880200c",
+  "reviewed_run_id": "r-20261116T105000562775-qwnw-red-file-backend-sandbox-delivery",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T161738881088-review-of-qwnw-red-file-backend-sandbox-delivery-23b2b31ddccb"
+  },
+  "reviewer_run_id": "r-20261116T161738881088-review-of-qwnw-red-file-backend-sandbox-delivery-23b2b31ddccb",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T18:05:00+00:00",
+  "total": 86
+}

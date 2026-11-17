@@ -110,6 +110,11 @@ def _dispatch(
         config=CONFIG,
         session=session,
         member="worker-a",
+        # The launcher is a stub, so no worker ever runs and the fence has
+        # nothing to seal. Reading the host's fence capability here made the
+        # file red for a reason it does not assert: on a host without user
+        # namespaces the dispatch was refused before session selection ran.
+        no_fence_reason="the test launches a stub, so no worker runs unfenced",
         launcher=lambda *args, **kwargs: 999921,
     )
 

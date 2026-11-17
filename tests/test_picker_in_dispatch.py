@@ -180,7 +180,9 @@ def invoke(
     if comment:
         args += ["--comment", comment]
     result = CliRunner().invoke(cli.main, args)
-    return result, json.loads(result.output.splitlines()[0])
+    # Stdout is the command's single final JSON document; the created-run
+    # notice goes to stderr, which ``output`` merges into the same string.
+    return result, json.loads(result.stdout)
 
 
 def test_shadow_records_selection_without_changing_backend(repo, monkeypatch):

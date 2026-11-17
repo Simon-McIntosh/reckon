@@ -117,6 +117,14 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         },
         "feat: the reviewed change",
     )
+    # A head move is measured against the remote-tracking ref of the
+    # integration branch, so the fixture repo is a clone carrying one: a
+    # repository with no such ref has no comparable history, and the reflex
+    # declines to carry a review over it.
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(origin))
+    _git(repo, "remote", "add", "origin", str(origin))
+    _git(repo, "push", "-q", "origin", "main")
     (config_home / "mounts.json").write_text(
         '{"' + PROJECT + '": "' + str(repo / "docs") + '"}'
     )

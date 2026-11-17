@@ -1,5 +1,5 @@
 #!/bin/bash
-# fleet-supervisor — the fleet allocation's batch step.
+# fleet-supervisor — the fleet allocation's replaceable request reader.
 #
 # A step started with srun ends when its login-side client does, so the batch
 # step is the only process tree on the fleet node that outlives every login
@@ -7,6 +7,8 @@
 # the node sampler, and the per-run supervisors holding crew workers are all
 # started from it.
 #
+# The generated batch shell holds the allocation and restarts this reader with
+# the service backoff if Python exits. Only an explicit retirement ends the hold.
 # The implementation is reckon/crew/fleet_supervisor.py. This file runs it with
 # this checkout's own interpreter and passes its arguments through: none for
 # the request loop, `start <session> [layout]` for one session start.

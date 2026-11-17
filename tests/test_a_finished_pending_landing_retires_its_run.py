@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -29,7 +30,7 @@ def _promoted_repair(deliver):
     assert result.exit_code == 0, result.output
     result = _complete_land(repaired)
     assert result.exit_code != 0, result.output
-    receipt = json.loads(result.output)
+    receipt = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
     assert receipt["steps"]["promote"]["ok"], receipt
     assert receipt["steps"]["land"]["outcome"] == "merge-conflict", receipt
     primary = git(repaired["repository"], "rev-parse", "HEAD")
@@ -116,7 +117,8 @@ def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monke
         )
         result = _complete_land(run)
     assert result.exit_code != 0, result.output
-    assert json.loads(result.output)["interrupted"], result.output
+    receipt = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
+    assert receipt["interrupted"], receipt
     assert (
         pending_landing._promoted_row("proj", run["run_id"])["promoted_revision"]
         == run["head"]

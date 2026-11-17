@@ -1,0 +1,60 @@
+<section id="qwnw-red-file-directory-claim-asks-first-landing">
+  <h3>The directory-claim file is green on the rule the code keeps</h3>
+  <p>One cause, seven failing cases, verdict <strong>test wrong</strong>. A
+  directory write claim shares as the files beneath it do, by the lead's
+  11 November ruling that work does not wait on file claims: the broader claim
+  is admitted when the narrower path it meets is mergeable, so the
+  <em>asks first</em> refusal now fires only for a region git cannot reconcile —
+  a claim that is, contains, or sits under an exclusive pattern. The fixture
+  before this change declared nothing and used <code>tests/</code> and
+  <code>docs/evidence/</code>, both mergeable, so every ask it asserted had
+  stopped happening when <code>4b70522237</code> made a directory claim share
+  and <code>5695689722</code> carried that rule to dispatch on a project with no
+  declaration. The file was left asserting the superseded rule and had been red
+  since <code>5695689722</code>; at <code>4b70522237</code> the same file passed
+  <code>12 passed</code>.</p>
+  <table>
+    <thead><tr><th>Case (before)</th><th>Rule the code kept</th><th>Verdict</th><th>Now asserts</th></tr></thead>
+    <tbody>
+      <tr><td>Directory <code>tests</code> over a live <code>tests/test_x.py</code></td><td>mergeable pair shares; no ask</td><td>test wrong</td><td>exit 0, no directory warning, no acceptance</td></tr>
+      <tr><td>The alternative's files under that claim</td><td>no ask to carry alternatives</td><td>test wrong</td><td>the ask names the brief's file under an exclusive claim</td></tr>
+      <tr><td>Flag records that acceptance</td><td>no acceptance exists to record</td><td>test wrong</td><td>the flag records the acceptance over <code>docs/figures/topic/panel.svg</code></td></tr>
+      <tr><td>Absent <code>docs/evidence/new-topic</code> inside a live <code>docs/evidence</code></td><td><code>docs/evidence</code> shares; only <code>docs/evidence/archive/</code> is exclusive</td><td>test wrong</td><td>absent <code>docs/figures/topic/new-panel</code> inside a live <code>docs/figures/topic</code> is asked for</td></tr>
+      <tr><td>Flag lets that absent claim proceed</td><td>no acceptance exists to record</td><td>test wrong</td><td>the same, over the exclusive claim, recorded</td></tr>
+      <tr><td>Absent dotted <code>docs/evidence/2026.09</code></td><td>same as above</td><td>test wrong</td><td>absent <code>docs/figures/topic/2026.09</code> is asked for</td></tr>
+      <tr><td>Flag lets the dotted claim proceed</td><td>same as above</td><td>test wrong</td><td>the same, over the exclusive claim, recorded</td></tr>
+    </tbody>
+  </table>
+  <p>No assertion was deleted or loosened: each of the seven keeps a definite
+  outcome, six keep their refusal or acceptance shape on an exclusive claim, and
+  the file gains three positive cases for the sharing rule — a mergeable
+  directory claim over a live file, an absent topic directory inside a mergeable
+  claim, and a leaf inside a peer's claim. The four classifier cases and the two
+  no-overlap dispatch cases are unchanged.</p>
+  <h4>Base arm, the negative control</h4>
+  <p>At <code>ee93819a0dfd283816a577795513c00bca2b8e19</code>, in a scratch tree
+  extracted from that revision, the file as it stood read
+  <code>7 failed, 5 passed in 2.20s</code> (<code>EXIT=1</code>), failing
+  <code>test_a_directory_claim_over_a_live_file_claim_warns_and_does_not_proceed</code>,
+  <code>test_the_warning_lists_the_files_the_brief_names_as_the_alternative</code>,
+  <code>test_the_flag_lets_the_directory_claim_proceed_and_is_recorded</code>,
+  <code>test_an_absent_directory_inside_a_live_claim_warns_and_does_not_proceed</code>,
+  <code>test_the_flag_lets_an_absent_directory_claim_proceed</code>,
+  <code>test_an_absent_dotted_directory_inside_a_live_claim_warns_and_does_not_proceed</code>
+  and <code>test_the_flag_lets_an_absent_dotted_directory_claim_proceed</code>.
+  The first two refused to proceed on an admitted plan — exit 0 where the file
+  expected 2; the flag cases read no acceptance where the file expected one.</p>
+  <h4>Head arm</h4>
+  <p>The same command over this head reads <code>14 passed in 2.56s</code>
+  (<code>EXIT=0</code>). Seven base failures, none surviving, none added.</p>
+  <h4>The guard fires</h4>
+  <p>A mutation making <code>_claim_paths_share</code> return true for every
+  overlap — so that no claim can ever ask — reads
+  <code>7 failed, 7 passed in 2.31s</code> (<code>EXIT=1</code>): exactly the
+  seven ask cases fail and the seven sharing and classifier cases hold, which
+  shows the refusal path is exercised rather than assumed.</p>
+  <p><code>ruff check</code> and <code>ruff format --check</code> report nothing
+  on the changed path after formatting it. No product source changed; the
+  product's directory-claim refusal, its acceptance record and the mergeable
+  sharing rule are the ones already at the base revision.</p>
+</section>

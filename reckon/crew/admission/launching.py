@@ -68,6 +68,34 @@ def _stored_field_value(spec: Any, value: Any) -> Any:
     return value
 
 
+#: The empty value of each type ``TaskNode`` may require. A required field has
+#: no dataclass default, so this is what a stored node that predates the field
+#: rebuilds with; the empty values are the ones the node's own well-formedness
+#: check refuses a dispatch for stating.
+_ABSENT_REQUIRED_VALUE: dict[str, Any] = {
+    "str": "",
+    "bool": False,
+    "int": 0,
+    "float": 0.0,
+    "list": [],
+    "dict": {},
+}
+
+
+def _absent_required_value(spec: Any) -> Any:
+    """The value a required field takes when the stored node carries none.
+
+    A pointer written before a field was declared on ``TaskNode`` carries no
+    value for it, and the rebuild cannot ask the dataclass for a default it
+    does not have. The rebuild stays total instead: a caller that reads only the
+    node's plan and section — stamping the review contract at queue time, for
+    one — must not fail with a ``TypeError`` because a stored node names no
+    goal.
+    """
+    declared = str(spec.type).split("|")[0].strip()
+    return copy.deepcopy(_ABSENT_REQUIRED_VALUE.get(declared.split("[")[0].strip(), ""))
+
+
 def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     """Rebuild a queued request's node from the pointer it was stored as.
 
@@ -75,7 +103,9 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     field list. The queued launch never carries the built node, so a field this
     rebuild does not name is a field the launched worker never sees, and a list
     written by hand drifts from the dataclass the first time a field is added.
-    A field the stored node lacks takes the dataclass default.
+    A field the stored node lacks takes the dataclass default, and a required
+    field — which has no default — takes its type's empty value, so the rebuild
+    is total over every pointer that was ever written.
 
     Two deliberate rewrites remain: a manifest path or a write path a previous
     dispatch defaulted into the queued run's own directory is dropped, so the
@@ -104,6 +134,12 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
             continue
         stored_value = stored.get(spec.name)
         if stored_value is None:
+            # A field the stored node lacks takes the dataclass default, and a
+            # required field has none. A pointer written before the field was
+            # declared rebuilds with the field's empty value rather than
+            # raising out of a caller that reads only the plan and section.
+            if spec.default is MISSING and spec.default_factory is MISSING:
+                values[spec.name] = _absent_required_value(spec)
             continue
         value = _stored_field_value(spec, stored_value)
         # An empty string is a stored field that was never filled, so a field
@@ -571,10 +607,18 @@ def _release_stranded_launches(
         )
         if reviewed_run:
             holder["reviewed_run_id"] = reviewed_run
-        dispatch_refusals.record_launch_refusal(run_id=run_id, step=step, holder=holder)
+        dispatch_refusals.record_launch_refusal(
+            run_id=run_id,
+            step=step,
+            holder=holder,
+            attempt=_released_attempt(claim),
+        )
         if _requeue_stranded_request(run_id, step=step):
             # A request this pass took from the queue goes back to it, with its
-            # brief and steering: nothing else would dispatch it again.
+            # brief and steering: nothing else would dispatch it again. The
+            # record says so, so its fence admits that request's next attempt
+            # while it still refuses the launch the release abandoned.
+            dispatch_refusals.mark_launch_requeued(run_id)
             released.append(run_id)
             if verdicts is not None:
                 verdicts.append(
@@ -609,6 +653,28 @@ def _release_stranded_launches(
                 )
             )
     return released
+
+
+def _released_attempt(claim: Mapping[str, Any]) -> dict[str, Any]:
+    """The launch attempt a release abandoned, as the claim it took names it.
+
+    A run id names one request across all its attempts, so a refusal keyed on
+    the run refuses the request's own next attempt too: the request the release
+    put back in the queue launches again under the same id and waits out the
+    whole fence. The claim is the attempt's own identity — its registration
+    instant and the holder that published it — so the release records that, and
+    the fence admits a later attempt of the same run while still refusing the
+    slow original. A claim that names no registration is recorded as no attempt,
+    and its fence then holds against the whole run as it did before.
+    """
+    registered = str(claim.get("claim_registered_at") or "")
+    if not registered:
+        return {}
+    return {
+        "claim_registered_at": registered,
+        "holder_pid": claim.get("holder_pid"),
+        "holder_host": str(claim.get("holder_host") or ""),
+    }
 
 
 def _owe_the_review_again(
@@ -712,6 +778,29 @@ def _requeue_stranded_request(run_id: str, *, step: str) -> bool:
     return True
 
 
+def _record_failure_hold(record: dict[str, Any]) -> None:
+    """Write the hold a failed attempt leaves, so no earlier lane reason survives.
+
+    A request restored to the queue after a failed launch keeps whatever hold the
+    last pass wrote, and a pass writes that hold from the lane's own reading: a
+    request sitting in a full lane comes back holding the router's congestion
+    sentence. Its reader ranks a hold above the refusal the attempt recorded, so
+    the request then shows a lane figure instead of the finding that stopped it,
+    and the command that clears the finding appears nowhere on the row.
+
+    The attempt's own failure is the later fact and the one a session can act on,
+    so it is written as the request's hold here, by the writer that composes the
+    failed request's record. A failure naming no remedy leaves the hold as it
+    stands: there is nothing to publish, and the waiting reading remains the
+    true one.
+    """
+    named = _verdicts.failure_hold(record)
+    if named is None:
+        return
+    record[RECORDED_HOLD_FIELD] = dict(named)
+    record["reason"] = str(named.get("reason") or "")
+
+
 def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]:
     """The request written back as a queued pointer under the id it already has.
 
@@ -727,6 +816,22 @@ def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]
     restored["run_id"] = str(run_id)
     restored["phase"] = "queued"
     return restored
+
+
+def _failed_launch_follows_work(pointer: Mapping[str, Any]) -> bool:
+    """Whether a failed launch belongs to a run that has already worked.
+
+    A run that reached its model holds a session, and one launched again after
+    that is on a later attempt or was started as a resume. Any of the three
+    says the pointer describes more than a request waiting to start.
+    """
+    if str(pointer.get("session_id") or "").strip():
+        return True
+    kind = str(pointer.get("attempt_kind") or "").strip()
+    if kind and kind != "dispatch":
+        return True
+    attempt = pointer.get("attempt")
+    return isinstance(attempt, int) and not isinstance(attempt, bool) and attempt > 1
 
 
 def _requeue_admitted_failures(
@@ -746,6 +851,13 @@ def _requeue_admitted_failures(
         request = runs.dispatch_field(pointer, "admit_request")
         if not isinstance(request, Mapping):
             continue
+        if _failed_launch_follows_work(pointer):
+            # The request stamp is the one the run's first launch was admitted
+            # from. Writing it back would replace a run that has a worktree, a
+            # session and possibly commits with a bare request, which the next
+            # pass would launch afresh in a new worktree. The run stays
+            # launch-failed, where its coordinator can see it and resume it.
+            continue
         failures = list(pointer.get("launch_failures") or ())
         failure = dict(failures[-1]) if failures else {}
         restored = _requeued_request(request, str(pointer["run_id"]))
@@ -760,6 +872,7 @@ def _requeue_admitted_failures(
             moment=_service._now(),
             guard=_holds._dependency_guard(restored, None),
         )
+        _record_failure_hold(restored)
         try:
             _writeback_pointer(str(pointer["run_id"]), restored)
         except _PointerWritebackError as exc:
@@ -861,9 +974,11 @@ def _restore_queued(
         _holds._stamp_failure(
             restored, failure, moment=moment or _service._now(), guard=guard
         )
+        _record_failure_hold(restored)
     else:
-        restored[RECORDED_HOLD_FIELD] = dict(hold)
-        restored["reason"] = str(hold.get("reason") or "")
+        carried = _holds._carried_hold(snapshot, hold)
+        restored[RECORDED_HOLD_FIELD] = carried
+        restored["reason"] = str(carried.get("reason") or "")
     for key in (
         "pid",
         "pid_start_time",
@@ -931,7 +1046,9 @@ def _record_queued_failure(
         )
         if _retain_launched_record(current, refused):
             return current
-        return _holds._stamp_failure(current, failure, moment=failed_at, guard=guard)
+        stamped = _holds._stamp_failure(current, failure, moment=failed_at, guard=guard)
+        _record_failure_hold(stamped)
+        return stamped
 
     try:
         runs._mutate_pointer(original_run_id, annotate)

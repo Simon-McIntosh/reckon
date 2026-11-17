@@ -135,6 +135,7 @@ STATE_HUE = {
         "stopped": 124,
         "abandoned": 124,
         "lane-event": 124,
+        "cut-off": 124,
         "stalled": 130,
         "complete": 28,
         "promoted": 22,
@@ -162,6 +163,7 @@ STATE_HUE = {
         "stopped": 203,
         "abandoned": 203,
         "lane-event": 203,
+        "cut-off": 203,
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
@@ -261,6 +263,12 @@ NEEDS_ACTION = frozenset(
         "unknown",
         "unreadable",
         "exited-unfinished",
+        # A worker whose own exit record ended it before its manifest reached
+        # an outcome resumes from the work already on disk, and nothing lifts
+        # it on its own: the classification reaches the pane as ``blocked``, so
+        # the word belongs in the set the blocked bucket and the marker are
+        # both derived from.
+        "cut-off",
         "wait-aged",
     }
 )
@@ -429,7 +437,7 @@ SEAT_MOVED_STATE = "seat-moved"
 # The sole state vocabulary printed by the pane. Recovery distinctions and
 # capacity-lift causes stay in the event's own facts.
 PANE_STATES = {
-    "queued": frozenset({"queued"}),
+    "queued": frozenset({"queued", "promotion-queued"}),
     "working": frozenset(
         {
             "dispatched",
@@ -480,6 +488,10 @@ PANE_STATES = {
             "unreadable",
             "unwritten",
             "exited-unfinished",
+            # A run the worker's own exit ended before a verdict delivers
+            # nothing a coordinator can promote, so its next move is the
+            # coordinator's: resume the session from the work on disk.
+            "cut-off",
             "ended-without-manifest",
             "launch-failed",
             "refused-at-admission",
@@ -716,12 +728,14 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
 
 _CELLS = ("working", "in review", "help", "delivered")
 _WAIT_CELL = "waiting"
+_HELP_CELL = "help"
 # The stuck count is a figure beside the buckets rather than one of them: a
 # stuck request keeps the cell its phase belongs to, so this cell recounts
 # rows the others already hold. It renders on every row so the block keeps
 # its shape, and its own letter names it rather than sharing the wait count,
 # so a reader sees the alarm beside the queue it belongs to.
 _STUCK_CELL = "stuck"
+_PROMOTION_CELL = "promotion queue"
 
 # The event still carries the historical count-field keys. The visible buckets
 # use pane words; a waiting count includes queued and externally waiting runs.
@@ -731,6 +745,7 @@ _COUNT_FIELD = {
     "delivered": "unpromoted",
     "waiting": "waiting",
     "stuck": "stuck",
+    "promotion queue": "promotion_queued",
 }
 
 # Each counter is labelled with the lower-case initial of a pane word. The
@@ -747,6 +762,7 @@ STAT_LETTER = {
     "delivered": "d",
     "waiting": "q",
     "stuck": "s",
+    "promotion queue": "p",
 }
 
 # Each counter is its count right-aligned to a fixed digit width followed by the
@@ -764,7 +780,7 @@ STAT_LETTER = {
 # Each label takes one character. The block's width includes the four spaces
 # between its five cells, leaving the reason on the same column on every row.
 STAT_DIGITS = 2
-_MAX_CELLS = (*_CELLS, _WAIT_CELL, _STUCK_CELL)
+_MAX_CELLS = (*_CELLS, _WAIT_CELL, _PROMOTION_CELL, _STUCK_CELL)
 # The stuck cell's hue is the alarm the pane already paints a blocked word
 # in, read from the verdict palette so the two cannot drift apart. A count
 # of zero dims like every other empty counter; a count above zero is
@@ -772,7 +788,7 @@ _MAX_CELLS = (*_CELLS, _WAIT_CELL, _STUCK_CELL)
 STUCK_HUE = {theme: STATE_HUE[theme]["blocked"] for theme in STATE_HUE}
 STATS = sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (
     len(_MAX_CELLS) - 1
-)
+) + 1 + STAT_DIGITS
 
 # The fixed head every row carries: time, stage, job, transition, elapsed and
 # the five counters, each separated by the two-column gutter. A width below this
@@ -953,17 +969,25 @@ def _stream_age(seconds: Any) -> str:
     return _elapsed(float(whole))
 
 
-def _bucket_of(state: Any, classification: Any) -> str | None:
+def _bucket_of(state: Any, *older: Any) -> str | None:
     """Which counter bucket a run's state belongs to, or None off the fleet.
 
     Membership is read from the fleet partition rather than restated, so the
     letter a counter prints always names the population it counts. The import
     happens here rather than at module scope because the partition imports this
     module: taking the names at import time would freeze them before the
-    partition has finished defining them. A held run counts as waiting, which
-    is the partition's own reading of a refusal that has been accepted rather
-    than acted on.
+    partition has finished defining them.
+
+    The bucket follows the state word the pane draws, never the classification
+    beside it: the two say different things about a held run — the word says
+    whose move lifts the hold, the classification names the hold — so reading
+    the classification here is how a request the queue parked, drawn waiting,
+    came to be counted somewhere else. Any further argument is accepted and
+    ignored, for callers written when this read took the classification beside
+    the word; the fleet partition's counter asks for the bucket from the word
+    alone, and so does this.
     """
+    del older
     from reckon.crew.recovery import (
         FLEET_BLOCKED_STATES,
         FLEET_UNPROMOTED_STATES,
@@ -971,13 +995,11 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
         FLEET_WORKING_STATES,
     )
 
-    if str(classification or "") == "held":
-        return _WAIT_CELL
     word = str(state or "")
     if word in FLEET_UNPROMOTED_STATES:
         return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "help"
+        return _HELP_CELL
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:
@@ -1155,6 +1177,8 @@ def _remembered_word(state: Any) -> str:
 
 def _state_hue(theme: str, word: str) -> Any:
     """The hue of the pane's state word, or dim for a non-state marker."""
+    if word == "stopped":
+        return STATE_HUE[theme][word]
     return DISPLAY_HUE[theme].get(word, "dim")
 
 
@@ -1554,12 +1578,26 @@ def _pane_word(event: Mapping[str, Any]) -> str:
     rather than by the event's own field.
     """
     typed = str(event.get("recovery_classification") or "")
+    if supervisor_stop_clause(event):
+        return "stopped"
     entry = (
         typed
         if typed in {"held", "needs-help", "unwritten"}
         else str(event.get("to_state") or "")
     )
     return _display_state(entry)
+
+
+def supervisor_stop_clause(event: Mapping[str, Any]) -> str:
+    """The supervisor stop's cause, as the classifier wrote it."""
+    from reckon.crew.recovery_classification import SUPERVISOR_STOP_PREFIX
+
+    detail = str(event.get("detail") or "")
+    if event.get("recovery_classification") == "stopped" and detail.startswith(
+        SUPERVISOR_STOP_PREFIX
+    ):
+        return detail.partition(";")[0]
+    return ""
 
 
 def is_submission_row(event: Mapping[str, Any]) -> bool:
@@ -1664,12 +1702,32 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # notice a coordinator gets that the launch will repeat the same
         # refusal until the remedy is run.
         return True
-    if _pane_word(event) in CARRIED_PANE_WORDS:
+    if _pane_word(event) in CARRIED_PANE_WORDS or supervisor_stop_clause(event):
         return True
     return (
         transition_class(event.get("from_state"), event.get("to_state"))
         == ROW_COORDINATOR
     )
+
+
+class _NoLiftClaim:
+    """The value a row path passes to say it shares no claim with anyone.
+
+    Distinct from ``None``, which asks a path naming a pane's session for that
+    pane's shared claim. A measurement replaying a recorded stream passes this
+    because a claim is not only a filter on what draws: a path holding a claim
+    withholds a lift's end unless it drew the grant, so a claim here would drop
+    the ends of grants that sit outside the replayed window, which the pane did
+    print.
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "NO_LIFT_CLAIM"
+
+
+NO_LIFT_CLAIM = _NoLiftClaim()
 
 
 class RowPolicy:
@@ -1694,7 +1752,7 @@ class RowPolicy:
         own_session: str | None = None,
         observed_sessions: Iterable[str] = (),
         lift_groups: Iterable[str] = (),
-        lift_claim: Callable[[str, str], bool] | None = None,
+        lift_claim: Callable[[str, str], bool] | _NoLiftClaim | None = None,
     ) -> None:
         self._show_observer = bool(show_observer)
         # The session this pane follows. A start row is delivered for this
@@ -1770,9 +1828,29 @@ class RowPolicy:
         # first take it and the rest draw nothing. The pane's key is the host
         # that spawned the followers when they have one, and the follower's own
         # session otherwise, so a host following two sessions draws each lift
-        # once between them. ``None`` draws every lift row on this pane's own
-        # memory alone, the behaviour before the claim.
-        self._lift_claim = lift_claim
+        # once between them. A path that names the pane's own session and is
+        # handed no claim takes that session's shared one, because the claim
+        # belongs to the pane rather than to the delivery path a follower
+        # happened to read through: the station subscriber builds its path
+        # without one, and a pane served by several followers drew the same
+        # limit reset once per follower.
+        #
+        # A caller that must draw with no claim says so with
+        # :data:`NO_LIFT_CLAIM` rather than by passing nothing, because a claim
+        # is not merely a filter on draws: a row path holding one skips a lift's
+        # end unless it drew the grant, which is what a live follower wants and
+        # what a measurement replaying a window that opens after the grant does
+        # not. A path with no session — the fleet-wide reader — takes no claim
+        # either, and draws every lift row on its own memory alone, the
+        # behaviour before the claim.
+        if lift_claim is NO_LIFT_CLAIM:
+            self._lift_claim: Callable[[str, str], bool] | None = None
+        elif lift_claim is not None:
+            self._lift_claim = lift_claim
+        else:
+            self._lift_claim = self._pane_lift_claim(
+                str(own_session) if own_session else ""
+            )
         # run_id -> the launch ordinal at which this pane drew the run's
         # in-review row. A producer resweeps a delivered run whose state has not
         # changed, so the delivery it writes again is a row this pane already
@@ -1793,6 +1871,29 @@ class RowPolicy:
         # request under the id it already had, so one request's attempts and
         # re-queues share an id while two requests do not.
         self._refusals: dict[str, set[str]] = {}
+
+    @staticmethod
+    def _pane_lift_claim(session: str) -> Callable[[str, str], bool] | None:
+        """The pane's shared lift claim, keyed on its own session.
+
+        One pane is one session, and every follower serving it writes the same
+        claim directory beneath the crew home, so an exclusive create there is
+        the arbitration they share whether they run in one process, several on
+        a node, or several on nodes sharing a home. The claim is resolved at the
+        row rather than when the path is built, so a path that never draws a
+        lift opens nothing, and a claim that cannot be written leaves the row
+        drawn rather than dropped, which is :func:`take_lift_claim`'s own
+        answer.
+        """
+        if not session:
+            return None
+
+        def claim(lift_id: str, transition: str) -> bool:
+            from reckon.crew_follow_commands import take_lift_claim
+
+            return take_lift_claim(session, lift_id, transition)
+
+        return claim
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -2740,6 +2841,13 @@ class PaneRowPath:
             lift_groups=lift_groups,
             lift_claim=lift_claim,
         )
+        # run_id -> the observation moment of the newest row this path emitted
+        # for the run. A stream can reach a pane out of order — a producer's
+        # sweep rewrites a stream while a follower is reading it, and a re-armed
+        # follower picks up rows written before the ones it already showed — so
+        # a row stamped before one already emitted for its run is a redraw of an
+        # instant the pane has passed. This is the memory that drops it.
+        self._emitted_moment: dict[str, float] = {}
         for run_id, state in self.reported.items():
             self._policy.seed(run_id, state)
 
@@ -2799,6 +2907,33 @@ class PaneRowPath:
                 self.reported[run_id] = str(row.get("to_state") or "")
         return printed
 
+    def _in_order(self, rows: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+        """Drop each row older than one already emitted for its own run.
+
+        A run's rows are emitted in the order of their observation times: the
+        pane draws the state as of the update the reader has already seen, so a
+        row stamped before that instant would redraw the run in a state it has
+        left and read as a fresh transition. The running figure is updated by
+        every row this path emits, so a replay of the same stream is ordered
+        against itself and not against the clock a reader happens to hold. A row
+        carrying no observation time cannot be ordered and is passed through; so
+        is a row whose run this path has not emitted anything for, because there
+        is no later row for it to be older than.
+        """
+        kept: list[Mapping[str, Any]] = []
+        for row in rows:
+            run_id = str(row.get("run_id") or "")
+            moment = _stamped_moment(row)
+            if not run_id or moment <= 0.0:
+                kept.append(row)
+                continue
+            emitted = self._emitted_moment.get(run_id, 0.0)
+            if emitted and moment < emitted:
+                continue
+            self._emitted_moment[run_id] = moment
+            kept.append(row)
+        return kept
+
     def feed(
         self, event: Mapping[str, Any] | None, *, now: float
     ) -> list[Mapping[str, Any]]:
@@ -2807,11 +2942,11 @@ class PaneRowPath:
             return []
         if self._selects is not None and not self._selects(event):
             return []
-        return self._remember(self._policy.feed(event, now=now))
+        return self._remember(self._in_order(self._policy.feed(event, now=now)))
 
     def flush(self, *, now: float) -> list[Mapping[str, Any]]:
         """Openers whose hold window has closed, released to the pane."""
-        return self._remember(self._policy.flush(now=now))
+        return self._remember(self._in_order(self._policy.flush(now=now)))
 
 
 def row_moment(event: Mapping[str, Any]) -> float:
@@ -2866,6 +3001,13 @@ def replay_row_policy(
         show_observer=show_observer,
         own_session=own_session,
         observed_sessions=observed_sessions,
+        # The replay prints a recorded stream and shares no claim with anyone: a
+        # claim here is not only a filter on draws, it also withholds a lift's
+        # end unless this path drew the grant, so a stream whose window opens
+        # after a grant would lose the ends the pane printed. The claim
+        # directory is never consulted, so the count does not depend on which
+        # followers happen to hold it today.
+        lift_claim=NO_LIFT_CLAIM,
     )
     printed: list[Mapping[str, Any]] = []
     for event in events:
@@ -3380,9 +3522,9 @@ class Ticker:
         elapsed and the fleet counters, which every row carries at fixed
         widths, then the lane's rate, the model and the effort. Those three
         are added while the pane has room for them, so a narrow pane drops the
-        effort first and never wraps. Nothing follows the effort: the row
-        carries no free text, and ends on its last cell with any trailing pad
-        removed.
+        effort first and never wraps. Supervisor stops carry their recorded
+        cause before these optional cells. The row ends on its last cell with
+        any trailing pad removed.
         """
         if is_submission_row(event):
             return self._submission_line(event)
@@ -3402,15 +3544,9 @@ class Ticker:
         # as the fresh grant having landed.
         if raw_to_state in LIFT_STATES and event.get("lift_replaces"):
             return self._lift_line(event)
-        typed_state = str(event.get("recovery_classification") or "")
         # The compatibility lifecycle state may group several stops as blocked.
         # The row spells the cause-specific type when the producer supplied one.
-        entry_state = (
-            typed_state
-            if typed_state in {"held", "needs-help", "unwritten"}
-            else raw_to_state
-        )
-        to_state = _display_state(entry_state)
+        to_state = _pane_word(event) or _display_state(raw_to_state)
         run_id = str(event.get("run_id") or node)
         stream_event = bool(str(event.get("event") or "").strip())
         # A run an admission pass launched from a queued request continues the
@@ -3440,14 +3576,18 @@ class Ticker:
             # The row's destination repeats the word the pane already shows for
             # the run. That draws no transition — unless the row carries a duty
             # (:func:`same_word_row_is_news`), which the pane owes the reader
-            # even when the word repeats. Such a row prints the destination word
-            # twice, or its own left word where the row names a different one,
-            # so a block or an unreadable the pane already shows is never
-            # released as an empty line the reader never saw.
+            # even when the word repeats. Such a row prints its own left word
+            # where the row names a different one, so a block or an unreadable
+            # the pane already shows is never released as an empty line the
+            # reader never saw. Where the row's own left word is the destination
+            # too, the row carries news and no transition: it names the state
+            # the run stands in and leaves the arrow's left side blank, because
+            # one word printed around an arrow claims a move between two states
+            # that are the same state, which is the noise a coordinator woke for.
             if not same_word_row_is_news(event, self._shown_wait.get(run_id)):
                 return ""
             own_left = _display_state(event.get("from_state"))
-            from_state = own_left if own_left and own_left != to_state else to_state
+            from_state = own_left if own_left and own_left != to_state else ""
         if stream_event:
             self._reported[run_id] = to_state
             # The wait facts the pane has now shown, so a later row repeating
@@ -3512,12 +3652,11 @@ class Ticker:
         cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
         cells.extend(self._stats(event))
-        # A lift row carries its own naming clause after the figures, so it
-        # reads as the lift it is — form, scope and id — rather than as the
-        # run-state word its transition maps to. The clause takes the room the
-        # pane has left and is cut like any other cell, so it never wraps.
-        if raw_to_state in LIFT_STATES:
-            clause = lift_clause(event)
+        # A lift or supervisor stop carries its own naming clause after the
+        # figures. It takes the room the pane has left and is cut like any
+        # other cell, so it never wraps.
+        if raw_to_state in LIFT_STATES or supervisor_stop_clause(event):
+            clause = supervisor_stop_clause(event) or lift_clause(event)
             spare = self._grid_width() - sum(len(text) for text, _ in cells)
             if clause and spare > GAP + 1:
                 text = elide(clause, spare - GAP)
@@ -3664,12 +3803,23 @@ class Ticker:
             # The request's own word does not move, so the next row's left half
             # reads the word this row left the pane holding.
             self._reported[run_id] = "queued"
+        clause = str(event.get(QUEUED_REFUSED_FIELD) or "")
+        remedy = str(event.get("next_action") or "").strip()
+        if remedy:
+            from reckon.crew.recovery_classification import QUEUED_REFUSAL_PREFIXES
+
+            reason = clause.removesuffix(f" — {remedy}")
+            for prefix in QUEUED_REFUSAL_PREFIXES:
+                reason = reason.removeprefix(prefix)
+            # The stage already names the refusal. Put its command before the
+            # explanation so a narrow clause keeps the action a reader needs.
+            clause = f"{remedy} — {reason}" if reason and reason != remedy else remedy
         return self._clause_line(
             event,
             stage=REFUSAL_STAGE,
             handle=run_id,
             hue_key=str(event.get("node") or run_id),
-            clause=str(event.get(QUEUED_REFUSED_FIELD) or ""),
+            clause=clause,
         )
 
     def _submission_line(self, event: Mapping[str, Any]) -> str:
@@ -3787,9 +3937,13 @@ class Ticker:
                 style: Any = STUCK_HUE[self.theme]
             else:
                 style = None if count else "dim"
+            suffix = ""
+            if label == _PROMOTION_CELL:
+                position = event.get("oldest_promotion_position")
+                suffix = f"@{str(position) if position is not None else DIM_MARKER:>{STAT_DIGITS}}"
             cells.append(
                 (
-                    f"{count:>{STAT_DIGITS}}{STAT_LETTER[label]}",
+                    f"{count:>{STAT_DIGITS}}{STAT_LETTER[label]}{suffix}",
                     style,
                 )
             )

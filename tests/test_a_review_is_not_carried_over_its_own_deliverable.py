@@ -56,7 +56,16 @@ def _commit(repository: Path, paths: dict[str, str], message: str) -> str:
 
 @pytest.fixture()
 def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
-    """A repository whose reviewed run delivered a test file, plus a config home."""
+    """A repository whose reviewed run delivered a test file, plus a config home.
+
+    The reviewed run's checkout is a clone of a bare origin, pushed at the
+    reviewed head, because the reflex attributes a run's own delta by excluding
+    the remote-tracking integration ref as well as the reviewed head. A
+    repository with no such ref reads its history as uncomparable — the rule
+    ``test_a_repository_without_a_remote_reads_the_move_as_uncomparable``
+    holds — and no move is decided at all, so the measurement these cases need
+    would never be taken, and the carry question would go unasked.
+    """
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -82,6 +91,10 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         {"tests/test_deliverable.py": "def test_delivered():\n    assert True\n"},
         "feat: the reviewed deliverable",
     )
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(origin))
+    _git(repo, "remote", "add", "origin", str(origin))
+    _git(repo, "push", "-q", "origin", "main")
     (config_home / "mounts.json").write_text(
         '{"' + PROJECT + '": "' + str(repo / "docs") + '"}'
     )

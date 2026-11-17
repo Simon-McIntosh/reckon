@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -81,6 +82,149 @@ _TAIL_BLOCK_BYTES = 64 * 1024
 _TAIL_BLOCK_CAP = 8 * 1024 * 1024
 
 
+class _StreamScan:
+    """What scanning one stream has learned, and the offsets its answers reach.
+
+    A stream only grows by appending, so a scan that reached the bytes appended
+    since the last one answers every later pass from those bytes alone. Each
+    answer is held beside the offset it stands at, because they are reached from
+    different ends of the file: the assistant record is looked for forwards from
+    the start, while the last tool call and the last record type are read from
+    the tail.
+    """
+
+    __slots__ = (
+        "append_offset",
+        "assistant_offset",
+        "assistant_seen",
+        "inode",
+        "last_record_type",
+        "record_known",
+        "record_offset",
+        "tool_call",
+        "tool_known",
+        "tool_offset",
+    )
+
+    def __init__(self, inode: int) -> None:
+        self.inode = inode
+        self.append_offset = 0
+        self.assistant_offset = 0
+        self.assistant_seen = False
+        self.tool_offset = 0
+        self.tool_known = False
+        self.tool_call: tuple[str, ...] | None = None
+        self.record_offset = 0
+        self.record_known = False
+        self.last_record_type: str | None = None
+
+    def covered(self) -> int:
+        """The end of the stream this scan has read through."""
+        return max(
+            self.append_offset,
+            self.assistant_offset,
+            self.tool_offset,
+            self.record_offset,
+        )
+
+
+# What each scanned stream taught the readers of its own bytes, keyed by the
+# path they read it under. A classification of a whole fleet scans every live
+# stream, and without this the next pass decoded the same bytes again — the
+# largest remaining per-tick read in the decode census. The store is cleared
+# whole at its bound, as the stream listing beside it is.
+_STREAM_SCANS: dict[str, _StreamScan] = {}
+_STREAM_SCANS_LIMIT = 4096
+# A scan record's offsets are advanced by whichever reader last read its path,
+# and a sweep and a classification can do that at once; the record store is
+# small enough that one lock for both is the whole of the synchronization.
+_STREAM_SCANS_LOCK = threading.Lock()
+
+
+def _stream_scan(path: Path) -> _StreamScan | None:
+    """The scan record for a stream, started again for a replaced or truncated one.
+
+    A stream whose inode moved was replaced, and one now shorter than the bytes
+    a scan read through was truncated: either can answer differently about its
+    own contents, so both are scanned again from the start.
+    """
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    key = str(path)
+    with _STREAM_SCANS_LOCK:
+        scan = _STREAM_SCANS.get(key)
+        if (
+            scan is not None
+            and scan.inode == info.st_ino
+            and info.st_size >= scan.covered()
+        ):
+            return scan
+        scan = _StreamScan(int(info.st_ino))
+        if len(_STREAM_SCANS) >= _STREAM_SCANS_LIMIT:
+            _STREAM_SCANS.clear()
+        _STREAM_SCANS[key] = scan
+        return scan
+
+
+def appended_lines(path: Path) -> tuple[list[bytes], int, int]:
+    """The complete lines ``path`` appended since it was last read, and offsets.
+
+    Both an agent stream and a project's recovery record are append-only files
+    whose readers ask the same three things: what landed since their last read,
+    the offset those lines end at, and the offset this read began at. The last
+    of the three is what a caller compares with the offset it recorded to learn
+    that the file was replaced or shortened under it and its own accumulated
+    answer no longer stands.
+
+    A writer's unterminated last line is not consumed, so it is decoded once,
+    by the read that follows the bytes completing it.
+    """
+    scan = _stream_scan(path)
+    if scan is None:
+        return [], 0, 0
+    with _STREAM_SCANS_LOCK:
+        start = scan.append_offset
+    lines, offset = _appended_lines(path, start)
+    with _STREAM_SCANS_LOCK:
+        scan.append_offset = offset
+    return lines, offset, start
+
+
+def _appended_lines(path: Path, offset: int) -> tuple[list[bytes], int]:
+    """The complete lines appended past ``offset``, and the offset they end at.
+
+    A writer's last line can be unterminated while it is being written, so only
+    the bytes through the last newline are consumed: the partial line waits for
+    the bytes that complete it, and the next scan decodes that record once.
+    """
+    try:
+        with path.open("rb") as handle:
+            handle.seek(offset)
+            payload = handle.read()
+    except OSError:
+        return [], offset
+    lines = payload.split(b"\n")
+    partial = lines.pop()
+    return lines, offset + len(payload) - len(partial)
+
+
+def _last_newline_offset(handle: Any, size: int) -> int:
+    """The offset just past a stream's last newline, read from its own handle."""
+    position = size
+    step = _TAIL_BLOCK_BYTES
+    while position > 0:
+        read = min(step, position)
+        position -= read
+        handle.seek(position)
+        found = handle.read(read).rfind(b"\n")
+        if found >= 0:
+            return position + found + 1
+        step = min(step * 2, _TAIL_BLOCK_CAP)
+    return 0
+
+
 def _tool_call_in_line(line: bytes) -> tuple[str, str] | None:
     """The last tool call one stream line starts, as (name, command), or None."""
     try:
@@ -124,7 +268,37 @@ def _tool_call_in_line(line: bytes) -> tuple[str, str] | None:
 
 
 def _last_tool_call(log: Path) -> tuple[str, str] | None:
-    """The tool call a stream most recently started, read from its end.
+    """The tool call a stream most recently started.
+
+    A stream no scan has reached the end of yet is read backwards from it. Once
+    a scan has reached the end, a later call decodes only the lines appended
+    since: the answer is the last call in the file, so a scan that finds none
+    keeps the answer it already holds. The scan stops at the last newline, so a
+    record still being written is decoded once the bytes completing it land.
+    """
+    scan = _stream_scan(log)
+    if scan is None:
+        return None
+    if not scan.tool_known:
+        try:
+            found, covered = _tail_tool_call(log)
+        except OSError:
+            return None
+        scan.tool_call = found
+        scan.tool_known = True
+        scan.tool_offset = covered
+        return found
+    lines, advanced = _appended_lines(log, scan.tool_offset)
+    scan.tool_offset = advanced
+    for line in lines:
+        found = _tool_call_in_line(line)
+        if found is not None:
+            scan.tool_call = found
+    return scan.tool_call
+
+
+def _tail_tool_call(log: Path) -> tuple[tuple[str, str] | None, int]:
+    """The last tool call in a stream, and the offset that read reached.
 
     The answer is reused while the stream's bytes are unchanged. A tick asks
     this of every live run, and the scan walks backwards until it finds a tool
@@ -143,24 +317,28 @@ def _read_last_tool_call(log: Path) -> tuple[str, str] | None:
 
     Lines are taken newest first, and the first one that starts a tool call
     answers. A line that begins in an earlier block is carried back until its
-    start is read, so a long tool result is parsed whole, never in pieces.
+    start is read, so a long tool result is parsed whole, never in pieces. The
+    offset returned is the last newline's, taken from the same handle so the
+    next scan resumes exactly where this read stopped.
     """
     with log.open("rb") as handle:
-        position = handle.seek(0, os.SEEK_END)
+        size = handle.seek(0, os.SEEK_END)
+        end = _last_newline_offset(handle, size)
+        position = size
         carry = b""
         step = _TAIL_BLOCK_BYTES
         while position > 0:
-            size = min(step, position)
-            position -= size
+            read = min(step, position)
+            position -= read
             handle.seek(position)
-            lines = (handle.read(size) + carry).split(b"\n")
+            lines = (handle.read(read) + carry).split(b"\n")
             carry = lines.pop(0) if position > 0 else b""
             for line in reversed(lines):
                 found = _tool_call_in_line(line)
                 if found is not None:
-                    return found
+                    return found, end
             step = min(step * 2, _TAIL_BLOCK_CAP)
-    return None
+    return None, end
 
 
 def _last_bounded_wait(record: Mapping[str, Any]) -> str | None:
@@ -502,6 +680,33 @@ def _wait_file_condition_observation(
     }
 
 
+def _wait_answer_names_terminal(
+    wait: Mapping[str, Any], lines: Sequence[str], observed: str
+) -> bool:
+    """Whether a probe's answer names one of the declaration's terminal states.
+
+    Every line's first token is a candidate, and so is the whole last line, so
+    a scheduler printing ``CANCELLED+ 01:02:03`` matches a declaration listing
+    ``CANCELLED``: the trailing ``+`` is the scheduler's own spelling of the
+    same state, and it is folded into the declared value here. One reader
+    answers this question, so a caller that needs to know whether a wait's own
+    probe says the work has ended asks this function rather than matching the
+    declaration's list again with its own strip set and its own candidate rule.
+    """
+    candidates = {observed.casefold()} if observed else set()
+    candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
+    terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
+    return any(
+        candidate in terminal
+        or (
+            len(candidate) > 1
+            and candidate.endswith("+")
+            and any(value.startswith(candidate[:-1]) for value in terminal)
+        )
+        for candidate in candidates
+    )
+
+
 def _run_wait_condition_probe(
     record: Mapping[str, Any], wait: Mapping[str, Any]
 ) -> dict[str, str]:
@@ -557,19 +762,7 @@ def _run_wait_condition_probe(
                 f"{completed.returncode}"
             ),
         }
-    candidates = {observed.casefold()}
-    candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
-    terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
-    matched = any(
-        candidate in terminal
-        or (
-            len(candidate) > 1
-            and candidate.endswith("+")
-            and any(value.startswith(candidate[:-1]) for value in terminal)
-        )
-        for candidate in candidates
-    )
-    if matched:
+    if _wait_answer_names_terminal(wait, lines, observed):
         return {
             "state": "met",
             "observed": observed,
@@ -943,6 +1136,19 @@ def _wait_probe_job_values(value: str) -> list[str]:
     if listed:
         return listed
     return [value.strip()] if _wait_probe_names_a_count(value) else []
+
+
+def _wait_probe_answered(observation: Any) -> bool:
+    """Whether a wait's probe produced an answer about the thing watched.
+
+    ``answered`` is the structured fact the probe reader sets; a probe that
+    could not run or exited non-zero reports it false and is the only case that
+    says nothing about the condition. A result carrying no flag is one that
+    answered, because it produced the state it reports.
+    """
+    if not isinstance(observation, Mapping):
+        return False
+    return observation.get("answered") is not False
 
 
 def _wait_probe_job_ids(probe: Sequence[str]) -> tuple[str, ...]:
@@ -1435,14 +1641,47 @@ def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
     and the record ending the file is read whole. One window answers the common
     case — a last record of a few hundred bytes behind any length of stream —
     because such a chunk holds that record entire and the read stops there.
+
+    A stream a scan already reached the end of decodes only the records
+    appended since, and leaves a record still being written for the bytes that
+    complete it.
     """
     found = _record_newest_stream(record)
     if found is None:
         return None
+    scan = _stream_scan(found[0])
+    if scan is None:
+        return None
+    if not scan.record_known:
+        record_type, covered = _tail_record_type(found[0])
+        scan.last_record_type = record_type
+        scan.record_known = True
+        scan.record_offset = covered
+        return record_type
+    lines, advanced = _appended_lines(found[0], scan.record_offset)
+    scan.record_offset = advanced
+    for raw in lines:
+        text = raw.strip()
+        if not text:
+            continue
+        try:
+            event = json.loads(text)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(event, Mapping):
+            continue
+        record_type = event.get("type")
+        if isinstance(record_type, str) and record_type:
+            scan.last_record_type = record_type
+    return scan.last_record_type
+
+
+def _tail_record_type(path: Path) -> tuple[str | None, int]:
+    """A stream's last complete record type, and the offset that read reached."""
     try:
-        with found[0].open("rb") as handle:
-            handle.seek(0, os.SEEK_END)
-            size = handle.tell()
+        with path.open("rb") as handle:
+            size = handle.seek(0, os.SEEK_END)
+            covered = _last_newline_offset(handle, size)
             window = _STREAM_TAIL_BYTES
             while True:
                 start = max(0, size - window)
@@ -1450,7 +1689,7 @@ def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
                 chunk = handle.read()
                 record_type = _last_record_type_in(chunk)
                 if record_type is not None or start == 0:
-                    return record_type
+                    return record_type, covered
                 # Nothing in the chunk read as a record. A chunk beginning at a
                 # record boundary holds only complete lines, so the stream has
                 # no record to read here and reaching further back would answer
@@ -1459,10 +1698,10 @@ def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
                 # contain.
                 handle.seek(start - 1)
                 if handle.read(1) == b"\n":
-                    return None
+                    return None, covered
                 window *= 4
     except OSError:
-        return None
+        return None, 0
 
 
 # The record an engine writes when the model answers a turn. It is the run's
@@ -1477,13 +1716,15 @@ def _stream_holds_assistant_record(path: Path) -> bool:
 
     Read forwards and stopped at the first match, because a worker's first
     assistant turn lands within its first few records: the scan answers after a
-    few kilobytes on a stream that grows to megabytes over a long run. A line
-    that does not parse is passed over, exactly as the tail read passes over
-    one, so a trailing partial write is never read as a record that completed.
+    few kilobytes on a stream that grows to megabytes over a long run. Later
+    passes read only the lines appended since the last one, and a stream that
+    has answered keeps that answer without reading at all. A line that does not
+    parse is passed over, exactly as the tail read passes over one, so a
+    trailing partial write is never read as a record that completed.
 
-    The answer is reused while the stream is unchanged, so a tick over a quiet
-    fleet opens no stream at all: the assistant record a run holds does not
-    stop existing between one tick and the next.
+    The answer is also memoized against the stream's identity, so a tick over a
+    quiet fleet opens no stream at all: the assistant record a run holds does
+    not stop existing between one tick and the next.
     """
     return file_memo.memoized(
         "stream_assistant_record", path, lambda: _scan_stream_assistant_record(path)
@@ -1492,23 +1733,47 @@ def _stream_holds_assistant_record(path: Path) -> bool:
 
 def _scan_stream_assistant_record(path: Path) -> bool:
     """Whether a stream holds at least one complete assistant record, scanned."""
-    try:
-        with path.open("rb") as handle:
-            for raw in handle:
-                text = raw.strip()
-                if not text:
-                    continue
-                try:
-                    event = json.loads(text)
-                except (TypeError, ValueError):
-                    continue
-                if (
-                    isinstance(event, Mapping)
-                    and event.get("type") == STREAM_ASSISTANT_RECORD_TYPE
-                ):
-                    return True
-    except OSError:
+    scan = _stream_scan(path)
+    if scan is None:
         return False
+    if scan.assistant_seen:
+        return True
+    lines, advanced = _appended_lines(path, scan.assistant_offset)
+    scan.assistant_offset = advanced
+    for raw in lines:
+        text = raw.strip()
+        if not text:
+            continue
+        try:
+            event = json.loads(text)
+        except (TypeError, ValueError):
+            continue
+        if _is_assistant_record(event):
+            scan.assistant_seen = True
+            return True
+    return False
+
+
+def _is_assistant_record(event: object) -> bool:
+    """Whether one stream record is the model answering, in any worker's format.
+
+    Each engine writes its stream in its own vocabulary, and the record that
+    shows the model has answered is spelled differently in each: a bare
+    ``assistant`` record, a completed item of a thread, or a settled message
+    whose role is the assistant's. Reading only the first spelling made every
+    other engine's run look as though it had never worked, however long its
+    stream, so a run whose host was gone could never be shown to have stopped.
+    """
+    if not isinstance(event, Mapping):
+        return False
+    kind = event.get("type")
+    if kind == STREAM_ASSISTANT_RECORD_TYPE:
+        return True
+    if kind == "item.completed":
+        return isinstance(event.get("item"), Mapping)
+    if kind in ("message_end", "turn_end"):
+        message = event.get("message")
+        return isinstance(message, Mapping) and message.get("role") == "assistant"
     return False
 
 

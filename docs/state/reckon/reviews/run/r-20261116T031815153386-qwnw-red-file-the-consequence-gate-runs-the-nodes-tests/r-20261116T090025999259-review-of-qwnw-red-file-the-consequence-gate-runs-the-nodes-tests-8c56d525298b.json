@@ -1,0 +1,99 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own recorded arms: baseline_suite suite-baseline.log (ee93819a0d, 58 passed, EXIT=0) against after_suite suite-after.log (8c56d525298b, 58 passed, EXIT=0) answers (0, []), and the node pair node-tests-base.log (5 failed, 9 passed, EXIT=1) against node-tests-head.log (14 passed, EXIT=0) also answers (0, []): the head arm names no failure the base arm does not. Both logs are pytest format.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T09:02:52.456Z",
+  "dispatched_at": "2026-11-16T09:02:16Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests/node-tests-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The head arm's header names the revision, the tree and the command but no job id and no partition, so the done_when's 'as a job on all_debug with SLURM_JOB_ID unset' is confirmed only from scheduler records (sacct job 1319533 qwnw-head-arms, all_debug, COMPLETED 09:54:59-09:55:42, matching the log's mtime) and not from the artefact the manifest cites. Sibling runs in this family write the job id into the header, so a later reader comparing the claim to the log alone cannot tell which job produced it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "The population paragraph calls tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py 'the resolved command's two files' without saying what they are: the project's declared census tests carried by the run's own census_tests, not the node's fenced test files, which resolve to none because its write paths name directories. The population itself is right and both arms read 58 passed; only the description invites a reader to take it for the fenced scope."
+    }
+  ],
+  "gate_evidence": [
+    {
+      "exit": 0,
+      "log": "node-tests-head.log",
+      "revision": "8c56d525298bb859ba63c31df8e0f1c16b01bec3",
+      "summary": "14 passed in 3.50s"
+    },
+    {
+      "exit": 1,
+      "log": "node-tests-base.log",
+      "revision": "ee93819a0dfd283816a577795513c00bca2b8e19",
+      "summary": "5 failed, 9 passed in 1.25s"
+    },
+    {
+      "exit": 0,
+      "log": "suite-baseline.log",
+      "revision": "ee93819a0dfd283816a577795513c00bca2b8e19",
+      "summary": "58 passed in 32.96s"
+    },
+    {
+      "exit": 0,
+      "log": "suite-after.log",
+      "revision": "8c56d525298bb859ba63c31df8e0f1c16b01bec3",
+      "summary": "58 passed in 34.98s"
+    }
+  ],
+  "item_manifest": {
+    "done_when": "tests/test_the_consequence_gate_runs_the_nodes_tests.py passes in full at head as a test on all_debug with SLURM_JOB_ID unset; at revision 8d50b0333f it reported 5 failing or erroring tests listed in ~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log; merge origin/main first; each cause is the product or the test; an arm over the files that import the change adds no failure; the base run is logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/",
+    "goal": "Make tests/test_the_consequence_gate_runs_the_nodes_tests.py pass in full on the primary branch",
+    "write_paths": [
+      "reckon",
+      "tests",
+      "docs/evidence/fragments/queued-work-needs-no-workaround"
+    ]
+  },
+  "item_verdicts": {
+    "call_sites": "None: the landed change is confined to a test module, which no runtime module imports or calls.",
+    "diff": "Read commit by commit against ee93819a0d: d375c2f912e7 seeds tests/test_one.py and tests/test_two.py in the base commit, commits a change to test_one.py so the head sits past its base, resolves pointer base_sha and manifest commits with git rev-parse instead of the literals base-abc/abc123, and drops --no-commit from the shared helper; 796b807fe7a7, 3c0642edb10a and 8c56d525298b add then re-word the evidence fragment's citations. 87 insertions, 16 deletions, no assertion removed.",
+    "done_when": "The file passes in full at head (node-tests-head.log:7, 14 passed, EXIT=0) under sbatch job 1319533 on all_debug with SLURM_JOB_ID unset (gate-head-arms.sh:14,24 pass env -u SLURM_JOB_ID); the base arm node-tests-base.log reproduces the same five ids the cached suite-at-8d50b0333f.log lists for this file; the arms over census_tests read 58 passed at both revisions; the base and head runs are cited from the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests.html:27.",
+    "goal": "The goal is a green tests/test_the_consequence_gate_runs_the_nodes_tests.py; the landed repair is the fixture at tests/test_the_consequence_gate_runs_the_nodes_tests.py:69-120 and the file's own run at 8c56d525298b reads 14 passed in node-tests-head.log:7.",
+    "manifest": "Read: it lists commits d375c2f912e7, 796b807fe7a7, 3c0642edb10a and 8c56d525298b, both changed paths, the node gate at 14 passed, the base arm at 5 failed/9 passed, baseline_suite and after_suite at 58 passed with exit 0, negative_control_log node-tests-base.log, and three causes each with the verdict test wrong; its landing line and evidence_inputs agree with the fragment.",
+    "write_paths": "Declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's two paths are tests/test_the_consequence_gate_runs_the_nodes_tests.py and that fragment directory, so every path is inside the fence."
+  },
+  "justifications": {
+    "durability": "The five cases repaired at tests/test_the_consequence_gate_runs_the_nodes_tests.py:264-481 are red at base ee93819a0d in node-tests-base.log with their own tracebacks, so reinstating the old fixture (base-abc, abc123, no tests/ in the seed, --no-commit) reddens exactly them.",
+    "evidence": "node-tests-head.log:1-7 and node-tests-base.log name their own revisions, commands and EXIT lines, but node-tests-head.log:1-3 names no job id or partition, so the all_debug claim rests on sacct job 1319533 rather than on the log.",
+    "fit": "_revision at tests/test_the_consequence_gate_runs_the_nodes_tests.py:111-120 is a docstringed private helper in the file's own subprocess idiom, and the seeded tests/ directory sits beside the existing docs/ seeding in _seed_git_repository.",
+    "goal_fidelity": "tests/test_the_consequence_gate_runs_the_nodes_tests.py:69-120 makes the fixture a promotable run, and the head run at 8c56d525298b reads 14 passed in node-tests-head.log:7.",
+    "reuse": "tests/conftest.py carries no git helper to extend, and the per-file _git wrapper is this repository's test convention, so _revision follows the surrounding idiom rather than forking a shared owner.",
+    "scope_discipline": "Both changed paths in git diff ee93819a0d..8c56d525 lie inside tests and docs/evidence/fragments/queued-work-needs-no-workaround, and no product module is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a green tests/test_the_consequence_gate_runs_the_nodes_tests.py; the landed repair is the fixture at tests/test_the_consequence_gate_runs_the_nodes_tests.py:69-120 and its head run records 14 passed in node-tests-head.log:7, EXIT=0.\nVERDICT done_when: the done_when asks for the file green at head; node-tests-head.log:1-7 names revision 8c56d525298b and 14 passed with EXIT=0, sacct reads job 1319533 qwnw-head-arms on all_debug COMPLETED 09:54:59-09:55:42 matching that log's mtime, and the base reproduction in node-tests-base.log:last reads 5 failed 9 passed with the same five ids the cached suite-at-8d50b0333f.log reports.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff ee93819a0d..8c56d525 touches only tests/test_the_consequence_gate_runs_the_nodes_tests.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests.html, both inside them.\nVERDICT manifest: read; it records four commits, the two changed paths, the node gate at 14 passed, a base arm at 5 failed/9 passed, baseline_suite and after_suite at 58 passed each over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and three causes each with the verdict test wrong.\nVERDICT diff: read all four commits against base ee93819a0d; d375c2f912e7 seeds tests/test_one.py and test_two.py in the base commit and commits a change to one of them, resolves the pointer's base_sha and the manifest's commits from git instead of literals, and drops --no-commit from the shared helper; 796b807fe7a7, 3c0642edb10a and 8c56d525298b add and then re-word the evidence fragment's log citations. No assertion line is removed or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_consequence_gate_runs_the_nodes_tests.py:69-120 makes the fixture a real base-and-head run, and the file's run at 8c56d525298b reads 14 passed in node-tests-head.log:7.\nSCORE evidence: 17\nJUSTIFICATION evidence: node-tests-head.log:1-7 and node-tests-base.log record the two arms at their own revisions with EXIT lines, but the head log's header names no job id or partition, so 'as a job on all_debug' is corroborated only by sacct job 1319533.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both files in git diff ee93819a0d..8c56d525 lie inside the declared reckon/tests/docs-evidence paths, and the three fragment commits only correct citations the manifest is judged on.\nSCORE durability: 18\nJUSTIFICATION durability: the five repaired cases are red at base ee93819a0d in node-tests-base.log with their own tracebacks, so reinstating the old fixture reddens exactly the cases the change repairs; the assertions themselves are unchanged.\nSCORE fit: 19\nJUSTIFICATION fit: _revision at tests/test_the_consequence_gate_runs_the_nodes_tests.py:111-120 is a docstringed private helper alongside the file's existing subprocess calls, and no forbidden name is introduced.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner exists for a git-revision helper in tests/conftest.py, and the per-file _git helper is the convention this file follows rather than a second copy of a shared mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests/node-tests-head.log:1 non-blocking: the head arm's header names revision, tree and command but no job id or partition, so the done_when's 'as a job on all_debug' can only be confirmed from scheduler records (sacct job 1319533) and not from the artefact the manifest cites.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-consequence-gate-runs-the-nodes-tests.html:27 non-blocking: the population paragraph calls the two files 'the resolved command's two files' without saying they are the project's declared census tests, which the run's own census_tests lists; a reader can take them for the node's fenced test files, which resolve to none because the scope names directories.\n",
+  "review_run_id": "r-20261116T090025999259-review-of-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-8c56d525298b",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "8c56d525298bb859ba63c31df8e0f1c16b01bec3",
+  "reviewed_run_id": "r-20261116T031815153386-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests",
+  "reviewer_rerun": {
+    "command": "not run: the review worktree sits at 0e0f25b0 and 8c56d525298b is not an ancestor of it, so no head arm can be taken here without checking out a branch, which the worktree rules forbid; the worker's recorded head arm in node-tests-head.log is read instead",
+    "note": "Independent reads taken instead: the cached suite-at-8d50b0333f.log lists the same five ids the base arm reports, sacct reads job 1319533 on all_debug for the head arm, and added failures were re-derived from the run's own logs with reckon.crew.review.added_failures_from_gate_logs (0, []).",
+    "revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+    "tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/review-of-qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-8c56d525298b"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:12:15.725186+00:00",
+  "total": 112
+}

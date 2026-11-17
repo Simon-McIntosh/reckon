@@ -11,6 +11,7 @@ import click
 
 from reckon._store import write_json_atomically
 from reckon.cli_entry import main
+from reckon.crew.resume import register_hold_commands
 from reckon.crew.tombstones import tombstone_command
 
 # Verbs whose stdout is one JSON document on every exit path, success and
@@ -1170,8 +1171,17 @@ def _queue_dispatch_batch(
     pretty: bool,
     project: str = "",
     plan: str = "",
+    over_fence_reason: str = "",
+    comment: str = "",
+    local: bool = False,
+    dry_run: bool = False,
 ) -> None:
-    """Queue a batch file or a plan's declared sections, naming each row."""
+    """Queue a batch file's entries or a plan's declared sections, naming each.
+
+    A command-level option given beside ``--batch`` applies to every entry that
+    does not set it, and ``dry_run`` judges every entry without storing any of
+    them.
+    """
     from reckon import ledger
     from reckon.crew.dispatch_batch import queue_batch, queue_plan, read_batch_entries
     from reckon.crew.node import CrewError
@@ -1216,6 +1226,10 @@ def _queue_dispatch_batch(
             config_for=config_for,
             repo_root=root,
             launch_kind=launch_kind,
+            over_fence_reason=over_fence_reason,
+            comment=comment,
+            local=local,
+            dry_run=dry_run,
         )
     _emit_crew_result(result, pretty)
 
@@ -1229,10 +1243,12 @@ def _queue_dispatch_batch(
     help=(
         "Queue every entry of a JSON batch file in one call: each entry names "
         "its project, plan, section, node id and goal, and any other dispatch "
-        "field it wants. Fields an entry omits are taken from its section, and "
-        "each entry is stored on its own, so a refused entry does not stop the "
-        "rest. A coordinator writes the work it chose as one batch rather than "
-        "one call per section."
+        "field it wants, including an over_fence_reason, a comment, local and "
+        "a queue priority. Fields an entry omits are taken from its section, "
+        "and an option given beside --batch applies to every entry that does "
+        "not set it. Each entry is stored on its own, so a refused entry does "
+        "not stop the rest. A coordinator writes the work it chose as one "
+        "batch rather than one call per section."
     ),
 )
 @click.option("--project", required=False, help="Project owning the plan.")
@@ -1307,7 +1323,14 @@ def _queue_dispatch_batch(
     default=None,
     help="Override routing.picker with picker or deterministic routing.",
 )
-@click.option("--comment", default="", help="Context passed verbatim to the picker.")
+@click.option(
+    "--comment",
+    default="",
+    help=(
+        "Context passed verbatim to the picker. Beside --batch it applies to "
+        "every entry that sets no comment of its own."
+    ),
+)
 @click.option(
     "--due", default="", help="UTC ISO instant or duration until due, such as 4h."
 )
@@ -1405,6 +1428,19 @@ def _queue_dispatch_batch(
     ),
 )
 @click.option(
+    "--mcp-set",
+    "mcp_set",
+    default="",
+    metavar="NAME",
+    help=(
+        "The MCP set this node's worker connects to, named by the plan section "
+        "or the brief. The flight declares each set under `mcp_sets` as a list "
+        "of servers; a name the flight does not declare refuses the dispatch. "
+        "Omitted, the node gets the flight's `worker_mcp_servers` list, or no "
+        "server at all."
+    ),
+)
+@click.option(
     "--peer",
     "peers",
     multiple=True,
@@ -1432,7 +1468,8 @@ def _queue_dispatch_batch(
     help=(
         "Why this node's time budget needs more wall clock than the resolved "
         "fence allows, e.g. a measured gate the fence predates. Recorded on "
-        "the node and its run record beside the over-fence note. This reason is optional."
+        "the node and its run record beside the over-fence note. Beside "
+        "--batch it applies to every entry that sets no reason of its own."
     ),
 )
 @click.option(
@@ -1524,7 +1561,10 @@ def _queue_dispatch_batch(
 @click.option(
     "--local",
     is_flag=True,
-    help="Route through the backend named by the resolved local_backend key.",
+    help=(
+        "Route through the backend named by the resolved local_backend key. "
+        "Beside --batch it applies to every entry that does not choose its lane."
+    ),
 )
 @click.option(
     "--repairs",
@@ -1566,13 +1606,28 @@ def _queue_dispatch_batch(
     ),
 )
 @click.option(
+    "--measure-only",
+    "measure_only",
+    default="",
+    metavar="REASON",
+    help=(
+        "Dispatch this node as a measurement run: it builds and gates exactly "
+        "as an implement run does and is then never reviewed, merged or "
+        "landed, so an already-landed section can be replayed for comparison. "
+        "REASON says why the replay is worth the work and is recorded on the "
+        "run. A section declared done is dispatchable only with this flag."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help=(
-        "Validate and resolve only: no worktree, no process, no record. A green "
-        "preview is a true statement standing in for the one the caller is "
-        "asking, so ask of any check added here: what would make this field "
-        "wrong while it still printed the same value?"
+        "Validate and resolve only: no worktree, no process, no record. Beside "
+        "--batch it judges every entry and prints one row for each, writing no "
+        "pointer and no run directory. A green preview is a true statement "
+        "standing in for the one the caller is asking, so ask of any check "
+        "added here: what would make this field wrong while it still printed "
+        "the same value?"
     ),
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
@@ -1606,6 +1661,7 @@ def crew_dispatch(
     regenerate_paths,
     anchor_paths,
     image_paths,
+    mcp_set,
     peers,
     required_decisions,
     locked_decisions,
@@ -1630,6 +1686,7 @@ def crew_dispatch(
     accept_directory_claim,
     no_fence_reason,
     pair_backend,
+    measure_only,
     dry_run,
     pretty,
 ):
@@ -1653,14 +1710,10 @@ def crew_dispatch(
             "--waits-only-after needs at least one --after request; without "
             "one the request waits on nothing"
         )
-    if batch_path and dry_run:
-        # A batch queues each entry as it reads it, so a dry run of a batch
-        # would store real requests. Refused before anything is read or written.
-        raise click.UsageError(
-            "--dry-run cannot be combined with --batch: a batch queues each "
-            "entry it reads; dry-run each entry as a single dispatch instead"
-        )
     if batch_path:
+        # A command-level option beside --batch applies to every entry that
+        # does not set it, and --dry-run validates every entry without storing
+        # any of them.
         _queue_dispatch_batch(
             batch_path,
             session=session,
@@ -1669,6 +1722,10 @@ def crew_dispatch(
             overrides=overrides,
             launch_kind="cli",
             pretty=pretty,
+            over_fence_reason=over_fence_reason,
+            comment=comment,
+            local=local,
+            dry_run=dry_run,
         )
         return
     if not project:
@@ -1800,6 +1857,7 @@ def crew_dispatch(
         role=role,
         spec_level=spec_level or "",
         negative_control=negative_control or "",
+        mcp_set=mcp_set or "",
         done_when=done_when,
         write_paths=list(write_paths),
         inputs=list(inputs),
@@ -2117,6 +2175,36 @@ def crew_dispatch(
             from reckon.crew.dispatch import resolve_project_repository
 
             repo = resolve_project_repository(project, repo)
+            # The launch refuses a dispatch of an already-declared-done
+            # section without the measurement flag before it claims anything,
+            # and the preview asks the same question of the same helper: a
+            # green preview standing in for a refused dispatch is the one
+            # answer a caller never expects from --dry-run.
+            from reckon.crew.dispatching.preparation import (
+                _measurement_flag_refusal as measurement_flag_refusal,
+            )
+
+            measurement_refusal = measurement_flag_refusal(
+                project,
+                str(node.plan or ""),
+                str(node.section or ""),
+                repo=repo,
+                measure_only=str(measure_only or "").strip(),
+            )
+            if measurement_refusal:
+                _emit(
+                    _with_resolved_overrides(
+                        {
+                            "ok": False,
+                            "dry_run": True,
+                            "error": "measurement-flag-required",
+                            "detail": measurement_refusal,
+                        },
+                        override_resolution,
+                    ),
+                    pretty,
+                )
+                raise click.exceptions.Exit(2)
             resolution = crew_module.plan_dispatch(
                 node=node,
                 config=config,
@@ -3352,3 +3440,11 @@ def crew_observe(run_id, project, pretty):
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result({**record, **resolved}, pretty, observation=True)
+
+
+# The hold verbs are declared beside the hold they take, in
+# ``reckon.crew.resume``, and attached here because this module owns the group
+# they belong to. A verb module may import the group; the group must not be
+# reached from a verb module, or the group's own import of the crew graph
+# closes a cycle.
+register_hold_commands(crew)

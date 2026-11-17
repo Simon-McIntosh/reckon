@@ -40,6 +40,7 @@ commits: none
 changed_paths:
   - {record}
 tests: record parsed, stored and parse-checked
+messages_received: none
 """
 
 

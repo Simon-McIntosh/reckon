@@ -1,0 +1,17 @@
+<section id="qwnw-queue-tests-red-on-main-are-repaired-codex-landing">
+  <h3>Queue requests receive a durable manifest before validation</h3>
+  <p>The queue writer assigns an omitted manifest path from the assigned run ID through the existing run directory resolver, matching direct and batch dispatch. Explicit manifest paths remain intact; relative paths still refuse before a pointer is written.</p>
+  <table>
+    <thead><tr><th>Observed cause</th><th>Diagnosis and repair</th></tr></thead>
+    <tbody>
+      <tr><td>21 queue/readiness cases and the review-store pass case refuse a missing manifest</td><td>Product defect: default the manifest before validating and storing requests. The review-store cache already reads once per pass and needs no rewrite.</td></tr>
+      <tr><td>JSONDecodeError on CLI output</td><td>Test defect: progress is on stderr. Parse the complete stdout document instead of the first line of the mixed output.</td></tr>
+      <tr><td>DID NOT RAISE ScopeConflict</td><td>Test defect: mergeable source claims allow concurrent work. Exercise refusal and pointer preservation with a shared figure topic; separately assert source sharing succeeds.</td></tr>
+      <tr><td>Cache rebuild count depends on launch thread order</td><td>Test defect exposed after manifest repair: force the edit to precede subsequent readiness reads using an event. Keep the exact two-build assertion and all three launch assertions.</td></tr>
+    </tbody>
+  </table>
+  <p>Historical control at <code>fdd817d3ff7b745bc8a0e7766f3d156e95ad3419</code>: <code>24 failed, 13 passed in 12.10s</code>. Assigned base at <code>32e147040e78caf8d9321eec920c5e413436aac6</code>: <code>24 failed, 13 passed in 11.44s</code>. Repaired code at <code>6ae6265d6b528726a2b0905439fc8897437ed5fc</code>: <code>41 passed in 21.61s</code>.</p>
+  <p>The armed baseline reads <code>58 passed in 35.65s</code> and the armed head <code>58 passed in 36.07s</code>, with zero added failures. Ruff check and format check report no findings on the four changed Python paths. New assertions read generated and explicit manifest paths from stored pointers and trigger the relative-path refusal. Existing missing-wait, wait-cycle and nonmergeable-claim refusal assertions remain enabled.</p>
+  <p>The supplied audit log names a different revision in its header; fresh controls establish both requested revisions independently. The first armed baseline extraction lacked git metadata and produced two fixture setup errors; the corrected extraction points its detached HEAD at the assigned base and all 58 tests pass. These setup errors are retained in the run directory.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/queue-tests-red-on-main.html">Complete negative-control and head logs, with armed suite receipts</a>. The assigned-base log and intermediate head run remain alongside the worker manifest.</p>
+</section>

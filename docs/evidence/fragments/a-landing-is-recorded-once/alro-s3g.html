@@ -1,0 +1,49 @@
+<section id="alro-s3g-brief-carried-run-counts-toward-its-section" class="evidence-fragment">
+  <h2>§3 — A run dispatched with a brief counts toward the section it names in every reader</h2>
+  <p>
+    <strong>What landed.</strong> The one resolver in <code>reckon/crew/section_holds.py</code>
+    is unchanged; the plan a run belongs to now has one public name,
+    <code>reckon/ledger.py:row_plan</code>, and the ledger's own readers call that
+    same function — no second body exists. The picker projection
+    (<code>ledger.picker_record</code>) carries <code>row_plan</code>'s answer, so a
+    projected row is not a row that lost the fact the projection never held:
+    it drops the impl move and the node definition. The index version moves to 8
+    so every stored row's projection is re-extracted.
+  </p>
+  <p>
+    <strong>Readers repaired</strong> — each now takes the plan from that resolver:
+    <code>section_holds._row_parts</code>; <code>picker/outcomes.summarize</code>
+    (a hold's following run); <code>picker/__init__.pick</code> and
+    <code>picker/snapshot._candidates_scan</code> (attempt count);
+    <code>picker/replay.replay</code> (the replayed node's plan);
+    <code>schedule.derive_schedule</code> (runs bucketed by plan);
+    <code>capabilities.derive_routing</code> (two buckets) and
+    <code>capabilities.derive_capabilities</code> (the hours observation).
+    The merge with main (<code>082fe4564f</code> already routed the store's
+    own selection through the resolver) keeps those bounded reads as main wrote
+    them and moves <code>run_store</code>'s plan selection and the store's
+    coverage test onto <code>ledger.row_plan</code>, so no private alias
+    survives the rename, and the docstring that describes the store read names
+    the same owner.
+  </p>
+  <p id="alro-s3g-brief-carried-run-counts-toward-its-section-measure">
+    <strong>Measure.</strong> <code>tests/test_a_brief_carried_run_counts_toward_its_section.py</code>
+    (12 cases over a temporary store) at the head against the same file over the
+    base revision <code>e0efa78</code>: the outcomes hold, replay, schedule,
+    capabilities measurement and capabilities routing cases fail at the base and
+    pass at the head, and the section-hold case reads the section its
+    brief-carried run delivered only at the head. The negative control reverts
+    the section-hold repair and the section-landed case fails.
+  </p>
+  <p>
+    <strong>The reported symptom, measured.</strong> Two queued runs left parked
+    on a section declared done is not the section-hold read's doing: the release
+    is decided by <code>admission/readiness._section_run_unlanded</code>, which
+    reads the live node's plan first and a ledger row's plan through the same
+    resolver, so a promoted brief-carried landing is visible to it instead of
+    only through the flat field. The waiter-release case records the read
+    holding a section whose brief-carried run is promoted and not landed, and
+    the lane case records the rework the brief-carried attempt puts on the
+    worker lane.
+  </p>
+</section>

@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: base-arm-test_schema-all_debug.log (revision cb557f9711, EXIT=1) reports the four test_cross_project_conformance ids and gate-head-test_schema.log (revision 2649a72c92, EXIT=0) reports none, so the head adds no failing test and the count is a measured 0.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/resources.py:69",
+    "reckon/resources.py:554"
+  ],
+  "completed_at": "2026-11-16T09:36:16.266Z",
+  "dispatched_at": "2026-11-16T09:35:41Z",
+  "findings": [
+    {
+      "file": "tests/test_schema.py",
+      "line": "1010",
+      "severity": "non-blocking",
+      "text": "non-blocking: The second assertion cannot fail \u2014 `scanned` and the fragment set are both built by the loop under test through the same `if _is_fragment(rel)` branch at :863-865, so an empty intersection is guaranteed by construction, and if the exclusion were reverted the assert at :1008 fires first, so this line adds no guard the previous line does not already hold."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/gate-head-test_schema.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The head arm was taken at 2649a72c92 while the reviewed head is 200f307e8f, so the reviewed deliverable's last commit is covered only by construction \u2014 it lands inside the subtree the scan now skips \u2014 and the head-keyed path this record is filed at names a revision no gate ran at."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_logs cites gate-head-prefix-run.log, whose header names revision c60ce0ab7c, a commit outside the reviewed range whose tree differs from the landed 2649a72c92 only by a docstring, so one of the three arms the manifest offers measures a tree that was not landed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/prompt.txt",
+      "line": "219",
+      "severity": "non-blocking",
+      "text": "non-blocking: The done_when names the negative control at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-schema.html while the fence at prompt.txt:88 names qwnw-red-file-schema.html and that is where the arms were landed, so a reader following the done_when opens a path that does not exist."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": "gate-head-test_schema.log (2875 passed, EXIT=0)",
+    "baseline_suite": "base-arm-test_schema-all_debug.log (4 failed, 7427 passed, EXIT=1)"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read 2649a72c92 and 200f307e8f commit by commit against cb557f9711; 2649a72c92 imports EVIDENCE_FRAGMENTS_SUBTREE at tests/test_schema.py:50, adds _FRAGMENT_FILES at :811, _is_fragment at :839, the skip at :863-865 and the new case at :998-1010, while 200f307e8f adds only the 122-line evidence fragment, and no product module is touched.",
+    "done_when": "Read done_when against both arms and the third clause; gate-head-test_schema.log:1 names 2649a72c92 and ends \"2875 passed in 277.25s\" EXIT=0, base-arm-test_schema-all_debug.log:1 names cb557f9711 and ends \"4 failed, 7427 passed\" EXIT=1 with the four ids the done_when asks a verdict for, but the ruff clause is answered only by prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-schema.html:118 and no ruff log exists.",
+    "goal": "Read the goal in dispatch-detail.json against the landed diff; tests/test_schema.py:863-865 now excludes the evidence-fragment subtree from the cross-project conformance scan, and gate-head-test_schema.log records that file green at 2875 passed, so the goal's file-level measure is met while the primary branch itself still awaits promotion.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/manifest.md; status complete, commits 2649a72c92 and 200f307e8f, a literal mounted pytest command on tests/test_schema.py, three named test logs, baseline_suite with the four red ids and after_suite with none, and a landing line.",
+    "write_paths": "Read the dispatch fence at prompt.txt:85-89, which declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and its qwnw-red-file-schema.html) and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-schema; both changed files, tests/test_schema.py and the fragment html, are inside those declarations."
+  },
+  "justifications": {
+    "durability": "deleting the `continue` at tests/test_schema.py:865 reddens the case at :1008 and reinstates the four parametrized failures the base arm records, but the second assertion at :1010 is a property of the same branch and cannot fail while :1008 holds.",
+    "evidence": "gate-head-test_schema.log:1 names 2649a72c92 rather than the reviewed head 200f307e8f and the ruff clause rests on the prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-schema.html:118, though both arms carry revision, tree, module and cwd headers and a terminal EXIT line.",
+    "fit": "tests/test_schema.py:839-846 follows the module's docstringed module-level helper idiom, reads the product's constant rather than a literal, and introduces no name the repository forbids.",
+    "goal_fidelity": "tests/test_schema.py:863-865 is the exclusion that clears the four recorded ids, and gate-head-test_schema.log records the file at 2875 passed EXIT=0, though the goal's \"on the primary branch\" half is promotion's and not this run's.",
+    "reuse": "the predicate's owner is reckon/resources.py:245, whose constant reckon/resources.py:69 the test imports rather than re-declares, matching the inline comparison idiom already at reckon/crew/routing.py:4217, though that comparison itself is spelled again at tests/test_schema.py:846.",
+    "scope_discipline": "both changed files lie inside prompt.txt:85-89 and 200f307e8f adds only the node's own landing record, with no product source, plan state or figure touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in dispatch-detail.json against the landed diff; tests/test_schema.py:863-865 now excludes the evidence-fragment subtree from the cross-project conformance scan, and gate-head-test_schema.log records that file green at 2875 passed, so the goal's file-level measure is met while the primary branch itself still awaits promotion.\nVERDICT done_when: Read done_when against both arms and the third clause; gate-head-test_schema.log:1 names 2649a72c92 and ends \"2875 passed in 277.25s\" EXIT=0, base-arm-test_schema-all_debug.log:1 names cb557f9711 and ends \"4 failed, 7427 passed\" EXIT=1 with the four ids the done_when asks a verdict for, but the ruff clause is answered only by prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-schema.html:118 and no ruff log exists.\nVERDICT write_paths: Read the dispatch fence at prompt.txt:85-89, which declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and its qwnw-red-file-schema.html) and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-schema; both changed files, tests/test_schema.py and the fragment html, are inside those declarations.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/manifest.md; status complete, commits 2649a72c92 and 200f307e8f, a literal mounted pytest command on tests/test_schema.py, three named test logs, baseline_suite with the four red ids and after_suite with none, and a landing line.\nVERDICT diff: Read 2649a72c92 and 200f307e8f commit by commit against cb557f9711; 2649a72c92 imports EVIDENCE_FRAGMENTS_SUBTREE at tests/test_schema.py:50, adds _FRAGMENT_FILES at :811, _is_fragment at :839, the skip at :863-865 and the new case at :998-1010, while 200f307e8f adds only the 122-line evidence fragment, and no product module is touched.\nCALL_SITES: reckon/resources.py:69, reckon/resources.py:554\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_schema.py:863-865 is the exclusion that clears the four recorded ids, and gate-head-test_schema.log records the file at 2875 passed EXIT=0, though the goal's \"on the primary branch\" half is promotion's and not this run's.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head-test_schema.log:1 names 2649a72c92 rather than the reviewed head 200f307e8f and the ruff clause rests on the prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-schema.html:118, though both arms carry revision, tree, module and cwd headers and a terminal EXIT line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both changed files lie inside prompt.txt:85-89 and 200f307e8f adds only the node's own landing record, with no product source, plan state or figure touched.\nSCORE durability: 16\nJUSTIFICATION durability: deleting the `continue` at tests/test_schema.py:865 reddens the case at :1008 and reinstates the four parametrized failures the base arm records, but the second assertion at :1010 is a property of the same branch and cannot fail while :1008 holds.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_schema.py:839-846 follows the module's docstringed module-level helper idiom, reads the product's constant rather than a literal, and introduces no name the repository forbids.\nSCORE reuse: 18\nJUSTIFICATION reuse: the predicate's owner is reckon/resources.py:245, whose constant reckon/resources.py:69 the test imports rather than re-declares, matching the inline comparison idiom already at reckon/crew/routing.py:4217, though that comparison itself is spelled again at tests/test_schema.py:846.\nFINDING tests/test_schema.py:1010 non-blocking: The second assertion cannot fail \u2014 `scanned` and the fragment set are both built by the loop under test through the same `if _is_fragment(rel)` branch at :863-865, so an empty intersection is guaranteed by construction, and if the exclusion were reverted the assert at :1008 fires first, so this line adds no guard the previous line does not already hold.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/gate-head-test_schema.log:1 non-blocking: The head arm was taken at 2649a72c92 while the reviewed head is 200f307e8f, so the reviewed deliverable's last commit is covered only by construction \u2014 it lands inside the subtree the scan now skips \u2014 and the head-keyed path this record is filed at names a revision no gate ran at.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/manifest.md:13 non-blocking: test_logs cites gate-head-prefix-run.log, whose header names revision c60ce0ab7c, a commit outside the reviewed range whose tree differs from the landed 2649a72c92 only by a docstring, so one of the three arms the manifest offers measures a tree that was not landed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032259284393-qwnw-red-file-schema/prompt.txt:219 non-blocking: The done_when names the negative control at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-schema.html while the fence at prompt.txt:88 names qwnw-red-file-schema.html and that is where the arms were landed, so a reader following the done_when opens a path that does not exist.\n",
+  "review_run_id": "r-20261116T093448202241-review-of-qwnw-red-file-schema-200f307e8f8f",
+  "reviewed_base_sha": "cb557f9711670ca8a00dd1d6dd22a17b42d3a51e",
+  "reviewed_head_sha": "200f307e8f8f15eaf877e9650bd3d6b4b34f0368",
+  "reviewed_run_id": "r-20261116T032259284393-qwnw-red-file-schema",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:21:59.933474+00:00",
+  "total": 104
+}

@@ -130,7 +130,10 @@ CONFIG = {
 
 
 def _iso(moment: datetime) -> str:
-    return moment.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+    # A receipt observed after promotion must retain its subsecond ordering.
+    return (
+        moment.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    )
 
 
 def _stamp(offset_seconds: int = 0) -> str:

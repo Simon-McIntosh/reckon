@@ -241,7 +241,7 @@ def test_case5_an_explicit_gate_check_is_kept(repository: Path, tmp_path: Path) 
     manifest.write_text(_manifest_body(), encoding="utf-8")
     _review_pointer(repository, declared=[str(delivered)], manifest=manifest)
     gate_log = tmp_path / "operator-gate.log"
-    gate_log.write_text("EXIT=0\n", encoding="utf-8")
+    gate_log.write_text("1 passed in 0.01s\nEXIT=0\n", encoding="utf-8")
     command = "pytest -q tests/operator_check.py"
 
     result = _promote(
@@ -259,7 +259,9 @@ def test_case5_an_explicit_gate_check_is_kept(repository: Path, tmp_path: Path) 
     # derived check would have cited.
     assert written["command"] == command, written
     assert written["log_path"] != str(delivered), written
-    assert Path(written["log_path"]).read_text(encoding="utf-8") == "EXIT=0\n"
+    assert Path(written["log_path"]).read_text(encoding="utf-8") == (
+        "1 passed in 0.01s\nEXIT=0\n"
+    )
 
 
 @pytest.mark.parametrize(

@@ -361,15 +361,21 @@ def _remote_unreadable_reason(
     )
 
 
-def _acceptance_inputs(
+def _acceptance_input_view(
     pointer: Mapping[str, Any],
     head: str,
     tree: Path | None,
     review: Mapping[str, Any] | None,
     gate: Mapping[str, Any] | None,
     commits: Sequence[str],
-) -> str:
-    """Identify the run, review and gate judged, without observing the remote."""
+) -> dict[str, Any]:
+    """The run, review and gate judged, without observing the remote.
+
+    The mapping is kept rather than only its digest because a judgement that
+    finds the inputs moved has to name which of them moved: a reader told a run
+    keeps moving needs to know what to hold still, and two digests differing
+    says nothing about that.
+    """
     from .recovery_memo import _file_identity, _worktree_head_identity
 
     fields = (
@@ -395,21 +401,174 @@ def _acceptance_inputs(
     checkout = str(pointer.get("repo") or "")
     manifest = str(pointer.get("manifest_path") or "")
     gate_log = str((gate or {}).get("log_path") or "")
-    inputs = {
+    return {
         "pointer": {field: pointer.get(field) for field in fields},
         "head": head,
         "tree_head": _worktree_head_identity(tree),
         "checkout_head": _worktree_head_identity(Path(checkout)) if checkout else "",
-        "checkout_exists": Path(checkout).is_dir() if checkout else False,
+        "checkout_exists": _checkout_is_a_directory(checkout) if checkout else False,
         "review": review,
         "gate": gate,
         "commits": list(commits),
         "manifest": _file_identity(manifest) if manifest else "",
         "gate_log": _file_identity(gate_log) if gate_log else "",
     }
+
+
+def _checkout_is_a_directory(checkout: str) -> bool:
+    """Whether the run's checkout is on disk, asked defensively.
+
+    A path a reader cannot stat is not a checkout this judgement can read a
+    merged gate against, so it answers False rather than raising out of the
+    identity a refusal is compared under.
+    """
+    try:
+        return Path(checkout).is_dir()
+    except OSError:
+        return False
+
+
+#: How many judgements one run may spend finding its inputs moved under it.
+#: Three is the count the plan states: a run whose pointer, review or gate moves
+#: once settles on the next sweep, while a run that keeps moving is not judged
+#: forever — it is reported with what moved and left to its coordinator.
+INPUTS_MOVED_ATTEMPTS = 3
+
+#: The words a refusal uses when the judgement, not the run, is what failed: the
+#: inputs moved between the read and the write, so the verdict describes a state
+#: that no longer exists. The sweep reads this sentence to judge the run again
+#: rather than leave it refused, so it states the fact and stands as the refusal
+#: for every attempt inside the budget.
+INPUTS_MOVED_REASON = "the run or its acceptance inputs changed while it was judged"
+
+
+def _moved_inputs(
+    before: Mapping[str, Any], after: Mapping[str, Any], *, limit: int = 6
+) -> list[str]:
+    """Which judged inputs differ between two readings, named for a reader.
+
+    A mapping compared as a whole says only that it moved; a coordinator told a
+    run keeps changing needs the field. The pointer is compared field by field
+    so a run that moved its attempt says so, and everything else is compared as
+    one value because it is a revision, a store record or a file identity.
+    """
+    moves: list[str] = []
+
+    def note(name: str, was: Any, now: Any) -> None:
+        moves.append(f"{name} {_input_value(was)} -> {_input_value(now)}")
+
+    for key in sorted(set(before) | set(after)):
+        was, now = before.get(key), after.get(key)
+        if isinstance(was, Mapping) and isinstance(now, Mapping):
+            for field in sorted(set(was) | set(now)):
+                if was.get(field) != now.get(field):
+                    note(f"{key}.{field}", was.get(field), now.get(field))
+        elif was != now:
+            note(key, was, now)
+    return moves[:limit]
+
+
+def _input_value(value: Any) -> str:
+    """One input's value, short enough to sit inside a refusal sentence."""
+    text = (
+        value
+        if isinstance(value, str)
+        else json.dumps(value, sort_keys=True, default=str)
+    )
+    text = " ".join(text.split())
+    return text if len(text) <= 40 else text[:37] + "..."
+
+
+def _inputs_moved_path(run_id: str) -> Path:
+    return runs.run_dir(run_id) / "acceptance-inputs-moved.json"
+
+
+def _record_inputs_moved(
+    run_id: str, before: Mapping[str, Any], after: Mapping[str, Any]
+) -> tuple[int, list[str]]:
+    """Count this judgement against the run's attempt budget.
+
+    An attempt is spent per judgement that found its own inputs move under it,
+    which is what a run that keeps changing looks like from here: each sweep
+    reads a state, the write lands on another, and the count is the only durable
+    evidence that the run is not settling. The moves are kept beside it so the
+    refusal that gives up names them without re-reading a state that has since
+    moved again.
+    """
+    path = _inputs_moved_path(run_id)
+    try:
+        prior = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prior = None
+    attempts = int((prior or {}).get("attempts") or 0) + 1
+    moved = _moved_inputs(before, after)
+    with suppress(OSError):
+        runs._write_json(
+            path,
+            {"attempts": attempts, "moved": moved, "at": _utc_now()},
+        )
+    return attempts, moved
+
+
+def _reset_inputs_moved(run_id: str) -> None:
+    """Clear the attempt budget once a judgement's inputs held still.
+
+    The count measures how many judgements a run spends on a state it will not
+    keep, so a judgement that got past the identity check settles the question;
+    a later movement starts a fresh count rather than inheriting one.
+    """
+    with suppress(OSError):
+        _inputs_moved_path(run_id).unlink(missing_ok=True)
+
+
+def _utc_now() -> str:
+    from datetime import UTC, datetime
+
+    return datetime.now(UTC).isoformat()
+
+
+def _inputs_digest(view: Mapping[str, Any]) -> str:
+    """The identity a judgement's inputs are compared under."""
     return hashlib.sha256(
-        json.dumps(inputs, sort_keys=True, default=str).encode()
+        json.dumps(view, sort_keys=True, default=str).encode()
     ).hexdigest()
+
+
+def _judge_again_on_moved_inputs(
+    run_id: str, before: Mapping[str, Any], after: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The outcome of a judgement whose inputs moved under it.
+
+    The refusal is right for the moment it describes and wrong as the run's
+    fate: the state it refused no longer exists, so the verdict has to be taken
+    again against the inputs that replaced it. The run is told to be judged
+    again on the next sweep while it has attempts left, and after
+    :data:`INPUTS_MOVED_ATTEMPTS` of them it is refused for a run that will not
+    hold still, naming what moved.
+    """
+    attempts, moved = _record_inputs_moved(run_id, before, after)
+    if attempts < INPUTS_MOVED_ATTEMPTS:
+        return {
+            "run_id": run_id,
+            "accepted": False,
+            "reason": INPUTS_MOVED_REASON,
+            "retry": True,
+            "attempts": attempts,
+            "attempt_limit": INPUTS_MOVED_ATTEMPTS,
+            "moved": moved,
+        }
+    named = ", ".join(moved) if moved else "inputs this run does not record"
+    return {
+        "run_id": run_id,
+        "accepted": False,
+        "reason": (
+            f"{INPUTS_MOVED_REASON} {attempts} times, so the run is not settling; "
+            f"the last changes were: {named}"
+        ),
+        "attempts": attempts,
+        "attempt_limit": INPUTS_MOVED_ATTEMPTS,
+        "moved": moved,
+    }
 
 
 def _acceptance_remote_inputs(checkout: Path | None, commits: Sequence[str]) -> list:
@@ -480,7 +639,10 @@ def accept_clean_review(
     checkout_value = str(pointer.get("repo") or "").strip()
     checkout = Path(checkout_value).expanduser() if checkout_value else None
     gate_check, commits = _recorded_gate_passed(pointer)
-    inputs = _acceptance_inputs(pointer, head, tree, review, gate_check, commits)
+    view_at_read = _acceptance_input_view(
+        pointer, head, tree, review, gate_check, commits
+    )
+    inputs = _inputs_digest(view_at_read)
     from reckon.crew import review_landing
 
     implementation = (
@@ -632,19 +794,19 @@ def accept_clean_review(
                     project, run_id, current_head, tree=current_tree
                 )
                 current_gate, current_commits = _recorded_gate_passed(current)
-                if inputs != _acceptance_inputs(
+                current_view = _acceptance_input_view(
                     current,
                     current_head,
                     current_tree,
                     current_review,
                     current_gate,
                     current_commits,
-                ):
-                    return {
-                        "run_id": run_id,
-                        "accepted": False,
-                        "reason": "the run or its acceptance inputs changed while it was judged",
-                    }
+                )
+                if inputs != _inputs_digest(current_view):
+                    return _judge_again_on_moved_inputs(
+                        run_id, view_at_read, current_view
+                    )
+            _reset_inputs_moved(run_id)
             if implementation and review_landing.manual_landing_reason(current):
                 return refuse(
                     {
@@ -1058,6 +1220,18 @@ def review_self_state(
             ),
             None,
         )
+    from reckon.crew import review_landing
+    from reckon.crew.recovery_review_delivery import _report_review_delivery
+
+    try:
+        manual_reason = review_landing.manual_landing_reason(pointer)
+        if manual_reason:
+            return REVIEW_SELF_REFUSED, manual_reason, None
+        report = _report_review_delivery(pointer)
+    except (CrewError, OSError, ValueError) as refusal:
+        return REVIEW_SELF_REFUSED, str(refusal), None
+    if report is not None:
+        return REVIEW_SELF_READY, "", Path(report["path"])
     # A run review's delivery is identified by the head it was dispatched to
     # read, and a record of an earlier round is not this run's verdict.
     declares = _declared_head_keyed_record(pointer, project)
@@ -1195,6 +1369,84 @@ def promote_review_run_itself(
             ),
         },
     }
+
+
+def _live_repair_attempt(pointer: Mapping[str, Any]) -> str:
+    """The repair run standing for this run's round, or "" when none is live.
+
+    A round is recorded on the run it repairs, and its attempt is the run the
+    composer dispatched. It is live while that run's pointer stands and the
+    attempt has written no exit record: a repair that ended has either committed
+    and moved the reviewed head past the stored review, or given up, and the
+    sweep's repair pass settles either. Nothing here probes the process, because
+    a repair launched but not yet running is exactly the state in which
+    promoting the reviewed head reserves a merge against a change about to
+    arrive.
+    """
+    from .recovery_review_dispatch import (
+        REPAIR_DISPATCH_FIELD,
+        REPAIR_ROUND_OPENING_STATUSES,
+    )
+
+    recorded = pointer.get(REPAIR_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return ""
+    if str(recorded.get("status") or "") not in REPAIR_ROUND_OPENING_STATUSES:
+        return ""
+    repair_run_id = str(recorded.get("run_id") or "")
+    if not repair_run_id:
+        return ""
+    if not runs.pointer_path(repair_run_id).exists():
+        return ""
+    try:
+        repair = runs.read_pointer(repair_run_id)
+    except CrewError:
+        return ""
+    if _run_exit_record(repair) is not None:
+        return ""
+    return repair_run_id
+
+
+def _judge_moved_inputs_again(
+    run_id: str, receipt: Mapping[str, Any], *, config: Mapping[str, Any] | None
+) -> bool:
+    """Re-queue a run refused only because its inputs moved under the judgement.
+
+    The refusal is terminal as the queue records it — a later request for the
+    same run returns that receipt unchanged, so nothing ever judges the run
+    against the inputs that replaced the ones it refused. The run asked to be
+    judged again when it kept attempts in hand, and this is the sweep taking it
+    up: a new request puts the run back in front of the drain, which judges it
+    against the inputs it now has, promoting it if they pass and refusing it on
+    from them if they do not.
+
+    Three things keep this from becoming a retry loop of its own. The receipt
+    says whether an attempt is still in budget, so a run that keeps moving is
+    reported instead. A live repair attempt stands the retry down, because the
+    repair is what moves the head and this promotion would race it. And a
+    pointer that has gone has nothing left to judge.
+    """
+    from reckon.crew.promotion_requests import request_promotion
+
+    result = receipt.get("result")
+    result = result if isinstance(result, Mapping) else {}
+    if not result.get("retry"):
+        return False
+    if not runs.pointer_path(run_id).exists():
+        return False
+    try:
+        pointer = runs.read_pointer(run_id)
+    except CrewError:
+        return False
+    if _live_repair_attempt(pointer):
+        return False
+    try:
+        request_promotion(
+            run_id, kind="acceptance", options={"config": config}, retry=True
+        )
+    except (CrewError, OSError, ValueError):
+        return False
+    return True
 
 
 def dispatch_awaiting_reviews(
@@ -1504,11 +1756,32 @@ def dispatch_awaiting_reviews(
             # to its coordinator, and an eligible run whose acceptance was refused
             # is reported with its reason rather than silently skipped.
             if scan is not None and scan["classification"] == "promotable":
-                _hand_off(
-                    str(pointer.get("run_id") or ""),
-                    "acceptance",
-                    lambda pointer=pointer: accept_clean_review(pointer, config=config),
-                )
+                # A repair attempt in flight is about to move the head this
+                # promotion would land, so an attempt taken now would find its
+                # own inputs changed under it by the run's own repair. The
+                # attempt is the run's move, and the promotion waits for it.
+                repair_run_id = _live_repair_attempt(pointer)
+                if repair_run_id:
+                    repair_held.append(
+                        {
+                            "run_id": str(pointer.get("run_id") or ""),
+                            "repair_run_id": repair_run_id,
+                            "reason": (
+                                "a repair attempt of this run is live "
+                                f"({repair_run_id}) and will move the head the "
+                                "promotion would land, so the sweep attempts no "
+                                "promotion for it"
+                            ),
+                        }
+                    )
+                else:
+                    _hand_off(
+                        str(pointer.get("run_id") or ""),
+                        "acceptance",
+                        lambda pointer=pointer: accept_clean_review(
+                            pointer, config=config
+                        ),
+                    )
             # The repair pass, keyed on the stored review rather than on the run's
             # classification: a review carrying findings may leave the run reading
             # promotable, so gating this on ``scoring`` alone would leave a
@@ -1564,6 +1837,13 @@ def dispatch_awaiting_reviews(
             if receipt.get("phase") in {"promotion-requested", "promotion-running"}:
                 requested.append(run_id)
             elif receipt.get("phase") in {"promotion-failed", "promotion-refused"}:
+                if kind == "acceptance" and _judge_moved_inputs_again(
+                    run_id, receipt, config=config
+                ):
+                    # The refusal describes a state that no longer exists, so
+                    # the run is judged again rather than reported as refused.
+                    requested.append(run_id)
+                    continue
                 error = str(receipt.get("error") or "")
                 if kind != "review-self" or _claims_refusal(run_id):
                     failed.append({"run_id": run_id, "error": error})

@@ -47,9 +47,11 @@ import shutil
 import statistics
 import subprocess
 import tempfile
+import threading
 import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
@@ -118,6 +120,71 @@ def measurement_width() -> int:
         return DEFAULT_MEASUREMENT_WIDTH
 
 
+_MEASUREMENT_AVAILABLE = threading.Condition()
+
+
+@contextlib.contextmanager
+def _promotion_measurement_slot():
+    """Park remote measurements outside preparation capacity, at bounded width."""
+    from reckon.crew.promotion_requests import (
+        PREPARATION_DONE,
+        PROMOTION_STAGE,
+        claim_promotion_lease,
+        release_promotion_lease,
+    )
+
+    handoff = PREPARATION_DONE.get()
+    if handoff is None:
+        yield
+        return
+    handoff()
+    mark = PROMOTION_STAGE.get()
+    if mark is not None:
+        mark("measurement-wait")
+    with _MEASUREMENT_AVAILABLE:
+        while True:
+            lease = next(
+                (
+                    claimed
+                    for number in range(measurement_width())
+                    if (
+                        claimed := claim_promotion_lease(
+                            f"promotion-measurement-slot-{number}"
+                        )
+                    )
+                    is not None
+                ),
+                None,
+            )
+            if lease is not None:
+                break
+            _MEASUREMENT_AVAILABLE.wait(2.0)
+    from reckon.crew.promotion import _PromotionLeaseRenewer
+
+    renewer = _PromotionLeaseRenewer(lease)
+    renewer.start()
+    if mark is not None:
+        mark("measurement")
+    try:
+        yield
+    finally:
+        renewer.stop()
+        with _MEASUREMENT_AVAILABLE:
+            release_promotion_lease(lease)
+            _MEASUREMENT_AVAILABLE.notify_all()
+        if mark is not None:
+            mark("post-measurement")
+
+
+def _handoff_measurement(function):
+    @wraps(function)
+    def measured(*args, **kwargs):
+        with _promotion_measurement_slot():
+            return function(*args, **kwargs)
+
+    return measured
+
+
 def submit_measurement(
     request_path: Path, *, config: Mapping[str, Any], bound: float
 ) -> dict[str, Any]:
@@ -125,7 +192,9 @@ def submit_measurement(
     import sys
 
     request = json.loads(request_path.read_text(encoding="utf-8"))
-    log = request_path.parent / "job.log"
+    from reckon.crew.promotion_gate import _unused_log_path
+
+    log = _unused_log_path(request_path.parent / "job.log")
     source = Path(__file__).resolve().parents[2]
     invocation = shlex.join(
         [
@@ -183,7 +252,13 @@ export PYTHONPATH={shlex.quote(str(source))}
 
 
 def measurement_job_state(job: Mapping[str, Any]) -> str:
-    """Read one scheduler observation; an absent accounting row is unknown."""
+    """Read one scheduler observation; an absent accounting row is unknown.
+
+    The queue forgets a job some minutes after it ends and then refuses a
+    query naming it, so a refused queue read says only that the job is no
+    longer queued. The accounting record is asked next, and it is the one
+    whose failure leaves the state unknown.
+    """
     job_id = str(job["job_id"])
     for argv in (
         ["squeue", "-h", "-j", job_id, "-o", "%T"],
@@ -192,6 +267,8 @@ def measurement_job_state(job: Mapping[str, Any]) -> str:
         finished = _SCHEDULER_RUN(
             argv, capture_output=True, text=True, check=False, timeout=10
         )
+        if finished.returncode and argv[0] == "squeue":
+            continue
         if finished.returncode:
             raise ValueError(
                 f"job {job_id}, log {job['log_path']}: scheduler query failed: "
@@ -549,14 +626,16 @@ def _link_environment(repo: Path, tree: Path) -> None:
     A repository with no environment is left alone: the arms then fail with
     the command's own error, which the measurement records as unreadable.
     """
-    environment = repo / ".venv"
+    from reckon.crew.fleet_supervisor import resolved_environment
+
+    environment = resolved_environment(repo)
     if not environment.exists():
         return
     link = tree / ".venv"
     if link.exists() or link.is_symlink():
         return
     with contextlib.suppress(OSError):
-        link.symlink_to(environment.resolve())
+        link.symlink_to(environment)
 
 
 def measure_timeout(config: Mapping[str, Any] | None) -> float:
@@ -678,55 +757,67 @@ def _arm(
     if getattr(run, "partitioned", False):
         extra["arm_log_path"] = str(log_path)
         extra["arm_environment"] = environment or {}
-    started = time.monotonic()
-    try:
-        finished = run(
-            argv,
-            cwd=str(tree),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
-            **extra,
-        )
-    except subprocess.TimeoutExpired as expired:
-        elapsed = time.monotonic() - started
-        partial = f"{expired.stdout or ''}{expired.stderr or ''}"
-        mode = "a" if getattr(run, "partitioned", False) else "w"
-        with log_path.open(mode, encoding="utf-8") as stream:
-            stream.write(f"timed out after {timeout}s\n{partial}")
-        return Arm(
-            tuple(argv),
-            None,
-            (),
-            str(log_path),
-            timed_out=True,
-            elapsed_seconds=elapsed,
-            file_count=file_count,
-        )
-    except OSError as exc:
-        elapsed = time.monotonic() - started
-        log_path.write_text(f"{type(exc).__name__}: {exc}\n", encoding="utf-8")
-        return Arm(
-            tuple(argv),
-            None,
-            (),
-            str(log_path),
-            elapsed_seconds=elapsed,
-            file_count=file_count,
-        )
-    elapsed = time.monotonic() - started
-    output = f"{finished.stdout or ''}{finished.stderr or ''}"
-    log_path.write_text(output, encoding="utf-8")
-    return Arm(
-        tuple(argv),
-        int(finished.returncode),
-        failing_ids(output),
-        str(log_path),
-        unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
-        elapsed_seconds=elapsed,
-        file_count=file_count,
+    partitioned = getattr(run, "partitioned", False)
+    handle = (
+        contextlib.nullcontext(None)
+        if partitioned
+        else log_path.open("x", encoding="utf-8")
     )
+    with handle as stream:
+        started = time.monotonic()
+        try:
+            finished = run(
+                argv,
+                cwd=str(tree),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout,
+                **extra,
+            )
+        except subprocess.TimeoutExpired as expired:
+            elapsed = time.monotonic() - started
+            partial = f"{expired.stdout or ''}{expired.stderr or ''}"
+            if stream is not None:
+                stream.write(f"timed out after {timeout}s\n{partial}")
+            return Arm(
+                tuple(argv),
+                None,
+                (),
+                str(log_path),
+                timed_out=True,
+                elapsed_seconds=elapsed,
+                file_count=file_count,
+            )
+        except OSError as exc:
+            elapsed = time.monotonic() - started
+            if stream is not None:
+                stream.write(f"{type(exc).__name__}: {exc}\n")
+            return Arm(
+                tuple(argv),
+                None,
+                (),
+                str(log_path),
+                unreadable_reason=f"{type(exc).__name__}: {exc}",
+                elapsed_seconds=elapsed,
+                file_count=file_count,
+            )
+        elapsed = time.monotonic() - started
+        output = f"{finished.stdout or ''}{finished.stderr or ''}"
+        if stream is not None:
+            stream.write(output)
+            if output and not output.endswith("\n"):
+                stream.write("\n")
+            stream.write(f"EXIT={finished.returncode}\n")
+        return Arm(
+            tuple(argv),
+            int(finished.returncode),
+            failing_ids(output),
+            str(log_path),
+            unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
+            elapsed_seconds=elapsed,
+            file_count=file_count,
+        )
 
 
 _LONG_PARTITION_BOUND_SECONDS = 3600.0
@@ -773,6 +864,13 @@ def partition_submission(
     reports where its measure ran needs the partition the bound chose rather
     than the one that was declared for short bounds.
     """
+    log_path = Path(log_path).absolute()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    # Reserve both outputs before submission; the task appends only to this run's files.
+    with log_path.open("x", encoding="utf-8"):
+        pass
+    with Path(f"{log_path}.scheduler").open("x", encoding="utf-8"):
+        pass
     selected = partition_for_bound(partition, long_partition, bound_seconds)
     seconds = max(1, math.ceil(bound_seconds))
     hours, remainder = divmod(seconds, 3600)
@@ -790,7 +888,7 @@ def partition_submission(
                 script,
             ]
         )
-        + " > "
+        + " >> "
         + shlex.quote(str(log_path))
         + " 2>&1"
     )
@@ -798,6 +896,7 @@ def partition_submission(
         "sbatch",
         "--wait",
         "--parsable",
+        "--open-mode=append",
         f"--partition={selected}",
         f"--time={bound}",
         "--nodes=1",
@@ -843,13 +942,15 @@ def _partition_runner(
         raise BaseCheckoutError("the shared git directory could not be read")
     git_dir = Path(common.stdout.strip())
     shared_repo = git_dir.parent
-    environment = (repo / ".venv").resolve()
+    from reckon.crew.fleet_supervisor import resolved_environment
+
+    environment = resolved_environment(repo)
     carried = tuple(test_files)
 
     def run(command, **options):
         revision = base_sha if Path(options["cwd"]) == base_tree else head_sha
         timeout = options["timeout"]
-        log = Path(options.pop("arm_log_path")).resolve()
+        log = Path(options.pop("arm_log_path")).absolute()
         scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote
         git = shlex.join(["git", "--git-dir", str(git_dir)])
@@ -893,7 +994,6 @@ exit "$status"
             chdir=shared_repo,
             log_path=log,
         )
-        log.write_text("")
         try:
             finished = runner(
                 argv,
@@ -1039,12 +1139,14 @@ def measure_run(
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
+    from reckon.crew.promotion_gate import _unused_log_path
+
     logs = Path(logs_dir)
     suite_bound = bound(len(node_tests))
     suite_base = _arm(
         argv,
         base_tree,
-        logs / "suite-base.log",
+        _unused_log_path(logs / "suite-base.log"),
         runner,
         suite_bound,
         environment,
@@ -1053,7 +1155,7 @@ def measure_run(
     suite_head = _arm(
         argv,
         tree,
-        logs / "suite-head.log",
+        _unused_log_path(logs / "suite-head.log"),
         runner,
         suite_bound,
         environment,
@@ -1066,7 +1168,7 @@ def measure_run(
         population_base = _arm(
             population_command,
             base_tree,
-            logs / "population-base.log",
+            _unused_log_path(logs / "population-base.log"),
             runner,
             population_bound,
             environment,
@@ -1075,7 +1177,7 @@ def measure_run(
         population_head = _arm(
             population_command,
             tree,
-            logs / "population-head.log",
+            _unused_log_path(logs / "population-head.log"),
             runner,
             population_bound,
             environment,
@@ -1127,7 +1229,7 @@ def measure_run(
             isolated_command(argv, test_id, node_tests),
             test_id,
             arm_tree,
-            logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log",
+            _unused_log_path(logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log"),
             runner,
             bound(1),
             environment,
@@ -1182,6 +1284,7 @@ def arm_observation(
     }
 
 
+@_handoff_measurement
 def armed_observations(
     *,
     command: str,
@@ -1251,11 +1354,13 @@ def armed_observations(
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
+    from reckon.crew.promotion_gate import _unused_log_path
+
     logs = Path(logs_dir)
     base_arm = _arm(
         argv,
         base_tree,
-        logs / "armed-baseline.log",
+        _unused_log_path(logs / "armed-baseline.log"),
         runner,
         timeout,
         environment,
@@ -1264,7 +1369,7 @@ def armed_observations(
     head_arm = _arm(
         argv,
         tree,
-        logs / "armed-after.log",
+        _unused_log_path(logs / "armed-after.log"),
         runner,
         timeout,
         environment,
@@ -1346,10 +1451,12 @@ def control_mutation_observation(
         )
         runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
+    from reckon.crew.promotion_gate import _unused_log_path
+
     arm = _arm(
         argv,
         base_tree,
-        Path(logs_dir) / "control-mutation.log",
+        _unused_log_path(Path(logs_dir) / "control-mutation.log"),
         runner,
         timeout,
         environment,

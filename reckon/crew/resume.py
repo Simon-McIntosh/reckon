@@ -30,6 +30,7 @@ import functools
 import json
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import click
@@ -39,6 +40,9 @@ from reckon.crew.node import CrewError
 
 #: The pointer field carrying a coordinator's hold over a delivered run.
 HOLD_FIELD = "delivery_hold"
+
+#: The run directory's own copy of the hold, so the fact outlives the pointer.
+HOLD_RECORD_NAME = "hold.json"
 
 #: Who a hold is taken by when the caller names nobody.
 DEFAULT_HOLDER = "coordinator"
@@ -104,6 +108,50 @@ def hold_reason(pointer: Mapping[str, Any], revision: str | None = None) -> str:
     return f"held by {hold.get('by') or DEFAULT_HOLDER}: {hold.get('reason') or ''}"
 
 
+def station_hold_reason(pointer: Mapping[str, Any]) -> str:
+    """Why a station pass must leave this run as it is, or "" when it may act.
+
+    A coordinator's hold names no head and covers every delivery, so a station
+    pass that resumes, repairs or reviews the run takes it out from under the
+    coordinator's hand: a held delivery gained a resume and a review nobody
+    asked for, and the hold lived only in the pointer a later promotion
+    removed. A resume's own hold names the head it was issued against, and
+    stops covering the run once that head has been superseded by a new
+    delivery — the same ``covers_delivery`` reading the lander and the
+    acceptance sweep make, asked here so a station door asks the lander's own
+    question rather than a second one.
+
+    The head is resolved only for a hold that names one, because this predicate
+    is read over the whole live fleet on every station pass, and resolving a
+    head costs a git subprocess.
+    """
+    hold = delivery_hold(pointer)
+    if hold is None:
+        return ""
+    if not str(hold.get("head") or "").strip():
+        return f"held by {hold.get('by') or DEFAULT_HOLDER}: {hold.get('reason') or ''}"
+    from reckon.crew.recovery_review_dispatch import _run_head_for_review
+
+    return hold_reason(pointer, _run_head_for_review(pointer))
+
+
+def record_hold_in_run_dir(run_id: str, hold: Mapping[str, Any]) -> None:
+    """Write the hold, and any release it carries, into the run's directory.
+
+    The live pointer is deleted by a promotion, so a hold that lives only
+    there leaves no record that the run ever waited: the recorded delay had to
+    be reconstructed from a coordinator's session. The run directory survives
+    the pointer, so the hold is copied there when it is taken and rewritten
+    when it is released, carrying the release's own reason beside the reason
+    the deferral began.
+    """
+    directory = Path(runs.run_dir(run_id))
+    directory.mkdir(parents=True, exist_ok=True)
+    runs._write_json(
+        directory / HOLD_RECORD_NAME, {"run_id": run_id, HOLD_FIELD: dict(hold)}
+    )
+
+
 def hold_delivery(
     run_id: str, reason: str, *, by: str = DEFAULT_HOLDER, head: str = ""
 ) -> dict[str, Any]:
@@ -136,6 +184,7 @@ def hold_delivery(
 
     record = runs._mutate_pointer(run_id, mutation)
     hold = delivery_hold(record) or {}
+    record_hold_in_run_dir(run_id, hold)
     return {"run_id": run_id, "held": True, HOLD_FIELD: hold}
 
 
@@ -166,10 +215,12 @@ def release_hold(
         return record
 
     record = runs._mutate_pointer(run_id, mutation)
+    released = record.get(HOLD_FIELD) or {}
+    record_hold_in_run_dir(run_id, released)
     return {
         "run_id": run_id,
         "held": False,
-        HOLD_FIELD: record.get(HOLD_FIELD) or {},
+        HOLD_FIELD: released,
     }
 
 
@@ -329,48 +380,66 @@ def _emit(payload: Mapping[str, Any], pretty: bool) -> None:
     )
 
 
-def _register_commands() -> None:
-    """Attach the two hold verbs to the crew group, once per process."""
-    from reckon.crew_dispatch_commands import crew
+def register_hold_commands(group: click.Group) -> None:
+    """Attach the two hold verbs to ``group``, once per process.
 
-    if "hold" in crew.commands:
+    The group is passed in rather than imported: this module sits deep in the
+    ``reckon.crew`` graph that the group's module imports, so importing the
+    group back from here closes a cycle and makes the verb module depend on
+    every module in between, which only shows when it is the one imported
+    first.
+    """
+    if "hold" in group.commands:
         return
 
-    @crew.command(name="hold")
+    @group.command(name="hold")
     @click.option("--run", "run_id", required=True, help="The delivered run to hold.")
+    @click.option(
+        "--project", default=None, help="Project owning the run; cross-checks the run."
+    )
     @click.option(
         "--reason", required=True, help="Why the landing is deferred; recorded."
     )
     @click.option("--by", default=DEFAULT_HOLDER, help="Who took the hold.")
     @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-    def crew_hold(run_id: str, reason: str, by: str, pretty: bool) -> None:
+    def crew_hold(
+        run_id: str, project: str | None, reason: str, by: str, pretty: bool
+    ) -> None:
         """Hold a delivered run from automatic promotion and landing.
 
         The landing pass and the review-acceptance sweep both read the hold, so
         a held run waits for its coordinator however clean its evidence reads.
         """
+        from reckon.crew_dispatch_commands import _accept_a_matching_project
+
+        _accept_a_matching_project(run_id, project)
         try:
             result = hold_delivery(run_id, reason, by=by)
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit(result, pretty)
 
-    @crew.command(name="release")
+    @group.command(name="release")
     @click.option("--run", "run_id", required=True, help="The held run to release.")
+    @click.option(
+        "--project", default=None, help="Project owning the run; cross-checks the run."
+    )
     @click.option("--reason", required=True, help="Why the deferral ended; recorded.")
     @click.option("--by", default=DEFAULT_HOLDER, help="Who released the hold.")
     @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-    def crew_release(run_id: str, reason: str, by: str, pretty: bool) -> None:
+    def crew_release(
+        run_id: str, project: str | None, reason: str, by: str, pretty: bool
+    ) -> None:
         """Release a hold so the run is the lander's again.
 
         The release is recorded beside the hold, with its own reason, so the
         run's record explains the delay it carried.
         """
+        from reckon.crew_dispatch_commands import _accept_a_matching_project
+
+        _accept_a_matching_project(run_id, project)
         try:
             result = release_hold(run_id, reason, by=by)
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
         _emit(result, pretty)
-
-
-_register_commands()

@@ -486,7 +486,9 @@ def test_wait_returns_the_synchronous_outcome(repository, monkeypatch):
     )
     assert result.exit_code == 0, result.output
     assert called == [run_id]
-    assert json.loads(result.output)["record"]["commits"] == [repository.sha]
+    receipt = json.loads(result.output)
+    record = json.loads(Path(receipt["record_path"]).read_text())
+    assert record["record"]["commits"] == [repository.sha]
     assert not requests._request_path(run_id).exists()
 
 

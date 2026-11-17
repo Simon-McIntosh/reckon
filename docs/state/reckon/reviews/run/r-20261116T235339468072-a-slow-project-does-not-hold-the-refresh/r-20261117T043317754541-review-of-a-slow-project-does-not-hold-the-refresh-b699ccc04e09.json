@@ -1,0 +1,151 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The held-input fixture does not release or the pending derivation never enters its input; these are fixture controls, not product guards.",
+      "lines": "349,377"
+    },
+    {
+      "fails_if": "The initial fresh prompt returns an error instead of establishing the pre-retention digest.",
+      "lines": "352"
+    },
+    {
+      "fails_if": "The station/export branch is wrong, a live heartbeat is classified stale, or retained-answer freshness is absent; answer_stale is independently required true while heartbeat stale is false.",
+      "lines": "385-389"
+    },
+    {
+      "fails_if": "Reading mutates the stored 180-second marker or fails to advance the returned age to 200 seconds; removing reader-time age recomputation makes the second assertion fail.",
+      "lines": "390,396"
+    },
+    {
+      "fails_if": "Removing the retained header warning or freezing its age removes stale or 3m20s from the independently clocked expected prompt; the reverse-patch receipt demonstrates this failure.",
+      "lines": "392,401"
+    },
+    {
+      "fails_if": "The prompt errors or retains the previous fresh digest and suppresses entering retention; removing retention identity from reading suppresses the nonempty case.",
+      "lines": "397,399"
+    },
+    {
+      "fails_if": "A live station is offered the stopped-station restart command.",
+      "lines": "402"
+    },
+    {
+      "fails_if": "The prompt drops the retained duty or suppresses an explicitly stale empty answer; the supplied run id is an output-preservation expectation, not an equality that survives arbitrary product behavior.",
+      "lines": "403"
+    },
+    {
+      "fails_if": "The second prompt errors or emits the same retained answer again after a one-second age advance; including age_seconds in the digest would redden the silence assertion.",
+      "lines": "405-406"
+    },
+    {
+      "fails_if": "The worker remains pending, the post-refresh prompt errors, or the nonempty fresh list is suppressed or still labelled stale; retaining the retention digest across completion fails the transition guard.",
+      "lines": "411-418"
+    },
+    {
+      "fails_if": "Completion leaves the stored stale marker or reader answer_stale true; returning answer_stale as a constant true fails the final assertion.",
+      "lines": "420-425"
+    }
+  ],
+  "assertion_independence": "No newly added assertion compares a returned value to a self-moving echo; literal elapsed ages, independently selected source and preservation of fixture duty identity each name a regression that fails.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:_prompt:1521",
+    "reckon/hooks/coordinator_obligations.py:_prompt:1559",
+    "reckon/hooks/coordinator_obligations.py:_prompt:1570",
+    "reckon/hooks/coordinator_obligations.py:_prompt:1583",
+    "reckon/hooks/coordinator_obligations.py:_stop:1914",
+    "reckon/crew/obligation_snapshot.py:read_station_answer:696",
+    "reckon/hooks/coordinator_obligations.py:_inject_list:1448"
+  ],
+  "completed_at": "2026-11-17T04:39:43Z",
+  "dispatched_at": "2026-11-17T04:34:40Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/retained-answer-qgst78uc/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/retained-answer-qgst78uc/tree/tests/test_project_refresh_returns_within_its_budget.py /tmp/retained-answer-qgst78uc/tree/tests/test_staged_write_inventory.py /tmp/retained-answer-qgst78uc/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/consumer-after.log",
+      "measurement_cwd": "/tmp/retained-answer-qgst78uc/tree",
+      "measurement_module": "/tmp/retained-answer-qgst78uc/tree/reckon/crew/obligation_snapshot.py",
+      "revision": "b699ccc04e09de52e5154914332fe90ab8d3d8eb"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/project-refresh-resume-7fnqzm2f/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/project-refresh-resume-7fnqzm2f/tree/tests/test_staged_write_inventory.py /tmp/project-refresh-resume-7fnqzm2f/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/baseline-exact.log",
+      "measurement_cwd": "/tmp/project-refresh-resume-7fnqzm2f/tree",
+      "measurement_module": "/tmp/project-refresh-resume-7fnqzm2f/tree/reckon/crew/station_obligations.py",
+      "revision": "3c3aefe8aa6d3231b99011f7b14baa23eda9b14f"
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read commits 7cc44e1210afbb76db85aa8dbf0c2f1e65318a27 and b699ccc04e09de52e5154914332fe90ab8d3d8eb individually against e5e928379223b13acafb80aceab14bb8cf350d1e; they add four reader regressions and repair retained age, rendering and digest transitions in the three requested files.",
+    "done_when": "the source live pointer node.done_when requires the section test, a failing negative control and no importer additions; consumer-after.log records 65 passes and consumer-revert.log four failures, but the importer logs record three additional failures, retained under outside_scope.",
+    "goal": "the source live pointer node.goal and docs/plans/dispatch-admission-and-landing-take-seconds.html section s4 require retained answers to be stale and dated; obligation_snapshot.py:696 and coordinator_obligations.py:914 now carry that fact through the reader and prompt.",
+    "manifest": "the source manifest.md identifies both incremental commits and readable baseline-exact.log, consumer-after.log and consumer-revert.log receipts, and explicitly preserves the three importer additions.",
+    "write_paths": "the source live pointer node.write_paths includes both consumer modules after scope expansion and the section test; all three paths in the incremental diff are declared."
+  },
+  "justifications": {
+    "durability": "tests/test_project_refresh_returns_within_its_budget.py:385-425 independently checks source, heartbeat, stored versus reader age and prompt transitions in four cases and the full repair reversal fails all four, although fresh-empty prompt silence is not explicitly asserted.",
+    "evidence": "consumer-after.log records 65 passed and consumer-revert.log records four failures at tests/test_project_refresh_returns_within_its_budget.py:392, while consumer-importers-after.log adds three ids to its matched base and therefore does not satisfy the entire original gate.",
+    "fit": "obligation_snapshot.py:1633 extends the existing copy-on-read age conversion and coordinator_obligations.py:918,1439 uses the existing age formatter and duty digest without adding prohibited source names.",
+    "goal_fidelity": "obligation_snapshot.py:696 advances retained age at the requested instant and coordinator_obligations.py:914,1395,1428 marks even empty retained lists while preserving heartbeat semantics.",
+    "reuse": "capability searches and reads of roadmap_snapshot.py:604, obligation_snapshot.py:1099,1139 and coordinator_obligations.py:503,544 show the change extends the payload reader and prompt owners and uses the existing formatter and digest; the sole added definition is the section regression test.",
+    "scope_discipline": "the e5e928379223b13acafb80aceab14bb8cf350d1e-to-b699ccc04e09de52e5154914332fe90ab8d3d8eb diff changes only obligation_snapshot.py, coordinator_obligations.py and tests/test_project_refresh_returns_within_its_budget.py, all inside the expanded source-node scope."
+  },
+  "negative_control": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/consumer-revert.log",
+    "reproduction": "AssertionError: a live heartbeat hid the retained answer's staleness and current age",
+    "result": "4 failed, 3 passed in 1.59s; EXIT=1"
+  },
+  "outside_scope": {
+    "explanation": "The source manifest attributes two ids to full-dictionary equality across a 20-second read-clock advance; the third remains unattributed after isolated base/head runs both passed 2 tests. Preserve all three; no out-of-scope code was reviewed or repaired. Coordinator owns follow-up under the source instruction to finish complete.",
+    "importer_added_failure_ids": [
+      "tests/test_a_staleness_verdict_reads_its_rows_source.py::test_a_stale_export_that_is_the_only_source_names_its_file",
+      "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[False]",
+      "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[True]"
+    ],
+    "importer_receipts": {
+      "base": {
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/consumer-importers-base.log",
+        "revision": "7cc44e1210afbb76db85aa8dbf0c2f1e65318a27",
+        "summary": "32 failed, 450 passed in 122.06s (0:02:02)"
+      },
+      "head": {
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/consumer-importers-after.log",
+        "revision": "b699ccc04e09de52e5154914332fe90ab8d3d8eb",
+        "summary": "35 failed, 447 passed in 169.00s (0:02:48)"
+      }
+    }
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source live pointer node.goal and docs/plans/dispatch-admission-and-landing-take-seconds.html section s4 require retained answers to be stale and dated; obligation_snapshot.py:696 and coordinator_obligations.py:914 now carry that fact through the reader and prompt.\nVERDICT done_when: the source live pointer node.done_when requires the section test, a failing negative control and no importer additions; consumer-after.log records 65 passes and consumer-revert.log four failures, but the importer logs record three additional failures, retained under outside_scope.\nVERDICT write_paths: the source live pointer node.write_paths includes both consumer modules after scope expansion and the section test; all three paths in the incremental diff are declared.\nVERDICT manifest: the source manifest.md identifies both incremental commits and readable baseline-exact.log, consumer-after.log and consumer-revert.log receipts, and explicitly preserves the three importer additions.\nVERDICT diff: read commits 7cc44e1210afbb76db85aa8dbf0c2f1e65318a27 and b699ccc04e09de52e5154914332fe90ab8d3d8eb individually against e5e928379223b13acafb80aceab14bb8cf350d1e; they add four reader regressions and repair retained age, rendering and digest transitions in the three requested files.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:_prompt:1521, reckon/hooks/coordinator_obligations.py:_prompt:1559, reckon/hooks/coordinator_obligations.py:_prompt:1570, reckon/hooks/coordinator_obligations.py:_prompt:1583, reckon/hooks/coordinator_obligations.py:_stop:1914, reckon/crew/obligation_snapshot.py:read_station_answer:696, reckon/hooks/coordinator_obligations.py:_inject_list:1448\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: obligation_snapshot.py:696 advances retained age at the requested instant and coordinator_obligations.py:914,1395,1428 marks even empty retained lists while preserving heartbeat semantics.\nSCORE evidence: 17\nJUSTIFICATION evidence: consumer-after.log records 65 passed and consumer-revert.log records four failures at tests/test_project_refresh_returns_within_its_budget.py:392, while consumer-importers-after.log adds three ids to its matched base and therefore does not satisfy the entire original gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the e5e928379223b13acafb80aceab14bb8cf350d1e-to-b699ccc04e09de52e5154914332fe90ab8d3d8eb diff changes only obligation_snapshot.py, coordinator_obligations.py and tests/test_project_refresh_returns_within_its_budget.py, all inside the expanded source-node scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_project_refresh_returns_within_its_budget.py:385-425 independently checks source, heartbeat, stored versus reader age and prompt transitions in four cases and the full repair reversal fails all four, although fresh-empty prompt silence is not explicitly asserted.\nSCORE fit: 20\nJUSTIFICATION fit: obligation_snapshot.py:1633 extends the existing copy-on-read age conversion and coordinator_obligations.py:918,1439 uses the existing age formatter and duty digest without adding prohibited source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches and reads of roadmap_snapshot.py:604, obligation_snapshot.py:1099,1139 and coordinator_obligations.py:503,544 show the change extends the payload reader and prompt owners and uses the existing formatter and digest; the sole added definition is the section regression test.\n",
+  "review_run_id": "r-20261117T043317754541-review-of-a-slow-project-does-not-hold-the-refresh-b699ccc04e09",
+  "reviewed_base_sha": "e5e928379223b13acafb80aceab14bb8cf350d1e",
+  "reviewed_commits": [
+    "7cc44e1210afbb76db85aa8dbf0c2f1e65318a27",
+    "b699ccc04e09de52e5154914332fe90ab8d3d8eb"
+  ],
+  "reviewed_head_sha": "b699ccc04e09de52e5154914332fe90ab8d3d8eb",
+  "reviewed_run_id": "r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh",
+  "revision_note": "Assigned read-only worktree HEAD is 74596dc69798e70de3dc4844701022a221470aa4; all reviewed source and line references were read explicitly through git show at reviewed_head_sha.",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T05:32:05.688365+00:00",
+  "total": 116
+}

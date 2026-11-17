@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/ledger.py:2437 stored_run_rows",
+    "reckon/ledger.py:3946 indexed_run_ids",
+    "reckon/crew/dispatching/preparation.py:143 stored_run_rows",
+    "reckon/crew/open_run_index.py:293 stored_run_rows",
+    "reckon/crew/open_run_index.py:368 stored_run_rows",
+    "reckon/crew/open_run_index.py:585 stored_run_rows",
+    "reckon/mcp_views.py:1934 stored_run_rows",
+    "reckon/velocity.py:823 stored_run_rows"
+  ],
+  "completed_at": "2026-11-16T23:28:20.418Z",
+  "dispatched_at": "2026-11-16T23:27:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a test count in the evidence prose; the base log is the record",
+      "recorded_at": "2026-11-17T00:17:24.052038+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a revision label in the evidence prose; the after-suite log's header is the record",
+      "recorded_at": "2026-11-17T00:17:26.370534+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/unreadable-store-is-an-error-s29.html",
+      "line": "103",
+      "severity": "non-blocking",
+      "text": "the arms paragraph says three of the seven tests the file then held fail at base, but the delivered tests/test_an_unreadable_store_is_an_error.py defines eight tests and logs/base-new-tests.log reports 3 failed and 3 passed over a six-test copy naming run_store.UnreadableRunStore, a symbol that never existed in the delivered file, so neither the count nor the recorded base arm corresponds to the delivered test file and the done-when's each-failing-at-base claim has no log measured against it."
+    },
+    {
+      "file": "docs/evidence/fragments/history-persists-as-detail-washes-out/unreadable-store-is-an-error-s29.html",
+      "line": "99",
+      "severity": "non-blocking",
+      "text": "the arms paragraph names head 2abf394180 for the 66-passed arm while logs/after-suite.log records that run at revision c96bcbd374, so the fragment and the log it cites name different revisions for one measurement."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified seven production readers of the changed functions: reckon/ledger.py:2437 and :3946, reckon/crew/dispatching/preparation.py:143, reckon/crew/open_run_index.py:293, :368 and :585, reckon/mcp_views.py:1934 and reckon/velocity.py:823.",
+    "diff": "read commit by commit at base 8e542a224c through 24f983870b, 78212ea61f, 3fbd898502, e622d8f99a, ccb4832a20, 2abf394180, c96bcbd374 and merge b174cea09a; the node adds the refusal class, the single record join and eight tests, and the merge re-applies the refusal on main's run_store structure.",
+    "done_when": "done_when names three error arms, a migration refusal or migration, one record join and a reader-equality test; tests/test_an_unreadable_store_is_an_error.py holds eight tests for them and logs/after-suite.log records 66 passed with EXIT=0 at c96bcbd374.",
+    "goal": "the node goal is to make a ledger read over an unreadable run store raise naming the store and cause; reckon/run_store.py:686 stored_run_rows and :1648 indexed_run_ids now raise UnreadableRunStoreError with the store path and the cause for every measured shape.",
+    "manifest": "read; it reports after 66 passed and base 58 passed, three negative-control mutations each red, and it discloses that the merge took origin/main's reckon/ledger.py, but its base-new-tests claim of 3 of 7 failing does not match logs/base-new-tests.log, which records 3 failed and 3 passed over a draft that names run_store.UnreadableRunStore.",
+    "write_paths": "the declared write paths are reckon/run_store.py, reckon/ledger.py, tests/test_an_unreadable_store_is_an_error.py and the evidence fragment; every path the node's own commits touch is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unreadable_store_is_an_error.py:161 fails DID NOT RAISE when the query swallow is restored (logs/negative-control-a.log), :138 fails when a failed attach is passed over (negative-control-c.log), :186 fails when _refuse_owed_migration returns (negative-control-b.log), and :227 fails if the refusal keys on the schema record instead of the table shape.",
+    "evidence": "logs/after-suite.log records 66 passed with EXIT=0 at revision c96bcbd374 and logs/negative-control-a.log, -b.log and -c.log each record a single failing test, but the base arm for the new test file, logs/base-new-tests.log, ran a six-test draft that names run_store.UnreadableRunStore rather than the eight-test delivered file.",
+    "fit": "reckon/run_store.py:172 declares UnreadableRunStoreError(RuntimeError), the same base class as the RuntimeError refusal it replaces, in the module-level helper and docstring idiom the surrounding functions use.",
+    "goal_fidelity": "reckon/run_store.py:692 stored_run_rows raises UnreadableRunStoreError through _unreadable for a damaged file, a failed archive attach and a payloadless runs table, and reckon/run_store.py:1648 indexed_run_ids raises it too, so a ledger read refuses rather than answering an empty population.",
+    "reuse": "reckon/run_store.py:372 _record_rows is the module's single record join, and both RunStore._indexed_records at :1207 and stored_run_rows at :713 call it; the exception refines main's existing RuntimeError refusal rather than adding a second reader.",
+    "scope_discipline": "the node's seven commits touch only reckon/run_store.py, tests/test_an_unreadable_store_is_an_error.py and docs/evidence/fragments/history-persists-as-detail-washes-out/unreadable-store-is-an-error-s29.html, all inside its four declared write paths, and its only reckon/ledger.py edit is a docstring the main merge dropped rather than a scope breach."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a ledger read over an unreadable run store raise naming the store and cause; reckon/run_store.py:686 stored_run_rows and :1648 indexed_run_ids now raise UnreadableRunStoreError with the store path and the cause for every measured shape.\nVERDICT done_when: done_when names three error arms, a migration refusal or migration, one record join and a reader-equality test; tests/test_an_unreadable_store_is_an_error.py holds eight tests for them and logs/after-suite.log records 66 passed with EXIT=0 at c96bcbd374.\nVERDICT write_paths: the declared write paths are reckon/run_store.py, reckon/ledger.py, tests/test_an_unreadable_store_is_an_error.py and the evidence fragment; every path the node's own commits touch is inside that set.\nVERDICT manifest: read; it reports after 66 passed and base 58 passed, three negative-control mutations each red, and it discloses that the merge took origin/main's reckon/ledger.py, but its base-new-tests claim of 3 of 7 failing does not match logs/base-new-tests.log, which records 3 failed and 3 passed over a draft that names run_store.UnreadableRunStore.\nVERDICT diff: read commit by commit at base 8e542a224c through 24f983870b, 78212ea61f, 3fbd898502, e622d8f99a, ccb4832a20, 2abf394180, c96bcbd374 and merge b174cea09a; the node adds the refusal class, the single record join and eight tests, and the merge re-applies the refusal on main's run_store structure.\nCALL_SITES: reckon/ledger.py:2437 stored_run_rows, reckon/ledger.py:3946 indexed_run_ids, reckon/crew/dispatching/preparation.py:143 stored_run_rows, reckon/crew/open_run_index.py:293 stored_run_rows, reckon/crew/open_run_index.py:368 stored_run_rows, reckon/crew/open_run_index.py:585 stored_run_rows, reckon/mcp_views.py:1934 stored_run_rows, reckon/velocity.py:823 stored_run_rows\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:692 stored_run_rows raises UnreadableRunStoreError through _unreadable for a damaged file, a failed archive attach and a payloadless runs table, and reckon/run_store.py:1648 indexed_run_ids raises it too, so a ledger read refuses rather than answering an empty population.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/after-suite.log records 66 passed with EXIT=0 at revision c96bcbd374 and logs/negative-control-a.log, -b.log and -c.log each record a single failing test, but the base arm for the new test file, logs/base-new-tests.log, ran a six-test draft that names run_store.UnreadableRunStore rather than the eight-test delivered file.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node's seven commits touch only reckon/run_store.py, tests/test_an_unreadable_store_is_an_error.py and docs/evidence/fragments/history-persists-as-detail-washes-out/unreadable-store-is-an-error-s29.html, all inside its four declared write paths, and its only reckon/ledger.py edit is a docstring the main merge dropped rather than a scope breach.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_unreadable_store_is_an_error.py:161 fails DID NOT RAISE when the query swallow is restored (logs/negative-control-a.log), :138 fails when a failed attach is passed over (negative-control-c.log), :186 fails when _refuse_owed_migration returns (negative-control-b.log), and :227 fails if the refusal keys on the schema record instead of the table shape.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/run_store.py:172 declares UnreadableRunStoreError(RuntimeError), the same base class as the RuntimeError refusal it replaces, in the module-level helper and docstring idiom the surrounding functions use.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/run_store.py:372 _record_rows is the module's single record join, and both RunStore._indexed_records at :1207 and stored_run_rows at :713 call it; the exception refines main's existing RuntimeError refusal rather than adding a second reader.\nFINDING docs/evidence/fragments/history-persists-as-detail-washes-out/unreadable-store-is-an-error-s29.html:103 non-blocking: the arms paragraph says three of the seven tests the file then held fail at base, but the delivered tests/test_an_unreadable_store_is_an_error.py defines eight tests and logs/base-new-tests.log reports 3 failed and 3 passed over a six-test copy naming run_store.UnreadableRunStore, a symbol that never existed in the delivered file, so neither the count nor the recorded base arm corresponds to the delivered test file and the done-when's each-failing-at-base claim has no log measured against it.\nFINDING docs/evidence/fragments/history-persists-as-detail-washes-out/unreadable-store-is-an-error-s29.html:99 non-blocking: the arms paragraph names head 2abf394180 for the 66-passed arm while logs/after-suite.log records that run at revision c96bcbd374, so the fragment and the log it cites name different revisions for one measurement.\n",
+  "review_run_id": "r-20261116T232525311714-review-of-unreadable-store-is-an-error-s29-c96bcbd374a5",
+  "reviewed_base_sha": "8e542a224cda04df031db459c8eae701949f0b11",
+  "reviewed_head_sha": "c96bcbd374a5fa8a55b0efcebd1f4c06f9bac939",
+  "reviewed_run_id": "r-20261115T183302422646-unreadable-store-is-an-error-s29",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:03:45.332332+00:00",
+  "total": 107
+}
