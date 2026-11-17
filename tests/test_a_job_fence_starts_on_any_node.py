@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import base64
-import hashlib
 import json
 import os
 import shlex
@@ -16,6 +15,7 @@ import pytest
 
 from reckon import _worker_fence as fence
 from reckon import nested_launch
+from tests.test_shared_environments_are_read_only import _identity
 
 TASK = r"""
 import json, os, pathlib, socket, subprocess, sys
@@ -101,11 +101,6 @@ def rehearsal(tmp_path, monkeypatch):
             "argv": argv,
             "recipe": json.loads(base64.urlsafe_b64decode(encoded)),
         }
-
-
-def _identity(path):
-    stat = path.stat()
-    return stat.st_size, stat.st_mtime_ns, hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _task(case, report):
