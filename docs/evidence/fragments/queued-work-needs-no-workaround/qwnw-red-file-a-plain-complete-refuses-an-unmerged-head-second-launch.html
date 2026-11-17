@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch-landing">
+  <h3>A plain complete's guard is exercised through the synchronous wait</h3>
+  <p>The file read <code>7 failed, 3 passed</code> at base
+  <code>0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc</code> from two causes, with a
+  different verdict for each.</p>
+  <table id="qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Every case that reads the promotion's outcome failed although the
+        refusal text matched: <code>crew complete</code> without
+        <code>--wait</code> now writes a durable promotion request and returns
+        <code>{"phase": "promotion-requested"}</code> instead of promoting, so
+        the pointer stayed live in the passing cases and the refusing cases
+        queued rather than refusing.</td>
+        <td>test wrong</td>
+        <td>A plain <code>crew complete</code> is asynchronous by default and
+        carries out the promotion in the calling process only with
+        <code>--wait</code> (<code>1ff2fb47fe</code>); the check is unchanged.</td>
+      </tr>
+      <tr>
+        <td>Once the call waited, the review-run case alone refused:
+        <code>run 'r-…-node-a' has a passing gate and cites no commit, but its
+        worktree is at … rather than its base …</code></td>
+        <td>product wrong</td>
+        <td>A review run's worktree is the reviewed node's tree at the reviewed
+        head, not a commit the review made, so the commitless guard must not
+        measure it against the review's own base. The reviewed head is carried
+        by design, as the plain-complete head guard already assumes.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The test change adds <code>--wait</code> to its
+  <code>_complete_plain</code> invocation and no assertion is deleted or
+  weakened. The product change returns early from
+  <code>_require_worktree_at_its_base</code> for a review run, the same
+  exemption the plain-complete head guard carries.</p>
+  <p>Arms, both as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code>
+  unset, both running
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_plain_complete_refuses_an_unmerged_head.py</code>:
+  at base <code>0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc</code> the file reads
+  <code>7 failed, 3 passed in 4.63s</code> with <code>EXIT=1</code>; at head
+  <code>e2eb735875211f127772aa8541a609ae2a86d9f4</code> it reads
+  <code>10 passed in 6.16s</code> with <code>EXIT=0</code>.</p>
+  <p>The base arm's failing ids, from the red log beside the head run:</p>
+  <pre id="qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch-red-ids">FAILED tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_plain_complete_on_an_unmerged_head_refuses_and_leaves_the_run
+FAILED tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_plain_complete_on_a_head_the_branch_carries_promotes
+FAILED tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_head_fast_forwarded_locally_but_not_pushed_is_refused
+FAILED tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_failed_gate_on_an_unmerged_head_promotes_as_before
+FAILED tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_review_run_promotes_without_reading_the_remote
+FAILED tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_an_unreachable_remote_refuses_naming_the_failed_fetch
+FAILED tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_remote_with_no_primary_ref_refuses_naming_the_missing_ref</pre>
+  <p id="qwnw-red-file-a-plain-complete-refuses-an-unmerged-head-second-launch-mutation">Negative
+  control for the guard the file covers: with the file's own declared mutation,
+  <code>RECKON_COMPLETE_SKIP_HEAD_CHECK=1</code> replacing
+  <code>_refuse_a_plain_complete_off_the_branch</code> with a no-op, the head
+  tree reads <code>1 failed, 9 passed in 8.37s</code> and the failure is
+  <code>test_a_plain_complete_on_an_unmerged_head_refuses_and_leaves_the_run</code>'s
+  refusal assertion, so the head guard is shown to fire rather than merely to
+  pass.</p>
+  <p>An arm over the test files that import the changed module — twenty-one
+  files naming <code>reckon.crew.promotion_evidence</code> or its guards — reads
+  the same seven failing ids at base and at head, so the product change adds no
+  failure. <code>ruff check</code> and <code>ruff format --check</code> report
+  no finding on either changed path.</p>
+</section>

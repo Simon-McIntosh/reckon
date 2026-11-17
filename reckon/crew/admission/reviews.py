@@ -153,14 +153,20 @@ def record_review_contract(pointer: Mapping[str, Any]) -> bool:
 
     The write happens under the pointer's own lock and only while the request
     still waits, so a pointer that has been launched is left alone. A pointer
-    that cannot be written keeps no contract and is not held on one.
+    that cannot be written keeps no contract and is not held on one, and so does
+    one whose stored node cannot be rebuilt: a request missing a field its node
+    requires is judged by the dispatch gate it was queued under, never left
+    half-stamped by an exception raised out of the caller's queue write.
     """
     if not isinstance(pointer, dict):
         return False
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return False
-    node = _launching._node_from_pointer(pointer)
+    try:
+        node = _launching._node_from_pointer(pointer)
+    except TypeError:
+        return False
     if not node.plan.strip():
         return False
     contract = review_contract(node, repo_root=str(pointer.get("repo") or ""))

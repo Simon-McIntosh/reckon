@@ -1,0 +1,93 @@
+<section id="qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch-landing">
+<h3>No cause reproduces: the file passes in full at head</h3>
+<p>The named file passes in full without a repair, so there was no cause to rule
+on. At the assigned base <code>0e0f25b0f941</code> it read
+<code>25 passed in 41.21s</code>; at the head of this node,
+<code>8d5be69198</code>, it read <code>25 passed in 35.81s</code> as its own
+<code>all_debug</code> job (1319589, on <code>98dci4-clu-3143</code>) with
+<code>SLURM_JOB_ID</code> unset inside the gate. Merging the current
+<code>origin/main</code> was a no-op: it is an ancestor of the assigned base, so
+the tree the gate ran against already carries it.</p>
+<p>The <code>25 failed</code> recorded against revision <code>8d50b0333f</code>
+does not reproduce at that revision either. Exported with <code>git archive</code>
+to a tree of its own, the file reads <code>25 passed in 39.12s</code> there. Only
+one commit has ever touched it, <code>5695689722</code> <q>reserve path claims
+for nonmergeable artifacts</q>, and that commit is an ancestor of
+<code>8d50b0333f</code>, so the file and the product rule it asserts were already
+at their present state when the red figure was taken. The recorded count is
+therefore a fact about that whole-suite run — 393 files sharing one crew home —
+and not about this file's assertions. Reading the whole suite is the
+neighbouring test node's measure, not this one's, and this node asserts nothing
+about it.</p>
+<h4>Verdict on each cause</h4>
+<table>
+<thead><tr><th>Cause</th><th>Verdict</th><th>What shows it</th></tr></thead>
+<tbody>
+<tr><td>25 failing or erroring ids recorded at <code>8d50b0333f</code></td>
+<td>no cause to rule on: it does not reproduce at that revision</td>
+<td>the same file, extracted from that revision and run alone, reads
+<code>25 passed</code></td>
+</tr>
+</tbody>
+</table>
+<p>Nothing was deleted, weakened or rewritten: the node changes no Python and no
+test file. Its only change is this record.</p>
+<h4>Negative control: the rule this file guards still refuses</h4>
+<p>A passing suite never shows that a guard fires, so the guarded rule was made
+false in place. <code>DEFAULT_EXCLUSIVE_PATHS</code> in
+<code>reckon/crew/runs.py</code> gained <code>"reckon/"</code>, which declares a
+mergeable source tree unmergeable; the file then read
+<code>14 failed, 11 passed in 33.16s</code>: a directory claim over a live source
+file refused as an exclusive class. The mutation was reverted before the commit
+and <code>git diff</code> against the base is empty. The log is
+<code>negative-control-reckon-exclusive.log</code> in the node's run directory.
+Failing ids: <code>test_a_directory_and_its_live_file_are_dispatched_and_launched</code>
+(three cases), <code>test_a_queued_directory_is_admitted_past_a_file_claim</code>
+(two), <code>test_a_worker_widens_onto_a_live_source_claim</code>,
+<code>test_a_sharing_declaration_cannot_reintroduce_a_source_hold</code> (two),
+<code>test_shared_edits_land_or_return_the_real_conflict_for_repair</code> (two),
+<code>test_promotion_acceptance_never_holds_on_a_source_peer</code> (two),
+<code>test_peer_declarations_are_information_in_validation_and_the_brief</code>,
+<code>test_source_sharing_does_not_need_a_root_declaration_or_existing_directory</code>.</p>
+<pre>
+# revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc + negative-control mutation in reckon/crew/runs.py
+# exact: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_only_unmergeable_paths_are_claimed.py
+14 failed, 11 passed in 33.16s
+EXIT=1
+</pre>
+<h4>The gate at head</h4>
+<p>Re-run after the record-only commit <code>6a7ffbd9d4</code>, whose only
+change is this fragment: the same command read <code>25 passed in
+35.85s</code> there, as job 1319594 on <code>98dci4-clu-3142</code>. The block
+below is that run.</p>
+<pre>
+# revision: 6a7ffbd9d40cc979cb9ab8d2e58ba3d198676dbf (head tree)
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_only_unmergeable_paths_are_claimed.py
+# host: 98dci4-clu-3142.iter.org  slurm job: 1319594
+# environment: SLURM_JOB_ID unset
+.........................                                                [100%]
+25 passed in 35.85s
+EXIT=0
+</pre>
+<h4>The suite arms</h4>
+<p>The command the promotion fence names, resolved with this node's write scope
+and run over each arm's own tree: <code>58 passed</code> on both.</p>
+<pre>
+baseline (0e0f25b0, this worktree before any change)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 42.08s
+EXIT=0
+
+after (8d5be69198, this worktree at head)
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 33.70s
+EXIT=0
+</pre>
+<p><code>ruff check</code> and <code>ruff format --check</code> report nothing new
+on the changed Python path: this node's only changed path is this fragment, which
+is not Python, and the one module the negative-control mutation touched and
+reverted — <code>reckon/crew/runs.py</code> — reports
+<code>All checks passed!</code> and <code>1 file already formatted</code>.</p>
+</section>

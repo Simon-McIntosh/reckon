@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite at 8fdf3958 has failure_count 4 with the four ids recorded in logs/baseline-suite-8fdf3958.log, after_suite at 653825f5b0 has failure_count 0, so the after set adds nothing to the base arm.",
+  "assertion_audit": {},
+  "assertion_independence": "The node adds no assertion of its own: the diff inserts six fixture arguments and an evidence fragment. Its regression guard is the pre-existing cases at tests/test_a_node_names_its_inputs_and_measurement.py:382-481, which read payload[\"validation\"][\"findings\"], payload[\"ok\"] and payload[\"warnings\"] derived by the CLI, and test_a_node_rebuilt_from_its_stored_record_reports_the_same_warning compares the payload's warning against a warning independently recomputed through admission.admission_domain_findings, so no assertion compares a value against the variable the test itself passed in.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T13:53:49.389Z",
+  "dispatched_at": "2026-11-16T13:52:56Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-names-its-inputs-and-measurement.html",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment names job 1319963 as the head arm while manifest.md:11 and the last head receipt name job 1319965 at 653825f5b0 (logs/head-suite-653825f5b0.log), and commit 653825f5b0 states it cites the job the head arm last ran as, so the durable record names neither the last job nor the reviewed head revision."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-names-its-inputs-and-measurement.html",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes '16 passed in 1.03s' for the block it attributes to revision 37a9554e99 and job 1319963, while logs/head-suite-37a9554e99.log's summary line reads '16 passed in 1.57s' and 1.03s is the summary of the earlier in-place run at logs/head-suite-c42992bca9.log, so a reader reconciling the fragment against the receipt it names finds a block that was never refreshed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "emitted as the CALL_SITES line: none, because the landed change is a test fixture and an evidence fragment that no runtime module reaches.",
+    "diff": "Read all three commits against base 8fdf3958 commit by commit: c42992bca9 adds the six-line --unplanned-reason block to _dry_run_arguments, 37a9554e99 adds the 24-line evidence fragment, 653825f5b0 rewrites two fragment lines to cite a job and revision; no product source changed.",
+    "done_when": "Read the source node's done_when in dispatch-detail.json; the head receipt logs/head-suite-653825f5b0.log records 16 passed EXIT=0 for that file as its own all_debug job with SLURM_JOB_ID unset, logs/baseline-suite-8fdf3958.log records the four named ids red at the base, the manifest states one cause with verdict test wrong, and the diff adds six lines with no assertion deleted or loosened, though the fragment's quoted head block does not match the receipt it cites (see findings).",
+    "goal_fidelity": "Read the source node's goal in dispatch-detail.json (make tests/test_a_node_names_its_inputs_and_measurement.py pass in full on the primary branch); the six-line fixture block at tests/test_a_node_names_its_inputs_and_measurement.py:368-377 is the change that turns the file green, and logs/head-suite-653825f5b0.log records 16 passed with EXIT=0 at the reviewed head.",
+    "manifest": "Read manifest.md; it states status complete, gives the literal gate command, names both arm logs and the two mutation logs, and its baseline_suite (4 failed, 4 ids) and after_suite (0 failed, exit 0 at 653825f5b0) reconcile with those logs' own summary lines, while its head-arm job 1319965 disagrees with the fragment's 1319963 (see findings).",
+    "write_paths": "Read the source node's write_paths in dispatch-detail.json (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround) and manifest.md:3; git diff 8fdf3958..653825f5b0 changes only tests/test_a_node_names_its_inputs_and_measurement.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-names-its-inputs-and-measurement.html, both inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_node_names_its_inputs_and_measurement.py:465-481 asserts on payload[\"validation\"] findings and payload[\"warnings\"] the CLI derived, not on the arguments the fixture handed in, and logs/baseline-suite-8fdf3958.log shows those same four tests red at 8fdf3958 \u2014 the head file minus precisely these six lines \u2014 so deleting the block reddens them again.",
+    "evidence": "logs/head-suite-653825f5b0.log:1 names the reviewed revision and command and its last line reads EXIT=0 while logs/baseline-suite-8fdf3958.log ends EXIT=1 with the four ids, but the fragment's block at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-names-its-inputs-and-measurement.html:14-19 quotes a job and revision whose own receipt does not carry its summary line.",
+    "fit": "The hunk at tests/test_a_node_names_its_inputs_and_measurement.py:371-376 passes an existing option (reckon/crew_dispatch_commands.py:1251) with the file's own comment-carrying-rationale idiom and introduces no identifier, and ruff check plus ruff format --check on that path were re-run clean under this review.",
+    "goal_fidelity": "tests/test_a_node_names_its_inputs_and_measurement.py:368-377 supplies the plan owner the brief-implementing dispatch owes, and logs/head-suite-653825f5b0.log records the whole file at 16 passed EXIT=0 at 653825f5b0.",
+    "reuse": "The change adds no definition: it uses the owner of the plan-owner channel, brief_plan_owner_finding at reckon/crew/node.py:1277 with its CLI surface at reckon/crew_dispatch_commands.py:1251, found by searching reckon for unplanned_reason and for the owner refusal, so nothing is duplicated.",
+    "scope_discipline": "git diff --stat 8fdf3958..653825f5... shows exactly two files and 30 inserted lines, both paths inside the manifest's declared write paths, with no plan or index write."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source node's goal in dispatch-detail.json, to make tests/test_a_node_names_its_inputs_and_measurement.py pass in full on the primary branch; the six-line fixture block at tests/test_a_node_names_its_inputs_and_measurement.py:368-377 is what turns the file green and logs/head-suite-653825f5b0.log records 16 passed EXIT=0 at the reviewed head.\nVERDICT done_when: Read the source node's done_when in dispatch-detail.json; logs/head-suite-653825f5b0.log records 16 passed EXIT=0 for the named file as its own all_debug job with SLURM_JOB_ID unset, logs/baseline-suite-8fdf3958.log records the four named ids red at 8fdf3958, the manifest states one cause with verdict test wrong, and the diff adds six lines with no assertion deleted or loosened, though the fragment's head block does not match the receipt it cites.\nVERDICT write_paths: Read node.write_paths in dispatch-detail.json (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround) and manifest.md:3, and git diff 8fdf3958..653825f5b0 changes only tests/test_a_node_names_its_inputs_and_measurement.py and the one fragment under that directory.\nVERDICT manifest: Read manifest.md; it states complete, gives the literal gate command, names both arms and their logs, and its 16 passed / 4 failed figures reconcile with the two logs, while its head-arm job 1319965 disagrees with the fragment's 1319963.\nVERDICT diff: Read all three commits c42992bca9, 37a9554e99 and 653825f5b0 against base 8fdf3958 commit by commit; they add the six-line fixture block, the 24-line evidence fragment and a two-line fragment correction, with no product source changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_node_names_its_inputs_and_measurement.py:368-377 supplies the plan owner the brief-implementing dispatch owes and logs/head-suite-653825f5b0.log records the file at 16 passed EXIT=0.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-suite-653825f5b0.log ends EXIT=0 and logs/baseline-suite-8fdf3958.log ends EXIT=1 with the four ids, but the fragment's block at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-names-its-inputs-and-measurement.html:14-19 cites a job and revision its own receipt does not carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly tests/test_a_node_names_its_inputs_and_measurement.py:365-377 and the declared fragment, both inside the manifest's write paths, and two files carry all 30 added lines.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_node_names_its_inputs_and_measurement.py:382-481 asserts on payload-derived validation findings and warnings (lines 394-406, 416-424, 451 and 474-481) rather than the fixture's arguments, and logs/baseline-suite-8fdf3958.log shows those four tests red at the head minus exactly these six lines.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_node_names_its_inputs_and_measurement.py:371-376 uses the existing --unplanned-reason option declared at reckon/crew_dispatch_commands.py:1251 with the file's own rationale comment, adds no identifier, and ruff check and ruff format --check on that path re-run clean under this review.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the plan-owner channel is owned by brief_plan_owner_finding at reckon/crew/node.py:1277 with its CLI surface at reckon/crew_dispatch_commands.py:1251, so the fixture extends the owner instead of forking it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-names-its-inputs-and-measurement.html:15 non-blocking: the fragment names job 1319963 as the head arm while manifest.md and the last head receipt name 1319965 at 653825f5b0, so the durable record names neither the last job nor the reviewed head revision.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-node-names-its-inputs-and-measurement.html:18 non-blocking: the fragment quotes '16 passed in 1.03s' for revision 37a9554e99 and job 1319963 while logs/head-suite-37a9554e99.log records '16 passed in 1.57s' and 1.03s belongs to the earlier in-place run at logs/head-suite-c42992bca9.log.\n",
+  "review_run_id": "r-20261116T135134546638-review-of-qwnw-red-file-a-node-names-its-inputs-and-measurement-653825f5b0f4",
+  "reviewed_base_sha": "8fdf39585f1fb4b05ac8a6e5b707a7c651d42176",
+  "reviewed_commits": [
+    "c42992bca919eb297da1b20ab5d8e037db926e87",
+    "37a9554e99594e5a3d3a222e7fb46cba834eb6f8",
+    "653825f5b0f407983f8251e36734550be0c6e221"
+  ],
+  "reviewed_head_sha": "653825f5b0f407983f8251e36734550be0c6e221",
+  "reviewed_run_id": "r-20261116T104633965314-qwnw-red-file-a-node-names-its-inputs-and-measurement",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_node_names_its_inputs_and_measurement.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104633965314-qwnw-red-file-a-node-names-its-inputs-and-measurement/logs/head-suite-653825f5b0.log",
+      "revision": "653825f5b0f407983f8251e36734550be0c6e221"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_node_names_its_inputs_and_measurement.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_a_node_names_its_inputs_and_measurement.py::test_the_dry_run_refuses_the_missing_input_and_warns_the_comparison",
+        "tests/test_a_node_names_its_inputs_and_measurement.py::test_the_dry_run_admits_a_model_node_and_warns_the_comparison",
+        "tests/test_a_node_names_its_inputs_and_measurement.py::test_a_node_rebuilt_from_its_stored_record_reports_the_same_warning",
+        "tests/test_a_node_names_its_inputs_and_measurement.py::test_the_dry_run_admits_a_node_that_answers_both_checks"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104633965314-qwnw-red-file-a-node-names-its-inputs-and-measurement/logs/baseline-suite-8fdf3958.log",
+      "revision": "8fdf39585f1fb4b05ac8a6e5b707a7c651d42176"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T14:58:00.000000+00:00",
+  "total": 112
+}

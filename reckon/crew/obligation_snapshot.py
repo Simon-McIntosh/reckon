@@ -38,6 +38,7 @@ import hashlib
 import json
 import os
 import re
+import socket
 import sys
 import traceback
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -329,6 +330,7 @@ def station_runtime_candidate(
 
 
 STATION_SNAPSHOT_NAME = "station-snapshot.json"
+STATION_HEARTBEAT_NAME = "station-heartbeat.json"
 
 
 def station_database_name() -> str:
@@ -352,6 +354,7 @@ STATION_STALE_SECONDS = FRESHNESS_WINDOW_SECONDS
 STATION_TICK_STAGE_KEY = "tick_stage"
 STATION_TICK_STARTED_AT_KEY = "tick_started_at"
 STATION_TICK_FINISHED_AT_KEY = "tick_finished_at"
+STATION_LAST_TICK_KEY = "last_tick"
 STATION_TICK_STAGES = (
     "store-tick",
     "classify",
@@ -372,6 +375,59 @@ def station_snapshot_path(project: str, *, home: str | Path | None = None) -> Pa
     """Where a station republishes one project's snapshot for off-node readers."""
     base = Path(home) if home is not None else crew_home()
     return base / "obligations" / _project_token(project) / STATION_SNAPSHOT_NAME
+
+
+def station_reading_path(
+    host: str, job: str, *, home: str | Path | None = None
+) -> Path:
+    """One small health publication per station host and allocation."""
+    base = Path(home) if home is not None else crew_home()
+    identity = hashlib.sha256(json.dumps([host, job]).encode()).hexdigest()
+    return base / "station-readings" / f"{identity}.json"
+
+
+def publish_station_reading(
+    markers: Mapping[str, str], *, home: str | Path | None = None
+) -> Path:
+    """Publish the beat and tick without rewriting any session's obligations."""
+    from reckon._store import write_json_atomically
+
+    host, job = socket.gethostname(), os.environ.get("SLURM_JOB_ID", "")
+    return write_json_atomically(
+        station_reading_path(host, job, home=home),
+        {"host": host, "job": job, "station": dict(markers)},
+        fsync=False,
+    )
+
+
+def _exported_station_markers(
+    station: Mapping[str, Any], *, home: str | Path | None = None
+) -> dict[str, Any]:
+    """Use health from the exporting station only, never an unrelated live one."""
+    markers = dict(station)
+    host, job = station.get("host"), station.get("job")
+    if not isinstance(host, str) or not host or not isinstance(job, str):
+        return markers
+    try:
+        reading = json.loads(station_reading_path(host, job, home=home).read_text())
+    except (OSError, ValueError):
+        return markers
+    if not isinstance(reading, Mapping) or (
+        reading.get("host"),
+        reading.get("job"),
+    ) != (
+        host,
+        job,
+    ):
+        return markers
+    current = reading.get("station")
+    if not isinstance(current, Mapping):
+        return markers
+    beat = _parse_instant(current.get("heartbeat"))
+    carried = _parse_instant(station.get("heartbeat"))
+    if beat is not None and (carried is None or beat >= carried):
+        return dict(current)
+    return markers
 
 
 def station_heartbeat_age(value: Any, *, now: datetime | None = None) -> int | None:
@@ -403,6 +459,15 @@ def station_tick_reading(
         return stage, None
     instant = _utc_now() if now is None else now
     return stage, max(0, int((instant - started).total_seconds()))
+
+
+def _last_tick_reading(markers: Mapping[str, Any]) -> dict[str, Any]:
+    """The completed measurement, retained while the current tick runs."""
+    try:
+        record = json.loads(markers.get(STATION_LAST_TICK_KEY) or "null")
+    except (TypeError, ValueError):
+        return {}
+    return {"last_tick": record} if isinstance(record, dict) else {}
 
 
 def _running_tick_start(markers: Mapping[str, Any], tick_age: int | None) -> str:
@@ -462,11 +527,38 @@ def _station_read(database: Path, read: Callable[[Any], Any]) -> tuple[bool, Any
 
 
 def _station_markers(connection: Any) -> dict[str, str]:
-    """The station table's own key/value rows, without a session's document."""
-    return {
+    """The station's beat and tick, without unrelated maintenance records."""
+    markers = {
         str(key): str(value)
-        for key, value in connection.execute("SELECT key, value FROM station")
+        for key, value in connection.execute(
+            "SELECT key, value FROM station WHERE key IN (?, ?, ?, ?, ?, ?)",
+            (
+                "heartbeat",
+                STATION_TICK_STAGE_KEY,
+                STATION_TICK_STARTED_AT_KEY,
+                STATION_TICK_FINISHED_AT_KEY,
+                "store_identity",
+                STATION_LAST_TICK_KEY,
+            ),
+        )
     }
+    # The beat is independent of SQLite's writer lock. Bind it to this store
+    # so replacing a database cannot borrow the previous store's liveness.
+    database = connection.execute("PRAGMA database_list").fetchone()[2]
+    try:
+        beat = json.loads((Path(database).parent / STATION_HEARTBEAT_NAME).read_text())
+    except (OSError, ValueError):
+        return markers
+    if (
+        isinstance(beat, Mapping)
+        and markers.get("store_identity")
+        and (beat.get("store_identity") == markers["store_identity"])
+    ):
+        stamped = _parse_instant(beat.get("heartbeat"))
+        carried = _parse_instant(markers.get("heartbeat"))
+        if stamped is not None and (carried is None or stamped >= carried):
+            markers["heartbeat"] = str(beat["heartbeat"])
+    return markers
 
 
 def _read_station_document(
@@ -523,9 +615,7 @@ def read_station_tick(
 ) -> dict[str, Any] | None:
     """The station store's own beat and running tick, read without a session.
 
-    The exported snapshot carries the heartbeat and nothing about the tick, so a
-    reader that fell back to it cannot tell a station working through a long
-    tick from one that stopped. This is the station's answer to that question:
+    This is the local station's answer without a session document:
     the beat, the stage a running tick has entered, the instant that tick
     started, and the verdict those two ages make. The started instant identifies
     the tick, so a reader can report one row per tick rather than one per sample.
@@ -557,6 +647,7 @@ def read_station_tick(
         "tick_age_seconds": tick_age,
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": age > STATION_STALE_SECONDS,
+        **_last_tick_reading(markers),
     }
 
 
@@ -583,8 +674,11 @@ def _read_station_export(
     exported = dict(document)
     exported.setdefault("project", snapshot.get("project"))
     station = snapshot.get("station")
-    beat = station.get("heartbeat") if isinstance(station, Mapping) else None
-    exported["_station_heartbeat"] = beat
+    exported["_station_markers"] = (
+        _exported_station_markers(station, home=home)
+        if isinstance(station, Mapping)
+        else {}
+    )
     return exported
 
 
@@ -608,9 +702,9 @@ def read_station_answer(
     it: a station can be quiet because the fleet is quiet, which is not a
     station that stopped. A fresh beat with a tick that has outlived the window
     is ``slow`` instead -- alive, working, and not something to cycle. An
-    exported snapshot names no tick stage, so an off-node reading is either
-    ``stopped`` or ``live`` and never claims a progress it cannot see; a reader
-    that needs the tick on that branch asks :func:`read_station_tick`.
+    exported snapshot uses the exporting station's independent health
+    publication when available, so a long derivation does not freeze the beat
+    or hide the running tick from a reader on another node.
     """
     instant = _utc_now() if now is None else now
     found = _read_station_document(project, session, environ=environ)
@@ -619,8 +713,7 @@ def read_station_answer(
         exported = _read_station_export(project, session, home=home)
         if exported is None:
             return None
-        beat = exported.pop("_station_heartbeat", None)
-        found = (exported, {"heartbeat": "" if beat is None else str(beat)})
+        found = (exported, exported.pop("_station_markers"))
         source = "snapshot"
     document, markers = found
     age = station_heartbeat_age(markers.get("heartbeat"), now=instant)
@@ -636,6 +729,7 @@ def read_station_answer(
         "tick_age_seconds": tick_age,
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": stale,
+        **_last_tick_reading(markers),
     }
 
 
@@ -1789,41 +1883,49 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
     )
     reviews_in_flight: dict[str, set[str]] = {}
     pointers: dict[str, Mapping[str, Any]] = {}
-    for pointer in module.runs.list_live(project=project):
-        session = str(pointer.get("session") or "")
-        run_id = str(pointer.get("run_id") or "")
-        if run_id:
-            pointers[run_id] = pointer
-        if session and run_id and module._current_review_in_flight(pointer):
-            reviews_in_flight.setdefault(session, set()).add(run_id)
-    floors = module.review_dispositions.declared_dimension_floors(config)
-    from reckon.crew.section_obligations import merged_section_items_by_session
+    # One listing of the project's live directory answers the derivation's own
+    # rows and every reader it reaches, so each pointer file is decoded once
+    # for the whole sweep rather than once per duty kind.
+    with module.live_pointer_snapshot(project) as listing:
+        for pointer in listing:
+            session = str(pointer.get("session") or "")
+            run_id = str(pointer.get("run_id") or "")
+            if run_id:
+                pointers[run_id] = pointer
+            if session and run_id and module._current_review_in_flight(pointer):
+                reviews_in_flight.setdefault(session, set()).add(run_id)
+        floors = module.review_dispositions.declared_dimension_floors(config)
+        from reckon.crew.section_obligations import merged_section_items_by_session
 
-    # Every review read this sweep makes happens inside the region -- the
-    # classified rows, the sub-floor lookup and the held-worktree scan all
-    # reach the review store -- so what could not be read is collected here,
-    # once, and travels with the state every session's slice is built from. A
-    # read outside the region has nobody to name its skips to, so another
-    # reader in this process never reaches this sweep's findings.
-    with module.review_module.collect_read_failures() as skipped_records:
-        state = FleetState(
-            project=project,
-            now=instant,
-            config=config,
-            grace=grace,
-            floors=floors,
-            rows=module._classified_rows(project),
-            pointers=pointers,
-            acknowledged=module._acknowledgements_in_force(project, now=instant),
-            reviews_in_flight=reviews_in_flight,
-            sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
-            held_worktrees=module._held_worktrees_by_session(project, now=instant),
-            unreconciled=module.runs.drain_unreconciled_by_session(project),
-            findings=[],
-            merged_sections=merged_section_items_by_session(
-                project, list(pointers.values()), now=instant
-            ),
-        )
+        # Every review read this sweep makes happens inside the region -- the
+        # classified rows, the sub-floor lookup and the held-worktree scan all
+        # reach the review store -- so what could not be read is collected here,
+        # once, and travels with the state every session's slice is built from. A
+        # read outside the region has nobody to name its skips to, so another
+        # reader in this process never reaches this sweep's findings.
+        with module.review_module.collect_read_failures() as skipped_records:
+            state = FleetState(
+                project=project,
+                now=instant,
+                config=config,
+                grace=grace,
+                floors=floors,
+                rows=module._classified_rows(project),
+                pointers=pointers,
+                acknowledged=module._acknowledgements_in_force(project, now=instant),
+                reviews_in_flight=reviews_in_flight,
+                sub_floor=module._sub_floor_items_by_session(
+                    project, floors, now=instant
+                ),
+                held_worktrees=module._held_worktrees_by_session(project, now=instant),
+                unreconciled=module.runs.drain_unreconciled_by_session(
+                    project, pointers=listing
+                ),
+                findings=[],
+                merged_sections=merged_section_items_by_session(
+                    project, list(pointers.values()), now=instant
+                ),
+            )
     state.findings = list(skipped_records)
     return state
 

@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/admission/reviews.py:_build_plan_review_record:344",
+    "reckon/crew/routing.py:3150",
+    "reckon/mcp_edit_plan.py:2284",
+    "reckon/mcp_deadlines.py:741",
+    "reckon/crew/plan_review.py:1573",
+    "reckon/crew/plan_review.py:2460",
+    "reckon/crew/plan_review.py:2899"
+  ],
+  "completed_at": "2026-11-16T08:55:18.595Z",
+  "dimension_dispositions": {
+    "scope_discipline": {
+      "kind": "exempted",
+      "reason": "The fence was under-declared by the coordinator's dispatch, which named only the evidence fragment and figure paths; the product and test edits are the ones the section asks for and are within the plan's stated deliverable, so the finding is against the brief, not the work.",
+      "recorded_at": "2026-11-16T22:01:10.833052+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-16T08:54:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 1398,
+      "severity": "non-blocking",
+      "text": "the source and test edits lie outside the node's declared write paths: the reviewed run's prompt.txt:84-86 fences only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-answering-edits-stay-covered.html and docs/figures/queued-work-needs-no-workaround/qwnw-answering-edits-stay-covered, yet the diff writes reckon/crew/plan_review.py, tests/test_answering_edits_stay_covered.py and tests/test_an_answered_findings_edit_is_covered.py, so promotion's scope report cannot tell the goal's required code change from scope the node was never granted."
+    },
+    {
+      "file": "tests/test_answering_edits_stay_covered.py",
+      "line": 254,
+      "severity": "non-blocking",
+      "text": "the reviewed run's FENCE \u2014 SUITE declares the node unarmed because no test file lies in its write scope, while the landed diff adds this 327-line test file and rewrites another, so promotion measures no suite pair for a change that adds two test files and needs that pair to catch a regression later."
+    },
+    {
+      "file": "manifest.md",
+      "line": 37,
+      "severity": "non-blocking",
+      "text": "the reviewed manifest's rubric.durability line answers with commit locality (local to the worktree, no plan meta lines) rather than the test that fails if the change regresses, so its own self-check records no durability evidence for the two new end-to-end cases."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the coverage reader through reckon/crew/admission/reviews.py:344, which passes the plan document text, and through reckon/mcp_deadlines.py:741, which passes a Path; _answered_edit_units resolves each cited commit through _plan_text_at at reckon/crew/plan_review.py:2104 when no path is handed in.",
+    "diff": "read both commits against base cb557f9711: 5e7e6b8712 changes reckon/crew/plan_review.py by 82 lines and tests/test_an_answered_findings_edit_is_covered.py by 32, adds tests/test_answering_edits_stay_covered.py at 327 lines, and 613209e020 adds the 48-line evidence fragment.",
+    "done_when": "the done_when asks for both answered sections admitted with no review composed, a later edit holding only its own section and a declined answer still owing one; gate.log records 8 passed with EXIT=0 at 613209e020 and negative-control.log records 2 failed, 1 passed with EXIT=1 at cb557f97, both answered requests held at the base revision as the control requires.",
+    "goal": "dispatch-detail.json states the goal as keeping a section covered when an edit to it is recorded as the answer to a review finding; reckon/crew/plan_review.py:2793 adds _answered_edit_units and line 1398 applies it inside _compute_coverage and covers a unit whose present digest equals the digest it held at the commit an acted answer cites.",
+    "manifest": "manifest.md is status complete with commits 5e7e6b8712 and 613209e020, four changed_paths, the gate command on its tests line, a named negative-control log and both arm results in artifacts; its baseline_suite and after_suite keys are null even though the suite pair ran.",
+    "write_paths": "the reviewed run's prompt.txt:84-86 declares only the evidence fragment and the figures directory, while the diff also changes three code and test paths; every changed path lies inside the worktree and none outside the repository."
+  },
+  "justifications": {
+    "durability": "tests/test_answering_edits_stay_covered.py:276 asserts both answered sections launch, and that assertion fails on the base arm's 2 failed at cb557f97, where neither request launched.",
+    "evidence": "gate.log carries 8 passed with EXIT=0 at 613209e020 and negative-control.log carries 2 failed, 1 passed with EXIT=1 at cb557f97, both on disk, though manifest.md records no structured suite pair.",
+    "fit": "reckon/crew/plan_review.py:2793 follows the module's private-helper idiom beside _accepted_edit_units and reuses finding_units, _plan_text_at and _section_digests.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2793 reads each named unit's digest at the commit an acted answer cites and line 1398 covers it, which is the deliverable the goal names.",
+    "reuse": "the addition extends the module that owns coverage (plan_review.py) and reuses its four existing readers rather than re-implementing them; a search over reckon/crew found no second owner of acted-answer coverage.",
+    "scope_discipline": "three of the four changed paths, including reckon/crew/plan_review.py:1355, lie outside the fence the reviewed run's prompt.txt:84-86 declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json states the goal as keeping a section covered when an edit to it is recorded as the answer to a review finding; reckon/crew/plan_review.py:2793 adds _answered_edit_units and line 1398 applies it inside _compute_coverage.\nVERDICT done_when: the done_when asks for both answered sections admitted with no review composed, a later edit holding only its own section and a declined answer still owing one; gate.log records 8 passed with EXIT=0 at 613209e020 and negative-control.log 2 failed, 1 passed with EXIT=1 at cb557f97.\nVERDICT write_paths: the reviewed run's prompt.txt:84-86 declares only the evidence fragment and the figures directory, while the diff also changes reckon/crew/plan_review.py and two test files.\nVERDICT manifest: manifest.md is status complete with commits 5e7e6b8712 and 613209e020, four changed paths, a tests line, a named negative-control log and both arm results, but its baseline_suite and after_suite keys are null.\nVERDICT diff: read both commits against cb557f9711: the source commit adds _answered_edit_units and its call site in reckon/crew/plan_review.py plus two test files, and the second adds docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-answering-edits-stay-covered.html.\nCALL_SITES: reckon/crew/admission/reviews.py:_build_plan_review_record:344, reckon/crew/routing.py:3150, reckon/mcp_edit_plan.py:2284, reckon/mcp_deadlines.py:741\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2793 reads each named unit's digest at the commit an acted answer cites and line 1398 covers it.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log carries 8 passed with EXIT=0 at 613209e020 and negative-control.log 2 failed at cb557f97, though manifest.md records no structured suite pair.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: three of the four changed paths, including reckon/crew/plan_review.py:1355, lie outside the fence the run's prompt.txt:84-86 declares.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_answering_edits_stay_covered.py:276 asserts both answered sections launch, which fails on the base arm's 2 failed at cb557f97.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_review.py:2793 follows the module's private-helper idiom beside _accepted_edit_units.\nSCORE reuse: 18\nJUSTIFICATION reuse: the addition extends plan_review.py, the owner of coverage, and reuses finding_units, _plan_text_at and _section_digests.\nFINDING reckon/crew/plan_review.py:1398 non-blocking: the source and test edits lie outside the node's declared write paths, so promotion's scope report cannot tell the goal's required code change from scope never granted.\nFINDING tests/test_answering_edits_stay_covered.py:254 non-blocking: the node declared no test file in its write scope, so promotion measures no suite pair for a change that adds two test files.\nFINDING manifest.md:37 non-blocking: the rubric.durability self-check answers with commit locality rather than the test that fails on regression.\n",
+  "review_run_id": "r-20261116T083154869472-review-of-qwnw-answering-edits-stay-covered-613209e020a6",
+  "reviewed_base_sha": "cb557f9711670ca8a00dd1d6dd22a17b42d3a51e",
+  "reviewed_head_sha": "613209e020a67120df882f9669ac2b3307cf07a7",
+  "reviewed_run_id": "r-20261116T040927961207-qwnw-answering-edits-stay-covered",
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T10:05:00Z",
+  "total": 98
+}

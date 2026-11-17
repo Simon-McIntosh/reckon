@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3538 crew_complete (--wait declared at :3532)",
+    "reckon/crew/promotion.py:827 complete",
+    "reckon/crew/promotion_checks.py:2595 added_failure_ids"
+  ],
+  "completed_at": "2026-11-16T07:10:32.010Z",
+  "dispatched_at": "2026-11-16T07:10:01Z",
+  "findings": [
+    {
+      "file": "tests/test_gate_evidence.py",
+      "line": "544",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two assertions at :544-545 compare suite_delta's stored arms against the same baseline and after dicts the test handed _write_suite_manifest, and because 53ba12ee now gives both arms _seeded_head(repository) the pair carries one value, so a product that assigned the after arm's revision to baseline_suite or vice versa still passes for that clause; the guard should name an independently created revision per arm."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-gate-evidence.html",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes a head run at 53ba12eeb1 reading 25 passed in 7.57s while the log it names, gate-head-test_gate_evidence.log, runs at 3a543c4441 and reads 7.81s, and the all_debug job it claims has no receipt behind the three zero-byte sbatch-head*.out files, so a reader cannot reproduce the quoted figure from the artefact the record cites."
+    }
+  ],
+  "head_log_revision": "3a543c4441e86e2cb0b0edb3038ee048504071bd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base d0d77f07e2: a898db92 adds --wait at five call sites in the test helper and four tests; 53ba12ee gives the fixtures the tree's own HEAD through the new _seeded_head, gives the manifest a commits field the store can resolve, adds uncommitted work to the missing-after fixture so the pair is required, and rewrites two assertions; 3a543c44 adds the landing and evidence fragments; the file's assert count is 83 at the base and 83 at the head, so nothing was deleted.",
+    "done_when": "the done_when names the same file passing in full with SLURM_JOB_ID unset and the fifteen failures the suite log recorded at 8d50b0333f; gate-base-test_gate_evidence.log at d0d77f07e2 lists exactly those fifteen ids (15 failed, 10 passed, EXIT=1), matching suite-at-8d50b0333f.log id for id, and the head log reads 25 passed EXIT=0, so the gate measures the measure; the one clause it does not evidence is \"as a job on all_debug\", since sbatch-head.out, sbatch-head2.out and sbatch-head3.out are all zero bytes and the head log names only a parent allocation.",
+    "goal": "the node's goal is that tests/test_gate_evidence.py passes in full at its delivered head, and the file reads 25 passed at 3a543c4441 (gate-head-test_gate_evidence.log, EXIT=0), which I reproduced by re-running the same file once in the node's clean worktree where it reported 25 passed in 14.73s.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224617007555-qwnw-red-file-gate-evidence/manifest.md at status complete; it names the three commits, the changed paths, the literal gate command, both gate logs, baseline_suite and after_suite JSON (completed true, 0 failure ids each, both EXIT 0), and a negative_control_log carrying a note.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and its three commits a898db92, 53ba12ee and 3a543c44 touch only tests/test_gate_evidence.py and two files under that fragments directory, every path inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating either cause reddens the file \u2014 dropping --wait is the state gate-base-test_gate_evidence.log records as 15 failed and the pre-repair placeholder base_sha is what the repaired pointer at tests/test_gate_evidence.py:215 replaced \u2014 but the two rewritten assertions at tests/test_gate_evidence.py:544-545 compare the stored arms with the same dict the test handed in, and both arms now carry one revision so an arm swap is invisible to them.",
+    "evidence": "gate-base-test_gate_evidence.log (d0d77f07e2, 15 failed/10 passed, EXIT=1) and gate-head-test_gate_evidence.log (3a543c4441, 25 passed, EXIT=0) are on disk with revision and command headers, but the done_when's all_debug job clause rests on the log's own wording while docs/evidence/fragments/queued-work-needs-no-workaround/red-file-gate-evidence.html:90-95 quotes a differently revisioned run.",
+    "fit": "tests/test_gate_evidence.py:175-190 adds _seeded_head as a private helper in the file's existing subprocess idiom beside _seed_git_repository, and tests/test_gate_evidence.py:239 documents the _FIXTURE_COMMIT constant where it is defined, with no plan identifier or attribution in any added name.",
+    "goal_fidelity": "tests/test_gate_evidence.py reads 25 passed at 3a543c4441 in gate-head-test_gate_evidence.log and in my single re-run, and I found no product change because the file's five causes were fixture defects, each named with a verdict in docs/evidence/fragments/queued-work-needs-no-workaround/red-file-gate-evidence.html:17-77.",
+    "reuse": "I searched tests/conftest.py for a git or revision helper and found none, and a grep for \"rev-parse\" across tests/*.py found only per-file _git helpers, so no owner of reading a fixture repository's HEAD exists and _seeded_head at tests/test_gate_evidence.py:175 is the first in this file rather than a fork.",
+    "scope_discipline": "git show --stat over a898db92, 53ba12ee and 3a543c44 lists only tests/test_gate_evidence.py and the two fragment files, all inside the fence of reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_gate_evidence.py passes in full at its delivered head, and the file reads 25 passed at 3a543c4441 (gate-head-test_gate_evidence.log, EXIT=0), which I reproduced by re-running the same file once in the node's clean worktree where it reported 25 passed in 14.73s.\nVERDICT done_when: the done_when names the same file passing in full with SLURM_JOB_ID unset and the fifteen failures the suite log recorded at 8d50b0333f; gate-base-test_gate_evidence.log at d0d77f07e2 lists exactly those fifteen ids (15 failed, 10 passed, EXIT=1), matching suite-at-8d50b0333f.log id for id, and the head log reads 25 passed EXIT=0, so the gate measures the measure; the one clause it does not evidence is \"as a job on all_debug\", since sbatch-head.out, sbatch-head2.out and sbatch-head3.out are all zero bytes and the head log names only a parent allocation.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and its three commits a898db92, 53ba12ee and 3a543c44 touch only tests/test_gate_evidence.py and two files under that fragments directory, every path inside the fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224617007555-qwnw-red-file-gate-evidence/manifest.md at status complete; it names the three commits, the changed paths, the literal gate command, both gate logs, baseline_suite and after_suite JSON (completed true, 0 failure ids each, both EXIT 0), and a negative_control_log carrying a note.\nVERDICT diff: read commit by commit against base d0d77f07e2: a898db92 adds --wait at five call sites in the test helper and four tests; 53ba12ee gives the fixtures the tree's own HEAD through the new _seeded_head, gives the manifest a commits field the store can resolve, adds uncommitted work to the missing-after fixture so the pair is required, and rewrites two assertions; 3a543c44 adds the landing and evidence fragments; the file's assert count is 83 at the base and 83 at the head, so nothing was deleted.\nCALL_SITES: reckon/crew_run_commands.py:3538 crew_complete (--wait declared at :3532), reckon/crew/promotion.py:827 complete, reckon/crew/promotion_checks.py:2595 added_failure_ids\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_gate_evidence.py reads 25 passed at 3a543c4441 in gate-head-test_gate_evidence.log and in my single re-run, and I found no product change because the file's five causes were fixture defects, each named with a verdict in docs/evidence/fragments/queued-work-needs-no-workaround/red-file-gate-evidence.html:17-77.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-base-test_gate_evidence.log (d0d77f07e2, 15 failed/10 passed, EXIT=1) and gate-head-test_gate_evidence.log (3a543c4441, 25 passed, EXIT=0) are on disk with revision and command headers, but the done_when's all_debug job clause rests on the log's own wording while docs/evidence/fragments/queued-work-needs-no-workaround/red-file-gate-evidence.html:90-95 quotes a differently revisioned run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over a898db92, 53ba12ee and 3a543c44 lists only tests/test_gate_evidence.py and the two fragment files, all inside the fence of reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\nSCORE durability: 15\nJUSTIFICATION durability: reinstating either cause reddens the file \u2014 dropping --wait is the state gate-base-test_gate_evidence.log records as 15 failed and the pre-repair placeholder base_sha is what the repaired pointer at tests/test_gate_evidence.py:215 replaced \u2014 but the two rewritten assertions at tests/test_gate_evidence.py:544-545 compare the stored arms with the same dict the test handed in, and both arms now carry one revision so an arm swap is invisible to them.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_gate_evidence.py:175-190 adds _seeded_head as a private helper in the file's existing subprocess idiom beside _seed_git_repository, and tests/test_gate_evidence.py:239 documents the _FIXTURE_COMMIT constant where it is defined, with no plan identifier or attribution in any added name.\nSCORE reuse: 20\nJUSTIFICATION reuse: I searched tests/conftest.py for a git or revision helper and found none, and a grep for \"rev-parse\" across tests/*.py found only per-file _git helpers, so no owner of reading a fixture repository's HEAD exists and _seeded_head at tests/test_gate_evidence.py:175 is the first in this file rather than a fork.\nFINDING tests/test_gate_evidence.py:544 non-blocking: the two assertions at :544-545 compare suite_delta's stored arms against the same baseline and after dicts the test handed _write_suite_manifest, and because 53ba12ee now gives both arms _seeded_head(repository) the pair carries one value, so a product that assigned the after arm's revision to baseline_suite or vice versa still passes for that clause; the guard should name an independently created revision per arm.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-gate-evidence.html:90 non-blocking: the fragment quotes a head run at 53ba12eeb1 reading 25 passed in 7.57s while the log it names, gate-head-test_gate_evidence.log, runs at 3a543c4441 and reads 7.81s, and the all_debug job it claims has no receipt behind the three zero-byte sbatch-head*.out files, so a reader cannot reproduce the quoted figure from the artefact the record cites.\n",
+  "review_run_id": "r-20261116T070728070039-review-of-qwnw-red-file-gate-evidence-3a543c4441e8",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_head_sha": "3a543c4441e86e2cb0b0edb3038ee048504071bd",
+  "reviewed_run_id": "r-20261115T224617007555-qwnw-red-file-gate-evidence",
+  "reviewer_run_id": "r-20261116T070728070039-review-of-qwnw-red-file-gate-evidence-3a543c4441e8",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:06:09.908754+00:00",
+  "total": 109
+}

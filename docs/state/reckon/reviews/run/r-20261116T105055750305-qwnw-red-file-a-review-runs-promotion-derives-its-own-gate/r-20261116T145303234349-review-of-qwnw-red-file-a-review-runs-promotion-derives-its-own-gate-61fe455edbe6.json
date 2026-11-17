@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:2739 _send_evidence_record",
+    "reckon/evidence.py:1618 compose_landed_record",
+    "reckon/crew/reports.py:2722 _fragment_plan_of",
+    "reckon/crew/dispatch_claims.py:1372 _landing_fragment_paths",
+    "reckon/resources.py:69 EVIDENCE_FRAGMENTS_SUBTREE"
+  ],
+  "completed_at": "2026-11-16T14:58:27.728Z",
+  "dispatched_at": "2026-11-16T14:57:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-arm cell cites `job 1320136 at the same code under 655a2befa9` as reporting the same 7 passes, but that run wrote logs/head-gate.log and job 1320156 overwrote it, so the 655a2befa9 arm cannot be re-read from a log whose first lines name its revision and whose last line is `EXIT=`; the figure survives only as transcript text inside stream.jsonl, which no reader treats as a gate log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms table records only the before-suite arm at 655a2befa9 (58 passed) and omits the after-suite arm the manifest logged at 61fe455edb (58 passed, `EXIT=0`), so the fragment does not show the suite pair its own armed fence measured, where the sibling fragment at qwnw-a-review-is-promoted-only-after-it-delivers-and.html records both arms."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105055750305-qwnw-red-file-a-review-runs-promotion-derives-its-own-gate/logs/head-gate.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the retained head-arm log names revision a1a9b1749b rather than the reviewed head 61fe455edb, so `passes in full at head` is evidenced one commit short; the intervening commit changes only the fragment, which the gate file never reads, so the arm is materially the head's but a reader cannot see that from the log alone."
+    }
+  ],
+  "head_log_revision": "a1a9b1749be4c3053dac56312e293b0c614e0c7f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites that can reach the fragment: reckon/serve.py:2739 _send_evidence_record hands the plan's record to compose_landed_record, which at reckon/evidence.py:1618 composes each fragment in ledger promotion order; reckon/crew/reports.py:2722 _fragment_plan_of audits a changed fragment by the plan its own directory names; reckon/crew/dispatch_claims.py:1372 _landing_fragment_paths resolves the fragment's path as the node's landing; and reckon/resources.py:69 EVIDENCE_FRAGMENTS_SUBTREE makes discovery walks pass over the subtree instead of reserving it as a typed document.",
+    "diff": "read all three commits against 655a2befa9: d1926efe87 writes the fragment's arms table and both causes, a1a9b1749b quotes the case-5 fixture's pytest summary literally (`1 passed in 0.01s`), 61fe455edb names the head run; the diff of the three carries 64 added lines in that one file and no product source and no test, which matches the fragment's own claim and the manifest's.",
+    "done_when": "the done_when asks for that file passing in full at head as an all_debug job with SLURM_JOB_ID unset; logs/head-gate.log:1 records `host: 98dci4-clu-3141 slurm-job-id-in-env: 1320156`, sacct reports job 1320156 on partition all_debug as COMPLETED, the header at :4 carries the command prefixed `env -u SLURM_JOB_ID`, and the tail at :8-9 reads `7 passed in 25.50s` then `EXIT=0`, so the gate asserts the measure; the one gap is that :2 names revision a1a9b1749b rather than the reviewed head 61fe455edb, and the intervening commit touches only the fragment, which the gate file never reads (a search for `docs/evidence` in the test file finds nothing).",
+    "goal": "the node's goal is that tests/test_a_review_runs_promotion_derives_its_own_gate.py passes in full on the primary branch; at the reviewed head the file's tree carries both predecessor fixes c1a5111bc0 and 15c5222060 (each an ancestor of main), and logs/head-gate.log:7-9 reports `7 passed in 25.50s` with `EXIT=0`, so the goal's measure holds and the node's own delivery is the evidence fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html:1, which records that run; the fragment says in its own words at :15-18 that the node changed no product source and no test.",
+    "manifest": "read; it states status complete, commits d1926efe87 a1a9b1749b 61fe455edb, changed_paths the fragment alone, `tests:` the single-file pytest gate with `env -u SLURM_JOB_ID` and `PYTHONPATH=.`, test_logs naming head-gate.log, negative-control-8d50b0333f.log, baseline-suite.log and after-suite.log, and baseline_suite (655a2befa9, exit 0, 0 failures) and after_suite (61fe455edb, exit 0, 0 failures) as armed JSON.",
+    "write_paths": "the fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; `git diff --stat 655a2befa9..61fe455edb` lists exactly one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html, with 64 insertions and no deletions, and that path lies inside the third declared root."
+  },
+  "justifications": {
+    "durability": "the fragment adds no assertion, and the behaviour it documents is guarded by tests/test_a_review_runs_promotion_derives_its_own_gate.py:36-115, whose cases 1, 2 and 5 are the three failures in logs/negative-control-8d50b0333f.log:512-515; a revert of the fragment itself, however, fails nothing.",
+    "evidence": "logs/head-gate.log:1-9 (all_debug job 1320156, `env -u SLURM_JOB_ID`, `7 passed`, `EXIT=0`) and logs/negative-control-8d50b0333f.log:515-516 (`3 failed, 4 passed`, `EXIT=1` at 8d50b0333f) are receipts that reconcile with the fragment, but the 655a2befa9 arm the table cites from job 1320136 lost its log to the second run's overwrite, and the head arm's revision is one commit short of the reviewed head.",
+    "fit": "the fragment's `<section>` with an `<h2>` and an arms `<table>` matches the sibling shape under docs/evidence/fragments/queued-work-needs-no-workaround/ (15 of its 37 fragments use a plain `<h2>`), its ids `...-landing` and `...-arms` are unique across that directory, and the file name is the node slug with no ticket identifier.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html:15-18 records the head run that satisfies the goal, and logs/head-gate.log:7-9 is that run's `7 passed` / `EXIT=0`; the score is short of full only because the retained arm ran at a1a9b1749b rather than the reviewed head.",
+    "reuse": "the diff adds no function, class or module and instantiates the existing evidence-fragment mechanism owned by reckon/crew/reports.py:2719 and composed at reckon/evidence.py:1618, and a search of docs/evidence/fragments across the mounted evidence fragments for a second document covering this node found none.",
+    "scope_discipline": "`git diff --stat 655a2befa9..61fe455edb` names only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html, inside the declared write path, and no other tracked file changes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_review_runs_promotion_derives_its_own_gate.py passes in full on the primary branch; at the reviewed head the file's tree carries both predecessor fixes c1a5111bc0 and 15c5222060 (each an ancestor of main), and logs/head-gate.log:7-9 reports `7 passed in 25.50s` with `EXIT=0`, so the goal's measure holds and the node's own delivery is the evidence fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html:1, which records that run; the fragment says in its own words at :15-18 that the node changed no product source and no test.\nVERDICT done_when: the done_when asks for that file passing in full at head as an all_debug job with SLURM_JOB_ID unset; logs/head-gate.log:1 records `host: 98dci4-clu-3141 slurm-job-id-in-env: 1320156`, sacct reports job 1320156 on partition all_debug as COMPLETED, the header at :4 carries the command prefixed `env -u SLURM_JOB_ID`, and the tail at :8-9 reads `7 passed in 25.50s` then `EXIT=0`, so the gate asserts the measure; the one gap is that :2 names revision a1a9b1749b rather than the reviewed head 61fe455edb, and the intervening commit touches only the fragment, which the gate file never reads (a search for `docs/evidence` in the test file finds nothing).\nVERDICT write_paths: the fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; `git diff --stat 655a2befa9..61fe455edb` lists exactly one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html, with 64 insertions and no deletions, and that path lies inside the third declared root.\nVERDICT manifest: read; it states status complete, commits d1926efe87 a1a9b1749b 61fe455edb, changed_paths the fragment alone, `tests:` the single-file pytest gate with `env -u SLURM_JOB_ID` and `PYTHONPATH=.`, test_logs naming head-gate.log, negative-control-8d50b0333f.log, baseline-suite.log and after-suite.log, and baseline_suite (655a2befa9, exit 0, 0 failures) and after_suite (61fe455edb, exit 0, 0 failures) as armed JSON.\nVERDICT call_sites: verified five production call sites that can reach the fragment: reckon/serve.py:2739 _send_evidence_record hands the plan's record to compose_landed_record, which at reckon/evidence.py:1618 composes each fragment in ledger promotion order; reckon/crew/reports.py:2722 _fragment_plan_of audits a changed fragment by the plan its own directory names; reckon/crew/dispatch_claims.py:1372 _landing_fragment_paths resolves the fragment's path as the node's landing; and reckon/resources.py:69 EVIDENCE_FRAGMENTS_SUBTREE makes discovery walks pass over the subtree instead of reserving it as a typed document.\nVERDICT diff: read all three commits against 655a2befa9: d1926efe87 writes the fragment's arms table and both causes, a1a9b1749b quotes the case-5 fixture's pytest summary literally (`1 passed in 0.01s`), 61fe455edb names the head run; the diff of the three carries 64 added lines in that one file and no product source and no test, which matches the fragment's own claim and the manifest's.\nCALL_SITES: reckon/serve.py:2739 _send_evidence_record, reckon/evidence.py:1618 compose_landed_record, reckon/crew/reports.py:2722 _fragment_plan_of, reckon/crew/dispatch_claims.py:1372 _landing_fragment_paths, reckon/resources.py:69 EVIDENCE_FRAGMENTS_SUBTREE\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html:15-18 records the head run that satisfies the goal, and logs/head-gate.log:7-9 is that run's `7 passed` / `EXIT=0`; the score is short of full only because the retained arm ran at a1a9b1749b rather than the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate.log:1-9 (all_debug job 1320156, `env -u SLURM_JOB_ID`, `7 passed`, `EXIT=0`) and logs/negative-control-8d50b0333f.log:515-516 (`3 failed, 4 passed`, `EXIT=1` at 8d50b0333f) are receipts that reconcile with the fragment, but the 655a2befa9 arm the table cites from job 1320136 lost its log to the second run's overwrite, and the head arm's revision is one commit short of the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 655a2befa9..61fe455edb` names only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html, inside the declared write path, and no other tracked file changes.\nSCORE durability: 14\nJUSTIFICATION durability: the fragment adds no assertion, and the behaviour it documents is guarded by tests/test_a_review_runs_promotion_derives_its_own_gate.py:36-115, whose cases 1, 2 and 5 are the three failures in logs/negative-control-8d50b0333f.log:512-515; a revert of the fragment itself, however, fails nothing.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment's `<section>` with an `<h2>` and an arms `<table>` matches the sibling shape under docs/evidence/fragments/queued-work-needs-no-workaround/ (15 of its 37 fragments use a plain `<h2>`), its ids `...-landing` and `...-arms` are unique across that directory, and the file name is the node slug with no ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and instantiates the existing evidence-fragment mechanism owned by reckon/crew/reports.py:2719 and composed at reckon/evidence.py:1618, and a search of docs/evidence/fragments across the mounted evidence fragments for a second document covering this node found none.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html:25 non-blocking: the head-arm cell cites `job 1320136 at the same code under 655a2befa9` as reporting the same 7 passes, but that run wrote logs/head-gate.log and job 1320156 overwrote it, so the 655a2befa9 arm cannot be re-read from a log whose first lines name its revision and whose last line is `EXIT=`; the figure survives only as transcript text inside stream.jsonl, which no reader treats as a gate log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-runs-promotion-derives-its-own-gate.html:33 non-blocking: the arms table records only the before-suite arm at 655a2befa9 (58 passed) and omits the after-suite arm the manifest logged at 61fe455edb (58 passed, `EXIT=0`), so the fragment does not show the suite pair its own armed fence measured, where the sibling fragment at qwnw-a-review-is-promoted-only-after-it-delivers-and.html records both arms.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105055750305-qwnw-red-file-a-review-runs-promotion-derives-its-own-gate/logs/head-gate.log:2 non-blocking: the retained head-arm log names revision a1a9b1749b rather than the reviewed head 61fe455edb, so `passes in full at head` is evidenced one commit short; the intervening commit changes only the fragment, which the gate file never reads, so the arm is materially the head's but a reader cannot see that from the log alone.\n",
+  "review_run_id": "r-20261116T145303234349-review-of-qwnw-red-file-a-review-runs-promotion-derives-its-own-gate-61fe455edbe6",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "61fe455edbe673e627a80ee136e49e9dc73a8bf3",
+  "reviewed_run_id": "r-20261116T105055750305-qwnw-red-file-a-review-runs-promotion-derives-its-own-gate",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T145303234349-review-of-qwnw-red-file-a-review-runs-promotion-derives-its-own-gate-61fe455edbe6"
+  },
+  "reviewer_run_id": "r-20261116T145303234349-review-of-qwnw-red-file-a-review-runs-promotion-derives-its-own-gate-61fe455edbe6",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:13:38.639896+00:00",
+  "total": 106
+}

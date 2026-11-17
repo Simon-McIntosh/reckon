@@ -120,9 +120,10 @@ def _committed_node_runs(
 ) -> list[dict[str, Any]]:
     """The committed runs of one node, in completion order.
 
-    Read from the project's run index with one filtered query, so a dispatch
-    pays for its own node's rows rather than for the whole ledger. An index
-    that cannot be read falls back to the full ledger read, filtered here.
+    Read with one filtered query, so a dispatch pays for its own node's rows
+    rather than for the whole ledger. The run store answers when it exists,
+    through its node column; a project with no store asks its run index, and an
+    index that cannot be read falls back to the full ledger read, filtered here.
     """
     import json as _json
     import sqlite3
@@ -137,6 +138,11 @@ def _committed_node_runs(
             ),
         )
 
+    from reckon import run_store
+
+    stored = run_store.stored_run_rows(project, node=node_id)
+    if stored is not None:
+        return ordered(stored)
     query = (
         "SELECT payload FROM aggregate_rows "  # noqa: S608 - values are bound
         "WHERE json_extract(payload, '$.node') = ? "
@@ -699,8 +705,18 @@ def dispatch(
         route = resolution.route
 
     dispatch_options = dict(dispatch_options or {})
+    # A caller-supplied pick is never re-used as the dispatch's answer: the
+    # selection resolved here is the checked one, and the option is a request
+    # field rather than the question. It is dropped first so that only the
+    # answer written below can reach a stored request.
     dispatch_options.pop("picker_selection", None)
     dispatch_options.setdefault("route", route or resolution.route)
+    if not admission_launch and picker_selection is not None:
+        # A held request is stored before any run record exists, so the pick it
+        # was made on rides the request's own options. Without it the request
+        # waits for its lane with no answer to continue there, and the launch
+        # asks the router again over lanes that have moved.
+        dispatch_options["picker_selection"] = dict(held_selection or picker_selection)
     if context_fit_fallback is not None:
         dispatch_options["route_fallback"] = context_fit_fallback
         dispatch_options["context_fit_shortfall"] = _context_fit_shortfall(

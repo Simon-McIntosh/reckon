@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own suite arms. logs/suite-base.log: revision 827719105952d26737ec2c5da31433132664e0b6, 58 passed, EXIT=0, failure_ids []. logs/suite-head.log: revision dca43f1d7127760f4d6cf269fa26ade916e38835, 58 passed, EXIT=0, failure_ids []. Neither arm reports a FAILED id, so the added-failure set is empty. Both arms collected the same two files and printed 58 progress marks, so the zero is a measured zero rather than an arm that collected nothing.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The diff adds no assertion. It changes one fixture string, the done_when handed to TaskNode. Restoring the base prose \"the upstream section has landed\" makes reckon/verify the contract at reckon/crew/dispatching/requests.py:219 refuse the request, and the three parametrised cases of test_queued_section_spelling_keeps_its_upstream_wait redden with CrewError; logs/negative-control-base-file.log shows exactly those three ids red at 8277191059.",
+      "lines": "tests/test_section_waits_read_normalised_keys.py:95"
+    },
+    {
+      "failure_condition": "The retained assertions at :115-116 and :117-121 compare the stored request's waits/phase against the plan's declared refs (PLAN#s1) read from the fixture, not against the done_when the test itself passed in, so a regression in section-wait normalisation still reddens them; they are untouched by this diff and are not part of its new coverage.",
+      "lines": "tests/test_section_waits_read_normalised_keys.py:113-121"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T14:55:28.332Z",
+  "dispatched_at": "2026-11-16T14:55:07Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104741936407-qwnw-red-file-section-waits-read-normalised-keys/logs/head-run.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The head gate log names revision a20fcb87a0b8b37157eb9cf6dd633865430d5df7, not the reviewed head dca43f1d7127760f4d6cf269fa26ade916e38835, and manifest.md's tests line points at this log, so the gate receipt the promotion reads is tied to a pre-head commit. The two commits after it touch only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-waits-read-normalised-keys.html, so the 9-passed result still describes the landed tree, but no log records the file gate at dca43f1d71."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104741936407-qwnw-red-file-section-waits-read-normalised-keys/logs/head-run.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "The done_when requires the passing run to be 'as a job on all_debug with SLURM_JOB_ID unset'; the head log header records revision, tree, command and df only. The all_debug claim rests on the comment at logs/measure-allsdebug.sh:2 and on logs/sbatch-1319969.out repeating the same three lines, neither of which carries a job id or partition, so the clause is unrecorded rather than contradicted."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104741936407-qwnw-red-file-section-waits-read-normalised-keys/logs/suite-head.log",
+      "revision": "dca43f1d7127760f4d6cf269fa26ade916e38835"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104741936407-qwnw-red-file-section-waits-read-normalised-keys/logs/suite-base.log",
+      "revision": "827719105952d26737ec2c5da31433132664e0b6"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "The landed diff changes no production module, so no production call site can reach it: tests/test_section_waits_read_normalised_keys.py:95 is read only by pytest. The rule it exercises is owned at reckon/crew/node.py:1465 (_EVIDENCE_SIGNALS check in validate_node), applied at queue time at reckon/crew/dispatching/requests.py:219, and both were read to confirm the refusal the test now avoids is the product's long-standing rule rather than a new one.",
+    "diff": "Read a20fcb87a0, daba93529f and dca43f1d71 against base 827719105952 commit by commit: a20fcb87a0 changes one fixture line at tests/test_section_waits_read_normalised_keys.py:95, daba93529f adds the 71-line evidence fragment, dca43f1d71 edits one sentence of that fragment; two files, 74 insertions and one deletion, no test file's assertion touched.",
+    "done_when": "Read the clauses against tests/test_section_waits_read_normalised_keys.py:95 and the run's logs: the file passes in full at head (logs/head-run.log, 9 passed, EXIT=0) and at base three cases red at the queue-time refusal (logs/negative-control-base-file.log, 3 failed 6 passed, EXIT=1); the suite arm adds no failure (58 passed both arms); no assertion was deleted or weakened; the 'as a job on all_debug' clause is not recorded in any log.",
+    "goal": "Read the goal in dispatch-detail.json (node qwnw-red-file-section-waits-read-normalised-keys) and section s29 of docs/plans/queued-work-needs-no-workaround.html; the landed change makes tests/test_section_waits_read_normalised_keys.py pass 9 of 9 at dca43f1d71 by giving the queued TaskNode a measure that emits evidence, which is the goal's delimiter.",
+    "manifest": "Read manifest.md: it records the three commits, the file gate at 9 passed, the base negative control at 3 failed, both suite arms at 58 passed, and its own rubric lines; its tests line names logs/head-run.log, whose header revision is pre-head, and its landing line states the test was wrong rather than the product.",
+    "write_paths": "Read the declared write paths in the dispatch node (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround) and the diff's two paths: tests/test_section_waits_read_normalised_keys.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-waits-read-normalised-keys.html, both inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_section_waits_read_normalised_keys.py:95 is the fix, and reinstating the base prose \"the upstream section has landed\" reddens exactly the three cases recorded in logs/negative-control-base-file.log with the CrewError raised at reckon/crew/dispatching/requests.py:219, so the guard is shown to fire rather than assumed.",
+    "evidence": "logs/head-run.log records 9 passed EXIT=0 and logs/negative-control-base-file.log records 3 failed EXIT=1, and both suite arms record 58 passed EXIT=0, but logs/head-run.log:1 names a20fcb87a0 not the head and records no all_debug job id although manifest.md:16 points promotion at that log.",
+    "fit": "The change follows the surrounding idiom of tests/test_section_waits_read_normalised_keys.py:104-110 (a commented three-line fixture argument in one parametrised case), adds no new name, and the evidence fragment matches the fragment shape under docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal_fidelity": "tests/test_section_waits_read_normalised_keys.py:95 now names a measure the contract accepts, so the file passes 9 of 9 at head against 6 passed 3 failed at base, which is the goal verbatim.",
+    "reuse": "The diff adds no function, class or module; the test reuses the product's own evidence rule at reckon/crew/node.py:114 (_EVIDENCE_SIGNALS) instead of introducing a second rule, so there is no capability to fork.",
+    "scope_discipline": "The whole diff is tests/test_section_waits_read_normalised_keys.py:95 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-waits-read-normalised-keys.html:1, both inside the declared write paths, with no product source touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in dispatch-detail.json and section s29 of the plan; tests/test_section_waits_read_normalised_keys.py:95 now gives the queued TaskNode a measure the contract accepts, and the file passes 9 of 9 at head instead of 3 failing.\nVERDICT done_when: Read the clauses against tests/test_section_waits_read_normalised_keys.py:95 and the run's logs; the file passes in full (logs/head-run.log, 9 passed, EXIT=0), three cases red at base with the queue-time refusal (logs/negative-control-base-file.log, 3 failed 6 passed, EXIT=1), both suite arms 58 passed EXIT=0, no assertion deleted or weakened; the 'as a job on all_debug' clause is recorded nowhere.\nVERDICT write_paths: Read the declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround) and checked the diff's two files, tests/test_section_waits_read_normalised_keys.py:95 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-waits-read-normalised-keys.html:1, against them; both are inside.\nVERDICT manifest: Read manifest.md; it records the three commits, the 9-passed file gate, the 58-passed suite arms the 3-failed negative control, and rubric lines, but its tests line points at logs/head-run.log, whose header revision a20fcb87a0 is pre-head.\nVERDICT diff: Read a20fcb87a0, daba93529f and dca43f1d71 against base 827719105952 commit by commit; one fixture line in the test and one new evidence fragment, 74 insertions and one deletion, no product module touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_section_waits_read_normalised_keys.py:95 names a measure the contract accepts, so the file passes 9 of 9 at head against 6 passed 3 failed at base.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-run.log records 9 passed EXIT=0 and logs/negative-control-base-file.log records 3 failed EXIT=1, but logs/head-run.log:1 names a20fcb87a0 rather than the head dca43f1d71 and carries no all_debug job id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the entire diff is tests/test_section_waits_read_normalised_keys.py:95 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-waits-read-normalised-keys.html:1, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the base prose at tests/test_section_waits_read_normalised_keys.py:95 reddens the three cases captured in logs/negative-control-base-file.log with the refusal at reckon/crew/dispatching/requests.py:219, so the guard is shown to fire.\nSCORE fit: 18\nJUSTIFICATION fit: the added comment and argument follow the same parametrised-case shape at tests/test_section_waits_read_normalised_keys.py:104-110 and introduce no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all and the test reuses the product's own rule at reckon/crew/node.py:114 (_EVIDENCE_SIGNALS) rather than forking it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104741936407-qwnw-red-file-section-waits-read-normalised-keys/logs/head-run.log:1 non-blocking: the gate log names a20fcb87a0, not the reviewed head dca43f1d71, so the receipt promotion reads is tied to a pre-head commit; only docs commits intervene, so the result still stands but is not recorded at the landed revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104741936407-qwnw-red-file-section-waits-read-normalised-keys/logs/head-run.log:2 non-blocking: the done_when's 'as a job on all_debug with SLURM_JOB_ID unset' clause has no recorded job id or partition in the log header, so it rests on logs/measure-allsdebug.sh:2 and logs/sbatch-1319969.out, neither of which names the job.\n",
+  "review_run_id": "r-20261116T140150757712-review-of-qwnw-red-file-section-waits-read-normalised-keys-dca43f1d7127",
+  "reviewed_base_sha": "827719105952d26737ec2c5da31433132664e0b6",
+  "reviewed_head_sha": "dca43f1d7127760f4d6cf269fa26ade916e38835",
+  "reviewed_run_id": "r-20261116T104741936407-qwnw-red-file-section-waits-read-normalised-keys",
+  "reviewer_rerun": {
+    "command": "not run",
+    "log_path": "",
+    "result": "not run: the reviewed run's own head log (9 passed, EXIT=0) was read instead"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:02:49.985255+00:00",
+  "total": 110
+}

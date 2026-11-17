@@ -255,6 +255,14 @@ DUTY_ROW_FIELDS = (
 # duty returns to review-missing so the coordinator sees it again.
 REVIEW_QUEUED_DUTY_KIND = "review-queued"
 
+# A review the run's record names and the fleet lists as working is work already
+# moving: the reviewer holds a live pointer, and the only reading the coordinator
+# can take is its own account. Nothing this session runs shortens the wait, so
+# the duty is listed and does not hold a turn open -- the same reading a queued
+# review gets, and the one a coordinator needs to end a turn with a watch armed
+# rather than sit in a foreground wait on it.
+REVIEW_IN_FLIGHT_DUTY_KIND = "review-in-flight"
+
 # A run whose review has been dispatched, delivered, and not yet landed reads
 # as awaiting promotion: the wait is a promotion, not a dispatch and not a
 # follower. A review holds its pointer after it delivers, so the pointer alone
@@ -395,6 +403,7 @@ _INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = 
 NON_BLOCKING_DUTY_KINDS = frozenset(
     {
         REVIEW_QUEUED_DUTY_KIND,
+        REVIEW_IN_FLIGHT_DUTY_KIND,
         QUEUED_RUN_DUTY_KIND,
         STALLED_RUN_DUTY_KIND,
         INDEX_LAG_DUTY_KIND,
@@ -755,6 +764,50 @@ _VIEW_REVIEWS_IN_FLIGHT: ContextVar[Mapping[str, Any] | None] = ContextVar(
 )
 
 
+@contextmanager
+def live_pointer_snapshot(
+    project: str | None = None,
+    *,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> Iterator[list[dict[str, Any]]]:
+    """Publish one project's live pointers for the length of one derivation.
+
+    Every duty kind reads the same live pointers, so a derivation over several
+    of them would otherwise list and decode the directory once per reader, and
+    could report duties derived from different snapshots of it. The directory
+    is listed once here — or the caller's own pass's read is taken as given,
+    so a pass that already holds one population does not read a second — and
+    that population is yielded and published, so the derivation drawing its own
+    rows and every nested reader answer from one listing.
+
+    A snapshot handed in may span projects, and each reader asks for a project:
+    the listing is published under the project each pointer names, so a reader
+    gets its own project's pointers rather than another's.
+
+    The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
+    exactly as long as the block and no later read inherits it.
+    """
+    listing = (
+        list(pointers) if pointers is not None else runs.list_live(project=project)
+    )
+    published: dict[str, list[dict[str, Any]]] = {}
+    for pointer in listing:
+        published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
+    token = _VIEW_LIVE_POINTERS.set(
+        {name: tuple(rows) for name, rows in published.items()}
+    )
+    # The in-flight review answer is keyed on the snapshot that asked the
+    # question, so it is dropped with the previous snapshot rather than left
+    # holding a pass whose pointers have gone. A reader below fills it in for
+    # this listing; it outlives nothing.
+    reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
+    try:
+        yield listing
+    finally:
+        _VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
+        _VIEW_LIVE_POINTERS.reset(token)
+
+
 def _live_pointers(project: str) -> list[dict[str, Any]]:
     """The live pointers this view derives from, read once for the whole view.
 
@@ -914,6 +967,27 @@ def _refusal_speaks_for_revision(recorded: Mapping[str, Any], *, head: str) -> b
     return bool(stated) and bool(head) and recovery.same_revision(stated, head)
 
 
+def _cli_review_rubric(record: Mapping[str, Any]) -> str | None:
+    """Text review records use the CLI's default rubric selector."""
+    rubric = review_module._review_record_rubric(record)
+    return None if rubric == "node" else rubric or None
+
+
+def _finding_disposition_commands(
+    project: str,
+    run_id: str,
+    index: int,
+    *,
+    review: Mapping[str, Any] | None = None,
+) -> tuple[str, str]:
+    """Compose finding remedies with the rubric names the CLI accepts."""
+    if review is not None:
+        review = {**review, "rubric": _cli_review_rubric(review)}
+    return recovery_review_dispatch._finding_dispose_commands(
+        project, run_id, index, review=review
+    )
+
+
 def _review_dispatch_refusal(
     project: str,
     pointer: Mapping[str, Any],
@@ -994,7 +1068,7 @@ def _review_dispatch_refusal(
         if not undisposed:
             continue
         index, _finding = undisposed[0]
-        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+        fold, exempt = _finding_disposition_commands(
             project, run_id, index, review=record
         )
         return {
@@ -1007,9 +1081,7 @@ def _review_dispatch_refusal(
     for index in recorded.get("findings") or ():
         if not isinstance(index, int) or isinstance(index, bool):
             continue
-        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
-            project, run_id, index
-        )
+        fold, exempt = _finding_disposition_commands(project, run_id, index)
         return {
             "reason": str(recorded.get("reason") or "")
             or "the review reflex refused this review's dispatch",
@@ -1322,7 +1394,7 @@ def _reflex_open_refusal(
             "reason": reason or "the reflex refused this review's dispatch",
             "next_command": dispatch or review_hand_dispatch_command(project, run_id),
         }
-    fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+    fold, exempt = _finding_disposition_commands(
         project,
         run_id,
         indices[0],
@@ -1402,22 +1474,6 @@ def _pointer_review(
 ) -> str:
     """One pointer's standing review, at the cost a single question had."""
     return _in_flight_review(pointer, _launched_candidates(pointers))
-
-
-@contextmanager
-def _pass_reviews_in_flight() -> Iterator[None]:
-    """Scope the shared answer to the derivation that published the pointers.
-
-    The memo carries the pass's own snapshot so it can tell one pass from the
-    next, so it must not outlive the pass either. Publishing the empty answer
-    with a token and resetting it in a finally drops the memo when the
-    derivation ends, as the pointer snapshot itself is dropped.
-    """
-    token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
-    try:
-        yield
-    finally:
-        _VIEW_REVIEWS_IN_FLIGHT.reset(token)
 
 
 def _reviews_in_flight(project: str) -> Mapping[str, str | None]:
@@ -1618,7 +1674,11 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
     what keeps the two surfaces from disagreeing about a refused request.
     """
     rows: list[dict[str, Any]] = []
-    for pointer in _live_pointers(project):
+    # The rows are classified from one snapshot of the view's pointers, and each
+    # row reads that same snapshot for a review that may stand for its head, so
+    # one fleet is classified from one read of the directory.
+    snapshot = _live_pointers(project)
+    for pointer in snapshot:
         # A pointer whose phase still reads queued while it carries
         # ``launched_at`` was launched and never had its phase advanced, so the
         # queued phase says nothing about the run. Classifying it as stored
@@ -1632,7 +1692,7 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
         ):
             subject = {**pointer, "phase": ""}
         try:
-            row = recovery.classify_pointer(subject)
+            row = recovery.classify_pointer(subject, pointers=snapshot)
         except Exception as error:  # noqa: BLE001 - one run must not fail the fleet
             # A classification that raises would otherwise take the whole
             # project's derivation with it, so no session's obligations are
@@ -1803,9 +1863,13 @@ def _partition_acknowledged(
     """Split duties into those still owed and those deliberately deferred."""
     owed: list[dict[str, Any]] = []
     deferred: list[dict[str, Any]] = []
-    for candidate in items:
-        original = candidate.get("deferred_duty")
-        item = original if isinstance(original, dict) else candidate
+    candidates = [
+        candidate["deferred_duty"]
+        if isinstance(candidate.get("deferred_duty"), dict)
+        else candidate
+        for candidate in items
+    ]
+    for item in measured_remedy_items(candidates, deferred_runs=acknowledgements):
         record = acknowledgements.get(str(item.get("run_id") or ""))
         if record is None:
             owed.append(item)
@@ -1824,6 +1888,79 @@ def _partition_acknowledged(
             }
         )
     return owed, deferred
+
+
+def measured_remedy_items(
+    items: Sequence[Mapping[str, Any]], *, deferred_runs: Iterable[str] = ()
+) -> list[dict[str, Any]]:
+    """Offer settlement commands only from the attempt's current evidence.
+
+    Both the direct view and the station's snapshot partition here, so the
+    hook renders the same decision without importing the derivation.
+    """
+    checked: list[dict[str, Any]] = []
+    deferred = set(deferred_runs)
+    for original in items:
+        item = dict(original)
+        command = str(item.get("next_command") or "")
+        try:
+            tokens = shlex.split(command)
+        except ValueError:
+            tokens = []
+        completing = "complete" in tokens and "crew" in tokens
+        repairing = "repair" in tokens and "--status" in tokens and "complete" in tokens
+        settlement_kind = item.get("kind") in {
+            "promotion-failed",
+            "review-ready",
+            "promotable-stale",
+            HELD_BY_FINISHED_RUN_DUTY_KIND,
+        }
+        if not (completing or repairing or settlement_kind):
+            checked.append(item)
+            continue
+        run_id = str(item.get("run_id") or "")
+        if "--run" in tokens and tokens.index("--run") + 1 < len(tokens):
+            run_id = tokens[tokens.index("--run") + 1]
+        try:
+            pointer = runs.read_pointer(run_id)
+        except CrewError:
+            pointer = {}
+        if not pointer:
+            if item.get("kind") == "promotion-failed" and run_id not in deferred:
+                continue
+            item["next_command"] = f"reckon crew observe --run {shlex.quote(run_id)}"
+        elif not recovery_classification.completion_offer(pointer, repair=True):
+            if settlement_kind:
+                continue
+            item["next_command"] = f"reckon crew observe --run {shlex.quote(run_id)}"
+        elif not repairing:
+            offered = recovery_classification._promotion_command(
+                run_id, pointer, list(item.get("manifest_commits") or ())
+            )
+            if "--gate passed" in offered and tokens[:3] == [
+                "reckon",
+                "crew",
+                "complete",
+            ]:
+                # Keep the caller's landing and disposition options once the
+                # shared composer has established the passing verdict.
+                if any(
+                    argument == "--gate" or argument.startswith("--gate=")
+                    for argument in tokens
+                ):
+                    item["next_command"] = re.sub(
+                        r"--gate(?:\s+|=)\S+", "--gate passed", command
+                    )
+                else:
+                    item["next_command"] = command + " --gate passed"
+            else:
+                item["next_command"] = offered
+        # An action form from a cached snapshot describes its previous command.
+        if "next_action" in item:
+            item["next_action"] = item["next_command"]
+        item.pop("next_action_form", None)
+        checked.append(item)
+    return checked
 
 
 def _scope_held_item(
@@ -2746,6 +2883,10 @@ def _review_duty_item(
     """
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
+    if pointer is not None and not recovery_classification.completion_offer(
+        pointer, repair=True
+    ):
+        return None
 
     def _classification_kind() -> str:
         return (
@@ -2776,7 +2917,7 @@ def _review_duty_item(
         and row.get("review_run_id")
         and row.get("review_run_phase") == "working"
     ):
-        item = _live_item(row, kind="review-in-flight", now=now)
+        item = _live_item(row, kind=REVIEW_IN_FLIGHT_DUTY_KIND, now=now)
         item["reason"] = str(row.get("detail") or "")
         return item
 
@@ -3608,6 +3749,23 @@ def _held_worktree_records_read(
                     key = (1, run_id)
                     index.extra.add(run_id)
                 index.replace(key, row, retained)
+            # The merged reader answers from the run store, whose identity is a
+            # run id, so a row the aggregate carries without one is not a run it
+            # can return even though the ledger still holds that row. The
+            # aggregate is read here anyway, and the ordinals still pending are
+            # the rows it kept and the read above did not deliver; one of those
+            # without a run id is filed from the aggregate's own position, so a
+            # tree only such a row names stays held rather than being lost to
+            # which reader answered. A pending row that does carry a run id is a
+            # disagreement between the aggregate and the store, which the store's
+            # own refresh settles; filing it here would answer for a row the
+            # store retired or has yet to take.
+            for (run_id, _order), ordinals in aggregate_order.items():
+                if run_id:
+                    continue
+                for ordinal in ordinals:
+                    row = aggregate_rows[ordinal]
+                    index.replace((0, ordinal), row, _retained_worktree(row))
             affected = set(inspected)
         else:
             _stamp, old_identities, index = previous
@@ -3857,7 +4015,7 @@ def _sub_floor_items_by_session(
                 run_id,
                 f"--dimension {shlex.quote(str(finding['dimension']))}",
                 review_run_id=str(record.get("review_run_id") or "") or None,
-                rubric=review_module._review_record_rubric(record) or None,
+                rubric=_cli_review_rubric(record),
             )
             by_session.setdefault(session, []).append(
                 {
@@ -4101,14 +4259,8 @@ def obligations(
     and a run in flight cannot appear in one duty and be absent from another
     read in the same view.
     """
-    with _pass_reviews_in_flight():
-        token = _VIEW_LIVE_POINTERS.set(
-            {project: tuple(runs.list_live(project=project))}
-        )
-        try:
-            return _obligations_view(project, session, fields=fields)
-        finally:
-            _VIEW_LIVE_POINTERS.reset(token)
+    with live_pointer_snapshot(project):
+        return _obligations_view(project, session, fields=fields)
 
 
 def _obligations_view(

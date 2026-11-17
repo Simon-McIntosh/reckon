@@ -42,10 +42,20 @@ def _tree_name(index: int) -> str:
 
 
 def _worktree(root: Path, node: str) -> Path:
-    """Register a tree the way a dispatched run leaves one behind."""
+    """Register a tree the way a dispatched run leaves one behind.
+
+    The tree carries a commit its primary branch does not reach. The derivation
+    holds a retained tree only while a landing would otherwise lose something,
+    so a tree left clean and reachable would be dropped before its naming was
+    ever consulted, and this fixture would measure that filter rather than the
+    index.
+    """
     path = root.parent / "managed-worktrees" / SESSION / node
     path.parent.mkdir(parents=True, exist_ok=True)
     _git(root, "worktree", "add", "-q", "--detach", str(path), "HEAD")
+    (path / f"{node}.txt").write_text(f"{node}\n", encoding="utf-8")
+    _git(path, "add", f"{node}.txt")
+    _git(path, "commit", "-q", "-m", f"test: leave {node} work unmerged")
     return path
 
 

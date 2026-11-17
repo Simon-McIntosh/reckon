@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "827719105952d26737ec2c5da31433132664e0b6",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:crew.dispatch",
+    "reckon/crew/dispatch_claims.py:2244 _raise_repository_scope_conflict",
+    "reckon/crew/runs.py:1985 _claim_paths_share",
+    "reckon/crew/runs.py:2032 _shared_write_paths",
+    "reckon/crew/admission/holds.py:525 _claim_paths_share"
+  ],
+  "completed_at": "2026-11-16T14:54:44.385Z",
+  "dispatched_at": "2026-11-16T14:54:15Z",
+  "findings": [
+    {
+      "file": "tests/test_shared_claims_on_declared_hot_files.py",
+      "line": "154",
+      "severity": "non-blocking",
+      "text": "non-blocking: the _declare call in cases two (:154), three (:171) and four (:192-absent) no longer influences the decision, because reckon/crew/runs.py:2032 _shared_write_paths documents that a sharing declaration cannot introduce a source-path hold and exclusivity comes from DEFAULT_EXCLUSIVE_PATHS; the docstring still says the list names only pkg/hot.py, which reads as load-bearing and makes case one (:134) indistinguishable from case four (:180)."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-shared-claims-on-declared-hot-files.html",
+      "line": "81",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base-arm receipt quotes all_debug job 1320039 and 9.01s, while the log the manifest names as negative_control_log, logs/base-gate-8277191059.log, carries job 1320064 on line 6 and 3 failed, 2 passed in 8.99s, so the recorded figure cannot be read back from the log it cites."
+    }
+  ],
+  "head_log_revision": "f93a68e990c7c5a0d1b68816d27128f622ffa155",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/dispatch.py:crew.dispatch as the entry the test drives, and the comparison it reaches: dispatch_claims.py:2244 _raise_repository_scope_conflict, runs.py:1985 _claim_paths_share and runs.py:2032 _shared_write_paths.",
+    "diff": "read commit by commit against 8277191059: b0fbab2823 rewrites three of the five cases in tests/test_shared_claims_on_declared_hot_files.py and nothing else, f93a68e990 adds the 102-line evidence fragment; the other three commits in the range are the merged origin/main the done_when required.",
+    "done_when": "the done_when asks for the named file passing as an all_debug job with SLURM_JOB_ID unset, a per-cause product-or-test verdict, no assertion deleted or weakened, an arm adding no failure, and a negative control; logs/head-f93a68e990.log is all_debug job 1320045 with the wrapper unsetting SLURM_JOB_ID, logs/base-gate-8277191059.log reproduces 3 failed / 2 passed EXIT=1, the fragment gives the test-wrong verdict, and git show shows all five cases retained.",
+    "goal": "the goal is to make tests/test_shared_claims_on_declared_hot_files.py pass in full on the primary branch; the gate at f93a68e990 reads 5 passed EXIT=0 and I re-ran the file in the reviewed worktree to the same 5 passed.",
+    "manifest": "read; status complete, commits b0fbab2823 and f93a68e990, both suite arms 58 passed with EXIT=0, the named negative control at 3 failed / 2 passed EXIT=1, ruff clean on the changed path in both arms.",
+    "write_paths": "the declared paths were reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two node commits touch tests/test_shared_claims_on_declared_hot_files.py and the one fragment html, nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_shared_claims_on_declared_hot_files.py:180 fails if runs.py:_shared_write_paths stops sharing an undeclared source file and :146/:163 fail if docs/plans/*.html leaves DEFAULT_EXCLUSIVE_PATHS, but the _declare call at :154 is inert on the decision runs.py:2032 describes and case one at :134 is indistinguishable from case four.",
+    "evidence": "logs/base-gate-8277191059.log and logs/head-f93a68e990.log each end in a bare EXIT line (EXIT=1, EXIT=0), sacct shows jobs 1320064 and 1320045 on all_debug, and both suite arms are recorded at 58 passed, but the manifest checkpoint, artifacts and the fragment at line 81 quote job 1320039 and 9.01s for the base arm while the log they name carries job 1320064 and 8.99s.",
+    "fit": "the rewritten cases at tests/test_shared_claims_on_declared_hot_files.py:146-188 keep the file's existing _declare/_dispatch/repository fixture idiom, ruff reports the file formatted, and no added name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_shared_claims_on_declared_hot_files.py reads 5 passed EXIT=0 at f93a68e990 in logs/head-f93a68e990.log, which I re-ran in the reviewed worktree to 5 passed, so the goal's file passes in full; the primary-branch half of the goal is still the promotion's to prove.",
+    "reuse": "the node adds no production definition; I searched reckon/crew for a claim-sharing mechanism and found the owners it drives, runs.py:1985 _claim_paths_share and runs.py:2032 _shared_write_paths, plus crew.dispatch and crew.pointer_path, none forked.",
+    "scope_discipline": "git show b0fbab2823 and f93a68e990 touch only tests/test_shared_claims_on_declared_hot_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-shared-claims-on-declared-hot-files.html, both inside the declared paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_shared_claims_on_declared_hot_files.py pass in full on the primary branch; the gate at f93a68e990 reads 5 passed EXIT=0 and I re-ran the file in the reviewed worktree to the same 5 passed.\nVERDICT done_when: the done_when asks for the named file passing as an all_debug job with SLURM_JOB_ID unset, a per-cause product-or-test verdict, no assertion deleted or weakened, an arm adding no failure, and a negative control; logs/head-f93a68e990.log is all_debug job 1320045 with the wrapper unsetting SLURM_JOB_ID, logs/base-gate-8277191059.log reproduces 3 failed / 2 passed EXIT=1, the fragment gives the test-wrong verdict, and git show shows all five cases retained.\nVERDICT write_paths: the declared paths were reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two node commits touch tests/test_shared_claims_on_declared_hot_files.py and the one fragment html, nothing else.\nVERDICT manifest: read; status complete, commits b0fbab2823 and f93a68e990, both suite arms 58 passed with EXIT=0, the named negative control at 3 failed / 2 passed EXIT=1, ruff clean on the changed path in both arms.\nVERDICT diff: read commit by commit against 8277191059: b0fbab2823 rewrites three of the five cases in tests/test_shared_claims_on_declared_hot_files.py and nothing else, f93a68e990 adds the 102-line evidence fragment; the other three commits in the range are the merged origin/main the done_when required.\nCALL_SITES: reckon/crew/dispatch.py:crew.dispatch, reckon/crew/dispatch_claims.py:2244 _raise_repository_scope_conflict, reckon/crew/runs.py:1985 _claim_paths_share, reckon/crew/runs.py:2032 _shared_write_paths, reckon/crew/admission/holds.py:525 _claim_paths_share\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_shared_claims_on_declared_hot_files.py reads 5 passed EXIT=0 at f93a68e990 in logs/head-f93a68e990.log, which I re-ran in the reviewed worktree to 5 passed, so the goal's file passes in full; the primary-branch half of the goal is still the promotion's to prove.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-gate-8277191059.log and logs/head-f93a68e990.log each end in a bare EXIT line (EXIT=1, EXIT=0), sacct shows jobs 1320064 and 1320045 on all_debug, and both suite arms are recorded at 58 passed, but the manifest checkpoint, artifacts and the fragment at line 81 quote job 1320039 and 9.01s for the base arm while the log they name carries job 1320064 and 8.99s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show b0fbab2823 and f93a68e990 touch only tests/test_shared_claims_on_declared_hot_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-shared-claims-on-declared-hot-files.html, both inside the declared paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_shared_claims_on_declared_hot_files.py:180 fails if runs.py:_shared_write_paths stops sharing an undeclared source file and :146/:163 fail if docs/plans/*.html leaves DEFAULT_EXCLUSIVE_PATHS, but the _declare call at :154 is inert on the decision runs.py:2032 describes and case one at :134 is indistinguishable from case four.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten cases at tests/test_shared_claims_on_declared_hot_files.py:146-188 keep the file's existing _declare/_dispatch/repository fixture idiom, ruff reports the file formatted, and no added name carries a plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no production definition; I searched reckon/crew for a claim-sharing mechanism and found the owners it drives, runs.py:1985 _claim_paths_share and runs.py:2032 _shared_write_paths, plus crew.dispatch and crew.pointer_path, none forked.\nFINDING tests/test_shared_claims_on_declared_hot_files.py:154 non-blocking: the _declare call in cases two (:154), three (:171) and four (:192-absent) no longer influences the decision, because reckon/crew/runs.py:2032 _shared_write_paths documents that a sharing declaration cannot introduce a source-path hold and exclusivity comes from DEFAULT_EXCLUSIVE_PATHS at runs.py:1821; the docstring still says the list names only pkg/hot.py, which reads as load-bearing and makes case one (:134) indistinguishable from case four (:180).\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-shared-claims-on-declared-hot-files.html:81 non-blocking: the base-arm receipt quotes all_debug job 1320039 and 9.01s, while the log the manifest names as negative_control_log, logs/base-gate-8277191059.log, carries job 1320064 on line 6 and 3 failed, 2 passed in 8.99s, so the recorded figure cannot be read back from the log it cites.\n",
+  "review_run_id": "r-20261116T140016960597-review-of-qwnw-red-file-shared-claims-on-declared-hot-files-f93a68e990c7",
+  "reviewed_base_sha": "827719105952d26737ec2c5da31433132664e0b6",
+  "reviewed_head_sha": "f93a68e990c7c5a0d1b68816d27128f622ffa155",
+  "reviewed_run_id": "r-20261116T104733987310-qwnw-red-file-shared-claims-on-declared-hot-files",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T140016960597-review-of-qwnw-red-file-shared-claims-on-declared-hot-files-f93a68e990c7"
+  },
+  "reviewer_run_id": "r-20261116T140016960597-review-of-qwnw-red-file-shared-claims-on-declared-hot-files-f93a68e990c7",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:00:48.098729+00:00",
+  "total": 108
+}

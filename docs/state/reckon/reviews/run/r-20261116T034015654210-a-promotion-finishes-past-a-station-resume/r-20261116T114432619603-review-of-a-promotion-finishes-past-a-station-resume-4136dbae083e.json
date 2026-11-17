@@ -1,0 +1,136 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from completed source baseline_suite and after_suite logs: both zero FAILED ids and EXIT=0; head failures minus baseline failures is empty. Partition execution remains a blocking evidence defect.",
+  "assertion_analysis": {
+    "180": "Removing promotion.py:591 restores exit 1 instead of 0, demonstrated by negative-control.log.",
+    "181": "Returning success without unlinking the ended pointer fails the independent filesystem absence assertion.",
+    "182-184": "Deleting the run receipt during cleanup fails the independent receipt-preservation assertion.",
+    "207": "Treating every newer attempt as ended lets the live case succeed and fails the nonzero-exit assertion.",
+    "208": "Replacing the refusal with an unrelated failure removes the required message and fails this assertion.",
+    "209": "Naming the original attempt rather than the newer pointer attempt fails the output identity assertion.",
+    "210": "Removing launcher naming or substituting supervisor pid fails the actual child-launcher pid output assertion, demonstrated by the negative control.",
+    "211": "Unlinking a live pointer before refusing fails the independent filesystem existence assertion.",
+    "45,47": "Fails if a fixture-id pointer preexists or leaks to actual home; external-state dependency is recorded as a finding."
+  },
+  "assertion_independence": "No vacuous same-variable assertion found: attempt and launcher fixture inputs name expected identity, but the CLI must independently read and format it; restoring base demonstrates failure of the launcher assertion.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete (cleanup calls at reviewed-head lines 2005 and 2696)",
+    "reckon/crew/promotion.py:_remove_promoted_pointer_or_defer"
+  ],
+  "completed_at": "2026-11-16T11:52:22Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-a-promotion-finishes-past-a-station-resume-4136dbae083e",
+      "recorded_at": "2026-11-16T12:08:53.790275+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-16T11:45:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-promotion-finishes-past-a-station-resume-4136dbae083e",
+      "recorded_at": "2026-11-16T12:08:52.706614+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-a-promotion-finishes-past-a-station-resume-4136dbae083e",
+      "recorded_at": "2026-11-16T12:08:53.202731+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "19",
+      "severity": "blocking",
+      "text": "blocking: the baseline_suite and after_suite receipts come from direct pytest tool commands in stream.jsonl on the worker allocation named in prompt.txt:42, with no all_debug sbatch launch; rerun the matched importer arms as the done_when requires before accepting this evidence."
+    },
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "blocking",
+      "text": "blocking: tests contains an unrecorded truncated pytest invocation with stderr discarded before the actual gate, while measurement_module at :15 is a truncated path plus shell redirection; replace these with the literal recorded gate command and actual imported module path so delivery can be audited and replayed."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "305",
+      "severity": "non-blocking",
+      "text": "non-blocking: _attempt_reservation duplicates the parse-and-type-check capability owned by reckon/crew/dispatch_launch.py:2525 (_read_reservation), adding run-id validation without extending or wrapping that owner; route the read through the owner to keep one reservation parser."
+    },
+    {
+      "file": "tests/test_a_promotion_finishes_past_a_station_resume.py",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "non-blocking: REAL_LIVE and the autouse assertions at :45 and :47 read the actual home crew directory, so the test depends on machine state despite the repository rule requiring isolation under the temporary crew home."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read dfee642b9830a5e11cc75afcae7931dde46dceae and 4136dbae083e090fa75ec21a09b53e045cd2b5a1 against e35fd9f935225b7005482a75032eb28abeb46c63; the first changes cleanup and adds two tests, the second adds only the evidence fragment.",
+    "done_when": "the plan s71 measure requires two integration cases and partition importer arms; gate-head.log and negative-control.log prove the cases, but stream.jsonl records direct importer invocations without the required all_debug submission.",
+    "goal": "dispatch-detail.json admit_request.node.goal requires finishing cleanup or naming the later launch; reckon/crew/promotion.py:591 and :618 implement those paths.",
+    "manifest": "manifest.md records completed zero-failure suite arms corroborated by both logs, but :13 contains a truncated extra pytest command and :15 supplies a shell fragment instead of an imported module path.",
+    "write_paths": "dispatch-detail.json admit_request.node.write_paths declares promotion.py, the new test and the evidence fragment; the complete base-to-head diff changes exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_finishes_past_a_station_resume.py:180 fails when ended-attempt cleanup is removed and :210 fails when launcher naming is removed, as negative-control.log demonstrates, although no added test races a third attempt against the final comparison.",
+    "evidence": "gate-head.log reports 2 passed and negative-control.log reports 2 failed with the required refusal, but manifest.md:19-20 cites importer measurements launched directly in stream.jsonl rather than the required all_debug job.",
+    "fit": "reckon/crew/promotion.py:395 uses the existing compare-under-lock mechanism and names functions by behavior, but tests/test_a_promotion_finishes_past_a_station_resume.py:40-47 reads real crew state contrary to the repository test-isolation rule.",
+    "goal_fidelity": "reckon/crew/promotion.py:591 retires a later ended attempt under the existing pointer lock, and :618 names the live attempt launcher in the refusal.",
+    "reuse": "reckon/crew/promotion.py:305 reimplements reservation JSON reading already owned by reckon/crew/dispatch_launch.py:2525 instead of wrapping that reader, although :370 and :400 correctly reuse exit-receipt and pointer-retirement owners.",
+    "scope_discipline": "the diff changes only reckon/crew/promotion.py, tests/test_a_promotion_finishes_past_a_station_resume.py and the declared evidence fragment, matching dispatch-detail.json admit_request.node.write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json admit_request.node.goal requires finishing cleanup or naming the later launch; reckon/crew/promotion.py:591 and :618 implement those paths.\nVERDICT done_when: the plan s71 measure requires two integration cases and partition importer arms; gate-head.log and negative-control.log prove the cases, but stream.jsonl records direct importer invocations without the required all_debug submission.\nVERDICT write_paths: dispatch-detail.json admit_request.node.write_paths declares promotion.py, the new test and the evidence fragment; the complete base-to-head diff changes exactly those three paths.\nVERDICT manifest: manifest.md records completed zero-failure suite arms corroborated by both logs, but :13 contains a truncated extra pytest command and :15 supplies a shell fragment instead of an imported module path.\nVERDICT diff: read dfee642b9830a5e11cc75afcae7931dde46dceae and 4136dbae083e090fa75ec21a09b53e045cd2b5a1 against e35fd9f935225b7005482a75032eb28abeb46c63; the first changes cleanup and adds two tests, the second adds only the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:complete (cleanup calls at reviewed-head lines 2005 and 2696), reckon/crew/promotion.py:_remove_promoted_pointer_or_defer\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:591 retires a later ended attempt under the existing pointer lock, and :618 names the live attempt launcher in the refusal.\nSCORE evidence: 10\nJUSTIFICATION evidence: gate-head.log reports 2 passed and negative-control.log reports 2 failed with the required refusal, but manifest.md:19-20 cites importer measurements launched directly in stream.jsonl rather than the required all_debug job.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/promotion.py, tests/test_a_promotion_finishes_past_a_station_resume.py and the declared evidence fragment, matching dispatch-detail.json admit_request.node.write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promotion_finishes_past_a_station_resume.py:180 fails when ended-attempt cleanup is removed and :210 fails when launcher naming is removed, as negative-control.log demonstrates, although no added test races a third attempt against the final comparison.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/promotion.py:395 uses the existing compare-under-lock mechanism and names functions by behavior, but tests/test_a_promotion_finishes_past_a_station_resume.py:40-47 reads real crew state contrary to the repository test-isolation rule.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion.py:305 reimplements reservation JSON reading already owned by reckon/crew/dispatch_launch.py:2525 instead of wrapping that reader, although :370 and :400 correctly reuse exit-receipt and pointer-retirement owners.\nFINDING manifest.md:19 blocking: the baseline_suite and after_suite receipts come from direct pytest tool commands in stream.jsonl on the worker allocation named in prompt.txt:42, with no all_debug sbatch launch; rerun the matched importer arms as the done_when requires before accepting this evidence.\nFINDING manifest.md:13 blocking: tests contains an unrecorded truncated pytest invocation with stderr discarded before the actual gate, while measurement_module at :15 is a truncated path plus shell redirection; replace these with the literal recorded gate command and actual imported module path so delivery can be audited and replayed.\nFINDING reckon/crew/promotion.py:305 non-blocking: _attempt_reservation duplicates the parse-and-type-check capability owned by reckon/crew/dispatch_launch.py:2525 (_read_reservation), adding run-id validation without extending or wrapping that owner; route the read through the owner to keep one reservation parser.\nFINDING tests/test_a_promotion_finishes_past_a_station_resume.py:40 non-blocking: REAL_LIVE and the autouse assertions at :45 and :47 read the actual home crew directory, so the test depends on machine state despite the repository rule requiring isolation under the temporary crew home.\n",
+  "reuse_audit": {
+    "definitions": {
+      "_attempt_has_ended": "Wraps dispatch_launch._reserved_attempt_ended.",
+      "_attempt_reservation": "Duplicates dispatch_launch._read_reservation instead of invoking it; finding recorded.",
+      "_launching_process_named": "New promotion refusal formatter; no existing formatter for this diagnostic found.",
+      "_pointer_attempt": "Promotion-specific optional integer adapter; existing _attempt_number has different missing/boolean semantics.",
+      "_retire_a_pointer_whose_attempt_ended": "Wraps pending_landing.attempt_identity and retire_pointer_if with the new end policy.",
+      "test helpers": "Scenario-specific setup and interposition reuse tests.helpers.landing_repository and tests.helpers.git."
+    },
+    "search": "Searched attempt extraction, reservation parsing, exit receipts, pointer retirement and landing setup capabilities in promotion.py, dispatch_launch.py, pending_landing.py and tests/helpers/landing_repository.py, and opened owners at the reviewed head."
+  },
+  "review_run_id": "r-20261116T114432619603-review-of-a-promotion-finishes-past-a-station-resume-4136dbae083e",
+  "review_text": "VERDICT goal: dispatch-detail.json admit_request.node.goal requires finishing cleanup or naming the later launch; reckon/crew/promotion.py:591 and :618 implement those paths.\nVERDICT done_when: the plan s71 measure requires two integration cases and partition importer arms; gate-head.log and negative-control.log prove the cases, but stream.jsonl records direct importer invocations without the required all_debug submission.\nVERDICT write_paths: dispatch-detail.json admit_request.node.write_paths declares promotion.py, the new test and the evidence fragment; the complete base-to-head diff changes exactly those three paths.\nVERDICT manifest: manifest.md records completed zero-failure suite arms corroborated by both logs, but :13 contains a truncated extra pytest command and :15 supplies a shell fragment instead of an imported module path.\nVERDICT diff: read dfee642b9830a5e11cc75afcae7931dde46dceae and 4136dbae083e090fa75ec21a09b53e045cd2b5a1 against e35fd9f935225b7005482a75032eb28abeb46c63; the first changes cleanup and adds two tests, the second adds only the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:complete (cleanup calls at reviewed-head lines 2005 and 2696), reckon/crew/promotion.py:_remove_promoted_pointer_or_defer\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:591 retires a later ended attempt under the existing pointer lock, and :618 names the live attempt launcher in the refusal.\nSCORE evidence: 10\nJUSTIFICATION evidence: gate-head.log reports 2 passed and negative-control.log reports 2 failed with the required refusal, but manifest.md:19-20 cites importer measurements launched directly in stream.jsonl rather than the required all_debug job.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/promotion.py, tests/test_a_promotion_finishes_past_a_station_resume.py and the declared evidence fragment, matching dispatch-detail.json admit_request.node.write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promotion_finishes_past_a_station_resume.py:180 fails when ended-attempt cleanup is removed and :210 fails when launcher naming is removed, as negative-control.log demonstrates, although no added test races a third attempt against the final comparison.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/promotion.py:395 uses the existing compare-under-lock mechanism and names functions by behavior, but tests/test_a_promotion_finishes_past_a_station_resume.py:40-47 reads real crew state contrary to the repository test-isolation rule.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion.py:305 reimplements reservation JSON reading already owned by reckon/crew/dispatch_launch.py:2525 instead of wrapping that reader, although :370 and :400 correctly reuse exit-receipt and pointer-retirement owners.\nFINDING manifest.md:19 blocking: the baseline_suite and after_suite receipts come from direct pytest tool commands in stream.jsonl on the worker allocation named in prompt.txt:42, with no all_debug sbatch launch; rerun the matched importer arms as the done_when requires before accepting this evidence.\nFINDING manifest.md:13 blocking: tests contains an unrecorded truncated pytest invocation with stderr discarded before the actual gate, while measurement_module at :15 is a truncated path plus shell redirection; replace these with the literal recorded gate command and actual imported module path so delivery can be audited and replayed.\nFINDING reckon/crew/promotion.py:305 non-blocking: _attempt_reservation duplicates the parse-and-type-check capability owned by reckon/crew/dispatch_launch.py:2525 (_read_reservation), adding run-id validation without extending or wrapping that owner; route the read through the owner to keep one reservation parser.\nFINDING tests/test_a_promotion_finishes_past_a_station_resume.py:40 non-blocking: REAL_LIVE and the autouse assertions at :45 and :47 read the actual home crew directory, so the test depends on machine state despite the repository rule requiring isolation under the temporary crew home.\n",
+  "reviewed_base_sha": "e35fd9f935225b7005482a75032eb28abeb46c63",
+  "reviewed_head_sha": "4136dbae083e090fa75ec21a09b53e045cd2b5a1",
+  "reviewed_run_id": "r-20261116T034015654210-a-promotion-finishes-past-a-station-resume",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 15,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T034015654210-a-promotion-finishes-past-a-station-resume/suite-head.log",
+      "summary": "60 passed in 87.59s (0:01:27)"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T034015654210-a-promotion-finishes-past-a-station-resume/suite-base.log",
+      "summary": "58 passed in 55.03s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:14:23.556068+00:00",
+  "total": 88
+}

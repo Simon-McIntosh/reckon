@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3642",
+    "reckon/crew_run_commands.py:3334"
+  ],
+  "completed_at": "2026-11-16T13:49:42.786Z",
+  "dispatched_at": "2026-11-16T13:48:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1555",
+      "severity": "non-blocking",
+      "text": "non-blocking: the helper's loop over declared review-record paths, JSON read and store_review_refusals call repeats _refused_delivered_review_read here; the rule is shared but the collection now exists in three places, so a change to what counts as a delivered record must be made three times."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3315",
+      "severity": "non-blocking",
+      "text": "non-blocking: the location test checks only the parent directory's name, where the owner recovery_review_delivery.py:153 also anchors on the runs root, so a repository path literally named review-records/<x>.json is judged delivered here while the filer would ignore it; the code is relocated unchanged, so it is not introduced by this change."
+    },
+    {
+      "file": "tests/test_review_record_contract.py",
+      "line": "287",
+      "severity": "non-blocking",
+      "text": "non-blocking: `**_kwargs` accepts any keyword from the rule, so the double no longer pins the call shape the old one-argument lambda did; naming the keyword would keep that check while allowing the snapshot the rule now passes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit over 24bc79d8..9dbb79b0; the node's own commits are 717c111c3f, c820c173d0, 515a1c6e38 and 9dbb79b090 (105 changed lines: the hoisted guard, one test-double signature and the evidence fragment), while 82a2e8f2e1 and 3eb1f64af4 arrive from the fast-forward merge of origin/main the run performed before reproducing.",
+    "done_when": "the done_when asks for a green file at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importers arm adding no failure, and a logged base control; logs/node-head.log carries `# slurm_job: unset` and `11 passed in 1.06s` with `EXIT=0`, logs/node-base.log carries `4 failed, 7 passed` with `EXIT=1` at 24bc79d8, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-record-contract.html:8-14 names both causes as product wrong and test wrong.",
+    "goal": "the goal is that tests/test_review_record_contract.py passes in full, and the landed repair hoists the review-record refusal to reckon/crew_run_commands.py:3642, ahead of the queued-request branch, so the file reads 11 passed at 9dbb79b0 (re-run in the node worktree: 11 passed in 0.95s).",
+    "manifest": "read the run's manifest.md, which states status complete, the four commits, 11 passed at head against 4 failed / 7 passed at 24bc79d8, and names logs/node-head.log, logs/node-base.log, logs/suite-base.log and logs/suite-after.log.",
+    "write_paths": "the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround plus its own fragment, and the three files the node commits change (reckon/crew_run_commands.py, tests/test_review_record_contract.py, that fragment) all lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_review_record_contract.py:262 reddens if the guard is moved back behind the queued-request branch, which is exactly the arm logs/node-base.log records as failing before the change.",
+    "evidence": "logs/node-head.log:48 records `11 passed in 1.06s` with `EXIT=0` and `# slurm_job: unset`, and logs/node-base.log:380 records the red arm `4 failed, 7 passed` with `EXIT=1`.",
+    "fit": "the helper at reckon/crew_run_commands.py:3283 follows the module's private keyword-only, deferred-import, docstring-stating-its-failure style beside _refuse_a_flag_as_a_reason.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3642 judges the refusal before the request path at 3647, and the file it governs passes in full at the head I re-ran.",
+    "reuse": "the refusal rule is delegated to review.py:1118 rather than restated, but the delivered-record collection loop is textually and semantically the one obligations.py:1555 already owns, so the addition duplicates rather than extends that owner.",
+    "scope_discipline": "the node's three changed paths all fall inside the manifest's declared write_paths for reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_review_record_contract.py passes in full, and the landed repair hoists the review-record refusal to reckon/crew_run_commands.py:3642, ahead of the queued-request branch, so the file reads 11 passed at 9dbb79b0 (re-run in the node worktree: 11 passed in 0.95s).\nVERDICT done_when: the done_when asks for a green file at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importers arm adding no failure, and a logged base control; logs/node-head.log carries `# slurm_job: unset` and `11 passed in 1.06s` with `EXIT=0`, logs/node-base.log carries `4 failed, 7 passed` with `EXIT=1` at 24bc79d8, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-record-contract.html:8-14 names both causes as product wrong and test wrong.\nVERDICT write_paths: the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround plus its own fragment, and the three files the node commits change (reckon/crew_run_commands.py, tests/test_review_record_contract.py, that fragment) all lie inside them.\nVERDICT manifest: read the run's manifest.md, which states status complete, the four commits, 11 passed at head against 4 failed / 7 passed at 24bc79d8, and names logs/node-head.log, logs/node-base.log, logs/suite-base.log and logs/suite-after.log.\nVERDICT diff: read commit by commit over 24bc79d8..9dbb79b0; the node's own commits are 717c111c3f, c820c173d0, 515a1c6e38 and 9dbb79b090 (105 changed lines: the hoisted guard, one test-double signature and the evidence fragment), while 82a2e8f2e1 and 3eb1f64af4 arrive from the fast-forward merge of origin/main the run performed before reproducing.\nCALL_SITES: reckon/crew_run_commands.py:3642, reckon/crew_run_commands.py:3334\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3642 judges the refusal before the request path at 3647, and the file it governs passes in full at the head I re-ran.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/node-head.log:48 records `11 passed in 1.06s` with `EXIT=0` and `# slurm_job: unset`, and logs/node-base.log:380 records the red arm `4 failed, 7 passed` with `EXIT=1`.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node's three changed paths all fall inside the manifest's declared write_paths for reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_record_contract.py:262 reddens if the guard is moved back behind the queued-request branch, which is exactly the arm logs/node-base.log records as failing before the change.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at reckon/crew_run_commands.py:3283 follows the module's private keyword-only, deferred-import, docstring-stating-its-failure style beside _refuse_a_flag_as_a_reason.\nSCORE reuse: 16\nJUSTIFICATION reuse: the refusal rule is delegated to review.py:1118 rather than restated, but the delivered-record collection loop is textually and semantically the one obligations.py:1555 already owns, so the addition duplicates rather than extends that owner.\nFINDING reckon/crew/obligations.py:1555 non-blocking: the helper's loop over declared review-record paths, JSON read and store_review_refusals call repeats _refused_delivered_review_read here; the rule is shared but the collection now exists in three places, so a change to what counts as a delivered record must be made three times.\nFINDING reckon/crew_run_commands.py:3315 non-blocking: the location test checks only the parent directory's name, where the owner recovery_review_delivery.py:153 also anchors on the runs root, so a repository path literally named review-records/<x>.json is judged delivered here while the filer would ignore it; the code is relocated unchanged, so it is not introduced by this change.\nFINDING tests/test_review_record_contract.py:287 non-blocking: `**_kwargs` accepts any keyword from the rule, so the double no longer pins the call shape the old one-argument lambda did; naming the keyword would keep that check while allowing the snapshot the rule now passes.",
+  "review_run_id": "r-20261116T131837713821-review-of-qwnw-red-file-review-record-contract-9dbb79b0901c",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "9dbb79b0901c30171b640261c534aaf9c5831ada",
+  "reviewed_run_id": "r-20261116T104355176177-qwnw-red-file-review-record-contract",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:16:00.322571+00:00",
+  "total": 109
+}

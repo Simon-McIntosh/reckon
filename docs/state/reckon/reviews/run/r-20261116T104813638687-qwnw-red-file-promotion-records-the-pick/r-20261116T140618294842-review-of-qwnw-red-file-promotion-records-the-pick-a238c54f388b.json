@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:827 complete",
+    "reckon/crew/runs.py:242 dispatch_field",
+    "reckon/crew/runs.py:1208 read_pointer"
+  ],
+  "completed_at": "2026-11-16T15:25:48.983Z",
+  "dispatched_at": "2026-11-16T15:25:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-the-pick.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms table names cdceb9bb82 in the named-file row and at :38 in the armed-suite row, while gate-head.log:1 and after-suite.log:1 \u2014 the only gate logs in the run directory \u2014 both name a238c54f38, so the revision each row states is not the revision its recorded result was produced at and a reader cannot reconcile the table with the logs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read f361d2bcfc..a238c54f38 commit by commit, and cdceb9bb82 replaces three `read_pointer(...)[\"picker_selection\"]` reads with `dispatch_field(read_pointer(...), \"picker_selection\")` and re-points the fixture's commit at the pointer's worktree (20 added, 13 deleted, no assert line dropped), while a238c54f38 only adds the 48-line evidence fragment.",
+    "done_when": "the done_when asks for the whole file as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no assertion deleted or weakened, an arm over the importing test files adding no failure, a logged base negative control and clean ruff, and the run records every part \u2014 gate-head.log:1 reads 6 passed EXIT=0 under `env -u SLURM_JOB_ID` with gate-job-2.out naming partition all_debug, the fragment states both causes with their test-wrong verdicts, baseline-suite.log and after-suite.log read 58 passed EXIT=0 each, base-run-test-exit.log ends 3 failed 3 passed EXIT=1, and ruff-head.log plus ruff-head-format.log read EXIT=0.",
+    "goal": "the node's goal is that tests/test_promotion_records_the_pick.py passes in full, and the landed change reads the pick through reckon/crew/runs.py:242 dispatch_field at tests/test_promotion_records_the_pick.py:269 and commits the fixture's work in the run's own worktree at :129, with the gate log at gate-head.log:1 reading 6 passed and EXIT=0 at the reviewed head.",
+    "manifest": "read; it records status complete, commits cdceb9bb82 and a238c54f38, the gate command with its log, baseline_suite and after_suite both at 0 failures and completed, the base negative control at 3 failed EXIT=1, and `crew check --manifest` on it answers ok true with an empty findings list.",
+    "write_paths": "the fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's own fragment there and its figure directory, and `git show --stat cdceb9bb82 a238c54f38` lists only tests/test_promotion_records_the_pick.py (commit cdceb9bb82) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-the-pick.html (commit a238c54f38), both inside it."
+  },
+  "justifications": {
+    "durability": "reinstating either half of the change reddens, since the primary head 398015d5 still reads 3 failed EXIT=1 with KeyError: 'picker_selection' where the accessor read now stands, and committing in the primary checkout reddens the promotion refusal the fixture works around.",
+    "evidence": "the gates that matter are logged against their own revisions in gate-head.log, baseline-suite.log:1 and after-suite.log:1, but the fragment's arms table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-the-pick.html:34 states a different revision from the one its logs carry.",
+    "fit": "the fixture follows the file's own subprocess-and-repo idiom but its four-line docstring at tests/test_promotion_records_the_pick.py:123-128 restates the commit body where the file's other helpers at tests/test_promotion_records_the_pick.py:118 carry none.",
+    "goal_fidelity": "gate-head.log:1 reads 6 passed EXIT=0 at a238c54f38, and the red file the goal names reproduces here at the primary head 398015d5 with the same three ids, so the repair targets the right defect and only its merge is outstanding.",
+    "reuse": "the change adds no definition at all, extending the owner instead: it drops the duplicate pointer-key read in favour of reckon/crew/runs.py:242 dispatch_field, the single accessor that already answers for both pointer shapes.",
+    "scope_discipline": "the two commits change only tests/test_promotion_records_the_pick.py and the node's own evidence fragment, both named by the fence in the dispatch, with nothing else touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_promotion_records_the_pick.py passes in full, and the landed change reads the pick through reckon/crew/runs.py:242 dispatch_field at tests/test_promotion_records_the_pick.py:269 and commits the fixture's work in the run's own worktree at :129, with the gate log at gate-head.log:1 reading 6 passed and EXIT=0 at the reviewed head.\nVERDICT done_when: the done_when asks for the whole file as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no assertion deleted or weakened, an arm over the importing test files adding no failure, a logged base negative control and clean ruff, and the run records every part \u2014 gate-head.log:1 reads 6 passed EXIT=0 under `env -u SLURM_JOB_ID` with gate-job-2.out naming partition all_debug, the fragment states both causes with their test-wrong verdicts, baseline-suite.log and after-suite.log read 58 passed EXIT=0 each, base-run-test-exit.log ends 3 failed 3 passed EXIT=1, and ruff-head.log plus ruff-head-format.log read EXIT=0.\nVERDICT write_paths: the fence is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's own fragment there and its figure directory, and `git show --stat cdceb9bb82 a238c54f38` lists only tests/test_promotion_records_the_pick.py (commit cdceb9bb82) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-the-pick.html (commit a238c54f38), both inside it.\nVERDICT manifest: read; it records status complete, commits cdceb9bb82 and a238c54f38, the gate command with its log, baseline_suite and after_suite both at 0 failures and completed, the base negative control at 3 failed EXIT=1, and `crew check --manifest` on it answers ok true with an empty findings list.\nVERDICT diff: read f361d2bcfc..a238c54f38 commit by commit, and cdceb9bb82 replaces three `read_pointer(...)[\"picker_selection\"]` reads with `dispatch_field(read_pointer(...), \"picker_selection\")` and re-points the fixture's commit at the pointer's worktree (20 added, 13 deleted, no assert line dropped), while a238c54f38 only adds the 48-line evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:827 complete, reckon/crew/runs.py:242 dispatch_field, reckon/crew/runs.py:1208 read_pointer\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: gate-head.log:1 reads 6 passed EXIT=0 at a238c54f38, and the red file the goal names reproduces here at the primary head 398015d5 with the same three ids, so the repair targets the right defect and only its merge is outstanding.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gates that matter are logged against their own revisions in gate-head.log, baseline-suite.log:1 and after-suite.log:1, but the fragment's arms table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-the-pick.html:34 states a different revision from the one its logs carry.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits change only tests/test_promotion_records_the_pick.py and the node's own evidence fragment, both named by the fence in the dispatch, with nothing else touched.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating either half of the change reddens, since the primary head 398015d5 still reads 3 failed EXIT=1 with KeyError: 'picker_selection' where the accessor read now stands, and committing in the primary checkout reddens the promotion refusal the fixture works around.\nSCORE fit: 16\nJUSTIFICATION fit: the fixture follows the file's own subprocess-and-repo idiom but its four-line docstring at tests/test_promotion_records_the_pick.py:123-128 restates the commit body where the file's other helpers at tests/test_promotion_records_the_pick.py:118 carry none.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition at all, extending the owner instead: it drops the duplicate pointer-key read in favour of reckon/crew/runs.py:242 dispatch_field, the single accessor that already answers for both pointer shapes.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-records-the-pick.html:34 non-blocking: the arms table names cdceb9bb82 in the named-file row and at :38 in the armed-suite row, while gate-head.log:1 and after-suite.log:1 \u2014 the only gate logs in the run directory \u2014 both name a238c54f38, so the revision each row states is not the revision its recorded result was produced at and a reader cannot reconcile the table with the logs.",
+  "review_run_id": "r-20261116T140618294842-review-of-qwnw-red-file-promotion-records-the-pick-a238c54f388b",
+  "reviewed_base_sha": "f361d2bcfcedaa2068686dd3588b2907527613f2",
+  "reviewed_head_sha": "a238c54f388b38c5ac6f1ac9d86ff43e3c666d35",
+  "reviewed_run_id": "r-20261116T104813638687-qwnw-red-file-promotion-records-the-pick",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewed_run_id": "r-20261116T104813638687-qwnw-red-file-promotion-records-the-pick",
+    "reviewer_run_id": "r-20261116T140618294842-review-of-qwnw-red-file-promotion-records-the-pick-a238c54f388b"
+  },
+  "reviewer_run_id": "r-20261116T140618294842-review-of-qwnw-red-file-promotion-records-the-pick-a238c54f388b",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:03:51.006322+00:00",
+  "total": 108
+}

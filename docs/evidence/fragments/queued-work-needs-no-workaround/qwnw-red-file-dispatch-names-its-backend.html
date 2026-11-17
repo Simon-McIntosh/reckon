@@ -1,0 +1,116 @@
+<section id="qwnw-red-file-dispatch-names-its-backend-landing">
+  <h2>A dispatch names its backend: the file is green again</h2>
+
+  <p><strong>What changed.</strong> One helper in
+  <code>tests/test_dispatch_names_its_backend.py</code>. Its <code>_payload</code>
+  decoded <code>result.output.splitlines()[0]</code>, which is Click's
+  mixed stream: since Click 8.2 <code>output</code> interleaves stdout and
+  stderr in write order. A launched dispatch publishes its durable claim and
+  then writes <code>reckon: created run &lt;id&gt;</code> to stderr, so on
+  every <code>dry_run=False</code> path the first line of that mixed stream was
+  the notice and the <code>json.loads</code> raised. Eleven cases in the file
+  split five passing (dry-run and refusal paths, which print no notice) against
+  six failing (every launched path).</p>
+
+  <p>The helper now decodes <code>result.stdout</code>, which the command holds
+  for exactly one JSON document on every exit path: refusals, dry runs and
+  launches alike. No assertion was removed or weakened — only the stream read
+  into them.</p>
+
+  <h3 id="qwnw-red-file-dispatch-names-its-backend-cause">The cause, and its verdict</h3>
+
+  <p>The product is right; the test was reading a stream the product never
+  promised. <code>reckon/crew_dispatch_commands.py</code> runs every dispatch
+  callback under <code>_single_document_stdout</code>, which points everything
+  the command calls at the notice channel and emits the payload on the stream
+  held aside — a rule its docstring states and that
+  <code>tests/test_dispatch_stdout_is_one_document.py</code> already guards with
+  <code>json.loads(result.stdout)</code> over eight cases, a launch among them.
+  <code>reckon/crew/dispatching/preparation.py</code> writes the created-run id
+  to stderr for the same reason, its comment reading "stdout remains the
+  command's final JSON document, so notices use stderr". The guard is not
+  reimplemented here; it is run at head, eight cases passing, which is what
+  makes "the product is right" a measurement rather than an assumption.</p>
+
+  <table id="qwnw-red-file-dispatch-names-its-backend-verdicts">
+    <caption>One cause, one verdict. Each arm named below is a log whose first
+    lines name revision, tree and command and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>case</th><th>verdict</th><th>evidence</th></tr></thead>
+    <tbody>
+      <tr><td><code>_payload</code> reads the mixed <code>output</code> stream</td>
+        <td>test wrong — the helper encoded a read the command never made</td>
+        <td>repaired to read <code>result.stdout</code>; the product rule is
+        unchanged and separately guarded</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-dispatch-names-its-backend-arms">Measured</h3>
+
+  <table id="qwnw-red-file-dispatch-names-its-backend-measured">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td>
+        <td><code>ee93819a0d</code>, worktree</td>
+        <td>6 failed, 5 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head</td>
+        <td><code>c6fa529200</code>, all_debug job 1319518, <code>SLURM_JOB_ID</code> unset</td>
+        <td>11 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the one-document guard, head</td>
+        <td><code>64829d8750</code>, worktree</td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the gate, base arm</td>
+        <td><code>ee93819a0d</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the gate, after arm</td>
+        <td><code>64829d8750</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the gate, delta</td>
+        <td>after arm against base arm</td>
+        <td>0 added failures; the two arms run the same 58 cases</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-dispatch-names-its-backend-control">Negative control</h3>
+
+  <p>At <code>ee93819a0d</code> the file fails six cases, all of them
+  <code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1
+  (char 0)</code> raised on
+  <code>s = 'reckon: created run r-20261116T082102687825-recorded-backend'</code>
+  — the notice, quoted from the failing run's own traceback:</p>
+
+  <ul id="qwnw-red-file-dispatch-names-its-backend-base-ids">
+    <li><code>test_explicit_metered_backend_dispatches_without_changing_resolution</code></li>
+    <li><code>test_member_backend_without_budget_check_dispatches_without_lane_flag</code></li>
+    <li><code>test_in_harness_default_without_budget_check_dispatches_without_lane_flag</code></li>
+    <li><code>test_unmetered_member_harness_dispatches_without_a_lane_flag</code></li>
+    <li><code>test_unknown_backend_without_budget_check_dispatches_without_lane_flag</code></li>
+    <li><code>test_run_record_pairs_declared_lane_with_dispatch_window</code></li>
+  </ul>
+
+  <p>None of the six fails at head. The base run is
+  <code>logs/repro-base.log</code> in the run directory; the head run is
+  <code>logs/all-debug-node-test.log</code>, beside it.</p>
+
+  <h3 id="qwnw-red-file-dispatch-names-its-backend-lint">Lint</h3>
+
+  <p><code>ruff check</code> reports nothing on the changed file.
+  <code>ruff format --check</code> reports the single pre-existing hunk at
+  <code>_invoke</code> (the unwrapped <code>_resolved_flight</code>
+  <code>monkeypatch.setattr</code>), and the same hunk on the file as committed
+  at <code>ee93819a0d</code>, extracted and checked apart — identical output,
+  so the change adds no finding.</p>
+
+  <h3 id="qwnw-red-file-dispatch-nodes-its-backend-outside">Outside scope</h3>
+
+  <p><code>tests/test_dispatch_family_prints_one_json_document.py</code> fails
+  two cases on this host in both arms, before reaching the code under test: its
+  dispatch refuses with <code>"error": "tmp-headroom-refusal"</code>,
+  <code>"floor_bytes": 5368709120</code> against
+  <code>"free_bytes": 1990656000</code>. The node's <code>/tmp</code> is 92 to
+  96 percent full, so the headroom floor refuses the launch, and the assertion
+  reads the refusal document's exit status. Not triaged or repaired here.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

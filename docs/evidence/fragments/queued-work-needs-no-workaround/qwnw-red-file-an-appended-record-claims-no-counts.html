@@ -1,0 +1,39 @@
+<section id="qwnw-red-file-an-appended-record-claims-no-counts-landing">
+<h2>An appended record claims no counts</h2>
+<p>The gate file failed at the base revision <code>655a2bef</code> with three failing tests, all on the same cause: the landing record's header paragraph carried its provenance chip inline, so the paragraph read as the summary sentence followed by <code>&lt;span class="source" data-source-kind="ledger"&gt;0 run(s)&lt;/span&gt;</code>. A frame the <code>append_evidence</code> op creates has read no ledger and no comment, so that chip published a run count and a ledger source it never read, and the gate's reader could not take the paragraph's text as the sentence it states.</p>
+<pre># revision: 655a2befa979af690bab537523cd9ad97dc108c5 (base product, base test file)
+# tree: /tmp/reckon-crew-scratch/r-20261116T105020847567-qwnw-red-file-an-appended-record-claims-no-counts/qwnw-appended-base
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_appended_record_claims_no_counts.py
+FAILED tests/test_an_appended_record_claims_no_counts.py::test_an_appended_record_states_no_counts_and_no_verdict
+FAILED tests/test_an_appended_record_claims_no_counts.py::test_control_the_renderer_without_the_flag_claims_zero_counts
+FAILED tests/test_an_appended_record_claims_no_counts.py::test_control_a_meta_left_holding_counts_fails_case_one
+3 failed, 3 passed
+EXIT=1</pre>
+<p>Two causes, judged separately.</p>
+<p><strong>Cause one — product wrong.</strong> <code>_render_document</code> emitted the chip on every record, including the empty frame an append creates. The chip's label is a run count (<code>0 run(s)</code>) and its <code>data-source-kind</code> claims a ledger read. At head the frame states the sentence alone: no chip, no run count.</p>
+<pre>base:  &lt;p&gt;Landing record for Demo plan: evidence appended by section. &lt;span class="source" data-source="sample" data-source-kind="ledger"&gt;0 run(s)&lt;/span&gt;&lt;/p&gt;
+head:  &lt;p&gt;Landing record for Demo plan: evidence appended by section.&lt;/p&gt;</pre>
+<p>A synthesis still states the count sentence and the chip naming the ledger it read, which the sourced-overview check requires of every factual sentence.</p>
+<p><strong>Cause two — test wrong.</strong> The gate's <code>_body_summary</code> reader matched the header paragraph as bare text (<code>&lt;p&gt;([^&lt;]*?)&lt;/p&gt;</code>). A later change made the record's every factual sentence carry its source, so a synthesis paragraph now holds the chip by design; the reader encoded a rule the code no longer keeps. It now parses the paragraph and sets the chip aside as provenance, so every comparison still reads the sentence the record publishes. No assertion is deleted or weakened: the append case gained an assertion that the frame carries no source chip and no run count, which is the check the control below fires.</p>
+<pre># negative control — base product, head gate file
+# revision: 655a2bef with tests/test_an_appended_record_claims_no_counts.py copied from head
+FAILED tests/test_an_appended_record_claims_no_counts.py::test_an_appended_record_states_no_counts_and_no_verdict
+1 failed, 5 passed
+EXIT=1</pre>
+<p>At head the same file reads 6 passed, and the record's own selector list is unchanged: the appended frame holds one section, <code>first-beat</code>.</p>
+<pre># head
+6 passed
+EXIT=0</pre>
+</section>
+
+<section id="qwnw-red-file-an-appended-record-claims-no-counts-arms">
+<h2>Arms</h2>
+<p>The armed suite command over this node's fence resolves to the project's census tests, because the node's write paths name directories holding no file pytest collects. Both arms read 58 passed.</p>
+<pre># command (both arms, resolved over each arm's own tree):
+#   PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+baseline 58 passed EXIT=0 (655a2bef)
+after    58 passed EXIT=0 (head)</pre>
+<p>The arm over the test files that import <code>reckon.evidence</code> or <code>reckon._store</code>'s record shell adds no failure against the base arm. The two failures left at head are the two the base arm already carried.</p>
+<pre>base: 5 failed, 184 passed — the three gate ids above plus test_number_grammar_census_has_six_composed_frames and test_only_the_shared_parser_calls_fromisoformat
+head: 2 failed, 187 passed — the same two pre-existing ids only</pre>
+</section>

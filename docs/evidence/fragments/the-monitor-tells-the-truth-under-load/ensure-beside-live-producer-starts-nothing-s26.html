@@ -1,0 +1,16 @@
+<section id="ensure-beside-live-producer-starts-nothing-s26-landing">
+  <h3>An ensure reuses the serving producer</h3>
+  <p>The watcher ensure reads the existing producer after stale-seat recovery and returns <code>started: false</code>, <code>path: existing</code>, and the producer's host and pid. It starts neither a service nor a fallback process beside a live producer, even when the local unit is inactive, changed, explicitly requested to restart, unreachable, or unable to enable lingering. With no producer, the service still starts and reports <code>started: true</code>. The unit definition can still be written; cycling a serving producer requires releasing its seat first.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>New regression cases on base product source</td><td>10 failed, 1 passed; live local and foreign leases reported started true</td></tr>
+      <tr><td>Scoped base arm</td><td>58 passed</td></tr>
+      <tr><td>Scoped implementation arm</td><td>69 passed</td></tr>
+      <tr><td>Importer comparison</td><td>Zero added failures over 85 existing cases in 16 test files</td></tr>
+      <tr><td>Service and fallback compatibility</td><td>11 passed</td></tr>
+      <tr><td>Declared mutation: use only unit state to decide a start</td><td>10 failed, 1 passed; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>The scoped arms, importer comparison and mutation ran on <code>all_debug</code>. Logs under <code>~/.cache/reckon-mttu/ensure-live-producer-*.log</code> retain revision, tree, literal command and terminal exit status; the mutation receipt also names its imported module and scratch working directory. The manifest carries the exact arm receipts and log paths.</p>
+</section>

@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: baseline_suite names /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/baseline-arm.log (revision 24bc79d8ee8e73d6d262d0879a27cd27d5a4048c, 4 failed, EXIT=1) and after_suite names /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/head-arm-final.log (revision 2a2b6ef04ff4698736f2df67492c8e6ba1d8a4f4, 0 failed, EXIT=0), so the head adds no failing test, so the count is a measured 0 rather than an unmeasured one. The base arm ran at 24bc79d8ee where tests/test_orchestrator_assessment_reaches_jev.py is identical to the base commit (git diff --stat empty), so the derived delta holds for the base the diff is taken from.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T13:46:54.854Z",
+  "dispatched_at": "2026-11-16T13:46:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate command names the source worktree's own .venv interpreter, so once that worktree is released the command this record cites can no longer be re-run by a reader; the repository's stated convention for a detached worktree is the root environment's interpreter."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-orchestrator-assessment-reaches-jev.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names red-file-orchestrator-assessment-reaches-jev.html in that directory, while the landed fragment carries the qwnw- section prefix, so a reader following the done_when literally finds no file; the prefixed name matches every sibling fragment, so the content is present under the convention rather than missing."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-orchestrator-assessment-reaches-jev/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_orchestrator_assessment_reaches_jev.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/head-arm-final.log",
+      "revision": "2a2b6ef04ff4698736f2df67492c8e6ba1d8a4f4"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-orchestrator-assessment-reaches-jev/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_orchestrator_assessment_reaches_jev.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_assessment_renders_beside_the_declared_capability",
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_record_carries_capability_on_the_explicit_route",
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_record_carries_capability_on_the_picker_route",
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_rendered_state_is_build_states_mapping_encoded_once"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/baseline-arm.log",
+      "revision": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read c152ea142b and 2a2b6ef04ff4 against base 52f2055b65a6 commit by commit; c152ea142b changes three fixture/helper boundaries in tests/test_orchestrator_assessment_reaches_jev.py (stub at snapshot.candidates, payload from result.stdout, config pinned scratch floor) with no assertion touched, and 2a2b6ef04ff4 adds the 107-line evidence fragment under the section-prefixed sibling naming convention.",
+    "done_when": "read the done_when's clauses against tests/test_orchestrator_assessment_reaches_jev.py at head, head-arm-final.log (\"8 passed\", EXIT=0, job 1319794 on all_debug in the manifest's artifacts), baseline-arm.log (\"4 failed, 4 passed\", EXIT=1, the four ids the head passes), and run-arm.sh:19-24, which runs pytest under `env -u SLURM_JOB_ID`; every clause the done_when asserts is measured, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-orchestrator-assessment-reaches-jev.html carries the base ids beside the head run.",
+    "goal": "read the goal \"Make tests/test_orchestrator_assessment_reaches_jev.py pass in full on the primary branch\" against the reviewed head 2a2b6ef04ff4 and the gate log head-arm-final.log:1, which names 2a2b6ef04ff4 and reports \"8 passed in 3.85s\" EXIT=0, so the file the goal names now passes in full.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/manifest.md: it records status complete, both commits, a \"4 failed, 4 passed\" base suite and an \"8 passed\" after suite with log paths, the three causes with the verdict that each was the test's, and the deliberate mutation that made the pinned scratch floor load-bearing.",
+    "write_paths": "read dispatch-detail.json's write_paths (\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\") and both authored commits: c152ea142b changes only tests/test_orchestrator_assessment_reaches_jev.py and 2a2b6ef04ff4 adds only qwnw-red-file-orchestrator-assessment-reaches-jev.html in that directory, so every authored path is inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating the pre-fix stub in tests/test_orchestrator_assessment_reaches_jev.py::_stub_picker reddens test_assessment_renders_beside_the_declared_capability with KeyError: 'state' as baseline-arm.log:1 records, and the fragment's recorded mutation of the scratch pin reads 5 failed, 3 passed.",
+    "evidence": "head-arm-final.log:1 names revision 2a2b6ef04ff4 and ends EXIT=0, and baseline-arm.log:1 names 24bc79d8ee with \"4 failed, 4 passed\" EXIT=1, both cited in manifest.md's baseline_suite/after_suite.",
+    "fit": "the fixture comment at tests/test_orchestrator_assessment_reaches_jev.py:61-64 explains the pinned floor in the file's existing voice, and the stub replaces a module attribute the way reckon/crew/picker/__init__.py:414 reads it.",
+    "goal_fidelity": "tests/test_orchestrator_assessment_reaches_jev.py passes in full at 2a2b6ef04ff4 per head-arm-final.log:8 (\"8 passed in 3.85s\", EXIT=0).",
+    "reuse": "replacing pick's snapshotter keyword with monkeypatching picker_package.snapshot.candidates reuses the boundary the rest of the suite already uses (tests/test_picker.py:158, tests/test_picker_pressure.py:181) and the added `_payload` docstring replaces no existing helper.",
+    "scope_discipline": "git diff --stat 52f2055b65a6 2a2b6ef04ff4 lists only tests/test_orchestrator_assessment_reaches_jev.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal \"Make tests/test_orchestrator_assessment_reaches_jev.py pass in full on the primary branch\" against the reviewed head 2a2b6ef04ff4 and the gate log head-arm-final.log:1, which names 2a2b6ef04ff4 and reports \"8 passed in 3.85s\" EXIT=0, so the file the goal names now passes in full.\nVERDICT done_when: read the done_when's clauses against tests/test_orchestrator_assessment_reaches_jev.py at head, head-arm-final.log (\"8 passed\", EXIT=0, job 1319794 on all_debug in the manifest's artifacts), baseline-arm.log (\"4 failed, 4 passed\", EXIT=1, the four ids the head passes), and run-arm.sh:19-24, which runs pytest under `env -u SLURM_JOB_ID`; every clause the done_when asserts is measured, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-orchestrator-assessment-reaches-jev.html carries the base ids beside the head run.\nVERDICT write_paths: read dispatch-detail.json's write_paths (\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\") and both authored commits: c152ea142b changes only tests/test_orchestrator_assessment_reaches_jev.py and 2a2b6ef04ff4 adds only qwnw-red-file-orchestrator-assessment-reaches-jev.html in that directory, so every authored path is inside the fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/manifest.md: it records status complete, both commits, a \"4 failed, 4 passed\" base suite and an \"8 passed\" after suite with log paths, the three causes with the verdict that each was the test's, and the deliberate mutation that made the pinned scratch floor load-bearing.\nVERDICT diff: read c152ea142b and 2a2b6ef04ff4 against base 52f2055b65a6 commit by commit; c152ea142b changes three fixture/helper boundaries in tests/test_orchestrator_assessment_reaches_jev.py (stub at snapshot.candidates, payload from result.stdout, config pinned scratch floor) with no assertion touched, and 2a2b6ef04ff4 adds the 107-line evidence fragment under the section-prefixed sibling naming convention.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_orchestrator_assessment_reaches_jev.py passes in full at 2a2b6ef04ff4 per head-arm-final.log:8 (\"8 passed in 3.85s\", EXIT=0).\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm-final.log:1 names revision 2a2b6ef04ff4 and ends EXIT=0, and baseline-arm.log:1 names 24bc79d8ee with \"4 failed, 4 passed\" EXIT=1, both cited in manifest.md's baseline_suite/after_suite.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 52f2055b65a6 2a2b6ef04ff4 lists only tests/test_orchestrator_assessment_reaches_jev.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the pre-fix stub in tests/test_orchestrator_assessment_reaches_jev.py::_stub_picker reddens test_assessment_renders_beside_the_declared_capability with KeyError: 'state' as baseline-arm.log:1 records, and the fragment's recorded mutation of the scratch pin reads 5 failed, 3 passed.\nSCORE fit: 18\nJUSTIFICATION fit: the fixture comment at tests/test_orchestrator_assessment_reaches_jev.py:61-64 explains the pinned floor in the file's existing voice, and the stub replaces a module attribute the way reckon/crew/picker/__init__.py:414 reads it.\nSCORE reuse: 20\nJUSTIFICATION reuse: replacing pick's snapshotter keyword with monkeypatching picker_package.snapshot.candidates reuses the boundary the rest of the suite already uses (tests/test_picker.py:158, tests/test_picker_pressure.py:181) and the added `_payload` docstring replaces no existing helper.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev/manifest.md:12 non-blocking: the gate command names the source worktree's own .venv interpreter, so once that worktree is released the command this record cites can no longer be re-run by a reader; the repository's stated convention for a detached worktree is the root environment's interpreter.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-orchestrator-assessment-reaches-jev.html:1 non-blocking: the done_when names red-file-orchestrator-assessment-reaches-jev.html in that directory, while the landed fragment carries the qwnw- section prefix, so a reader following the done_when literally finds no file; the prefixed name matches every sibling fragment, so the content is present under the convention rather than missing.\n",
+  "review_run_id": "r-20261116T124935171943-review-of-qwnw-red-file-orchestrator-assessment-reaches-jev-2a2b6ef04ff4",
+  "reviewed_base_sha": "52f2055b65a61a81b796c7e5e315e5a003801a59",
+  "reviewed_head_sha": "2a2b6ef04ff4698736f2df67492c8e6ba1d8a4f4",
+  "reviewed_run_id": "r-20261116T104442890670-qwnw-red-file-orchestrator-assessment-reaches-jev",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T13:59:24.519031+00:00",
+  "total": 110
+}

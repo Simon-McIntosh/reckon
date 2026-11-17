@@ -728,6 +728,7 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
 
 _CELLS = ("working", "in review", "help", "delivered")
 _WAIT_CELL = "waiting"
+_HELP_CELL = "help"
 # The stuck count is a figure beside the buckets rather than one of them: a
 # stuck request keeps the cell its phase belongs to, so this cell recounts
 # rows the others already hold. It renders on every row so the block keeps
@@ -965,17 +966,25 @@ def _stream_age(seconds: Any) -> str:
     return _elapsed(float(whole))
 
 
-def _bucket_of(state: Any, classification: Any) -> str | None:
+def _bucket_of(state: Any, *older: Any) -> str | None:
     """Which counter bucket a run's state belongs to, or None off the fleet.
 
     Membership is read from the fleet partition rather than restated, so the
     letter a counter prints always names the population it counts. The import
     happens here rather than at module scope because the partition imports this
     module: taking the names at import time would freeze them before the
-    partition has finished defining them. A held run counts as waiting, which
-    is the partition's own reading of a refusal that has been accepted rather
-    than acted on.
+    partition has finished defining them.
+
+    The bucket follows the state word the pane draws, never the classification
+    beside it: the two say different things about a held run — the word says
+    whose move lifts the hold, the classification names the hold — so reading
+    the classification here is how a request the queue parked, drawn waiting,
+    came to be counted somewhere else. Any further argument is accepted and
+    ignored, for callers written when this read took the classification beside
+    the word; the fleet partition's counter asks for the bucket from the word
+    alone, and so does this.
     """
+    del older
     from reckon.crew.recovery import (
         FLEET_BLOCKED_STATES,
         FLEET_UNPROMOTED_STATES,
@@ -983,13 +992,11 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
         FLEET_WORKING_STATES,
     )
 
-    if str(classification or "") == "held":
-        return _WAIT_CELL
     word = str(state or "")
     if word in FLEET_UNPROMOTED_STATES:
         return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "help"
+        return _HELP_CELL
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:
@@ -1700,6 +1707,26 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     )
 
 
+class _NoLiftClaim:
+    """The value a row path passes to say it shares no claim with anyone.
+
+    Distinct from ``None``, which asks a path naming a pane's session for that
+    pane's shared claim. A measurement replaying a recorded stream passes this
+    because a claim is not only a filter on what draws: a path holding a claim
+    withholds a lift's end unless it drew the grant, so a claim here would drop
+    the ends of grants that sit outside the replayed window, which the pane did
+    print.
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "NO_LIFT_CLAIM"
+
+
+NO_LIFT_CLAIM = _NoLiftClaim()
+
+
 class RowPolicy:
     """Decide which rows reach the pane, holding back the ones that ask for none.
 
@@ -1722,7 +1749,7 @@ class RowPolicy:
         own_session: str | None = None,
         observed_sessions: Iterable[str] = (),
         lift_groups: Iterable[str] = (),
-        lift_claim: Callable[[str, str], bool] | None = None,
+        lift_claim: Callable[[str, str], bool] | _NoLiftClaim | None = None,
     ) -> None:
         self._show_observer = bool(show_observer)
         # The session this pane follows. A start row is delivered for this
@@ -1798,9 +1825,29 @@ class RowPolicy:
         # first take it and the rest draw nothing. The pane's key is the host
         # that spawned the followers when they have one, and the follower's own
         # session otherwise, so a host following two sessions draws each lift
-        # once between them. ``None`` draws every lift row on this pane's own
-        # memory alone, the behaviour before the claim.
-        self._lift_claim = lift_claim
+        # once between them. A path that names the pane's own session and is
+        # handed no claim takes that session's shared one, because the claim
+        # belongs to the pane rather than to the delivery path a follower
+        # happened to read through: the station subscriber builds its path
+        # without one, and a pane served by several followers drew the same
+        # limit reset once per follower.
+        #
+        # A caller that must draw with no claim says so with
+        # :data:`NO_LIFT_CLAIM` rather than by passing nothing, because a claim
+        # is not merely a filter on draws: a row path holding one skips a lift's
+        # end unless it drew the grant, which is what a live follower wants and
+        # what a measurement replaying a window that opens after the grant does
+        # not. A path with no session — the fleet-wide reader — takes no claim
+        # either, and draws every lift row on its own memory alone, the
+        # behaviour before the claim.
+        if lift_claim is NO_LIFT_CLAIM:
+            self._lift_claim: Callable[[str, str], bool] | None = None
+        elif lift_claim is not None:
+            self._lift_claim = lift_claim
+        else:
+            self._lift_claim = self._pane_lift_claim(
+                str(own_session) if own_session else ""
+            )
         # run_id -> the launch ordinal at which this pane drew the run's
         # in-review row. A producer resweeps a delivered run whose state has not
         # changed, so the delivery it writes again is a row this pane already
@@ -1821,6 +1868,29 @@ class RowPolicy:
         # request under the id it already had, so one request's attempts and
         # re-queues share an id while two requests do not.
         self._refusals: dict[str, set[str]] = {}
+
+    @staticmethod
+    def _pane_lift_claim(session: str) -> Callable[[str, str], bool] | None:
+        """The pane's shared lift claim, keyed on its own session.
+
+        One pane is one session, and every follower serving it writes the same
+        claim directory beneath the crew home, so an exclusive create there is
+        the arbitration they share whether they run in one process, several on
+        a node, or several on nodes sharing a home. The claim is resolved at the
+        row rather than when the path is built, so a path that never draws a
+        lift opens nothing, and a claim that cannot be written leaves the row
+        drawn rather than dropped, which is :func:`take_lift_claim`'s own
+        answer.
+        """
+        if not session:
+            return None
+
+        def claim(lift_id: str, transition: str) -> bool:
+            from reckon.crew_follow_commands import take_lift_claim
+
+            return take_lift_claim(session, lift_id, transition)
+
+        return claim
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -2928,6 +2998,13 @@ def replay_row_policy(
         show_observer=show_observer,
         own_session=own_session,
         observed_sessions=observed_sessions,
+        # The replay prints a recorded stream and shares no claim with anyone: a
+        # claim here is not only a filter on draws, it also withholds a lift's
+        # end unless this path drew the grant, so a stream whose window opens
+        # after a grant would lose the ends the pane printed. The claim
+        # directory is never consulted, so the count does not depend on which
+        # followers happen to hold it today.
+        lift_claim=NO_LIFT_CLAIM,
     )
     printed: list[Mapping[str, Any]] = []
     for event in events:

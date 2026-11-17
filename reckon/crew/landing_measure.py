@@ -183,7 +183,13 @@ export PYTHONPATH={shlex.quote(str(source))}
 
 
 def measurement_job_state(job: Mapping[str, Any]) -> str:
-    """Read one scheduler observation; an absent accounting row is unknown."""
+    """Read one scheduler observation; an absent accounting row is unknown.
+
+    The queue forgets a job some minutes after it ends and then refuses a
+    query naming it, so a refused queue read says only that the job is no
+    longer queued. The accounting record is asked next, and it is the one
+    whose failure leaves the state unknown.
+    """
     job_id = str(job["job_id"])
     for argv in (
         ["squeue", "-h", "-j", job_id, "-o", "%T"],
@@ -192,6 +198,8 @@ def measurement_job_state(job: Mapping[str, Any]) -> str:
         finished = _SCHEDULER_RUN(
             argv, capture_output=True, text=True, check=False, timeout=10
         )
+        if finished.returncode and argv[0] == "squeue":
+            continue
         if finished.returncode:
             raise ValueError(
                 f"job {job_id}, log {job['log_path']}: scheduler query failed: "
@@ -549,14 +557,16 @@ def _link_environment(repo: Path, tree: Path) -> None:
     A repository with no environment is left alone: the arms then fail with
     the command's own error, which the measurement records as unreadable.
     """
-    environment = repo / ".venv"
+    from reckon.crew.fleet_supervisor import resolved_environment
+
+    environment = resolved_environment(repo)
     if not environment.exists():
         return
     link = tree / ".venv"
     if link.exists() or link.is_symlink():
         return
     with contextlib.suppress(OSError):
-        link.symlink_to(environment.resolve())
+        link.symlink_to(environment)
 
 
 def measure_timeout(config: Mapping[str, Any] | None) -> float:
@@ -843,7 +853,9 @@ def _partition_runner(
         raise BaseCheckoutError("the shared git directory could not be read")
     git_dir = Path(common.stdout.strip())
     shared_repo = git_dir.parent
-    environment = (repo / ".venv").resolve()
+    from reckon.crew.fleet_supervisor import resolved_environment
+
+    environment = resolved_environment(repo)
     carried = tuple(test_files)
 
     def run(command, **options):
