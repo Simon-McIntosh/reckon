@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: logs/suite-base-69fab1372f.log records 58 passed with EXIT=0 at 69fab1372f16686ce6acdb6094a357c6f6bfe18d and logs/suite-head-5f89302dc2.log records 58 passed with EXIT=0 at 5f89302dc2d4b3ae06e615cc2fd6d980964f2fa0, both over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither carrying a FAILED or ERROR line, so the head-minus-base id difference over the armed pair is empty (0). The imported-module arm is not one of those logs.",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/serve.py:902",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/promotion_release.py:1169",
+    "reckon/crew/recovery_watch.py:757",
+    "reckon/crew/recovery_watch.py:1809",
+    "reckon/crew/recovery_watch.py:4262",
+    "reckon/crew/recovery_watch.py:4350",
+    "reckon/crew/station_subscriber.py:144",
+    "reckon/roadmap.py:3224"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T23:30:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html",
+      "line": "77",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delta opened a second <p> at line 78 without closing the one at line 77, so the Lint paragraph nests a paragraph and the fragment's element structure is malformed."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importing arm still states \"No id fails at head that does not fail at base\" while the merge section at line 67 names two ids that do fail at the merged heads and pass at the base, so the fragment asserts a clean and a two-id delta for the same file."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html",
+      "line": "69",
+      "severity": "non-blocking",
+      "text": "non-blocking: the attribution that the two ids fail in scratch trees holding only 50b1f03078 and only 1f07f8e7 still has no artefact under logs/, which holds no primary-only run, so excluding them from this change rests on the worker's word."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states \"no rule is stated twice\", but reckon/crew/recovery_classification.py:2030 restates the terminal-status exclusion line 2019 already applies, so the claim misleads a reader into expecting no manifest guard remains below the gate."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal reads \"Make tests/test_a_review_never_runs_in_harness.py pass in full on the primary branch\"; the delta's head gate log logs/gate-head-5f89302dc2-slurm.log reads 4 passed EXIT=0 at 5f89302dc2, and the primary branch's own copy of the pre-spawn gate is the resolution it took, so the goal is met at the head read.\nVERDICT done_when: the done_when asks for tests/test_a_review_never_runs_in_harness.py to pass in full as a job on all_debug with SLURM_JOB_ID unset, and the gate the worker ran is exactly that command under `env -u SLURM_JOB_ID -u SLURM_JOBID` on host 98dci4-clu-3142, recording 4 passed EXIT=0 against 3 failed and 1 passed at 69fab1372f in logs/gate-base-69fab1372f.log.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness; the node-authored commits in 8a9decd5..5f89302d touch only reckon/crew/recovery_classification.py by merge and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html by commit.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105126521019-qwnw-red-file-a-review-never-runs-in-harness/manifest.md; it states status complete, the gate file 4 passed EXIT=0 at 5f89302dc2 with five pre-spawn witnesses, the census arm 58 passed at both revisions, and names the six logs it cites.\nVERDICT diff: read commit by commit from 8a9decd5 to 5f89302d; the node's own first-parent commits are two merges of the primary branch (3580a09e, ac4c22f2) and two evidence records (4478f1e3, 5f89302d), the merges resolving three rounds of the same pre-spawn gate by taking primary's general clause and adding no rule of their own.\nCALL_SITES: reckon/serve.py:902, reckon/crew/directory.py:342, reckon/crew/forgotten_runs.py:94, reckon/crew/promotion_release.py:1169, reckon/crew/recovery_watch.py:757, reckon/crew/recovery_watch.py:1809, reckon/crew/recovery_watch.py:4262, reckon/crew/recovery_watch.py:4350, reckon/crew/station_subscriber.py:144, reckon/roadmap.py:3224\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:2015-2021 now withholds the pre-spawn reading from a pointer carrying a manifest or a terminal verdict, which is the refusal the four tests in tests/test_a_review_never_runs_in_harness.py exercise.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head-5f89302dc2-slurm.log records `4 passed in 33.85s` with `EXIT=0` under the env-unset command, against `3 failed, 1 passed` and `EXIT=1` at 69fab1372f in logs/gate-base-69fab1372f.log, so the measure is recorded rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the node's own commits change is inside its declared paths - docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html and reckon/crew/recovery_classification.py - and the 1358 paths the merges carry are the primary branch's own, which the fence names as reconciliation.\nSCORE durability: 16\nJUSTIFICATION durability: the base arm at 69fab1372f reddens three ids of tests/test_a_review_never_runs_in_harness.py, but the terminal-status exclusion is stated twice at reckon/crew/recovery_classification.py:2019 and 2030, so reversing either conjunct alone leaves every test green.\nSCORE fit: 19\nJUSTIFICATION fit: the merged gate keeps the surrounding comment-and-predicate idiom of reckon/crew/recovery_classification.py:1994-2032 and introduces no new name beyond the resolved-branch locals.\nSCORE reuse: 20\nJUSTIFICATION reuse: the resolution defers to the primary branch's `_spawn_evidence`, `_stranded_launch` and `_run_chain_manifest_freshness` (reckon/crew/recovery_classification.py:2015-2021) instead of adding a second pre-spawn reader, and a search over reckon/ finds no other owner of that gate \u2014 reckon/crew/recovery_watch.py:1712 delegates to this one.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html:77 non-blocking: the delta opened a second `<p>` at line 78 without closing the one at line 77, so the Lint paragraph nests a paragraph and the fragment's element structure is malformed.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html:42 non-blocking: the importing arm still states \"No id fails at head that does not fail at base\" while the merge section at line 67 names two ids that do fail at the merged heads and pass at the base, so the fragment asserts a clean and a two-id delta for the same file.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html:69 non-blocking: the attribution that the two ids fail in scratch trees holding only 50b1f03078 and only 1f07f8e7 still has no artefact under logs/, which holds no primary-only run, so excluding them from this change rests on the worker's word.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-never-runs-in-harness.html:61 non-blocking: the fragment states \"no rule is stated twice\", but reckon/crew/recovery_classification.py:2030 restates the terminal-status exclusion that line 2019 already applies, so the claim misleads a reader into expecting no manifest guard remains below the gate.\n",
+  "review_run_id": "r-20261117T232952229288-review-of-qwnw-red-file-a-review-never-runs-in-harness-5f89302dc2d4",
+  "reviewed_base_sha": "8a9decd5a7c60dbf4a16fc4af4c42ccf1ee9d128",
+  "reviewed_head_sha": "5f89302dc2d4b3ae06e615cc2fd6d980964f2fa0",
+  "reviewed_run_id": "r-20261116T105126521019-qwnw-red-file-a-review-never-runs-in-harness",
+  "rubric": "six-dimension",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:49:39.511175+00:00",
+  "total": 112
+}
