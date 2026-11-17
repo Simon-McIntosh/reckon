@@ -1660,7 +1660,7 @@ class RunStore:
             for run_id, record in self._indexed_records(include_archive=True).items()
             if run_id not in stale
         }
-        for name, rows in changed.items():
+        for rows in changed.values():
             for row in rows:
                 run_id, payload, detail = _split_durable(row)
                 records[run_id] = {**payload, **detail}
