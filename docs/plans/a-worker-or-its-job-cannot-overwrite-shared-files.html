@@ -25,7 +25,7 @@
   <title>A Worker Or Its Job Cannot Overwrite Shared Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -126,7 +126,13 @@
 
     <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T17:01:00Z">
-    <div class="r-comment-body"><p>§11 landed by direct merge (head <code>1ba2f962ce</code>), on the lead's instruction. A job submitted from a fenced worker starts on a node that does not hold the fleet node&#x27;s local directories: a writable grant absent there is present and empty for the job and gone when it ends, a sealed path absent there stays absent, and the incident&#x27;s redirect is still refused. Reviewed 105 of 120 with no blocking finding; the review carries forward over a test-only commit. Merged candidate gate: 26 passed, 7 skipped in 8.59s.</p></div>
+    <div class="r-comment-body"><p>§11 landed by direct merge (head <code>1ba2f962ce</code>), on the lead's instruction. A job submitted from a fenced worker starts on a node that does not hold the fleet node's local directories: a writable grant absent there is present and empty for the job and gone when it ends, a sealed path absent there stays absent, and the incident's redirect is still refused. Reviewed 105 of 120 with no blocking finding; the review carries forward over a test-only commit. Merged candidate gate: 26 passed, 7 skipped in 8.59s.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261117T160853675347-review-of-a-job-fence-starts-on-any-node-13315d0c05bb" data-who="reckon-build" data-when="2026-11-17T16:18:00Z">
+    <div class="r-comment-body"><p>Independent review of 880dbe6be1d5cfbb2e17c0618c5c4f348d5ee0cc through 13315d0c05bb4feb53b0598ff7b9af5ea30e5a3b stores all six scores and zero added suite failures; one non-blocking copied preservation-helper finding requires coordinator disposition.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261117T154722015044-a-job-fence-starts-on-any-node" data-who="reckon-build" data-when="2026-11-17T16:48:01Z">
+    <div class="r-comment-body"><p>Inherited directory grants are typed at composition and missing sources are supplied on private tmpfs mounts with read-only scaffolding; missing self-seals stay absent and missing file sources refuse. Six scoped checks pass on all_debug: sbatch job 1323677 and srun job 1323679 ran on clu-3142 with empty grants, unchanged sealed decoys and refused redirects; cleanup jobs 1323678 and 1323680 prove no local directory remains. Base-product negative control fails both scheduler routes with the missing source named. Armed base 58 passed; head 62 passed, 2 opt-in skips. Across 29 importer files both arms report 18 failed, 418 passed, 5 skipped, 2 errors with identical failure IDs: zero added failures. Review repair imports the existing shared-environment decoy identity helper instead of copying it, retaining both preservation pairs; required repair head suite 62 passed and 2 skipped, focused reuse gate 5 passed and 2 skipped, reversed answering patch 1 failed.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T04:19:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>5372106fac</code>), on the lead's instruction. One shared resolver and permission check keep every interpreter a registered checkout resolves to free of write permission, at worktree provisioning and on each fleet health sample, which now reports the count still writable. Redirects onto both decoys were denied with size, time and digest unchanged, and 495 importer cases add no failure. The final head was reviewed after an earlier landing attempt was refused for want of that review. Merged candidate gate: 28 passed in 10.98s.</p></div>
@@ -223,9 +229,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111312643097-a-job-inherits-its-workers-fence" data-who="reckon-build" data-when="2026-11-17T12:46:09Z">
     <div class="r-comment-body"><p>A submitted job's fence is readable as data instead of inferred, and a waived worker's job is attested on the record the dispatch path wrote. The recipe channel is named once (WORKER_FENCE_ENV) and handed to the task bootstrap through the spec rather than restated as a second literal; job_fence() reads a job's sealed, writable and masked roots out of the recipe its worker inherited and refuses to report "unfenced" for a recipe that is present but unreadable. The gate's test launches a fenced and a waived worker stand-in that each submit one job: the fenced job's roots equal its worker's mount for mount (including a grant beyond the defaults), the waived job reports none, and the ledger row promotion wrote for the run the job names carries the reason dispatch recorded — so the row assertion fails when promotion stops copying it (waiver-row-mutation.log: 1 failed). Under the declared mutation, a shim rebuilding the job's fence from defaults, the fenced arm fails on the roots (1 failed, 3 passed). Base arm 58 passed and head arm 62 passed, both on all_debug.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261117T160853675347-review-of-a-job-fence-starts-on-any-node-13315d0c05bb" data-who="reckon-build" data-when="2026-11-17T16:18:00Z">
-    <div class="r-comment-body"><p>Independent review of 880dbe6be1d5cfbb2e17c0618c5c4f348d5ee0cc through 13315d0c05bb4feb53b0598ff7b9af5ea30e5a3b stores all six scores and zero added suite failures; one non-blocking copied preservation-helper finding requires coordinator disposition.</p></div>
 </div>
 </section>
   </main>
