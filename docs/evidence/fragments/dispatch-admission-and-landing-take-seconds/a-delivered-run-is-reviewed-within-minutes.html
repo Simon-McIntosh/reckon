@@ -42,7 +42,14 @@
   rule would return, or the session no armed follower serves.
   <code>reckon/crew/resumption.py</code> runs that reading on the pass that makes
   the requests and carries the obligations on the sweep's report, so a sweep
-  that could not request a review says which run and why.</p>
+  that could not request a review says which run and why. The obligation is also
+  written into the review pass's owed rows, which is the record the station
+  keeps per session and renders as a duty: the reason a coordinator is shown is
+  the reason the census found, not a second account of it. The percentile the
+  census quotes is the run-time profile's own rule, and a request receipted
+  before the delivery it belongs to is counted with the unrecorded requests
+  rather than quoted as a zero-length interval or mistaken for a request nobody
+  made.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-harness"><strong>The harness.</strong>
   <code>tests/test_a_delivered_run_is_reviewed_within_minutes.py</code> builds the
@@ -55,11 +62,15 @@
   case withholds the request's precondition — its session has no armed follower
   — and reads no obligation at 599 s and one at 601 s whose reason names that
   session. A third case reads a recorded refusal as the reason rather than as no
-  dispatch at all.</p>
+  dispatch at all. The census itself is measured against a two-run sample of
+  known size, so the median names the near lag and the 90th percentile the far
+  one; an out-of-order receipt pair, a reviewer whose id carries no prefix but
+  whose pointer says it is one, the review's inherited priority, and the duty
+  row the obligation reaches are each a case of their own.</p>
 
 <p id="a-delivered-run-is-reviewed-within-minutes-gate"><strong>Gate.</strong>
-  The node's five tests pass at the head
-  (<strong>5 passed</strong> in 2.8 s). The armed suite arms — the node's test
+  The node's ten tests pass at the head
+  (<strong>10 passed</strong> in 8.3 s). The armed suite arms — the node's test
   file beside the two importer files at the head, and the two importer files
   alone at the base revision — are recorded in the manifest's
   <code>after_suite</code> and <code>baseline_suite</code> fields with their own
@@ -69,8 +80,10 @@
   With the sweep's review pass made to wait for the tick — the pass gated on a
   marker the held tick never writes — the in-window case fails
   (<code>FAILED tests/test_a_delivered_run_is_reviewed_within_minutes.py::test_a_delivered_run_is_requested_inside_the_window_while_a_tick_is_held</code>,
-  <strong>1 failed, 2 passed</strong>, <code>EXIT=1</code>), so the case measures
-  the request's independence rather than restating it. The log is named on the
+  <strong>3 failed, 7 passed</strong>, <code>EXIT=1</code>), beside the case that
+  reads the inherited priority and the case that follows the obligation to the
+  duty row, both of which depend on the same pass. So the cases measure the
+  request's independence rather than restating it. The log is named on the
   manifest's <code>negative_control_log</code> line.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-census"><strong>The live census.</strong>
