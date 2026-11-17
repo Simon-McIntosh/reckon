@@ -191,6 +191,7 @@ DUTY_ROW_FIELDS = (
     "until_condition",
     "deferred_duty",
     "record",
+    "record_action",
     "head",
     "reviewed_head",
     "review_tier",
@@ -658,7 +659,7 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
     view projects passes through here, in the derivation and in the slice a
     sweep publishes, so the two surfaces cannot disagree about what a duty names.
     """
-    if item.get("_delivery_decision"):
+    if item.get("_delivery_decision") and not item.get("deferred_duty"):
         row = {
             key: item[key]
             for key in (
@@ -672,7 +673,7 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
         }
         # The run id is the key of the full read, so the bounded row need not
         # repeat the manifest, pointer, worktree and review paths.
-        row["record"] = f"reckon crew observe --run {row['run_id']}"
+        row["record_action"] = "observe"
         row = project_run_rows(
             [row],
             view="obligations",
@@ -680,17 +681,20 @@ def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
         )[0]
         available = max(0, 400 - len(json.dumps({**row, "reason": ""})))
         reason = str(row.get("reason") or "")
+        if len(reason) > available and available < 25 and "gate" in reason.lower():
+            reason = "gate failed"
         row["reason"] = (
             (
                 reason
                 if len(reason) <= available
-                else "..." + reason[-max(0, available - 3) :]
+                else reason[: max(0, available - 3)] + "..."
             )
             if available >= 3
             else reason[:available]
         )
         return row
     row = dict(item)
+    row.pop("_delivery_decision", None)
     rendered = action_form(str(item.get("next_command") or ""))
     if rendered is not None:
         row["next_action_form"] = rendered
@@ -2905,16 +2909,25 @@ def _review_duty_item(
     from reckon.crew import review_landing
     from reckon.crew.resume import hold_reason
 
-    if recovery._is_review_run(pointer):
+    head, tree = recovery._review_head_and_tree(pointer)
+    held = hold_reason(pointer, head)
+    if held:
+        item["kind"] = "run-held"
+        item["reason"] = held
+        item["next_command"] = (
+            f"reckon crew release --run {shlex.quote(str(row['run_id']))} "
+            "--reason 'The delivery is ready to land.'"
+        )
+    elif recovery._is_review_run(pointer):
         state, reason, _record = acceptance.review_self_state(pointer)
         if state != acceptance.REVIEW_SELF_REFUSED:
             return None
         item["reason"] = reason
     elif item["kind"] in {"review-ready", "promotable-stale"}:
-        head, tree = recovery._review_head_and_tree(pointer)
-        reason = hold_reason(pointer, head) or review_landing.manual_landing_reason(
-            pointer
-        )
+        try:
+            reason = review_landing.manual_landing_reason(pointer)
+        except (OSError, ValueError, _store.CorruptEnvelopeError) as exc:
+            reason = f"the landing decision could not be read: {exc}"
         if not reason:
             gate, commits = acceptance._recorded_gate_passed(pointer)
             if gate is None:
@@ -2934,9 +2947,12 @@ def _review_duty_item(
                 inputs = acceptance._acceptance_input_view(
                     pointer, head, tree, review, gate, commits
                 )
-                if isinstance(memo, Mapping) and (memo.get("inputs") or [None])[
-                    0
-                ] == acceptance._inputs_digest(inputs):
+                key = memo.get("inputs") if isinstance(memo, Mapping) else None
+                if (
+                    isinstance(key, (tuple, list))
+                    and key
+                    and key[0] == acceptance._inputs_digest(inputs)
+                ):
                     reason = str((memo.get("refusal") or {}).get("reason") or "")
                 if not reason and (
                     acceptance._review_accepts_promotion(review)
@@ -2945,10 +2961,17 @@ def _review_duty_item(
                     return None
         if reason:
             item["reason"] = reason
-    elif item["kind"] != "landing-refused":
+    elif item["kind"] == "landing-refused":
+        item["reason"] = str(
+            (pointer.get("admission_landing") or {}).get("guard")
+            or item.get("reason")
+            or ""
+        )
+    else:
         return item
     if (
-        str(pointer.get("role") or (pointer.get("node") or {}).get("role"))
+        not held
+        and str(pointer.get("role") or (pointer.get("node") or {}).get("role"))
         == "implement"
     ):
         item["next_command"] = (

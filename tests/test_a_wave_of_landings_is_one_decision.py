@@ -105,7 +105,8 @@ def test_twelve_deliveries_leave_three_bounded_decisions(repository, tmp_path):
     }, rows
     for row in rows:
         assert len(json.dumps(row)) <= 400, row
-        assert "test_guard" in row["reason"]
+        assert "gate" in row["reason"]
+        assert row["record_action"] == "observe"
         assert "crew complete" in row["next_command"]
         assert (
             runs.read_pointer(row["run_id"])["admission_landing"]["status"] == "refused"
@@ -213,6 +214,44 @@ def test_a_ready_report_is_left_to_its_existing_automatic_promoter(
     assert runs.pointer_path(pointer["run_id"]).exists()
 
 
+def test_a_held_report_still_names_the_coordinators_decision(repository, tmp_path):
+    from reckon.crew.resume import hold_delivery
+
+    pointer = delivery._review_run(repository, tmp_path)
+    hold_delivery(pointer["run_id"], "Awaiting the paired report.")
+    view = obligations.obligations(delivery.PROJECT, delivery.SESSION)
+    [row] = view["obligations"]
+    assert "held" in row["reason"]
+    assert "crew release" in row["next_command"]
+
+
+def test_a_long_run_name_keeps_its_condition_and_a_working_evidence_read(
+    repository, tmp_path
+):
+    name = "r-" + "delivered-candidate-" * 4
+    pointer = _deliver(repository, tmp_path, name, implementation=True)
+    pointer["admission_landing"] = {
+        "status": "refused",
+        "head": git(Path(pointer["worktree"]), "rev-parse", "HEAD"),
+        "guard": "the merged-head gate adds tests/test_candidate.py::test_guard",
+    }
+    runs._write_json(runs.pointer_path(name), pointer)
+    [row] = obligations.obligations(delivery.PROJECT, delivery.SESSION)["obligations"]
+    assert len(json.dumps(row)) <= 400, row
+    assert "gate" in row["reason"]
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            row["record_action"],
+            "--run",
+            row["run_id"],
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "test_guard" in result.output
+
+
 def test_the_default_batch_requests_both_promotions_without_running_them(
     repository, tmp_path, monkeypatch
 ):
@@ -243,6 +282,25 @@ def test_the_default_batch_requests_both_promotions_without_running_them(
     assert {row["run_id"] for row in payload["runs"]} == set(names)
     assert all(row["phase"] == promotion_requests.REQUESTED for row in payload["runs"])
     assert all(promotion_requests.read_promotion(name) for name in names)
+
+
+def test_the_drain_keeps_the_full_receipt_for_stored_click_options(
+    repository, tmp_path
+):
+    from reckon.crew.promotion_requests import _execute_command
+
+    pointer = _deliver(repository, tmp_path, "r-drain-delivery")
+    receipt = _execute_command(
+        {
+            "run_id": (pointer["run_id"],),
+            "gate": "passed",
+            "wait": True,
+            "no_commit": "The report changes no repository files.",
+            "outcome": "Delivered the report.",
+        }
+    )
+    assert receipt["record"]["gate"] == "passed"
+    assert receipt["pointer_removed"] is True
 
 
 def test_a_large_pretty_batch_keeps_its_reply_bounded(

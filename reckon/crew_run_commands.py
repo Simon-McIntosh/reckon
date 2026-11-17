@@ -3722,10 +3722,21 @@ def crew_complete(
     review checks. Replies link the full record and stay below 2 kB.
     """
     if isinstance(run_id, (tuple, list)):
-        parameters = dict(locals())
-        parameters.pop("run_id")
-        _complete_many(run_id, parameters)
-        return
+        from reckon.crew.promotion_requests import COMMAND_REPLY
+
+        if COMMAND_REPLY.get() is not None and len(run_id) == 1:
+            # Stored CLI options retain Click's tuple, while the drain reads
+            # the full single-run receipt rather than the compact CLI reply.
+            run_id = run_id[0]
+        else:
+            accepted = set(inspect.signature(crew_complete.callback).parameters)
+            parameters = {
+                name: value
+                for name, value in locals().items()
+                if name in accepted and name != "run_id"
+            }
+            _complete_many(run_id, parameters)
+            return
     from reckon.crew.promotion_requests import (
         COMMAND_REPLY,
         REQUESTED,
