@@ -4398,6 +4398,9 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                 # receipt. A delayed supervisor re-reads the attempt before spawning.
                 if writer is not None:
                     writer(process)
+                from reckon.crew.stage_receipts import note_review
+                note_review(current, "review_admitted", at=str(spec.get("launched_at") or "") or None)
+                note_review(current, "review_started")
                 return process
 
     process = _spawn_worker_retrying_a_vanished_bind(
@@ -4764,6 +4767,9 @@ def _publish_stored_phase(
         _write_existing_pointer(run_id, record)
 
     if delivered_status:
+        if delivered_status == "complete":
+            from reckon.crew.stage_receipts import record_stage
+            record_stage(run_id, "delivery_recorded")
         # The run's review brief is composed where its delivery is recorded, so
         # a reader opening it is told the revision this run actually delivered.
         # A dispatch writes one when it is composed for a review; a resumed run
