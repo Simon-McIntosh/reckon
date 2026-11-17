@@ -133,21 +133,25 @@ def test_a_store_written_by_newer_code_is_opened_without_a_backfill(
 ) -> None:
     # The instrument starts at zero: nothing has migrated this store yet.
     assert decodes["rows"] == 0
+    _columns_before, indexes_before = _declared_shape(store_path)
     _migrated_forward(store_path)
 
     # The store is the shape newer code leaves: every column and index this
     # code declares, one column it has never heard of, an unknown record.
     columns, indexes = _declared_shape(store_path)
     assert columns >= run_store._RUNS_COLUMNS
-    assert set(run_store._RUNS_INDEX_NAMES) <= indexes
+    assert indexes == indexes_before
     assert "scheduled_at" in columns
     assert _recorded_version(store_path) == _UNKNOWN_VERSION
 
     with run_store.RunStore(store_path):
         pass
 
-    # Opening it decoded no row and left the newer code's record alone.
+    # Opening it decoded no row, added no column, dropped no index, and left
+    # the newer code's record alone.
     assert decodes["rows"] == 0
+    assert _declared_shape(store_path)[0] == columns
+    assert _declared_shape(store_path)[1] == indexes
     assert _recorded_version(store_path) == _UNKNOWN_VERSION
 
 
@@ -188,13 +192,20 @@ def test_a_store_missing_a_declared_column_is_still_given_and_backfilled(
     # the same recorder that counted nothing above counts all 500 here.
     assert decodes["rows"] == ROWS
     with sqlite3.connect(str(path)) as connection:
-        columns, indexes = _declared_shape(path)
+        columns, _indexes = _declared_shape(path)
         total, unset = connection.execute(
             'SELECT COUNT(*), COUNT(*) FILTER (WHERE "activity_seconds" IS NULL) '
             'FROM "runs"'
         ).fetchone()
+        activity_indexes = {
+            str(row[0])
+            for row in connection.execute(
+                'SELECT "name" FROM sqlite_master WHERE "type" = ? AND "sql" LIKE ?',
+                ("index", "%activity_seconds%"),
+            )
+        }
     assert "activity_seconds" in columns
-    assert set(run_store._RUNS_INDEX_NAMES) <= indexes
+    assert activity_indexes
     assert (total, unset) == (ROWS, 0)
     assert _recorded_version(path) == run_store._STORE_SCHEMA_VERSION
 
