@@ -3382,7 +3382,9 @@ def _tree_holds_unmerged_work(tree: Path) -> bool:
     return _unmerged_commit_answer(tree) is not False
 
 
-def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
+def _held_worktree_records(
+    project: str, *, include_landed: bool = False
+) -> dict[Path, Mapping[str, Any]]:
     """Return the record holding each registered, present and unoccupied tree.
 
     Source identities validate per-run files, live claims, the common Git
@@ -3393,6 +3395,11 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     An aggregate rewrite rebuilds the index because its envelope has no per-row
     identity. Reader failures retain the unrefused document-reader fallback.
     The read-only region shares parsed document views without copying them.
+
+    ``include_landed`` answers with every tree a row still names rather than
+    only the trees owed as duties. A landing empties a tree of work the primary
+    branch lacks, so the duty view drops exactly the trees a merge is about to
+    free; a caller deciding what may be released reads them through here.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -3401,24 +3408,44 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     with file_memo.read_only_region():
         key = (project, str(repository), _held_records_signature(project, repository))
         if key[2] is None:
-            return _held_worktree_records_read(project, repository)
+            return _held_worktree_records_read(
+                project, repository, include_landed=include_landed
+            )
         # Source identity is stable when unrelated checkout files are created.
         return file_memo.memoized(
             "obligation_held_records",
             Path(__file__),
-            lambda: _held_records_read_uncached(project, repository, key[2]),
-            variant=key,
+            lambda: _held_records_read_uncached(
+                project, repository, key[2], include_landed=include_landed
+            ),
+            variant=(key[2], include_landed),
         )
 
 
+def _named_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
+    """Every present, unoccupied tree a ledger row names, landed work or not.
+
+    A landing moves the branch the duty view judges a tree against, so the tree
+    the landing emptied stops being a duty at the very moment the landing is
+    the thing that could free it. The release reads this view instead.
+    """
+    return _held_worktree_records(project, include_landed=True)
+
+
 def _held_records_read_uncached(
-    project: str, repository: Path, signature: tuple[Any, ...]
+    project: str,
+    repository: Path,
+    signature: tuple[Any, ...],
+    *,
+    include_landed: bool = False,
 ) -> dict[Path, Mapping[str, Any]]:
     """Read the held-tree records once, inside the region a fresh read opens."""
     token = _HELD_SOURCE_SIGNATURE.set(signature)
     try:
         with file_memo.read_only_region():
-            return _held_worktree_records_read(project, repository)
+            return _held_worktree_records_read(
+                project, repository, include_landed=include_landed
+            )
     finally:
         _HELD_SOURCE_SIGNATURE.reset(token)
 
@@ -3630,6 +3657,7 @@ class _HeldWorktreeState:
         self.extra: set[str] = set()
         self.trees: dict[Any, set[Path]] = {}
         self.inspected: set[Path] = set()
+        self.matched: dict[Path, Mapping[str, Any]] = {}
         self.held: dict[Path, Mapping[str, Any]] = {}
 
     def replace(
@@ -3653,9 +3681,16 @@ class _HeldWorktreeState:
         have taken: a tree that survived its run but holds nothing unmerged
         only costs someone a look, while a row claiming otherwise costs a
         reader their trust in every row beside it.
+
+        ``matched`` keeps the record of every inspected tree a row still names,
+        judged by nothing else. The duty view is the wrong answer for a caller
+        deciding which trees it may free: a landing empties the tree of exactly
+        the work the duty view judges against, so the tree the landing could
+        release stops being a duty as the landing completes.
         """
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
+            self.matched.pop(tree, None)
             for name in self.records.worktree_keys(tree):
                 self.trees[name].discard(tree)
                 if not self.trees[name]:
@@ -3667,22 +3702,27 @@ class _HeldWorktreeState:
         self.inspected = inspected
         for tree in affected & inspected:
             record = _holding_record(tree, self.records)
-            release = record.get("release") if record is not None else None
+            if record is None:
+                self.matched.pop(tree, None)
+                self.held.pop(tree, None)
+                continue
+            self.matched[tree] = record
+            release = record.get("release")
             if (
-                record is None
-                or (
-                    isinstance(release, Mapping)
-                    and release.get("worktree_released") is True
-                )
-                or not _tree_holds_unmerged_work(tree)
-            ):
+                isinstance(release, Mapping)
+                and release.get("worktree_released") is True
+            ) or not _tree_holds_unmerged_work(tree):
                 self.held.pop(tree, None)
             else:
                 self.held[tree] = record
 
 
 def _held_worktree_records_read(
-    project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
+    project: str,
+    repository: Path,
+    *,
+    signature: tuple[Any, ...] | None = None,
+    include_landed: bool = False,
 ) -> dict[Path, Mapping[str, Any]]:
     """Apply changed run documents and tree registrations to the previous answer.
 
@@ -3806,7 +3846,7 @@ def _held_worktree_records_read(
             _held_remember(
                 _HELD_RECORD_READS, cache_key, (aggregate_stamp, identities, index)
             )
-        return dict(index.held)
+        return dict(index.matched if include_landed else index.held)
 
 
 def _held_worktrees_by_session(
