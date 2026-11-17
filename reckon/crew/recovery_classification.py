@@ -1996,6 +1996,13 @@ def classify_pointer(
     # already recorded dead is not waiting to start either, whatever label it
     # still carries: a killed run keeps the phase it held when it died, so
     # honouring the label there would let a pre-spawn word outrank the process.
+    #
+    # A manifest carrying a verdict is the same kind of receipt, written by the
+    # worker itself, and that precedence is applied below rather than here:
+    # ``pre_spawn_reads_as_claim`` withholds the claim as soon as the manifest
+    # reaches a terminal status, so a completed run whose pointer still reads
+    # ``starting`` is read from its manifest, exactly as a queued request that
+    # recorded a launch clock is read from its liveness rather than its label.
     pre_spawn_waiting = (
         phase in _PRE_SPAWN_PHASES
         and alive is not False
