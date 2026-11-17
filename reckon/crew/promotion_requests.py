@@ -295,7 +295,13 @@ def request_promotion(
     one arriving through a different caller. Retrying a terminal refusal is an
     explicit coordinator action; automatic sweeps leave its obligation visible.
     """
-    if kind not in {"command", "complete", "acceptance", "review-self", "landing-group"}:
+    if kind not in {
+        "command",
+        "complete",
+        "acceptance",
+        "review-self",
+        "landing-group",
+    }:
         raise CrewError(f"unknown promotion request kind {kind!r}")
     path = _request_path(run_id)
     with runs._pointer_lock(f"promotion-request-{run_id}"):

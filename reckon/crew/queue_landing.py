@@ -1749,7 +1749,9 @@ def _verified_measurement(
     if moved and not _moved_primary_keeps_the_measurement(
         pointer, measured_main, primary
     ):
-        conflicts = _merge_conflicts({**pointer, "merge_primary_revision": primary}, head)
+        conflicts = _merge_conflicts(
+            {**pointer, "merge_primary_revision": primary}, head
+        )
         if conflicts:
             from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
 
@@ -2008,7 +2010,10 @@ def _queue_landing_groups(eligible: Sequence[tuple]) -> list[str]:
         receipt = request_promotion(
             leader, kind="landing-group", options={"members": members}
         )
-        if receipt.get("kind") != "landing-group" or receipt.get("phase") not in PENDING:
+        if (
+            receipt.get("kind") != "landing-group"
+            or receipt.get("phase") not in PENDING
+        ):
             continue
         for member in members:
             run_id = str(member["pointer"]["run_id"])
@@ -2029,9 +2034,14 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     from reckon.crew import merge
 
     leader = str(group["run_id"])
-    members = [group["members"][leader], *(
-        member for run_id, member in sorted(group["members"].items()) if run_id != leader
-    )]
+    members = [
+        group["members"][leader],
+        *(
+            member
+            for run_id, member in sorted(group["members"].items())
+            if run_id != leader
+        ),
+    ]
     pointer = members[0]["pointer"]
     repo = Path(str(pointer["repo"]))
     primary = _primary_revision(pointer)
@@ -2417,12 +2427,32 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         if _landed_elsewhere(pointer, run_id):
             skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
-        eligible.append((pointer, run_id, project, head, tree, code_stamp,
-                         review_stamp, previous, conflict_primary))
+        eligible.append(
+            (
+                pointer,
+                run_id,
+                project,
+                head,
+                tree,
+                code_stamp,
+                review_stamp,
+                previous,
+                conflict_primary,
+            )
+        )
     grouped = _queue_landing_groups(eligible)
     requested.extend(grouped)
-    for (pointer, run_id, project, head, tree, code_stamp,
-         review_stamp, previous, primary) in eligible:
+    for (
+        pointer,
+        run_id,
+        project,
+        head,
+        tree,
+        code_stamp,
+        review_stamp,
+        previous,
+        primary,
+    ) in eligible:
         if run_id in grouped:
             continue
         command = str(pointer.get("suite_command") or "").strip()

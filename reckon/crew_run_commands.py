@@ -4357,7 +4357,11 @@ def _land_a_promoted_run(
         "promotion": promoted,
     }
     group = pending_landing.LANDING_GROUP.get()
-    head = str(group["head"]) if group and group.get("publishing") else _reviewed_head_of(record)
+    head = (
+        str(group["head"])
+        if group and group.get("publishing")
+        else _reviewed_head_of(record)
+    )
     if not head:
         report["steps"]["land"] = {
             "ok": False,
