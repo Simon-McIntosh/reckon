@@ -473,6 +473,93 @@ def test_release_record_is_written_under_the_branch_lease(tmp_path, monkeypatch)
         )
 
 
+
+def test_a_release_record_holds_the_branch_before_another_ledger_write(
+    tmp_path, monkeypatch
+):
+    from reckon import ledger
+    from reckon.crew import promotion, promotion_release, promotion_scope
+    from scripts.replay_promotion_drain import git
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("RECKON_RUN_STORE", str(tmp_path / "store.db"))
+    repo = tmp_path / "repository"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "config", "user.name", "Fixture")
+    git(repo, "config", "user.email", "fixture@example.invalid")
+    git(repo, "config", "commit.gpgsign", "false")
+    for run_id in ("first", "second"):
+        path = ledger.run_path("fixture", run_id, repo)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(ledger.serialize_run({"run_id": run_id}))
+        git(repo, "add", str(path.relative_to(repo)))
+    git(repo, "commit", "-qm", "Seed release records")
+
+    releasing, finish_release = threading.Event(), threading.Event()
+    attempted, second_write = threading.Event(), threading.Event()
+    update = promotion_release._update_run_record
+    claim = promotion_requests.claim_promotion_lease
+    errors = []
+
+    def observed_update(path, run_id, changes):
+        if run_id == "first":
+            releasing.set()
+            assert finish_release.wait(10), "release fixture was not finished"
+        else:
+            second_write.set()
+        return update(path, run_id, changes)
+
+    def observed_claim(name):
+        lease = claim(name)
+        if threading.current_thread().name == "second-release" and name.startswith(
+            "promotion-branch-"
+        ):
+            attempted.set()
+        return lease
+
+    monkeypatch.setattr(promotion_release, "_update_run_record", observed_update)
+    monkeypatch.setattr(promotion_requests, "claim_promotion_lease", observed_claim)
+
+    def release(run_id):
+        try:
+            with promotion_scope._branch_write_scope():
+                if run_id == "first":
+                    promotion_scope._acquire_branch_write(repo)
+                    promotion_scope._release_branch_write()
+                promotion._record_release_on_ledger(
+                    project="fixture",
+                    root=repo,
+                    run_id=run_id,
+                    release={"worktree_released": True},
+                    checkout=repo,
+                )
+        except Exception as exc:  # noqa: BLE001 - preserve background test failures
+            errors.append(exc)
+
+    first = threading.Thread(target=release, args=("first",), name="first-release")
+    second = threading.Thread(target=release, args=("second",), name="second-release")
+    try:
+        first.start()
+        assert releasing.wait(5), "first promotion never reached its release"
+        second.start()
+        assert attempted.wait(5), "second promotion never attempted the branch lease"
+        assert not second_write.wait(0.25), (
+            "second promotion wrote the shared ledger before the first release finished"
+        )
+    finally:
+        finish_release.set()
+        for thread in (first, second):
+            if thread.ident is not None:
+                thread.join(10)
+    assert not first.is_alive() and not second.is_alive()
+    assert not errors, errors
+    assert second_write.is_set()
+    for run_id in ("first", "second"):
+        row = ledger._read_run(ledger.run_path("fixture", run_id, repo))
+        assert row["release"]["worktree_released"] is True
+
+
 def test_a_measurement_wait_holds_no_preparation_slot(tmp_path, monkeypatch):
     import subprocess
 
