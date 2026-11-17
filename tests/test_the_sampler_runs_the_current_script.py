@@ -58,7 +58,10 @@ def _script(path, *, added):
     path.chmod(0o755)
 
 
-def test_reexecution_replaces_the_script_and_keeps_earlier_samples(tmp_path):
+@pytest.mark.parametrize("script_changes_path", [False, True])
+def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
+    tmp_path, script_changes_path
+):
     sampler = tmp_path / "sampler"
     series = tmp_path / "series.tsv"
     events = tmp_path / "events"
@@ -84,6 +87,7 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(tmp_path):
         "pid = start_health_sampler()\n"
         "if len(sys.argv) == 1:\n"
         "    while not Path(os.environ['ADVANCE']).exists(): time.sleep(.02)\n"
+        "    os.environ['FLEET_HEALTH_SAMPLER'] = Path(os.environ['ADVANCE']).read_text()\n"
         "    os.execv(sys.executable, [sys.executable, __file__, 'reexecuted'])\n"
         "Path(os.environ['RESULT']).write_text(json.dumps({'pid': pid}))\n"
         "time.sleep(30)\n"
@@ -92,9 +96,12 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(tmp_path):
     try:
         earlier = _wait(lambda: _rows(series))
         first = int(events.read_text().splitlines()[0].split()[1])
-        _script(sampler, added=True)
+        replacement_script = (
+            tmp_path / "replacement" if script_changes_path else sampler
+        )
+        _script(replacement_script, added=True)
         started = time.monotonic()
-        advance.touch()
+        advance.write_text(str(replacement_script))
         _wait(result.exists)
         replacement = json.loads(result.read_text())["pid"]
         rows = _wait(
@@ -119,7 +126,8 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(tmp_path):
         assert active == {str(replacement)}
         print(
             f"handover: one sampler; retained={len(earlier)}; added=present; "
-            f"elapsed={time.monotonic() - started:.3f}s; period={period}s; missed<=2"
+            f"elapsed={time.monotonic() - started:.3f}s; period={period}s; "
+            f"changed_path={script_changes_path}; missed<=2"
         )
     finally:
         process.terminate()
@@ -167,12 +175,16 @@ def test_missing_disk_sample_names_sampler_without_claiming_a_hold(
 
 
 def test_an_unidentified_lock_owner_refuses_replacement(tmp_path, monkeypatch, capsys):
+    from reckon.crew import process_signal
+
     signals = []
-    monkeypatch.setattr(supervisor, "signal_worker", lambda *a, **kw: signals.append(a))
+    monkeypatch.setattr(
+        process_signal, "_signal_one", lambda *a, **kw: signals.append(a)
+    )
     monkeypatch.setattr(supervisor, "all_process_cmdlines", dict)
     with (tmp_path / "fleet-health.lock").open("a+b") as held:
         fcntl.flock(held, fcntl.LOCK_EX)
-        assert not supervisor._stop_health_sampler(tmp_path, "/unrelated/sampler")
+        assert not supervisor._stop_health_sampler(tmp_path)
     assert signals == []
     assert "replacement refused" in capsys.readouterr().out
 
@@ -250,3 +262,104 @@ def test_sampling_without_interpreter_overrides_uses_the_project_environment(tmp
     print(
         "unconfigured sampler: project interpreter used for all four helpers; disk fields published"
     )
+
+
+def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
+    from reckon.crew.process_signal import _running_descendants, _signal_one
+
+    installed = tmp_path / "installed" / "fleet-health"
+    previous = tmp_path / "earlier-checkout" / "bin" / "fleet-health"
+    current = tmp_path / "current-checkout" / "bin" / "fleet-health"
+    for path in (installed, previous, current):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    _script(previous, added=False)
+    _script(current, added=True)
+    installed.symlink_to(previous)
+    env = {
+        **os.environ,
+        "XDG_RUNTIME_DIR": str(tmp_path),
+        "FLEET_SLEEP_SECONDS": "2",
+        "SERIES": str(tmp_path / "series.tsv"),
+        "EVENTS": str(tmp_path / "events"),
+        "CHECKOUT": str(current.parent.parent),
+        "RESULT": str(tmp_path / "replacement.json"),
+    }
+    env.pop("FLEET_HEALTH_SAMPLER", None)
+    old = subprocess.Popen([str(installed)], env=env)
+    survivor = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    replacement = None
+    try:
+        earlier = _wait(lambda: _rows(tmp_path / "series.tsv"))
+        assert os.getpgid(old.pid) == os.getpgid(0)
+        code = (
+            "import os; from pathlib import Path; "
+            "from reckon.crew import fleet_supervisor as s; "
+            "s._checkout_root=lambda: Path(os.environ['CHECKOUT']); "
+            "pid=s.start_health_sampler(); "
+            "Path(os.environ['RESULT']).write_text(str(pid))"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code], env=env, timeout=10, check=False
+        )
+        assert result.returncode == 0
+        recorded = (tmp_path / "replacement.json").read_text()
+        assert recorded != "None", "the installed sampler was not replaced"
+        replacement = int(recorded)
+        rows = _wait(
+            lambda: [
+                r for r in _rows(tmp_path / "series.tsv") if r.get("added") == "present"
+            ]
+        )
+        assert rows
+        assert _rows(tmp_path / "series.tsv")[: len(earlier)] == [
+            dict(row, added="-") for row in earlier
+        ]
+        assert old.wait(timeout=3) == 0
+        assert survivor.poll() is None, (
+            "replacement signalled a peer in the same process group"
+        )
+        assert supervisor.process_cmdline(replacement)[1] == str(current)
+        events = (tmp_path / "events").read_text().splitlines()
+        assert events[:3] == [
+            f"start {old.pid}",
+            f"stop {old.pid}",
+            f"start {replacement}",
+        ]
+        print(
+            "manual handover: installed symlink replaced by checkout script; shared-group peer survived"
+        )
+    finally:
+        # Enumerate only fixture descendants; the sampler shares the test's group.
+        for root in (old.pid, replacement):
+            if root is not None:
+                for pid in _running_descendants(root):
+                    _signal_one(pid, signal.SIGTERM, allow_group=False)
+                _wait(lambda root=root: not supervisor.process_cmdline(root))
+        old.wait(timeout=3)
+        survivor.terminate()
+        survivor.wait(timeout=3)
+
+
+def test_an_open_descriptor_without_the_lock_is_not_sampler_ownership(tmp_path, capsys):
+    script = tmp_path / "other-service"
+    lock = tmp_path / "fleet-health.lock"
+    ready = tmp_path / "ready"
+    script.write_text(
+        "#!/bin/bash\n"
+        f"exec 8>{shlex.quote(str(lock))}\n"
+        "flock -n 8 || exit 1\n"
+        f"exec 9>{shlex.quote(str(lock))}\n"
+        f"touch {shlex.quote(str(ready))}\n"
+        "sleep 30 & wait $!\n"
+    )
+    script.chmod(0o755)
+    process = subprocess.Popen([str(script)], start_new_session=True)
+    try:
+        _wait(ready.exists)
+        assert supervisor.lock_held("fleet-health", tmp_path)
+        assert not supervisor._stop_health_sampler(tmp_path)
+        assert process.poll() is None
+        assert "replacement refused" in capsys.readouterr().out
+    finally:
+        os.killpg(process.pid, signal.SIGTERM)
+        process.wait(timeout=3)

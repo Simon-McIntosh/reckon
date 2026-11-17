@@ -1486,7 +1486,7 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
     runtime = Path(environ.get("XDG_RUNTIME_DIR") or runtime_directory(environ))
     runtime.mkdir(parents=True, exist_ok=True)
     with exclusive_lock(runtime / "fleet-health.handover.lock"):
-        if not _stop_health_sampler(runtime, sampler):
+        if not _stop_health_sampler(runtime):
             return None
         sampler_environment = {
             **environ,
@@ -1505,47 +1505,101 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
     return process.pid
 
 
-def _stop_health_sampler(runtime: Path, sampler: str) -> bool:
-    """Stop only the script session holding this runtime's sampler descriptor.
-
-    Bash inherits the flock through descriptor 9. Match that inode and the
-    script argument, rather than trusting a pid record or a command substring.
-    The session contains only that sampler and its sampling children.
-    """
-    if not lock_held("fleet-health", runtime):
-        return True
-    inode = (runtime / "fleet-health.lock").stat()
-    candidates = []
+def _health_sampler_processes(runtime: Path) -> dict[int, list[str]]:
+    """Processes sharing the exclusive sampler lock through descriptor 9."""
+    try:
+        inode = (runtime / "fleet-health.lock").stat()
+    except FileNotFoundError:
+        return {}
+    holders = {}
     for pid, argv in all_process_cmdlines().items():
-        if len(argv) < 2 or Path(argv[1]).resolve() != Path(sampler).resolve():
-            continue
+        proc = Path(f"/proc/{pid}")
         try:
-            held = Path(f"/proc/{pid}/fd/9").stat()
-            if (held.st_dev, held.st_ino) == (inode.st_dev, inode.st_ino) and os.getsid(
-                pid
-            ) == pid:
-                candidates.append(pid)
+            if proc.stat().st_uid != os.getuid():
+                continue
+            held = (proc / "fd/9").stat()
+            if (held.st_dev, held.st_ino) != (inode.st_dev, inode.st_ino):
+                continue
+            info = (proc / "fdinfo/9").read_text()
         except OSError:
             continue
+        for line in info.splitlines():
+            if not line.startswith("lock:"):
+                continue
+            record = line.partition(":")[2].strip()
+            if record.split()[1:4] == [
+                "FLOCK",
+                "ADVISORY",
+                "WRITE",
+            ] and lock_holders_in(record, inode.st_dev, inode.st_ino):
+                holders[pid] = argv
+                break
+    return holders
+
+
+def _stop_health_sampler(runtime: Path) -> bool:
+    """Stop the lock-owning shell and its tree without assuming its launch path.
+
+    The held descriptor identifies the sampler independently of its script's
+    current location or parent. Descriptor inheritance identifies its children;
+    only the root shell is an incumbent. Signals target enumerated processes,
+    because a manually launched sampler can share its group with other work.
+    """
+    from reckon.crew.process_liveness import _process_start_time, _process_stat_fields
+    from reckon.crew.process_signal import _running_descendants, _signal_one
+
+    if not lock_held("fleet-health", runtime):
+        return True
+    holders = _health_sampler_processes(runtime)
+    candidates = []
+    for pid, argv in holders.items():
+        if len(argv) < 2 or Path(argv[0]).name not in {"bash", "sh", "dash"}:
+            continue
+        if argv[1].startswith("-"):
+            continue
+        fields = _process_stat_fields(pid)
+        if len(fields) > 1 and int(fields[1]) not in holders:
+            candidates.append(pid)
     if len(candidates) != 1:
         log(
             f"sampler replacement refused: lock held with {len(candidates)} identified owners"
         )
         return False
     pid = candidates[0]
+    targets = {}
+    for target in _running_descendants(pid):
+        try:
+            if Path(f"/proc/{target}").stat().st_uid != os.getuid():
+                continue
+        except OSError:
+            continue
+        started = _process_start_time(target)
+        if started is not None:
+            targets[target] = started
+    shown = {target: process_cmdline(target) for target in targets}
     log(
-        f"replacing sampler session {pid}: {process_cmdline(pid)}; other sessions are outside its group"
+        f"replacing sampler pid {pid}; targets {shown}; its parent and peers are outside this tree"
     )
     for sig in (signal.SIGTERM, signal.SIGKILL):
-        signal_worker(pid, sig, reason="fleet-health-replace")
+        for target, started in targets.items():
+            if _process_start_time(target) == started:
+                _signal_one(
+                    target, sig, reason="fleet-health-replace", allow_group=False
+                )
         deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
         while time.monotonic() < deadline:
             with suppress(ChildProcessError):
                 os.waitpid(pid, os.WNOHANG)
-            if not lock_held("fleet-health", runtime) and not process_cmdline(pid):
+            live = any(
+                _process_start_time(target) == started and process_cmdline(target)
+                for target, started in targets.items()
+            )
+            if not lock_held("fleet-health", runtime) and not live:
                 return True
             time.sleep(SERVICE_POLL_SECONDS)
-    log(f"sampler replacement refused: session {pid} still holds its runtime")
+    log(
+        f"sampler replacement refused: pid {pid} still owns its runtime or live children"
+    )
     return False
 
 
