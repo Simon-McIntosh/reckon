@@ -1931,10 +1931,8 @@ def _complete_locked(
     # half-landed, uncommitted state behind.
     _require_committable_checkout(checkout, run_id)
     tree = _record_tree(record)
-    # A landing that will carry the plan file must not sweep an unrelated
-    # uncommitted edit into its commit. The check runs here, before either
-    # store is written, so a refusal leaves no ledger row and no plan comment
-    # for the next promotion to read as an unrelated edit.
+    # The comment captures pending plan text after acquiring the branch lease;
+    # the same mapping then carries that projection through the commit.
     from reckon.crew.promotion_scope import _branch_plan_text_edits
 
     plan_text_edits = _branch_plan_text_edits()

@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
@@ -62,6 +63,7 @@ from reckon.crew.runs import (
 
 _ZERO_COUNT = re.compile(r"0+")
 _BRANCH_WRITES: ContextVar[dict | None] = ContextVar("promotion_branch_writes", default=None)
+_BRANCH_WRITER_CHANGED = threading.Condition()
 
 
 @contextmanager
@@ -79,18 +81,18 @@ def _branch_write_scope():
 
 
 def _branch_write_key(checkout: Path) -> str:
-    from reckon.git_head import _git_directory
+    from reckon.git_head import _common_git_directory, _git_directory
 
     directory = _git_directory(checkout)
     common, branch = checkout.resolve(), "HEAD"
     if directory is not None:
         common = directory.resolve()
-        common_file = directory / "commondir"
-        if common_file.is_file():
-            common = (directory / common_file.read_text().strip()).resolve()
         head = directory / "HEAD"
         if head.is_file():
-            branch = head.read_text().strip()
+            contents = head.read_text().strip()
+            if contents.startswith("ref:"):
+                common = _common_git_directory(directory).resolve()
+                branch = contents
     return "promotion-branch-" + hashlib.sha256(f"{common}\n{branch}".encode()).hexdigest()[:24]
 
 
@@ -113,10 +115,12 @@ def _acquire_branch_write(checkout: Path | None) -> None:
         mark_stage("branch-wait")
     name = _branch_write_key(checkout)
     deadline = time.monotonic() + 300
-    while (lease := claim_promotion_lease(name)) is None:
-        if time.monotonic() >= deadline:
-            raise CrewError(f"branch-writing lease remained held for {checkout}")
-        time.sleep(0.05)
+    with _BRANCH_WRITER_CHANGED:
+        while (lease := claim_promotion_lease(name)) is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CrewError(f"branch-writing lease remained held for {checkout}")
+            _BRANCH_WRITER_CHANGED.wait(min(2.0, remaining))
     renewer = _PromotionLeaseRenewer(lease)
     renewer.start()
     scope.update(lease=lease, renewer=renewer)
@@ -131,7 +135,9 @@ def _release_branch_write() -> None:
     from reckon.crew.promotion_requests import PROMOTION_STAGE, release_promotion_lease
 
     scope.pop("renewer").stop()
-    release_promotion_lease(scope.pop("lease"))
+    with _BRANCH_WRITER_CHANGED:
+        release_promotion_lease(scope.pop("lease"))
+        _BRANCH_WRITER_CHANGED.notify_all()
     mark_stage = PROMOTION_STAGE.get()
     if mark_stage is not None:
         mark_stage("bookkeeping")
@@ -2929,6 +2935,7 @@ def _commit_landing_writes(
     subject: str | None = None, body: str | None = None,
     store_row_written: bool = False, plan_text_edits: Mapping[Path, str] | None = None,
 ) -> dict[str, Any]:
+    """Commit available landing writes under the lazy branch lease."""
     if not any(Path(path).is_file() for path in paths):
         return {"committed": False, "reason": "no_write"}
     with _branch_write_scope():

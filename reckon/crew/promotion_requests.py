@@ -17,7 +17,7 @@ import time
 from collections import Counter
 from collections.abc import Callable, Mapping
 from contextlib import suppress
-from contextvars import ContextVar
+from contextvars import Context, ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -214,8 +214,9 @@ def promotion_queue_report(
 ) -> dict[str, Any]:
     """What the queue holds now and how fast it has drained recently.
 
-    ``waiting`` counts the requests a slot would take up next, ``running`` the
-    ones holding a slot, and ``parked`` the ones held outside every slot
+    ``waiting`` counts requests whose preparation can start next, ``running``
+    includes preparation, branch writes and their waits, and ``parked`` those
+    held outside every slot
     because the record a reviewer still owes is not written yet. The oldest
     wait is measured from the request that has waited longest, so a queued
     request that is stuck shows up even while younger ones drain past it.
@@ -278,7 +279,9 @@ def promotion_queue_report(
         "refused_last_window": counted["refused"],
         "failed_last_window": counted["failed"],
         "deferred_last_window": counted["deferred"],
-        "successful_promotions_per_hour": counted["promoted"] * 3600 / window_seconds,
+        "successful_promotions_per_hour": (
+            counted["promoted"] * 3600 / window_seconds if window_seconds > 0 else None
+        ),
         "stage_seconds_last_window": dict(stages),
         "rate_bounded_by": max(stages, key=stages.get) if stages else None,
     }
@@ -868,8 +871,8 @@ class PromotionService:
                 self._release(slot)
                 continue
             thread = threading.Thread(
-                target=self._run,
-                args=(request, owner, slot),
+                target=Context().run,
+                args=(self._run, request, owner, slot),
                 name=f"promotion-request-{request['run_id']}",
                 daemon=True,
             )
