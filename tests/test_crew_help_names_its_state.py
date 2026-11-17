@@ -157,6 +157,16 @@ def test_the_retired_review_plan_alias_is_not_reachable() -> None:
     assert result.exit_code != 0, result.output
 
 
+def test_gate_help_names_worker_scope_and_paired_arms() -> None:
+    gate = _help_result(("verify-gate",))
+    suite = _help_result(("suite", "run"))
+    assert "live worker's scoped gate" in " ".join(gate.output.split())
+    assert "live run's base and head arms" in " ".join(suite.output.split())
+    for result in (gate, suite):
+        assert "--partition" in result.output
+        assert "--log" not in result.output
+
+
 def test_the_one_word_near_namesake_states_its_distinction() -> None:
     """A one-word verb that reads like another names the other it is not.
 

@@ -172,6 +172,138 @@ def _revision(project_root: str | Path) -> str:
     return result.stdout.strip()
 
 
+def node_gate_partition(done_when: str) -> str:
+    """The compute partition named by the measure, with a safe CPU default."""
+    match = re.search(
+        r"\b(all_debug|rigel|betelgeuse|[a-z][a-z0-9_]*_debug)\b", done_when
+    )
+    return match.group(1) if match else "all_debug"
+
+
+def worker_context(run_id: str, project: str, repository: Path) -> dict[str, Any]:
+    """Read the live run without allowing its measurement to target another tree."""
+    from reckon.crew.node import CrewError
+    from reckon.crew.runs import read_pointer
+
+    try:
+        pointer = read_pointer(run_id)
+    except CrewError as exc:
+        raise StandingSuiteError(str(exc)) from exc
+    if pointer.get("project") != project:
+        raise StandingSuiteError(f"run {run_id!r} does not belong to {project!r}")
+    tree = str(pointer.get("worktree") or "").strip()
+    if not tree or Path(tree).resolve() != repository.resolve():
+        raise StandingSuiteError(f"run {run_id!r} does not own checkout {repository}")
+    return pointer
+
+
+def run_node_command(
+    *,
+    repository: Path,
+    run_id: str,
+    revision: str,
+    command: str,
+    partition: str,
+    timeout_seconds: float,
+    label: str,
+) -> dict[str, Any]:
+    """Measure a committed node command using the landing runner's job and log.
+
+    The runner archives the requested revision on the compute node and links
+    the project's environment there. No test is copied across revisions, and
+    no caller supplies an output path. Exclusive creation reserves every log
+    before submission; a missing job receipt remains an unreadable result.
+    """
+    from reckon.crew import landing_measure
+    from reckon.crew.runs import read_pointer
+
+    if not command.strip():
+        raise StandingSuiteError(
+            f"the {label} arm resolves to no command at {revision}"
+        )
+    if not partition.strip() or timeout_seconds <= 0:
+        raise StandingSuiteError("a worker gate needs a partition and a positive bound")
+    pointer = read_pointer(run_id)
+    manifest = str(pointer.get("manifest_path") or "")
+    if not manifest:
+        raise StandingSuiteError(f"run {run_id!r} records no manifest delivery path")
+    directory = Path(manifest).expanduser().parent
+    log = directory / f"{label}-{time.time_ns()}.log"
+    runner = landing_measure._partition_runner(
+        subprocess.run,
+        repo=repository,
+        base_tree=repository,
+        base_sha=revision,
+        head_sha=revision,
+        partition=partition,
+        long_partition="rigel",
+        test_files=(),
+    )
+    runner.partitioned = True
+    arm = landing_measure._arm(
+        ["sh", "-c", command],
+        repository,
+        log,
+        runner,
+        timeout_seconds,
+        {"PYTHONPATH": "."},
+    )
+    if log.exists():
+        text = log.read_text(encoding="utf-8", errors="replace")
+        receipt = _exit_status(text)
+        if receipt is not None and receipt == arm.exit_status:
+            terminal = f"EXIT={receipt}"
+            if not text.rstrip().endswith(terminal):
+                with log.open("a", encoding="utf-8") as created:
+                    created.write(f"\n{terminal}\n")
+    observation = landing_measure.arm_observation(
+        command, revision, arm, measured_by="worker"
+    )
+    observation["completed"] = arm.readable and arm.exit_status in (0, 1)
+    observation["reason"] = arm.unreadable_reason or (
+        f"exceeded the {timeout_seconds:g}s bound" if arm.timed_out else ""
+    )
+    observation["partition"] = landing_measure.partition_for_bound(
+        partition, "rigel", timeout_seconds
+    )
+    return observation
+
+
+def run_node_arms(
+    *,
+    pointer: Mapping[str, Any],
+    repository: Path,
+    run_id: str,
+    partition: str,
+    timeout_seconds: float,
+) -> dict[str, Any]:
+    """Resolve and measure each arm against the files its own revision holds."""
+    from reckon.crew.promotion_records import _scoped_suite_command
+
+    base = str(pointer.get("base_sha") or "")
+    if not base:
+        raise StandingSuiteError(f"run {run_id!r} records no base revision")
+    head = _revision(repository)
+    result: dict[str, Any] = {}
+    for field, revision in (("baseline_suite", base), ("after_suite", head)):
+        command = _scoped_suite_command(pointer, revision=revision)
+        result[field] = run_node_command(
+            repository=repository,
+            run_id=run_id,
+            revision=revision,
+            command=command,
+            partition=partition,
+            timeout_seconds=timeout_seconds,
+            label=field,
+        )
+    result["ok"] = all(
+        result[field]["completed"] for field in ("baseline_suite", "after_suite")
+    ) and set(result["after_suite"]["failure_ids"]) <= set(
+        result["baseline_suite"]["failure_ids"]
+    )
+    return result
+
+
 def _kill_process_group(proc: subprocess.Popen) -> None:
     """Kill every process the suite spawned, not only the runner itself.
 
