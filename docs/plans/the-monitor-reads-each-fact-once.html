@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="449">
+<meta name="plan-version" content="450">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1040,7 +1040,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>s13 lands as a partial: its stream cursor makes <code>recovery_memo._newest_result_event</code> read only what changed (11,009,290 to 7,545 bytes on its fixture), with the rewrite check reused from <code>_backends</code> and a test for a stream rewritten in place. Its live bound and the dominant 42.7% reader move to s88, and a steady-tick regression that appeared on main after s86 is s87. The section is declared done so its landing can record it.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261117T155326060499-review-of-the-station-reads-only-what-changed-after-one-pointer-read-c70293a6b843" data-who="reckon-build" data-when="2026-11-17T15:55:16.543Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read at base 73a771cde3238af66d88944a3bae01debf09896f and head c70293a6b8435db8af8825731444ec41bc004633: a parsed record scores all six dimensions (goal_fidelity 7, evidence 11, scope_discipline 15, durability 17, fit 18, reuse 18, total 86) with added_failure_count 0 and no added failure ids against the reviewed run&#x27;s own gate-base and gate-after logs, and carries six non-blocking findings.</p></div>
+    <div class="r-comment-body"><p>Reviewed run r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read at base 73a771cde3238af66d88944a3bae01debf09896f and head c70293a6b8435db8af8825731444ec41bc004633: a parsed record scores all six dimensions (goal_fidelity 7, evidence 11, scope_discipline 15, durability 17, fit 18, reuse 18, total 86) with added_failure_count 0 and no added failure ids against the reviewed run's own gate-base and gate-after logs, and carries six non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read" data-who="reckon-build" data-when="2026-11-17T04:29:52Z">
+    <div class="r-comment-body"><p>The station&#x27;s terminal-lane scan keeps a per-stream cursor, so a run whose stream has grown is read from the record boundary it reached and a run whose stream is unchanged is not opened at all; the rewrite check is _backends.stream_head_fingerprint with _backends._stream_head_intact, the same 8 KiB opening the parsed-stream cache records, and the scan&#x27;s read passes count=False so the producer&#x27;s parsed-byte counter keeps reporting exactly the bytes appended rather than the growth twice. On a five-run fixture whose streams total 11,004,305 bytes, the tick after each worker appends 510 bytes reads 11,009,290 bytes of those streams at base 73a771c and 86,905 on this tree; every verdict equals a classification computed with the cursor store cleared, the gate is 81 passed at base against 82 at head with no added importer failure, and the section&#x27;s live 20 MB/min bound stays open because the 42.7% _cached_stream_entry eviction another section owns is the dominant residual.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261108T053351721397-review-of-a-sessions-duties-run-while-its-follower-is-alive-3aec564ad491" data-who="reckon-build" data-when="2026-11-08T05:46:04Z">
     <div class="r-comment-body"><p>Independent review of base fdfcd7d77a7347a068604e52f00696e3c338eb15 to head 3aec564ad491f6d9d6dde4606786f2a68bc78231 stored parsed scores 14, 7, 20, 14, 19, 20, zero observed added failure IDs, and three blocking findings.</p></div>
