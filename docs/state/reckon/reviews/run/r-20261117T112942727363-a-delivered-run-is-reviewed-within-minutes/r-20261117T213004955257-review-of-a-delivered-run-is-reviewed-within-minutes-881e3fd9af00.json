@@ -1,0 +1,94 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/resumption.py:3019 resumption.sweep -> review_request_census",
+    "reckon/crew/station.py:461 SweepBeat._run -> on_report",
+    "reckon/crew/station.py:1122 Station._record_sweep_report -> station_obligations.record_sweep_report"
+  ],
+  "completed_at": "2026-11-17T21:33:10.414Z",
+  "dispatched_at": "2026-11-17T21:32:37Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-delivered-run-is-reviewed-within-minutes-881e3fd9af00",
+      "recorded_at": "2026-11-17T21:59:02.932759+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 3028,
+      "severity": "blocking",
+      "text": "The census's obligations are written onto the in-memory sweep report under the key review_requests, and no production reader reads that key: reckon/crew/station.py:1122 sets on_report to Station._record_sweep_report, which forwards to station_obligations.record_sweep_report that reads only report[\"reviews\"] (reckon/crew/station_obligations.py:106), so the obligation the goal and done_when require an operator to see is computed on every sweep and discarded, and no CLI, MCP or SPA surface can name the reason a run was never requested."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 4694,
+      "severity": "non-blocking",
+      "text": "_nearest_rank duplicates the nearest-rank quantile the repository already owns at reckon/crew/run_time_profile.py:107 (_percentile, same clamp, same None-on-empty) and again at reckon/crew/picker/snapshot.py:122, so a third copy is a capability fork rather than an extension of either owner."
+    },
+    {
+      "file": "tests/test_a_delivered_run_is_reviewed_within_minutes.py",
+      "line": 145,
+      "severity": "non-blocking",
+      "text": "assert instants[\"delivered_at\"] == delivered_at compares a second call to recovery_review_dispatch.review_stage_instants against the value the same call returned at line 70, so it holds whatever the reader does and cannot redden on a regression; the sibling at line 154 (p90 == the single row's lag) is the same shape with a one-element sample."
+    },
+    {
+      "file": "tests/test_a_delivered_run_is_reviewed_within_minutes.py",
+      "line": 151,
+      "severity": "non-blocking",
+      "text": "Plan \u00a78's deliverable 'A review request takes the priority of the run it reviews' and the done_when's 'with the run's priority' are neither implemented nor asserted: the in-window case stops at the 120 s bound and reads nothing about the composed request's priority, and the manifest's evidence_inputs defers the rule to a-session-spends-a-priority-budget \u00a73."
+    },
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html",
+      "line": 72,
+      "severity": "non-blocking",
+      "text": "The fragment records the negative control as '1 failed, 2 passed', while the log it cites (negative-control.log) states '1 failed, 4 passed' over the file's five tests, so the artifact and its own receipt disagree on the measured result."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 4654,
+      "severity": "non-blocking",
+      "text": "_lag_seconds clamps a negative interval to 0.0, so a request receipted before its delivery is reported as a zero-length interval rather than as the out-of-order reading it is, which is the claim the module's own census docstring at line 4759 refuses to make about a missing delivery."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 4688,
+      "severity": "non-blocking",
+      "text": "The live-pointer arm of _is_review_subject is unexercised: the review-run test uses an id already carrying the review prefix (tests/...:205) and returns at line 4685, so the _is_review_run(record) branch could be deleted with the suite still green."
+    }
+  ],
+  "justifications": {
+    "durability": "The negative control at negative-control.log reddens the in-window case with only the sweep pass gated, but tests/test_a_delivered_run_is_reviewed_within_minutes.py:145 compares a value against a second call to the same reader and no assertion reaches priority or the sweep wiring at reckon/crew/resumption.py:3028.",
+    "evidence": "The gate logs record completed runs at both arms (after_suite-head.log 63 passed EXIT=0, baseline_suite-head.log 58 passed EXIT=0), yet the done_when's fleet threshold is contradicted by the run's own live-census-20261117T2145Z.log, which reads 23 delivered runs and a request-lag p90 of 917.1 s over five samples.",
+    "fit": "The new block at reckon/crew/recovery_review_dispatch.py:4600-4857 follows the module's own idiom of a commented constant and a docstringed reader per capability, and ruff format --check on the landed blobs of all three files reports no reformat.",
+    "goal_fidelity": "The two intervals are reported apart at reckon/crew/recovery_review_dispatch.py:4749 and the obligation is built at line 4820, but the obligation reaches no reader because reckon/crew/resumption.py:3028 writes it onto a sweep report key nothing consumes.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:4694 re-implements the nearest-rank quantile that reckon/crew/run_time_profile.py:107 already owns, and review_stage_instants at line 4618 re-partitions the stage intervals reckon/crew/stage_receipts.py:198 stage_census already computes.",
+    "scope_discipline": "All four paths in the diff (docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html, reckon/crew/recovery_review_dispatch.py, reckon/crew/resumption.py, tests/test_a_delivered_run_is_reviewed_within_minutes.py) are inside the five declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261117T213004955257-review-of-a-delivered-run-is-reviewed-within-minutes-881e3fd9af00",
+  "reviewed_base_sha": "0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388",
+  "reviewed_head_sha": "881e3fd9af00dcf8ba65f06f512c33b1920d112b",
+  "reviewed_run_id": "r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 11,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:41:29.218460+00:00",
+  "total": 79,
+  "verdicts": {
+    "diff": "Read commit by commit over 0c9f4fc8cd..881e3fd9af: c10e311 adds 260 lines of census and one test file of 267 lines, 25335816 excludes review runs, d401ffc2 reports a recorded dispatch without an instant, and 6fc97e08/881e3fd9 add the 103-line evidence fragment; the two source files and the fragment carry no change outside the section's subject.",
+    "done_when": "The done_when asks for the last 50 delivered runs on the live fleet with the request inside 120 s at p90 plus a held-tick test; the gate ran tests/test_a_delivered_run_is_reviewed_within_minutes.py with two suite arms, which asserts only the test half, and the run's own live-census-20261117T2145Z.log reads p90 917.1 s over 5 request samples of 23 delivered runs.",
+    "goal": "The goal asks for a request within 120 s of delivery, request-to-launch recorded apart, and an obligation after ten minutes with its reason; reckon/crew/recovery_review_dispatch.py:4749 delivers the split and line 4820 the obligation, but the obligation is computed and dropped and 'a review request takes the priority of the run it reviews' from plan \u00a78 is absent.",
+    "manifest": "The manifest of r-20261117T112942727363 records status complete with five commits, the scoped gate command, both suite arms (0 failures each) and the negative-control log path, and states the live census figures honestly rather than claiming the done_when threshold.",
+    "write_paths": "The diff carries four paths and each is inside the five declared write paths listed in the manifest's orientation_write_paths, with docs/figures/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes declared but unused."
+  }
+}
