@@ -112,7 +112,7 @@ def _append_a_record(path: Path) -> None:
 @pytest.fixture(autouse=True)
 def _cold_stream_caches() -> None:
     """Start every case with no stream state carried in from another one."""
-    for name in ("_PARSED_STREAMS", "_STREAM_CURSORS", "_STREAM_SUMMARIES"):
+    for name in ("_PARSED_STREAMS", "_STREAM_SUMMARIES"):
         cache = getattr(_backends, name, None)
         if cache is not None:
             cache.clear()
@@ -206,9 +206,11 @@ def test_a_whole_request_is_never_answered_from_a_tail_entry(tmp_path: Path) -> 
         "".join(_record(index) + "\n" for index in range(40)), encoding="utf-8"
     )
     assert len(_backends.cached_stream_events(path)[0]) == 40
+    # The summary is where a resume cursor lives once the byte bound drops a
+    # stream's records, so one pass through the tick is the state the resumed
+    # read answers from.
+    _observe(path)
 
-    # The byte bound drops the records it held and keeps the cursor of the read
-    # that published them, which is the state a resumed read answers from.
     _evict_contents()
     with path.open("a", encoding="utf-8") as handle:
         handle.write("".join(_record(40 + index) + "\n" for index in range(3)))
@@ -238,8 +240,8 @@ def test_a_resume_past_the_end_of_a_truncated_stream_reads_it_whole(
     # A stream either cache has seen is answered from that cache, so the
     # carried resume is only consulted when neither holds the stream.
     _evict_contents()
-    with _backends._PARSED_STREAM_LOCK:
-        _backends._STREAM_CURSORS.clear()
+    with _backends._STREAM_SUMMARY_LOCK:
+        _backends._STREAM_SUMMARIES.clear()
 
     # The stream is truncated back to a record boundary inside the sampled
     # opening, so the opening still holds and only the offset is stale.
@@ -264,3 +266,35 @@ def test_a_resume_past_the_end_of_a_truncated_stream_reads_it_whole(
     )
     assert resumed.as_dict() == fresh.as_dict()
     assert resumed.stream_state["offset"] == path.stat().st_size
+
+
+def test_a_whole_request_after_an_append_parses_only_what_was_appended(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A held whole entry is extended, not discarded and read from the first byte."""
+    recorder = RecordingParse(_backends.parse_events)
+    monkeypatch.setattr(_backends, "parse_events", recorder)
+    path = tmp_path / "stream.jsonl"
+    path.write_text(
+        "".join(_record(index) + "\n" for index in range(40)), encoding="utf-8"
+    )
+    whole, _malformed = _backends.cached_stream_events(path, whole=True)
+    assert len(whole) == 40
+
+    recorder.bytes = 0
+    recorder.records = 0
+    appended = "".join(_record(40 + index) + "\n" for index in range(3))
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(appended)
+
+    whole, malformed = _backends.cached_stream_events(path, whole=True)
+    assert [event["message"]["id"] for event in whole] == [
+        f"msg_{index:06d}" for index in range(43)
+    ], "a whole request lost records it held"
+    assert malformed == 0
+    assert recorder.bytes == len(appended.encode("utf-8")), (
+        "a whole request re-read the stream it already held",
+        recorder.bytes,
+        len(appended.encode("utf-8")),
+    )
+    assert recorder.records == 3
