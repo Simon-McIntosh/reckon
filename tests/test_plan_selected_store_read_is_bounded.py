@@ -248,9 +248,12 @@ def test_migration_indexes_derived_identity_in_hot_and_archive(tmp_path, monkeyp
                     "INSERT INTO run_details VALUES (?, ?)",
                     (row["run_id"], json.dumps(detail)),
                 )
-    expected = _reference(path)
+    # A store that owes its schema migration is refused at the read, so the
+    # open that performs the migration comes first; the reference is then the
+    # indexed answer the migrated store holds, which is what this case asks.
     with run_store.RunStore(path):
         pass
+    expected = _reference(path)
     _assert_reference(
         run_store.stored_run_rows("project", path=path, plan="selected"), expected
     )
