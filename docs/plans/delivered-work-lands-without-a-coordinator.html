@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -170,9 +170,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-11-17T13:11:00Z">
-    <div class="r-comment-body"><p>§17 landed by direct merge (head <code>21ab9fdae2</code>), on the lead's instruction. A failure id that fails at the primary revision a run merged is counted as the base&#x27;s and named with that revision on the promotion record; a failure absent at that revision is still charged. The receipt check reuses the format-aware owner, covering composite logs. Merged candidate gate: 15 passed in 12.87s.</p></div>
-</div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
     <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
 </div>
@@ -239,11 +236,17 @@
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261117T114924247084-a-repaired-head-is-reviewed-and-landed" data-who="reckon-build" data-when="2026-11-17T12:19:10Z">
     <div class="r-comment-body"><p>Persist completed merge-repair heads, request reviews of those heads without a coordinator, and land clean reviews while exposing review/conflict refusals; 4 behavior cases and 62 armed head checks pass against 58 base checks. The 111-file importer pair retains 18 base failures and adds 6 stale no-review assertions in 3 fenced-out test files, recorded for the coordinator scope round.</p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-11-17T13:11:00Z">
+    <div class="r-comment-body"><p>§17 landed by direct merge (head <code>21ab9fdae2</code>), on the lead's instruction. A failure id that fails at the primary revision a run merged is counted as the base's and named with that revision on the promotion record; a failure absent at that revision is still charged. The receipt check reuses the format-aware owner, covering composite logs. Merged candidate gate: 15 passed in 12.87s.</p></div>
+</div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261117T122916805015-review-of-a-base-failure-is-not-charged-to-the-run-30ebc5c13551" data-who="reckon-build" data-when="2026-11-17T12:38:29Z">
     <div class="r-comment-body"><p>Independent exact-revision review stored at both granted paths; six dimensions scored 17/20/20/17/20/5, one blocking receipt-validation finding, zero added source gate failure IDs; coordinator must repair the finding before landing the source node.</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261117T125521334540-review-of-a-base-failure-is-not-charged-to-the-run-21ab9fdae21a" data-who="reckon-build" data-when="2026-11-17T13:01:10Z">
     <div class="r-comment-body"><p>Incremental review of 30ebc5c13551530a260841f17f2847f1ed16b481..21ab9fdae21a6084a8383f06c68bfc9a079448cb answers the prior blocking receipt finding; six dimensions score 20, no findings, and recorded armed logs add zero failures.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run" data-who="reckon-build" data-when="2026-11-17T12:51:56Z">
+    <div class="r-comment-body"><p>Promotion attributes failures to the primary revision explicitly merged by the run and preserves the dispatch baseline; receipt validation now reuses the format-aware owner so earlier failing CTest labels survive a passing last label, while omitted failures are refused. Fifteen node cases pass, scoped/armed head passes 73 tests against 58 at base, 36-file importers add zero failure IDs (same four failures; 214/229 passed), and both composite-log cases fail before the repair; all gates ran on all_debug at no more than -n 4.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge at <code>112bbec4b6</code> (head <code>18f4fdaf71</code>), on the lead's instruction, because its own promotion request waited in the queue it replaces. The first review gave 109 of 120 with two blocking findings: a running or parked request took a simulated turn, and the report's window option ordered differently from the drain. Both were repaired with a test each, and the re-review of the repaired head gave 120 of 120 with no findings. In the 70-request case the later sessions' requests move from positions 68 and 69 to 3 and 4. A merged candidate with §3 passed 34 of 36 focused tests; the two failures are in the base's own failure list.</p></div>
@@ -314,6 +317,9 @@
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261116T234158820301-concurrent-edits-land-unattended" data-who="reckon-build" data-when="2026-11-17T02:25:54Z">
     <div class="r-comment-body"><p>Compatible reviewed heads share one measured candidate and the existing publisher; a newly conflicting primary now returns the affected group member to its own repair worker and the persisted group accepts its fresh gated head without repeating promotions. All 19 landing cases and 77 armed tests pass; reversing the repair fails all 4 new conflict cases, and 120 importer files add 0 failure ids (55 failures and 1 error unchanged).</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261117T124728423775-review-of-a-wave-of-landings-is-one-decision-d0d7c6d1fd1b" data-who="reckon-build" data-when="2026-11-17T12:56:53Z">
+    <div class="r-comment-body"><p>Reviewed b5dda3fd06b6dfbad3c1eda77c8503a3d8af5fb6..d0d7c6d1fd1bc7f85346a0481855632a3a631c7f; six dimensions scored 19/12/20/19/19/20, one blocking importer-gate finding, both parsed review records validated.</p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-17T04:42:00Z">
     <div class="r-comment-body"><p>§9 landed by direct merge (head <code>ba288c05cd</code>), on the lead's instruction. The delivered count holds only runs for which no promotion has been asked, runs waiting in the promotion queue are counted apart and not listed as owed, and each owed row carries the command that promotes that run. Reviewed with one blocking finding on a lost remedy, repaired, and re-reviewed 120 of 120. Merged candidate gate: 16 passed in 5.84s.</p></div>
 </div>
@@ -328,9 +334,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261116T233752526352-delivered-rows-say-what-is-owed" data-who="reckon-build" data-when="2026-11-17T01:05:40Z">
     <div class="r-comment-body"><p>Shared live classification separates 1 delivered run, 2 promotion requests and 1 landed leftover across pane and obligations/MCP reads; refusal rows now keep their complete remedy beside the new counters. The committed gate passes 74 tests versus 70 at the repair base and 58 at the original base; all 9 affected importer tests pass unchanged, and reversing the answering commit makes the review-named assertion fail (1 failed). Earlier importer observations remain outside scope.</p></div>
-</div>
-<div class="r-comment" data-section="s8" data-id="c-run-r-20261117T124728423775-review-of-a-wave-of-landings-is-one-decision-d0d7c6d1fd1b" data-who="reckon-build" data-when="2026-11-17T12:56:53Z">
-    <div class="r-comment-body"><p>Reviewed b5dda3fd06b6dfbad3c1eda77c8503a3d8af5fb6..d0d7c6d1fd1bc7f85346a0481855632a3a631c7f; six dimensions scored 19/12/20/19/19/20, one blocking importer-gate finding, both parsed review records validated.</p></div>
 </div>
 </section>
   </main>
