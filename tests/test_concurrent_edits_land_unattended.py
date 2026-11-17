@@ -244,8 +244,11 @@ def test_three_independent_edits_publish_one_proved_set(fleet):
 def test_a_clean_merge_with_an_added_gate_failure_publishes_nothing(fleet):
     fleet.deliver("alpha", 1)
     fleet.deliver("beta", 9)
-    with pytest.raises(runs.CrewError, match="test_interaction"):
-        commands._complete_landing_group(_request(fleet))
+    request = _request(fleet)
+    for _ in range(2):
+        with pytest.raises(runs.CrewError, match="test_interaction"):
+            commands._complete_landing_group(request)
+    assert len(fleet.measured) == 1
     assert not fleet.calls
     assert git(fleet.repo, "rev-parse", "HEAD") == fleet.base
 

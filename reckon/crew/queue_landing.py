@@ -1961,7 +1961,7 @@ def _measurement_run_skip(pointer: Mapping[str, Any]) -> str:
 def _queue_landing_groups(eligible: Sequence[tuple]) -> list[str]:
     """Queue compatible deliveries together after their ordinary eligibility checks."""
     from reckon.crew import merge
-    from reckon.crew.promotion_requests import request_promotion
+    from reckon.crew.promotion_requests import PENDING, request_promotion
     from reckon.crew_run_commands import crew_complete
 
     cohorts: dict[tuple[str, str], list[tuple]] = {}
@@ -2008,7 +2008,7 @@ def _queue_landing_groups(eligible: Sequence[tuple]) -> list[str]:
         receipt = request_promotion(
             leader, kind="landing-group", options={"members": members}
         )
-        if receipt.get("kind") != "landing-group":
+        if receipt.get("kind") != "landing-group" or receipt.get("phase") not in PENDING:
             continue
         for member in members:
             run_id = str(member["pointer"]["run_id"])
@@ -2032,6 +2032,15 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     pointer = members[0]["pointer"]
     repo = Path(str(pointer["repo"]))
     primary = _primary_revision(pointer)
+    signature = {
+        "primary": primary,
+        "heads": [member["head"] for member in members],
+        "commands": [member["pointer"].get("suite_command") for member in members],
+        "code": _landing_code_stamp(),
+    }
+    refusal = group.get("refusal") or {}
+    if refusal.get("signature") == signature:
+        raise CrewError(str(refusal["guard"]))
     aggregate = merge.build_merge_group(
         repo, primary, [member["head"] for member in members]
     )
@@ -2075,6 +2084,10 @@ def measure_landing_group(group: dict[str, Any]) -> str:
         )
         guard = _measure_guard(measured)
         if guard:
+            from reckon.crew.pending_landing import save_group
+
+            group["refusal"] = {"signature": signature, "guard": guard}
+            save_group(group)
             raise CrewError(guard)
         records.append(measured.as_dict())
     # Completion's publication check reads the leader's command and candidate.
