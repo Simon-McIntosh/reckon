@@ -137,6 +137,9 @@ def test_private_repository_copies_packs_without_changing_the_source(tmp_path):
     git(source, "add", "present.txt")
     git(source, "-c", "commit.gpgsign=false", "commit", "-qm", "Seed fixture")
     git(source, "repack", "-ad")
+    (source / "loose.txt").write_text("loose content\n")
+    git(source, "add", "loose.txt")
+    git(source, "-c", "commit.gpgsign=false", "commit", "-qm", "Extend fixture")
     packs = source / ".git/objects/pack"
     before = {path.name: path.read_bytes() for path in packs.iterdir()}
     assert any(name.endswith(".pack") for name in before)
@@ -152,6 +155,8 @@ def test_private_repository_copies_packs_without_changing_the_source(tmp_path):
     )
     assert (private / "present.txt").read_text() == "known content\n"
     assert git(private, "rev-parse", "HEAD") == revision
+    (private / ".git/objects/info/alternates").unlink()
+    assert git(private, "show", "HEAD:loose.txt") == "loose content"
     assert {path.name: path.read_bytes() for path in packs.iterdir()} == before
     for name, content in before.items():
         if name.endswith((".pack", ".idx")):

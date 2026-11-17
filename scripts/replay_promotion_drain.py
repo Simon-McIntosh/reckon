@@ -220,6 +220,18 @@ def _repository(root: Path, source: dict) -> None:
     for original in sorted((Path(source["objects"]) / "pack").glob("*")):
         if original.suffix in {".pack", ".idx"}:
             shutil.copyfile(original, packed / original.name)
+    for directory in Path(source["objects"]).iterdir():
+        if not re.fullmatch("[0-9a-f]{2}", directory.name):
+            continue
+        target = root / ".git/objects" / directory.name
+        target.mkdir(exist_ok=True)
+        for original in directory.iterdir():
+            if re.fullmatch("[0-9a-f]{38}", original.name):
+                with (
+                    original.open("rb") as source_file,
+                    (target / original.name).open("wb") as copied,
+                ):
+                    shutil.copyfileobj(source_file, copied)
     git(root, "config", "user.name", "Replay fixture")
     git(root, "config", "user.email", "replay@example.invalid")
     git(root, "config", "commit.gpgsign", "false")
@@ -574,7 +586,7 @@ def replay(
             "repository_sources_sha256": sources["sha256"],
             "relocation": "repositories and crew paths relocated; process and scheduler handles cleared; request options and promotion guards retained",
             "worker_materialization": "sparse checkout retains source and declared deliverables, omitting duplicate docs/state, docs/figures and docs/evidence except declared paths; canonical repositories and Git objects remain complete",
-            "object_materialization": "private copies of packed objects and indexes; read-only original alternates supply any loose historical objects",
+            "object_materialization": "private copies of packed indexes and loose objects; read-only original alternates retain historical lookup compatibility",
         }
         return result
 
