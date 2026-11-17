@@ -1,0 +1,164 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion merely compares output against the same supplied input; the semantic equality oracle is an independent cold roadmap composition, and warm-answer equality is coupled to a zero-build assertion.",
+  "assertion_review": [
+    {
+      "fails_if": "A state or text edit returns a refused/error response; these are success preconditions, not the regression oracle.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        109,
+        144
+      ]
+    },
+    {
+      "fails_if": "A snapshot returns readiness or closure blockers differing from a fresh _roadmap_scoped composition after discovery cache clear; stale-negative.log shows blocked versus ready.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        127
+      ]
+    },
+    {
+      "fails_if": "Metadata/text or an unchanged declaration starts roadmap composition or acquires readiness fields; restoring the base declaration path fails 151 and 163 with two observed builds.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        133,
+        134,
+        145,
+        146,
+        151,
+        152,
+        163
+      ]
+    },
+    {
+      "fails_if": "A cold changed declaration builds more than once, the build-count instrument sees no known cold build, or both declarations done fails to produce independently derived closable readiness; both implicit and explicit checkout paths are exercised.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        176,
+        177,
+        178
+      ]
+    },
+    {
+      "fails_if": "The initial whole-plan dependency is not blocked or completing upstream declarations leaves target stale/blocked, including a subsequent target write; bypassing key matching provably fails 186 through 127.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        183,
+        186,
+        188,
+        189
+      ]
+    },
+    {
+      "fails_if": "An unchanged warm snapshot changes its answer or does any roadmap build; comparing first and second observed answers is not comparing an output to a value supplied as input.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        194,
+        196,
+        197
+      ]
+    },
+    {
+      "fails_if": "Appending a promoted unlanded store row fails to trigger a fresh build or the independent roadmap misses the run-not-landed finding; removing store_stamp from the key leaves builds empty at 250.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        250,
+        253
+      ]
+    },
+    {
+      "fails_if": "The profiler fails to observe the landing audit or measured wall time less its observed cumulative audit time exceeds five seconds; the equality helper additionally checks the timed edit response.",
+      "file": "tests/test_plan_write_returns_current_readiness.py",
+      "lines": [
+        273,
+        277
+      ]
+    },
+    {
+      "fails_if": "No assertions were added here; moving failure injection to _plan_readiness_report retains the existing persistence-after-read-failure checks.",
+      "file": "tests/test_a_finishing_write_offers_its_close.py",
+      "lines": [
+        227
+      ]
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:3907 edit_plan MCP registration",
+    "reckon/mcp_edit_plan.py:2382 _edit_plan_tool post-write readiness call",
+    "reckon/mcp_deadlines.py:890 _plan_readiness_fields report call"
+  ],
+  "completed_at": "2026-11-17T00:52:19Z",
+  "dispatched_at": "2026-11-17T00:47:00Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all three commits f89d983c9c90f223ad70e8fa8a1019200c24b436, e7cb018c7b673ad8bb9cd690f324a790209e8659 and d8d75400a919375427a905a0e051933a3c07f7f4 against c6274b6a0e6698ed29f59c3027552f4e795abc10; the four-file diff adds snapshot-backed projection, declaration-change detection and focused regression tests.",
+    "done_when": "Read node.done_when and live plan section 5; final-armed.log records 79 passing tests, base-negative.log and stale-negative.log demonstrate the required refusals, importer logs add no failure, and final-timing.log records 0.397171 s outside the observed landing audit.",
+    "goal": "Read the source run's live node.goal, and reckon/mcp_deadlines.py:798 now looks up the keyed readiness snapshot before discovery or composition.",
+    "manifest": "Read the source manifest.md and its named logs; its base/head armed summaries reconcile to 70/79 passes and its importer delta reconciles to nine/eight failures with no added id.",
+    "write_paths": "Read node.write_paths and resume-1-advice.txt; all four changed files are granted, including the explicitly extended tests/test_a_finishing_write_offers_its_close.py scope."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_write_returns_current_readiness.py:127 compares against a separately composed roadmap, lines 151/163 redden on restored redundant builds, line 250 reddens without store invalidation, and the recorded stale-loader mutation fails the upstream equality assertion.",
+    "evidence": "tests/test_plan_write_returns_current_readiness.py:149-277 measures zero/one builds, independent fresh-field equality, upstream and promoted-store invalidation and the five-second fixture bound, with completed revision-labelled receipts in base-armed-corrected.log, final-armed.log, base-negative.log, stale-negative.log and final-timing.log.",
+    "fit": "reckon/mcp_deadlines.py:798 follows the existing projection/error-response idiom, preserves _plan_readiness_fields error handling at line 891, and adds mechanism-based names without prohibited source labels.",
+    "goal_fidelity": "reckon/mcp_deadlines.py:825 checks the keyed snapshot before discovery and captures the existing roadmap build scope on a miss, while reckon/mcp_edit_plan.py:2382 skips readiness composition for unchanged declarations.",
+    "reuse": "Capability searches found snapshot ownership in reckon/roadmap_snapshot.py:378/558/629, scoped build reuse in reckon/roadmap.py:3374 and the store token in reckon/run_store.py:230, all of which reckon/mcp_deadlines.py:798 wraps for its readiness projection rather than duplicating their mechanisms.",
+    "scope_discipline": "The four paths in the base-to-head diff match node.write_paths, with resume-1-advice.txt explicitly granting the failure-injection update in tests/test_a_finishing_write_offers_its_close.py:227."
+  },
+  "limitations": [
+    "No suite was rerun during review; existing completed gate receipts were read.",
+    "Timing is the isolated three-plan project fixture, not a live-fleet latency measurement.",
+    "Importer arm is at e7cb018c7b673ad8bb9cd690f324a790209e8659; the final commit changes only the timing test instrumentation, and the exact final head has its own 79-pass armed receipt.",
+    "The assigned review worktree HEAD is 2904033518b10a2086214fc2bb6cac60f8a7ca3b; all implementation reads and diffs explicitly selected the reviewed base/head objects."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source run's live node.goal, and reckon/mcp_deadlines.py:798 now looks up the keyed readiness snapshot before discovery or composition.\nVERDICT done_when: Read node.done_when and live plan section 5; final-armed.log records 79 passing tests, base-negative.log and stale-negative.log demonstrate the required refusals, importer logs add no failure, and final-timing.log records 0.397171 s outside the observed landing audit.\nVERDICT write_paths: Read node.write_paths and resume-1-advice.txt; all four changed files are granted, including the explicitly extended tests/test_a_finishing_write_offers_its_close.py scope.\nVERDICT manifest: Read the source manifest.md and its named logs; its base/head armed summaries reconcile to 70/79 passes and its importer delta reconciles to nine/eight failures with no added id.\nVERDICT diff: Read all three commits f89d983c9c90f223ad70e8fa8a1019200c24b436, e7cb018c7b673ad8bb9cd690f324a790209e8659 and d8d75400a919375427a905a0e051933a3c07f7f4 against c6274b6a0e6698ed29f59c3027552f4e795abc10; the four-file diff adds snapshot-backed projection, declaration-change detection and focused regression tests.\nCALL_SITES: reckon/mcp.py:3907 edit_plan MCP registration, reckon/mcp_edit_plan.py:2382 _edit_plan_tool post-write readiness call, reckon/mcp_deadlines.py:890 _plan_readiness_fields report call\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp_deadlines.py:825 checks the keyed snapshot before discovery and captures the existing roadmap build scope on a miss, while reckon/mcp_edit_plan.py:2382 skips readiness composition for unchanged declarations.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_plan_write_returns_current_readiness.py:149-277 measures zero/one builds, independent fresh-field equality, upstream and promoted-store invalidation and the five-second fixture bound, with completed revision-labelled receipts in base-armed-corrected.log, final-armed.log, base-negative.log, stale-negative.log and final-timing.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the base-to-head diff match node.write_paths, with resume-1-advice.txt explicitly granting the failure-injection update in tests/test_a_finishing_write_offers_its_close.py:227.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_plan_write_returns_current_readiness.py:127 compares against a separately composed roadmap, lines 151/163 redden on restored redundant builds, line 250 reddens without store invalidation, and the recorded stale-loader mutation fails the upstream equality assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/mcp_deadlines.py:798 follows the existing projection/error-response idiom, preserves _plan_readiness_fields error handling at line 891, and adds mechanism-based names without prohibited source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found snapshot ownership in reckon/roadmap_snapshot.py:378/558/629, scoped build reuse in reckon/roadmap.py:3374 and the store token in reckon/run_store.py:230, all of which reckon/mcp_deadlines.py:798 wraps for its readiness projection rather than duplicating their mechanisms.\n",
+  "reuse_search": {
+    "production": "Searched roadmap snapshot load/store/key, readiness projection, scoped roadmap build reuse and run-store stamp capabilities; opened roadmap_snapshot.py, mcp.py, roadmap.py and run_store.py at the reviewed revision. The new report helper wraps these owners.",
+    "tests": "The added fixture, build counter, edit/op/field assertion adapters and temporary git helper implement local test setup and observation, using existing _plan_html, _store, ledger and RunStore owners rather than adding production capabilities."
+  },
+  "review_run_id": "r-20261117T004536561311-review-of-a-plan-write-returns-current-readiness-d8d75400a919",
+  "reviewed_base_sha": "c6274b6a0e6698ed29f59c3027552f4e795abc10",
+  "reviewed_head_sha": "d8d75400a919375427a905a0e051933a3c07f7f4",
+  "reviewed_run_id": "r-20261116T234809141134-a-plan-write-returns-current-readiness",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_finishing_write_offers_its_close.py tests/test_plan_write_returns_current_readiness.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234809141134-a-plan-write-returns-current-readiness/final-armed.log",
+      "observed_failure_ids": [],
+      "revision": "d8d75400a919375427a905a0e051933a3c07f7f4"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_finishing_write_offers_its_close.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234809141134-a-plan-write-returns-current-readiness/base-armed-corrected.log",
+      "observed_failure_ids": [],
+      "revision": "c6274b6a0e6698ed29f59c3027552f4e795abc10"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:00:35.055865+00:00",
+  "total": 120
+}

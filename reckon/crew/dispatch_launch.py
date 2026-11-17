@@ -588,6 +588,66 @@ def _current_host_facts() -> Any:
     return host.host_facts()
 
 
+def _record_launcher_job(run_id: str, record: Mapping[str, Any]) -> str | None:
+    """Record on the run's pointer the allocation a CLI launch runs inside.
+
+    A foreign run is proved gone by the job it ran inside leaving the queue, so
+    a launch made inside an allocation has to say which job that is: the pid a
+    foreign pointer records names nothing the reading host can probe. Only a
+    CLI launch is given the field. An in-harness run executes inside whatever
+    holds its orchestrator, so that allocation is not the run's own, and a
+    placed run already answers through the ``job_id`` its placement writes;
+    recording a launcher job beside either would name a job the run does not
+    run in.
+
+    ``record`` is the pointer the caller already read, so a launch outside an
+    allocation or on a shape that takes no field costs no write at all. The
+    conditions are read again under the pointer's lock, where the write itself
+    decides. Answers the job id the pointer now carries, or None.
+
+    The id comes from ``host_facts``, which owns the reading of
+    ``FLEET_JOB_ID``, ``SLURM_JOB_ID`` and the ``SLURM_JOBID`` alias and picks
+    the one this process's own cgroup names, so a launch made inside a step of
+    the fleet job does not record the fleet's allocation instead of its own.
+
+    A pointer that cannot be rewritten leaves the launch to proceed as it did
+    before the field existed, which is a reading this change keeps unknown
+    rather than a launch it refuses.
+    """
+    if str(record.get("launch") or "") != "cli" or record.get("job_id"):
+        return None
+    if str(record.get("launcher_host") or "") != _reservation_host():
+        # The pointer names another machine: the attempt this launch prepares is
+        # not the one that ran inside this allocation, and stamping this job on
+        # it would name an allocation the run never ran in. A reading that names
+        # a job the node's answer does not carry stays unknown, so the cost of
+        # declining here is a run that keeps the unknown it had.
+        return None
+    # The host's own placement reading answers which job this process runs
+    # inside, so the environment names are read in one place rather than
+    # again here. Reading it last keeps a launch that takes no field free of
+    # the probe.
+    job_id = _current_host_facts().job_id
+    if not job_id:
+        return None
+    if record.get("launcher_job_id") == job_id:
+        return job_id
+
+    def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
+        if str(pointer.get("launch") or "") != "cli" or pointer.get("job_id"):
+            return pointer
+        if str(pointer.get("launcher_host") or "") != _reservation_host():
+            return pointer
+        pointer["launcher_job_id"] = job_id
+        return pointer
+
+    try:
+        written = _mutate_pointer(run_id, mutation)
+    except (CrewError, OSError):
+        return None
+    return job_id if written.get("launcher_job_id") == job_id else None
+
+
 def _worker_shim_directory() -> Path:
     """Return the scheduler-shim directory from its owning module."""
     from reckon.nested_launch import shim_directory
@@ -3303,6 +3363,7 @@ def _prepare_attempt_records(
                 record,
             )
         )
+    _record_launcher_job(run_id, record)
     _supervisor_write(
         run_directory / ATTEMPT_RECORD_NAME,
         {

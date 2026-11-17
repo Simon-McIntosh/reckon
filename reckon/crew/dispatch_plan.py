@@ -1116,7 +1116,15 @@ def plan_dispatch(
         )
         if report_live_conflicts:
             repo_root = Path(repo).resolve()
-            claims = _repository_scope_claims()
+            candidate_scope = _candidate_scope_entries(
+                node, project=project, repo=repo_root, authority=resolved_authority
+            )
+            claims = _repository_scope_claims(
+                candidate_paths=(entry[2] for entry in candidate_scope),
+                candidate_repositories=(
+                    entry[0] for entry in candidate_scope if entry[0] is not None
+                ),
+            )
             # The directory-claim judgement reads exactly the rows the
             # exclusive-claim walk produced at base, so the granted report
             # below adds rows to the record but nothing it adds can drop a
@@ -1838,6 +1846,7 @@ from .dispatch_admission import (  # noqa: E402
 
 from .dispatch_claims import (  # noqa: E402
     _can_write_worktree,
+    _candidate_scope_entries,
     _directory_claim_acceptance_kwargs,
     _directory_claim_acceptance_line,
     _directory_claim_alternatives,

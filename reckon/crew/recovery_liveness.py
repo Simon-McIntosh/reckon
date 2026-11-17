@@ -1444,14 +1444,133 @@ def _record_is_known_foreign(record: Mapping[str, Any]) -> bool:
     return host is not None and str(host) != _reading_host()
 
 
-def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
-    """Prove a foreign compute launcher holds no job belonging to this user.
+def _node_job_rows(output: str) -> list[tuple[str, str, str]] | None:
+    """The node's job answer as ``(job id, state, start)`` rows, or None.
 
-    Slurm's node inventory excludes login hosts, whose processes outlive jobs.
-    A successful empty queue answer then proves the allocation cannot hold the
-    worker. Any job still holding the node, an unrecognised node or a failed
-    query keeps liveness unknown. The observation is written before it licenses
-    recovery, so a launch cannot rely on an answer that nobody can later read.
+    One line that does not carry exactly the three selected fields makes the
+    whole answer unusable: reading the rest as if the unreadable line were
+    absent would report a foreign worker gone on an answer this reader never
+    understood.
+    """
+    rows: list[tuple[str, str, str]] = []
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        fields = [field.strip() for field in line.split("|", 2)]
+        if len(fields) != 3 or not fields[0]:
+            return None
+        rows.append((fields[0], fields[1], fields[2]))
+    return rows
+
+
+def _nothing_working_the_run(
+    record: Mapping[str, Any], jobs_output: str | None
+) -> tuple[bool, dict[str, Any]]:
+    """Whether the node's job answer shows no job that can be this run's.
+
+    Answers ``(gone, relied_on)``. A job is live only while its state is one
+    ``process_liveness`` owns as in flight, so a terminal job of any name has
+    left the queue and cannot hold a worker. Where the record names the launcher
+    job, that job's own answer decides, and any other job on the node is beside
+    the point — a peer's debug job landing on the same node says nothing about
+    this run. Where it names none, every job on the node has to be dismissed,
+    and a live one is dismissed only by a start time that is after the launch:
+    a job that began after the worker was launched cannot be the allocation the
+    worker runs inside.
+
+    ``relied_on`` names the facts the answer was read against, so the reading can be
+    checked afterwards with nothing but what the record and the answer hold.
+
+    Where the record names the launcher job, an answer that does not list it is
+    read as the job having left the queue: the scheduler lists a finished job
+    only for its retention window, so the state a purged job would report is not
+    in the answer at all. That verdict rests on the answer having been taken,
+    which is the distinction between this shape and a query that failed.
+    """
+    from reckon.crew.process_liveness import _JOB_LIVE_STATES
+
+    if jobs_output is None:
+        return False, {"basis": None, "reason": "the job query could not be read"}
+    rows = _node_job_rows(jobs_output)
+    if rows is None:
+        return False, {"basis": None, "reason": "a job line did not parse"}
+    launcher_job = str(record.get("launcher_job_id") or "").strip()
+    if launcher_job:
+        named = [row for row in rows if row[0] == launcher_job]
+        if not named:
+            # ``squeue --states all`` lists a finished job only for the
+            # scheduler's own retention window, so a run read minutes after its
+            # allocation ended finds the job gone from the answer rather than
+            # reporting a terminal state. An answer that was taken and does not
+            # name the job is the queue saying the job is no longer in it, and
+            # that is the run's allocation having left the queue — the case
+            # this reading exists for. An answer that could not be taken is the
+            # case above and keeps the run unknown.
+            return True, {
+                "basis": "launcher-job",
+                "launcher_job_id": launcher_job,
+                "launcher_job_state": None,
+                "reason": "the node's answer does not name the launcher job, so it has left the queue",
+            }
+        state = named[0][1]
+        gone = state.casefold() not in _JOB_LIVE_STATES
+        return gone, {
+            "basis": "launcher-job",
+            "launcher_job_id": launcher_job,
+            "launcher_job_state": state,
+        }
+    live = [
+        (job_id, state, started)
+        for job_id, state, started in rows
+        if state.casefold() in _JOB_LIVE_STATES
+    ]
+    if not live:
+        # Nothing on the node is in flight, so no job there can hold the
+        # worker and the launch instant is not needed to dismiss any of them.
+        return True, {"basis": "node-jobs", "live_jobs": []}
+    launched = parse_utc(record.get("launched_at"))
+    if launched is None:
+        return False, {
+            "basis": "node-jobs",
+            "reason": "the record names no readable launch instant",
+        }
+    live_after_launch: list[dict[str, Any]] = []
+    for job_id, state, started in live:
+        moment = parse_utc(started)
+        if moment is None:
+            return False, {
+                "basis": "node-jobs",
+                "reason": f"job {job_id} is live and its start time does not parse",
+            }
+        if moment <= launched:
+            return False, {
+                "basis": "node-jobs",
+                "reason": f"job {job_id} is live and started at or before the launch",
+                "job_id": job_id,
+                "started_at": started,
+            }
+        live_after_launch.append(
+            {"job_id": job_id, "state": state, "started_at": started}
+        )
+    return True, {
+        "basis": "node-jobs",
+        "launched_at": record.get("launched_at"),
+        "live_jobs_started_after_launch": live_after_launch,
+    }
+
+
+def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
+    """Prove a foreign compute launcher holds no job working this run.
+
+    Slurm's node inventory excludes login hosts, whose processes outlive jobs,
+    so the node's own job answer is what is read. A worker dies with the
+    allocation it ran inside, and the node's answer is read for that
+    allocation: the launcher job the record names, or, for a record written
+    before the field existed, every job on the node dismissed as terminal or as
+    having started after the launch. Any job that could still be the run's, an
+    unrecognised node, an unreadable answer or a failed query keeps liveness
+    unknown. The observation is written before it licenses recovery, so a
+    launch cannot rely on an answer that nobody can later read.
     """
     from reckon.crew.process_liveness import _run_scheduler_query
 
@@ -1462,6 +1581,8 @@ def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
     if not node or not all(char.isalnum() or char in "-_" for char in node):
         return False
     node_query = ["scontrol", "show", "node", node, "--oneliner"]
+    # The start time rides the same query because a record naming no launcher
+    # job can only dismiss a live job by when that job began.
     jobs_query = [
         "squeue",
         "--noheader",
@@ -1472,7 +1593,7 @@ def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
         "--states",
         "all",
         "--format",
-        "%i|%T",
+        "%i|%T|%S",
     ]
     node_output = None
     jobs_output = None
@@ -1482,6 +1603,7 @@ def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
             jobs_output = _run_scheduler_query(jobs_query)
     except (OSError, subprocess.SubprocessError):
         pass
+    gone, relied_on = _nothing_working_the_run(record, jobs_output)
     observation = {
         "run_id": record.get("run_id"),
         "attempt": record.get("attempt"),
@@ -1492,7 +1614,8 @@ def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
         "node_output": node_output,
         "jobs_query": jobs_query,
         "jobs_output": jobs_output,
-        "process_gone": jobs_output is not None and not jobs_output.strip(),
+        "relied_on": relied_on,
+        "process_gone": gone,
     }
     try:
         runs._write_json(

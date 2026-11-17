@@ -1,0 +1,76 @@
+<section id="qwnw-red-file-a-pane-settles-when-no-work-is-live-landing">
+  <h3>The follower-pair harness sends the mark its host requires</h3>
+  <p>At the base revision this file failed in three cases, all from one cause. The
+  harness wrote its request line as <code>{"project", "session"}</code>, and a host
+  settles, restarts or keeps a pair in its census only for a pair it can vouch
+  for. The settling child was therefore dropped as another session's follower the
+  moment it exited: no settled entry reached the census, and a child that exited
+  without the settle status was never restarted. The verdict is <strong>test
+  wrong</strong>; no product rule was repaired.</p>
+  <table id="qwnw-red-file-a-pane-settles-when-no-work-is-live-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_the_host_retires_a_settled_child_and_stays_alive</code> —
+        <code>timed out after 20s waiting for the pair retired from the
+        census</code>; the census read <code>"children": []</code> with the child
+        gone</td>
+        <td>test wrong</td>
+        <td>A host follows a pair it can vouch for: the request line carries
+        <code>owner_checked: true</code>, or the pair names the host's own current
+        session. An unmarked pair it cannot vouch for is dropped on its child's
+        exit and is not written to the census.</td>
+      </tr>
+      <tr>
+        <td><code>test_a_later_request_starts_one_new_child</code> —
+        <code>timed out after 20s waiting for the first pair retired</code></td>
+        <td>test wrong</td>
+        <td>Same arm: a pair that never reaches <code>settled</code> is not
+        re-armed, so the second request starts nothing to count.</td>
+      </tr>
+      <tr>
+        <td><code>test_a_new_host_restarts_a_child_that_exits_without_settling</code>
+        — <code>timed out after 20s waiting for a restarted child</code></td>
+        <td>test wrong</td>
+        <td>The supervision tick's ownership arm precedes the restart arm, so an
+        unvouched pair's non-settle exit is a drop rather than a backoff
+        restart.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The rule is <code>_SessionHost._pair_is_owners</code> in
+  <code>reckon/crew/session_host.py</code>, read by <code>tick()</code> before it
+  settles or restarts an exited child. It arrived in <code>aebf721d7e</code>
+  ("a running host restarts only its own session's followers"), whose own test
+  file <code>tests/test_a_running_host_restarts_only_its_own_followers.py</code>
+  asserts both directions: an unmarked child for another session is dropped and
+  the census keeps <code>"children": []</code>, while a marked child for an
+  earlier session of the same owner is restarted. This file's harness predates
+  that mark.</p>
+  <p>The assertions keep their strength: every one of the 12 cases is unchanged,
+  and the only edit makes the harness send the mark every production request
+  carries. The cases that now pass are the three that read the host's decision
+  about an exited child, plus the nine that were already green.</p>
+  <p id="qwnw-red-file-a-pane-settles-when-no-work-is-live-arms">Arms, both as
+  <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> unset, both running
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_pane_settles_when_no_work_is_live.py</code>: at base
+  <code>1feacf337c1134a501a59170165adefedb9d4030</code> the file reads
+  <code>3 failed, 9 passed in 78.50s</code> with <code>EXIT=1</code> and the three
+  ids above; at head <code>74858ce4f3</code> it reads <code>12 passed in
+  23.54s</code> with <code>EXIT=0</code>. The base run is the negative control:
+  it is red on exactly the cases the change turns green. The armed suite template
+  (<code>tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code>) reads
+  <code>58 passed in 32.69s</code>, <code>EXIT=0</code> at base and
+  <code>58 passed in 33.13s</code>, <code>EXIT=0</code> at head, so the arm adds
+  no failure. <code>ruff check</code> and <code>ruff format --check</code> report
+  no finding on the changed path at head.</p>
+  <p>The base arms ran over a detached worktree at
+  <code>1feacf337c1134a501a59170165adefedb9d4030</code>, named
+  <code>/tmp/reckon-crew-scratch/r-20261116T105201556633-qwnw-red-file-a-pane-settles-when-no-work-is-live/reckon-red-file-pane-settles/worktree-1feacf337c1134a501a59170165adefedb9d4030</code>,
+  importing
+  <code>&hellip;/worktree-1feacf337c1134a501a59170165adefedb9d4030/reckon/__init__.py</code>.
+  <code>origin/main</code> (<code>69fab1372f</code>) was already contained in the
+  worktree head, so no merge was needed and the head arm is the merged tree.</p>
+</section>

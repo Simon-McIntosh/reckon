@@ -623,3 +623,44 @@ def test_the_review_request_identity_reaches_dispatch_and_queued_admission(
             receipts.note_review(reviewer, stage)
     assert identities[0] != identities[1]
     assert receipts.stage_census([source["run_id"]])["unknown_seconds"] == 0
+
+
+def test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full(
+    clock, monkeypatch
+):
+    run_id = "r-waiting-attempt"
+    _pointer(run_id)
+    monkeypatch.setattr(requests, "_review_self_waits", lambda _: (False, ""))
+    request = requests.request_promotion(run_id, kind="review-self")
+    service = requests.PromotionService(
+        width=1,
+        execute=lambda _: {"waiting": True, "reason": "review record is still writing"},
+    )
+    service._run(request)
+    parked = requests.read_promotion(run_id)
+    assert parked["phase"] == requests.WAITING
+    assert parked["waiting_reason"] == "review record is still writing"
+    assert runs.read_pointer(run_id)["promotion_status"] == requests.WAITING
+    outcomes = [
+        row
+        for row in receipts.read_receipts(run_id)
+        if row["stage"] == "promotion_outcome"
+    ]
+    assert len(outcomes) == 1
+    assert outcomes[0]["attempt"] == parked["attempt_id"]
+    assert outcomes[0]["outcome"] == requests.WAITING
+    assert outcomes[0]["reason"] == parked["waiting_reason"]
+    journal = receipts.receipt_path(run_id).read_bytes()
+    slot = service._claim("promotion-slot-0")
+    assert slot is not None
+    try:
+        assert service.tick() == []
+        ready = requests.read_promotion(run_id)
+        assert ready["phase"] == requests.REQUESTED
+        assert ready["request_id"] == request["request_id"]
+        assert ready["attempt_id"] == parked["attempt_id"]
+        assert ready["waiting_reason"] == ""
+        assert ready["checked_at"] != parked["checked_at"]
+        assert receipts.receipt_path(run_id).read_bytes() == journal
+    finally:
+        service._release(slot)

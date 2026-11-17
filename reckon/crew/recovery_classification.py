@@ -1352,6 +1352,8 @@ def _first_turn_without_action(record: Mapping[str, Any]) -> tuple[str, str] | N
     if _FIRST_TURN_ERROR_RE.match(text):
         return ("error", text)
     return ("premature", text)
+
+
 def _stuck_verdict_for(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """Ask the drain view's stuck verdict about one pointer.
 
@@ -1920,6 +1922,18 @@ def classify_pointer(
         )
         terminal_age_seconds = max(0, int(moment - terminal_seconds))
 
+    # Observation and recovery share the same orientation verdict. Work in
+    # motion is still classified from liveness before any delivered outcome.
+    orientation_record = dict(record)
+    if manifest_status == "complete" and not deferred_outcome:
+        from reckon.crew.dispatch_sessions import _apply_orientation_check
+
+        if memo_fresh and isinstance(memo.get("orientation_check"), Mapping):
+            orientation_record["orientation_check"] = memo["orientation_check"]
+        _apply_orientation_check(orientation_record, None, reported=manifest_data)
+        memo["orientation_check"] = orientation_record.get("orientation_check")
+    orientation_check = orientation_record.get("orientation_check")
+
     # Classification order: the process is consulted before the manifest
     # reading. A worker whose process is alive is classified from that life and
     # never as unreadable, so a strictness added for manifests at rest cannot
@@ -1949,20 +1963,22 @@ def classify_pointer(
     stuck = _stuck_verdict_for(record) if phase else None
 
     # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the pre-spawn reading needs a launch that has spawned nothing, and
-    # the liveness arms read the rest — a stranded launch as a failed launch the
-    # admission pass then releases or returns to the queue, and a launch whose
-    # worker has come and gone from that worker's own liveness and output.
+    # start: the liveness arms read it as a failed launch, which the admission
+    # pass then releases or returns to the queue.
     #
     # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
     # be trusted alone. A run that reached its worker carries a pid, a worker
     # record, a stream or a launch log, and any of those outranks the label:
     # reading them as a request that has not started held a refused, unreadable
     # or dead run at ``running`` for as long as its pointer lived, and left
-    # ``fleet_verdict`` free to call the same row abandoned, so one row stated
-    # two outcomes and neither surface could be acted on.
+    # ``fleet_verdict`` free to match the same row abandoned, so one row
+    # stated two outcomes and neither surface could be acted on. A pointer
+    # already recorded dead is not waiting to start either, whatever label it
+    # still carries: a killed run keeps the phase it held when it died, so
+    # honouring the label there would let a pre-spawn word outrank the process.
     pre_spawn_waiting = (
         phase in _PRE_SPAWN_PHASES
+        and alive is not False
         and not _spawn_evidence(record)
         and not _stranded_launch(record, now_seconds=moment)
     )
@@ -2199,6 +2215,16 @@ def classify_pointer(
         classification = "running"
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
+    elif (
+        manifest_status == "complete"
+        and isinstance(orientation_check, Mapping)
+        and orientation_check.get("matched") is False
+    ):
+        classification = "blocked"
+        detail = str(
+            orientation_check.get("detail") or "orientation could not be verified"
+        )
+        action = f"inspect the worktree at {record.get('worktree')} before promoting run {run_id}"
     elif manifest_status == "complete":
         if _is_measurement_run(record):
             classification = "promotable"
@@ -3211,6 +3237,7 @@ def classify_pointer(
         # watcher still needs to recognise a fresh completion written by the
         # resumed attempt it is waiting for.
         "manifest_reported_status": manifest_reported_status or None,
+        "orientation_check": orientation_check,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
         # Committed work past the recorded base, read from git on the abandoned

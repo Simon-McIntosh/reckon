@@ -57,6 +57,42 @@ def crew_station(interval: float, once: bool, census_sweep: bool) -> None:
         raise click.ClickException(str(exc)) from exc
 
 
+@crew.command(name="reload")
+@click.argument("service_name")
+@click.option("--reason", help="Why this service must take new code immediately.")
+@click.option(
+    "--status",
+    "status_only",
+    is_flag=True,
+    help="Read the service's code and reload schedule.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_reload(service_name: str, reason: str | None, status_only: bool, pretty: bool):
+    """Request or inspect one named service's reload schedule.
+
+    An immediate request bypasses the configured window and retains who asked
+    and why. The service still completes and exports a tick and drains its
+    in-flight work before replacing its image.
+    """
+    from reckon.crew.follower_reload import (
+        request_service_reload,
+        service_reload_status,
+    )
+
+    if status_only and reason is not None:
+        raise click.UsageError("--status and --reason cannot be combined")
+    if not status_only and not (reason or "").strip():
+        raise click.UsageError("an immediate reload requires --reason")
+    try:
+        if status_only:
+            result = service_reload_status(service_name)
+        else:
+            result = request_service_reload(service_name, reason)
+    except (OSError, ValueError, TypeError) as error:
+        raise click.ClickException(str(error)) from error
+    click.echo(json.dumps(result, indent=2 if pretty else None))
+
+
 def _follow_selects(
     event: Mapping[str, Any],
     *,

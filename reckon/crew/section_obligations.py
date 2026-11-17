@@ -40,10 +40,10 @@ def merged_section_items_by_session(
     checkout = project_mount_repository(project)
     if checkout is None:
         return {}
-    history, _version = ledger.load(project, checkout)
+    history = ledger.session_rows(project, session, checkout)
     candidates = {
         str(record.get("run_id") or ""): record
-        for record in [*pointers, *history["runs"]]
+        for record in [*pointers, *history]
         if record.get("session") and (session is None or record["session"] == session)
     }
     plans: dict[str, tuple[dict, int]] = {}

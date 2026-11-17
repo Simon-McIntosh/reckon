@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1307 _request_claim_restored_on_refusal and :1309 _claim_released_on_refusal guards",
+    "reckon/crew/dispatching/preparation.py:351 queue_dispatch on the direct dispatch path",
+    "reckon/crew/dispatching/requests.py:112 and :382 queue_dispatch from the queued admission path",
+    "reckon/crew/admission/launching.py:531 runs.queue_dispatch from the admission pass",
+    "reckon/crew/recovery_review_dispatch.py:893 and :957 _runs.queue_dispatch",
+    "reckon/crew/dispatch.py:165 facade export of _claim_released_on_refusal"
+  ],
+  "completed_at": "2026-11-17T01:42:03.224Z",
+  "dispatched_at": "2026-11-17T01:40:57Z",
+  "findings": [
+    {
+      "file": "logs/gate_head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the pass as a job on all_debug with SLURM_JOB_ID unset, and this header names only revision fc67747d7846 and tree d4b6105fcd9f, so the gate ran in place and nothing in the record shows the partition the measure names."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1296",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added shutil.rmtree has no test I can name that reddens if it is reverted, since the held-request cases assert the pointer's phase and never the run directory's absence, so a regression leaving a queued request owning a run directory passes green."
+    },
+    {
+      "file": "tests/test_dispatch_launch_is_not_its_own_conflict.py",
+      "line": "125",
+      "severity": "non-blocking",
+      "text": "non-blocking: the rewritten guard reads identity fields in the live pointer directory only, where the replaced traces_naming search covered every file under the real crew home, so a leaked run directory under crew/runs or a leaked delivered record no longer reddens it; the docstring admits the narrower reach, and the done_when's 'no assertion is deleted or weakened' does not cover a narrowed one."
+    },
+    {
+      "file": "reckon/crew/dispatching/claims.py",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: _pointer_already_waits re-reads a live pointer with pointer_path plus json.loads plus a phase comparison instead of extending the pointer reader at reckon/crew/runs.py:1212, adding a third inline copy of a lenient phase read already written at reckon/crew/admission/launching.py:218 and reckon/crew/obligation_snapshot.py:1291."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-launch-is-not-its-own-conflict.html",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites 59 failed/470 passed at 50d9f85f1a and a six-file arm's 9 failed/56 passed, but neither log is declared in the manifest's test_logs nor present under logs/, so those two figures cannot be read against a receipt."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 9dbddb3c89 to fc67747d7846: bb9858cd0d rewrites the real-home guard, 50d9f85f1a skips the dispatch's own claim in queue_dispatch and moves the created-run notice behind the bound reads, 3f0087fc23 removes a held request's run directory and stops a restore overwriting a newer hold, and 6ab89c4db5 plus fc67747d78 are the evidence fragment.",
+    "done_when": "the done_when's head clause is met and recorded (5 passed, EXIT=0, SLURM_JOB_ID unset); the two arms add no head-only failure (I set-differenced related_base/related_after and queue_base/queue_after, both empty); the negative control is in the fragment and logs/negative_control_base_revision.log; the all_debug job clause is unrecorded, and the ruff clause is no longer in the fragment, though I ran ruff myself on the six changed paths at head and got the base's two findings in reckon/crew/dispatching/preparation.py and 5 files formatted.",
+    "goal": "the goal is a green tests/test_dispatch_launch_is_not_its_own_conflict.py; logs/gate_head.log records 5 passed with EXIT=0 at fc67747d7846, and the five commits gained since the 9dbddb3c89 review repair the four causes the wide arms exposed, in reckon/crew/runs.py:915 and reckon/crew/dispatch_claims.py:1296 among others.",
+    "manifest": "read at the reviewed run's directory: status complete, the literal gate command, eight log paths, a baseline_suite/after_suite pair of 58 passed and zero failures each, and four causes each carrying a product-wrong or test-wrong verdict.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment and figure-topic paths inside it; the five commits since 9dbddb3c89 touch six files, all inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_launch_is_not_its_own_conflict.py:166 reddens on a leaked pointer, as logs/guard_controls.log shows with 5 errors, but reckon/crew/dispatch_claims.py:1296's rmtree has no test I can name that reddens on its reversion.",
+    "evidence": "logs/gate_head.log carries revision fc67747d7846, tree d4b6105fcd9f, the literal command, 5 passed and EXIT=0, while its header names no all_debug job and the fragment no longer states the ruff result.",
+    "fit": "reckon/crew/dispatching/claims.py:50 sits beside _attempt_record_for in a module whose other pointer reads use the same json-plus-phase idiom, and the three code commits carry conventional subjects with bodies.",
+    "goal_fidelity": "reckon/crew/runs.py:915 now skips the pointer whose run_id is the record's own, so a held dispatch stores its queued request instead of answering itself, and logs/gate_head.log reads 5 passed at the delivered head tree d4b6105fcd9f.",
+    "reuse": "reckon/crew/dispatching/claims.py:50 does not fork an owned capability because no owner exists for a lenient pointer read, the strict reader at reckon/crew/runs.py:1212 refusing a missing pointer, though the addition is a third inline copy of reckon/crew/admission/launching.py:218's idiom.",
+    "scope_discipline": "the five commits touch the six declared paths only, and the fragment rewrite stays inside docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-launch-is-not-its-own-conflict.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a green tests/test_dispatch_launch_is_not_its_own_conflict.py; logs/gate_head.log records 5 passed with EXIT=0 at fc67747d7846, and the five commits gained since the 9dbddb3c89 review repair the four causes the wide arms exposed, in reckon/crew/runs.py:915 and reckon/crew/dispatch_claims.py:1296 among others.\nVERDICT done_when: the done_when's head clause is met and recorded (5 passed, EXIT=0, SLURM_JOB_ID unset); the two arms add no head-only failure (I set-differenced related_base/related_after and queue_base/queue_after, both empty); the negative control is in the fragment and logs/negative_control_base_revision.log; the all_debug job clause is unrecorded, and the ruff clause is no longer in the fragment, though I ran ruff myself on the six changed paths at head and got the base's two findings in reckon/crew/dispatching/preparation.py and 5 files formatted.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment and figure-topic paths inside it; the five commits since 9dbddb3c89 touch six files, all inside that scope.\nVERDICT manifest: read at the reviewed run's directory: status complete, the literal gate command, eight log paths, a baseline_suite/after_suite pair of 58 passed and zero failures each, and four causes each carrying a product-wrong or test-wrong verdict.\nVERDICT diff: read commit by commit from 9dbddb3c89 to fc67747d7846: bb9858cd0d rewrites the real-home guard, 50d9f85f1a skips the dispatch's own claim in queue_dispatch and moves the created-run notice behind the bound reads, 3f0087fc23 removes a held request's run directory and stops a restore overwriting a newer hold, and 6ab89c4db5 plus fc67747d78 are the evidence fragment.\nCALL_SITES: reckon/crew/dispatching/preparation.py:1307, reckon/crew/dispatching/preparation.py:1309, reckon/crew/dispatching/preparation.py:351, reckon/crew/dispatching/requests.py:112, reckon/crew/dispatching/requests.py:382, reckon/crew/admission/launching.py:531, reckon/crew/recovery_review_dispatch.py:893, reckon/crew/dispatch.py:165\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:915 now skips the pointer whose run_id is the record's own, so a held dispatch stores its queued request instead of answering itself, and logs/gate_head.log reads 5 passed at the delivered head tree d4b6105fcd9f.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate_head.log carries revision fc67747d7846, tree d4b6105fcd9f, the literal command, 5 passed and EXIT=0, while its header names no all_debug job and the fragment no longer states the ruff result.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the five commits touch the six declared paths only, and the fragment rewrite stays inside docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-launch-is-not-its-own-conflict.html.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_dispatch_launch_is_not_its_own_conflict.py:166 reddens on a leaked pointer, as logs/guard_controls.log shows with 5 errors, but reckon/crew/dispatch_claims.py:1296's rmtree has no test I can name that reddens on its reversion.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/dispatching/claims.py:50 sits beside _attempt_record_for in a module whose other pointer reads use the same json-plus-phase idiom, and the three code commits carry conventional subjects with bodies.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/dispatching/claims.py:50 does not fork an owned capability because no owner exists for a lenient pointer read, the strict reader at reckon/crew/runs.py:1212 refusing a missing pointer, though the addition is a third inline copy of reckon/crew/admission/launching.py:218's idiom.\nFINDING logs/gate_head.log:1 non-blocking: the done_when asks for the pass as a job on all_debug with SLURM_JOB_ID unset, and this header names only revision fc67747d7846 and tree d4b6105c, so the gate ran in place and nothing in the record shows the partition the measure names.\nFINDING reckon/crew/dispatch_claims.py:1296 non-blocking: the added shutil.rmtree has no test I can name that reddens if it is reverted, since the held-request cases assert the pointer's phase and never the run directory's absence, so a regression leaving a queued request owning a run directory passes green.\nFINDING tests/test_dispatch_launch_is_not_its_own_conflict.py:125 non-blocking: the rewritten guard reads identity fields in the live pointer directory only, where the replaced traces_naming search covered every file under the real crew home, so a leaked run directory under crew/runs no longer reddens it; the docstring admits the narrower reach and the done_when's 'no assertion is deleted or weakened' does not cover a narrowed one.\nFINDING reckon/crew/dispatching/claims.py:50 non-blocking: _pointer_already_waits re-reads a live pointer with pointer_path plus json.loads plus a phase comparison instead of extending the pointer reader at reckon/crew/runs.py:1212, adding a third inline copy of a lenient phase read already written at reckon/crew/admission/launching.py:218 and reckon/crew/obligation_snapshot.py:1291.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-launch-is-not-its-own-conflict.html:91 non-blocking: the fragment cites 59 failed/470 passed at 50d9f85f1a and a six-file arm's 9 failed/56 passed, but neither log is declared in the manifest's test_logs nor present under logs/, so those two figures cannot be read against a receipt.",
+  "review_run_id": "r-20261117T001816013603-review-of-qwnw-red-file-dispatch-launch-is-not-its-own-conflict-fc67747d7846",
+  "reviewed_base_sha": "9dbddb3c89c0f1b6cd1e71b0ce459b0c6e776f8e",
+  "reviewed_head_sha": "fc67747d7846fc8b3ba969d75035ef3ed491c44d",
+  "reviewed_run_id": "r-20261116T104943842340-qwnw-red-file-dispatch-launch-is-not-its-own-conflict",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:30:00+00:00",
+  "total": 99
+}

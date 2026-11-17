@@ -1,0 +1,71 @@
+<section id="qwnw-red-file-a-producer-tick-reads-live-pointers-once-landing">
+<h3>A producer-tick red file passes, with its one cause decided as the test's</h3>
+<p><code>tests/test_a_producer_tick_reads_live_pointers_once.py</code> was red on the primary branch at <code>69fab1372f</code>: 3 errors, none passed. All three came from one fixture line, and that line named a module attribute the product had stopped exposing. The rule the file asserts — a whole tick shares a single live-pointer listing, a single stream publication and a single flight resolution, sweeps each unattended session once, reaches the owed plan review once, and a tick that overruns stops at the very next pointer boundary without publishing departures from an incomplete population — is kept by <code>recovery_watch.watch_ticker</code> and every one of the three cases now exercises it. No assertion was deleted or weakened: the file's whole diff is one removed <code>monkeypatch.setattr</code> line.</p>
+
+<h4 id="qwnw-red-file-a-producer-tick-reads-live-pointers-once-causes">Cause and verdict</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>The fixture patched <code>recovery_watch.watch_lease_renewed_at</code>, which the module no longer imports</td>
+<td>3 of 3, each <code>AttributeError: &lt;module 'reckon.crew.recovery_watch' ...&gt; has no attribute 'watch_lease_renewed_at'</code>, raised in fixture setup before any assertion ran</td>
+<td><strong>test wrong</strong> — <code>45a4abe98f</code> moved the ticker's lease arithmetic onto the single verdict in <code>runs</code>: <code>watch_lease_renewed_at</code> left the module's import list, and the tick and its wait now ask <code>runs.end_lapsed_watch_seat</code> and <code>runs.watch_lease_remaining</code>. The guard the line meant to express — a project with no recorded renewal establishes no expiry, so the seat never lapses mid-tick — is a product property rather than a fixture patch: <code>runs.watch_lease_remaining_from_record</code> returns <code>None</code> for an absent, non-numeric or non-finite <code>lease_renewed_at</code>, pinned by <code>tests/test_crew_census.py::test_producer_lease_snapshot_uses_record_and_clock</code>. This fixture's home carries no producer registration at all, so the ticker's lapse verdict is already false and the stale line was inert as well as unreachable; it was removed rather than retargeted, because a patch that cannot fire documents nothing.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-a-producer-tick-reads-live-pointers-once-negative-control">Negative control: the base revision's own run</h4>
+<pre>
+# revision: 69fab1372f16686ce6acdb6094a357c6f6bfe18d
+# tree: /tmp/reckon-crew-scratch/r-20261116T105153029067-qwnw-red-file-a-producer-tick-reads-live-pointers-once/base-69fab1372f16686ce6acdb6094a357c6f6bfe18d (shared clone, detached at the base revision)
+# cwd: /tmp/reckon-crew-scratch/r-20261116T105153029067-qwnw-red-file-a-producer-tick-reads-live-pointers-once/base-69fab1372f16686ce6acdb6094a357c6f6bfe18d
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_producer_tick_reads_live_pointers_once.py
+# module_under_test: /tmp/reckon-crew-scratch/r-20261116T105153029067-qwnw-red-file-a-producer-tick-reads-live-pointers-once/base-69fab1372f16686ce6acdb6094a357c6f6bfe18d/reckon/crew/recovery_watch.py
+# slurm_job_id: unset
+EEE                                                                      [100%]
+ERROR tests/test_a_producer_tick_reads_live_pointers_once.py::test_one_whole_tick_shares_its_live_pointers_and_flight - AttributeError: &lt;module 'reckon.crew.recovery_watch' ...&gt; has no attribute 'watch_lease_renewed_at'
+ERROR tests/test_a_producer_tick_reads_live_pointers_once.py::test_an_overdue_tick_reaches_the_reload_check_before_all_pointers[publication] - AttributeError: &lt;module 'reckon.crew.recovery_watch' ...&gt; has no attribute 'watch_lease_renewed_at'
+ERROR tests/test_a_producer_tick_reads_live_pointers_once.py::test_an_overdue_tick_reaches_the_reload_check_before_all_pointers[acceptance] - AttributeError: &lt;module 'reckon.crew.recovery_watch' ...&gt; has no attribute 'watch_lease_renewed_at'
+3 errors in 1.73s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-a-producer-tick-reads-live-pointers-once-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision: f38e971f01fa9292c32061046c91298060633a3a
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-producer-tick-reads-live-pointers-once
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_producer_tick_reads_live_pointers_once.py
+# module_under_test: .../qwnw-red-file-a-producer-tick-reads-live-pointers-once/reckon/crew/recovery_watch.py
+# slurm_job_id: unset
+...                                                                      [100%]
+3 passed in 4.13s
+EXIT=0
+</pre>
+<p>Both runs are all_debug job <code>1320259</code>; the base arm reads the base revision's own tree and the head arm the run's own worktree. The near-identical figures were also read as job <code>1320254</code> (3 errors at base, 3 passed at head) before the neighbour arm was added, and as job <code>1320246</code> for the head arm alone.</p>
+
+<h4 id="qwnw-red-file-a-producer-tick-reads-live-pointers-once-arms">Armed suite arms: no failure added</h4>
+<pre>
+# baseline at 69fab1372f16686ce6acdb6094a357c6f6bfe18d
+# tree: /tmp/reckon-crew-scratch/r-20261116T105153029067-qwnw-red-file-a-producer-tick-reads-live-pointers-once/base-69fab1372f16686ce6acdb6094a357c6f6bfe18d (shared clone, detached)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 33.72s
+EXIT=0
+
+# head at f38e971f01fa9292c32061046c91298060633a3a, in the run's own worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 34.34s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-a-producer-tick-reads-live-pointers-once-neighbours">Neighbour arm over the tests that touch the same lease and ticker surface</h4>
+<p>This node changes no product file, so the resolved command is the same over each arm's own tree: <code>tests/test_producer_holds_a_lease.py tests/test_a_watcher_carries_no_session_identity.py tests/test_crew_census.py tests/test_idle_producer_backs_off.py</code>. Both arms read <code>2 failed, 53 passed</code> with the same two failure ids, so the arm adds no failure and those two are an existing red file of their own:</p>
+<pre>
+# baseline at 69fab1372f: 2 failed, 53 passed in 22.10s
+# head at f38e971f01: 2 failed, 53 passed in 22.86s
+FAILED tests/test_a_watcher_carries_no_session_identity.py::test_the_supervisor_sheds_identity_before_it_starts_the_producer
+FAILED tests/test_a_watcher_carries_no_session_identity.py::test_a_review_dispatched_inside_a_producer_records_no_session
+EXIT=1 (both arms, unchanged)
+</pre>
+</section>

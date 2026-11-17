@@ -1,0 +1,71 @@
+<section id="qwnw-red-file-section-waits-read-normalised-keys-landing">
+  <h2>A queued section's wait is read through one section identity</h2>
+
+  <p><strong>What changed.</strong> One line of
+  <code>tests/test_section_waits_read_normalised_keys.py</code>. The file's
+  <code>test_queued_section_spelling_keeps_its_upstream_wait</code> built its node
+  with <code>done_when="the upstream section has landed"</code>, prose that names
+  no test, command or numeric result. Queueing now judges the whole node contract
+  before a request is stored, so that measure was refused while the request was
+  still a queue entry:</p>
+
+  <pre>reckon.crew.CrewError: node 'waiting-section' is refused at queue time:
+done-when emits no evidence; name a test, a command output or a numeric result
+against a stated bound</pre>
+
+  <p><strong>Verdict: the test was wrong, not the product.</strong> The
+  done-when evidence rule predates this file: the phrase is added to
+  <code>reckon/crew/node.py</code> at <code>a927c9c1d2</code> (2026-08-12), and
+  the queue-time refusal it rides at <code>cce801f3c6</code> (2026-10-23), a day
+  before this test file was written. The test read the stored
+  wait, never the measure, so its prose measure was incidental scaffolding. The
+  rule is deliberate: <code>reckon/crew/dispatching/requests.py</code> judges the
+  contract beside the admission domain so a batch entry a dispatch would refuse
+  is refused while it is still a request rather than at its launch, where the
+  refusal would cost the queue position and reach nobody. The measure now names
+  the command that emits evidence, and every assertion in the file is unchanged —
+  nothing was deleted or loosened.</p>
+
+  <h3 id="qwnw-red-file-section-waits-read-normalised-keys-measured">Measured</h3>
+
+  <table id="qwnw-red-file-section-waits-read-normalised-keys-arms">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, head</td>
+        <td><code>a20fcb87a0</code>, worktree, all_debug job,
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td>9 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's file, base (negative control)</td>
+        <td><code>8277191059</code>, scratch tree</td>
+        <td>3 failed, 6 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the suite gate, base arm</td>
+        <td><code>8277191059</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the suite gate, after arm</td>
+        <td>the run's head, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base failure IDs are the three parameters of that one case —
+  <code>[s2-§2]</code>, <code>[§2-s2]</code> and
+  <code>[section 2-s2]</code> — all carrying the queue-time refusal above. The
+  head run passes 9 of 9 in the same file. The suite gate collects
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> in both
+  arms, and the change adds no test file, so the two commands agree.</p>
+
+  <p>No assertion was added, so no mutation of my own was applied to falsify one;
+  the base arm is the falsification, and it names the refusal the repair
+  removes.</p>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> on
+  <code>tests/test_section_waits_read_normalised_keys.py</code> both report
+  nothing: <code>All checks passed!</code> and
+  <code>1 file already formatted</code>.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

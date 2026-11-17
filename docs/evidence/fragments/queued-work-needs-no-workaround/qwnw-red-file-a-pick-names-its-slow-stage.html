@@ -1,0 +1,319 @@
+<section id="qwnw-red-file-a-pick-names-its-slow-stage-repair">
+<h3>A pick names its slow stage: measured runs</h3>
+<p>One cause, four red tests. <code>dispatch_picker_selection</code> resolves a node's declared capability and effort before it asks, through <code>dispatcher_declared_difficulty</code>, whose guard reads <code>node.plan</code> and <code>node.section</code>. Five stage-timing tests in this file handed that path a bare <code>SimpleNamespace()</code> standing in for an opaque node, so the guard raised <code>AttributeError</code> before any stage ran. Verdict: the test was wrong. The production path is handed a <code>TaskNode</code> at every call site, the resolver early-returns on a node whose plan is blank, and this file already carries <code>_node()</code> — the TaskNode every other test here passes. The five call sites now pass <code>_node()</code>; no assertion, no test id and no product rule changed.</p>
+<h4>Gate at base — the negative control (4 failed, 6 passed)</h4>
+<pre># revision: 8fdf39585f1fb4b05ac8a6e5b707a7c651d42176
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/base-tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_pick_names_its_slow_stage.py
+# measurement_module: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/base-tree/reckon/__init__.py
+# measurement_cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/base-tree
+FFFF......                                                               [100%]
+=================================== FAILURES ===================================
+__________________ test_a_slow_input_names_keeps_its_own_name __________________
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f5460978fc0&gt;
+
+    def test_a_slow_input_names_keeps_its_own_name(monkeypatch):
+        &quot;&quot;&quot;A slow budget snapshot is named, not reported as the picker timing out.&quot;&quot;&quot;
+        monkeypatch.setattr(dispatch_picker_module, &quot;PICKER_DISPATCH_TIMEOUT_SECONDS&quot;, 0.05)
+        _quiet_inputs(monkeypatch)
+    
+        def slow_budget(*_args, **_kwargs):
+            time.sleep(0.4)
+            return {}
+    
+        monkeypatch.setattr(dispatch_picker_module, &quot;_picker_budget_snapshot&quot;, slow_budget)
+    
+        started = time.monotonic()
+&gt;       result = dispatch_picker_module.dispatch_picker_selection(
+            node=SimpleNamespace(),
+            config={},
+            project=&quot;proj&quot;,
+            repo=Path(&quot;/tmp&quot;),
+            stage_ms={},
+        )
+
+tests/test_a_pick_names_its_slow_stage.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch_picker.py:683: in dispatch_picker_selection
+    request_capability, request_hours = dispatcher_declared_difficulty(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+node = namespace(urgency={&#x27;due&#x27;: None, &#x27;reason&#x27;: None}), config = {}
+project = &#x27;proj&#x27;, repo = PosixPath(&#x27;/tmp&#x27;), authority = None
+
+    def dispatcher_declared_difficulty(
+        *,
+        node: TaskNode,
+        config: Mapping[str, Any],
+        project: str,
+        repo: Path,
+        authority: Mapping[str, Any] | None = None,
+    ) -&gt; tuple[dict[str, Any], float | None]:
+        &quot;&quot;&quot;The section capability and effort a dispatch resolves before it asks.
+    
+        The pick reads both from the plan itself when it is handed neither, and
+        that read is what a loaded host spends the pick&#x27;s whole bound on. Resolving
+        them here and handing them in leaves the pick&#x27;s difficulty step nothing to
+        read. The resolution is the picker&#x27;s own ``_declared_difficulty`` rather
+        than a second copy of it, so the dispatcher and the pick cannot disagree
+        about which plan a node names, which figure outranks which, or what a failed
+        read leaves behind: an estimate the node itself carries is kept, and a
+        section&#x27;s declared effort outranks the plan total exactly as it does inside
+        the pick.
+        &quot;&quot;&quot;
+&gt;       if not (node.plan.strip() and node.section.strip()):
+                ^^^^^^^^^
+E       AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+
+reckon/crew/dispatch_picker.py:94: AttributeError
+________________ test_a_completed_pick_carries_every_stage_time ________________
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f54609783e0&gt;
+
+    def test_a_completed_pick_carries_every_stage_time(monkeypatch):
+        &quot;&quot;&quot;A normal pick records every dispatcher stage&#x27;s elapsed milliseconds.&quot;&quot;&quot;
+        _quiet_inputs(monkeypatch)
+        monkeypatch.setattr(
+            dispatch_picker_module, &quot;_picker_budget_snapshot&quot;, lambda *_a, **_k: {}
+        )
+        monkeypatch.setattr(
+            picker_snapshot,
+            &quot;estimated_context_tokens&quot;,
+            lambda *_a, **_k: 1234,
+        )
+        monkeypatch.setattr(
+            picker,
+            &quot;pick&quot;,
+            lambda *_a, **_k: SimpleNamespace(
+                as_dict=lambda: {&quot;action&quot;: &quot;route&quot;, &quot;backend&quot;: &quot;beta&quot;}
+            ),
+        )
+    
+&gt;       result = dispatch_picker_module.dispatch_picker_selection(
+            node=SimpleNamespace(),
+            config={},
+            project=&quot;proj&quot;,
+            repo=Path(&quot;/tmp&quot;),
+            stage_ms={},
+        )
+
+tests/test_a_pick_names_its_slow_stage.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch_picker.py:683: in dispatch_picker_selection
+    request_capability, request_hours = dispatcher_declared_difficulty(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+node = namespace(urgency={&#x27;due&#x27;: None, &#x27;reason&#x27;: None}), config = {}
+project = &#x27;proj&#x27;, repo = PosixPath(&#x27;/tmp&#x27;), authority = None
+
+    def dispatcher_declared_difficulty(
+        *,
+        node: TaskNode,
+        config: Mapping[str, Any],
+        project: str,
+        repo: Path,
+        authority: Mapping[str, Any] | None = None,
+    ) -&gt; tuple[dict[str, Any], float | None]:
+        &quot;&quot;&quot;The section capability and effort a dispatch resolves before it asks.
+    
+        The pick reads both from the plan itself when it is handed neither, and
+        that read is what a loaded host spends the pick&#x27;s whole bound on. Resolving
+        them here and handing them in leaves the pick&#x27;s difficulty step nothing to
+        read. The resolution is the picker&#x27;s own ``_declared_difficulty`` rather
+        than a second copy of it, so the dispatcher and the pick cannot disagree
+        about which plan a node names, which figure outranks which, or what a failed
+        read leaves behind: an estimate the node itself carries is kept, and a
+        section&#x27;s declared effort outranks the plan total exactly as it does inside
+        the pick.
+        &quot;&quot;&quot;
+&gt;       if not (node.plan.strip() and node.section.strip()):
+                ^^^^^^^^^
+E       AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+
+reckon/crew/dispatch_picker.py:94: AttributeError
+___________ test_a_production_pick_names_the_estimate_it_ran_out_in ____________
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f54600a5eb0&gt;
+tmp_path = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/pytest-of-mcintos/pytest-1/test_a_production_pick_names_t0&#x27;)
+
+    def test_a_production_pick_names_the_estimate_it_ran_out_in(monkeypatch, tmp_path):
+        &quot;&quot;&quot;A caller that builds the inputs and hands them in still names the stage.
+    
+        Production builds the three dispatcher-scope inputs outside the pick&#x27;s bound
+        and hands them in, so the stage the pick is inside when the deadline expires
+        is the context estimate. The fallback must name it rather than read the bare
+        ``timeout``, and the handed-in inputs&#x27; elapsed milliseconds must still be on
+        the fallback.
+        &quot;&quot;&quot;
+        _quiet_inputs(monkeypatch)
+        monkeypatch.setattr(
+            dispatch_picker_module, &quot;_picker_budget_snapshot&quot;, lambda *_a, **_k: {}
+        )
+        monkeypatch.setattr(dispatch_picker_module, &quot;PICKER_DISPATCH_TIMEOUT_SECONDS&quot;, 0.05)
+    
+        def slow_estimate(*_args, **_kwargs):
+            time.sleep(0.4)
+            return 0
+    
+        monkeypatch.setattr(picker_snapshot, &quot;estimated_context_tokens&quot;, slow_estimate)
+    
+        records, verdicts, budget, errors = dispatch_picker_module.build_picker_inputs(
+            &quot;proj&quot;, {}, tmp_path
+        )
+        assert not errors
+&gt;       result = dispatch_picker_module.dispatch_picker_selection(
+            node=SimpleNamespace(),
+            config={},
+            project=&quot;proj&quot;,
+            repo=tmp_path,
+            records=records,
+            verdict_inputs=verdicts,
+            budget_snapshot=budget,
+        )
+
+tests/test_a_pick_names_its_slow_stage.py:135: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch_picker.py:683: in dispatch_picker_selection
+    request_capability, request_hours = dispatcher_declared_difficulty(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+node = namespace(urgency={&#x27;due&#x27;: None, &#x27;reason&#x27;: None}), config = {}
+project = &#x27;proj&#x27;
+repo = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/pytest-of-mcintos/pytest-1/test_a_production_pick_names_t0&#x27;)
+authority = None
+
+    def dispatcher_declared_difficulty(
+        *,
+        node: TaskNode,
+        config: Mapping[str, Any],
+        project: str,
+        repo: Path,
+        authority: Mapping[str, Any] | None = None,
+    ) -&gt; tuple[dict[str, Any], float | None]:
+        &quot;&quot;&quot;The section capability and effort a dispatch resolves before it asks.
+    
+        The pick reads both from the plan itself when it is handed neither, and
+        that read is what a loaded host spends the pick&#x27;s whole bound on. Resolving
+        them here and handing them in leaves the pick&#x27;s difficulty step nothing to
+        read. The resolution is the picker&#x27;s own ``_declared_difficulty`` rather
+        than a second copy of it, so the dispatcher and the pick cannot disagree
+        about which plan a node names, which figure outranks which, or what a failed
+        read leaves behind: an estimate the node itself carries is kept, and a
+        section&#x27;s declared effort outranks the plan total exactly as it does inside
+        the pick.
+        &quot;&quot;&quot;
+&gt;       if not (node.plan.strip() and node.section.strip()):
+                ^^^^^^^^^
+E       AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+
+reckon/crew/dispatch_picker.py:94: AttributeError
+____________ test_a_normal_production_pick_carries_every_stage_time ____________
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f5460150050&gt;
+tmp_path = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/pytest-of-mcintos/pytest-1/test_a_normal_production_pick_0&#x27;)
+
+    def test_a_normal_production_pick_carries_every_stage_time(monkeypatch, tmp_path):
+        &quot;&quot;&quot;A completed production pick records every stage&#x27;s elapsed milliseconds.&quot;&quot;&quot;
+        _quiet_inputs(monkeypatch)
+        monkeypatch.setattr(
+            dispatch_picker_module, &quot;_picker_budget_snapshot&quot;, lambda *_a, **_k: {}
+        )
+        monkeypatch.setattr(picker_snapshot, &quot;estimated_context_tokens&quot;, lambda *_a, **_k: 7)
+        monkeypatch.setattr(
+            picker,
+            &quot;pick&quot;,
+            lambda *_a, **_k: SimpleNamespace(
+                as_dict=lambda: {&quot;action&quot;: &quot;route&quot;, &quot;backend&quot;: &quot;beta&quot;}
+            ),
+        )
+        records, verdicts, budget, errors = dispatch_picker_module.build_picker_inputs(
+            &quot;proj&quot;, {}, tmp_path
+        )
+        assert not errors
+&gt;       result = dispatch_picker_module.dispatch_picker_selection(
+            node=SimpleNamespace(),
+            config={},
+            project=&quot;proj&quot;,
+            repo=tmp_path,
+            records=records,
+            verdict_inputs=verdicts,
+            budget_snapshot=budget,
+        )
+
+tests/test_a_pick_names_its_slow_stage.py:171: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+reckon/crew/dispatch_picker.py:683: in dispatch_picker_selection
+    request_capability, request_hours = dispatcher_declared_difficulty(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+node = namespace(urgency={&#x27;due&#x27;: None, &#x27;reason&#x27;: None}), config = {}
+project = &#x27;proj&#x27;
+repo = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/pytest-of-mcintos/pytest-1/test_a_normal_production_pick_0&#x27;)
+authority = None
+
+    def dispatcher_declared_difficulty(
+        *,
+        node: TaskNode,
+        config: Mapping[str, Any],
+        project: str,
+        repo: Path,
+        authority: Mapping[str, Any] | None = None,
+    ) -&gt; tuple[dict[str, Any], float | None]:
+        &quot;&quot;&quot;The section capability and effort a dispatch resolves before it asks.
+    
+        The pick reads both from the plan itself when it is handed neither, and
+        that read is what a loaded host spends the pick&#x27;s whole bound on. Resolving
+        them here and handing them in leaves the pick&#x27;s difficulty step nothing to
+        read. The resolution is the picker&#x27;s own ``_declared_difficulty`` rather
+        than a second copy of it, so the dispatcher and the pick cannot disagree
+        about which plan a node names, which figure outranks which, or what a failed
+        read leaves behind: an estimate the node itself carries is kept, and a
+        section&#x27;s declared effort outranks the plan total exactly as it does inside
+        the pick.
+        &quot;&quot;&quot;
+&gt;       if not (node.plan.strip() and node.section.strip()):
+                ^^^^^^^^^
+E       AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+
+reckon/crew/dispatch_picker.py:94: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_a_pick_names_its_slow_stage.py::test_a_slow_input_names_keeps_its_own_name - AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+FAILED tests/test_a_pick_names_its_slow_stage.py::test_a_completed_pick_carries_every_stage_time - AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+FAILED tests/test_a_pick_names_its_slow_stage.py::test_a_production_pick_names_the_estimate_it_ran_out_in - AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+FAILED tests/test_a_pick_names_its_slow_stage.py::test_a_normal_production_pick_carries_every_stage_time - AttributeError: &#x27;types.SimpleNamespace&#x27; object has no attribute &#x27;plan&#x27;
+4 failed, 6 passed in 0.74s
+EXIT=1
+</pre>
+<h4>Gate at head — the file passes in full (10 passed)</h4>
+<pre># revision: 7ffc5674bbc2a75973a207814d667ed7587d04a9
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-pick-names-its-slow-stage
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_pick_names_its_slow_stage.py
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-pick-names-its-slow-stage/reckon/__init__.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-pick-names-its-slow-stage
+..........                                                               [100%]
+10 passed in 0.99s
+EXIT=0
+</pre>
+<h4>Armed baseline arm at the base revision (58 passed)</h4>
+<pre># revision: 8fdf39585f1fb4b05ac8a6e5b707a7c651d42176
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/base-tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# measurement_module: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/base-tree/reckon/__init__.py
+# measurement_cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104627206893-qwnw-red-file-a-pick-names-its-slow-stage/base-tree
+..........................................................               [100%]
+58 passed in 33.66s
+EXIT=0
+</pre>
+<h4>Armed after arm at the run's head (58 passed)</h4>
+<pre># revision: 7ffc5674bbc2a75973a207814d667ed7587d04a9
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-pick-names-its-slow-stage
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-pick-names-its-slow-stage/reckon/__init__.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-pick-names-its-slow-stage
+..........................................................               [100%]
+58 passed in 34.36s
+EXIT=0
+</pre>
+<p>The base arm ran in a scratch clone of the base revision, because the project's census tests read the tree's own <code>HEAD</code>: when the first attempt ran over a <code>git archive</code> extraction they found no object store and reported <code>0</code> staged writes, which is the empty column the check exists to prevent. Both arms ran as jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in the tree the tests resolve from; the gate is the base and head run of the named file above, and the suite pair is the census the flight armed this node with.</p>
+</section>

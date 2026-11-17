@@ -1,0 +1,72 @@
+<section class="r-evidence" id="qwnw-red-file-modules-import-alone">
+  <h3 id="qwnw-red-file-modules-import-alone-title">Every module under <code>reckon/</code> imports first</h3>
+
+  <p id="qwnw-red-file-modules-import-alone-cause">One product cause, three failing modules. A module-level call in
+  <code>reckon/crew/resume.py</code> did <code>from reckon.crew_dispatch_commands import crew</code> to attach the
+  <code>hold</code> and <code>release</code> verbs. <code>reckon/crew_dispatch_commands.py</code> imports
+  <code>reckon.crew.tombstones</code>, which initialises the whole <code>reckon.crew</code> facade and reaches
+  <code>resume</code> again before <code>crew</code> exists. The verb module therefore depended on the group's module, and
+  every reader of the group failed whenever it was the first module a fresh interpreter imported.</p>
+
+  <p id="qwnw-red-file-modules-import-alone-repro">Reproduced before repair, at the base revision
+  <code>cd6f85d1db7153433ef395e52746bffc98f64639</code> — <code>3 failed, 254 passed</code>, exit 1:</p>
+
+  <pre id="qwnw-red-file-modules-import-alone-trace">ImportError: cannot import name 'crew' from partially initialized module 'reckon.crew_dispatch_commands'
+(most likely due to a circular import) (/…/reckon/crew_dispatch_commands.py)</pre>
+
+  <table id="qwnw-red-file-modules-import-alone-table">
+    <caption id="qwnw-red-file-modules-import-alone-caption"><code>tests/test_modules_import_alone.py</code>, base against head</caption>
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th></tr>
+    </thead>
+    <tbody>
+      <tr id="qwnw-red-file-modules-import-alone-base-arm">
+        <td>base (negative control)</td><td><code>cd6f85d1db</code></td><td>3 failed, 254 passed in 16.18s</td><td>1</td>
+      </tr>
+      <tr id="qwnw-red-file-modules-import-alone-head-arm">
+        <td>head, batch job 1320200 on <code>all_debug</code>, <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>4ff35cd7dc</code></td><td>257 passed in 129.42s</td><td>0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-modules-import-alone-base-ids">The three failing ids at base, the same three the primary-branch run at
+  <code>8d50b0333f</code> lists:</p>
+  <ul id="qwnw-red-file-modules-import-alone-base-list">
+    <li id="qwnw-red-file-modules-import-alone-id-dispatch"><code>test_module_imports_alone[reckon.crew_dispatch_commands]</code></li>
+    <li id="qwnw-red-file-modules-import-alone-id-maint"><code>test_module_imports_alone[reckon.project_maintenance_commands]</code></li>
+    <li id="qwnw-red-file-modules-import-alone-id-setup"><code>test_module_imports_alone[reckon.project_setup_commands]</code></li>
+  </ul>
+
+  <p id="qwnw-red-file-modules-import-alone-verdict">Verdict: the product rule was wrong, and it is repaired. The rule the
+  test asserts — a module imports first on its own — is the rule the code broke, so no test assertion was edited, deleted or
+  weakened, and no test file is in this run's diff.</p>
+
+  <p id="qwnw-red-file-modules-import-alone-fix">The verbs now take the group as an argument
+  (<code>register_hold_commands(group)</code>) and are attached at the end of <code>reckon/crew_dispatch_commands.py</code>,
+  the module that owns the group — the direction the sibling verb modules (<code>crew_run_commands</code>,
+  <code>crew_follow_commands</code>) already import it in. The verbs, their options and the resume hold guard are unchanged:
+  <code>reckon crew --help</code> lists both, and <code>crew hold --help</code> prints its four options.</p>
+
+  <p id="qwnw-red-file-modules-import-alone-importers">The arm over the test files that import either changed module — 159
+  files, 1,685 tests collected, run in four slices:</p>
+  <table id="qwnw-red-file-modules-import-alone-importers-table">
+    <thead><tr><th>Arm</th><th>Slices</th><th>Summary</th></tr></thead>
+    <tbody>
+      <tr id="qwnw-red-file-modules-import-alone-importers-base"><td>base <code>cd6f85d1db</code></td><td>4</td><td>157 failed, 1,528 passed; exit 1</td></tr>
+      <tr id="qwnw-red-file-modules-import-alone-importers-head"><td>head <code>4ff35cd7dc</code></td><td>4</td><td>157 failed, 1,528 passed; exit 1</td></tr>
+    </tbody>
+  </table>
+  <p id="qwnw-red-file-modules-import-alone-importers-delta">Head-only failing ids: 0. The same 157 ids fail on both arms —
+  the primary branch's own red files, each another node's. The first head pass read 159 failing: two in
+  <code>tests/test_a_dispatch_that_outlives_its_caller_s_timeout_names_what_it_created.py</code> refused with
+  <code>tmp-headroom-refusal … 5242925056 bytes free, floor 5368709120 bytes</code>, which is the node's scratch below the
+  dispatch floor rather than the code. After the scratch clone and pytest directories were reclaimed that file reads
+  <code>2 passed</code>, exit 0 (<code>logs/importers-after-00-rerun.log</code>).</p>
+
+  <p id="qwnw-red-file-modules-import-alone-logs">Logs under
+  <code>~/.config/reckon/crew/runs/r-20261116T104856876718-qwnw-red-file-modules-import-alone/</code>:
+  <code>logs/gate-head.log</code> (head goal run), <code>logs/gate-head-first.log</code> (base goal run, the negative
+  control), <code>logs/suite-base.log</code>, <code>logs/suite-after.log</code>,
+  <code>logs/importers-{base,after}-0{0,1,2,3}.log</code>, <code>logs/importers-after-00-rerun.log</code>.</p>
+</section>

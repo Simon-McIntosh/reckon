@@ -132,6 +132,11 @@ enums:
 # ── Slots ───────────────────────────────────────────────────────────────────
 
 slots:
+  service_reload_window_seconds:
+    description: Minimum automatic standing-service reload interval in seconds; 1800 by default.
+    range: integer
+    minimum_value: 1
+
   version:
     description: Schema version of this configuration document.
     range: integer
@@ -1225,6 +1230,7 @@ classes:
     tree_root: true
     description: A complete flight configuration, or one layer of one.
     slots:
+      - service_reload_window_seconds
       - version
       - default_backend
       - local_backend
