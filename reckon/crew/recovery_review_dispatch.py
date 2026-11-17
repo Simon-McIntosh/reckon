@@ -4654,6 +4654,27 @@ def _lag_seconds(left: str | None, right: str | None) -> float | None:
     return max(0.0, (end - start).total_seconds())
 
 
+def _is_review_subject(
+    run_id: str, record: Mapping[str, Any] | None
+) -> bool:
+    """Whether this run is itself a review, which owes no review of its own.
+
+    The pointer answers when it is live; a run whose pointer is gone is read
+    from its id, which carries the node id the dispatch gave it.
+    """
+    if any(
+        f"-{prefix}" in run_id
+        for prefix in (REVIEW_NODE_PREFIX, PLAN_REVIEW_NODE_PREFIX)
+    ):
+        return True
+    if isinstance(record, Mapping) and record:
+        try:
+            return _is_review_run(record)
+        except (CrewError, OSError, ValueError):
+            return False
+    return False
+
+
 def _nearest_rank(values: Sequence[float], quantile: float) -> float | None:
     """The nearest-rank quantile of the sample, so a small sample names a member."""
     if not values:
@@ -4675,20 +4696,24 @@ def _unrequested_reason(
     the request unmade with nothing recorded at all, because no sweep ever
     reached the run to refuse it.
     """
-    if isinstance(record, Mapping):
-        recorded = record.get(REVIEW_DISPATCH_FIELD)
-        if isinstance(recorded, Mapping) and str(recorded.get("reason") or ""):
-            return (
-                f"the review reflex recorded {recorded.get('status') or 'no dispatch'}: "
-                f"{recorded['reason']}"
-            )
-        try:
-            refusal = review_dispatch_refusal(record)
-        except (CrewError, OSError, ValueError) as exc:
-            refusal = {"reason": f"the run's dispatch rule could not be read: {exc}"}
-        if isinstance(refusal, Mapping) and str(refusal.get("reason") or ""):
-            return str(refusal["reason"])
-    project = str((record or {}).get("project") or "")
+    if not isinstance(record, Mapping) or not record:
+        return (
+            "the run has no live pointer, so no sweep reaches it to ask for "
+            "its review"
+        )
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if isinstance(recorded, Mapping) and str(recorded.get("reason") or ""):
+        return (
+            f"the review reflex recorded {recorded.get('status') or 'no dispatch'}: "
+            f"{recorded['reason']}"
+        )
+    try:
+        refusal = review_dispatch_refusal(record)
+    except (CrewError, OSError, ValueError) as exc:
+        refusal = {"reason": f"the run's dispatch rule could not be read: {exc}"}
+    if isinstance(refusal, Mapping) and str(refusal.get("reason") or ""):
+        return str(refusal["reason"])
+    project = str(record.get("project") or "")
     if session and project:
         try:
             state = runs.follower_state(project, session)
@@ -4732,6 +4757,12 @@ def review_request_census(
     request_lags: list[float] = []
     launch_lags: list[float] = []
     for run_id in run_ids:
+        # A review is never asked for a review of itself, so a review run is not
+        # a delivered run that owes a request. Without this a census of the fleet
+        # would report every reviewer as an unrequested delivery, which is an
+        # absence of requests where no request is due.
+        if _is_review_subject(run_id, live.get(run_id)):
+            continue
         instants = review_stage_instants(run_id)
         delivered_at = instants["delivered_at"]
         if not delivered_at:

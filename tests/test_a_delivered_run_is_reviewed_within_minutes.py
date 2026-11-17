@@ -197,6 +197,26 @@ def test_a_run_with_no_request_carries_an_obligation_at_ten_minutes(
     assert overdue["counts"]["requested"] == 0
 
 
+def test_a_review_run_owes_no_review_of_itself(
+    isolated_project: tuple[Path, Path], controlled_clock: dict
+) -> None:
+    """A reviewer is not a delivered run that owes a request."""
+    config_home, repo = isolated_project
+    review_id = "r-20260101T000000000000-review-of-r-source"
+    _scoring_pointer(config_home, repo, review_id)
+    delivered_at = _delivered(review_id)
+    moment = datetime.fromisoformat(delivered_at)
+
+    census = recovery_review_dispatch.review_request_census(
+        [review_id],
+        now=moment + timedelta(seconds=601),
+        pointers=[runs.read_pointer(review_id)],
+    )
+    assert census["rows"] == []
+    assert census["obligations"] == []
+    assert census["counts"]["delivered"] == 0
+
+
 def test_a_recorded_refusal_is_the_obligations_reason(
     isolated_project: tuple[Path, Path],
 ) -> None:
