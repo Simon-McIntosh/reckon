@@ -163,6 +163,7 @@ def record_review_contract(pointer: Mapping[str, Any]) -> bool:
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return False
+
     try:
         node = _launching._node_from_pointer(pointer)
     except TypeError:
