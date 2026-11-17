@@ -25,7 +25,7 @@
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -118,9 +118,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-17T05:12:00Z">
-    <div class="r-comment-body"><p>§3 landed by direct merge (head <code>3dd1d4768a</code>), on the lead's instruction. One pass over the promotion queue lists the live pointers once where the primary branch listed them 21 times for 100 requests over 300 pointers, with the served order unchanged and the fair order, waiting-request refresh and readiness-before-admission cases all passing. The head merges the primary branch after tonight&#x27;s promotion changes and was reviewed at that merged head, 120 of 120. Merged candidate gate: 18 passed in 5.28s.</p></div>
-</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T00:58:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>adcc599978</code>), on the lead's instruction. A dispatch preview's scope report reads only the claims the candidate's paths and repositories can meet: 243 git calls fall under 20 in the 240-pointer case, and three live previews took 23, 10 and 7 seconds, a median of 10 s against 86 s before. Review 120 of 120, 41 importer files with no added failure, merged candidate gate 4 of 4.</p></div>
 </div>
@@ -130,11 +127,17 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261116T234505013176-a-dispatch-checks-the-claims-its-paths-can-meet" data-who="reckon-build" data-when="2026-11-17T00:04:21Z">
     <div class="r-comment-body"><p>Preview scope reads now use the existing candidate-path and repository narrowing; the 240-pointer regression exceeds 20 git calls at base (243 calls) and passes the 20-call/6-second bounds at head, with unchanged exhaustive verdicts and figure refusal/release; 62 armed-scope tests pass and 41 importer files add zero failures against base. Three live fleet previews took 23.31/10.02/7.06 seconds (median 10.02 seconds), under the 30-second bound; no candidate worktree or request remains.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-17T05:12:00Z">
+    <div class="r-comment-body"><p>§3 landed by direct merge (head <code>3dd1d4768a</code>), on the lead's instruction. One pass over the promotion queue lists the live pointers once where the primary branch listed them 21 times for 100 requests over 300 pointers, with the served order unchanged and the fair order, waiting-request refresh and readiness-before-admission cases all passing. The head merges the primary branch after tonight's promotion changes and was reviewed at that merged head, 120 of 120. Merged candidate gate: 18 passed in 5.28s.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-s3-not-landed" data-who="reckon-build" data-when="2026-11-17T04:35:00Z">
     <div class="r-comment-body"><p>§3 is delivered and not landed. Its head <code>02a7b9f525</code> is reviewed 120 of 120 and passed a merged-candidate gate (18 of 18) with the fair-queue and parked-request tests, but the merge was refused: the manifest records a gate command under a temporary directory that no longer exists, so the integration re-run cannot start. The worker is asked to record the command against its worktree. A landing record was written here before the merge was attempted and has been withdrawn.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261117T015044927067-review-of-promotion-order-reads-one-population-02a7b9f525d1" data-who="reckon-build" data-when="2026-11-17T02:03:45Z">
     <div class="r-comment-body"><p>Independent review of 3759d88f70ed285f007f0d86250c53058578f98f..02a7b9f525d1dfd9369661d24ce03c5b4f6ba413 stored parsed; all six dimensions scored 20/20, no findings, zero added failure IDs from recorded armed suite logs.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T050436942055-review-of-promotion-order-reads-one-population-3dd1d4768a92" data-who="reckon-build" data-when="2026-11-17T05:11:38Z">
+    <div class="r-comment-body"><p>Independent incremental review of 02a7b9f525d1dfd9369661d24ce03c5b4f6ba413 to 3dd1d4768a928e22ea0035bc6dd2795c3697c94e stored at the revision-specific record; all six dimensions 20/20, no findings, original armed-suite added_failure_count=0 and matched-primary importer added IDs=[].</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261117T005028812634-review-of-a-slow-project-does-not-hold-the-refresh-e5e928379223" data-who="reckon-build" data-when="2026-11-17T00:57:30Z">
     <div class="r-comment-body"><p>Reviewed base 3c3aefe8aa6d3231b99011f7b14baa23eda9b14f through head e5e928379223b13acafb80aceab14bb8cf350d1e; six dimension scores and six checklist verdicts parsed; zero added failures; one blocking reader integration finding and one non-blocking assertion finding.</p></div>
