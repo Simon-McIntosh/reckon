@@ -129,6 +129,7 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(tmp_path):
         for pid in pids:
             with suppress(ProcessLookupError):
                 os.killpg(pid, signal.SIGTERM)
+            _wait(lambda pid=pid: not supervisor.process_cmdline(pid))
 
 
 def test_schema_widening_keeps_rows_in_the_same_series(tmp_path):
@@ -209,6 +210,7 @@ def test_sampling_without_interpreter_overrides_uses_the_project_environment(tmp
     from tests.test_fleet_health import BASE, run_pass, sample_rows, sandbox
 
     box = sandbox(tmp_path, extra_env=BASE)
+    (box.root / "proc" / "uptime").write_text("1000 0\n")
     box.env.pop("FLEET_DISK_PYTHON", None)
     box.env.pop("RECKON_SHIM_PYTHON", None)
     mounts = box.root / "mounts.json"
