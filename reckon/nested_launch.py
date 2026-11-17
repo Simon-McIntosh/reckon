@@ -545,6 +545,10 @@ def fenced_scheduler_task(
         return list(argv)
     recipe = json.loads(base64.urlsafe_b64decode(encoded))
     parsed, operands = _scheduler_options(tool, argv)
+    if ":" in operands:
+        raise ValueError(
+            "heterogeneous scheduler launches cannot carry one fenced task"
+        )
     if any(
         name in {"help", "usage", "version", "h", "V"}
         for name, _value, _tokens in parsed

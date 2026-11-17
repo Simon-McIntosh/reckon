@@ -2089,10 +2089,13 @@ def fence_argv(
     # The scheduler starts tasks outside this mount namespace. Carry the
     # composed mounts rather than rediscovering protection from job-local env,
     # including masks, credentials and the worktree's exclusive seals.
-    directories = [*runtime_roots, *by_construction]
+    directories = [
+        *(path for path in runtime_roots if path.is_dir()),
+        *sorted(by_construction),
+    ]
     if scratch_seal is not None:
         directories.append(scratch_seal)
-    scratch = tmp_mount or next(iter(by_construction), None)
+    scratch = tmp_mount or next(iter(sorted(by_construction)), None)
     if scratch is None:
         scratch = (
             Path(manifest_path).parent if manifest_path is not None else NODE_TMP_ROOT

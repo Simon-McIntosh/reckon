@@ -274,11 +274,16 @@ def _scheduler_replay(decoys, tool, *, absolute):
         ]
         if form:
             command.pop()
-            command += [
-                "--export=NONE",
-                "-" if form == "stdin" else str(wrapper),
-                *task[2:],
-            ]
+            command.append("--export=NONE")
+            if form == "stdin":
+                wrapper.write_text(
+                    wrapper.read_text().replace(
+                        'log="$3"',
+                        "log=" + shlex.quote(str(worktree / ".venv/bin/python")),
+                    )
+                )
+            else:
+                command += [str(wrapper), *task[2:]]
     else:
         command = [
             executable,
@@ -427,6 +432,7 @@ def test_task_boundary_keeps_option_values_and_resources(decoys, tool, options):
     [
         ("srun", ["--unknown-boundary", "printf", "payload"]),
         ("srun", ["--multi-prog", "commands.conf"]),
+        ("srun", ["printf", "payload", ":", "-n2", "/bin/true"]),
         ("srun", ["--task-prolog=/bin/true", "printf", "payload"]),
         ("sbatch", ["--wrap=printf payload", "script.sh"]),
         ("sbatch", ["--output"]),
