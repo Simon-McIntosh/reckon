@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s84">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-17">
+  <meta name="evidence-commit" content="0e0c715c8f">
+  <title>Older code never migrates a newer store | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="older-code-never-migrates-a-newer-store">
+  <h2>Older code never migrates a newer store</h2>
+
+  <p><strong>The defect, reproduced.</strong> A store records the hash of the
+  schema declarations it was last migrated to. An open whose declaration hash
+  differed from that record ran the runs backfill: every row decoded and
+  rewritten inside one exclusive transaction, and then the store stamped with
+  the <em>opening</em> process's declaration. A store holding 500 rows, given a
+  record this code does not know and one column it does not declare — the shape
+  newer code leaves behind — reproduced it at the base revision
+  <code>d5694fa44d63c6b52d9b80e8315d1afa897bc11e</code>:</p>
+
+  <pre><code>FAILED tests/test_older_code_never_migrates_a_newer_store.py::test_a_store_written_by_newer_code_is_opened_without_a_backfill - assert 500 == 0
+FAILED ...::test_reads_and_appends_on_a_store_written_by_newer_code_still_work - AssertionError: assert '71ab98ba3c3b...5c90fceae480b' == 'a-declaratio...by-newer-code'</code></pre>
+
+  <p>500 row decodes on a store that was missing nothing, and the newer code's
+  record replaced by the older code's hash. That is the whole-store write lock
+  the plan's <em>Why</em> records, held by a process that had nothing to add,
+  and the claim on the store that let it keep doing so.</p>
+
+  <p><strong>What landed. Members and holds remain as they were; the open
+  changed.</strong></p>
+
+  <ul>
+    <li><code>RunStore._lacks_declaration</code> asks what the store is missing
+    — a declared column, a declared index, or the table itself — instead of
+    whether its columns equal the declaration. A superset is complete for this
+    code, and the open returns without migrating and without rewriting the
+    recorded version (<code>_create</code>).</li>
+    <li><code>_migrate_runs</code> gates the row backfill on a declared column
+    being absent. A store carrying every declared column re-asserts its indexes
+    and decodes nothing, however its record reads.</li>
+    <li>The declared index names are stated once
+    (<code>_RUNS_INDEX_DEFS</code>) and both the creating script and the
+    coverage check read them, so the check cannot ask for an index the code no
+    longer creates. The generated schema text is byte-identical to base, so
+    <code>_STORE_SCHEMA_VERSION</code> did not move.</li>
+  </ul>
+
+  <p><strong>The measure, and the guard that could have failed silently.</strong>
+  The test counts the rows the migration decodes through a stand-in on
+  <code>_legacy_payload</code>, the one per-row decode the backfill performs.
+  Matched arms, both running the same file and interpreter over different trees,
+  as an <code>all_debug</code> partition job:</p>
+
+  <table>
+    <tr><th>arm</th><th>tree</th><th>result</th></tr>
+    <tr><td>base</td><td><code>d5694fa4</code>, test file overlaid</td><td>2 failed, 1 passed — newer-store case decodes 500 rows, record rewritten</td></tr>
+    <tr><td>head</td><td><code>0e0c715c</code></td><td>3 passed</td></tr>
+    <tr><td>negative control</td><td><code>d5694fa4</code>, newer-store case only</td><td>1 failed — <code>assert 500 == 0</code></td></tr>
+  </table>
+
+  <p>The same recorder reads 500 on a store that really lacks
+  <code>activity_seconds</code> and 0 on the newer store, in the same run: the
+  zero is the store reporting it did no work, not an instrument that never
+  fired. That missing-column case still adds the column, backfills every row,
+  builds the index on it, and passes at both revisions — the guard fires where
+  it should and only there.</p>
+
+  <p><strong>Contradiction found outside this node's write scope.</strong>
+  <code>tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py::test_a_changed_declaration_version_is_not_taken_as_current</code>
+  moves a complete-shaped store's record to an unknown version, opens it, and
+  asserts the record was rewritten to this code's hash. That is the behaviour
+  this node removes, so the test fails with <code>assert 0 == 1</code> on the
+  migration-pass count. Its premise survives if the fixture store is made to
+  lack something this code declares — dropping one declared index is enough —
+  and its remaining assertions then hold unchanged.</p>
+</section>
+</main>
+</body>
+</html>
