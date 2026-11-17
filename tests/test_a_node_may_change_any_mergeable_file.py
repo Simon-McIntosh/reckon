@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import promotion_scope, recovery_review_subject
+from reckon.crew.dispatch_admission import _resolved_write_paths
 from reckon.crew.node import CrewError, TaskNode, validate_node
 from reckon.crew.prompts import compose_prompt
 
@@ -186,9 +187,6 @@ def test_a_dispatch_declaring_no_write_path_states_the_repository_as_its_scope()
     assert "Expected: the repository itself" in brief, brief
     assert "docs/plans/*.html" in brief, brief
 
-    # A dispatch judges the node before it launches, so the acceptance the
-    # done-when names is asserted on that verdict: an empty declaration is not
-    # a contract violation, and the brief above is the assertion's own account.
     node = TaskNode(
         id="scope-node",
         goal="change a thing",
@@ -203,6 +201,21 @@ def test_a_dispatch_declaring_no_write_path_states_the_repository_as_its_scope()
     )
     verdict = validate_node(node)
     assert verdict.ok, verdict.findings
+
+    # The dispatch route never presents an empty declaration to the launch: it
+    # fills the role's default delivery scope first, so the state a worker
+    # receives is those absolute paths. That is the state asserted here: the
+    # brief still states the repository as the writable scope, and the
+    # defaults are named for what they are — delivery grants, not expected
+    # edits.
+    defaults = _resolved_write_paths(
+        {"write_paths": ["."], "sandbox": "worktree-full"},
+        run_directory=Path("/state/runs/r-scope"),
+    )
+    assert defaults and all(Path(path).is_absolute() for path in defaults), defaults
+    filled = _prompt_brief(defaults)
+    assert "Expected: the repository itself" in filled, filled
+    assert "Delivery grants outside the repository" in filled, filled
 
 
 def test_a_project_declared_pattern_is_named_in_the_scope_block(
