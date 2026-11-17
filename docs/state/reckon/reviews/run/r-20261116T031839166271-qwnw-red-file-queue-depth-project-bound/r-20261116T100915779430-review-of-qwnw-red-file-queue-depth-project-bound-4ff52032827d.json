@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/admission/launching.py:308 _node_from_pointer (queued launch)",
+    "reckon/crew/admission/holds.py:1072 _node_from_pointer",
+    "reckon/crew/admission/release.py:448 _node_from_pointer",
+    "reckon/crew/admission/reviews.py:163 _node_from_pointer",
+    "reckon/crew/admission/reviews.py:444 _node_from_pointer",
+    "reckon/crew/admission/reviews.py:588 _node_from_pointer",
+    "reckon/crew/queue_edit.py:103 _node_from_pointer",
+    "reckon/crew/query.py:853 _lane_config_for (live rows)"
+  ],
+  "completed_at": "2026-11-16T10:11:46.190Z",
+  "dispatched_at": "2026-11-16T10:11:05Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_node_keeps_every_field.py",
+      "line": "168",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added test's tail mutates `stored` after its rebuild and then calls `_node_from_pointer({\"run_id\": RUN_ID, \"node\": None})`, so lines 168-169 are dead and the `partial` assertions exercise the node-is-absent branch rather than the field-is-absent branch the test is named for; the guarding assertions are the earlier ones at 162-166."
+    }
+  ],
+  "head_log_revision": "4ff52032827dc8dc9ffd3d579a0927ac9e899137",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production callers of both changed functions: reckon/crew/admission/launching.py:308, admission/holds.py:1072, admission/release.py:448, admission/reviews.py:163, admission/reviews.py:444, admission/reviews.py:588 and queue_edit.py:103 for _node_from_pointer, and reckon/crew/query.py:853 for _lane_config_for.",
+    "diff": "read commit by commit against base 0e0f25b0f9: 7d152c104b adds _ABSENT_REQUIRED_VALUE and the required-field branch in reckon/crew/admission/launching.py, c57f3b6865 adds FlightConfigError to reckon/crew/query.py:794, ceafca3d40 adds the evidence fragment, and 4ff5203282 replaces the fragment's base-gate excerpt with the log's own header lines.",
+    "done_when": "the done_when names that file passing in full at head as an all_debug job with SLURM_JOB_ID unset, an importer arm adding no failure, and the base run as the negative control, and the manifest records each: logs/base-gate.log (0e0f25b0f9, 5 failed, EXIT=1), logs/after-gate-all-debug-final.log (4ff5203282, 11 passed, EXIT=0), logs/probe-env.out (SLURM_JOB_ID present: False), and logs/base-arm.log against logs/after-arm.log (14 identical failure ids, computed here as an empty symmetric difference).",
+    "goal": "the node's goal is to make tests/test_queue_depth_project_bound.py pass in full on the primary branch; the landed change repairs both causes the file's red tests name, in reckon/crew/admission/launching.py:141 and reckon/crew/query.py:794, with no assertion in the red file edited.",
+    "manifest": "read; it declares status complete over four commits ending 4ff5203282, names the two product fixes with their verdicts, records the gate and both arms with revisions and exit receipts, and files the 14 pre-existing importer-arm ids under outside_scope.",
+    "write_paths": "the node declared reckon, tests, the queued-work-needs-no-workaround evidence fragment and its figures directory; git diff 0e0f25b0f9..4ff5203282 lists five paths and every one of them is inside that fence."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-mutation.log reverts both product fixes and reddens the two added tests with EXIT=1 (TypeError: TaskNode.__init__() missing 3 required positional arguments, and FlightConfigError local_backend must be set), and the pre-existing red file tests/test_queue_depth_project_bound.py covers both paths at 11 passed.",
+    "evidence": "the manifest records the base gate logs/base-gate.log at revision 0e0f25b0f9 reading \"5 failed, 6 passed\" with EXIT=1 and the head gate logs/after-gate-all-debug-final.log at 4ff5203282 reading \"11 passed\" with EXIT=0 as an all_debug job, logs/probe-env.out printing \"SLURM_JOB_ID present: False\"; only the importer arms ran at c57f3b6865 rather than the final head.",
+    "fit": "the added helper and comment at reckon/crew/admission/launching.py:71-98 follow the module's private-helper idiom and the repo's `#:` constant-comment style, and the added names carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "both causes named in the node's gate are repaired in place: reckon/crew/admission/launching.py:141 fills a required field the stored pointer lacks, and reckon/crew/query.py:794 catches FlightConfigError beside the other resolution failures, so the named file's 11 tests pass at head.",
+    "reuse": "reckon/crew/admission/launching.py:141 extends _node_from_pointer and its existing _stored_field_value sibling rather than forking a rebuild, and a search over reckon/ for an owner of \"empty value of a required dataclass field by declared type\" found only class-specific from_dict rebuilds such as reckon/crew/landing_measure.py:350, so no owner exists to extend.",
+    "scope_discipline": "git diff --stat 0e0f25b0f9..4ff5203282 touches only reckon/crew/admission/launching.py, reckon/crew/query.py, the two named test files and the evidence fragment, every one inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261116T100915779430-review-of-qwnw-red-file-queue-depth-project-bound-4ff52032827d",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "4ff52032827dc8dc9ffd3d579a0927ac9e899137",
+  "reviewed_run_id": "r-20261116T031839166271-qwnw-red-file-queue-depth-project-bound",
+  "reviewer_run_id": "r-20261116T100915779430-review-of-qwnw-red-file-queue-depth-project-bound-4ff52032827d",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:11:54.497050+00:00",
+  "total": 116
+}

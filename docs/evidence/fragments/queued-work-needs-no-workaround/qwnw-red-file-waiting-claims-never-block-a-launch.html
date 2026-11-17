@@ -1,0 +1,98 @@
+<section id="qwnw-red-file-waiting-claims-never-block-a-launch-landing">
+  <h2>A waiting claim never blocks a launch; a working claim still fences a path a merge cannot reconcile</h2>
+
+  <p><strong>What changed.</strong> The named file was written before path
+  claims were reserved for nonmergeable artifacts, and four of its cases
+  exercised that rule on a source file, <code>reckon/crew/shared_path.py</code>.
+  Source and test declarations are shared between isolated worktrees now, so a
+  live worker editing one does not hold a peer off it; only the classes a merge
+  cannot reconcile — the dependency manifest, the plan/state/evidence/figure
+  paths and binary content — fence a peer. The four cases move to the fixture's
+  fenced class, <code>pyproject.toml</code>, and every assertion is kept: the
+  working claim is still refused with exit 7 and <code>scope-conflict</code>;
+  the queued waiter still stays <code>queued</code> with no recorded failure and
+  the <code>held-on-claim</code> verdict whose detail names <code>r-launched</code>
+  and the contested path; the dispatch claim still agrees with the registry
+  claim for all three waiting phases; and a working run still widens across a
+  waiting claim. Nothing was deleted or weakened.</p>
+
+  <p><strong>Verdict: test wrong.</strong> The fixture already states the rule
+  the code keeps, beside the two constants — <em>a source file is shared
+  between isolated worktrees, so a live run editing one does not hold a peer
+  off it; only the generated and binary classes a merge cannot reconcile are
+  exclusive</em> — and this section's earlier node recorded the same diagnosis
+  beside a <code>DID NOT RAISE ScopeConflict</code>. Both failing cases asserted
+  a fence over a mergeable source path. With the fenced class the cases measure
+  the claim rule they name instead of passing on a shared path.</p>
+
+  <table id="qwnw-red-file-waiting-claims-never-block-a-launch-causes">
+    <thead><tr><th>failing case at the base revision</th><th>what it read</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_working_claim_still_refuses_a_dispatch</code></td>
+        <td>exit <code>0</code> where the case asserted exit <code>7</code>: a
+        working run's claim on a mergeable source path admitted the dispatch</td>
+        <td><strong>test wrong</strong> — a fence was asserted over a source
+        path; the claim is reserved for nonmergeable artifacts</td>
+      </tr>
+      <tr>
+        <td><code>test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path</code></td>
+        <td><code>['r-waiting'] == []</code>: the ready waiter launched over a
+        working run's claim on a mergeable source path</td>
+        <td><strong>test wrong</strong> — the same cause; a shared path owes no
+        hold</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Reproduction, before the repair.</strong> The base revision's run of
+  the named file, quoted from <code>base-named-file.log</code>:</p>
+
+  <pre id="qwnw-red-file-waiting-claims-never-block-a-launch-repro">FAILED tests/test_waiting_claims_never_block_a_launch.py::test_working_claim_still_refuses_a_dispatch - AssertionError: reckon: created run r-20261116T072715454770-ready
+FAILED tests/test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path - AssertionError: assert ['r-waiting'] == []
+2 failed, 6 passed in 3.35s
+EXIT=1</pre>
+
+  <h3 id="qwnw-red-file-waiting-claims-never-block-a-launch-arms">Arms</h3>
+
+  <table id="qwnw-red-file-waiting-claims-never-block-a-launch-arm-table">
+    <caption>Every arm is a log in the run's <code>logs/</code> directory whose
+    first lines name its revision, tree and command and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>selection</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>named file, base (negative control)</td>
+        <td><code>tests/test_waiting_claims_never_block_a_launch.py</code></td>
+        <td>2 failed, 6 passed, <code>EXIT=1</code> — the two ids above</td></tr>
+      <tr><td>named file, head</td>
+        <td>the same file</td>
+        <td><strong>8 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>gate selection, base</td>
+        <td><code>tests/test_staged_write_inventory.py</code>,
+        <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>gate selection, after</td>
+        <td>the same two files</td>
+        <td>58 passed, <code>EXIT=0</code> — no added failure</td></tr>
+      <tr><td>neighbour arm, base</td>
+        <td>five files around the claim, queue and admission passes</td>
+        <td>7 failed, 61 passed, <code>EXIT=1</code> — the two named-file causes
+        plus five failures carried from the claim in other files</td></tr>
+      <tr><td>neighbour arm, after</td>
+        <td>the same five files</td>
+        <td>5 failed, 63 passed, <code>EXIT=1</code> — the same five carried
+        failures, none added</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Outside this node's scope.</strong> One of the five carried
+  failures is the same cause in another red file:
+  <code>tests/test_a_manual_admission_pass_reports_its_verdicts.py::test_each_pass_prints_its_verdicts_as_one_json_line</code>
+  reads <code>'launched' == 'held-on-claim'</code> at the base revision;
+  <code>tests/test_a_queued_request_waits_on_its_dependencies.py</code> carries
+  four more (<code>TaskNode.__init__() missing 1 required positional argument:
+  'goal'</code> twice, a queue-time refusal that does not raise, and a
+  <code>JSONDecodeError</code>). All five fail identically at the base revision
+  and none was triaged or fixed here; they belong to the nodes that own those
+  files.</p>
+</section>

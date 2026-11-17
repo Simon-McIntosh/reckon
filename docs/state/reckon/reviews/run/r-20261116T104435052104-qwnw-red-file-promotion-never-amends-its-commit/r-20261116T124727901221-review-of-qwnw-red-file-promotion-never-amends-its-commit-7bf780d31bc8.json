@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "2026-11-16T13:24:02.273Z",
+  "dispatched_at": "2026-11-16T13:23:23Z",
+  "findings": [
+    {
+      "file": "tests/test_promotion_never_amends_its_commit.py",
+      "line": "248",
+      "severity": "non-blocking",
+      "text": "the assertion compares the returned release against row[\"release\"], the same dict the test hands to _record_release_on_ledger at line 245, so it cannot distinguish the product's re-read at reckon/crew/promotion_release.py:770 from an echo of its own argument; the independent guards are line 253 and lines 254-255, and it does redden on the pre-48d32268f0 replay so it is not vacuous."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-never-amends-its-commit.html",
+      "line": "69",
+      "text": "the head row cites all_debug job 1319790 while logs/gate-head.log:7 and the manifest both name job 1319808, and the row carries three cells under the table's four-column header, so the evidence table names a job that did not produce the log it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against 24bc79d8ee; 423ffa0b6c adds --wait at line 153, `\"unstaged\": []` at line 220 and replaces the filtered replay comparison with full equality plus a landing_check absence at lines 248-253, and 7bf780d31b adds only the 116-line evidence fragment, so no assertion was deleted or weakened and no product file changed.",
+    "done_when": "it requires a full pass of the named file as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict of product wrong or test wrong, no deleted or weakened assertion, and an import arm adding no failure; logs/gate-head.log records 5 passed at 7bf780d31b with job 1319808 and a runner reporting SLURM_JOB_ID absent, and both arms record 58 passed, though the tree never merged the origin/main the done_when's first step names.",
+    "goal": "the goal is to make tests/test_promotion_never_amends_its_commit.py pass in full on the primary branch, and commits 423ffa0b6c and 7bf780d31b change only that file and its evidence fragment, leaving product source untouched.",
+    "manifest": "read; it reads complete and names the gate command, 5 passed at head against 4 failed and 1 passed at 24bc79d8ee, the negative-control log whose four ids match the plan's, both 58-passed arms and the ruff result.",
+    "write_paths": "declared as reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the two files the diff touches, tests/test_promotion_never_amends_its_commit.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-never-amends-its-commit.html, both sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_never_amends_its_commit.py:253 reddens if a replay composes the landing check 48d32268f0 removed and line 220 reddens if the clean check stops reporting unstaged, though line 248 compares against the value it hands in.",
+    "evidence": "logs/gate-head.log records all_debug job 1319808 with SLURM_JOB_ID absent and logs/negative-control.log records EXIT=1 with the four failing ids, but no arm ran after merging the origin/main the done_when's first step requires.",
+    "fit": "the edit keeps the file's parametrized, helper-driven idiom and introduces no new name, but the arms table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-never-amends-its-commit.html:69 leaves one cell of its four-column row empty.",
+    "goal_fidelity": "tests/test_promotion_never_amends_its_commit.py passes 5/5 at 7bf780d31b per logs/gate-head.log, which is the deliverable the goal names, though the pass is measured on the run's own tree rather than on the primary branch.",
+    "reuse": "the diff adds no function, class or module that could fork an owner, and the capability its assertions exercise still lives only at reckon/crew/promotion_release.py:734.",
+    "scope_discipline": "the only two paths in the diff, tests/test_promotion_never_amends_its_commit.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both sit inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_promotion_never_amends_its_commit.py pass in full on the primary branch, and commits 423ffa0b6c and 7bf780d31b change only that file and its evidence fragment, leaving product source untouched.\nVERDICT done_when: it requires a full pass of the named file as an all_debug job with SLURM_JOB_ID unstated in the runner, a per-cause verdict of product wrong or test wrong, no deleted or weakened assertion, and an import arm adding no failure; logs/gate-head.log records 5 passed at 7bf780d31b with job 1319808 and the runner reporting SLURM_JOB_ID absent, and both arms record 58 passed, though the tree never merged the origin/main the done_when's first step names.\nVERDICT write_paths: declared as reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the two files the diff touches, tests/test_promotion_never_amends_its_commit.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both sit inside them.\nVERDICT manifest: read; it reads complete and names the gate command, 5 passed at head against 4 failed and 1 passed at 24bc79d8ee, the negative-control log whose four ids match the plan's, both 58-passed arms and the ruff result.\nVERDICT diff: read both commits against 24bc79d8ee; 423ffa0b6c adds --wait at line 153, a \"unstaged\": [] key at line 220 and replaces the filtered replay comparison with full equality plus a landing_check absence at lines 248-253, and 7bf780d31b adds only the 116-line evidence fragment, so no assertion was deleted or weakened and no product file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: tests/test_promotion_never_amends_its_commit.py passes 5/5 at 7bf780d31b per logs/gate-head.log, which is the deliverable the goal names, though the pass is measured on the run's own tree rather than on the primary branch.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log records all_debug job 1319808 with SLURM_JOB_ID absent and logs/negative-control.log records EXIT=1 with the four failing ids the plan names, but no arm ran after merging the origin/main the done_when's first step requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths in the diff, tests/test_promotion_never_amends_its_commit.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-never-amends-its-commit.html, both sit inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_promotion_never_amends_its_commit.py:253 reddens if a replay composes the landing check 48d32268f0 removed and line 220 reddens if the clean check stops reporting unstaged, though line 248 compares against the value it hands in.\nSCORE fit: 15\nJUSTIFICATION fit: the edit keeps the file's parametrized idiom and introduces no new name, but the arms table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-never-amends-its-commit.html:69 leaves one cell of its four-column row empty.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module that could fork an owner, and the capability its assertions exercise still lives only at reckon/crew/promotion_release.py:734.\nFINDING tests/test_promotion_never_amends_its_commit.py:248 non-blocking: the assertion compares the returned release against the same dict the test hands to _record_release_on_ledger at line 245, so it cannot distinguish the product's re-read at reckon/crew/promotion_release.py:770 from an echo of its own argument; the independent guards are line 253 and lines 254-255, and it does redden on the pre-48d32268f0 replay so it is not vacuous.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-never-amends-its-commit.html:69 non-blocking: the head row cites all_debug job 1319790 while logs/gate-head.log:7 and the manifest both name job 1319808, and the row carries three cells under the table's four-column header, so the evidence table names a job that did not produce the log it cites.",
+  "review_run_id": "r-20261116T124727901221-review-of-qwnw-red-file-promotion-never-amends-its-commit-7bf780d31bc8",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "7bf780d31bc830ed34db01ee0827484295792bce",
+  "reviewed_run_id": "r-20261116T104435052104-qwnw-red-file-promotion-never-amends-its-commit",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:28:02.749583+00:00",
+  "total": 105
+}

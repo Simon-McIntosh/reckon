@@ -783,11 +783,16 @@ def _lane_config_for(
     from click import ClickException
 
     from reckon.crew.queue_admission import _resolve_lane_config
+    from reckon.flight import FlightConfigError
 
     if key not in configs:
         try:
             configs[key] = _resolve_lane_config(record)
-        except (OSError, ValueError, ClickException):
+        # A host with no declared local worker route is a valid configuration
+        # (``local_backend`` absent means exactly that), and the refusal
+        # selecting it raises is a dispatch refusal, not a read failure: the
+        # row keeps no lane reading and the rest of the view stays readable.
+        except (OSError, ValueError, ClickException, FlightConfigError):
             configs[key] = {}
     return configs[key]
 

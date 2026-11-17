@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own two arms: logs/negative-control-base.log (revision 0e0f25b0f941, scratch tree, 10 failed, EXIT=1) and logs/gate-head.log (revision f8986dcd23, worker worktree, 10 passed, EXIT=0) report no head failure the base does not, so the added count is a measured 0 with no ids rather than an unmeasured zero.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:639",
+    "reckon/crew/promotion_evidence.py:424",
+    "reckon/crew/promotion.py:1853",
+    "reckon/crew/promotion.py:2430"
+  ],
+  "completed_at": "2026-11-16T11:07:23.151Z",
+  "dispatched_at": "2026-11-16T11:06:52Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064910100776-qwnw-red-file-cited-identifier-resolves-second-launch/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "The artifacts line quotes the gate as \"10 passed in 4.42s\", EXIT=0, revision acc3c6998e, but whose log it cites (logs/gate-head.log) reads \"10 passed in 4.59s\" at revision f8986dcd23, so the headline metric does not reconcile with the log a reader opens; the pass itself holds at the later revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064910100776-qwnw-red-file-cited-identifier-resolves-second-launch/logs/gate-head.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "The head gate ran in the worker worktree (header line 2 is the worktree path), not as a job on all_debug with SLURM_JOB_ID unset as plan \u00a729's done-when requires, and origin/main was not merged first: base 0e0f25b0f941 is 50 commits behind b38f257288, though no commit since the base touches reckon/crew/promotion_scope.py or tests/test_cited_identifier_resolves.py, so the measured result for this file is unaffected."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-cited-identifier-resolves.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "The head row of the arms table reads \"0e0f25b0f941 plus this node's two commits\" while the gate log the row summarises names revision f8986dcd23, five commits past the base, so the row and its log cannot be reconciled by a reader."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_cited_identifier_resolves.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064910100776-qwnw-red-file-cited-identifier-resolves-second-launch/logs/gate-head.log",
+      "revision": "f8986dcd23d0d6d207849bf2cf5d81f21c0195d6"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_cited_identifier_resolves.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 10,
+      "failure_ids": [
+        "tests/test_cited_identifier_resolves.py::test_a_full_commit_sha_that_resolves_is_admitted",
+        "tests/test_cited_identifier_resolves.py::test_an_abbreviated_commit_sha_that_resolves_is_admitted",
+        "tests/test_cited_identifier_resolves.py::test_a_citation_naming_a_tag_is_admitted",
+        "tests/test_cited_identifier_resolves.py::test_the_measured_fabricated_sha_is_refused",
+        "tests/test_cited_identifier_resolves.py::test_a_well_formed_sha_with_no_object_behind_it_is_refused",
+        "tests/test_cited_identifier_resolves.py::test_a_citation_that_is_not_hexadecimal_at_all_is_refused",
+        "tests/test_cited_identifier_resolves.py::test_the_refusal_turns_on_resolvability_and_not_on_the_spelling",
+        "tests/test_cited_identifier_resolves.py::test_a_declared_absence_is_not_read_as_a_citation",
+        "tests/test_cited_identifier_resolves.py::test_a_manifest_with_no_commits_line_is_unaffected",
+        "tests/test_cited_identifier_resolves.py::test_the_refusal_leaves_no_row_behind_it"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064910100776-qwnw-red-file-cited-identifier-resolves-second-launch/logs/negative-control-base.log",
+      "revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read 0e0f25b0f941..f8986dcd23 commit by commit (ed013206aa, f198fdaf86, 316b6ccc69, acc3c6998e, f8986dcd23): 4 files, +167/-9, one product filter in reckon/crew/promotion_scope.py, two test corrections in tests/test_cited_identifier_resolves.py, two evidence fragments.",
+    "done_when": "Read the node's done_when and the plan's Done when clause against the recorded gate: the file's arm (base 10 failed EXIT=1, head 10 passed EXIT=0), the importer arm (23 files, 17 failed at both arms, identical id sets) and the base failing ids in the fragment are recorded, while the all_debug batch-job clause and the merge-origin/main-first step are not what the logs show.",
+    "goal": "Read node.goal in dispatch-detail.json and plan section s29 of docs/plans/queued-work-needs-no-workaround.html: the deliverable is that the named test file passes in full at head; logs/gate-head.log records 10 passed, EXIT=0 at f8986dcd23, so the file does pass at head, though the tree is not merged onto current origin/main.",
+    "manifest": "Read the reviewed run's manifest.md: status complete, five commits cited, gate and negative control with log paths, baseline_suite 10 failures and after_suite 0; its artifacts line misquotes its own gate log's summary and revision, and its test suite listing is truncated mid-array on line 19.",
+    "write_paths": "Read node.write_paths; the four paths in the diff (reckon/crew/promotion_scope.py, tests/test_cited_identifier_resolves.py, docs/evidence/fragments/queued-work-needs-no-workaround/red-file-cited-identifier-resolves.html and .../qwnw-red-file-cited-identifier-resolves-second-launch.html) all lie inside the declared scope."
+  },
+  "justifications": {
+    "durability": "Removing the `and not _declares_absent_commits(str(sha))` filter at reckon/crew/promotion_scope.py:1365 puts \"none (repository worktree remained clean)\" back into the citation list, so _unresolved_citations refuses it and tests/test_cited_identifier_resolves.py:322's `result.exit_code == 0` reddens; that assertion predates this diff and the base arm is 10-of-10 red, so the node's own base run does not isolate the product cause.",
+    "evidence": "logs/gate-head.log names revision, tree, module, cwd and command on its header lines and ends EXIT=0, and logs/negative-control-base.log records the ten failing ids at 0e0f25b0, but logs/gate-head.log:2 shows a worktree run rather than the all_debug job the plan's done-when names, and manifest.md:22 quotes a summary line its cited log does not contain.",
+    "fit": "The added filter sits in the same declaration-reader idiom the function's docstring already describes and matches reckon/crew/promotion_scope.py:89's use of _declares_absent_commits in _manifest_cites_a_commit.",
+    "goal_fidelity": "tests/test_cited_identifier_resolves.py passes in full at head per logs/gate-head.log (10 passed, EXIT=0), which is the one-file-to-a-node deliverable plan \u00a729 states, but the head tree is 0e0f25b0 plus five commits rather than a tree merged onto b38f257288.",
+    "reuse": "The diff adds no definition: it calls the existing _declares_absent_commits at reckon/crew/promotion_evidence.py:547, the reader _unresolved_citations and _manifest_cites_a_commit already ask, rather than adding a second absence predicate.",
+    "scope_discipline": "git diff --stat 0e0f25b0f941 f8986dcd23 lists only reckon/crew/promotion_scope.py, tests/test_cited_identifier_resolves.py and the two docs/evidence fragments, every one of them inside the node's declared write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read node.goal in dispatch-detail.json and s29 of docs/plans/queued-work-needs-no-workaround.html; the deliverable is that tests/test_cited_identifier_resolves.py passes in full at head, and logs/gate-head.log records 10 passed, EXIT=0 at f8986dcd23, so the file does pass at head on a tree not yet merged onto b38f257288.\nVERDICT done_when: Read the node's done_when and the plan's Done when clause; the file arm (10 failed at 0e0f25b0, 10 passed at head), the 23-file importer arm (17 failed at both arms, identical id sets) and the base failing ids in docs/evidence/fragments/queued-work-needs-no-workaround/red-file-cited-identifier-resolves.html are recorded, but logs/gate-head.log:2 shows a worker-worktree run rather than the all_debug job the clause names, and no merge of origin/main precedes it.\nVERDICT write_paths: Read node.write_paths; every path in the diff (reckon/crew/promotion_scope.py, tests/test_cited_identifier_resolves.py and two docs/evidence/fragments/queued-work-needs-no-workaround files) is inside the declared write paths.\nVERDICT manifest: Read manifest.md; it cites five commits, the gate and negative control with log paths, baseline_suite 10 failures and after_suite 0, while its artifacts line (manifest.md:22) quotes \"10 passed in 4.42s\" at acc3c6998e against logs/gate-head.log's \"10 passed in 4.59s\" at f8986dcd23.\nVERDICT diff: Read all five commits 0e0f25b0f941..f8986dcd23 (ed013206aa, f198fdaf86, 316b6ccc69, acc3c6998e, f8986dcd23): 4 files, +167/-9, one three-line product filter in reckon/crew/promotion_scope.py, two test corrections, two evidence fragments.\nCALL_SITES: reckon/crew/promotion_checks.py:639, reckon/crew/promotion_evidence.py:424, reckon/crew/promotion.py:1853, reckon/crew/promotion.py:2430\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_cited_identifier_resolves.py passes in full at head per logs/gate-head.log (10 passed, EXIT=0), the one-file-to-a-node deliverable of plan s29, but the head tree is base plus five commits rather than a tree merged onto origin/main b38f257288.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-head.log carries revision, tree, module, cwd and command and ends EXIT=0 with logs/negative-control-base.log's ten ids, yet logs/gate-head.log:2 shows a worktree run rather than the all_debug job the done-when names and manifest.md:22 quotes a summary line its cited log does not contain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 0e0f25b0f941 f8986dcd23 changes only reckon/crew/promotion_scope.py, tests/test_cited_identifier_resolves.py and two docs/evidence fragments, all inside the node's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: Reinstating the bare list comprehension at reckon/crew/promotion_scope.py:1365 puts \"none (repository worktree remained clean)\" back into the citation list, so _unresolved_citations refuses it and the exit_code==0 assertion at tests/test_cited_identifier_resolves.py:322 reddens, though that assertion predates the diff and the base arm's 10-of-10 red does not isolate the product cause.\nSCORE fit: 19\nJUSTIFICATION fit: The added filter and its docstring follow the declaration-reader idiom reckon/crew/promotion_scope.py:89 already uses for _declares_absent_commits in _manifest_cites_a_commit.\nSCORE reuse: 20\nJUSTIFICATION reuse: No definition is added; the change calls the existing _declares_absent_commits at reckon/crew/promotion_evidence.py:547 that _unresolved_citations already asks, instead of forking a second absence predicate.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064910100776-qwnw-red-file-cited-identifier-resolves-second-launch/manifest.md:22 non-blocking: the artifacts line quotes \"10 passed in 4.42s\" at acc3c6998e while the log it cites reads \"10 passed in 4.59s\" at f8986dcd23, so the headline metric does not reconcile with its log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064910100776-qwnw-red-file-cited-identifier-resolves-second-launch/logs/gate-head.log:2 non-blocking: the head gate ran in the worker worktree, not as an all_debug batch job with SLURM_JOB_ID unset as plan s29's done-when requires, and origin/main was not merged first (base 0e0f25b0f941 is 50 commits behind b38f257288, none touching the two changed source paths).\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-cited-identifier-resolves.html:19 non-blocking: the head row names \"0e0f25b0f941 plus this node's two commits\" while the gate log it summarises names f8986dcd23, five commits past the base, so the row and its log cannot be reconciled.",
+  "review_run_id": "r-20261116T110304488400-review-of-qwnw-red-file-cited-identifier-resolves-second-launch-f8986dcd23d0",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "f8986dcd23d0d6d207849bf2cf5d81f21c0195d6",
+  "reviewed_run_id": "r-20261116T064910100776-qwnw-red-file-cited-identifier-resolves-second-launch",
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:14:05.614510+00:00",
+  "total": 106
+}

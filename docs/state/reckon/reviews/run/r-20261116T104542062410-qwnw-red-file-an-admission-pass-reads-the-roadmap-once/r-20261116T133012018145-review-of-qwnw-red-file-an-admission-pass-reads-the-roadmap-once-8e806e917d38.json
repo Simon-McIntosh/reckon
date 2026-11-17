@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T14:18:15.958Z",
+  "dispatched_at": "2026-11-16T14:17:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104542062410-qwnw-red-file-an-admission-pass-reads-the-roadmap-once/manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "summary": "non-blocking: baseline_suite and after_suite (manifest.md:17-18) both carry the gate command for tests/test_an_admission_pass_reads_the_roadmap_once.py, while the dispatch's armed template at prompt.txt:295 resolves to tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so promotion's pair comparison reads an arm pair that is not the population the fence armed; the neighbouring red file the change shares its fixture module with is measured only under artifacts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104542062410-qwnw-red-file-an-admission-pass-reads-the-roadmap-once/scratch/base_arm.sh",
+      "line": 6,
+      "severity": "non-blocking",
+      "summary": "non-blocking: the base and arm scripts extract into /tmp/qwnw-base-$SLURM_JOB_ID (base_arm.sh:6) and /tmp/qwnw-arm-$SLURM_JOB_ID (suite_arm.sh:7) rather than under $TMPDIR, so the trees outlive the run instead of dying with its scratch, and the manifest's measurement_module/measurement_cwd point at those paths."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 52e0ad9363101e661bb0f505fff0e733bec01d24; b7bf220340 changes only the test fixture (11+/3-) and 8e806e91 adds two evidence pages of 83 and 205 lines, with no product code \u2014 pass.",
+    "done_when": "read the measure requiring the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset and a red base; the gate log ends 4 passed / EXIT=0, the control log ends 3 failed, 1 passed / EXIT=1, and sacct shows the arm jobs COMPLETED on all_debug \u2014 pass, the measure is what the gate asserts.",
+    "goal": "read the dispatched goal 'make tests/test_an_admission_pass_reads_the_roadmap_once.py pass in full'; the landed fixture change at tests/test_an_admission_pass_reads_the_roadmap_once.py:47-49 and :239 makes that file pass 4/4 at head \u2014 pass, per logs/gate-head-8e806e917d387e3d9a5dc50e06370e15c832da79.log.",
+    "manifest": "read the reviewed run's manifest.md: status complete, commits b7bf220340 and 8e806e91, three changed paths, both arms record the demo file with completed true, and the neighbouring red file is reported under outside_scope \u2014 pass, the stated results match the logs cited.",
+    "write_paths": "read the declared paths at prompt.txt:84-89 (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its page, docs/figures/...); every path in the two commits is inside them and reckon is untouched \u2014 pass."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_reads_the_roadmap_once.py:156 asserts len(builds) == 1 against plan_review.section_readiness_rows calls the test did not supply, so reinstating a readiness build per launch reddens it; the repaired fixture's regression is shown red at base with three ids (logs/negative-control-base-52e0ad9.log), though the new fixture invariant is itself guarded only by the docstring at :36-42.",
+    "evidence": "logs/gate-head-8e806e917d387e3d9a5dc50e06370e15c832da79.log recorded 4 passed / EXIT=0 at head as an all_debug batch job with SLURM_JOB_ID unset (scratch/head_gate.sh:10), but manifest.md:17-18 records the gate file, not the armed suite pair that prompt.txt:295 resolves.",
+    "fit": "the repair states its reason in the fixture docstring at tests/test_an_admission_pass_reads_the_roadmap_once.py:36-42, matching the module's own docstring idiom, and the evidence pages follow the qwnw-/slug naming of their siblings in docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal_fidelity": "tests/test_an_admission_pass_reads_the_roadmap_once.py:47-49 now declares the done upstream as s0 and s1 implementable, which is what makes the file run in full (4 passed, EXIT=0 in logs/gate-head-8e806e917d387e3d9a5dc50e06370e15c832da79.log).",
+    "reuse": "the diff adds no definition: it edits fixture declarations and adds two evidence pages at the location docs/evidence/fragments already owns, and the test keeps importing tests/test_a_queued_request_waits_on_its_dependencies.py as fixtures rather than forking helpers.",
+    "scope_discipline": "the two commits touch only tests/test_an_admission_pass_reads_the_roadmap_once.py and two pages under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared write paths, and no product file or plan element changes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the dispatched goal 'make tests/test_an_admission_pass_reads_the_roadmap_once.py pass in full'; the landed fixture change at tests/test_an_admission_pass_reads_the_roadmap_once.py:47-49 and :239 makes that file pass 4/4 at head per logs/gate-head-8e806e917d387e3d9a5dc50e06370e15c832da79.log.\nVERDICT done_when: read the measure requiring the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset and a red base; the gate log ends 4 passed / EXIT=0, the control log ends 3 failed, 1 passed / EXIT=1, and sacct shows the arm jobs COMPLETED on all_debug.\nVERDICT write_paths: read the declared paths at prompt.txt:84-89; every path in the two commits is inside them and reckon is untouched.\nVERDICT manifest: read the reviewed run's manifest.md; it names both commits, three changed paths, both suite arms with completed true, and reports the neighbouring red file under outside_scope.\nVERDICT diff: read both commits against 52e0ad9363101e661bb0f505fff0e733bec01d24; b7bf220340 changes only the test fixture (11+/3-) and 8e806e91 adds two evidence pages, with no product code.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/dispatching/preparation.py:_measurement_flag_refusal\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_an_admission_pass_reads_the_roadmap_once.py:47-49 declares the done upstream as s0; the file runs in full at head.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head-8e806e917d387e3d9a5dc50e06370e15c832da79.log records 4 passed / EXIT=0 as an all_debug job, but manifest.md:17-18 records the gate file rather than the armed pair at prompt.txt:295.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both commits touch only tests/test_an_admission_pass_reads_the_roadmap_once.py and two pages under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_admission_pass_reads_the_roadmap_once.py:156 fails if a readiness build per launch returns, while the invariant the repair installs is stated only in the docstring at :36-42.\nSCORE fit: 18\nJUSTIFICATION fit: the repair explains itself in the fixture docstring at tests/test_an_admission_pass_reads_the_roadmap_once.py:36-42, matching the module's own docstring idiom.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff adds no definition and keeps importing tests/test_a_queued_request_waits_on_its_dependencies.py as fixtures; the evidence pages land where docs/evidence/fragments already owns them.\n",
+  "review_run_id": "r-20261116T133012018145-review-of-qwnw-red-file-an-admission-pass-reads-the-roadmap-once-8e806e917d38",
+  "reviewed_base_sha": "52e0ad9363101e661bb0f505fff0e733bec01d24",
+  "reviewed_head_sha": "8e806e917d387e3d9a5dc50e06370e15c832da79",
+  "reviewed_run_id": "r-20261116T104542062410-qwnw-red-file-an-admission-pass-reads-the-roadmap-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:43:19.168476+00:00",
+  "total": 109
+}

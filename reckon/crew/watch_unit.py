@@ -1050,12 +1050,10 @@ class ProducerSnapshotNotices:
     publication health. A session without a station reads its producer snapshot
     instead. Missing timestamps cannot establish an age or prove a recovery.
 
-    A station busy in a long tick exports a beat the pane reads as stale while
-    the process is in fact alive and working, so this reports a slow tick rather
-    than a lost producer. The exported snapshot carries the beat and no tick
-    stage, which is why the station store's own row is read on that branch
-    alone: it is the only reading that says what the tick is doing. One row is
-    drawn per slow tick, and one when it ends.
+    The station's independent health publication keeps its beat and tick
+    visible while a long derivation holds the obligation export. A local
+    station can also answer without a session document. One row is drawn per
+    slow tick, and one when it ends.
     """
 
     project: str
@@ -1083,14 +1081,9 @@ class ProducerSnapshotNotices:
             return []
         self.sampled_at = moment
         station = snapshots.read_station_answer(self.project, self.session)
-        # The station's own reading of its tick: the answer's when the store
-        # answered it, and the store's own row when the export was read instead,
-        # because the export carries the beat alone. A slow tick and a stopped
-        # station are alike on that branch, which is the row this check drew
-        # wrongly: the beat is stale by export, and the process was working.
         tick = station
         if station is not None and station["source"] == "snapshot":
-            tick = snapshots.read_station_tick()
+            tick = snapshots.read_station_tick() or station
         if tick is not None and not tick["stale"]:
             # A fresh beat is a station alive now, whatever the export says, so
             # the tick alone decides what to draw and the loss path is not
@@ -1341,12 +1334,10 @@ def ensure_watcher_service(
 ) -> dict[str, Any]:
     """Start or restart a project's watcher as an idempotent user service.
 
-    Idempotent in the sense that decides whether a second call disturbs a live
-    watcher: the unit is rewritten only when its rendered content changed, and a
-    unit already active on an unchanged definition is reported rather than
-    restarted. Restarting unconditionally would drop the seat and re-take it,
-    so the command a refusal tells a person to run would interrupt the watcher
-    it exists to guarantee.
+    A serving producer is reported without starting anything, even when the
+    local unit is inactive or its definition changed. A producer may be running
+    outside this host's service manager. Cycling one deliberately requires
+    releasing its seat before ensuring it again.
 
     Arming also survives a manager that cannot be reached. The user manager is a
     single point of failure for a command whose whole job is to leave a watcher
@@ -1435,6 +1426,32 @@ def ensure_watcher_service(
             "fallback_reason": None,
             "seat": seat,
             "ensure_line": watcher_ensure_line(project),
+        }
+
+    state = watch_state(project)
+    if state["watcher_live"]:
+        watcher = state["watcher"]
+        return {
+            **state,
+            "project": project,
+            "unit": watch_unit_name(project),
+            "unit_path": str(path),
+            "unit_changed": bool(changed),
+            "service_active": None,
+            "started": False,
+            "cycling": False,
+            "restart_count_before": None,
+            "restart_count_after": None,
+            "detail": (
+                f"producer for {project} is already live: pid {watcher.get('pid')} "
+                f"on {watcher.get('host') or 'this host'}; started nothing"
+            ),
+            "environment": environment,
+            "lingering": None,
+            "registration": {"registered": False, "reason": "seat-held"},
+            "path": "existing",
+            "fallback_reason": None,
+            "seat": seat,
         }
 
     try:

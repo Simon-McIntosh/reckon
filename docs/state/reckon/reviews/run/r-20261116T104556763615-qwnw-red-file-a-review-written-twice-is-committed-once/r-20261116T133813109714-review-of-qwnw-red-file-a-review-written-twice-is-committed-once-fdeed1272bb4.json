@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1399 _landing_fragment_paths (resolves docs/evidence/fragments/<plan>/<node-id>.html as the node's landing fragment)",
+    "reckon/crew/reports.py:2722 _fragment_plan_of (maps a fragment path to its plan)",
+    "reckon/serve.py:2739 HTTPHandler._send_evidence_record (composes the plan's fragments into the served record)",
+    "reckon/evidence.py:1618 compose_landed_record (composes the fragment into the landed record)"
+  ],
+  "completed_at": "2026-11-16T14:24:00.398Z",
+  "dispatched_at": "2026-11-16T14:23:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate is measured at 26ddbe5d9d, two commits before the reviewed head fdeed1272b, so the record cannot show the named file green at the revision being promoted without the reader diffing the two commits; both intervening commits are docs-only, so no behaviour differs."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html",
+      "line": "51",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted head-gate block carries a `# slurm_job_id: unset` line the cited logs/head-node-test.log does not contain (gate4.sh emits only revision, cwd, module and command), so a reader who opens the log finds a header the excerpt added; the fact is true of the run because gate4.sh runs pytest under `env -u SLURM_JOB_ID`."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html",
+      "line": "80",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's ruff clause is answered on tests/test_a_review_written_twice_is_committed_once.py and reckon/crew/promotion_evidence.py, neither of which this node changed, and no ruff invocation is logged in the run's logs directory or named in the manifest, so the clause states a measurement nobody recorded."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all three authored commits against base ed948d0a2934dcbd8dd50128dfab9d13113aa45c: 26ddbe5d9d adds the 83-line fragment, e373975e9f rewrites its log citations (15 insertions and 17 deletions), fdeed1272b rewrites the arms block to the re-measured head, 81 lines added in total and no product module, test file or assertion is touched.",
+    "done_when": "the done_when asks for that file passing at head as an all_debug job with SLURM_JOB_ID unset, the base run's failing ids beside the run, no added failure on the arm over the files that import the change, and clean ruff; sacct shows jobs 1319802/1319830/1319843 COMPLETED on all_debug, gate4.sh runs every pytest under `env -u SLURM_JOB_ID`, logs/negative-control-base.log carries the four failing ids at 8d50b0333f and both suite arms read 58 passed, but the done_when's ruff clause has no log and no ruff run is recorded in the run's logs directory.",
+    "goal": "the node's goal is that tests/test_a_review_written_twice_is_committed_once.py pass in full on the primary branch; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:22-43 records 4 passed at 26ddbe5d9d and logs/head-node-test.log (EXIT=0) is that run, so the named file is green at the landed revision.",
+    "manifest": "read; status complete, commits 26ddbe5d9d e373975e9f fdeed1272b, changed_paths the one fragment, tests the literal pytest command for the named file, test_logs naming the head gate, negative-control, baseline and after-suite logs, negative_control_log a bare path, and both suite arms recorded with completed true and failure_count 0.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --name-status 52f2055b65 fdeed1272bb4cd95f4fc0509d787bce3632654f9 lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html, and the one further path in ed948d0a..fdeed1272bb4cd95f4fc0509d787bce3632654f9 (docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261115T231316745099-plan-review-of-the-monitor-reads-each-fact-once.json) arrives in the upstream commit 52f2055b65 that the done_when's merge instruction brought by fast-forward, not authored here."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion at all, so nothing in it can redden; the guard that would fail on the capability's regression is the pre-existing tests/test_a_review_written_twice_is_committed_once.py, which logs/negative-control-base.log shows failing at 8d50b0333f with the four names cited in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:20-22, but no check guards the record's own claims.",
+    "evidence": "logs/head-node-test.log reads \"4 passed in 5.42s\" EXIT=0, logs/negative-control-base.log reads \"4 failed in 1.56s\" EXIT=1 at 8d50b0333f, logs/baseline-suite.log and logs/after-suite.log both read \"58 passed\", and sacct confirms jobs 1319802/1319830/1319843 ran on all_debug - but the head gate is at 26ddbe5d9d rather than the reviewed head, and the done_when's ruff clause has no log.",
+    "fit": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:17-44 follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees.html:23-29 - h4 sections, a quoted log block headed by revision, command, slurm_job_id, module and cwd, and the job id cited beside it - and introduces no name the repository forbids.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:17-33 records the cause, the verdict and the 4-passed run at logs/head-node-test.log EXIT=0, which is the goal's green file, and the change is the measurement the done_when authorised when the file already passed.",
+    "reuse": "the change adds no function, class or module, so there is no capability to fork; the fragment is composed by the existing reckon/evidence.py:1618 compose_landed_record and reckon/serve.py:2739 HTTPHandler._send_evidence_record, which this node uses rather than duplicates.",
+    "scope_discipline": "every path in the three authored commits is the one fragment inside docs/evidence/fragments/queued-work-needs-no-workaround; the only other path in the range, docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/, is upstream commit 52f2055b65."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_review_written_twice_is_committed_once.py pass in full on the primary branch; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:22-43 records 4 passed at 26ddbe5d9d and logs/head-node-test.log (EXIT=0) is that run, so the named file is green at the landed revision.\nVERDICT done_when: the done_when asks for that file passing at head as an all_debug job with SLURM_JOB_ID unset, the base run's failing ids beside the run, no added failure on the arm over the files that import the change, and clean ruff; sacct shows jobs 1319802/1319830/1319843 COMPLETED on all_debug, gate4.sh runs every pytest under `env -u SLURM_JOB_ID`, logs/negative-control-base.log carries the four failing ids at 8d50b0333f and both suite arms read 58 passed, but the done_when's ruff clause has no log and no ruff run is recorded in the run's logs directory.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --name-status 52f2055b65 fdeed1272bb4cd95f4fc0509d787bce3632654f9 lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html, and the one further path in ed948d0a..fdeed1272bb4cd95f4fc0509d787bce3632654f9 (docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261115T231316745099-plan-review-of-the-monitor-reads-each-fact-once.json) arrives in the upstream commit 52f2055b65 that the done_when's merge instruction brought by fast-forward, not authored here.\nVERDICT manifest: read; status complete, commits 26ddbe5d9d e373975e9f fdeed1272b, changed_paths the one fragment, tests the literal pytest command for the named file, test_logs naming the head gate, negative-control, baseline and after-suite logs, negative_control_log a bare path, and both suite arms recorded with completed true and failure_count 0.\nVERDICT diff: read all three authored commits against base ed948d0a2934dcbd8dd50128dfab9d13113aa45c: 26ddbe5d9d adds the 83-line fragment, e373975e9f rewrites its log citations (15 insertions and 17 deletions), fdeed1272b rewrites the arms block to the re-measured head, 81 lines added in total and no product module, test file or assertion is touched.\nCALL_SITES: reckon/crew/dispatch_claims.py:1399 _landing_fragment_paths (resolves docs/evidence/fragments/<plan>/<node-id>.html as the node's landing fragment), reckon/crew/reports.py:2722 _fragment_plan_of (maps a fragment path to its plan), reckon/serve.py:2739 HTTPHandler._send_evidence_record (composes the plan's fragments into the served record), reckon/evidence.py:1618 compose_landed_record (composes the fragment into the landed record)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:17-33 records the cause, the verdict and the 4-passed run at logs/head-node-test.log EXIT=0, which is the goal's green file, and the change is the measurement the done_when authorised when the file already passed.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-node-test.log reads \"4 passed in 5.42s\" EXIT=0, logs/negative-control-base.log reads \"4 failed in 1.56s\" EXIT=1 at 8d50b0333f, logs/baseline-suite.log and logs/after-suite.log both read \"58 passed\", and sacct confirms jobs 1319802/1319830/1319843 ran on all_debug - but the head gate is at 26ddbe5d9d rather than the reviewed head, and the done_when's ruff clause has no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the three authored commits is the one fragment inside docs/evidence/fragments/queued-work-needs-no-workaround; the only other path in the range, docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/, is upstream commit 52f2055b65.\nSCORE durability: 14\nJUSTIFICATION durability: the diff adds no assertion at all, so nothing in it can redden; the guard that would fail on the capability's regression is the pre-existing tests/test_a_review_written_twice_is_committed_once.py, which logs/negative-control-base.log shows failing at 8d50b0333f with the four names cited in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:20-22, but no check guards the record's own claims.\nSCORE fit: 20\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:17-44 follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees.html:23-29 - h4 sections, a quoted log block headed by revision, command, slurm_job_id, module and cwd, and the job id cited beside it - and introduces no name the repository forbids.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no function, class or module, so there is no capability to fork; the fragment is composed by the existing reckon/evidence.py:1618 compose_landed_record and reckon/serve.py:2739 HTTPHandler._send_evidence_record, which this node uses rather than duplicates.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:48 non-blocking: the head gate is measured at 26ddbe5d9d, two commits before the reviewed head fdeed1272b, so the record cannot show the named file green at the revision being promoted without the reader diffing the two commits; both intervening commits are docs-only, so no behaviour differs.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:51 non-blocking: the quoted head-gate block carries a `# slurm_job_id: unset` line the cited logs/head-node-test.log does not contain (gate4.sh emits only revision, cwd, module and command), so a reader who opens the log finds a header the excerpt added; the fact is true of the run because gate4.sh runs pytest under `env -u SLURM_JOB_ID`.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-written-twice-is-committed-once.html:80 non-blocking: the done_when's ruff clause is answered on tests/test_a_review_written_twice_is_committed_once.py and reckon/crew/promotion_evidence.py, neither of which this node changed, and no ruff invocation is logged in the run's logs directory or named in the manifest, so the clause states a measurement nobody recorded.",
+  "review_run_id": "r-20261116T133813109714-review-of-qwnw-red-file-a-review-written-twice-is-committed-once-fdeed1272bb4",
+  "reviewed_base_sha": "ed948d0a2934dcbd8dd50128dfab9d13113aa45c",
+  "reviewed_head_sha": "fdeed1272bb4cd95f4fc0509d787bce3632654f9",
+  "reviewed_run_id": "r-20261116T104556763615-qwnw-red-file-a-review-written-twice-is-committed-once",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T133813109714-review-of-qwnw-red-file-a-review-written-twice-is-committed-once-fdeed1272bb4"
+  },
+  "reviewer_run_id": "r-20261116T133813109714-review-of-qwnw-red-file-a-review-written-twice-is-committed-once-fdeed1272bb4",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:44:29.290707+00:00",
+  "total": 107
+}

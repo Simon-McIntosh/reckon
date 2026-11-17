@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T11:22:57.466Z",
+  "dispatched_at": "2026-11-16T11:22:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:218",
+      "id": "done_when-1",
+      "reason": "the author must either narrow s27 to the case the claim misses (a distinct id per follower, a claim that could not be written and fell back to drawing, `except OSError: return True`, or two followers filing under different claim keys \u2014 a hosted follower files under `host-<node>-<owner>` while an unhosted one keeps the per-session key, `crew_follow_commands.py:935-960`) or drop the section, otherwise the node builds a guard that is already there.",
+      "text": "\"One limit reset draws one row per pane, whatever number of followers serve it\" is already the base behaviour: a reset row carries the event id in its key (`lift_watch.py:301-330`, `_reset_row(..., key=str(event.get(\"id\")))`), and the pane's limit-reset branch claims it through the shared exclusive-create claim before drawing (`ticker.py:2633-2636`, `if claim is not None and not claim(lift_id, to_state): return out`), with `lift_claim` defaulted to `take_lift_claim` for every real pane (`crew_follow_commands.py:1190-1217`), keyed per pane, id and transition and shared across the followers of that pane (`crew_follow_commands.py:1103-1160`). The dedupe itself landed on 2026-10-22 (`b613326a57`), before the 15 November report, so a test written to this criterion passes on the unfixed code and the section's fail-first gate measures nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:208",
+      "id": "done_when-2",
+      "reason": "the section must name which reading is fresh (the station's own store row) so the fixture is the stale exported beat beside a live station, or the node's fail-first gate passes on the unfixed code.",
+      "text": "s25's criterion is stated over an observable the base revision already handles: \"while the station's beat is fresh and its tick is running \u2026 draws no lost row\" is exactly the base path, because `ProducerSnapshotNotices.poll` takes `station = read_station_answer(...)` and, with a fresh exported beat, keeps `age = station[\"heartbeat_age_seconds\"]` under `bound = STATION_STALE_SECONDS` and draws nothing (`watch_unit.py:1085-1110`); only an off-node follower whose exported beat is stale (or absent) falls to the snapshot-age branch and draws the false lost row, which is the case the cited report actually shows (\"snapshot age 206s exceeds 120s\"). As written, a test that makes the station's beat fresh at the follower's input is green at base",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:212",
+      "id": "evidence_paths-1",
+      "reason": "",
+      "text": "\u2014 s26's whole Why is a population count, \"nova-84 re-armed six times \u2026 every `crew watch --ensure` answered `started: true` \u2026 the one nova watcher, alive 29 hours, never changed\", and it names no run id, pointer file or log a later reader can open \u2014 the count is the section's only evidence that an inactive unit beside a live producer occurs in practice, and it moved here from s25 with the criterion; WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: without an openable record neither the reviewer nor the worker can check the case the section is built on, and an invented one costs a review round.",
+      "type": "evidence_paths",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:218",
+      "id": "reasoning-1",
+      "reason": "a wrong cause sends the repair at a mechanism that is already correct and leaves the duplicate rows drawing.",
+      "text": "s27's Why attributes the duplicate rows to followers each drawing one, but the shared claim already stops exactly that, so the stated cause does not match what the base does; the surviving causes are an unreadable claim (falls back to drawing) or two ids for one reset, neither of which the section's write path (`reckon/crew/ticker.py`) can address alone",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-tells-the-truth-under-load.html:202",
+      "id": "reasoning-2",
+      "reason": "the sentence reads as s24's own justification and would have a worker open `reckon/crew/ticker.py` on a section whose path list no longer includes it.",
+      "text": "s24's Why still carries \"The same report found the watch drawing one `limit` row per follower: two identical rows at 23:25:53 and 23:25:55 for one reset\", evidence for the deliverable this round moved to s27, while s24's done-when and write paths no longer touch the ticker",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "87006db649abb924ab592aecfdaf066d948f5437",
+  "plan_fingerprint": "d8eb980c5b9592c44d2d4d5753f41fe54f00d04df29bc7cb8ef362c1709caca0",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 71,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T075653869616-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "a12b674f177af87af2bc249f231eca720ece79d2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every write path in the changed units resolves (`reckon/crew/watch_unit.py`, `reckon/crew/obligation_snapshot.py`, `reckon/crew/station_store.py`, `reckon/crew/ticker.py`, `reckon/hooks/coordinator_obligations.py`, `reckon/crew/obligations.py`), and section ids s24\u2013s27 match their declarations.",
+    "done_when": "a finding \u2014 s27's criterion already holds at the base revision, so its \"each failing at the base revision\" gate cannot go red (plan.html:218).",
+    "evidence_paths": "a finding \u2014 s26's Why rests on the six-re-arm population count with no run id, pointer or log naming where it was observed (plan.html:212).",
+    "naming": "pass \u2014 no plan labels, section numbers or ticket ids reach a symbol, path or comment in the changed units.",
+    "reasoning": "a finding \u2014 s27 names a cause the base already guards (plan.html:218), and s24's Why still justifies itself with the limit-row evidence whose criterion moved to s27 (plan.html:202).",
+    "single_goal": "pass \u2014 s24 carries the stop-hook row alone, s25 the off-node lost row alone, s26 the ensure start decision alone, s27 the limit-row dedupe alone.",
+    "wiring": "pass \u2014 the changed units declare s26 and s27 in `plan-section-declarations` (plan.html:23) and both headings exist (plan.html:210, plan.html:215); no relationship the change introduces points at a missing node, and the followup title question was already answered by batching s22\u2013s27."
+  },
+  "section_digests": {
+    "_document": "2ea8471cb25952fbe7db4d63420bad451d69bf09142092d1767bb378d233e24b",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s21": "b07e6731435129f50c6cb46f57c3e1172601f799b7c52c4f55ea6d99f25bf88f",
+    "s22": "002813700f469262299757ff5d18cdb27c019b46a0dfafdeb6c41450129b4cc5",
+    "s23": "ee414aaed9e9f5dcdb9da2c749629c72b5012385aab644da5c10a79231bd3157",
+    "s24": "64671bb4c2f3b304690b3ac39517b469648de2000c5d684f676b27a333694d46",
+    "s25": "864de506929d02baff07eface226780ded88e2a983bb8d666ecfa7321aa4b393",
+    "s26": "4ac7545d5a200b4cdf26198c3e182ea37f2ab47cefba6e881c3cf624bbfda695",
+    "s27": "d2da99aa3991671ae01d0e656ab2b5ef0c07864b441cfd5fabd3480305c3d999",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:01:26.229094+00:00",
+  "total": null
+}

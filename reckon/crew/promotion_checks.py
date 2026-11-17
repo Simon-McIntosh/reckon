@@ -2265,13 +2265,17 @@ def _require_impl_moved(
         return check
     remaining = _plan_remaining_sections(plan_state)
     listed = ", ".join(remaining) if remaining else "(none declared)"
+    from .recovery_classification import _promotion_command
+
+    remedy = _promotion_command(run_id, record, ())
+    if "crew complete" in remedy:
+        remedy += " --no-impl-change REASON"
     raise CrewError(
         f"run {run_id!r} promotes a passing {role} run, but plan {plan!r} impl "
         f"did not move: {recorded_value:g} at dispatch and {current:g} at "
         f"completion. Sections still to land: {listed}. Advance the plan's impl "
-        f"as the work lands, or record why it did not move with "
-        f"`reckon crew complete --run {run_id} --gate passed "
-        f"--no-impl-change REASON` (the reason lands on the ledger row); if the "
+        f"as the work lands. Inspect or complete the run with `{remedy}`; "
+        f"--no-impl-change REASON records why it did not move on the ledger; if the "
         f"plan's impl is not this run's to move, state that reason"
     )
 

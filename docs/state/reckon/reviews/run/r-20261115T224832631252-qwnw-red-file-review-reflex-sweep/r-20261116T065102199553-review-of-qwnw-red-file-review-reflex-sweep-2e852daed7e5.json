@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": {
+    "added_assertions": [],
+    "changed_assertions": [],
+    "regression_counterfactual": "Restoring pre_spawn_waiting unconditionally in both branches again yields zero launcher calls and running rather than scoring; existing assertions at tests/test_review_reflex_sweep.py:266 and :415 fail. Reverting dispatch_field to pointer indexing raises KeyError before the independent True and r-work expectations. No same-input tautology was introduced."
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews:1676",
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run:2827"
+  ],
+  "completed_at": "2026-11-16T06:58:02Z",
+  "dispatched_at": "2026-11-16T06:53:07Z",
+  "failure_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224832631252-qwnw-red-file-review-reflex-sweep/suite-after-0322d86a03.log",
+      "revision": "0322d86a03c1e2d3276d5fc7b3ecec458d7939cd",
+      "summary": "58 passed in 51.99s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224832631252-qwnw-red-file-review-reflex-sweep/suite-base-75a3c9cd83.log",
+      "revision": "75a3c9cd83b3017abcd08c58b6bea9e64776fff0",
+      "summary": "58 passed in 35.12s"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "id": "f4a839d42ea",
+      "line": "30",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite and after_suite run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which inspect staged writes and locks rather than executing classify_pointer; the required no-added-failures arm over affected classifier importers is missing, so rerun the relevant importer selection on all_debug against the stated base and head and record its delta before accepting the node."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "f89d4dffd24",
+      "line": "1808",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added comment narrates the former arm and its historical failure instead of only stating the manifest-precedence mechanism, contrary to the binding source-comment hygiene rule; coordinator should fold a mechanism-only rewrite into the repair node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 08651fc96c, 887b592ca6 and 2e852daed7 individually against base 75a3c9cd83b3017abcd08c58b6bea9e64776fff0; they add terminal-manifest precedence, reuse dispatch_field in the waiver test and record evidence, with upstream merge ancestry distinguished from those edits.",
+    "done_when": "docs/plans/queued-work-needs-no-workaround.html:s29 requires the named file plus an affected-importer delta, and the named gate passes but manifest.md:baseline_suite/after_suite select two static census files rather than classifier importers.",
+    "goal": "dispatch-detail.json:admit_request.node.goal requests tests/test_review_reflex_sweep.py passing in full; gate-head-1319080.log records all 9 passing after the classifier and waiver-accessor repair.",
+    "manifest": "manifest.md records three worker commits, two cause verdicts and readable completed logs; its 58-pass comparison is recorded accurately but does not establish the required affected-importer coverage.",
+    "write_paths": "dispatch-detail.json:admit_request.node.write_paths grants reckon, tests and the fragment directory; all three worker-authored paths fall within those roots, while the mandated origin/main merge imports peer changes separately."
+  },
+  "justifications": {
+    "durability": "no assertions were added or removed in tests/test_review_reflex_sweep.py; restoring the unconditional pre-spawn precedence makes its existing launcher-count assertion at line 266 and literal scoring assertion at line 415 fail, while restoring the direct waiver indexing makes the line 340 accessor-dependent check unreachable with KeyError.",
+    "evidence": "gate-head-1319080.log and negative-control-base-review-reflex-sweep.log show 9 passed versus 8 failed/1 passed, but manifest.md:baseline_suite/after_suite substitute static write/lock census tests for the affected-importer comparison required by s29.",
+    "fit": "reckon/crew/recovery_classification.py:1812 uses the existing TERMINAL_MANIFEST_STATUSES owner and neighboring deferral precedence, but its added comment at line 1808 describes prior behavior contrary to the source-comment hygiene rule.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1812 lets the complete starting-pointer fixture reach scoring, and gate-head-1319080.log records the requested file passing all 9 tests.",
+    "reuse": "no function, class or module is added; reckon/crew/recovery_classification.py:1812 extends classify_pointer in its owner and tests/test_review_reflex_sweep.py:340 calls the existing pointer/detail compatibility owner runs.dispatch_field at reckon/crew/runs.py:242.",
+    "scope_discipline": "the three worker-authored paths in commits 08651fc96c, 887b592ca6 and 2e852daed7 stay inside dispatch-detail.json:admit_request.node.write_paths, and the additional ancestry comes from the explicitly required upstream merge."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json:admit_request.node.goal requests tests/test_review_reflex_sweep.py passing in full; gate-head-1319080.log records all 9 passing after the classifier and waiver-accessor repair.\nVERDICT done_when: docs/plans/queued-work-needs-no-workaround.html:s29 requires the named file plus an affected-importer delta, and the named gate passes but manifest.md:baseline_suite/after_suite select two static census files rather than classifier importers.\nVERDICT write_paths: dispatch-detail.json:admit_request.node.write_paths grants reckon, tests and the fragment directory; all three worker-authored paths fall within those roots, while the mandated origin/main merge imports peer changes separately.\nVERDICT manifest: manifest.md records three worker commits, two cause verdicts and readable completed logs; its 58-pass comparison is recorded accurately but does not establish the required affected-importer coverage.\nVERDICT diff: read 08651fc96c, 887b592ca6 and 2e852daed7 individually against base 75a3c9cd83b3017abcd08c58b6bea9e64776fff0; they add terminal-manifest precedence, reuse dispatch_field in the waiver test and record evidence, with upstream merge ancestry distinguished from those edits.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews:1676, reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run:2827\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1812 lets the complete starting-pointer fixture reach scoring, and gate-head-1319080.log records the requested file passing all 9 tests.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head-1319080.log and negative-control-base-review-reflex-sweep.log show 9 passed versus 8 failed/1 passed, but manifest.md:baseline_suite/after_suite substitute static write/lock census tests for the affected-importer comparison required by s29.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three worker-authored paths in commits 08651fc96c, 887b592ca6 and 2e852daed7 stay inside dispatch-detail.json:admit_request.node.write_paths, and the additional ancestry comes from the explicitly required upstream merge.\nSCORE durability: 18\nJUSTIFICATION durability: no assertions were added or removed in tests/test_review_reflex_sweep.py; restoring the unconditional pre-spawn precedence makes its existing launcher-count assertion at line 266 and literal scoring assertion at line 415 fail, while restoring the direct waiver indexing makes the line 340 accessor-dependent check unreachable with KeyError.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1812 uses the existing TERMINAL_MANIFEST_STATUSES owner and neighboring deferral precedence, but its added comment at line 1808 describes prior behavior contrary to the source-comment hygiene rule.\nSCORE reuse: 20\nJUSTIFICATION reuse: no function, class or module is added; reckon/crew/recovery_classification.py:1812 extends classify_pointer in its owner and tests/test_review_reflex_sweep.py:340 calls the existing pointer/detail compatibility owner runs.dispatch_field at reckon/crew/runs.py:242.\nFINDING manifest.md:30 blocking: baseline_suite and after_suite run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which inspect staged writes and locks rather than executing classify_pointer; the required no-added-failures arm over affected classifier importers is missing, so rerun the relevant importer selection on all_debug against the stated base and head and record its delta before accepting the node.\nFINDING reckon/crew/recovery_classification.py:1808 non-blocking: the added comment narrates the former arm and its historical failure instead of only stating the manifest-precedence mechanism, contrary to the binding source-comment hygiene rule; coordinator should fold a mechanism-only rewrite into the repair node.\n",
+  "review_run_id": "r-20261116T065102199553-review-of-qwnw-red-file-review-reflex-sweep-2e852daed7e5",
+  "reviewed_base_sha": "75a3c9cd83b3017abcd08c58b6bea9e64776fff0",
+  "reviewed_head_sha": "2e852daed7e57e0de62db07be053dfc56a894b7e",
+  "reviewed_run_id": "r-20261115T224832631252-qwnw-red-file-review-reflex-sweep",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T06:58:04.965935+00:00",
+  "total": 106
+}

@@ -1,0 +1,90 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    "test file:56-57: count fails if fixture insertion loses rows; journal mode fails on WAL; these validate the instrument and constraint.",
+    "test file:79: uncontended count fails if the selector returns a population other than 200, with independent fixture-based membership checked at lines 159-172.",
+    "test file:87,125,128,133: wait/ready/alive assertions fail when instrumentation does not reach a predicate, writer initialization fails, or selection ends before its write receipt; they validate that concurrency was exercised.",
+    "test file:134-142: writer exit, committed-row receipt and independent internal/external clocks fail when the restored base query retains a read lock; both ready-base-reproduction.log and ready-writer-control.log record those failures.",
+    "test file:149-156: reader termination, error absence, exact uncontended-answer equality, reopened written identity and delete journal checks fail on hung selection, raised errors, changed concurrency results, missing durable write or changed journal mode.",
+    "test file:163-172: expected population derives independently from fixture indices; equality fails on omitted impl_move/node_definition fallbacks, failure to use completed_at, field-projection loss or order loss; index modulo coverage is fixture-only and is not credited as a production guard.",
+    "test file:200-221: retired count establishes archive presence; full-answer and tail-order equalities fail on dropped archive rows or reordered identity fetches, paired bounded reads fail on differing plan filtering with the same bound, and absent-plan equality fails if nonmatching rows leak; the paired bound assertion alone does not prove run_ids exclusion and is not credited for that capability.",
+    "No added assertion was found whose two sides simply echo the same supplied value without observing production behavior; writer identity checks reopen persisted storage and fixture-derived membership checks are independent of the selector."
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/run_store.py:stored_run_rows",
+    "reckon/run_store.py:RunStore._indexed_records",
+    "reckon/ledger.py:load",
+    "reckon/ledger.py:read_records",
+    "reckon/crew/plan_review.py:plan_authoring_runs"
+  ],
+  "completed_at": "2026-11-16T12:26:46Z",
+  "dispatched_at": "2026-11-16T12:21:07Z",
+  "failure_evidence": {
+    "after_suite": {
+      "completed": true,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T114740438545-scan-holds-no-store-lock-s31/gate-logs/ready-writer-suite.log",
+      "revision": "1ff572c9252b21b513545c3a814514e5bf7c0939"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T114740438545-scan-holds-no-store-lock-s31/gate-logs/baseline-suite.log",
+      "revision": "fd7d9b486e8d4e8c2e25497eeb18c3240e75a3a7"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "coordinator adjudication: the single added id is in tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py, whose fixtures compare the real crew home before and after each test, so it flips whenever the live fleet writes there mid-run; s31 and s18 each show one added and one removed id in that same file with unchanged totals, and neither change touches what the test exercises",
+      "recorded_at": "2026-11-16T19:30:03.855136+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "23",
+      "severity": "blocking",
+      "text": "blocking: the declared no-added-importer-failure condition remains unmet in the worker's own broad comparison; resolve or explicitly adjudicate that evidence before landing rather than treating the focused zero-failure pair as completion of the broader gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "reviewed ecac03514f65806eb8c64af00fd5eacefbc8a7ca, f652f81c9e34e2f7cdc4781f1f6a3ce8027994d7, d61ff5d19db5e0f6b55ddd08be800f762d50a0e5 and 1ff572c9252b21b513545c3a814514e5bf7c0939 against fd7d9b486e8d4e8c2e25497eeb18c3240e75a3a7; they add the reproducer, move selection after cursor close, record evidence and initialize the writer before timing.",
+    "done_when": "the live plan at docs/plans/history-persists-as-detail-washes-out.html:417 requires sub-second writes on 20000 rows and no added importer failures; ready-writer-suite.log records 70 passes and both restored-query controls record two writer timeouts, but the broader compatibility condition remains unresolved in the source manifest:23.",
+    "goal": "prompt.txt:38 asks that scoped store selection stop holding off writers; reckon/run_store.py:344-381 closes the metadata cursor before calling either ledger predicate and fetches selected payloads through the existing owner.",
+    "manifest": "manifest.md:18-19 names readable baseline and final-head gate receipts with zero failures, while manifest.md:23 explicitly retains an unmet broader evidence condition despite its terminal complete status.",
+    "write_paths": "prompt.txt:84-89 declares five allowed paths and the complete base-to-head diff changes only reckon/run_store.py, tests/test_a_scanning_store_read_holds_no_lock.py and the declared evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_scanning_store_read_holds_no_lock.py:128-145 would fail if predicates again ran in SQLite because the independent writer cannot commit before selection is released, as both recorded restored-query controls demonstrate.",
+    "evidence": "manifest.md:18-19 and gate-logs/ready-writer-suite.log establish a zero-added focused pair, but manifest.md:23 states the broader no-added-failure requirement has not been met.",
+    "fit": "reckon/run_store.py:281-381 extends the existing private join helper, retains its schema and identity validation and uses capability names without introducing forbidden source labels.",
+    "goal_fidelity": "reckon/run_store.py:344-381 removes Python selection from the open SQLite statement and preserves selected identity order, with both lock reproductions turning green at the reviewed head.",
+    "reuse": "capability searches and owner reads of reckon/run_store.py:_record_rows and RunStore._indexed_records plus reckon/ledger.py:row_plan and run_activity_seconds show the repair extends the existing join owner and calls the existing selection owners rather than duplicating their rules.",
+    "scope_discipline": "the three changed paths in the base-to-head diff are declared in prompt.txt:84-89 and contain only the lock repair, its focused tests and its evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks that scoped store selection stop holding off writers; reckon/run_store.py:344-381 closes the metadata cursor before calling either ledger predicate and fetches selected payloads through the existing owner.\nVERDICT done_when: the live plan at docs/plans/history-persists-as-detail-washes-out.html:417 requires sub-second writes on 20000 rows and no added importer failures; ready-writer-suite.log records 70 passes and both restored-query controls record two writer timeouts, but the broader compatibility condition remains unresolved in the source manifest:23.\nVERDICT write_paths: prompt.txt:84-89 declares five allowed paths and the complete base-to-head diff changes only reckon/run_store.py, tests/test_a_scanning_store_read_holds_no_lock.py and the declared evidence fragment.\nVERDICT manifest: manifest.md:18-19 names readable baseline and final-head gate receipts with zero failures, while manifest.md:23 explicitly retains an unmet broader evidence condition despite its terminal complete status.\nVERDICT diff: reviewed ecac03514f65806eb8c64af00fd5eacefbc8a7ca, f652f81c9e34e2f7cdc4781f1f6a3ce8027994d7, d61ff5d19db5e0f6b55ddd08be800f762d50a0e5 and 1ff572c9252b21b513545c3a814514e5bf7c0939 against fd7d9b486e8d4e8c2e25497eeb18c3240e75a3a7; they add the reproducer, move selection after cursor close, record evidence and initialize the writer before timing.\nCALL_SITES: reckon/run_store.py:stored_run_rows, reckon/run_store.py:RunStore._indexed_records, reckon/ledger.py:load, reckon/ledger.py:read_records, reckon/crew/plan_review.py:plan_authoring_runs\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:344-381 removes Python selection from the open SQLite statement and preserves selected identity order, with both lock reproductions turning green at the reviewed head.\nSCORE evidence: 14\nJUSTIFICATION evidence: manifest.md:18-19 and gate-logs/ready-writer-suite.log establish a zero-added focused pair, but manifest.md:23 states the broader no-added-failure requirement has not been met.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths in the base-to-head diff are declared in prompt.txt:84-89 and contain only the lock repair, its focused tests and its evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_scanning_store_read_holds_no_lock.py:128-145 would fail if predicates again ran in SQLite because the independent writer cannot commit before selection is released, as both recorded restored-query controls demonstrate.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:281-381 extends the existing private join helper, retains its schema and identity validation and uses capability names without introducing forbidden source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches and owner reads of reckon/run_store.py:_record_rows and RunStore._indexed_records plus reckon/ledger.py:row_plan and run_activity_seconds show the repair extends the existing join owner and calls the existing selection owners rather than duplicating their rules.\nFINDING manifest.md:23 blocking: the declared no-added-importer-failure condition remains unmet in the worker's own broad comparison; resolve or explicitly adjudicate that evidence before landing rather than treating the focused zero-failure pair as completion of the broader gate.\n",
+  "review_run_id": "r-20261116T121910082613-review-of-scan-holds-no-store-lock-s31-1ff572c9252b",
+  "reviewed_base_sha": "fd7d9b486e8d4e8c2e25497eeb18c3240e75a3a7",
+  "reviewed_head_sha": "1ff572c9252b21b513545c3a814514e5bf7c0939",
+  "reviewed_run_id": "r-20261116T114740438545-scan-holds-no-store-lock-s31",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:19:20.235821+00:00",
+  "total": 112
+}

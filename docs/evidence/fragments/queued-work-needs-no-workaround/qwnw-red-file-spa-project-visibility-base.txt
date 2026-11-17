@@ -1,0 +1,723 @@
+# revision: cb557f9711670ca8a00dd1d6dd22a17b42d3a51e tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree
+# command: env -u SLURM_JOB_ID PLAYWRIGHT_BROWSERS_PATH=/home/ITER/mcintos/.cache/ms-playwright PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_project_visibility.py
+# module: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/tests/spa_browser_harness.py
+# cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree
+.FFF..F.......                                                           [100%]
+=================================== FAILURES ===================================
+________ test_topbar_keeps_one_ordered_row_with_tools_flush_right[1280] ________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/pytest-of-mcintos/pytest-2/test_topbar_keeps_one_ordered_0')
+rendered_browser = '/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell'
+width = 1280
+
+    @pytest.mark.parametrize("width", [1280, 1440, 1920])
+    def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
+        tmp_path: Path,
+        rendered_browser: str,
+        width: int,
+    ) -> None:
+        browser = rendered_browser
+    
+        expression = """(() => {
+          const header = document.querySelector('.r-topbar');
+          const brand = header?.querySelector('.r-topbar-brand');
+          const search = header?.querySelector('.r-topbar-search');
+          const artifactTabs = header?.querySelector('.r-tabs-artifact');
+          const workTabs = header?.querySelector('.r-tabs-work');
+          const receipt = header?.querySelector('.r-live-receipt');
+          const project = header?.querySelector('.r-project-manage');
+          const tools = header?.querySelector('.top-r');
+          const rect = element => element?.getBoundingClientRect();
+          const boxes = [brand, search, artifactTabs, workTabs, receipt, project, tools].map(rect);
+          const headerBox = rect(header);
+          const paddingRight = parseFloat(getComputedStyle(header).paddingRight);
+          return {
+            centers: boxes.map(box => box.top + box.height / 2),
+            lefts: boxes.map(box => box.left),
+            toolsInset: headerBox.right - tools.getBoundingClientRect().right,
+            paddingRight,
+            headerReceipt: Boolean(header.querySelector('.r-snapshot-receipt')),
+          };
+        })()"""
+    
+        with served_spa(tmp_path, browser, route="#home") as spa:
+>           geometry = spa.run_probe(
+                expression,
+                viewport=(width, 900),
+                ready_expression="Boolean(document.querySelector('.r-topbar .r-tabs-work'))",
+            )
+
+tests/test_spa_project_visibility.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/spa_browser_harness.py:722: in run_probe
+    return _evaluate_browser_url(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/pytest-of-mcintos/pytest-2/test_topbar_keeps_one_ordered_0')
+browser = '/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell'
+url = 'http://127.0.0.1:41517/reckon/#home'
+expression = "(() => {\n      const header = document.querySelector('.r-topbar');\n      const brand = header?.querySelector('.r-to...       paddingRight,\n        headerReceipt: Boolean(header.querySelector('.r-snapshot-receipt')),\n      };\n    })()"
+viewport = (1280, 900)
+ready_expression = "Boolean(document.querySelector('.r-topbar .r-tabs-work'))"
+preload_expression = None, prepare_expression = None, remove_expression = None
+refresh_expression = None
+
+    def _evaluate_browser_url(
+        tmp_path: Path,
+        browser: str,
+        url: str,
+        expression: str,
+        *,
+        viewport: tuple[int, int],
+        ready_expression: str,
+        preload_expression: str | None = None,
+        prepare_expression: str | None = None,
+        remove_expression: str | None = None,
+        refresh_expression: str | None = None,
+    ) -> object:
+        _preflight_browser_socket()
+        with temporary_browser_profile(tmp_path) as profile:
+            environment = dict(os.environ)
+            environment["RECKON_BROWSER_EXPRESSION"] = expression
+            environment["RECKON_BROWSER_READY_EXPRESSION"] = ready_expression
+            optional_expressions = {
+                "RECKON_BROWSER_PRELOAD_EXPRESSION": preload_expression,
+                "RECKON_BROWSER_PREPARE_EXPRESSION": prepare_expression,
+                "RECKON_BROWSER_REMOVE_EXPRESSION": remove_expression,
+                "RECKON_BROWSER_REFRESH_EXPRESSION": refresh_expression,
+            }
+            environment.update(
+                {
+                    key: value
+                    for key, value in optional_expressions.items()
+                    if value is not None
+                }
+            )
+            # Run the driver in its own process group so a timeout can reap the
+            # browser with it. `subprocess.run(timeout=...)` kills only the process
+            # it started, and the driver kills the browser from a JavaScript
+            # `finally` that a killed process never reaches -- so every timed-out
+            # probe used to leave a full browser tree alive. Those survivors then
+            # hold the profile directory that cleanup is waiting to remove, and load
+            # the machine enough to time out the next probe: 30 timeouts in one run
+            # left 410 browser processes behind and a load average above 10, which
+            # is a suite that makes itself slower the longer it runs.
+            probe = subprocess.Popen(
+                [
+                    "node",
+                    "--input-type=module",
+                    "-e",
+                    _PROBE_DRIVER,
+                    browser,
+                    str(profile),
+                    url,
+                    str(viewport[0]),
+                    str(viewport[1]),
+                ],
+                cwd=ROOT,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                start_new_session=True,
+            )
+            try:
+                stdout, stderr = probe.communicate(timeout=75)
+            except subprocess.TimeoutExpired:
+                stdout, stderr = _terminate_process_group(probe)
+                count, limit = _inotify_usage()
+                raise _classify_probe_failure(
+                    stage=_probe_stage(stderr),
+                    browser_stderr=stderr,
+                    inotify_count=count,
+                    inotify_limit=limit,
+                ) from None
+            result = subprocess.CompletedProcess(
+                probe.args, probe.returncode, stdout=stdout, stderr=stderr
+            )
+        if result.returncode != 0:
+            count, limit = _inotify_usage()
+>           raise _classify_probe_failure(
+                stage=_probe_stage(result.stderr),
+                browser_stderr=result.stderr or result.stdout,
+                inotify_count=count,
+                inotify_limit=limit,
+            )
+E           tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed: the browser reached stage 'navigation-1-started' but the page did not become ready; the diagnosed boundary is Chrome's Network Service above Internet stream-socket creation; evidence: /home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md; this rendered case remains owed against the required host/browser runtime change; inotify instances 2/128; browser stderr: [reckon-browser-stage] browser-spawned
+E           [1116/094229.714854:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094229.732001:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           [1116/094229.732123:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094229.735541:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           
+E           DevTools listening on ws://127.0.0.1:37257/devtools/browser/8306eafc-871d-4b3d-bc3d-d2e3702241a5
+E           [reckon-browser-stage] browser-started
+E           [1116/094229.770763:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+E           [1116/094229.804266:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094229.804308:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           [reckon-browser-stage] navigation-1-started
+E           file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139
+E               throw new Error(detail || "browser evaluation failed");
+E                     ^
+E           
+E           Error: TypeError: Cannot read properties of undefined (reading 'top')
+E               at <anonymous>:15:39
+E               at Array.map (<anonymous>)
+E               at <anonymous>:15:24
+E               at <anonymous>:21:7
+E               at evaluate (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139:11)
+E               at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:214:22
+E           
+E           Node.js v22.22.2
+
+tests/spa_browser_harness.py:948: BrowserProbeError
+________ test_topbar_keeps_one_ordered_row_with_tools_flush_right[1440] ________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/pytest-of-mcintos/pytest-2/test_topbar_keeps_one_ordered_1')
+rendered_browser = '/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell'
+width = 1440
+
+    @pytest.mark.parametrize("width", [1280, 1440, 1920])
+    def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
+        tmp_path: Path,
+        rendered_browser: str,
+        width: int,
+    ) -> None:
+        browser = rendered_browser
+    
+        expression = """(() => {
+          const header = document.querySelector('.r-topbar');
+          const brand = header?.querySelector('.r-topbar-brand');
+          const search = header?.querySelector('.r-topbar-search');
+          const artifactTabs = header?.querySelector('.r-tabs-artifact');
+          const workTabs = header?.querySelector('.r-tabs-work');
+          const receipt = header?.querySelector('.r-live-receipt');
+          const project = header?.querySelector('.r-project-manage');
+          const tools = header?.querySelector('.top-r');
+          const rect = element => element?.getBoundingClientRect();
+          const boxes = [brand, search, artifactTabs, workTabs, receipt, project, tools].map(rect);
+          const headerBox = rect(header);
+          const paddingRight = parseFloat(getComputedStyle(header).paddingRight);
+          return {
+            centers: boxes.map(box => box.top + box.height / 2),
+            lefts: boxes.map(box => box.left),
+            toolsInset: headerBox.right - tools.getBoundingClientRect().right,
+            paddingRight,
+            headerReceipt: Boolean(header.querySelector('.r-snapshot-receipt')),
+          };
+        })()"""
+    
+        with served_spa(tmp_path, browser, route="#home") as spa:
+>           geometry = spa.run_probe(
+                expression,
+                viewport=(width, 900),
+                ready_expression="Boolean(document.querySelector('.r-topbar .r-tabs-work'))",
+            )
+
+tests/test_spa_project_visibility.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/spa_browser_harness.py:722: in run_probe
+    return _evaluate_browser_url(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/pytest-of-mcintos/pytest-2/test_topbar_keeps_one_ordered_1')
+browser = '/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell'
+url = 'http://127.0.0.1:39925/reckon/#home'
+expression = "(() => {\n      const header = document.querySelector('.r-topbar');\n      const brand = header?.querySelector('.r-to...       paddingRight,\n        headerReceipt: Boolean(header.querySelector('.r-snapshot-receipt')),\n      };\n    })()"
+viewport = (1440, 900)
+ready_expression = "Boolean(document.querySelector('.r-topbar .r-tabs-work'))"
+preload_expression = None, prepare_expression = None, remove_expression = None
+refresh_expression = None
+
+    def _evaluate_browser_url(
+        tmp_path: Path,
+        browser: str,
+        url: str,
+        expression: str,
+        *,
+        viewport: tuple[int, int],
+        ready_expression: str,
+        preload_expression: str | None = None,
+        prepare_expression: str | None = None,
+        remove_expression: str | None = None,
+        refresh_expression: str | None = None,
+    ) -> object:
+        _preflight_browser_socket()
+        with temporary_browser_profile(tmp_path) as profile:
+            environment = dict(os.environ)
+            environment["RECKON_BROWSER_EXPRESSION"] = expression
+            environment["RECKON_BROWSER_READY_EXPRESSION"] = ready_expression
+            optional_expressions = {
+                "RECKON_BROWSER_PRELOAD_EXPRESSION": preload_expression,
+                "RECKON_BROWSER_PREPARE_EXPRESSION": prepare_expression,
+                "RECKON_BROWSER_REMOVE_EXPRESSION": remove_expression,
+                "RECKON_BROWSER_REFRESH_EXPRESSION": refresh_expression,
+            }
+            environment.update(
+                {
+                    key: value
+                    for key, value in optional_expressions.items()
+                    if value is not None
+                }
+            )
+            # Run the driver in its own process group so a timeout can reap the
+            # browser with it. `subprocess.run(timeout=...)` kills only the process
+            # it started, and the driver kills the browser from a JavaScript
+            # `finally` that a killed process never reaches -- so every timed-out
+            # probe used to leave a full browser tree alive. Those survivors then
+            # hold the profile directory that cleanup is waiting to remove, and load
+            # the machine enough to time out the next probe: 30 timeouts in one run
+            # left 410 browser processes behind and a load average above 10, which
+            # is a suite that makes itself slower the longer it runs.
+            probe = subprocess.Popen(
+                [
+                    "node",
+                    "--input-type=module",
+                    "-e",
+                    _PROBE_DRIVER,
+                    browser,
+                    str(profile),
+                    url,
+                    str(viewport[0]),
+                    str(viewport[1]),
+                ],
+                cwd=ROOT,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                start_new_session=True,
+            )
+            try:
+                stdout, stderr = probe.communicate(timeout=75)
+            except subprocess.TimeoutExpired:
+                stdout, stderr = _terminate_process_group(probe)
+                count, limit = _inotify_usage()
+                raise _classify_probe_failure(
+                    stage=_probe_stage(stderr),
+                    browser_stderr=stderr,
+                    inotify_count=count,
+                    inotify_limit=limit,
+                ) from None
+            result = subprocess.CompletedProcess(
+                probe.args, probe.returncode, stdout=stdout, stderr=stderr
+            )
+        if result.returncode != 0:
+            count, limit = _inotify_usage()
+>           raise _classify_probe_failure(
+                stage=_probe_stage(result.stderr),
+                browser_stderr=result.stderr or result.stdout,
+                inotify_count=count,
+                inotify_limit=limit,
+            )
+E           tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed: the browser reached stage 'navigation-1-started' but the page did not become ready; the diagnosed boundary is Chrome's Network Service above Internet stream-socket creation; evidence: /home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md; this rendered case remains owed against the required host/browser runtime change; inotify instances 2/128; browser stderr: [reckon-browser-stage] browser-spawned
+E           [1116/094258.353968:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           
+E           DevTools listening on ws://127.0.0.1:33505/devtools/browser/3fd83783-6ba4-4b7a-bc54-3028ee5f24a2
+E           [1116/094258.399552:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           [reckon-browser-stage] browser-started
+E           [1116/094258.409116:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094258.409158:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           [1116/094258.421966:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+E           [1116/094258.470406:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094258.470427:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           [reckon-browser-stage] navigation-1-started
+E           file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139
+E               throw new Error(detail || "browser evaluation failed");
+E                     ^
+E           
+E           Error: TypeError: Cannot read properties of undefined (reading 'top')
+E               at <anonymous>:15:39
+E               at Array.map (<anonymous>)
+E               at <anonymous>:15:24
+E               at <anonymous>:21:7
+E               at evaluate (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139:11)
+E               at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:214:22
+E           
+E           Node.js v22.22.2
+
+tests/spa_browser_harness.py:948: BrowserProbeError
+________ test_topbar_keeps_one_ordered_row_with_tools_flush_right[1920] ________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/pytest-of-mcintos/pytest-2/test_topbar_keeps_one_ordered_2')
+rendered_browser = '/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell'
+width = 1920
+
+    @pytest.mark.parametrize("width", [1280, 1440, 1920])
+    def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
+        tmp_path: Path,
+        rendered_browser: str,
+        width: int,
+    ) -> None:
+        browser = rendered_browser
+    
+        expression = """(() => {
+          const header = document.querySelector('.r-topbar');
+          const brand = header?.querySelector('.r-topbar-brand');
+          const search = header?.querySelector('.r-topbar-search');
+          const artifactTabs = header?.querySelector('.r-tabs-artifact');
+          const workTabs = header?.querySelector('.r-tabs-work');
+          const receipt = header?.querySelector('.r-live-receipt');
+          const project = header?.querySelector('.r-project-manage');
+          const tools = header?.querySelector('.top-r');
+          const rect = element => element?.getBoundingClientRect();
+          const boxes = [brand, search, artifactTabs, workTabs, receipt, project, tools].map(rect);
+          const headerBox = rect(header);
+          const paddingRight = parseFloat(getComputedStyle(header).paddingRight);
+          return {
+            centers: boxes.map(box => box.top + box.height / 2),
+            lefts: boxes.map(box => box.left),
+            toolsInset: headerBox.right - tools.getBoundingClientRect().right,
+            paddingRight,
+            headerReceipt: Boolean(header.querySelector('.r-snapshot-receipt')),
+          };
+        })()"""
+    
+        with served_spa(tmp_path, browser, route="#home") as spa:
+>           geometry = spa.run_probe(
+                expression,
+                viewport=(width, 900),
+                ready_expression="Boolean(document.querySelector('.r-topbar .r-tabs-work'))",
+            )
+
+tests/test_spa_project_visibility.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/spa_browser_harness.py:722: in run_probe
+    return _evaluate_browser_url(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/pytest-of-mcintos/pytest-2/test_topbar_keeps_one_ordered_2')
+browser = '/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell'
+url = 'http://127.0.0.1:55635/reckon/#home'
+expression = "(() => {\n      const header = document.querySelector('.r-topbar');\n      const brand = header?.querySelector('.r-to...       paddingRight,\n        headerReceipt: Boolean(header.querySelector('.r-snapshot-receipt')),\n      };\n    })()"
+viewport = (1920, 900)
+ready_expression = "Boolean(document.querySelector('.r-topbar .r-tabs-work'))"
+preload_expression = None, prepare_expression = None, remove_expression = None
+refresh_expression = None
+
+    def _evaluate_browser_url(
+        tmp_path: Path,
+        browser: str,
+        url: str,
+        expression: str,
+        *,
+        viewport: tuple[int, int],
+        ready_expression: str,
+        preload_expression: str | None = None,
+        prepare_expression: str | None = None,
+        remove_expression: str | None = None,
+        refresh_expression: str | None = None,
+    ) -> object:
+        _preflight_browser_socket()
+        with temporary_browser_profile(tmp_path) as profile:
+            environment = dict(os.environ)
+            environment["RECKON_BROWSER_EXPRESSION"] = expression
+            environment["RECKON_BROWSER_READY_EXPRESSION"] = ready_expression
+            optional_expressions = {
+                "RECKON_BROWSER_PRELOAD_EXPRESSION": preload_expression,
+                "RECKON_BROWSER_PREPARE_EXPRESSION": prepare_expression,
+                "RECKON_BROWSER_REMOVE_EXPRESSION": remove_expression,
+                "RECKON_BROWSER_REFRESH_EXPRESSION": refresh_expression,
+            }
+            environment.update(
+                {
+                    key: value
+                    for key, value in optional_expressions.items()
+                    if value is not None
+                }
+            )
+            # Run the driver in its own process group so a timeout can reap the
+            # browser with it. `subprocess.run(timeout=...)` kills only the process
+            # it started, and the driver kills the browser from a JavaScript
+            # `finally` that a killed process never reaches -- so every timed-out
+            # probe used to leave a full browser tree alive. Those survivors then
+            # hold the profile directory that cleanup is waiting to remove, and load
+            # the machine enough to time out the next probe: 30 timeouts in one run
+            # left 410 browser processes behind and a load average above 10, which
+            # is a suite that makes itself slower the longer it runs.
+            probe = subprocess.Popen(
+                [
+                    "node",
+                    "--input-type=module",
+                    "-e",
+                    _PROBE_DRIVER,
+                    browser,
+                    str(profile),
+                    url,
+                    str(viewport[0]),
+                    str(viewport[1]),
+                ],
+                cwd=ROOT,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                start_new_session=True,
+            )
+            try:
+                stdout, stderr = probe.communicate(timeout=75)
+            except subprocess.TimeoutExpired:
+                stdout, stderr = _terminate_process_group(probe)
+                count, limit = _inotify_usage()
+                raise _classify_probe_failure(
+                    stage=_probe_stage(stderr),
+                    browser_stderr=stderr,
+                    inotify_count=count,
+                    inotify_limit=limit,
+                ) from None
+            result = subprocess.CompletedProcess(
+                probe.args, probe.returncode, stdout=stdout, stderr=stderr
+            )
+        if result.returncode != 0:
+            count, limit = _inotify_usage()
+>           raise _classify_probe_failure(
+                stage=_probe_stage(result.stderr),
+                browser_stderr=result.stderr or result.stdout,
+                inotify_count=count,
+                inotify_limit=limit,
+            )
+E           tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed: the browser reached stage 'navigation-1-started' but the page did not become ready; the diagnosed boundary is Chrome's Network Service above Internet stream-socket creation; evidence: /home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md; this rendered case remains owed against the required host/browser runtime change; inotify instances 2/128; browser stderr: [reckon-browser-stage] browser-spawned
+E           [1116/094324.293451:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094324.357547:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           
+E           DevTools listening on ws://127.0.0.1:38449/devtools/browser/74cc85ac-3864-4a41-a639-d4795006ad90
+E           [1116/094324.370091:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094324.364741:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+E           [1116/094324.371503:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           [reckon-browser-stage] browser-started
+E           [1116/094324.497833:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E           [1116/094324.497856:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E           [reckon-browser-stage] navigation-1-started
+E           file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139
+E               throw new Error(detail || "browser evaluation failed");
+E                     ^
+E           
+E           Error: TypeError: Cannot read properties of undefined (reading 'top')
+E               at <anonymous>:15:39
+E               at Array.map (<anonymous>)
+E               at <anonymous>:15:24
+E               at <anonymous>:21:7
+E               at evaluate (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139:11)
+E               at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:214:22
+E           
+E           Node.js v22.22.2
+
+tests/spa_browser_harness.py:948: BrowserProbeError
+________ test_first_visit_renders_live_runs_from_every_mounted_project _________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/pytest-of-mcintos/pytest-2/test_first_visit_renders_live_0')
+rendered_browser = '/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell'
+
+    def test_first_visit_renders_live_runs_from_every_mounted_project(
+        tmp_path: Path, rendered_browser: str
+    ) -> None:
+        projects = [
+            {
+                "project": f"project-{index}",
+                "data": {
+                    "projects": [{"project": f"project-{index}", "plans_count": 1}],
+                    "inventory": [{"slug": "finished", "status": "done"}],
+                },
+            }
+            for index in range(12)
+        ]
+        runs = [
+            {
+                "project": f"project-{index}",
+                "run_id": f"run-{index}",
+                "plan": "finished",
+                "section": "delivery",
+                "phase": "working",
+            }
+            for index in range(1, 9)
+        ]
+        fixture_source = (
+            f"const fixtureProjects = {json.dumps({'projects': projects})};"
+            f"const fixtureRuns = {json.dumps({'runs': runs})};"
+            'localStorage.removeItem("reckon:hidden-projects");'
+        )
+        fetch_source = """
+                if (url.endsWith("/_projects/index.json")) {
+                  return Promise.resolve(new Response(JSON.stringify(fixtureProjects), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                  }));
+                }
+                if (url.endsWith("/crew")) {
+                  return Promise.resolve(new Response(JSON.stringify(fixtureRuns), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                  }));
+                }
+    """
+        probe_script = NODE_PROBE.replace(
+            "const fixtureSprints = fixtureIndex.data.sprints;",
+            "const fixtureSprints = fixtureIndex.data.sprints;" + fixture_source,
+        ).replace(
+            "            const url = String(resource);\n",
+            "            const url = String(resource);\n" + fetch_source,
+        )
+        probe = """(() => ({
+          cards: document.querySelectorAll('.r-crew-card').length,
+          summary: document.querySelector('.r-crew-heading span')?.textContent.trim() || '',
+        }))()"""
+    
+        with (
+            temporary_browser_profile(tmp_path) as profile,
+            _served_fixture(tmp_path, "#crew") as url,
+        ):
+            result = subprocess.run(
+                [
+                    "node",
+                    "--input-type=module",
+                    "-e",
+                    probe_script,
+                    json.dumps(
+                        {
+                            "browser": rendered_browser,
+                            "profile": str(profile),
+                            "url": url,
+                            "waitSelector": ".r-crew-card",
+                            "probe": probe,
+                            "prepareSignal": "undefined",
+                            "removeSignal": "null",
+                            "failPlanHtml": False,
+                            "fixtureIndex": INDEX_STATE,
+                        }
+                    ),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=90,
+                check=False,
+            )
+    
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [reckon-browser-stage] browser-spawned
+E         [1116/094349.035121:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E         
+E         DevTools listening on ws://127.0.0.1:42771/devtools/browser/28d8e9bd-a40e-49fc-b1ae-8d46ec541ecc
+E         [1116/094349.055042:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E         [1116/094349.055163:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E         [1116/094349.059074:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E         [reckon-browser-stage] browser-started
+E         [1116/094349.108613:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+E         [1116/094349.118434:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+E         [1116/094349.118466:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+E         [reckon-browser-stage] navigation-1-started
+E         file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:180
+E           throw new Error(
+E                 ^
+E         
+E         Error: timed out waiting for browser readiness: Boolean(window.STATE && document.querySelector(".r-crew-card")); browser events: none
+E             at navigateAndWait (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:180:9)
+E             at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:221:3
+E         
+E         Node.js v22.22.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', '--input-type=module', '-e', '\nimport { spawn } from "node:child_process";\nimport { r.../crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:221:3\n\nNode.js v22.22.2\n').returncode
+
+tests/test_spa_project_visibility.py:276: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1280] - tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed: the browser reached stage 'navigation-1-started' but the page did not become ready; the diagnosed boundary is Chrome's Network Service above Internet stream-socket creation; evidence: /home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md; this rendered case remains owed against the required host/browser runtime change; inotify instances 2/128; browser stderr: [reckon-browser-stage] browser-spawned
+[1116/094229.714854:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094229.732001:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[1116/094229.732123:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094229.735541:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+
+DevTools listening on ws://127.0.0.1:37257/devtools/browser/8306eafc-871d-4b3d-bc3d-d2e3702241a5
+[reckon-browser-stage] browser-started
+[1116/094229.770763:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+[1116/094229.804266:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094229.804308:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[reckon-browser-stage] navigation-1-started
+file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139
+    throw new Error(detail || "browser evaluation failed");
+          ^
+
+Error: TypeError: Cannot read properties of undefined (reading 'top')
+    at <anonymous>:15:39
+    at Array.map (<anonymous>)
+    at <anonymous>:15:24
+    at <anonymous>:21:7
+    at evaluate (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139:11)
+    at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:214:22
+
+Node.js v22.22.2
+FAILED tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1440] - tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed: the browser reached stage 'navigation-1-started' but the page did not become ready; the diagnosed boundary is Chrome's Network Service above Internet stream-socket creation; evidence: /home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md; this rendered case remains owed against the required host/browser runtime change; inotify instances 2/128; browser stderr: [reckon-browser-stage] browser-spawned
+[1116/094258.353968:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+
+DevTools listening on ws://127.0.0.1:33505/devtools/browser/3fd83783-6ba4-4b7a-bc54-3028ee5f24a2
+[1116/094258.399552:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[reckon-browser-stage] browser-started
+[1116/094258.409116:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094258.409158:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[1116/094258.421966:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+[1116/094258.470406:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094258.470427:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[reckon-browser-stage] navigation-1-started
+file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139
+    throw new Error(detail || "browser evaluation failed");
+          ^
+
+Error: TypeError: Cannot read properties of undefined (reading 'top')
+    at <anonymous>:15:39
+    at Array.map (<anonymous>)
+    at <anonymous>:15:24
+    at <anonymous>:21:7
+    at evaluate (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139:11)
+    at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:214:22
+
+Node.js v22.22.2
+FAILED tests/test_spa_project_visibility.py::test_topbar_keeps_one_ordered_row_with_tools_flush_right[1920] - tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed: the browser reached stage 'navigation-1-started' but the page did not become ready; the diagnosed boundary is Chrome's Network Service above Internet stream-socket creation; evidence: /home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md; this rendered case remains owed against the required host/browser runtime change; inotify instances 2/128; browser stderr: [reckon-browser-stage] browser-spawned
+[1116/094324.293451:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094324.357547:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+
+DevTools listening on ws://127.0.0.1:38449/devtools/browser/74cc85ac-3864-4a41-a639-d4795006ad90
+[1116/094324.370091:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094324.364741:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+[1116/094324.371503:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[reckon-browser-stage] browser-started
+[1116/094324.497833:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+[1116/094324.497856:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[reckon-browser-stage] navigation-1-started
+file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139
+    throw new Error(detail || "browser evaluation failed");
+          ^
+
+Error: TypeError: Cannot read properties of undefined (reading 'top')
+    at <anonymous>:15:39
+    at Array.map (<anonymous>)
+    at <anonymous>:15:24
+    at <anonymous>:21:7
+    at evaluate (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:139:11)
+    at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:214:22
+
+Node.js v22.22.2
+FAILED tests/test_spa_project_visibility.py::test_first_visit_renders_live_runs_from_every_mounted_project - AssertionError: [reckon-browser-stage] browser-spawned
+  [1116/094349.035121:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+  
+  DevTools listening on ws://127.0.0.1:42771/devtools/browser/28d8e9bd-a40e-49fc-b1ae-8d46ec541ecc
+  [1116/094349.055042:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+  [1116/094349.055163:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+  [1116/094349.059074:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+  [reckon-browser-stage] browser-started
+  [1116/094349.108613:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+  [1116/094349.118434:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/user/39486/bus: No such file or directory
+  [1116/094349.118466:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+  [reckon-browser-stage] navigation-1-started
+  file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:180
+    throw new Error(
+          ^
+  
+  Error: timed out waiting for browser readiness: Boolean(window.STATE && document.querySelector(".r-crew-card")); browser events: none
+      at navigateAndWait (file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:180:9)
+      at async file:///home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:221:3
+  
+  Node.js v22.22.2
+  
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['node', '--input-type=module', '-e', '\nimport { spawn } from "node:child_process";\nimport { r.../crew/runs/r-20261116T032248093388-qwnw-red-file-spa-project-visibility/base-tree/[eval1]:221:3\n\nNode.js v22.22.2\n').returncode
+4 failed, 10 passed in 129.29s (0:02:09)
+EXIT=1

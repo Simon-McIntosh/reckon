@@ -60,7 +60,11 @@ from reckon.crew.process_liveness import (
     LIVENESS_UNKNOWN,
     LivenessReading,
 )
-from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
+from reckon.crew.process_signal import (
+    _run_uses_step,
+    argv_uses_step,
+    signal_pending_step_client,
+)
 from reckon.crew.runs import (
     PointerLockHeldError,
     _mutate_pointer,
@@ -582,6 +586,66 @@ def _current_host_facts() -> Any:
     from reckon import host
 
     return host.host_facts()
+
+
+def _record_launcher_job(run_id: str, record: Mapping[str, Any]) -> str | None:
+    """Record on the run's pointer the allocation a CLI launch runs inside.
+
+    A foreign run is proved gone by the job it ran inside leaving the queue, so
+    a launch made inside an allocation has to say which job that is: the pid a
+    foreign pointer records names nothing the reading host can probe. Only a
+    CLI launch is given the field. An in-harness run executes inside whatever
+    holds its orchestrator, so that allocation is not the run's own, and a
+    placed run already answers through the ``job_id`` its placement writes;
+    recording a launcher job beside either would name a job the run does not
+    run in.
+
+    ``record`` is the pointer the caller already read, so a launch outside an
+    allocation or on a shape that takes no field costs no write at all. The
+    conditions are read again under the pointer's lock, where the write itself
+    decides. Answers the job id the pointer now carries, or None.
+
+    The id comes from ``host_facts``, which owns the reading of
+    ``FLEET_JOB_ID``, ``SLURM_JOB_ID`` and the ``SLURM_JOBID`` alias and picks
+    the one this process's own cgroup names, so a launch made inside a step of
+    the fleet job does not record the fleet's allocation instead of its own.
+
+    A pointer that cannot be rewritten leaves the launch to proceed as it did
+    before the field existed, which is a reading this change keeps unknown
+    rather than a launch it refuses.
+    """
+    if str(record.get("launch") or "") != "cli" or record.get("job_id"):
+        return None
+    if str(record.get("launcher_host") or "") != _reservation_host():
+        # The pointer names another machine: the attempt this launch prepares is
+        # not the one that ran inside this allocation, and stamping this job on
+        # it would name an allocation the run never ran in. A reading that names
+        # a job the node's answer does not carry stays unknown, so the cost of
+        # declining here is a run that keeps the unknown it had.
+        return None
+    # The host's own placement reading answers which job this process runs
+    # inside, so the environment names are read in one place rather than
+    # again here. Reading it last keeps a launch that takes no field free of
+    # the probe.
+    job_id = _current_host_facts().job_id
+    if not job_id:
+        return None
+    if record.get("launcher_job_id") == job_id:
+        return job_id
+
+    def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
+        if str(pointer.get("launch") or "") != "cli" or pointer.get("job_id"):
+            return pointer
+        if str(pointer.get("launcher_host") or "") != _reservation_host():
+            return pointer
+        pointer["launcher_job_id"] = job_id
+        return pointer
+
+    try:
+        written = _mutate_pointer(run_id, mutation)
+    except (CrewError, OSError):
+        return None
+    return job_id if written.get("launcher_job_id") == job_id else None
 
 
 def _worker_shim_directory() -> Path:
@@ -1121,9 +1185,18 @@ def _worker_runtime_environment(
     attempt_started_at: str,
     coordinator_session: str,
     claude_headers: bool,
+    placed_step: bool = False,
     omp_headers: bool = False,
 ) -> dict[str, str]:
-    """Add one attempt's identity to the environment inherited by its worker."""
+    """Add one attempt's identity to the environment inherited by its worker.
+
+    The worker's scratch directory is created where the worker runs, never on
+    the host that composed the launch: a placed worker's ``TMPDIR`` is made by
+    the step's own node before the fence is exec'd (see
+    :func:`step_node_directories`), so a dispatch on the fleet node writes no
+    run scratch on the fleet node's own disk. A worker that runs as a child of
+    the launcher is on this host already, so its directory is made here.
+    """
     runtime = dict(environment or {})
     runtime.update(
         {
@@ -1133,7 +1206,11 @@ def _worker_runtime_environment(
         }
     )
     if run_id:
-        runtime["TMPDIR"] = str(ensure_worker_scratch(run_id))
+        runtime["TMPDIR"] = (
+            str(worker_scratch_dir(run_id))
+            if placed_step
+            else str(ensure_worker_scratch(run_id))
+        )
     if claude_headers:
         inherited = str(
             runtime.get("ANTHROPIC_CUSTOM_HEADERS")
@@ -1173,6 +1250,7 @@ def _worker_runtime_plan(
             attempt_started_at=attempt_started_at,
             coordinator_session=coordinator_session,
             claude_headers=plan.dialect == "claude",
+            placed_step=argv_uses_step(plan.argv),
             omp_headers=plan.dialect == "omp",
         ),
     )
@@ -1371,7 +1449,9 @@ _STEP_TASK_WRAPPER = (
 )
 
 
-def step_node_directories(argv: Iterable[str]) -> list[str]:
+def step_node_directories(
+    argv: Iterable[str], *, expected: Iterable[str | Path] = ()
+) -> list[str]:
     """The node-local directory bind sources a placed step must find on its node.
 
     Read from the fence's own bind triples, up to its ``--`` separator: every
@@ -1379,10 +1459,19 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
     the composing host. A file or socket source is left out, so the step never
     turns one into a directory, and a source that is a node-local root itself
     exists on every node and is left out too.
+
+    ``expected`` names sources the launch knows are directories by
+    construction but that this host has deliberately not created — the run's
+    own scratch directory, which belongs to the node that runs the worker
+    rather than to the host that composed the launch. They are kept whether or
+    not they exist here, because the step's wrapper makes each one's parent
+    chain on the node before the fence is exec'd; without that, a placed worker
+    would be the only launch whose scratch directory nobody creates.
     """
     from reckon import _worker_fence
 
     roots = (Path(_worker_fence.NODE_TMP_ROOT), NODE_LOCAL_SHM_ROOT)
+    by_construction = {str(Path(raw)) for raw in expected if raw}
     words = [str(word) for word in argv]
     try:
         start = next(
@@ -1399,7 +1488,7 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
             source = Path(words[index + 1])
             if (
                 any(source != root and source.is_relative_to(root) for root in roots)
-                and source.is_dir()
+                and (source.is_dir() or str(source) in by_construction)
                 and str(source) not in found
             ):
                 found.append(str(source))
@@ -1407,6 +1496,40 @@ def step_node_directories(argv: Iterable[str]) -> list[str]:
             continue
         index += 1
     return found
+
+
+def step_launch_environment(
+    environment: Mapping[str, str],
+    argv: Iterable[str],
+    *,
+    run_directory: str | Path,
+) -> dict[str, str]:
+    """The environment a placed step's worker is launched with.
+
+    A step's worker runs on the node the allocation is held on, not on the host
+    that composes the launch, so two facts have to reach the step's own wrapper
+    rather than the composer's disk: the record it writes its scheduler identity
+    to, which a stop addresses the task through, and the node-local directories
+    it creates before the fence is exec'd — among them the run's own scratch
+    directory, which the composing host deliberately does not create and the
+    fence grants anyway (see
+    :func:`reckon._worker_fence.worker_scratch_write_roots`). Composed here, in
+    one function, so the wiring that names the scratch is exercised by the same
+    call a launch makes and cannot be dropped unnoticed.
+
+    A launch that is not a step is returned unchanged: it runs on this host, and
+    that launch is what makes its own scratch directory.
+    """
+    staged = dict(environment or {})
+    if not argv_uses_step(argv):
+        return staged
+    step_record = Path(str(run_directory)) / "step-task.txt"
+    step_record.unlink(missing_ok=True)
+    staged["RECKON_STEP_RECORD"] = str(step_record)
+    node_directories = step_node_directories(argv, expected=(staged.get("TMPDIR", ""),))
+    if node_directories:
+        staged[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
+    return staged
 
 
 def apply_backend_placement(
@@ -2275,8 +2398,10 @@ def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> b
     have ended and the launch proceeds. A retired worker receipt whose pid is
     alive or cannot be read still refuses.
 
-    A run launched on another host is freed by an exit receipt alone, because no
-    probe this host can run answers for a pid it did not issue. The canonical
+    A scheduler observation that proves the foreign compute launcher's node
+    holds no job for this user supplies a gone reading before this guard.
+    Without that proof, a foreign run is freed by an exit receipt alone: no
+    local pid probe answers for a pid issued elsewhere. The canonical
     ``exit.json`` beside a canonical worker record and a retired
     ``attempt-N-exit.json`` are read by the exit-record owner
     ``_run_exit_record``, under its strict reading: the receipt must name this
@@ -2636,7 +2761,7 @@ def reservation_in_flight(
 
     Before one is recorded, the reserving process itself is the launch, and
     while it lives the launch is in flight, including a launch still waiting for
-a scheduler slot.
+    a scheduler slot.
 
     The attempt's own exit receipt answers for all of it: a reservation whose
     attempt recorded its end holds nothing, whatever process it names, because
@@ -2718,8 +2843,9 @@ def _reservation_holder_running(
     matched against the start time recorded beside it. A reservation taken on
     another host names a pid this host cannot read at all — the number may
     belong to an unrelated local process — so it is judged by that host's own
-    heartbeat instead: a host still publishing is a host whose holder still
-    exists, and a host whose beat has lapsed is a host that has gone.
+    scheduler allocation first: a compute host holding no job for this user
+    cannot hold the launch. Otherwise its heartbeat supplies the existing
+    host-level reading, without probing a foreign pid on this machine.
 
     A record naming no host is the shape an older launch wrote. It keeps the
     local reading it was always given, because nothing on disk says the pid
@@ -2730,6 +2856,10 @@ def _reservation_holder_running(
         home = crew_home()
 
         def foreign(_record: Mapping[str, Any]) -> bool:
+            from reckon.crew.recovery_liveness import launcher_host_is_gone
+
+            if launcher_host_is_gone(payload):
+                return False
             return host_heartbeat.host_is_live(home, host)
 
         return foreign
@@ -3233,6 +3363,7 @@ def _prepare_attempt_records(
                 record,
             )
         )
+    _record_launcher_job(run_id, record)
     _supervisor_write(
         run_directory / ATTEMPT_RECORD_NAME,
         {
@@ -4189,6 +4320,8 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                 prior,
             )
         )
+    argv = [str(word) for word in plan["argv"]]
+    step_placed = argv_uses_step(argv)
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
         run_id=str(spec["run_id"]),
@@ -4196,19 +4329,12 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         attempt_started_at=_utc_now(),
         coordinator_session=str(record.get("session") or ""),
         claude_headers=str(plan.get("dialect") or "") == "claude",
+        placed_step=step_placed,
         omp_headers=str(plan.get("dialect") or "") == "omp",
     )
-    argv = [str(word) for word in plan["argv"]]
-    step_placed = Path(argv[0]).name == "srun" and any(
-        word.startswith("--jobid=") for word in argv[1:]
+    environment = step_launch_environment(
+        environment, argv, run_directory=spec["run_directory"]
     )
-    if step_placed:
-        step_record = Path(str(spec["run_directory"])) / "step-task.txt"
-        step_record.unlink(missing_ok=True)
-        environment["RECKON_STEP_RECORD"] = str(step_record)
-        node_directories = step_node_directories(argv)
-        if node_directories:
-            environment[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
 
     writer = _worker_record_writer(spec)
 

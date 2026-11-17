@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import os
@@ -138,8 +139,13 @@ class StationBeat:
         return self._store
 
     def beat_once(self) -> None:
-        """Move the heartbeat to now."""
-        self._handle().heartbeat(now=self._clock())
+        """Move the local beat and publish its tick for off-node readers."""
+        handle = self._handle()
+        handle.heartbeat(now=self._clock())
+        markers = obligation_snapshot._station_markers(handle.connect())
+        home = handle.station_value(station_store.CREW_HOME_KEY)
+        handle.guard.check()
+        obligation_snapshot.publish_station_reading(markers, home=home)
 
     def _run(self) -> None:
         while not self._stop.is_set():
@@ -877,9 +883,7 @@ class StationReloader:
             os.environ.get(SOURCE_ROOT_ENV, str(self.import_root))
         ).resolve()
         self.identity = os.environ.pop(IMAGE_IDENTITY_ENV, "") or (
-            checkout_trust.source_code_identity(
-                self.source_root / "reckon", source_root=self.source_root
-            )
+            checkout_trust.running_code_identity(self.import_root / "reckon")
         )
         self.image_pin: int | None = None
         carried = os.environ.pop(IMAGE_PIN_ENV, "")
@@ -893,6 +897,7 @@ class StationReloader:
                     self.image_pin = candidate
             except (OSError, ValueError):
                 pass
+        self.window: follower_reload.ReloadWindow | None = None
         self.deferred_identity: str | None = None
         # When the deferred image's proof may be repeated, and the spacing its
         # next refusal waits. Zero means the next poll.
@@ -904,6 +909,10 @@ class StationReloader:
         # happens only at a tick's end: a tick longer than the bound used to put
         # the deadline a whole tick past it.
         self._clear_since: float | None = None
+
+    def start_window(self) -> None:
+        """Enable the standing-service schedule around the image reloader."""
+        self.window = follower_reload.ReloadWindow("station", self.identity)
 
     def poll(self, duties: DutyBeat | None = None) -> None:
         """Check committed code after a tick and re-execute when it moves.
@@ -923,7 +932,11 @@ class StationReloader:
         current = checkout_trust.source_code_identity(
             self.source_root / "reckon", source_root=self.source_root
         )
-        due = self._reload_owed(current)
+        if self.window is not None and not self.window.due(current):
+            return
+        due = self._reload_owed(current) or bool(
+            self.window is not None and self.window.pending_request
+        )
         if not due:
             self._clear_since = time.monotonic()
         if due and duties is not None and not self._quiet(duties):
@@ -945,7 +958,7 @@ class StationReloader:
 
         A deferred image is owed again once its proof is due to be repeated: a
         deferral that said nothing about the image must not stand until main
-        moves, which used to be the only thing that asked for it again.
+        moves, because the proof's retry clock can expire without a new commit.
         """
         if re.fullmatch(r"[0-9a-f]{40}", current) is None:
             return False
@@ -1009,11 +1022,16 @@ class StationReloader:
         # and leave the claim with no worker behind it. Wait for it, bounded.
         dispatch_claims.wait_for_dispatches_in_flight()
         try:
-            os.execve(  # noqa: S606 - replacement keeps this station's pid
-                sys.executable,
-                follower_reload.image_reexec_argv(image),
-                environment,
-            )
+            with (
+                self.window.replacement(current)
+                if self.window is not None
+                else contextlib.nullcontext()
+            ):
+                os.execve(  # noqa: S606 - replacement keeps this station's pid
+                    sys.executable,
+                    follower_reload.image_reexec_argv(image),
+                    environment,
+                )
         except OSError:
             os.close(pin)
             raise
@@ -1472,6 +1490,9 @@ def run_station(
                 else station_instance
             )
             reloader = StationReloader(store.root)
+            start_window = getattr(reloader, "start_window", None)
+            if start_window is not None:
+                start_window()
             # Both threads start before the first tick, so a station whose
             # opening tick is slow is never read as one that never started, and
             # its lease never lapses while that tick runs.
@@ -1495,6 +1516,9 @@ def run_station(
                     break
                 try:
                     station.tick()
+                    window = getattr(reloader, "window", None)
+                    if window is not None:
+                        window.exported()
                 except station_store.StationLeaseLostError as lost:
                     raise StationHeldError(
                         f"station lost its lease at {lease.path}: {lost}"

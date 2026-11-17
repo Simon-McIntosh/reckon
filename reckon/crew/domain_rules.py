@@ -61,6 +61,23 @@ def _normalize(raw: str) -> str:
     return text
 
 
+def path_at_or_beneath(path: str, root: str) -> bool:
+    """Whether a path is the root itself or lies beneath it.
+
+    One owner for the containment both a write-path glob and a findings lookup
+    ask about, so a caller matching "everything under this directory" cannot
+    match a sibling whose name merely begins with the directory's:
+    ``reckon/subtle.py`` is not beneath ``reckon/sub``. Both arguments are
+    normalized, and a root written with a trailing separator governs what it
+    names rather than nothing.
+    """
+    path = _normalize(path)
+    root = _normalize(root).rstrip("/")
+    if not path or not root:
+        return False
+    return path == root or path.startswith(root + "/")
+
+
 def _path_matches_write_path(write_path: str, pattern: str) -> bool:
     """Whether one declared glob governs one of a node's write paths.
 
@@ -79,8 +96,7 @@ def _path_matches_write_path(write_path: str, pattern: str) -> bool:
     if "/" not in pattern and fnmatchcase(PurePosixPath(path).name, pattern):
         return True
     if not _has_wildcard(pattern):
-        prefix = pattern.rstrip("/")
-        return path == prefix or path.startswith(prefix + "/")
+        return path_at_or_beneath(path, pattern)
     return False
 
 
