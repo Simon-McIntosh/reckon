@@ -267,7 +267,11 @@ def _refuse_owed_migration(connection: sqlite3.Connection, path: Path) -> None:
 def _open_readonly(path: Path) -> sqlite3.Connection:
     """Open an existing store read-only, refusing one that will not open."""
     try:
-        return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+        return sqlite3.connect(
+            f"{path.resolve().as_uri()}?mode=ro",
+            uri=True,
+            timeout=RECORD_BUSY_TIMEOUT_SECONDS,
+        )
     except (OSError, sqlite3.Error) as exc:
         raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
 

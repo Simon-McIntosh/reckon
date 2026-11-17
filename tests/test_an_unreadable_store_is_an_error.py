@@ -265,3 +265,56 @@ def test_the_ledger_reader_and_the_indexed_reader_return_the_same_rows(
     # store would satisfy a comparison of two empty answers.
     assert sorted(ledger_rows) == ["r-1", "r-2"]
     assert ledger_rows == indexed
+
+
+def _hold_exclusive(store_path: Path) -> sqlite3.Connection:
+    """Another process's write in progress: no reader can see the schema."""
+    holder = sqlite3.connect(
+        str(store_path), isolation_level=None, check_same_thread=False
+    )
+    holder.execute("BEGIN EXCLUSIVE")
+    return holder
+
+
+def test_a_locked_store_is_never_reported_as_owing_its_migration(
+    store: Path,
+) -> None:
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.append(PROJECT, _record("r-1", 1))
+    holder = _hold_exclusive(store)
+    reader = sqlite3.connect(
+        f"{store.resolve().as_uri()}?mode=ro", uri=True, timeout=0.05
+    )
+    try:
+        # A lock is a read that did not happen. An empty column set would read
+        # as a runs table missing every column, which is a different fault.
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            run_store._table_columns(reader)
+        with pytest.raises(run_store.UnreadableRunStoreError) as refused:
+            run_store._refuse_owed_migration(reader, store)
+        assert "locked" in str(refused.value)
+        assert "owes the schema migration" not in str(refused.value)
+    finally:
+        reader.close()
+        holder.rollback()
+        holder.close()
+
+
+def test_a_read_only_reader_waits_out_a_lock_within_the_store_bound(
+    store: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import threading
+
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.append(PROJECT, _record("r-1", 1))
+    monkeypatch.setattr(run_store, "RECORD_BUSY_TIMEOUT_SECONDS", 20.0)
+    # Held past sqlite's own five-second default, so only the store's bound
+    # lets the read through.
+    holder = _hold_exclusive(store)
+    release = threading.Timer(6.0, lambda: (holder.rollback(), holder.close()))
+    release.start()
+    try:
+        rows = run_store.stored_run_rows(PROJECT)
+    finally:
+        release.join()
+    assert [row["run_id"] for row in rows or []] == ["r-1"]
