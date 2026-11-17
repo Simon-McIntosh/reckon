@@ -4206,13 +4206,16 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
                 },
             }
             pending_landing.save_group(group)
+        pending_landing.refresh_group_repairs(group)
         # Preflight all still-unpromoted members before the first write. This
         # is the same guard as each real completion, never a group exemption.
         for run_id, member in group["members"].items():
             project = str(member["pointer"]["project"])
             row = pending_landing._promoted_row(project, run_id)
             if row is not None:
-                if _reviewed_head_of(row) != member["head"]:
+                if _reviewed_head_of(row) != member.get(
+                    "promoted_head", member["head"]
+                ):
                     raise runs.CrewError(
                         f"group member {run_id} was promoted at a different head"
                     )
@@ -4286,13 +4289,19 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
         for run_id, member in group["members"].items():
             if run_id == leader:
                 continue
-            released, code = _land_a_promoted_run(
-                member["promotion"],
-                run_id=run_id,
-                gate="passed",
-                checkout_path=None,
-                pointer=member["pointer"],
-            )
+            # A promoted member's repaired worktree is ahead of its ledger head.
+            # Release it against the combined head whose ancestry proved both.
+            token = pending_landing.LANDING_GROUP.set({**group, "publishing": True})
+            try:
+                released, code = _land_a_promoted_run(
+                    member["promotion"],
+                    run_id=run_id,
+                    gate="passed",
+                    checkout_path=None,
+                    pointer=member["pointer"],
+                )
+            finally:
+                pending_landing.LANDING_GROUP.reset(token)
             if code:
                 raise runs.CrewError(str(released.get("error") or released))
         path.unlink()

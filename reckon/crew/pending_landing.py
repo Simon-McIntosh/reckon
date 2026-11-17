@@ -70,6 +70,46 @@ def save_group(group: Mapping[str, Any]) -> None:
     write_json_atomically(group_path(str(group["run_id"])), dict(group))
 
 
+def refresh_group_repairs(group: dict[str, Any]) -> None:
+    """Accept completed member repairs through the ordinary fresh-gate reader."""
+    from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+    for run_id, conflict in list((group.get("merge_repairs") or {}).items()):
+        member = group["members"][run_id]
+        try:
+            pointer = runs.read_pointer(run_id)
+        except runs.CrewError:
+            if runs.pointer_path(run_id).exists():
+                raise
+            # The group journal can precede the repair owner's pointer rebuild.
+            pointer = member["pointer"]
+        repaired = _delivered_repair(
+            pointer,
+            str(conflict["head"]),
+            conflict,
+            Path(str(pointer["repo"])),
+        )
+        if not repaired:
+            dispatch_merge_repair(
+                pointer,
+                head=str(conflict["head"]),
+                primary=str(conflict["main_revision"]),
+                paths=conflict["paths"],
+                promoted=bool(member.get("promotion")),
+            )
+            raise runs.CrewError(f"group member {run_id} is awaiting merge repair")
+        if member.get("promotion"):
+            member.setdefault("promoted_head", member["head"])
+        member.update(head=repaired, pointer=pointer)
+        member["options"]["commits"] = list(
+            dict.fromkeys([*(member["options"].get("commits") or ()), repaired])
+        )
+        del group["merge_repairs"][run_id]
+        for field in ("head", "primary", "measurements", "refusal"):
+            group.pop(field, None)
+        save_group(group)
+
+
 def finish_landing_groups(*, only_run: str = "") -> list[dict[str, Any]]:
     """Resume the same queued group after interruption, including its promotions."""
     from reckon.crew.promotion_requests import PENDING, read_promotion

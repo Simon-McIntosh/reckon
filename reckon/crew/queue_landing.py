@@ -2054,9 +2054,31 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     refusal = group.get("refusal") or {}
     if refusal.get("signature") == signature:
         raise CrewError(str(refusal["guard"]))
-    aggregate = merge.build_merge_group(
-        repo, primary, [member["head"] for member in members]
-    )
+    try:
+        aggregate = merge.build_merge_group(
+            repo, primary, [member["head"] for member in members]
+        )
+    except merge.MergeConflictError as exc:
+        from reckon.crew.pending_landing import save_group
+        from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+        member = next(member for member in members if member["head"] == exc.head)
+        run_id = str(member["pointer"]["run_id"])
+        # The intermediate candidate may include earlier members. Repair advice
+        # must name the published primary, which the worker can actually merge.
+        repair = {"head": exc.head, "main_revision": primary, "paths": exc.paths}
+        group.setdefault("merge_repairs", {})[run_id] = repair
+        save_group(group)
+        dispatch_merge_repair(
+            member["pointer"],
+            head=exc.head,
+            primary=primary,
+            paths=exc.paths,
+            promoted=bool(member.get("promotion")),
+        )
+        raise CrewError(
+            f"merge-conflict: group member {run_id}: {', '.join(exc.paths)}"
+        ) from exc
     scope = sorted(
         {
             path

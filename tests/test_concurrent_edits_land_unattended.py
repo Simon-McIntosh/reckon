@@ -589,3 +589,133 @@ def test_a_failed_promotion_row_does_not_admit_a_group(fleet, monkeypatch):
     with pytest.raises(runs.CrewError, match="no passing promotion"):
         commands._complete_landing_group(_request(fleet))
     assert not fleet.measured and not fleet.calls
+
+
+@pytest.mark.parametrize("conflicting_name", ["alpha", "beta"])
+@pytest.mark.parametrize("after_promotion", [False, True], ids=["queued", "promoted"])
+def test_a_primary_conflict_after_queueing_returns_its_member_for_repair(
+    fleet, monkeypatch, conflicting_name, after_promotion
+):
+    from reckon.crew import recovery_repair_dispatch, resumption
+
+    for index, name in enumerate(("alpha", "beta", "gamma"), 1):
+        fleet.deliver(name, index)
+    monkeypatch.setattr(
+        queue_landing.recovery,
+        "classify_pointer",
+        lambda pointer: {
+            "manifest_status": "complete",
+            "manifest_commits": [git(Path(pointer["worktree"]), "rev-parse", "HEAD")],
+        },
+    )
+    monkeypatch.setattr(queue_landing, "_owed_review_tiers", lambda pointer: [])
+    monkeypatch.setattr(queue_landing, "_red_suite_guard", lambda *args: "")
+    assert len(queue_landing.land_once()["promotion_requested"]) == 3
+    primary = ""
+
+    def move_primary():
+        nonlocal primary
+        (fleet.repo / "sample.py").write_text(
+            SOURCE.replace(
+                f"def {conflicting_name}():\n    return 0",
+                f"def {conflicting_name}():\n    return 8",
+            )
+        )
+        primary = _commit(fleet.repo, "test: move primary after queueing")
+
+    if after_promotion:
+        actual = commands._land_a_promoted_run
+
+        def moved(*args, **kwargs):
+            result = actual(*args, **kwargs)
+            if len(fleet.calls) == 3 and not primary:
+                move_primary()
+            return result
+
+        monkeypatch.setattr(commands, "_land_a_promoted_run", moved)
+    else:
+        move_primary()
+    seen = []
+    monkeypatch.setattr(
+        recovery_repair_dispatch, "_reviewed_run_is_busy", lambda pointer: ""
+    )
+    monkeypatch.setattr(
+        resumption,
+        "_resume",
+        lambda run_id, *args, **kwargs: seen.append((run_id, kwargs["advice"])),
+    )
+    service = promotion_requests.PromotionService(width=1)
+    assert len(service.tick()) == 1
+    service.settle(90)
+    member = next(
+        member
+        for member in fleet.members
+        if member["pointer"]["run_id"].startswith("r-" + conflicting_name + "-")
+    )
+    run_id = member["pointer"]["run_id"]
+    assert [item[0] for item in seen] == [run_id]
+    pointer = runs.read_pointer(run_id)
+    repair = pointer["merge_conflict"]
+    assert repair["main_revision"] == primary
+    assert repair["head"] == member["head"]
+    assert repair["paths"] == ["sample.py"]
+    assert primary in seen[0][1] and "sample.py" in seen[0][1]
+    assert len(fleet.calls) == (3 if after_promotion else 0)
+    assert len(fleet.measured) == (1 if after_promotion else 0)
+    assert git(fleet.repo, "rev-parse", "HEAD") == primary
+    assert pending_landing.finish_landing_groups()[0]["status"] == "group-refused"
+    assert len(seen) == 1, "a waiting repair resumed the same worker twice"
+    tree = Path(pointer["worktree"])
+    merged = subprocess.run(
+        ["git", "-C", str(tree), "merge", "--no-commit", "--no-ff", primary],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert merged.returncode == 1
+    (tree / "sample.py").write_text(
+        SOURCE.replace(
+            f"def {conflicting_name}():\n    return 0",
+            f"def {conflicting_name}():\n    # REPAIRED = True\n    return 8",
+        )
+    )
+    head = _commit(tree, "test: retain both conflicting intentions")
+    command = shlex.join([sys.executable, "-m", "pytest", "-q", "tests/test_sample.py"])
+    checked = subprocess.run(
+        shlex.split(command),
+        cwd=tree,
+        env={"PATH": str(Path(sys.executable).parent), "PYTHONPATH": "."},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert checked.returncode == 0
+    log = tree / "repair.log"
+    log.write_text(
+        f"# revision: {head}\n# command: {command}\n" + checked.stdout + "EXIT=0\n"
+    )
+    manifest = tree / "manifest.md"
+    manifest.write_text(
+        f"status: complete\ncommits: [{member['head']}, {head}]\ntests: {command}\ntest_logs: {json.dumps([str(log)])}\n"
+    )
+    pointer["manifest_path"] = str(manifest)
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    results = pending_landing.finish_landing_groups()
+    assert len(results) == 3 and all(row["status"] == "finished" for row in results), (
+        results
+    )
+    assert len(fleet.calls) == 3 and len(set(fleet.calls)) == 3
+    assert len(fleet.measured) == (2 if after_promotion else 1)
+    assert len(seen) == 1
+    text = (fleet.repo / "sample.py").read_text()
+    assert "REPAIRED = True" in text
+    for index, name in enumerate(("alpha", "beta", "gamma"), 1):
+        expected = (
+            f"def {name}():\n    # REPAIRED = True\n    return 8"
+            if name == conflicting_name
+            else f"def {name}():\n    return {index}"
+        )
+        assert expected in text
+    assert not pending_landing.group_path(
+        fleet.members[0]["pointer"]["run_id"]
+    ).exists()
