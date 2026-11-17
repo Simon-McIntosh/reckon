@@ -2993,6 +2993,11 @@ def _complete_locked(
     except Exception:  # noqa: BLE001, S110 - advisory profiling cannot prevent a landing
         pass
     committed_review_paths: list[Path] = []
+    # The run store is outside the checkout. Only file-backed appends supply
+    # a ledger path that belongs in a landing commit or its rollback.
+    ledger_commit_paths = [
+        Path(path) for path in written.get("commit_paths", [written["path"]])
+    ]
     with _report_written_ledger_row(
         run_id,
         ledger_path=written["path"],
@@ -3030,7 +3035,7 @@ def _complete_locked(
                 )
             except ValueError as exc:
                 rollback = _restore_landing_writes(
-                    checkout, [Path(written["path"]), *committed_review_paths]
+                    checkout, [*ledger_commit_paths, *committed_review_paths]
                 )
                 if store_row_written:
                     _discard_run_store_row(run_id)
@@ -3063,7 +3068,7 @@ def _complete_locked(
                 verdict=str(gate).strip().lower(),
                 checkout=checkout,
                 paths=[
-                    Path(written["path"]),
+                    *ledger_commit_paths,
                     *_plan_comment_store_path(
                         project=project,
                         plan=str(node.get("plan") or ""),

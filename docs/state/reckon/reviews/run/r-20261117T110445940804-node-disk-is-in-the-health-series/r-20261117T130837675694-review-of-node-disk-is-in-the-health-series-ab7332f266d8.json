@@ -1,0 +1,96 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "changed identity and remote-missing assertions (:164,179)": "Reverting mismatch handling or the remote missing branch returns None and loses the literal node-disk-unreadable kind.",
+    "configuration (:444-452)": "Changing the default fails literal 180; ignoring the override fails literal 17; accepting zero fails the ValueError context; the override equality measures setting plumbing rather than time expiry.",
+    "disappearing fleet (:500)": "Restoring the sample-is-None fallthrough loses the node-disk-unreadable hold.",
+    "expiry boundary (:352-364)": "Roundtrip equality to the written sample is a positive acceptance control only; unconditional refusal fails it, while ignoring or hardcoding the age bound fails the paired raises at max_age+1 for 17 and 180 seconds.",
+    "extended named/service hold test (:250-253)": "Removing the selection gate loses held ids and recorded verdicts; equality against injected pressure/reason is propagation coverage only, not independent measurement, and is not counted as freshness proof.",
+    "fresh positive control (:372-373)": "An unconditional hold or rejecting all remote data fails the explicit None assertions on a current healthy reading.",
+    "invalid data (:409)": "Restoring identity, timestamp, metric or reserve acceptance makes the corresponding damaged healthy record return no hold rather than node-disk-unreadable.",
+    "obligation readers (:428-437)": "Reader disagreement fails parity; joint omission would pass parity but fails the separate literal one-kind list, so parity alone is not credited as an independent guard.",
+    "queued refusal and recovery (:480-492)": "Restoring fail-open launches the first request and fails held/empty-launch/queued assertions; permanent refusal fails the second launch; returned-id equality is routing coverage and the observed launch callback adds an independent effect.",
+    "unavailable cases (:334-340)": "Restoring fail-open makes missing/unreadable/expired-free return None; disabling expiry leaves expired-low as node-disk-reserve, contradicting the independently selected expected kind."
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/service.py:189",
+    "reckon/crew/admission/selection.py:161",
+    "reckon/crew/fleet_supervisor.py:642",
+    "reckon/crew/obligations.py:4409",
+    "reckon/crew/obligation_snapshot.py:2159"
+  ],
+  "completed_at": "2026-11-17T13:14:30Z",
+  "dispatched_at": "2026-11-17T13:09:55Z",
+  "evidence_limits": "Declared suite pair adds zero failures; broader importer and live deployment measures remain unmet as disclosed in the source manifest; no reviewer suite rerun. Receipt metadata normalization was checked against the raw source SHA-256 digests.",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health_records_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/after_suite-1794919262967260434.receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/baseline_suite-1794919180070716401.receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21"
+    },
+    "observed_failure_ids": {
+      "after_suite": [],
+      "baseline_suite": []
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/admission/service.py:189, reckon/crew/admission/selection.py:161, reckon/crew/fleet_supervisor.py:642, reckon/crew/obligations.py:4409, reckon/crew/obligation_snapshot.py:2159",
+    "diff": "Read the single added commit ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e against previous reviewed head 23a656b40b8863c6f95cf95a8349e16a688f30ba; seven files add freshness configuration, strict publication validation, refusal propagation and regression cases.",
+    "done_when": "Read node.done_when and live plan s5; after_suite records 93 passes and both negative controls fail, but freshness-importer-delta.json records 110 added importer failures and the live one-hour series is still unmeasured.",
+    "goal": "Read node.goal in the reviewed live pointer and live plan section s5; the incremental repair in reckon/crew/admission/service.py:187 now holds a known remote fleet when its disk reading is unavailable or stale.",
+    "manifest": "Read the reviewed manifest.md and its suite, reproduction and control logs; its 58-pass baseline and 93-pass head receipts are readable, and it discloses ungranted importer failures and the pending deployment observation.",
+    "write_paths": "Read node.write_paths in the reviewed live pointer; all seven files changed by ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e are granted, including generated schema outputs and tests/test_fleet_health_records_node_tmp.py."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_health_records_node_tmp.py:334-340 fails on restored fail-open or unlimited-age behaviour, :358-364 rejects the first second past the bound, and :480-492 proves actual queued refusal followed by launch recovery; freshness-expiry-negative.log records both stale cases red.",
+    "evidence": "The source baseline_suite and after_suite receipt logs end EXIT=0 with 58 and 93 passes, but freshness-importer-delta.json and manifest.md leave the no-added-importer-failures and live one-hour measures unmet.",
+    "fit": "reckon/crew/fleet_supervisor.py:406 follows the adjacent reserve-setting resolver, :564 reuses the shared timestamp parser, and reckon/schema/flight.yaml:1103 plus the generated outputs follow the existing capability-based configuration idiom.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:575-633 rejects missing, mismatched, invalid and expired readings, and admission/service.py:187-199 converts those errors into launch holds, answering the prior blocking finding.",
+    "reuse": "Capability searches for published readings, age bounds, freshness classification and reading errors found the disk owner in fleet_supervisor.py:553 and station-specific freshness in obligation_snapshot.py:965; the added resolver, typed error and obligation adapter extend the disk owner and reuse reckon/_timestamps.py:36 rather than copying station logic.",
+    "scope_discipline": "The seven paths in git diff 23a656b40b8863c6f95cf95a8349e16a688f30ba..ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e all occur in the reviewed pointer node.write_paths and directly support the reading-availability repair."
+  },
+  "negative_control": "freshness-expiry-negative.log reinstates effectively unlimited age: expired-free and expired-low fail, 2 failed in 1.30s, EXIT=1; freshness-mount-negative.log: 1 failed in 1.07s, EXIT=1.",
+  "prior_blocking_finding": "Missing/unreadable/expired remote sample finding answered by the inspected repair and recorded red controls.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read node.goal in the reviewed live pointer and live plan section s5; the incremental repair in reckon/crew/admission/service.py:187 now holds a known remote fleet when its disk reading is unavailable or stale.\nVERDICT done_when: Read node.done_when and live plan s5; after_suite records 93 passes and both negative controls fail, but freshness-importer-delta.json records 110 added importer failures and the live one-hour series is still unmeasured.\nVERDICT write_paths: Read node.write_paths in the reviewed live pointer; all seven files changed by ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e are granted, including generated schema outputs and tests/test_fleet_health_records_node_tmp.py.\nVERDICT manifest: Read the reviewed manifest.md and its suite, reproduction and control logs; its 58-pass baseline and 93-pass head receipts are readable, and it discloses ungranted importer failures and the pending deployment observation.\nVERDICT diff: Read the single added commit ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e against previous reviewed head 23a656b40b8863c6f95cf95a8349e16a688f30ba; seven files add freshness configuration, strict publication validation, refusal propagation and regression cases.\nCALL_SITES: reckon/crew/admission/service.py:189, reckon/crew/admission/selection.py:161, reckon/crew/fleet_supervisor.py:642, reckon/crew/obligations.py:4409, reckon/crew/obligation_snapshot.py:2159\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:575-633 rejects missing, mismatched, invalid and expired readings, and admission/service.py:187-199 converts those errors into launch holds, answering the prior blocking finding.\nSCORE evidence: 12\nJUSTIFICATION evidence: The source baseline_suite and after_suite receipt logs end EXIT=0 with 58 and 93 passes, but freshness-importer-delta.json and manifest.md leave the no-added-importer-failures and live one-hour measures unmet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The seven paths in git diff 23a656b40b8863c6f95cf95a8349e16a688f30ba..ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e all occur in the reviewed pointer node.write_paths and directly support the reading-availability repair.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_fleet_health_records_node_tmp.py:334-340 fails on restored fail-open or unlimited-age behaviour, :358-364 rejects the first second past the bound, and :480-492 proves actual queued refusal followed by launch recovery; freshness-expiry-negative.log records both stale cases red.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:406 follows the adjacent reserve-setting resolver, :564 reuses the shared timestamp parser, and reckon/schema/flight.yaml:1103 plus the generated outputs follow the existing capability-based configuration idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for published readings, age bounds, freshness classification and reading errors found the disk owner in fleet_supervisor.py:553 and station-specific freshness in obligation_snapshot.py:965; the added resolver, typed error and obligation adapter extend the disk owner and reuse reckon/_timestamps.py:36 rather than copying station logic.\n",
+  "reproduction": "freshness-reproduction.log: AssertionError: a known remote fleet needs a current disk reading; assert None is not None; expired-low returns node-disk-reserve instead of node-disk-stale; 4 failed, 12 deselected in 1.09s; EXIT=1.",
+  "review_run_id": "r-20261117T130837675694-review-of-node-disk-is-in-the-health-series-ab7332f266d8",
+  "review_scope": "Only the single commit gained since the prior review; the official suite baseline remains the original node base 45967c6c6399a70306ce0cd5cb106e6ed54e0c21, not the incremental review base.",
+  "reviewed_base_sha": "23a656b40b8863c6f95cf95a8349e16a688f30ba",
+  "reviewed_head_sha": "ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e",
+  "reviewed_run_id": "r-20261117T110445940804-node-disk-is-in-the-health-series",
+  "scores": {
+    "durability": 20,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:16:11.032663+00:00",
+  "total": 112
+}

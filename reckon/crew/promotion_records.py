@@ -1337,6 +1337,79 @@ def _failed_measurement_gate(record: Mapping[str, Any], gate_verdict: str) -> bo
     return measurement_run and str(gate_verdict).strip().lower() == "failed"
 
 
+def _merged_primary_baseline(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    head: str,
+    command: str,
+    dry_run: bool,
+) -> dict[str, Any] | None:
+    """Measure the same suite at the primary revision this run actually merged.
+
+    Keep the dispatch baseline intact. This additional observation explains
+    inherited failures without claiming they failed before the run started.
+    Reuse a receipt only for its immutable revision and command, checking its
+    log before trusting its IDs. An interrupted reading excuses no failure.
+    """
+    import hashlib
+
+    from reckon.crew import promotion_evidence
+
+    primary = promotion_evidence._merged_primary_revision(record, head)
+    if not primary:
+        return None
+    primary_record = {**record, "base_sha": primary}
+    command = _scoped_suite_command(primary_record, revision=primary)
+    if not command:
+        return None
+    key = hashlib.sha256(json.dumps([primary, command]).encode()).hexdigest()
+    receipt = run_dir(run_id) / "landing-measure" / f"primary-{key}.json"
+
+    def usable(arm: Mapping[str, Any]) -> bool:
+        if ledger.suite_observation_missing_fields(arm, name="primary_suite"):
+            return False
+        if arm.get("revision") != primary or arm.get("command") != command:
+            return False
+        try:
+            text = Path(str(arm.get("log_path") or "")).read_text(encoding="utf-8")
+        except OSError:
+            return False
+        described = promotion_evidence._text_the_receipt_describes(text)
+        return (
+            promotion_evidence._log_failure_count(described) is not None
+            and not promotion_evidence._receipt_mismatches(
+                arm, str(arm["log_path"]), text
+            )
+            and _recorded_exit_status(text) == arm["exit_status"]
+        )
+
+    cached = _read_json_object(receipt)
+    if usable(cached):
+        return cached
+    if dry_run:
+        return {"status": "would-measure", "revision": primary, "command": command}
+    declaration = gate_declaration(record)
+    measured = _measure_missing_arms(
+        run_id,
+        primary_record,
+        head,
+        command,
+        partition=declaration.get("partition") or "all_debug",
+        long_partition=declaration.get("long_partition") or "rigel",
+    )
+    arm = measured.get("baseline_suite") if isinstance(measured, Mapping) else None
+    if not isinstance(arm, Mapping) or not usable(arm):
+        raise ledger.SuiteDeltaError(
+            f"cannot read completed primary suite evidence at merged revision {primary}",
+            missing_fields=["primary_suite"],
+        )
+    normalized = ledger.normalized_suite_observation(arm)
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    receipt.write_text(json.dumps(normalized, sort_keys=True), encoding="utf-8")
+    return normalized
+
+
 def _evaluate_suite_delta(
     run_id: str,
     record: Mapping[str, Any],
@@ -1591,12 +1664,40 @@ def _evaluate_suite_delta(
     # share one notion of a newly added failure rather than a second expression
     # that could drift from it.
     added = ledger.added_failure_ids(normalized_baseline, normalized_after)
+    primary_suite = None
+    inherited: dict[str, str] = {}
+    effective_baseline = normalized_baseline
+    if added:
+        primary_suite = _merged_primary_baseline(
+            run_id, record, head=head, command=suite_command, dry_run=dry_run
+        )
+        if primary_suite and primary_suite.get("status") == "would-measure":
+            return {
+                "status": "would-measure",
+                "suite_command": suite_command,
+                "baseline_suite": normalized_baseline,
+                "after_suite": normalized_after,
+                "primary_suite": primary_suite,
+                "added_failure_ids": added,
+            }
+        if primary_suite:
+            uncovered = ledger.added_failure_ids(primary_suite, {"failure_ids": added})
+            inherited = {
+                failure_id: primary_suite["revision"]
+                for failure_id in added
+                if failure_id not in uncovered
+            }
+            effective_baseline = {
+                **normalized_baseline,
+                "failure_ids": [*normalized_baseline["failure_ids"], *inherited],
+            }
+            added = ledger.added_failure_ids(effective_baseline, normalized_after)
     failed_measurement = _failed_measurement_gate(record, gate_verdict)
     # Surface the worker's attribution on the stored record: each added
     # failure id beside the candidate merged commit that introduced it.
     # An entry naming a pre-existing failure is dropped rather than stored.
     attribution = ledger.new_failure_attribution(
-        baseline, after, manifest.get("failure_attribution")
+        effective_baseline, after, manifest.get("failure_attribution")
     )
     if str(record.get("role") or "").strip() == "test":
         unattributed = sorted(set(added) - set(attribution))
@@ -1612,6 +1713,8 @@ def _evaluate_suite_delta(
                 "missing_fields": missing_attribution,
                 "added_failure_ids": added,
                 "failure_attribution": attribution,
+                "inherited_failure_ids": inherited,
+                "primary_suite": primary_suite,
             }
             _record_refusal(refusal)
             raise ledger.SuiteDeltaError(
@@ -1636,6 +1739,8 @@ def _evaluate_suite_delta(
             "missing_fields": [],
             "added_failure_ids": added,
             "failure_attribution": attribution,
+            "inherited_failure_ids": inherited,
+            "primary_suite": primary_suite,
         }
         _record_refusal(refusal)
         detail = "armed promotion added suite failures: " + ", ".join(added)
@@ -1661,6 +1766,8 @@ def _evaluate_suite_delta(
         "after_suite": normalized_after,
         "added_failure_ids": added,
         "failure_attribution": attribution,
+        "inherited_failure_ids": inherited,
+        "primary_suite": primary_suite,
         "waiver_reason": accepted_waiver_reason or None,
         # Which arm fields a waiver covered. Empty for a measured pair, so a
         # reader can tell an arm set that was waived from one that matched.

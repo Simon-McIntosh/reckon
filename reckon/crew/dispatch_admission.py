@@ -1766,8 +1766,12 @@ def _mount_table() -> tuple[tuple[Path, str], ...]:
     return table
 
 
-def _path_is_tmpfs(path: str | Path) -> bool:
-    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+def path_filesystem_type(path: str | Path) -> str | None:
+    """The filesystem of the nearest enclosing mount, following path aliases.
+
+    All path classification shares the cached mount table and longest-prefix
+    selection; callers own their policies for the returned filesystem type.
+    """
     target = Path(path).expanduser().resolve()
     best: tuple[int, str] | None = None
     for mount, kind in _mount_table():
@@ -1775,7 +1779,12 @@ def _path_is_tmpfs(path: str | Path) -> bool:
             candidate = (len(mount.parts), kind)
             if best is None or candidate[0] > best[0]:
                 best = candidate
-    return bool(best and best[1] in {"tmpfs", "ramfs"})
+    return best[1] if best else None
+
+
+def _path_is_tmpfs(path: str | Path) -> bool:
+    """Return whether a path resolves beneath a tmpfs or ramfs mount."""
+    return path_filesystem_type(path) in {"tmpfs", "ramfs"}
 
 
 # A declared endpoint is probed before launch, so the probe is bounded: a slow

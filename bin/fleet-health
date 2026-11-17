@@ -92,6 +92,7 @@ last_kills=$(awk -F '\t' 'NR > 1 && $18 ~ /^[0-9]+$/ {n=$18} END {print n}' "$ou
 last_snapshot=0
 count=0
 while :; do
+    session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
     writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
     read -r load1 load5 _ < "$procdir/loadavg"
     running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
@@ -119,9 +120,9 @@ while :; do
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
-        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" \
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" "$session_scratch" \
         | "$health_python" -m reckon.crew.fleet_node --append-node-row "$out" || exit 1
 
     reason=""
