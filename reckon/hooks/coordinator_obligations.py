@@ -911,6 +911,16 @@ def format_checklist(
     summary = payload.get("summary") or {}
     project = str(payload.get("project") or "")
     session = str(payload.get("session") or "")
+    retained = payload.get("stale")
+    if isinstance(retained, Mapping):
+        age = retained.get("age_seconds")
+        age_note = (
+            f"{_format_age(int(age))} old"
+            if isinstance(age, (int, float)) and age >= 0
+            else "age unavailable"
+        )
+        retained_note = f"retained answer, stale {age_note}"
+        note = f"{note}; {retained_note}" if note else retained_note
     # The header counts the rows this render is about to print. The payload's
     # own summary figure is a derivation's count for a list a recheck may have
     # cut down since, and a figure that disagrees with the rows beneath it
@@ -1377,40 +1387,61 @@ def _inject_list(
             )
     items = obligations.get("obligations") or ()
     acknowledged = obligations.get("acknowledged") or ()
+    retained = obligations.get("stale")
+    retained = retained if isinstance(retained, Mapping) else None
     digest_file = digest_path(project, session)
     notices = pending_model_notices()
     resets = limit_reset_events(session)
-    if not items and not acknowledged and not reloading and not notices and not resets:
+    if (
+        not items
+        and not acknowledged
+        and not reloading
+        and not notices
+        and not resets
+        and retained is None
+    ):
         _clear_digest(digest_file)
         return
+    reading = (
+        json.dumps(
+            [
+                {
+                    key: item.get(key)
+                    for key in (
+                        "run_id",
+                        "kind",
+                        "reason",
+                        "until",
+                        "until_condition",
+                    )
+                }
+                for item in sorted(
+                    acknowledged,
+                    key=lambda row: (str(row.get("run_id")), str(row.get("kind"))),
+                )
+            ],
+            sort_keys=True,
+        )
+        if acknowledged
+        else ""
+    )
+    if retained is not None:
+        # The answer's identity changes on entering/leaving retention, not as
+        # its age grows between reads of the same still-pending refresh.
+        reading += json.dumps(
+            {
+                "retained": {
+                    key: retained.get(key) for key in ("key", "stored_at", "reason")
+                }
+            },
+            sort_keys=True,
+        )
     digest = duty_digest(
         [*items, *acknowledged],
         reloading=reloading,
         model_notices=notices,
         limit_resets=[str(event.get("id") or "") for event in resets],
-        reading=(
-            json.dumps(
-                [
-                    {
-                        key: item.get(key)
-                        for key in (
-                            "run_id",
-                            "kind",
-                            "reason",
-                            "until",
-                            "until_condition",
-                        )
-                    }
-                    for item in sorted(
-                        acknowledged,
-                        key=lambda row: (str(row.get("run_id")), str(row.get("kind"))),
-                    )
-                ],
-                sort_keys=True,
-            )
-            if acknowledged
-            else ""
-        ),
+        reading=reading,
     )
     if _read_digest(digest_file) == digest:
         return

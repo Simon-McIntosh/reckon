@@ -674,6 +674,10 @@ def read_station_answer(
     exported snapshot uses the exporting station's independent health
     publication when available, so a long derivation does not freeze the beat
     or hide the running tick from a reader on another node.
+
+    ``stale`` describes that heartbeat. ``answer_stale`` separately identifies
+    retained duties, whose ``payload.stale`` marking carries their current age:
+    an alive station can still be reading a project's replacement answer.
     """
     instant = _utc_now() if now is None else now
     found = _read_station_document(project, session, environ=environ)
@@ -689,15 +693,17 @@ def read_station_answer(
     stale = age is None or age > STATION_STALE_SECONDS
     stage, tick_age = station_tick_reading(markers, now=instant)
     state = station_state(heartbeat_age=age, tick_age=tick_age)
+    payload = live_payload(document, now=instant)
     return {
         "source": source,
         "state": state,
-        "payload": live_payload(document),
+        "payload": payload,
         "heartbeat_age_seconds": age,
         "tick_stage": stage,
         "tick_age_seconds": tick_age,
         "tick_started_at": _running_tick_start(markers, tick_age),
         "stale": stale,
+        "answer_stale": isinstance(payload.get("stale"), Mapping),
     }
 
 
@@ -1624,6 +1630,18 @@ def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) ->
     payload = {
         key: value for key, value in document.items() if key not in _SNAPSHOT_KEYS
     }
+    retained = payload.get("stale")
+    if isinstance(retained, Mapping):
+        retained = dict(retained)
+        try:
+            stored_at = float(retained["stored_at"])
+        except (KeyError, TypeError, ValueError):
+            pass
+        else:
+            retained["age_seconds"] = round(
+                max(0.0, instant.timestamp() - stored_at), 3
+            )
+        payload["stale"] = retained
     for key in ("obligations", "acknowledged"):
         rows = payload.get(key)
         if isinstance(rows, list):

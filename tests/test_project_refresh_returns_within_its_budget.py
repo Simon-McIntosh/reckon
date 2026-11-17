@@ -385,6 +385,9 @@ def test_retained_answers_are_labelled_stale_by_the_reader_and_prompt(
         assert answer is not None and answer["source"] == read_from
         assert answer["state"] == obligation_snapshot.STATION_LIVE
         assert answer["heartbeat_age_seconds"] == 0
+        assert answer["stale"] is False
+        assert answer["answer_stale"] is True
+        assert _document(store, SLOW)["stale"]["age_seconds"] == 180
         rendered = hook.format_checklist(answer["payload"], limit_resets=[])
         assert "stale" in rendered and "3m20s" in rendered, (
             "a live heartbeat hid the retained answer's staleness and current age: "
@@ -398,6 +401,7 @@ def test_retained_answers_are_labelled_stale_by_the_reader_and_prompt(
         assert "stale" in checklist and "3m20s" in checklist
         assert "watch --ensure" not in checklist
         assert ("0 outstanding" if empty_previous else run_id) in checklist
+        observed += timedelta(seconds=1)
         assert hook._prompt(event) == 0
         assert capsys.readouterr().out == "", (
             "an unchanged retained answer was repeated"
@@ -414,6 +418,12 @@ def test_retained_answers_are_labelled_stale_by_the_reader_and_prompt(
                 not in json.loads(fresh)["hookSpecificOutput"]["additionalContext"]
             )
         assert "stale" not in _document(store, SLOW)
+        assert (
+            obligation_snapshot.read_station_answer(SLOW, session, now=observed)[
+                "answer_stale"
+            ]
+            is False
+        )
     finally:
         release.set()
         beat.drain(timeout=10)
