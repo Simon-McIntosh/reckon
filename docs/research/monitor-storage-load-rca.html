@@ -561,9 +561,9 @@
         <tr><th colspan="3" scope="colgroup">A copy of the fleet's live streams (57 streams, 129.0&nbsp;MB, the fleet
           as it stood during this measurement), one 500&nbsp;byte append per stream between passes,
           through <code>cached_stream_events</code></th></tr>
-        <tr><td>Bytes parsed on the second pass</td><td>128,663,561&nbsp;B</td><td>12,583&nbsp;B</td></tr>
+        <tr><td>Bytes parsed on the second pass</td><td>126,806,578&nbsp;B</td><td>12,296&nbsp;B</td></tr>
         <tr><th colspan="3" scope="colgroup">The same copy left unchanged, through <code>cached_stream_events</code></th></tr>
-        <tr><td>Bytes parsed on the second pass</td><td>128,195,881&nbsp;B</td><td>123,086,556&nbsp;B</td></tr>
+        <tr><td>Bytes parsed on the second pass</td><td>126,806,578&nbsp;B</td><td>128,311,372&nbsp;B</td></tr>
         <tr><th colspan="3" scope="colgroup">The tick's own path, <code>observe_log</code> through
           <code>_summarised_observation</code>, over the same copy</th></tr>
         <tr><td>The pass after each stream gained 500&nbsp;bytes, one folded reader</td>
@@ -575,13 +575,13 @@
     <p>What the cursor buys, and what it does not:</p>
     <ul>
       <li>A grown stream is re-parsed from its cursor, so the second pass over the live population parses
-      the appended bytes and nothing else — 12,583&nbsp;B against 128.7&nbsp;MB.
+      the appended bytes and nothing else — 12,296&nbsp;B against 126.8&nbsp;MB.
       The fixture's 27,120&nbsp;B is the same effect at fixture scale: 120 decodes of a 226&nbsp;byte
       record, because the appended record is parsed once by the events cache and once by the summary
       that folds the growth.</li>
       <li>An <em>unchanged</em> stream whose records the byte bound dropped still costs a whole read: the
       cache no longer holds them, and only a whole read can answer for what it lost. That is
-      123&nbsp;MB at head against 128&nbsp;MB at base on an idle copy — the same order, and the reason
+      128.3&nbsp;MB at head against 126.8&nbsp;MB at base on an idle copy — the same order, and the reason
       the cursor is not a substitute for a bound that fits the population.</li>
       <li>A reader the summary has not folded still reads every stream whole, once per distinct
       backend, receipt and elapsed-time key (126.8&nbsp;MB at head). This is the census's 42.7&nbsp;%
