@@ -777,7 +777,18 @@ def recovery_log_path(project: str) -> Path:
     return crew_home() / "recovery" / f"{readable or 'project'}.jsonl"
 
 
-def _lifted_holds(project: str) -> set[tuple[str, str]]:
+# What the last read of each project's recovery log already decoded: the file's
+# identity, the byte offset through the last whole line it consumed, and the
+# lifted set those lines produced. The log only grows and each sweep re-derived
+# the same answer from all of it, which on a 41 MB record cost a fifth of the
+# sweep thread in ``json.loads`` alone.
+_LIFTED_HOLD_READS: dict[
+    str, tuple[tuple[int, int], int, frozenset[tuple[str, str]]]
+] = {}
+_LIFTED_HOLD_READS_LOCK = threading.Lock()
+
+
+def _lifted_holds(project: str) -> frozenset[tuple[str, str]]:
     """The (run id, signature) pairs the recovery log already records as lifted.
 
     The sweep's append-only recovery log is the authority on what it has already
@@ -787,13 +798,46 @@ def _lifted_holds(project: str) -> set[tuple[str, str]]:
     the pointer's own ``auto_resume`` slot cannot promise — a resume's launch
     rewrites the pointer from a snapshot taken before the stamp, so the slot can
     read absent for a lift that happened.
+
+    Only the lines appended since the previous read are decoded, because the log
+    is append-only and a sweep already holds the answer for everything before
+    them. A log replaced or shortened since the last read is not the file those
+    lines came from, so it is read from the start.
     """
-    lifted: set[tuple[str, str]] = set()
+    path = recovery_log_path(project)
+    key = str(path)
+    with _LIFTED_HOLD_READS_LOCK:
+        previous = _LIFTED_HOLD_READS.get(key)
     try:
-        lines = recovery_log_path(project).read_text(encoding="utf-8").splitlines()
+        status = path.stat()
     except OSError:
-        return lifted
-    for line in lines:
+        with _LIFTED_HOLD_READS_LOCK:
+            _LIFTED_HOLD_READS.pop(key, None)
+        return frozenset()
+    identity = (status.st_dev, status.st_ino)
+    unchanged = (
+        previous is not None
+        and previous[0] == identity
+        and status.st_size >= previous[1]
+    )
+    if unchanged:
+        offset, lifted = previous[1], previous[2]
+    else:
+        offset, lifted = 0, frozenset()
+    try:
+        with path.open("rb") as handle:
+            handle.seek(offset)
+            chunk = handle.read()
+    except OSError:
+        with _LIFTED_HOLD_READS_LOCK:
+            _LIFTED_HOLD_READS.pop(key, None)
+        return frozenset()
+    # Only whole lines are consumed. A writer appends a line at a time, so a
+    # read can land mid-line, and an offset advanced past that fragment would
+    # drop the lift the line records once it is complete.
+    consumed = chunk[: chunk.rfind(b"\n") + 1]
+    fresh = set(lifted)
+    for line in consumed.decode("utf-8").splitlines():
         if not line.strip():
             continue
         try:
@@ -812,8 +856,11 @@ def _lifted_holds(project: str) -> set[tuple[str, str]]:
             run_id = str(entry.get("run_id") or "")
             signature = str(entry.get("hold") or "")
             if run_id and signature:
-                lifted.add((run_id, signature))
-    return lifted
+                fresh.add((run_id, signature))
+    result = frozenset(fresh)
+    with _LIFTED_HOLD_READS_LOCK:
+        _LIFTED_HOLD_READS[key] = (identity, offset + len(consumed), result)
+    return result
 
 
 def _refusal_observed_at(record: Mapping[str, Any]) -> datetime | None:
