@@ -1,0 +1,38 @@
+<section id="qwnw-red-file-landing-runs-beside-admission-landing">
+<h3>The landing suite's two red cases read the rule the code now keeps</h3>
+<p>The named file failed in two cases at base <code>ba3443a9ae6a2bc171c76560016a6ca24e055f02</code> and at the merged head <code>398015d5d5fb31e353d1e29a4d2d78324aac9d88</code>: <code>test_a_land_step_past_its_bound_is_stopped_and_refused</code> and <code>test_the_land_step_waives_the_impl_move_the_beat_makes</code>. Both were authored by <code>8ba55d63ad</code> (29 October) and last touched by <code>c1a851524b</code> (6 November), and both describe the land step as a bounded subprocess the pass runs and waits on. <code>b4840067ad</code> (13 November) replaced that step with a durable promotion request the admission service drains, and <code>_land</code> now records the request and returns; the synchronous runner it left behind (<code>_run_land_command</code>, <code>_land_timeout</code>) has no caller. The product rule was changed deliberately and every other suite already asserts the queued form, so both causes are <strong>test wrong</strong>: each case is updated to the rule the code keeps, with no assertion deleted and none weakened.</p>
+<table>
+<thead><tr><th>Case</th><th>Verdict</th><th>Rule the test now asserts</th></tr></thead>
+<tbody>
+<tr><td><code>…past_its_bound_is_stopped_and_refused</code> → <code>…past_its_bound_is_queued_rather_than_run</code></td><td>test wrong</td><td>The pass runs no land step: <code>landed</code> is empty, the step appears under <code>promotion_requested</code>, no obligation is owed, <code>_run_srun</code> is never invoked, elapsed stays under four seconds, and the durable request on disk is <code>requested</code>, <code>kind=command</code>, carrying <code>land</code>, with the pointer marked <code>promotion-requested</code>.</td></tr>
+<tr><td><code>…waives_the_impl_move_the_beat_makes</code></td><td>test wrong</td><td>The step the pass queues carries the waiver the beat will make: <code>_land_command</code> emits <code>--no-impl-change</code> with <code>LANDING_BEAT_REASON</code> and ends <code>--land</code>, the recorded request's options carry the same reason and <code>land</code>, and the section declaration is left at <code>implementable</code> because the beat that moves it runs from the promotion the request starts.</td></tr>
+</tbody>
+</table>
+<p>The removed assertions are the ones that described behaviour the code no longer has: that a bounded subprocess was killed and recorded <code>refused</code> with a guard naming the bound, and that the section was already <code>done</code> when the pass returned. The waiver and the base arm's own failing ids are unchanged by this node.</p>
+</section>
+<section id="qwnw-red-file-landing-runs-beside-admission-runs">
+<h3>Runs</h3>
+<table>
+<thead><tr><th>Arm</th><th>Revision</th><th>Command</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base (negative control)</td><td><code>ba3443a9ae6a2bc171c76560016a6ca24e055f02</code></td><td><code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_landing_runs_beside_admission.py</code></td><td>2 failed, 4 passed; EXIT=1</td></tr>
+<tr><td>Head, as a job on <code>all_debug</code></td><td>named on the log's own first line, <code>gate-head-all_debug.log</code> in the run directory</td><td><code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_landing_runs_beside_admission.py</code></td><td>6 passed; EXIT=0</td></tr>
+</tbody>
+</table>
+<p>The base arm ran as <code>git archive</code> of <code>ba3443a9ae</code> extracted under the run's scratch root, with <code>PYTHONPATH=.</code> resolving <code>reckon</code> from that tree; the head arm ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in its environment. The base arm's failing ids:</p>
+<pre>FAILED tests/test_landing_runs_beside_admission.py::test_a_land_step_past_its_bound_is_stopped_and_refused
+FAILED tests/test_landing_runs_beside_admission.py::test_the_land_step_waives_the_impl_move_the_beat_makes</pre>
+<p>Neither id exists at head, so the red log cannot be met by the head arm's own selection.</p>
+</section>
+<section id="qwnw-red-file-landing-runs-beside-admission-falsification">
+<h3>Falsification</h3>
+<p>A passing run of a repaired test shows nothing on its own, so two mutations of the product were applied in memory, from a pytest plugin outside the tree, and the repaired cases were run against each.</p>
+<table>
+<thead><tr><th>Mutation</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td><code>_land</code> restored to the synchronous step that runs the command and waits (the pre-<code>b4840067ad</code> behaviour)</td><td>2 failed, 4 passed — both repaired cases fail on <code>landed == [RUN]</code> where the queued form requires an empty list</td></tr>
+<tr><td><code>_land_command</code> stripped of <code>--no-impl-change</code> and its reason</td><td>1 failed, 5 passed — the waiver case fails on the recorded request's options</td></tr>
+</tbody>
+</table>
+<p>Lint: <code>ruff check</code> and <code>ruff format --check</code> report nothing on the changed path, and the base copy of the same file was clean on both, so the change adds no finding.</p>
+</section>

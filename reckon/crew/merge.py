@@ -42,10 +42,12 @@ import contextlib
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from pathlib import Path
+from typing import Any
 
 # The repository's own pre-push guard refuses a line-anchored ``co-authored-by``
 # trailer, and a footer crediting a generator is the same defect in another
@@ -202,6 +204,19 @@ def require_promotable_head(
             )
 
 
+def _on_fleet_node() -> bool:
+    """Whether this host is the node the published fleet record names."""
+    import socket
+
+    from reckon.crew import watch_unit
+
+    try:
+        node = watch_unit.fleet_record_node()
+    except Exception:  # noqa: BLE001 - an unreadable record names no node
+        return False
+    return watch_unit._hosts_match(socket.gethostname(), node)
+
+
 def _run(
     repo: Path,
     *args: str,
@@ -209,7 +224,12 @@ def _run(
     env: dict[str, str] | None = None,
     extra_env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    remote = bool(args) and args[0] in {"ls-remote", "fetch"}
+    verb = args[0] if args else ""
+    # The fleet node reaches the remote only on port 443, and its port 22 fails
+    # by timing out, so every remote call there takes the 443 route at once. A
+    # push elsewhere keeps Git's own route and falls back only when refused.
+    direct = verb in {"ls-remote", "fetch", "push"} and _on_fleet_node()
+    remote = verb in {"ls-remote", "fetch"} or direct
     if remote:
         env = dict(os.environ if env is None else env)
         ssh = (env.get("GIT_SSH_COMMAND") or "").strip()
@@ -222,8 +242,9 @@ def _run(
             # Only an absent setting permits the default: Git owns configured
             # identities, proxies and wrappers, and reports config errors itself.
             if configured.returncode == 1:
+                route = FALLBACK_SSH_COMMAND if direct else "ssh"
                 env["GIT_SSH_COMMAND"] = (
-                    f"ssh -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
+                    f"{route} -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
                 )
     if extra_env:
         env = {**(os.environ if env is None else env), **extra_env}
@@ -935,36 +956,32 @@ def _index_lock_signature(lock: Path) -> tuple[int, int] | None:
     return (stat.st_size, stat.st_mtime_ns)
 
 
-def _processes_holding(path: Path) -> list[int] | None:
-    """Return the pids on this host with ``path`` open, or ``None`` if unreadable.
+# The holder scan belongs to :mod:`reckon.crew.gc`, and that module imports this
+# one, so the binding is made on first use rather than at import: an import here
+# would have gc read half-built. The name is left assignable on purpose, because
+# a caller that replaces it asks the stale-lock judgement a different question,
+# and it is filled once so a resolved scan is not looked up again.
+_processes_holding: Callable[[Path], list[dict[str, Any]] | None] | None = None
 
-    git writes no owner into ``index.lock``, so the holder is found by walking
-    ``/proc/<pid>/fd``. The distinction between an empty list and ``None``
-    matters: a ``/proc`` that cannot be read says nothing about whether the lock
-    is held, so a caller must not read that failure as proof that it is free.
+
+def _holders_of(lock: Path) -> list[dict[str, Any]] | None:
+    """Ask the one holder scan which processes on this host hold ``lock``.
+
+    The scan is resolved on first use and remembered under this module's own
+    name, so this module never imports :mod:`reckon.crew.gc` at module level —
+    that module imports this one, and an eager import would read it half-built.
+    The name is also the seam a caller patches to ask the stale-lock judgement a
+    different question. ``None`` before the first call means "not resolved yet";
+    after it, ``None`` is the scan's own failure and proves nothing either way,
+    so it is returned rather than folded into an empty list a caller would read
+    as "no holder".
     """
-    try:
-        processes = [entry for entry in Path("/proc").iterdir() if entry.name.isdigit()]
-    except OSError:  # pragma: no cover - an unreadable /proc answers "unknown"
-        return None
-    target = os.path.realpath(path)
-    holders: list[int] = []
-    for process in processes:
-        try:
-            descriptors = list((process / "fd").iterdir())
-        except OSError:
-            # A process that ended, or one this user cannot inspect, offers no
-            # evidence either way; it holds no descriptor we can see.
-            continue
-        for descriptor in descriptors:
-            try:
-                link = os.readlink(descriptor)
-            except OSError:
-                continue
-            if link == str(path) or link == target:
-                holders.append(int(process.name))
-                break
-    return holders
+    scan = _processes_holding
+    if scan is None:
+        from reckon.crew.gc import _processes_holding as resolved
+
+        globals()["_processes_holding"] = scan = resolved
+    return scan(lock)
 
 
 def _index_lock_age_seconds(lock: Path) -> float | None:
@@ -1002,10 +1019,35 @@ def _stale_index_lock_age_seconds(
     age = _index_lock_age_seconds(lock)
     if age is None or age < stale_after_seconds:
         return None
-    holders = _processes_holding(lock)
+    holders = _holders_of(lock)
     if holders is None or holders:
         return None
     return age
+
+
+def stale_index_lock_removal_line(lock: Path, age: float) -> str:
+    """The one wording for a cleared index lock: what went, and for how long.
+
+    Written here, beside the wait that clears the lock, so a landing's report, a
+    promotion's landing record and a state write's note name one removal the
+    same way. A reader looking for the age of a cleared lock has one shape to
+    find, wherever the clearing happened.
+    """
+    return (
+        f"removed {lock} after {age:.0f}s unchanged with no process on this "
+        "host holding it"
+    )
+
+
+def note_stale_index_lock_removal(lock: Path, age: float) -> None:
+    """Name a cleared lock, and the age it stood for, on stderr.
+
+    For a caller with no durable record to append to: a state write's commit is
+    its only record, and a rollback keeps none. Silence is not the alternative —
+    the lock belongs to a checkout other sessions commit to, and a clearing
+    nobody states is one nobody can account for.
+    """
+    print(f"index lock: {stale_index_lock_removal_line(lock, age)}", file=sys.stderr)
 
 
 def _result_text(result: subprocess.CompletedProcess) -> str:
@@ -1358,10 +1400,7 @@ def land_merge(
     stale_removals: list[str] = []
 
     def record_stale_removal(lock: Path, age: float) -> None:
-        stale_removals.append(
-            f"removed {lock} after {age:.0f}s unchanged with no process "
-            "on this host holding it"
-        )
+        stale_removals.append(stale_index_lock_removal_line(lock, age))
 
     if _is_ancestor(repo, head_sha, "HEAD"):
         # A previous run landed this head and only its push is outstanding, so

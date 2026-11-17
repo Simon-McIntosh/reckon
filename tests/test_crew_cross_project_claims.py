@@ -1,4 +1,11 @@
-"""Hermetic coverage for repository-scoped live write claims."""
+"""Hermetic coverage for repository-scoped live write claims.
+
+A claim fences only a path git cannot reconcile: two runs may declare the same
+source file, and their worktrees keep the edits apart until the merge. So every
+claim and candidate here names a non-mergeable artifact — generated state, or
+the dependency manifest — and the containers, ownership and disposition the
+tests assert are read off refusals the arbitration really gives.
+"""
 
 from __future__ import annotations
 
@@ -177,7 +184,10 @@ def _claim(
 
 @pytest.mark.parametrize(
     ("claimed", "candidate"),
-    [("package", "package/target.py"), ("package/target.py", "package")],
+    [
+        ("docs/state", "docs/state/generated.json"),
+        ("docs/state/generated.json", "docs/state"),
+    ],
 )
 def test_cross_project_containment_names_the_owning_project(
     home: Path, tmp_path: Path, claimed: str, candidate: str
@@ -264,7 +274,7 @@ def test_cross_repository_mounted_claim_expands_its_own_derivation(
                         {
                             "name": "project-b",
                             "derivations": {
-                                "package/schema.yaml": ["package/generated.py"]
+                                "docs/state/schema.yaml": ["docs/state/generated.json"]
                             },
                         }
                     ],
@@ -276,13 +286,13 @@ def test_cross_repository_mounted_claim_expands_its_own_derivation(
     owner = _claim(
         dispatch_repo,
         project="project-a",
-        path=str(delivery_repo / "package" / "schema.yaml"),
+        path=str(delivery_repo / "docs" / "state" / "schema.yaml"),
         authority_repositories=(dispatch_repo, delivery_repo),
     )
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("project-b", "package/generated.py"),
+            node=_node("project-b", "docs/state/generated.json"),
             project="project-b",
             repo=delivery_repo,
             config=CONFIG,
@@ -292,7 +302,7 @@ def test_cross_repository_mounted_claim_expands_its_own_derivation(
         )
 
     assert excinfo.value.run_id == owner["run_id"]
-    assert excinfo.value.claimed_path == "package/generated.py"
+    assert excinfo.value.claimed_path == "docs/state/generated.json"
     assert excinfo.value.project == "project-a"
 
 
@@ -343,7 +353,7 @@ def test_one_repository_file_refuses_a_second_writer_across_projects(
     owner = _claim(
         elsewhere,
         project="project-a",
-        path="package/target.py",
+        path="pyproject.toml",
         run_id="r-first",
         worktree=_linked_worktree(work, tmp_path / "first"),
         pid=os.getpid(),
@@ -352,7 +362,7 @@ def test_one_repository_file_refuses_a_second_writer_across_projects(
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("project-b", "package/target.py"),
+            node=_node("project-b", "pyproject.toml"),
             project="project-b",
             repo=work,
             config=CONFIG,
@@ -379,7 +389,7 @@ def test_a_stopped_claim_with_nothing_unintegrated_is_disregarded(
     stopped = _claim(
         repo,
         project="project-a",
-        path="package/target.py",
+        path="pyproject.toml",
         run_id="r-stopped",
         worktree=_linked_worktree(repo, tmp_path / "stopped"),
         pid=_reaped_pid(),
@@ -387,7 +397,7 @@ def test_a_stopped_claim_with_nothing_unintegrated_is_disregarded(
     )
 
     record = crew.dispatch(
-        node=_node("project-b", "package/target.py"),
+        node=_node("project-b", "pyproject.toml"),
         project="project-b",
         repo=repo,
         config=CONFIG,
@@ -411,11 +421,11 @@ def test_a_stopped_claim_holding_a_commit_is_refused_and_named(
     _mounts(home, {"project-a": repo, "project-b": repo})
     base_sha = _git(repo, "rev-parse", "HEAD")
     worktree = _linked_worktree(repo, tmp_path / "loaded")
-    _commit_in(worktree, "package/target.py", "value = 2\n")
+    _commit_in(worktree, "pyproject.toml", "value = 2\n")
     owner = _claim(
         repo,
         project="project-a",
-        path="package/target.py",
+        path="pyproject.toml",
         run_id="r-committed",
         worktree=worktree,
         pid=_reaped_pid(),
@@ -424,7 +434,7 @@ def test_a_stopped_claim_holding_a_commit_is_refused_and_named(
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("project-b", "package/target.py"),
+            node=_node("project-b", "pyproject.toml"),
             project="project-b",
             repo=repo,
             config=CONFIG,
@@ -446,11 +456,11 @@ def test_a_stopped_claim_holding_a_dirty_path_is_refused_and_named(
     repo = _repository(tmp_path / "shared", ("project-a", "project-b"))
     _mounts(home, {"project-a": repo, "project-b": repo})
     worktree = _linked_worktree(repo, tmp_path / "dirty")
-    (worktree / "package" / "target.py").write_text("value = 3\n", encoding="utf-8")
+    (worktree / "pyproject.toml").write_text("value = 3\n", encoding="utf-8")
     owner = _claim(
         repo,
         project="project-a",
-        path="package/target.py",
+        path="pyproject.toml",
         run_id="r-dirty",
         worktree=worktree,
         pid=_reaped_pid(),
@@ -459,7 +469,7 @@ def test_a_stopped_claim_holding_a_dirty_path_is_refused_and_named(
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("project-b", "package/target.py"),
+            node=_node("project-b", "pyproject.toml"),
             project="project-b",
             repo=repo,
             config=CONFIG,
@@ -481,7 +491,7 @@ def test_a_running_claim_is_still_refused(home: Path, tmp_path: Path) -> None:
     owner = _claim(
         repo,
         project="project-a",
-        path="package/target.py",
+        path="pyproject.toml",
         run_id="r-running",
         worktree=_linked_worktree(repo, tmp_path / "running"),
         pid=os.getpid(),
@@ -490,7 +500,7 @@ def test_a_running_claim_is_still_refused(home: Path, tmp_path: Path) -> None:
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("project-b", "package/target.py"),
+            node=_node("project-b", "pyproject.toml"),
             project="project-b",
             repo=repo,
             config=CONFIG,

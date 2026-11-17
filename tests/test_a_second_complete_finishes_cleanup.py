@@ -14,9 +14,11 @@ ledger row is the record of that promotion, so the difference is reported in
 the receipt while the existing comment is kept.
 
 Two cases run in a temporary config home: a run whose row is written and whose
-pointer survived is retired with no second row, and the same run retried with a
-different narrative finishes the cleanup and names the difference. The third is
-the ordinary promotion of a run with no row, which still writes one.
+pointer survived is retired with no second row, and the same run retried with
+different wording finishes the cleanup and names the difference. The third is
+the ordinary promotion of a run with no row, which still writes one. The fourth
+is a comment that outlived an attempt whose row was rolled back: no row records
+that wording, so the retry's narrative replaces it and the promotion lands.
 """
 
 # ruff: noqa: F811 - the fixture is imported and also named as each test's parameter.
@@ -29,7 +31,6 @@ import pytest
 
 from reckon import _plan_html, crew, ledger
 from reckon.crew import promotion, promotion_scope
-from reckon.crew.node import CrewError
 from reckon.crew.runs import pointer_path
 from tests.test_a_run_can_always_be_reconciled import (  # noqa: F401 - fixture
     PLAN,
@@ -130,11 +131,13 @@ def test_a_run_with_no_ledger_row_is_promoted(
 # ── Case 4: a differing narrative before any row exists ─────────────────────
 
 
-def test_a_differing_narrative_without_a_row_is_still_refused(
+def test_a_differing_narrative_without_a_row_supersedes_the_comment(
     repository: Path,
 ) -> None:
-    """No committed row means no promotion to defer to, so the refusal stands."""
+    """No row recorded that text, so the retry's narrative replaces it."""
     run_id = "r-differing-narrative-without-row"
+    stale = "the attempt whose landing never committed"
+    retried = "a narrative the plan does not hold"
     _pointer(repository, run_id)
     # The comment an interrupted attempt wrote, and the landing commit that
     # would have followed it failed: the plan holds one narrative, no row.
@@ -143,7 +146,7 @@ def test_a_differing_narrative_without_a_row_is_still_refused(
         plan=PLAN,
         section="s1",
         run_id=run_id,
-        narrative="the attempt whose landing never committed",
+        narrative=stale,
         author="reckon-build",
         when="2026-10-01T06:00:00Z",
         root=repository,
@@ -151,13 +154,18 @@ def test_a_differing_narrative_without_a_row_is_still_refused(
     )
     assert ledger.runs(PROJECT, root=repository) == []
 
-    with pytest.raises(CrewError, match="different narrative"):
-        _promote(repository, run_id, outcome="a narrative the plan does not hold")
+    receipt = _promote(repository, run_id, outcome=retried)
 
-    # The refusal writes nothing: no row, and the pointer survives for a retry
-    # that repeats the narrative the plan already carries.
-    assert ledger.runs(PROJECT, root=repository) == []
-    assert pointer_path(run_id).exists()
+    # Nothing committed recorded the interrupted attempt's wording, so the
+    # retry promotes: one row, the pointer retired, and the plan's single
+    # comment carrying the narrative promoted now.
+    assert receipt["already_promoted"] is False
+    assert not pointer_path(run_id).exists()
+    assert len(ledger.runs(PROJECT, root=repository)) == 1
+    bodies = _landing_comment_bodies(repository)
+    assert len(bodies) == 1
+    assert retried in bodies[0]
+    assert stale not in bodies[0]
 
 
 # ── Case 5: what an unreadable or disagreeing ledger answers ────────────────

@@ -1,0 +1,96 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T23:15:08.495Z",
+  "dispatched_at": "2026-11-16T23:14:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/standing_suite.py:273",
+      "id": "reuse_search-1",
+      "reason": "\u00a76's write paths name only two of the six truncating sites, so a node following the plan would leave the arm logs, which \u00a77's own command invokes, replaceable.",
+      "text": "\u00a76 closes only two of the truncating gate-log writers it claims to own: `standing_suite.run` opens `log_path` with mode `\"w\"` and `promotion_gate._write_replay_log` (`reckon/crew/promotion_gate.py:179`) uses `path.write_text`, both of which follow a symlink or create a dangling target, but the same population also includes the arm and measurement logs at `reckon/crew/landing_measure.py:704` (`log_path.open(mode)` with `mode = \"w\"`), `reckon/crew/landing_measure.py:728` (`log_path.write_text`), `reckon/crew/landing_measure.py:904` (`log.write_text(\"\")` immediately before a submission \u2014 the incident's exact shape), and `reckon/crew/resumption.py:708`; \u00a77 depends on the arm logs (`landing_measure.py:860` takes `arm_log_path` from the caller's options), so the route the incident took is still open in the machinery \u00a77 must use",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_run_commands.py:2134",
+      "id": "reuse_search-2",
+      "reason": "\u00a77's premise is false and the section should be written as composing the two existing verbs into the prompt, not as supplying behaviour the verbs lack, otherwise the node builds a third gate runner.",
+      "text": "\u00a77 states \"nothing gives it those, so each one writes its own script\", but `crew suite run` already derives its own log path with no caller option (`crew_suite_run` at `:2158`, `standing_log = runs_dir / f\"suite-{time.time_ns()}.log\"`), stamps the revision and the command into the row (`standing_suite._build_record`), and `crew verify-gate` (`reckon/crew_run_commands.py:4530`) likewise offers no log option, deriving `verify-gate.log` under the run directory (`reckon/crew/promotion_gate.py:34`); both already record start and end in `reckon/crew/gate_watch.py:68-69` (`VERIFY_GATE`/`SUITE_RUN` with `start`/`end` writing `gate_records_path`); the missing piece is only that the composed command is absent from `reckon/crew/prompts.py`, which carries no gate command today",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_worker_fence.py:1180",
+      "id": "deep_module-1",
+      "reason": "one invariant answered in two modules leaves a reader of either section holding half the guard, and the plan's \u00a72/\u00a73 done-write pairs should be settled as one enumeration so both guards measure the same set.",
+      "text": "the file set \"every location a registered checkout's environment resolves to\" is needed by \u00a72 (chmod repair, plus the health field on `fleet_supervisor.start_health_sampler`, `fleet_supervisor.py:707`) and again by \u00a73 (seal roots, `_worker_fence.declared_protected_paths`), and the plan names both halves with separate write paths while no section defines what resolution means; the nearest existing resolver is `reckon/crew/landing_measure.py:552` (`_link_environment`, which resolves `repo/.venv` through the repository's own links) and `reckon/crew/promotion_evidence.py:648`, so two nodes would each write their own symlink-chain walk and neither would be authoritative",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/standing_suite.py:273",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a76's done-when is behavioural (\"returns non-zero before the command runs, target's bytes unchanged\") and exclusive creation satisfies every arm of it including the dangling symlink, so the honest change lands in the node brief rather than in the plan text.",
+      "text": "\u00a76's deliverable is a refusal before a truncating open, which is a thin layer beside the open (and racy: a path that is absent at the check can exist at the open); the rule \"create this file only if the name is free\" already has one owner at `reckon/_store.py:517` (`_open_sibling_temporary`, `os.O_CREAT|os.O_EXCL`) with three sibling instances at `reckon/crew/dispatch_claims.py:989`, `reckon/crew/recovery_watch.py:2021` and `reckon/crew_follow_commands.py:1115`, all of which create exclusively with `os.open(..., O_CREAT|O_EXCL, 0o644)`; \u00a76 says nothing about why the existing open cannot itself be made exclusive",
+      "type": "thin_wrapper",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:1036",
+      "id": "duplicate_owner-1",
+      "reason": "a forked backoff drifts from the one the service loop uses, and the section's write paths must extend `fleet_supervisor.next_backoff` or the third-restart bound would be a second, disagreeing policy.",
+      "text": "\u00a78's \"supervisor restarted with a bounded backoff, at most three restarts in the first minute\" is a second backoff policy beside `fleet_supervisor.next_backoff` (`def next_backoff(delay, ran_seconds)`) and the service restart loop that already applies it (`fleet_supervisor.py:244-254` for the start delay and tick, `:1501-1532` for a copy's `restart_after` and the restart decision), and \u00a78's declared write paths (`reckon/crew/fleet_node.py`, `bin/fleet-supervisor`) exclude the file that owns those constants; `reckon/crew/fleet_node.py:201` only derives `batch_log_path`, so the restart state machine would be written in the launcher",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s7",
+      "id": "interface_budget-1",
+      "reason": "a section adding command surface must say in its own text what it retires or merges, or why nothing can be; without that the node ships a third gate verb and the count grows.",
+      "text": "public_definitions 2875, cli_options 515, mcp_views 15, refusal_families 25; \u00a77 delivers \"one composed command\" for the scoped gate and one more for the two arms, i.e. new command surface, and \u00a77's text forbids only a log-file option (\"The command offers no option that names a log file\") without naming any definition these commands retire or merge (`crew verify-gate` and `crew suite run` survive unchanged, and the wrapper census of \u00a710 counts run directories, not definitions)",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s2",
+      "id": "interface_budget-2",
+      "reason": "the section must account for the added public surface it introduces (the health field and the repair record) rather than leaving the count to grow silently.",
+      "text": "public_definitions 2875, cli_options 515, mcp_views 15, refusal_families 25; \u00a72 adds a fleet-health series field (the count of writable interpreters) and a repair record with file and time, and neither retires nor merges a definition, nor states why not, while the section's own \u00a710 done-when reads that same field for 24 hours",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e1aa678e3e6353e33036ea38ae75e469d1a4a322",
+  "plan_fingerprint": "ba4213a3dfde247b8518b9fa3628e320c291450e17e1e34bcd55f690f3feeb7f",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T225034840582-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "112c0db9c8739c1acc224bbcaea22f234c89718e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72 and \u00a73 each enumerate \"every location a registered checkout's environment resolves to\", once for a chmod repair and once for a seal set, so one invariant is answered twice, in `reckon/crew/fleet_supervisor.py:707` and `reckon/_worker_fence.py:1180`, with no single definition of the file set either consults.",
+    "duplicate_owner": "a finding \u2014 \u00a78 adds a second restart-with-backoff path in `reckon/crew/fleet_node.py` and `bin/fleet-supervisor` beside the owner `reckon/crew/fleet_supervisor.py:1036` (`next_backoff`) and its service-restart loop in the same file.",
+    "interface_budget": "a finding \u2014 public_definitions 2875, cli_options 515, mcp_views 15, refusal_families 25; \u00a77 adds a composed command surface and \u00a72 adds a repair record and a health-series field, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a76's \"every log a gate or suite run writes\" rebuilds a rule that `reckon/_store.py:517` (`_open_sibling_temporary`) already owns and omits four truncating writers inside \u00a76's own population; \u00a77's premise that nothing gives a worker a scoped, revision-stamped, self-named gate log is contradicted by `reckon/crew_run_commands.py:2134` and `:4530`.",
+    "thin_wrapper": "a finding \u2014 \u00a76 asks for an existence refusal in front of a truncating open (`reckon/crew/standing_suite.py:273`, `reckon/crew/promotion_gate.py:179`), a check beside the open rather than the exclusive creation `reckon/_store.py:517` and the O_EXCL creations at `reckon/crew/dispatch_claims.py:989`, `reckon/crew/recovery_watch.py:2021` and `reckon/crew_follow_commands.py:1115` already implement."
+  },
+  "section_digests": {
+    "_document": "2a545263486290860cc9d0a9ad52694d7936a721f3eb5546bb6444eb61f1a8eb",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "84f689b1fe3a3958764243ec8a36b523f1442db516e285a1b6772e5abdce51b9",
+    "s2": "bddb5f329f83cc5d54181a2ce427fd004900a21b3cf57e6315264603b22ae151",
+    "s3": "85166d11c5f49486f49000ca265ddcfa9517042549b1c0ed821273e6daaaba80",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "54fa1612d82af984cd224cad9ce210c3e362a4e22fc9da9cb7069a4ef66225ed",
+    "s7": "4abdf61255ea9095dfb98f18e4cde8f7f478679deec846a8ddd1871579dadf93",
+    "s8": "eff1639944e711555ed5c3482463eccd4948425371727b340c58df7826e91cc1",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:13:44.171146+00:00",
+  "total": null
+}

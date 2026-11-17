@@ -1,0 +1,49 @@
+<section id="qwnw-red-file-oversized-route-replay-red-file">
+<h2>The replay of the 3 November refusals is red because two landed picker rules changed the rows it records</h2>
+<p>The file is red before and after this node's work, with the same three failing ids:</p>
+<pre>- tests/test_oversized_route_replay.py::test_the_replay_runs_to_a_clean_exit
+- tests/test_oversized_route_replay.py::test_both_attempts_refuse_and_reproduce_their_recorded_rows
+- tests/test_oversized_route_replay.py::test_every_attempt_is_refused_and_nothing_is_offered
+</pre>
+<p>The replay script <code>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py</code> rebuilds each 2026-11-03 attempt and asks the picker the same question. It now answers differently from the record, and prints why:</p>
+<pre>attempt-1: claude reserved-lane x4 reproduced; clive/deepseek-v4.1-flash replayed only as
+  reserved-lane (recorded: two context-fit and one competence); codex offered, not withheld
+  answer: action=route decision_source=jev fallback_reason=None
+attempt-4: three codex models offered; no exclusion row
+  answer: action=hold fallback_reason=reserved-lane-unreasoned: codex was picked with no reason on a nested re-ask
+replayed: 2 attempts, refusals NOT reproduced
+EXIT=1
+</pre>
+<p>Two landed rules account for every differing row, and both are pinned by green tests:</p>
+<ul>
+<li><code>ccff33221c</code> (feat(picker): offer a reserved lane and let the router weigh it) split a reservation into an exclusion for the enforced family and evidence for the rest — <code>reckon/crew/picker/snapshot.py:1294</code> <code>_reserved_lane_evidence</code>, applied at <code>snapshot.py:1827</code>. The three <code>codex</code> reserved-lane rows the record carries therefore no longer exist as exclusions; the lane is offered and the reservation travels as evidence. Pinned by <code>tests/test_picker_reserved_lanes.py:561</code> and <code>:585</code>.</li>
+<li><code>b14e289ffe</code> (fix(picker): honor the local harness and reserved CLI policy) resolves a local wrapper's policy family from the harness, <code>reckon/crew/dispatch_picker.py:1059</code> <code>reservation_family</code>, read at <code>snapshot.py:1808</code>. <code>clive</code> is the configured local backend and speaks the claude dialect, so it now takes the claude reservation and is withheld with <code>reserved-lane</code> before the context and competence verdicts the record carries are reached. Pinned by <code>tests/test_picker_local_backend.py:123</code>.</li>
+</ul>
+<p>Neither rule is a broken guard: each says what it intends and each is asserted by a test that passes. The replay's recorded rows and its <code>RECORDED_OUTCOME</code> are the artifact that predates both, so this file's subject — "the picker withholds a reserved lane's window on an absent reading and refuses" — is a rule the code has deliberately stopped keeping. Making the file pass means re-recording the replay to the rules now kept (asserting that the claude family, including the local wrapper, is withheld, and that a non-claude reservation is offered and held only on a nested unreasoned re-ask). That change lives in the replay script and its evidence fragment, outside this node's write paths, so this node makes no product and no test change.</p>
+</section>
+
+<section id="qwnw-red-file-oversized-route-replay-arms">
+<h2>Base and head arms</h2>
+<p>Both arms resolve the same command over the same test file, because this node changes no test file.</p>
+<pre># base arm — revision f361d2bcfcedaa2068686dd3588b2907527613f2, extracted tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_oversized_route_replay.py
+3 failed, 2 passed in 31.90s
+EXIT=1
+
+# head arm — revision 89a6b4abf79a72aaf5b6f7b65b8e90574c003685, worktree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_oversized_route_replay.py
+3 failed, 2 passed in 59.24s
+EXIT=1
+</pre>
+<p>The two arms fail the identical three ids, so this node adds no failure. The scratch-tree base arm reaches the same three ids through one further difference the worktree does not show — the routing probe there reports <code>LiveJevDisabledError</code>, because the extracted tree is not a checkout — which changes no id and neither outcome assertion, both of which fail on the exclusion rows before the answer is read.</p>
+
+<p><strong>Outcome.</strong> The write fence was extended to the fragment directory
+that holds the replay script and its evidence page, and the re-recording this
+diagnosis asked for landed. The replay now runs the candidate scan unchanged,
+reads its answer from the deterministic fallback, and reports the rows the rules
+keep beside the rows the record holds, naming each superseded row with the rule
+at <code>ccff33221c</code> and <code>b14e289ffe</code> that replaced it. The gate
+file passes in full — six tests, no failures — where both arms below are three
+failures. The diagnosis is kept as written: what changed was the fence, not the
+analysis, and the fix is exactly the one it described.</p>
+</section>

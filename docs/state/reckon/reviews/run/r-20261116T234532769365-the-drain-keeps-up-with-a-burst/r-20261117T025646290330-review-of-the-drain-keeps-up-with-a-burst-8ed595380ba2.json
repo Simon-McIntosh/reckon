@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "test_a_commitless_promotion_finishes_beside_a_landing": "Restoring preparation-slot retention prevents the second executor event before the independently controlled release; base-control-final.log reproduces this failure.",
+    "test_a_detached_checkout_keeps_its_lease_key_when_it_commits": "Keying detached leases by commit contents changes the separately captured key after HEAD changes.",
+    "test_a_refusal_releases_the_branch_and_rates_count_only_successes": "Leaking the first writer lease prevents the promoted phase; including refusals in success counts changes expected one/one counters and hourly rate; omitting stage attribution fails membership. Wait-for-in-flight assertions reject unfinished threads but alone do not prove successful execution.",
+    "test_archived_run_records_and_historical_pointer_are_copied": "Dropping historical pointer/archive fallback changes literal repo or manifest content; any write changes the separately captured inventory.",
+    "test_changed_copied_set_is_refused": "Removing digest validation accepts the explicitly modified dataset instead of raising.",
+    "test_distinct_attempts_of_one_run_remain_distinct": "Deduplicating by run_id alone changes the independently expected count from two to one.",
+    "test_empty_real_replay_reports_no_rate": "Accepting empty replay rather than raising loses the required exception.",
+    "test_empty_request_directory_reports_no_rate": "Fabricating a row changes zero count; accepting an empty set loses the expected ValueError.",
+    "test_landings_for_different_repositories_do_not_wait": "Retaining preparation slots through writes or sharing all repositories under one lease prevents the second event before release; base control fails.",
+    "test_linked_checkouts_of_one_branch_share_a_lease": "Keying named branches by private gitdir changes the equal-key assertion; ignoring the branch name fails the unequal-key assertion after the fixture changes HEAD.",
+    "test_locked_promotion_reads_its_target_in_the_operational_scope": "Removing the execution-time operational_read decorator makes pointers omit the supplied target and fails its equality assertion; bypassing the checked body fails the expected RuntimeError.",
+    "test_private_repository_copies_packs_without_changing_the_source": "Wrong checkout changes known content or HEAD; failing to copy loose objects fails show after removing alternates; changing source or copied packs changes independently read bytes. The HEAD assertion compares against a revision independently read from the source repository, not a constant returned by the callee.",
+    "test_real_replay_exercises_guards_and_a_positive_control": "Removing acquire before ledger.append_run fails the observer; bypassing the writer fails appended; disabling promotion guards changes the expected refused verdict; any source write changes inventory. This does not observe release updates.",
+    "test_relocation_uses_the_longest_path_and_clears_process_handles": "Removing relocation or pid clearing changes literal output; longest-path precedence itself is NOT distinguished because the parent and child substitutions yield the same string, so no durability credit is assigned for that claimed precedence.",
+    "test_replay_refuses_a_write_to_its_original_inputs": "Removing the audit-hook write refusal loses PermissionError, changes source content or leaves refusal count zero.",
+    "test_replay_store_is_seeded_before_it_becomes_authoritative": "Omitting seed leaves no known row; losing relocation leaves the old path; leaking synchronous=OFF beyond the disposable connection changes the independent new-connection PRAGMA reading.",
+    "test_retained_request_supersedes_the_same_historical_request": "Prioritizing the historical record loses the promoted phase; keeping both changes count.",
+    "test_selection_uses_request_time_and_keeps_retained_settlements": "Including either excluded endpoint or dropping a retained lower/middle request changes the independently enumerated count or names.",
+    "test_two_landings_on_one_branch_never_overlap": "Removing branch exclusion allows the second executor event while release is unset; base-control-final.log reproduces this failure. It does not prove the second executor eventually succeeds rather than refusing."
+  },
+  "assertion_independence": "No assertion is counted as a throughput or verdict-parity guard merely because it echoes a configured input; source revision, bytes, inventories and controlled event state are independent observations. Two limits are explicitly recorded in assertion_audit.",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/admission/service.py:244",
+    "reckon/crew/promotion_requests.py:941",
+    "reckon/crew/promotion.py:1397",
+    "reckon/crew/promotion.py:2548",
+    "reckon/crew/promotion.py:2575",
+    "reckon/crew/promotion.py:2701",
+    "reckon/crew/promotion_release.py:803",
+    "reckon/crew/promotion_release.py:845",
+    "scripts/replay_promotion_drain.py:693"
+  ],
+  "completed_at": "2026-11-17T03:09:51Z",
+  "dispatched_at": "2026-11-17T03:02:44Z",
+  "failure_delta_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234532769365-the-drain-keeps-up-with-a-burst/delivery-integrated-gate.log",
+    "after_summary": "77 passed in 42.57s",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234532769365-the-drain-keeps-up-with-a-burst/baseline-assigned.log",
+    "baseline_summary": "58 passed in 38.17s",
+    "note": "The required armed pair adds zero failures; the broader importer run separately reports one added ID, and is not substituted for this pair."
+  },
+  "findings": [
+    {
+      "file": "scripts/replay_promotion_drain.py",
+      "line": "426",
+      "severity": "blocking",
+      "text": "blocking: the delivered real head replay fails after 1800 seconds with 46 active requests, while the base completed at 84.8639 successful promotions/hour; neither the required threefold gain nor all-request verdict equivalence is demonstrated, and the live-home listing equality check is false in both arm logs, so complete quantitative evidence is required before landing."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "2942",
+      "severity": "blocking",
+      "text": "blocking: acquiring the branch lease only at the commit wrapper is too late for its release-record caller, which updates the shared ledger in promotion_release.py:803 before calling this wrapper at :845; after the first landing releases its lease another promotion can write concurrently with that release update, contradicting same-branch write serialization and confirmed by release-lease-probe.log's AssertionError: release record writes before acquiring the branch lease."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read the fifteen commits from 606afde873e4bd9e8425c33892fd944b6c33a9c3 through 8ed595380ba2351031e4a0ffc43e2f88e664db03; the five-file diff extends the existing drain and lease owner and adds an isolated real replay with nineteen tests, but the release writer is outside the lazy lease boundary.",
+    "done_when": "prompt.txt:260 and live plan section 4 require the concurrency cases, a paired real replay and no added importer failures; delivery-integrated-gate.log records 77 passes, but the real replay comparison is incomplete and the manifest reports one added importer failure.",
+    "goal": "prompt.txt:38 requires at least 30 successful promotions/hour without wasting blocked slots; promotion_scope.py adds lazy branch admission, but real-head-native.log ends with a timeout and does not establish the throughput goal.",
+    "manifest": "manifest.md records the fifteen commits, green assigned arms, three failing base concurrency controls, a completed base replay and a timed-out head replay, while its complete status expressly leaves the quantitative measure unmet.",
+    "write_paths": "prompt.txt:95 and resume-2-advice.txt grant the original seven paths plus promotion.py and promotion_scope.py; all five changed paths are within that expanded scope."
+  },
+  "justifications": {
+    "durability": "tests/test_the_drain_keeps_up_with_a_burst.py:290 and :320 fail when preparation handoff or branch exclusion is reverted, as base-control-final.log demonstrates, but the real append observer at :187 covers no release update and the longest-path fixture at :131 gives both mappings the same result.",
+    "evidence": "delivery-integrated-gate.log records 77 passed against baseline-assigned.log's 58 passed, but real-head-native.log:22 records EXIT=1 and both native replay logs report original_listing_unchanged: False, leaving the main quantitative and isolation measures unproven.",
+    "fit": "promotion_scope.py:68 follows the existing context-manager ownership pattern and promotion_requests.py:81 extracts its existing HostLease claim rather than replacing it, with capability-based source names and bounded waits.",
+    "goal_fidelity": "scripts/replay_promotion_drain.py:426 times out on the real changed cohort with 46 requests active, so the new branch scheduling in promotion_scope.py:97 has not delivered the required rate or per-request verdict parity.",
+    "reuse": "promotion_requests.py:81 extends its existing claim owner, promotion_scope.py:97 uses host_lease.py:76 and the existing renewer, and searches of the crew modules and scripts found only pace_replay.py:98's allowance replay and reproduce_landing_reversion.py's rollback reproduction, neither owning real request-cohort draining.",
+    "scope_discipline": "the five paths in the base-to-head diff are covered by prompt.txt:95 and the explicit two-file extension in resume-2-advice.txt, and all changes serve promotion scheduling or its measurement."
+  },
+  "notes": "Review only: no production edits, no suite rerun, no change to shared plan state. False live inventory comparison is a failed measure, not proof the replay caused external concurrent changes.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires at least 30 successful promotions/hour without wasting blocked slots; promotion_scope.py adds lazy branch admission, but real-head-native.log ends with a timeout and does not establish the throughput goal.\nVERDICT done_when: prompt.txt:260 and live plan section 4 require the concurrency cases, a paired real replay and no added importer failures; delivery-integrated-gate.log records 77 passes, but the real replay comparison is incomplete and the manifest reports one added importer failure.\nVERDICT write_paths: prompt.txt:95 and resume-2-advice.txt grant the original seven paths plus promotion.py and promotion_scope.py; all five changed paths are within that expanded scope.\nVERDICT manifest: manifest.md records the fifteen commits, green assigned arms, three failing base concurrency controls, a completed base replay and a timed-out head replay, while its complete status expressly leaves the quantitative measure unmet.\nVERDICT diff: read the fifteen commits from 606afde873e4bd9e8425c33892fd944b6c33a9c3 through 8ed595380ba2351031e4a0ffc43e2f88e664db03; the five-file diff extends the existing drain and lease owner and adds an isolated real replay with nineteen tests, but the release writer is outside the lazy lease boundary.\nCALL_SITES: reckon/crew/admission/service.py:244, reckon/crew/promotion_requests.py:941, reckon/crew/promotion.py:1397, reckon/crew/promotion.py:2548, reckon/crew/promotion.py:2575, reckon/crew/promotion.py:2701, reckon/crew/promotion_release.py:803, reckon/crew/promotion_release.py:845, scripts/replay_promotion_drain.py:693\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: scripts/replay_promotion_drain.py:426 times out on the real changed cohort with 46 requests active, so the new branch scheduling in promotion_scope.py:97 has not delivered the required rate or per-request verdict parity.\nSCORE evidence: 8\nJUSTIFICATION evidence: delivery-integrated-gate.log records 77 passed against baseline-assigned.log's 58 passed, but real-head-native.log:22 records EXIT=1 and both native replay logs report original_listing_unchanged: False, leaving the main quantitative and isolation measures unproven.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in the base-to-head diff are covered by prompt.txt:95 and the explicit two-file extension in resume-2-advice.txt, and all changes serve promotion scheduling or its measurement.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_drain_keeps_up_with_a_burst.py:290 and :320 fail when preparation handoff or branch exclusion is reverted, as base-control-final.log demonstrates, but the real append observer at :187 covers no release update and the longest-path fixture at :131 gives both mappings the same result.\nSCORE fit: 19\nJUSTIFICATION fit: promotion_scope.py:68 follows the existing context-manager ownership pattern and promotion_requests.py:81 extracts its existing HostLease claim rather than replacing it, with capability-based source names and bounded waits.\nSCORE reuse: 20\nJUSTIFICATION reuse: promotion_requests.py:81 extends its existing claim owner, promotion_scope.py:97 uses host_lease.py:76 and the existing renewer, and searches of the crew modules and scripts found only pace_replay.py:98's allowance replay and reproduce_landing_reversion.py's rollback reproduction, neither owning real request-cohort draining.\nFINDING scripts/replay_promotion_drain.py:426 blocking: the delivered real head replay fails after 1800 seconds with 46 active requests, while the base completed at 84.8639 successful promotions/hour; neither the required threefold gain nor all-request verdict equivalence is demonstrated, and the live-home listing equality check is false in both arm logs, so complete quantitative evidence is required before landing.\nFINDING reckon/crew/promotion_scope.py:2942 blocking: acquiring the branch lease only at the commit wrapper is too late for its release-record caller, which updates the shared ledger in promotion_release.py:803 before calling this wrapper at :845; after the first landing releases its lease another promotion can write concurrently with that release update, contradicting same-branch write serialization and confirmed by release-lease-probe.log's AssertionError: release record writes before acquiring the branch lease.\n",
+  "reuse_search": "Searched lease/resource ownership, branch keys, temporary repository materialization, path relocation, digest/object reads and cohort replay across the touched owners and scripts; opened HostLease, promotion owner, git helpers and both related replay/reproduction owners. New orchestration composes those owners; fixture helpers have no existing owner of the same real-cohort capability.",
+  "review_run_id": "r-20261117T025646290330-review-of-the-drain-keeps-up-with-a-burst-8ed595380ba2",
+  "reviewed_base_sha": "606afde873e4bd9e8425c33892fd944b6c33a9c3",
+  "reviewed_commits": [
+    "5a9b53617e4d5a722299ca759ad58ee2f9f98da2",
+    "b27c59101c76d1c6647749fbd797e2774fb50a24",
+    "4afe0300da48794609a6f1e8421635c8ca1ef582",
+    "05ac1f019a208fb09cf2f90209b482734caaba91",
+    "566ff19a13cfcbb3b16d0eed313778749fcca258",
+    "7bc84f7361648081916efdd236ab528772042502",
+    "d8b89b9760b1207777c06e0cb8f304ce848048ab",
+    "b0f13c5880f8b03d388b70ed1dcc45c20382c95c",
+    "9d773648af502dca9785486467cb321e80c4410a",
+    "1b43d572dc96154407c3d90502988c0b2885ce5b",
+    "ff511d7b28398857ffb17a56b345e7a4d457e8f6",
+    "db51cad39e7c00feb3a5b2b0592ae1be4d96c75d",
+    "4c2d4fd92bf211524509abc6a3b50fe2850691a6",
+    "914061e2dea7754bf47be1e5c0456ceb5ac0ff08",
+    "8ed595380ba2351031e4a0ffc43e2f88e664db03"
+  ],
+  "reviewed_head_sha": "8ed595380ba2351031e4a0ffc43e2f88e664db03",
+  "reviewed_run_id": "r-20261116T234532769365-the-drain-keeps-up-with-a-burst",
+  "scores": {
+    "durability": 15,
+    "evidence": 8,
+    "fit": 19,
+    "goal_fidelity": 8,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T03:13:01.444463+00:00",
+  "total": 90
+}

@@ -1,0 +1,60 @@
+<section id="qwnw-red-file-crew-cross-project-claims-second-launch-red-runs">
+<h3>Cross-project claims: the base red run beside the head run</h3>
+<p>
+  <code>tests/test_crew_cross_project_claims.py</code> reported eight failing tests at the node's base
+  revision <code>0e0f25b0f9</code>. The cause is one rule the file no longer kept: a live write claim
+  now fences only a path a merge cannot reconcile, so two runs may declare the same source file and
+  their worktrees keep the edits apart until git merges them. Every one of the eight fixtures fenced
+  plain source paths (<code>package</code>, <code>package/target.py</code>, <code>package/schema.yaml</code>),
+  which the arbitration shares, so no refusal fired and each <code>pytest.raises(crew.ScopeConflict)</code>
+  failed with <code>conflict must not launch</code> — except the disregard case, whose launch succeeded
+  and whose expected disregard warning never appeared, because a shared path is passed over before the
+  disposition is read.
+</p>
+<p>
+  Verdict for the cause: <strong>the test was wrong</strong>. The product rule is unchanged and asserted
+  elsewhere (<code>tests/test_a_source_file_is_shared_by_default.py</code>,
+  <code>tests/test_only_unmergeable_paths_are_claimed.py</code>). Each fixture now names a non-mergeable
+  artifact — generated state under <code>docs/state</code>, or <code>pyproject.toml</code> — and every
+  assertion it made before is still made. No assertion was deleted or weakened.
+</p>
+<h4>Base run: eight failing ids, revision 0e0f25b0f9</h4>
+<pre># revision: 0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc
+# tree: /tmp/reckon-crew-scratch/r-20261116T064926669084-qwnw-red-file-crew-cross-project-claims-second-launch/base-0e0f25b0f9
+# command: PYTHONPATH=&lt;tree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_cross_project_claims.py
+# module.__file__: &lt;tree&gt;/reckon/crew/runs.py
+# cwd: &lt;tree&gt;
+FF.F.FFFFF                                                               [100%]
+FAILED tests/test_crew_cross_project_claims.py::test_cross_project_containment_names_the_owning_project[package-package/target.py] - Failed: conflict must not launch
+FAILED tests/test_crew_cross_project_claims.py::test_cross_project_containment_names_the_owning_project[package/target.py-package] - Failed: conflict must not launch
+FAILED tests/test_crew_cross_project_claims.py::test_cross_repository_mounted_claim_expands_its_own_derivation - Failed: conflict must not launch
+FAILED tests/test_crew_cross_project_claims.py::test_one_repository_file_refuses_a_second_writer_across_projects - Failed: conflict must not launch
+FAILED tests/test_crew_cross_project_claims.py::test_a_stopped_claim_with_nothing_unintegrated_is_disregarded - AssertionError: ["plan-review gate in report-only mode — ..."] assert []
+FAILED tests/test_crew_cross_project_claims.py::test_a_stopped_claim_holding_a_commit_is_refused_and_named - Failed: conflict must not launch
+FAILED tests/test_crew_cross_project_claims.py::test_a_stopped_claim_holding_a_dirty_path_is_refused_and_named - Failed: conflict must not launch
+FAILED tests/test_crew_cross_project_claims.py::test_a_running_claim_is_still_refused - Failed: conflict must not launch
+8 failed, 2 passed in 13.06s
+EXIT=1</pre>
+<h4>Head run: ten passing, revision 39ddcd2bd6</h4>
+<pre># revision: 39ddcd2bd6339e6574cd9280ce372f71298ed291
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-cross-project-claims-second-launch
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_cross_project_claims.py
+..........                                                               [100%]
+10 passed in 5.38s
+EXIT=0</pre>
+<h4>The updated tests still fire: mutation forcing every claim to share</h4>
+<p>
+  A plugin that replaces <code>reckon.crew.dispatch_claims._claim_paths_share</code> with
+  <code>lambda *_a, **_k: True</code> — every overlapping declaration shared, so no refusal can fire —
+  makes exactly the same eight ids fail. The guards are therefore exercised by the claim comparison, not
+  satisfied by a path no longer being read.
+</p>
+<pre># command: PYTHONPATH=.:&lt;plugin-dir&gt; .venv/bin/python -m pytest -p no:cacheprovider -p mutant -q tests/test_crew_cross_project_claims.py
+8 failed, 2 passed in 11.79s
+EXIT=1</pre>
+<p>
+  Raw logs: <code>logs/base-red-crew-cross-project-claims.log</code>,
+  <code>logs/head-crew-cross-project-claims.log</code>,
+  <code>logs/mutation-shared-claims.log</code> in the node's run directory.
+</p>
+</section>
