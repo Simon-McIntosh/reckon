@@ -1692,21 +1692,24 @@ def test_promotion_refuses_a_merge_conflicted_ledger(home, repo) -> None:
 
 
 def test_hold_check_backs_off_after_a_version_conflict(home, repo, monkeypatch) -> None:
-    # The hold path composes its write through the state writer, which is the
-    # one that raises a stale-version refusal, so the conflict is injected
-    # there rather than at the public wrapper that delegates to it.
-    real_write = ledger._write_state
+    # Interleave a store write so the hold's stale version is refused before retry.
+    real_write = ledger._write_auxiliary
     writes = 0
     backoffs: list[int] = []
+    refusals: list[str] = []
 
-    def conflicting_write(project, data, expected_version, root=None, **kwargs):
+    def conflicting_write(project, data, expected_version):
         nonlocal writes
         writes += 1
         if writes == 1:
-            raise ledger.LedgerError("concurrent write")
-        return real_write(project, data, expected_version, root, **kwargs)
+            real_write(project, {"holds": []}, expected_version)
+        try:
+            return real_write(project, data, expected_version)
+        except ledger.LedgerError as exc:
+            refusals.append(str(exc))
+            raise
 
-    monkeypatch.setattr(ledger, "_write_state", conflicting_write)
+    monkeypatch.setattr(ledger, "_write_auxiliary", conflicting_write)
     monkeypatch.setattr(ledger, "_retry_backoff", backoffs.append)
 
     result = ledger.record_hold_checks(
@@ -1716,8 +1719,13 @@ def test_hold_check_backs_off_after_a_version_conflict(home, repo, monkeypatch) 
         root=repo,
     )
 
-    assert result["version"] == 1
+    assert result["version"] == 2
+    assert writes == 2
     assert backoffs == [0]
+    assert refusals == ["version conflict: expected 0, got 1"]
+    assert ledger.holds(PROJECT, repo) == [result["outcomes"][0]["hold"]]
+    assert not ledger.ledger_path(PROJECT, repo).exists()
+    print(f"store refusal: {refusals[0]}")
 
 
 def test_promoting_the_same_run_twice_is_refused(home, repo) -> None:
