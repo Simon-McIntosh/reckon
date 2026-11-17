@@ -1,0 +1,158 @@
+<section id="qwnw-red-file-ledger-landing">
+  <h2>One red test file on the primary branch passes again</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_ledger.py</code> is the
+  named file. Its head run at <code>928c8e71d7</code> reads 97 passed and no
+  failure; at the base revision the same file reads 13 failed and 84 passed.
+  Nothing in the product was repaired, because no product rule is broken: every
+  one of the occurrence groups below is a fixture that still described a surface
+  the product had already moved, so the fixture now drives the surface the
+  product keeps. The file's collected test count is identical either side (97
+  in both trees), so no case was dropped, merged or split.</p>
+
+  <h3 id="qwnw-red-file-ledger-causes">Each cause and its verdict</h3>
+
+  <table id="qwnw-red-file-ledger-causes-table">
+    <caption>Verdicts: <em>test wrong</em> means the case encoded a rule the
+    code no longer keeps, and the rule it now asserts is named.</caption>
+    <thead>
+      <tr><th>cause</th><th>cases</th><th>verdict</th><th>rule now asserted</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>The commit a run cites is measured on the run's own line of
+        history, and dispatch gives every run its own worktree, so a commit made
+        in the registered checkout is not the run's work.</td>
+        <td><code>test_completion_promotes_the_pointer_into_the_repositorys_ledger</code>,
+        <code>test_a_promoted_record_names_the_member_and_its_session</code>,
+        <code>test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it</code>,
+        <code>test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it</code>,
+        <code>test_a_completed_record_carries_every_calibration_input</code>,
+        <code>test_a_killed_run_that_delivered_is_scoring_pending_review</code></td>
+        <td>test wrong</td>
+        <td>A run's citation is read in the run's own worktree from
+        <code>record["worktree"]</code>, which is where a worker commits; the
+        shared commit helper now commits there.</td>
+      </tr>
+      <tr>
+        <td>Liveness of the current attempt is read from the worker record its
+        supervisor writes. A pointer whose pid is dead is not the attempt's end
+        while no worker record exists for that attempt: it reads as still
+        starting (and past the launch bound, as a stranded launch).</td>
+        <td><code>test_a_dead_run_that_delivered_nothing_is_interrupted</code>,
+        <code>test_recovery_counts_running_scoring_and_interrupted</code></td>
+        <td>test wrong</td>
+        <td>The kill fixture publishes the dead pid to the attempt's
+        <code>worker.json</code> as well as to the pointer, so a launched worker
+        that ended reads as an interruption with <code>dead-pid-no-exit</code>.</td>
+      </tr>
+      <tr>
+        <td><code>crew complete</code> queues its promotion for the fleet
+        service unless the call waits for the outcome.</td>
+        <td><code>test_complete_command_assumes_utc_for_a_naive_completion_stamp</code></td>
+        <td>test wrong</td>
+        <td>The case reads a promotion outcome, so it passes <code>--wait</code>
+        instead of asserting over a request receipt.</td>
+      </tr>
+      <tr>
+        <td>A declared write path is a hint, not a fence: only a path whose
+        class a merge cannot reconcile needs a coordinator's acceptance.</td>
+        <td><code>test_changed_lines_are_measured_from_the_scoped_diff</code></td>
+        <td>test wrong</td>
+        <td>A commit that changes a mergeable path beside the declared one
+        promotes, and the row carries the measurement of the run's own commits
+        (<code>{"added": 2, "removed": 0, "files": 2}</code>) rather than the
+        diagnostics mapping a caller passed.</td>
+      </tr>
+      <tr>
+        <td>The run store is the durable authority for a promoted run, so a
+        store write that fails refuses the promotion and leaves neither store a
+        row.</td>
+        <td><code>test_a_raising_store_write_refuses_and_leaves_no_row</code>,
+        <code>test_a_failed_index_write_keeps_the_rows_already_written</code></td>
+        <td>test wrong</td>
+        <td>The refusal propagates as <code>LedgerError</code>, the run file is
+        taken back, the rows already written are untouched and the file and the
+        store still agree. The retired claims — a <code>store_write</code> entry
+        recorded on the row, and a visible index lag left for a repair pass — are
+        gone from both cases.</td>
+      </tr>
+      <tr>
+        <td>The hold-check path composes its write through the state writer,
+        not through the public wrapper it used to call.</td>
+        <td><code>test_hold_check_backs_off_after_a_version_conflict</code></td>
+        <td>test wrong</td>
+        <td>The stale-version refusal is injected at
+        <code>ledger._write_state</code>, the writer the hold path uses, and the
+        first retry's back-off of <code>0</code> is still asserted.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Two further cases failed in the pre-merge head run only, and neither
+  reproduces: <code>test_a_run_in_flight_leaves_the_working_tree_clean</code>
+  failed with <code>BlockingIOError: [Errno 11] Resource temporarily
+  unavailable</code> while three separate pytest processes shared the host, and
+  <code>test_measured_worker_time_is_reported_against_declared_effort</code>
+  timed out under the same load. Both pass in the isolated head run below and
+  at the base revision.</p>
+
+  <h3 id="qwnw-red-file-ledger-arms">Measured</h3>
+
+  <table id="qwnw-red-file-ledger-arms-table">
+    <caption>Each arm names the revision it ran at; each log's first lines name
+    the revision, tree and command, and its last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head, on all_debug with SLURM_JOB_ID unset</td>
+        <td><code>928c8e71d7</code>, worktree</td>
+        <td>97 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base</td>
+        <td><code>d0d77f07e2</code>, extraction</td>
+        <td>13 failed, 84 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>promotion's suite arm, base</td>
+        <td><code>d0d77f07e2</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>promotion's suite arm, head</td>
+        <td><code>928c8e71d7</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-ledger-control">Negative control</h3>
+
+  <p>The base run of the file is the control, and it fails on the cases the head
+  run passes, for the reasons the product's own refusals state. Its failing ids,
+  as the runner printed them:</p>
+
+  <pre id="qwnw-red-file-ledger-control-ids"># revision: d0d77f07e2dcc64d74713755aebe748602f9a06f
+# tree: /tmp/reckon-crew-scratch/r-20261115T224639107918-qwnw-red-file-ledger/red-file-base (scratch extraction of the base revision, committed as a checkout)
+# module: /tmp/reckon-crew-scratch/r-20261115T224639107918-qwnw-red-file-ledger/red-file-base/reckon/ledger.py
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py
+FAILED tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger
+FAILED tests/test_ledger.py::test_complete_command_assumes_utc_for_a_naive_completion_stamp
+FAILED tests/test_ledger.py::test_a_killed_run_that_delivered_is_scoring_pending_review
+FAILED tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_interrupted
+FAILED tests/test_ledger.py::test_recovery_counts_running_scoring_and_interrupted
+FAILED tests/test_ledger.py::test_hold_check_backs_off_after_a_version_conflict
+FAILED tests/test_ledger.py::test_a_promoted_record_names_the_member_and_its_session
+FAILED tests/test_ledger.py::test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it
+FAILED tests/test_ledger.py::test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it
+FAILED tests/test_ledger.py::test_a_completed_record_carries_every_calibration_input
+FAILED tests/test_ledger.py::test_changed_lines_are_measured_from_the_scoped_diff
+FAILED tests/test_ledger.py::test_a_raising_store_write_is_recorded_and_never_propagated
+FAILED tests/test_ledger.py::test_failed_index_writes_leave_files_and_visible_lag
+13 failed, 84 passed in 1355.18s (0:22:35)
+EXIT=1</pre>
+
+  <p>The head run at the same command shape, on all_debug as its own job with
+  <code>SLURM_JOB_ID</code> unset:</p>
+
+  <pre id="qwnw-red-file-ledger-head-run"># revision: 928c8e71d73e5bf179e2adec64e307b12301e8fe
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-ledger
+# module: .../qwnw-red-file-ledger/reckon/ledger.py
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py
+97 passed in 101.29s (0:01:41)
+EXIT=0</pre>
+</section>

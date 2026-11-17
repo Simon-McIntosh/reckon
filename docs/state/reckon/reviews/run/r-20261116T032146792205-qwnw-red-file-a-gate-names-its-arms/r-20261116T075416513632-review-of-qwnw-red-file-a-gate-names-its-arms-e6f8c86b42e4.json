@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew/promotion_evidence.py:_require_gate_evidence",
+    "reckon/crew/promotion_evidence.py:_require_worktree_at_its_base"
+  ],
+  "completed_at": "2026-11-16T08:20:21.913Z",
+  "dispatched_at": "2026-11-16T08:19:40Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "id": "fd9372f3b0c",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the head arm was measured at base 6fa76c49 plus the node's own commits, but the done_when's first step orders the current origin/main merged before the rerun and origin/main had advanced to cb557f9711, 55 files ahead, including reckon/_store.py which the exercised reckon/crew/promotion_evidence.py:18 imports, so this run does not establish that the file passes on the primary branch; the merged result is the separately dispatched test node's measure per the brief."
+    },
+    {
+      "file": "logs/suite-baseline.log",
+      "id": "fd29247f53c",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the manifest's failure_attribution names two census cases that failed in a first baseline arm over a git-archive extraction, but that arm's log was overwritten by the re-measured arm, so the attributed failure ids have no red log a reader can open; only logs/sbatch2.log:3 ('suite-baseline EXIT=1') still records that the first attempt failed."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261116T075416513632-review-of-qwnw-red-file-a-gate-names-its-arms-e6f8c86b42e4",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "e6f8c86b42e427aefc4d42eb0d038df9dab6bc8e",
+  "reviewed_run_id": "r-20261116T032146792205-qwnw-red-file-a-gate-names-its-arms",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T08:50:00.307222+00:00",
+  "total": 107,
+  "verdicts": [
+    {
+      "item": "goal",
+      "verdict": "read the node goal 'Make tests/test_a_gate_names_its_arms.py pass in full on the primary branch' against the gate log; tests/test_a_gate_names_its_arms.py:209 now presents the fixture's delivered commit and the named file reports 5 passed at head, so the goal's deliverable is met at the landed head."
+    },
+    {
+      "item": "done_when",
+      "verdict": "the done_when names tests/test_a_gate_names_its_arms.py at head with SLURM_JOB_ID unset plus a base run and an armed arm pair derived from the delivery manifest's baseline_suite and after_suite; the manifest's tests: line and logs/gate-head.log (5 passed, EXIT=0, slurm_job_id unset) and logs/gate-base.log (5 failed, EXIT=1) assert it, while the done_when's first step, merging the current origin/main, was not performed."
+    },
+    {
+      "item": "write_paths",
+      "verdict": "read the node's declared paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --name-only against base 6fa76c49 lists three files and every one lies inside them."
+    },
+    {
+      "item": "manifest",
+      "verdict": "read manifest.md of the reviewed run; it records status complete, the five commits, the gate command on line 11, four log paths, the base arm's five failing ids and the suite arms' 58-passed pair, and its negative_control_log names logs/gate-base.log."
+    },
+    {
+      "item": "diff",
+      "verdict": "read the five commits against base 6fa76c49: f22588c6 replaces --no-commit with --commit <the fixture's head> in tests/test_a_gate_names_its_arms.py:209-228, and f3435999, 0f2d2108, 6e1e34a8 and e6f8c86b4 revise the two evidence fragments to quote stable figures, with no product line touched."
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "digests": {
+        "s28": "7427b8f9fbee79ddba7d976a20b07e0df3e32ca73c02f7c4b3ebfff2a2d7a4f4"
+      },
+      "reason": "the s28 rewrite is exactly what findings reasoning-1 and done_when-1 of r-20261116T211450210551 asked for, and the followup change answers wiring-1",
+      "units": [
+        "s28"
+      ],
+      "when": "2026-11-16T21:43:04.470625+00:00"
+    }
+  ],
+  "completed_at": "2026-11-16T21:17:20.983Z",
+  "dispatched_at": "2026-11-16T21:17:02Z",
+  "findings": [
+    {
+      "anchor": "plan.html:222",
+      "id": "reasoning-1",
+      "reason": "a worker dispatched here would loosen a condition that changes no verdict while the real cause of the observed restored row stays unfixed, and the section's whole premise would be argued past its data.",
+      "text": "s28 blames a station-sourced answer that \"has gone stale during a long derivation\" while the station's health beat stayed fresh, but both readers take their age from the same single `heartbeat` row of the station table: `_read_station_document` returns the document with `_station_markers(connection)` read in the same cursor (obligation_snapshot.py:556-578), `read_station_answer` derives `stale` from that beat (obligation_snapshot.py:688-689), `read_station_tick` reads the same markers and the same age (obligation_snapshot.py:605-619), and the beat thread writes that row every 5 s off its own handle independent of the tick (`STATION_BEAT_SECONDS = 5.0`, `StationBeat.beat_once`, station.py:90,141-148) with the guard refusing only after lease loss (station_store.py:209-215). A probe of the real readers over one store returned answer stale/beat_age and tick stale/beat_age identical in all four states (fresh beat 0/0; beat stopped 600 s 600/600; beat stopped with a running tick recorded 600/600; fresh beat with that running tick 0/0). So on the station's own node the fresh-beat case never reaches the tick consult at all (`tick = station` unless the source is the snapshot, watch_unit.py:1084-1091): the \"fresh tick is never asked\" sentence needs a state the store cannot produce",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:223",
+      "id": "done_when-1",
+      "reason": "the node's red case cannot be produced from the state it claims, so its gate would pass on a synthesised input and the done-when would not be measurable as written.",
+      "text": "\"New tests, each failing at the base revision\" has one candidate leg, a station-sourced stale answer, which no store state produces (see the reasoning finding); the snapshot-sourced leg is already green at base because poll consults `read_station_tick()` there and \u00a725 landed d72a7d9b25, and the declared negative control (\"restore the base condition that consults the tick only for a snapshot-sourced answer, and the new station-sourced case draws a lost row\") can only be exercised by handing poll a fabricated answer dict for the station source. That measures the branch, not the system the section describes as its reference",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:235",
+      "id": "wiring-1",
+      "reason": "the declared status and the batch dispatch of every implementable section are authoritative, so the stale sentence costs a reader the declaration already answers.",
+      "text": "the open chain still carries a staging claim in `f-mttu-002`'s body (\"\u00a75 waits on the codex budget window\") that its own declaration and comments contradict (s5 done; the s5 landing comment at plan.html:171 records the committed implementation and two stored reviews), and s28 is declared implementable while no followup names it \u2014 the prompt is still `\u00a721`",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2bd0813b710f1880608f7b5eb8c2b40587b15f25",
+  "plan_fingerprint": "6d43a1867aca3f9bcdea84e828fe9dd76d30b108ff6ef69b96b303b459ea9307",
+  "plan_slug": "the-monitor-tells-the-truth-under-load",
+  "plan_version": 88,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a0baaa618f82e003011bcfdb20b3a266f2dce457",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "s28 is rewritten: the review showed both readers take one heartbeat row, so the stale-answer-fresh-beat state cannot exist; the hook measured the heartbeat row itself 2m58s old at about 21:45Z, so the defect is the beat stalling during a tick, and s28 now asks that the beat stay under the stale window through any tick",
+      "reason": "",
+      "when": "2026-11-16T21:41:43.476172+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a0baaa618f82e003011bcfdb20b3a266f2dce457",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s28's fails-at-base leg is now a constructible state: a beat write held behind a long tick; the negative control restores the base beat path and the beat goes stale",
+      "reason": "",
+      "when": "2026-11-16T21:41:50.299285+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a0baaa618f82e003011bcfdb20b3a266f2dce457",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-mttu-002 is resolved and one followup now carries the s28 invocation; s28 is dispatched directly after this round",
+      "reason": "",
+      "when": "2026-11-16T21:42:06.427759+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a0baaa618f82e003011bcfdb20b3a266f2dce457",
+      "commit_basis": "edit",
+      "note": "s28's fails-at-base leg is now a constructible state: a beat write held behind a long tick; the negative control restores the base beat path and the beat goes stale",
+      "reason": "",
+      "when": "2026-11-16T21:41:50.299285+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a0baaa618f82e003011bcfdb20b3a266f2dce457",
+      "commit_basis": "edit",
+      "note": "s28 is rewritten: the review showed both readers take one heartbeat row, so the stale-answer-fresh-beat state cannot exist; the hook measured the heartbeat row itself 2m58s old at about 21:45Z, so the defect is the beat stalling during a tick, and s28 now asks that the beat stay under the stale window through any tick",
+      "reason": "",
+      "when": "2026-11-16T21:41:43.476172+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a0baaa618f82e003011bcfdb20b3a266f2dce457",
+      "commit_basis": "edit",
+      "note": "f-mttu-002 is resolved and one followup now carries the s28 invocation; s28 is dispatched directly after this round",
+      "reason": "",
+      "when": "2026-11-16T21:42:06.427759+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-tells-the-truth-under-load.v88.json",
+  "review_run_id": "r-20261116T211450210551-plan-review-of-the-monitor-tells-the-truth-under-load",
+  "reviewed_blob_sha": "ec2c302f0dd08af2adea2878b2b8180bf67a1ee0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `d72a7d9b25` (plan.html:222) resolves to the \u00a725 landing merge on main; s28's section element and heading resolve, and the declared write path `reckon/crew/watch_unit.py` exists.",
+    "done_when": "a finding \u2014 s28's only fails-at-base leg (plan.html:223) is a station-sourced answer stale while the beat is fresh, a state the station store cannot hold, so the declared negative control measures a fabricated input.",
+    "evidence_paths": "pass \u2014 s28's done-when puts every log under the section's run directory (plan.html:223), a durable path; its Why rests on a live sighting that cites no path, the same class the earlier review declined as would-not-change on the sibling section.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol; \"\u00a725\" appears in plan prose only.",
+    "reasoning": "a finding \u2014 s28's stated root cause (plan.html:222) is unreachable in the code it names: a station-sourced answer's staleness is the station-table heartbeat row, which the station's own beat thread refreshes every 5 s, and `read_station_tick` reads that same row, so the \"fresh tick never asked\" state cannot exist.",
+    "single_goal": "pass \u2014 s28 (plan.html:220-223) names one deliverable: no lost row and no re-arm from a stale station answer while the beat is fresh; the \"alive but slow\" reading is the same verdict, not a second one.",
+    "wiring": "a finding \u2014 the open followup `f-mttu-002` (plan.html:235) still declares \"\u00a75 waits on the codex budget window\" while `plan-section-declarations` (plan.html:23) marks s5 done, and the newly implementable s28 is named by no followup title or prompt."
+  },
+  "section_digests": {
+    "_document": "736aa934f1862dba7875e5e78b52e0ad3264340ad3a200352efa168cd6624ff1",
+    "s1": "7df70e005850ec7773b3db8cdf1384c5422e6cbfac994a1cfc3bdeca2fd47ef2",
+    "s10": "b83b287b25ce35ab03c105da8c02eec999809dbdea6073436eae2dc72bb0055d",
+    "s11": "db2972ed7155bc484ac98ce58f8c119ab201e99f5a53c1af54606eb6564a66e4",
+    "s12": "93d79e3e452ecd1f5c10186fc7eb1781f5e7455324237438f574fbc699447b31",
+    "s13": "79271d44153e341633146df7233120d46939c41b1ca66de6bac074c2472ea991",
+    "s14": "c0f58bcc6da33e5ff402ec71bef199b31de1619824a04f6db8d415d9669a38d7",
+    "s15": "3d6257718e450fda1363e42a9394f2cb631579e92f2cf0dbdaca2f25c62d6537",
+    "s16": "9c67ebb9a89d3b566da303e2866877a636f868c501bf32f08ff80e2c7a7f26da",
+    "s17": "229d1aee2b054a2680acdd7883f3d6cd8216513f31305ff21ed874c51b1af3a7",
+    "s18": "4a5429fac53529c64918e90d1bc4d47480e08689bea9601336332ce330c82e49",
+    "s19": "1f9e10fa3b0ee55a46bc415cf145a732b0361a363b70930a33a7c5ccbe2189ca",
+    "s2": "a065d657377c24ca69329c265d4a0a821a0104c7df8d1140dec9c3b9d1c6edf2",
+    "s20": "2a22cb56cd43d1c837c31506853a47a9de4ea2b23c97d583934c0f47da03fad0",
+    "s21": "b07e6731435129f50c6cb46f57c3e1172601f799b7c52c4f55ea6d99f25bf88f",
+    "s22": "002813700f469262299757ff5d18cdb27c019b46a0dfafdeb6c41450129b4cc5",
+    "s23": "ee414aaed9e9f5dcdb9da2c749629c72b5012385aab644da5c10a79231bd3157",
+    "s24": "a4c0e935a8ea9b7a17e8572e4ee0bcb70375ed4bf7585fd6b453850521dbfae2",
+    "s25": "58fab8fc1326f514ceac7aa72bd4e83d954c5c53256c464dc38a3646da0ae892",
+    "s26": "4ac7545d5a200b4cdf26198c3e182ea37f2ab47cefba6e881c3cf624bbfda695",
+    "s27": "d2da99aa3991671ae01d0e656ab2b5ef0c07864b441cfd5fabd3480305c3d999",
+    "s28": "44117d69308a089422177a0c3ffdb6061a3f6b0c33ab1a455d82145528a320ba",
+    "s3": "f3cf9279ee0efc6c6e7b55dede5b9ff68ee3db1e40edd78b825098ecee64d396",
+    "s4": "739bbbd316f3b5138d938c01abaac59b3f08e1231effa6dc1e416fb46b9b34b1",
+    "s5": "2806db9da94cd21c23ef92806d85a99f15d28df20b272f97173d332fba5a1587",
+    "s6": "a8a7d00ef50ab0ca240bc59bb917ff62442d6f3567da095cb913cd5860246056",
+    "s7": "9f299f30b0fda7b1f5bbc9f6d7cf6b936604181068a2c9a8363b64e58ace0fd6",
+    "s8": "30f0e740e2caee5b735cc3bdc83d5eaa23eac7eeaae780899f811d7a1c32956c",
+    "s9": "56c122a4d4057a2e12e9ebbaae0a53fb955938f47dbe9275cdf2dd5566896f78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:41:41.455696+00:00",
+  "total": null
+}

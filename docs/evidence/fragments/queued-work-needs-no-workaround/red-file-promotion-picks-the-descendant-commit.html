@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-promotion-picks-the-descendant-commit-negative-control">
+  <h3>Negative control: the file red at the base revision, green at head</h3>
+  <p>
+    <code>tests/test_promotion_picks_the_descendant_commit.py</code> at the base
+    revision <code>f361d2bcfcedaa2068686dd3588b2907527613f2</code>, run as a job
+    of its own on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset,
+    from a tree extracted at that revision on the node the job ran on:
+  </p>
+  <pre># command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -B -p no:cacheprovider -q tests/test_promotion_picks_the_descendant_commit.py
+# slurm job 1320037 on all_debug node 98dci4-clu-3144.iter.org
+3 failed, 1 passed in 1.82s
+EXIT=1</pre>
+  <p>The three failing identifiers, as the runner reported them:</p>
+  <ul>
+    <li><code>tests/test_promotion_picks_the_descendant_commit.py::test_a_newest_first_presentation_promotes_the_reviewed_head</code></li>
+    <li><code>tests/test_promotion_picks_the_descendant_commit.py::test_an_oldest_first_presentation_promotes_the_same_head</code></li>
+    <li><code>tests/test_promotion_picks_the_descendant_commit.py::test_the_obligation_remedy_line_runs_as_printed</code></li>
+  </ul>
+  <p>
+    The same file at the head carrying the repairs, run as its own job on
+    <code>all_debug</code> by <code>gate-head.sbatch</code>, reads
+    <q>4 passed</q> with <code>EXIT=0</code> in
+    <code>gate-head-all_debug.log</code>, the log the manifest cites. The base
+    run is <code>gate-base-all_debug.log</code> in the same directory, and its
+    log's own summary and exit line are the figures quoted above.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Cause</th><th>Verdict</th><th>What shows it</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Both linear fixtures cited a passing pytest gate with a log carrying
+        no pytest result line, and were refused as <q>a pytest gate whose last
+        run reached no pytest summary</q>.</td>
+        <td>test wrong: the fixture log did not describe the run its manifest
+        claimed</td>
+        <td>the receipt refusal reads a cited pytest log for its result-count
+        line; <code>1 passed in 0.01s</code> satisfies it, the fixture's own
+        <code>focused check passed</code> did not</td>
+      </tr>
+      <tr>
+        <td>The remedy-line case asserted the printed <code>--commit</code>
+        citations newest first and read the run's parent where the obligation
+        cites the run's history.</td>
+        <td>test wrong: the obligation cites the run's own history oldest first</td>
+        <td><code>_promotion_command</code> reads
+        <code>commits_between</code>, documented to answer oldest first; the
+        head is chosen by descent, not by the position the line prints it in</td>
+      </tr>
+      <tr>
+        <td>The remedy-line case ran the printed command without
+        <code>--wait</code> and expected a ledger row.</td>
+        <td>test wrong: the CLI default files a durable promotion request</td>
+        <td><code>--wait</code> is the documented flag that carries the
+        promotion out in the call; the printed line's own commit order is left
+        untouched</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    No product module changed: the tree differs in one test file, by sixteen
+    added and nine removed lines, and no assertion was removed or weakened.
+  </p>
+</section>

@@ -1,0 +1,48 @@
+<section id="qwnw-red-file-a-hand-written-review-record-is-refused-landing">
+  <h3>A hand-written review record is refused: base red, head green</h3>
+  <p><strong>Cause.</strong> Every case in
+  <code>tests/test_a_hand_written_review_record_is_refused.py</code> failed on
+  one finding that has nothing to do with the status check the file is about:
+  <q>messages_received: no delivery receipt was recorded, so the manifest must
+  say `messages_received: none`</q>. The check acquired that rule after the
+  file was written — a manifest that received no message must say so, because a
+  silent one cannot be told from an ignored inbox — and the file's four fixture
+  manifests predate it. Verdict: <strong>test wrong</strong>. The product rule
+  is kept and is not the rule this file asserts; the status refusal beside it
+  already behaves as the file expects, which the base run shows by reporting
+  the reader's accepted statuses (<code>incomplete, parsed, unparsed</code>) for
+  a record carrying <code>complete</code>.</p>
+  <p><strong>Repair.</strong> Both manifest bodies — the review template and the
+  non-review body in the fourth case — now carry
+  <code>messages_received: none</code>. No assertion, message, record or
+  accepted-status set changed; the refusal text the first case compares against
+  is the one the reader produces.</p>
+  <p><strong>Negative control</strong> — the named file at the base revision
+  <code>125628f608ef00b5f4a4a9ce845c5e8a04b12f58</code>, extracted with
+  <code>git archive</code> into a scratch tree under <code>$TMPDIR</code> and
+  run there with <code>SLURM_JOB_ID</code> unset:</p>
+  <pre># command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_a_hand_written_review_record_is_refused.py
+FFFF                                                                     [100%]
+4 failed in 0.73s
+EXIT=1</pre>
+  <p>Failing identifiers at the base revision:</p>
+  <ul>
+    <li><code>tests/test_a_hand_written_review_record_is_refused.py::test_a_hand_written_record_with_an_unrecognised_status_is_refused</code></li>
+    <li><code>tests/test_a_hand_written_review_record_is_refused.py::test_a_record_written_through_the_store_passes</code></li>
+    <li><code>tests/test_a_hand_written_review_record_is_refused.py::test_a_placeholder_that_is_not_a_record_is_left_alone</code></li>
+    <li><code>tests/test_a_hand_written_review_record_is_refused.py::test_a_non_review_run_writing_a_record_is_not_status_checked</code></li>
+  </ul>
+  <p>The first case's diff is the whole cause in one line: its expected list
+  held the single status finding, and the run returned that finding plus the
+  messages statement, so <q>Left contains one more item</q>.</p>
+  <p><strong>Head run</strong> — the same file at
+  <code>6b93db59b7ca4992c795ea7673cd1d5824c1e272</code>, as job 1319862 on
+  <code>all_debug</code> node <code>98dci4-clu-3143</code>, with
+  <code>SLURM_JOB_ID</code> unset:</p>
+  <pre># command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_hand_written_review_record_is_refused.py
+....                                                                     [100%]
+4 passed in 0.99s
+EXIT=0</pre>
+  <p><strong>Ruff.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> both report nothing on the one changed file.</p>
+</section>

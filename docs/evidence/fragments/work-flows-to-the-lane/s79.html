@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="reckon-type" content="evidence">
+<title>Work flows to the lane §79 — the failing run</title>
+</head>
+<body>
+<section id="s79-negative-control">
+  <h2>The failing run at the base revision</h2>
+
+  <p><strong>What this is.</strong> The measure's first test, run against the
+  base revision <code>6b7c8a2bf2b4772033d549be7346f3d913b10800</code> on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset. Twelve requests are
+  queued behind a stand-in router that reads full to the first admission pass and
+  open, with a slot for every request, from five seconds after that pass begins.
+  The base revision's pass takes its one reading, holds all twelve and returns,
+  so the test reads none launched. The log is verbatim; its last line is the
+  run's own exit status.</p>
+
+  <pre id="s79-negative-control-log"># revision: 6b7c8a2bf2b4772033d549be7346f3d913b10800
+# tree: /tmp/reckon-crew-scratch/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/s79-base
+# module: /tmp/reckon-crew-scratch/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/s79-base/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/s79-base
+# host: 98dci4-clu-3144.iter.org partition: all_debug
+# command: cd /tmp/reckon-crew-scratch/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/s79-base &amp;&amp; env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-a-full-reading-does-not-hold-queued-work/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_full_reading_does_not_hold_queued_work.py
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+_________________ test_a_full_reading_does_not_hold_the_queue __________________
+
+repository = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/pytest-of-mcintos/pytest-0/test_a_full_reading_does_not_h0/checkout&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261115T210614019724-wftl-a-full-reading-does-not-hold-queued-work/pytest-of-mcintos/pytest-0/test_a_full_reading_does_not_h0&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7ff34698d810&gt;
+
+    def test_a_full_reading_does_not_hold_the_queue(
+        repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        lane = tmp_path / &quot;lane.json&quot;
+        router = _StandInRouter(lane, open_after=FULL_FOR_SECONDS, slots=float(REQUESTS))
+        _config, resolve = fixtures._config_with_lane(lane)
+        monkeypatch.setattr(holds, &quot;_dispatch_lane_allowance&quot;, router.read)
+        queued = _queue(repository, REQUESTS)
+        completed: list[tuple[str, float]] = []
+        monkeypatch.setattr(queue_admission, &quot;_launch_queued&quot;, _instant_launcher(completed))
+        pauses: list[float] = []
+        monkeypatch.setattr(queue_admission, &quot;_pause&quot;, _recorded_pause(pauses))
+    
+        result = queue_admission.admit_once(
+            config_for=resolve,
+            budget_seconds=PASS_BUDGET_SECONDS,
+        )
+    
+        assert router.reads[0][1] == &quot;full&quot;, router.reads
+&gt;       assert set(result[&quot;launched&quot;]) == set(queued), result[&quot;verdicts&quot;]
+E       AssertionError: [{&#x27;run_id&#x27;: &#x27;r-queued-0&#x27;, &#x27;session&#x27;: &#x27;coordinator-a&#x27;, &#x27;allowance&#x27;: 0, &#x27;allowance_source&#x27;: &quot;the session&#x27;s own worker sl...queued-3&#x27;, &#x27;session&#x27;: &#x27;coordinator-a&#x27;, &#x27;allowance&#x27;: 0, &#x27;allowance_source&#x27;: &quot;the session&#x27;s own worker slots&quot;, ...}, ...]
+E       assert set() == {&#x27;r-queued-0&#x27;...ueued-3&#x27;, ...}
+E         
+E         Extra items in the right set:
+E         &#x27;r-queued-3&#x27;
+E         &#x27;r-queued-10&#x27;
+E         &#x27;r-queued-2&#x27;
+E         &#x27;r-queued-9&#x27;
+E         &#x27;r-queued-7&#x27;
+E         &#x27;r-queued-1&#x27;
+E         &#x27;r-queued-0&#x27;
+E         &#x27;r-queued-8&#x27;
+E         &#x27;r-queued-5&#x27;
+E         &#x27;r-queued-6&#x27;
+E         &#x27;r-queued-4&#x27;
+E         &#x27;r-queued-11&#x27;
+E         
+E         Full diff:
+E         + set()
+E         - {
+E         -     &#x27;r-queued-0&#x27;,
+E         -     &#x27;r-queued-1&#x27;,
+E         -     &#x27;r-queued-10&#x27;,
+E         -     &#x27;r-queued-11&#x27;,
+E         -     &#x27;r-queued-2&#x27;,
+E         -     &#x27;r-queued-3&#x27;,
+E         -     &#x27;r-queued-4&#x27;,
+E         -     &#x27;r-queued-5&#x27;,
+E         -     &#x27;r-queued-6&#x27;,
+E         -     &#x27;r-queued-7&#x27;,
+E         -     &#x27;r-queued-8&#x27;,
+E         -     &#x27;r-queued-9&#x27;,
+E         - }
+
+tests/test_a_full_reading_does_not_hold_queued_work.py:187: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_a_full_reading_does_not_hold_queued_work.py::test_a_full_reading_does_not_hold_the_queue - AssertionError: [{&#x27;run_id&#x27;: &#x27;r-queued-0&#x27;, &#x27;session&#x27;: &#x27;coordinator-a&#x27;, &#x27;allowance&#x27;: 0, &#x27;allowance_source&#x27;: &quot;the session&#x27;s own worker sl...queued-3&#x27;, &#x27;session&#x27;: &#x27;coordinator-a&#x27;, &#x27;allowance&#x27;: 0, &#x27;allowance_source&#x27;: &quot;the session&#x27;s own worker slots&quot;, ...}, ...]
+assert set() == {&#x27;r-queued-0&#x27;...ueued-3&#x27;, ...}
+  
+  Extra items in the right set:
+  &#x27;r-queued-3&#x27;
+  &#x27;r-queued-10&#x27;
+  &#x27;r-queued-2&#x27;
+  &#x27;r-queued-9&#x27;
+  &#x27;r-queued-7&#x27;
+  &#x27;r-queued-1&#x27;
+  &#x27;r-queued-0&#x27;
+  &#x27;r-queued-8&#x27;
+  &#x27;r-queued-5&#x27;
+  &#x27;r-queued-6&#x27;
+  &#x27;r-queued-4&#x27;
+  &#x27;r-queued-11&#x27;
+  
+  Full diff:
+  + set()
+  - {
+  -     &#x27;r-queued-0&#x27;,
+  -     &#x27;r-queued-1&#x27;,
+  -     &#x27;r-queued-10&#x27;,
+  -     &#x27;r-queued-11&#x27;,
+  -     &#x27;r-queued-2&#x27;,
+  -     &#x27;r-queued-3&#x27;,
+  -     &#x27;r-queued-4&#x27;,
+  -     &#x27;r-queued-5&#x27;,
+  -     &#x27;r-queued-6&#x27;,
+  -     &#x27;r-queued-7&#x27;,
+  -     &#x27;r-queued-8&#x27;,
+  -     &#x27;r-queued-9&#x27;,
+  - }
+1 failed, 2 passed in 0.81s
+EXIT=1
+</pre>
+</section>
+</body>
+</html>

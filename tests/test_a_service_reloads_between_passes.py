@@ -211,6 +211,46 @@ def test_a_withdrawn_code_change_releases_the_requested_boundary(controlled):
     assert fleet.recorded_service_pid(home.runtime, "demo") == pid
 
 
+def test_a_copy_that_reloaded_itself_is_released_from_the_boundary(controlled):
+    """A boundary requested as the copy replaces itself does not hold the new image.
+
+    The new image has exported no tick, so its reload window is not due and the
+    supervisor will not replace it. The supervisor therefore withdraws the
+    boundary, and the copy starts its next pass.
+    """
+    import socket
+
+    from reckon._store import write_json_atomically
+    from reckon.crew import follower_reload
+
+    home = controlled
+    manager, pid = home.start()
+    (home.root / "stamp").write_text("after")
+    manager.supervise_once()
+    assert (home.runtime / "demo.pass.reload").exists()
+    now = time.time()
+    write_json_atomically(
+        follower_reload.reload_paths("demo")[0],
+        {
+            "service": "demo",
+            "process": [socket.gethostname(), pid],
+            "running_code": "before",
+            "newest_seen": "before",
+            "next_reload_at": now + 1800,
+            "window_seconds": 1800,
+            "tick_exported_at": None,
+            "last_reload_at": now,
+            "last_request": {},
+            "reload_count": 1,
+        },
+    )
+    manager.supervise_once()
+    assert not (home.runtime / "demo.pass.reload").exists()
+    (home.root / "release-0").touch()
+    _wait((home.root / f"begin-{pid}-1").exists)
+    assert fleet.recorded_service_pid(home.runtime, "demo") == pid
+
+
 def test_a_refused_checkout_releases_the_requested_boundary(controlled):
     home = controlled
     manager, pid = home.start()

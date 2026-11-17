@@ -1,0 +1,136 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the source run baseline_suite and after_suite raw gate logs: both complete with EXIT=0 and no FAILED ids. Parser positive control sees the known FAILED id in the suppression log. This is the armed pair, not a claim about importer results.",
+  "assertion_audit": [
+    {
+      "assertions": "Parked phase, literal waiting reason and pointer promotion status.",
+      "fails_if": "The waiting execution is treated as terminal/requested, drops the execute result reason or fails to update its pointer.",
+      "lines": "641-643"
+    },
+    {
+      "assertions": "Exactly one persisted promotion outcome.",
+      "fails_if": "Suppress the waiting note_promotion_outcome call; the recorded mutation shows zero rows and failure.",
+      "lines": "649"
+    },
+    {
+      "assertions": "Receipt attempt matches the persisted request attempt; outcome is WAITING; receipt reason matches the already literal-checked parked reason.",
+      "fails_if": "Write the request identity instead of the generated attempt identity, stamp the wrong outcome, or drop/alter the outcome reason.",
+      "lines": "650-652"
+    },
+    {
+      "assertions": "The only promotion slot is successfully occupied and tick launches nothing.",
+      "fails_if": "The lease cannot be held or tick ignores the occupied slot and admits a promotion.",
+      "lines": "655-657"
+    },
+    {
+      "assertions": "Parked request becomes REQUESTED despite full slots; request and attempt identities persist, waiting reason clears and checked_at advances.",
+      "fails_if": "Restore the first-parent slot-gated readiness logic, replace identities during refresh, retain the stale reason or fail to date the refresh.",
+      "lines": "659-663"
+    },
+    {
+      "assertions": "Journal bytes remain identical after readiness-only refresh.",
+      "fails_if": "Readiness refresh rewrites or appends receipts, changing the captured persisted bytes.",
+      "lines": "664"
+    }
+  ],
+  "assertion_independence": "All 15 new assertions were read. Identity assertions compare separate persisted request and journal representations; they are supported by independent presence, literal phase/reason and byte-preservation assertions. No expectation is an at argument echoed by the code under test. The execute reason is supplied fixture data, but dropping its propagation makes the literal parked reason and cross-store comparison fail. No vacuous input-equals-itself assertion was found.",
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:_prepare_attempt_records",
+    "reckon/crew/promotion_requests.py:PromotionService._tick_locked",
+    "reckon/crew/promotion_requests.py:PromotionService._run",
+    "reckon/crew/recovery_watch.py:_compute_watch_snapshot",
+    "reckon/crew/recovery_watch.py:_watch_verdict",
+    "reckon/crew/recovery_watch.py:_fleet_counts",
+    "reckon/crew_follow_commands.py:crew_reload"
+  ],
+  "completed_at": "2026-11-17T04:56:16Z",
+  "dispatched_at": "2026-11-17T04:51:50Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_handoff_has_durable_stage_receipts.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/merge-head-suite.log",
+      "revision": "732ca20cffc3b2963baf6a0d31221a22e56ef19c",
+      "summary": "85 passed in 41.00s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/base-suite.log",
+      "revision": "c6274b6a0e6698ed29f59c3027552f4e795abc10",
+      "summary": "58 passed in 35.35s"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read the single first-parent merge commit 732ca20cffc3b2963baf6a0d31221a22e56ef19c against prior reviewed head 973ff2c2c1952835e2cf10e3de76c871990feab4 across the five named targets, including its combined promotion_requests.py resolution and 15 new assertions.",
+    "done_when": "Read live section 13 and resume-3-advice.txt; base-suite.log records 58 passed, merge-head-suite.log records 85 passed, and the suppression control fails at test_review_handoff_has_durable_stage_receipts.py:649; the broader importer zero-added condition remains qualified by the source manifest.",
+    "goal": "Read source prompt.txt:38 and live plan section 13; promotion_requests.py:914 retains the waiting attempt outcome before the merged readiness update, preserving durable stage accounting.",
+    "manifest": "Read source manifest.md at completed head 732ca20cffc3b2963baf6a0d31221a22e56ef19c; its two armed suite receipts reconcile with the raw completed logs and it explicitly does not claim zero added importer failures.",
+    "write_paths": "Read source manifest.md orientation_write_paths and resume-3-advice.txt authorising the primary merge; the sole manual source resolution is promotion_requests.py and the added test is in its granted test file."
+  },
+  "justifications": {
+    "durability": "tests/test_review_handoff_has_durable_stage_receipts.py:649 fails when the waiting outcome call is suppressed, :659 fails if parked readiness is skipped under occupied slots, and :664 fails if refreshing readiness rewrites or appends journal bytes.",
+    "evidence": "merge-head-suite.log records 85 passed and EXIT=0 at the reviewed head, and merge-negative-waiting-receipt.log records assert 0 == 1 at test_review_handoff_has_durable_stage_receipts.py:649, while source manifest.md qualifies the unmet broader importer condition.",
+    "fit": "reckon/crew/promotion_requests.py:357 extends the existing locked request-state owner, and tests/test_review_handoff_has_durable_stage_receipts.py:628 uses the established clock, pointer fixture and lease lifecycle with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:914 records the waiting outcome before _mark_readiness, and tests/test_review_handoff_has_durable_stage_receipts.py:664 proves readiness refresh preserves the existing journal bytes.",
+    "reuse": "Capability searches and opened owners show dispatch_launch.py:591 delegates placement to host.py:223, recovery_watch.py:1211 uses plan_review.py:215 and ticker.py:969, crew_follow_commands.py:70 delegates to follower_reload.py:56, and promotion_requests.py:357 extends its existing request owner.",
+    "scope_discipline": "resume-3-advice.txt explicitly authorises the primary merge; the combined diff in reckon/crew/promotion_requests.py:914 retains both parents and the only newly authored test lies at tests/test_review_handoff_has_durable_stage_receipts.py:628."
+  },
+  "method": "Read exact git objects because assigned read-only checkout HEAD is 2c7f45599c70fab39e119dd87b00714d56945dc9. Review is limited to the five named targets since the prior review; primary-owned additions are distinguished from the combined merge resolution. No source mutation or suite rerun.",
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "failure_id": "tests/test_review_handoff_has_durable_stage_receipts.py::test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/merge-negative-waiting-receipt.log",
+    "mutation": "Suppress only waiting attempt outcome receipt; keep readiness update.",
+    "quote": "assert 0 == 1",
+    "summary": "1 failed, 26 deselected in 0.48s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and live plan section 13; promotion_requests.py:914 retains the waiting attempt outcome before the merged readiness update, preserving durable stage accounting.\nVERDICT done_when: Read live section 13 and resume-3-advice.txt; base-suite.log records 58 passed, merge-head-suite.log records 85 passed, and the suppression control fails at test_review_handoff_has_durable_stage_receipts.py:649; the broader importer zero-added condition remains qualified by the source manifest.\nVERDICT write_paths: Read source manifest.md orientation_write_paths and resume-3-advice.txt authorising the primary merge; the sole manual source resolution is promotion_requests.py and the added test is in its granted test file.\nVERDICT manifest: Read source manifest.md at completed head 732ca20cffc3b2963baf6a0d31221a22e56ef19c; its two armed suite receipts reconcile with the raw completed logs and it explicitly does not claim zero added importer failures.\nVERDICT diff: Read the single first-parent merge commit 732ca20cffc3b2963baf6a0d31221a22e56ef19c against prior reviewed head 973ff2c2c1952835e2cf10e3de76c871990feab4 across the five named targets, including its combined promotion_requests.py resolution and 15 new assertions.\nCALL_SITES: reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/crew/promotion_requests.py:PromotionService._tick_locked, reckon/crew/promotion_requests.py:PromotionService._run, reckon/crew/recovery_watch.py:_compute_watch_snapshot, reckon/crew/recovery_watch.py:_watch_verdict, reckon/crew/recovery_watch.py:_fleet_counts, reckon/crew_follow_commands.py:crew_reload\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:914 records the waiting outcome before _mark_readiness, and tests/test_review_handoff_has_durable_stage_receipts.py:664 proves readiness refresh preserves the existing journal bytes.\nSCORE evidence: 18\nJUSTIFICATION evidence: merge-head-suite.log records 85 passed and EXIT=0 at the reviewed head, and merge-negative-waiting-receipt.log records assert 0 == 1 at test_review_handoff_has_durable_stage_receipts.py:649, while source manifest.md qualifies the unmet broader importer condition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: resume-3-advice.txt explicitly authorises the primary merge; the combined diff in reckon/crew/promotion_requests.py:914 retains both parents and the only newly authored test lies at tests/test_review_handoff_has_durable_stage_receipts.py:628.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_review_handoff_has_durable_stage_receipts.py:649 fails when the waiting outcome call is suppressed, :659 fails if parked readiness is skipped under occupied slots, and :664 fails if refreshing readiness rewrites or appends journal bytes.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:357 extends the existing locked request-state owner, and tests/test_review_handoff_has_durable_stage_receipts.py:628 uses the established clock, pointer fixture and lease lifecycle with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches and opened owners show dispatch_launch.py:591 delegates placement to host.py:223, recovery_watch.py:1211 uses plan_review.py:215 and ticker.py:969, crew_follow_commands.py:70 delegates to follower_reload.py:56, and promotion_requests.py:357 extends its existing request owner.",
+  "reuse_search": {
+    "capabilities": [
+      "launcher allocation identity",
+      "hold ownership and release command",
+      "reload requests and status",
+      "slot-independent promotion readiness",
+      "durable promotion outcomes"
+    ],
+    "judgement": "Added runtime definitions extend the owning launch, watch, request and CLI surfaces or wrap existing owners; the new test extends the existing receipt test module, with no new competing capability owner.",
+    "opened_owners": [
+      "reckon/host.py:host_facts",
+      "reckon/crew/admission/reviews.py",
+      "reckon/crew/plan_review.py:review_invocation",
+      "reckon/crew/ticker.py:_bucket_of",
+      "reckon/crew/follower_reload.py:request_service_reload",
+      "reckon/crew/promotion_requests.py:_mark_readiness",
+      "reckon/crew/stage_receipts.py:note_promotion_outcome"
+    ]
+  },
+  "review_run_id": "r-20261117T044833936509-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-732ca20cffc3",
+  "reviewed_base_sha": "973ff2c2c1952835e2cf10e3de76c871990feab4",
+  "reviewed_commits": [
+    "732ca20cffc3b2963baf6a0d31221a22e56ef19c"
+  ],
+  "reviewed_head_sha": "732ca20cffc3b2963baf6a0d31221a22e56ef19c",
+  "reviewed_run_id": "r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T04:55:02.777473+00:00",
+  "total": 118
+}

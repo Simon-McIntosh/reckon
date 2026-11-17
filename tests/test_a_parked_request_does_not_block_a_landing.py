@@ -28,7 +28,7 @@ from reckon.crew.runs import _write_json, list_live, pointer_path
 PROJECT = "sample"
 OURS = "r-landing-run"
 PEER = "r-parked-request"
-ACCEPTED = "declared-b.txt"
+ACCEPTED = "declared-b.receipt"
 DECLARED = "declared-a.txt"
 
 
@@ -190,6 +190,7 @@ def complete_arguments(head: str) -> list[str]:
         "0",
         "--gate-log-path",
         "/durable/parked-request-landing.log",
+        "--wait",
     ]
 
 

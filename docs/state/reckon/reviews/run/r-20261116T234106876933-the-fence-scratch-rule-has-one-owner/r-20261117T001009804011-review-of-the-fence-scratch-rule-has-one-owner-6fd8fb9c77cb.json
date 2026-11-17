@@ -1,0 +1,167 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "Membership queries create the absent scratch directory; line 43 catches the side effect after all calls.",
+      "lines": [
+        32,
+        43
+      ]
+    },
+    {
+      "fails_if": "Containment becomes string-prefix matching, the scratch root is granted writable or mounted, descendant membership is lost, or string and Path inputs differ; explicit sealed/writable booleans independently define the expected cases.",
+      "lines": [
+        34,
+        37,
+        40
+      ]
+    },
+    {
+      "fails_if": "Symlink ancestry is not resolved, canonical members are not deduplicated, a nested candidate wins over the shallow own root, or aliased node containment is lost.",
+      "lines": [
+        56,
+        57,
+        58
+      ]
+    },
+    {
+      "fails_if": "The seal returns the resolved root instead of the handed alias, or write/mount paths keep the alias rather than their canonical destination.",
+      "lines": [
+        70,
+        71,
+        72
+      ]
+    },
+    {
+      "fails_if": "An empty grant invents a seal, write root or mount, or a missing/equal/unrelated node_tmp wrongly permits a mount.",
+      "lines": [
+        77,
+        78,
+        79,
+        82
+      ]
+    },
+    {
+      "fails_if": "The selected in-scratch descendant is not accepted before injecting the rejection; these are positive controls for subsequent rejection assertions.",
+      "lines": [
+        88,
+        89,
+        90
+      ]
+    },
+    {
+      "fails_if": "Any former caller retains its independent predicate instead of consuming the injected rejection; restoring the base seal makes line 99 fail as the recorded control demonstrates.",
+      "lines": [
+        98,
+        99,
+        100
+      ]
+    },
+    {
+      "fails_if": "The changed verdict rejects all roots instead of only chosen; the independent other root must remain accepted.",
+      "lines": [
+        101,
+        102,
+        103
+      ]
+    },
+    {
+      "fails_if": "Equally shallow candidates are sorted or unordered instead of preserving handed order; the loop explicitly reverses the candidates.",
+      "lines": [
+        110
+      ]
+    }
+  ],
+  "assertion_independence": "No tautological assertion found: expected paths are selected by independent fixture topology, explicit boundary booleans, depth/order rules, or injected rejection; equality to an input path is the API contract and wrong containment or ordering makes these checks fail.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_worker_fence.py:1895",
+    "reckon/_worker_fence.py:1974",
+    "reckon/_worker_fence.py:2011",
+    "reckon/_backends.py:3102"
+  ],
+  "completed_at": "2026-11-17T00:19:51Z",
+  "dispatched_at": "2026-11-17T00:13:46Z",
+  "findings": [],
+  "importer_comparison": {
+    "added_failure_ids": [],
+    "after_failure_count": 8,
+    "baseline_failure_count": 8,
+    "failure_ids": [
+      "tests/test_a_run_review_cannot_remove_a_siblings_record.py::test_a_fenced_review_removes_no_siblings_record",
+      "tests/test_a_worker_cannot_remove_another_runs_reports.py::test_a_fenced_run_under_the_production_composition_cannot_remove_a_siblings_report_tree",
+      "tests/test_a_worker_cannot_remove_another_runs_reports.py::test_a_fenced_run_under_the_production_composition_cannot_remove_a_siblings_review_record",
+      "tests/test_a_worker_cannot_remove_another_runs_scratch.py::test_a_fenced_run_cannot_remove_a_siblings_scratch",
+      "tests/test_launch_plan_fences_the_home.py::test_the_negative_control_deletes_the_claude_sentinel",
+      "tests/test_launch_plan_fences_the_home.py::test_a_symlinked_protected_path_does_not_stop_the_launch",
+      "tests/test_launch_plan_fences_the_home.py::test_the_negative_control_rebinds_a_target_inside_a_sealed_directory",
+      "tests/test_spawn_retries_a_vanished_bind.py::test_the_supervisor_seam_retries_the_spawn"
+    ]
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the sole commit 6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed against 5b93c97d604b49797e845a7fda92a9c31a9b2e3c; the two-file diff centralizes membership while preserving root exclusion, symlink resolution, lazy imports and mount ordering.",
+    "done_when": "Live plan section 5 and source prompt.txt require centralization, fewer lines, verdict propagation and zero added fence/importer failures; structure.log, negative-control-final.log, both armed-exact logs and both importer logs record these measures.",
+    "goal": "Source prompt.txt requires one scratch-membership definition reached by every caller; reckon/_worker_fence.py:1447 supplies it to all three former sites at lines 1486, 1593 and 1626.",
+    "manifest": "Source manifest.md identifies commit 6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed and completed gate arms; their logs confirm 58 baseline passes, 69 head passes and the same eight importer failures in each arm.",
+    "write_paths": "Source prompt.txt declares the fence module, scratch-root test and optional evidence/figure paths; the exact base-to-head diff changes only reckon/_worker_fence.py and tests/test_worker_fence_scratch_roots.py."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_fence_scratch_roots.py:97-103 rejects one member through the shared owner and requires all three answers to change while another member remains accepted, so restoring either independent seal or mount predicate makes lines 99 or 100 fail.",
+    "evidence": "Source baseline-armed-exact.log and after-armed-exact.log identify the inspected revisions and finish EXIT=0, while negative-control-final.log fails tests/test_worker_fence_scratch_roots.py:99 and importer logs show identical eight-failure sets.",
+    "fit": "reckon/_worker_fence.py:1447 follows the neighboring typed path-helper idiom and preserves the lazy dispatch import, while tests/test_worker_fence_scratch_roots.py uses isolated temporary paths and mechanism-based names.",
+    "goal_fidelity": "reckon/_worker_fence.py:1447 owns the membership predicate used at all three former sites, and exact revision reads confirm the module shrank from 2061 to 2058 lines.",
+    "reuse": "Capability searches for scratch-root membership and worker_scratch_root across reckon identify reckon/_worker_fence.py as the existing owner; its new helper consolidates that owner and reuses resolved_destination at line 1293 and dispatch_launch.worker_scratch_root at line 868.",
+    "scope_discipline": "Commit 6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed changes only the declared reckon/_worker_fence.py and tests/test_worker_fence_scratch_roots.py paths with behavior-preserving consolidation and directly relevant coverage."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234106876933-the-fence-scratch-rule-has-one-owner/negative-control-final.log",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt requires one scratch-membership definition reached by every caller; reckon/_worker_fence.py:1447 supplies it to all three former sites at lines 1486, 1593 and 1626.\nVERDICT done_when: Live plan section 5 and source prompt.txt require centralization, fewer lines, verdict propagation and zero added fence/importer failures; structure.log, negative-control-final.log, both armed-exact logs and both importer logs record these measures.\nVERDICT write_paths: Source prompt.txt declares the fence module, scratch-root test and optional evidence/figure paths; the exact base-to-head diff changes only reckon/_worker_fence.py and tests/test_worker_fence_scratch_roots.py.\nVERDICT manifest: Source manifest.md identifies commit 6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed and completed gate arms; their logs confirm 58 baseline passes, 69 head passes and the same eight importer failures in each arm.\nVERDICT diff: Read the sole commit 6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed against 5b93c97d604b49797e845a7fda92a9c31a9b2e3c; the two-file diff centralizes membership while preserving root exclusion, symlink resolution, lazy imports and mount ordering.\nCALL_SITES: reckon/_worker_fence.py:1895, reckon/_worker_fence.py:1974, reckon/_worker_fence.py:2011, reckon/_backends.py:3102\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1447 owns the membership predicate used at all three former sites, and exact revision reads confirm the module shrank from 2061 to 2058 lines.\nSCORE evidence: 20\nJUSTIFICATION evidence: Source baseline-armed-exact.log and after-armed-exact.log identify the inspected revisions and finish EXIT=0, while negative-control-final.log fails tests/test_worker_fence_scratch_roots.py:99 and importer logs show identical eight-failure sets.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Commit 6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed changes only the declared reckon/_worker_fence.py and tests/test_worker_fence_scratch_roots.py paths with behavior-preserving consolidation and directly relevant coverage.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_worker_fence_scratch_roots.py:97-103 rejects one member through the shared owner and requires all three answers to change while another member remains accepted, so restoring either independent seal or mount predicate makes lines 99 or 100 fail.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_worker_fence.py:1447 follows the neighboring typed path-helper idiom and preserves the lazy dispatch import, while tests/test_worker_fence_scratch_roots.py uses isolated temporary paths and mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for scratch-root membership and worker_scratch_root across reckon identify reckon/_worker_fence.py as the existing owner; its new helper consolidates that owner and reuses resolved_destination at line 1293 and dispatch_launch.worker_scratch_root at line 868.\n",
+  "reproduction_quote": "Changing the write-root verdict removed own from write roots; seal and tmp mount still selected it.",
+  "review_run_id": "r-20261117T001009804011-review-of-the-fence-scratch-rule-has-one-owner-6fd8fb9c77cb",
+  "reviewed_base_sha": "5b93c97d604b49797e845a7fda92a9c31a9b2e3c",
+  "reviewed_head_sha": "6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed",
+  "reviewed_run_id": "r-20261116T234106876933-the-fence-scratch-rule-has-one-owner",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "structural_evidence": {
+    "base_lines": 2061,
+    "caller_count": 3,
+    "definition_count": 1,
+    "head_lines": 2058
+  },
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_worker_fence_scratch_roots.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234106876933-the-fence-scratch-rule-has-one-owner/after-armed-exact.log",
+      "revision": "6fd8fb9c77cb43d9e03e37be4433fcc489cb08ed"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234106876933-the-fence-scratch-rule-has-one-owner/baseline-armed-exact.log",
+      "revision": "5b93c97d604b49797e845a7fda92a9c31a9b2e3c"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:32:59.528324+00:00",
+  "total": 120
+}
