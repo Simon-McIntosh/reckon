@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -152,9 +152,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s4" data-id="c-s4-bound-revised" data-who="reckon-build" data-when="2026-11-17T05:05:00Z">
-    <div class="r-comment-body"><p>§4's done-when is revised after its first delivery. The worker's isolated replay of 106 requests drained at 202.9 successful promotions an hour against 112.8 at the base, 1.80 times, with all 106 verdicts equal. That meets the 30 an hour this section exists for and misses the "three times the base" bound, which was set before any harness measurement and has no basis: the base on the harness is already faster than the live drain's 9 to 39 an hour. The bound is now "higher than the base". The "real crew home's listing is identical" check was unsatisfiable, because other sessions write the live home during any replay; it is restated as "the replay writes nothing there". The review of that delivery, 90 of 120, raised two blocking findings that stand: the real-head replay did not finish in 1,800 s with 46 requests still active, and the branch lease is taken at the commit wrapper, after the release record has already written the shared ledger. The second is added to the done-when as a test.</p></div>
-</div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
     <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
 </div>
@@ -178,6 +175,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261117T023606635649-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-973ff2c2c195" data-who="reckon-build" data-when="2026-11-17T02:58:03Z">
     <div class="r-comment-body"><p>Independent review of e828b0d65579a7b837828cac71c135a57d6f43e8..973ff2c2c1952835e2cf10e3de76c871990feab4 is parsed in canonical and revision-specific records; all six scores 20/20, no findings, zero added armed failures. Both earlier blocking findings are answered.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261117T044833936509-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-732ca20cffc3" data-who="reckon-build" data-when="2026-11-17T04:56:16Z">
+    <div class="r-comment-body"><p>Independently reviewed 973ff2c2c1952835e2cf10e3de76c871990feab4..732ca20cffc3b2963baf6a0d31221a22e56ef19c within five named targets; stored canonical and revision-specific parsed records, scores 20/18/20/20/20/20, no findings, zero added armed failures.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261117T021343280250-review-of-a-failed-promotion-restores-its-plan-935996ceabfa" data-who="reckon-build" data-when="2026-11-17T02:24:26Z">
     <div class="r-comment-body"><p>Independent review of b8dc50aa168d697d3c8201c5a213282c8d610641..935996ceabfae1086d0d43cb92f8316f4da61616 stores both parsed records; six dimensions scored 20/20/20/20/20/5, zero added gate failures, prior concurrency blocker answered, one non-blocking duplicated-comment-transformation finding.</p></div>
@@ -209,6 +209,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261116T222501389181-a-waiting-promotion-is-read-again" data-who="reckon-build" data-when="2026-11-16T22:44:45Z">
     <div class="r-comment-body"><p>Waiting completion requests are re-evaluated with a fresh checked_at, successful drain checks are dated, and waits over 30 minutes raise session duties naming their condition and last check; 3 behavior cases plus 58 repository checks pass, and 330 importer cases add zero failures or errors against the base (313 passed, 13 failed, 4 errors in both arms).</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-s4-bound-revised" data-who="reckon-build" data-when="2026-11-17T05:05:00Z">
+    <div class="r-comment-body"><p>§4's done-when is revised after its first delivery. The worker's isolated replay of 106 requests drained at 202.9 successful promotions an hour against 112.8 at the base, 1.80 times, with all 106 verdicts equal. That meets the 30 an hour this section exists for and misses the "three times the base" bound, which was set before any harness measurement and has no basis: the base on the harness is already faster than the live drain's 9 to 39 an hour. The bound is now "higher than the base". The "real crew home's listing is identical" check was unsatisfiable, because other sessions write the live home during any replay; it is restated as "the replay writes nothing there". The review of that delivery, 90 of 120, raised two blocking findings that stand: the real-head replay did not finish in 1,800 s with 46 requests still active, and the branch lease is taken at the commit wrapper, after the release record has already written the shared ledger. The second is added to the done-when as a test.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261117T025646290330-review-of-the-drain-keeps-up-with-a-burst-8ed595380ba2" data-who="reckon-build" data-when="2026-11-17T03:09:51Z">
     <div class="r-comment-body"><p>Independent review of 8ed595380ba2351031e4a0ffc43e2f88e664db03 stored in both granted paths: six scores (8,8,20,15,19,20), zero added failures in the armed pair, and two blocking findings for incomplete throughput evidence and the release writer preceding its branch lease.</p></div>
 </div>
@@ -229,6 +232,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261117T012737887566-review-of-report-runs-are-promoted-from-their-record-80b6a6b9ca96" data-who="reckon-build" data-when="2026-11-17T01:41:07Z">
     <div class="r-comment-body"><p>Reviewed 4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8..80b6a6b9ca96a921b3542b0a0a9b575be4b1b0ac; prior subject finding answered, all six dimensions 20/20, no findings, added failures 0.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261116T233437459813-report-runs-are-promoted-from-their-record" data-who="reckon-build" data-when="2026-11-17T01:14:27Z">
+    <div class="r-comment-body"><p>Unattended report promotion now validates the exact sidecar subject the storage owner recognises, so missing/misspelled code or portfolio subjects keep their pointers and write no ledger row. Valid promotion tests assert the persisted review record. Repair base 4d9433f24fad passes 71 armed checks; repaired head 80b6a6b9ca96 passes 77; reversing its source hunk restores all four malformed-subject failures. The blocking review finding is answered in the manifest.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-11-17T04:25:00Z">
     <div class="r-comment-body"><p>§7 landed by direct merge (head <code>7d7dbacbe4</code>), on the lead's instruction. Reviewed heads that merge cleanly with a moved primary branch are measured and published as one candidate, and a head that conflicts, including one that meets a new conflict after it was queued, is returned to the worktree that produced it as a repair round. First review 108 of 120 with one blocking finding on a queued group meeting a later conflict, repaired; re-review 120 of 120. Merged candidate gate: 19 passed in 49.68s.</p></div>
