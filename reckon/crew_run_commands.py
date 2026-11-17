@@ -1,7 +1,7 @@
 import inspect
 import os
 import time
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1561,6 +1561,29 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
     help="Repair a review's status or missing subject.",
 )
 @click.option(
+    "--arm",
+    type=click.Choice(["baseline_suite", "after_suite"]),
+    default=None,
+    help="Re-point a suite arm's revision.",
+)
+@click.option(
+    "--revision",
+    default=None,
+    help="The commit object id the re-pointed arm's command ran against.",
+)
+@click.option(
+    "--command",
+    "arm_command",
+    default="",
+    help="The command the re-pointed arm ran, when it differs from the recorded one.",
+)
+@click.option(
+    "--log-path",
+    "arm_log_path",
+    default="",
+    help="The log the re-pointed arm wrote, when the recorded one is wrong; a run keeps the files it was armed with otherwise.",
+)
+@click.option(
     "--run", "run_id", required=True, help="Run whose manifest or review is repaired."
 )
 @click.option(
@@ -1576,16 +1599,35 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
 @click.option("--reason", required=True, help="Why the recorded repair is justified.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_repair(
-    status, repair_review, run_id, record_path, change, reason, pretty, project=None
+    status,
+    repair_review,
+    arm,
+    revision,
+    arm_command,
+    arm_log_path,
+    run_id,
+    record_path,
+    change,
+    reason,
+    pretty,
+    project=None,
 ):
-    """Repair a manifest's status word or a review's status or subject identity."""
+    """Repair a manifest's status word, a suite arm's revision, or a review's fields."""
     resolved_project = _accept_a_matching_project(run_id, project)
-    if bool(status) == repair_review:
-        raise click.UsageError("choose exactly one of --status or --review")
+    if sum((bool(status), repair_review, bool(arm))) != 1:
+        raise click.UsageError("choose exactly one of --status, --review or --arm")
     if status:
         if record_path or change:
             raise click.UsageError("--status does not accept --record or --set")
         return crew_repair_status(run_id, status, reason, pretty)
+    if arm:
+        if record_path or change:
+            raise click.UsageError("--arm does not accept --record or --set")
+        if not revision:
+            raise click.UsageError("--arm needs --revision")
+        return crew_repair_arm(
+            run_id, arm, revision, reason, arm_command, arm_log_path, pretty
+        )
     if not record_path or not change:
         raise click.UsageError("--review needs --record and --set")
     return crew_repair_review(
@@ -3216,6 +3258,25 @@ def crew_repair_status(run_id, status, reason, pretty):
     _emit_crew_result(result, pretty)
 
 
+def crew_repair_arm(run_id, arm, revision, reason, command, log_path, pretty):
+    """Re-point a suite arm at a revision, keeping the manifest as delivered."""
+    crew_module, _ = _crew_modules()
+    from reckon.crew import runs as runs_module
+
+    try:
+        result = runs_module.repair_manifest_arm(
+            run_id,
+            arm,
+            revision=revision,
+            reason=reason,
+            command=command,
+            log_path=log_path,
+        )
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
+
 def _ledger_module():
     """Import the ledger helpers on demand."""
     from reckon import ledger as ledger_module
@@ -3457,6 +3518,59 @@ def _complete_many(run_ids, parameters):
             "record_path": str(path),
         }
     _emit_crew_result(reply, parameters.get("pretty", False))
+
+
+def _refuse_an_unfileable_review_record(
+    run_id: str, *, accepted: "Iterable[str]" = (), pretty: bool = False
+) -> None:
+    """Refuse a review run whose every delivered record the store would reject.
+
+    A review writes its record into its own run directory rather than into the
+    store, so the file a promotion files is the one on a path the run declared.
+    Reading it before the promotion is requested is what keeps the refusal on
+    the command that would have queued the work: the queued path answers with
+    its request receipt immediately, so a guard placed behind it reports a
+    review claims files that the reviewer is never told about until a drain
+    refuses them. A path this call accepts is read beside the declaration
+    because a widen lands it on the pointer only after this point.
+    """
+    import json
+
+    from reckon.crew import review as review_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except CrewError:
+        return
+    node = pointer.get("node") or {}
+    if str(pointer.get("role") or node.get("role") or "") != "review":
+        return
+    declared = [*(node.get("write_paths") or ()), *accepted]
+    delivered = []
+    for name in dict.fromkeys(str(path) for path in declared):
+        source = Path(name)
+        if (
+            source.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
+            or not source.is_file()
+        ):
+            continue
+        try:
+            body = json.loads(source.read_text(encoding="utf-8"))
+            reasons = (
+                review_module.store_review_refusals(body)
+                if isinstance(body, dict)
+                else ["record is not an object"]
+            )
+        except (OSError, ValueError) as exc:
+            reasons = [f"unreadable JSON: {exc}"]
+        delivered.append({"record": str(source), "reasons": reasons})
+    if delivered and all(entry["reasons"] for entry in delivered):
+        _emit_completion_reply(
+            {"ok": False, "review_filed": False, "refused": delivered}, pretty
+        )
+        raise click.exceptions.Exit(1)
 
 
 @crew.command(name="complete")
@@ -3799,6 +3913,11 @@ def crew_complete(
     # a promotion request, and a caller whose --project disagrees with the run
     # must be refused without a request left queued for a run it did not name.
     _accept_a_matching_project(run_id, project)
+    # Judged here, ahead of the queued request, so a review learns its record
+    # is unfileable from the command that would have queued the promotion.
+    _refuse_an_unfileable_review_record(
+        run_id, accepted=[path for path, _ in accepted_paths], pretty=pretty
+    )
     driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
         # The drain forwards every stored option as a keyword, so the snapshot
@@ -3836,7 +3955,6 @@ def crew_complete(
         )
     crew_module, _ = _crew_modules()
     ledger_module = _ledger_module()
-    from reckon.crew import review as review_module
     from reckon.crew import runs as runs_module
 
     try:
@@ -3864,36 +3982,6 @@ def crew_complete(
             pointer = runs_module.read_pointer(run_id)
         except crew_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-    if (
-        pointer
-        and str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
-        == "review"
-    ):
-        delivered = []
-        for declared in (pointer.get("node") or {}).get("write_paths") or ():
-            source = Path(str(declared))
-            if (
-                source.parent.name != review_module.RUN_REVIEW_RECORD_DIRNAME
-                or not source.is_file()
-            ):
-                continue
-            try:
-                import json
-
-                body = json.loads(source.read_text(encoding="utf-8"))
-                reasons = (
-                    review_module.store_review_refusals(body)
-                    if isinstance(body, dict)
-                    else ["record is not an object"]
-                )
-            except (OSError, ValueError) as exc:
-                reasons = [f"unreadable JSON: {exc}"]
-            delivered.append({"record": str(source), "reasons": reasons})
-        if delivered and all(entry["reasons"] for entry in delivered):
-            _emit_completion_reply(
-                {"ok": False, "review_filed": False, "refused": delivered}, pretty
-            )
-            raise click.exceptions.Exit(1)
     gate_check = {
         "command": gate_command,
         "exit_status": gate_exit_status,

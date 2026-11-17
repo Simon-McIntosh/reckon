@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/run_store.py:806 RunStore.__init__",
+    "reckon/run_store.py:555 backfill_revisions",
+    "reckon/run_store.py:1775 compare",
+    "reckon/crew/gc.py:2100 _retire_run_store",
+    "reckon/budget.py:551 binding_window"
+  ],
+  "completed_at": "2026-11-17T09:02:12.818Z",
+  "dispatched_at": "2026-11-17T09:01:14Z",
+  "findings": [
+    {
+      "file": "tests/test_older_code_never_migrates_a_newer_store.py",
+      "line": 142,
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the fixture store against the constant that built it, so both sides move together and it holds whatever the coverage check does; it guards nothing."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": 939,
+      "severity": "non-blocking",
+      "text": "non-blocking: the superset test has no assertion that reddens if it reverts to equality, since case (a) returns at :842 and case (b) is missing a column either way."
+    },
+    {
+      "file": "tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py",
+      "line": 219,
+      "severity": "non-blocking",
+      "text": "non-blocking: the head tree leaves this test red because it asserts an unknown recorded version on a complete store is migrated, the behaviour this node removes; the file is outside the node fence and the source manifest records it under outside_scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commits a5e9b92c, 0e0c715c and 19d35d7d against d5694fa; they add the coverage check and relax _migrate_runs, point the test at the store own shape, and add the evidence fragment, with no path outside the declared scope.",
+    "done_when": "the three cases are asserted in tests/test_older_code_never_migrates_a_newer_store.py at :152 for zero decodes plus the untouched record, :193 with :206 for the missing-column backfill of 500 rows, and :220-233 for reads and appends, and logs/gate.log records 3 passed with EXIT=0.",
+    "goal": "docs/plans/the-monitor-reads-each-fact-once.html:818 states that older code never migrates a newer store; reckon/run_store.py:842 with :877-905 gates the open on declared coverage, so a store carrying every declared column and index is opened without the row backfill.",
+    "manifest": "source manifest.md records status complete, the three commits, the literal gate command with 3 passed EXIT=0, matched arms at d5694fa with 2 failed and at 19d35d7 with 3 passed, the negative control assert 500 == 0, and the contradicting existing test under outside_scope.",
+    "write_paths": "source manifest.md:3 declares reckon/run_store.py, tests/test_older_code_never_migrates_a_newer_store.py, the evidence fragment and the figure directory; the three-commit diff changes exactly the first three."
+  },
+  "justifications": {
+    "durability": "tests/test_older_code_never_migrates_a_newer_store.py:152 reddens on the restored base equality check, but :142 is a precondition that moves with the code and reckon/run_store.py:939 has no assertion that reddens on a revert to equality.",
+    "evidence": "logs/gate.log records 3 passed with EXIT=0 at head, and logs/negative-control.log records the base whole-store backfill as assert 500 == 0 with EXIT=1.",
+    "fit": "reckon/run_store.py:877 follows the private-helper style of _runs_columns at :869 and the module noqa idiom, and ruff check plus ruff format --check are clean on the staged paths at head.",
+    "goal_fidelity": "reckon/run_store.py:842 returns before _migrate_runs for a store holding every declared column and index, so the open performs no row backfill.",
+    "reuse": "the capability search for store-shape introspection found only reckon/run_store.py:869 _runs_columns, which _lacks_declaration reuses, and the column comparison at :939, which it wraps.",
+    "scope_discipline": "the three-commit diff touches only reckon/run_store.py, the new test file and the evidence fragment, all inside the write paths at manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/the-monitor-reads-each-fact-once.html:818 states that older code never migrates a newer store; reckon/run_store.py:842 with :877-905 gates the open on declared coverage, so a store carrying every declared column and index is opened without the row backfill.\nVERDICT done_when: the three cases are asserted in tests/test_older_code_never_migrates_a_newer_store.py at :152 for zero decodes plus the untouched record, :193 with :206 for the missing-column backfill of 500 rows, and :220-233 for reads and appends, and logs/gate.log records 3 passed with EXIT=0.\nVERDICT write_paths: source manifest.md:3 declares reckon/run_store.py, tests/test_older_code_never_migrates_a_newer_store.py, the evidence fragment and the figure directory; the three-commit diff changes exactly the first three.\nVERDICT manifest: source manifest.md records status complete, the three commits, the literal gate command with 3 passed EXIT=0, matched arms at d5694fa with 2 failed and at 19d35d7 with 3 passed, the negative control assert 500 == 0, and the contradicting existing test under outside_scope.\nVERDICT diff: read commits a5e9b92c, 0e0c715c and 19d35d7d against d5694fa; they add the coverage check and relax _migrate_runs, point the test at the store own shape, and add the evidence fragment, with no path outside the declared scope.\nCALL_SITES: reckon/run_store.py:806 RunStore.__init__, reckon/run_store.py:555 backfill_revisions, reckon/run_store.py:1775 compare, reckon/crew/gc.py:2100 _retire_run_store, reckon/budget.py:551 binding_window\nSCORE goal_fidelity: 18\nSCORE evidence: 18\nSCORE scope_discipline: 18\nSCORE durability: 14\nSCORE fit: 19\nSCORE reuse: 18\nJUSTIFICATION goal_fidelity: reckon/run_store.py:842 returns before _migrate_runs for a store holding every declared column and index, so the open performs no row backfill.\nJUSTIFICATION evidence: logs/gate.log records 3 passed with EXIT=0 at head, and logs/negative-control.log records the base whole-store backfill as assert 500 == 0 with EXIT=1.\nJUSTIFICATION scope_discipline: the three-commit diff touches only reckon/run_store.py, the new test file and the evidence fragment, all inside the write paths at manifest.md:3.\nJUSTIFICATION durability: tests/test_older_code_never_migrates_a_newer_store.py:152 reddens on the restored base equality check, but :142 is a precondition that moves with the code and reckon/run_store.py:939 has no assertion that reddens on a revert to equality.\nJUSTIFICATION fit: reckon/run_store.py:877 follows the private-helper style of _runs_columns at :869 and the module noqa idiom, and ruff check plus ruff format --check are clean on the staged paths at head.\nJUSTIFICATION reuse: the capability search for store-shape introspection found only reckon/run_store.py:869 _runs_columns, which _lacks_declaration reuses, and the column comparison at :939, which it wraps.\nFINDING tests/test_older_code_never_migrates_a_newer_store.py:142 non-blocking: the assertion compares the fixture store against the constant that built it, so both sides move together and it holds whatever the coverage check does; it guards nothing.\nFINDING reckon/run_store.py:939 non-blocking: the superset test has no assertion that reddens if it reverts to equality, since case (a) returns at :842 and case (b) is missing a column either way.\nFINDING tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:219 non-blocking: the head tree leaves this test red because it asserts an unknown recorded version on a complete store is migrated, the behaviour this node removes; the file is outside the node fence and the source manifest records it under outside_scope.\n",
+  "review_run_id": "r-20261117T085953647948-review-of-older-code-never-migrates-a-newer-store-19d35d7deff0",
+  "reviewed_base_sha": "d5694fa44d63c6b52d9b80e8315d1afa897bc11e",
+  "reviewed_commits": [
+    "a5e9b92cc749edac32962d8d1c3dc15ceb63e05e",
+    "0e0c715c8f0ac444ee501ab2e7e36b69c3d26b0b",
+    "19d35d7deff0f0c459dc7cf70facdbe317e31ef7"
+  ],
+  "reviewed_head_sha": "19d35d7deff0f0c459dc7cf70facdbe317e31ef7",
+  "reviewed_run_id": "r-20261117T050100558634-older-code-never-migrates-a-newer-store",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T10:57:50.670287+00:00",
+  "total": 105
+}

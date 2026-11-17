@@ -546,16 +546,21 @@ def admit_once(
                     moment=moment,
                     claims=claims,
                     fenced=_holds._non_binding_holds(verdicts),
+                    shared=shared_files[shared_key],
                 )
                 if overlap is not None:
-                    # An earlier-ranked queued request names a path this one also
-                    # names, so this launch would be refused against a claim that
-                    # fences nothing while both wait. It is left exactly as it is —
-                    # queued, with no failure recorded — and the head of the queue,
-                    # which has no earlier overlap, is never held this way. An
-                    # earlier request the pass has already held is not a fence: it
-                    # cannot launch, so holding this one behind it would stop the
-                    # lane on a request that is waiting elsewhere.
+                    # An earlier-ranked queued request names a path a merge cannot
+                    # reconcile — a plan document, generated state, a cumulative
+                    # evidence record, a figure directory or a dependency lock —
+                    # and this one names it too, so this launch would be refused
+                    # against a claim that fences nothing while both wait. Source
+                    # paths are not a reason to wait: the worktrees isolate the
+                    # edits and the merge reconciles them. It is left exactly as it
+                    # is — queued, with no failure recorded — and the head of the
+                    # queue, which has no earlier overlap, is never held this way.
+                    # An earlier request the pass has already held is not a fence:
+                    # it cannot launch, so holding this one behind it would stop
+                    # the lane on a request that is waiting elsewhere.
                     result["held"].append(str(pointer["run_id"]))
                     result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                         f"held behind earlier queued request "

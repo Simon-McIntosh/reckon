@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T13:38:21.879Z",
+  "dispatched_at": "2026-11-17T13:37:37Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261117T133548828578-plan-review-of-history-persists-as-detail-washes-out/plan.html:435",
+      "id": "done_when-1",
+      "reason": "the section must either put that test path inside its write scope and name its assertion as the one that changes, or the dispatched node stops at the gate.",
+      "text": "s35's write paths are \"reckon/run_store.py and a new test\", yet the head suite already asserts the reversed rule: `tests/test_a_locked_store_is_not_read_as_missing_columns.py::test_an_absent_runs_table_still_owes_its_migration` (line 37, green at base: `3 passed in 0.81s`) requires `_refuse_owed_migration` to raise \"owes the schema migration\" for an absent runs table, and its module docstring states \"Only a table that is absent reads as carrying none\" as the rule; that test is not in s35's write paths and not in its \"these still hold\" list, so a node built to the section either fails its own gate on a test it may not touch or edits outside its fence.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261117T133548828578-plan-review-of-history-persists-as-detail-washes-out/plan.html:435",
+      "id": "reasoning-1",
+      "reason": "a worker building the sentence as written answers empty for a lost runs table, and the plan already has the discriminator it needs to refuse that. A worker that instead keeps the file's docstring promise (\"An existing empty store answers an empty list\", `reckon/run_store.py:827`) answers the same endpoint by a path the Why does not name: a bare store file with no tables also raises today (reproduced against this tree: `stored_run_rows(\"proj\", path=<file with no tables>)` \u2192 `UnreadableRunStoreError: \u2026 it owes the schema migration (the runs table has no activity_seconds, backend, \u2026 column`)`), so the endpoint would also have to decide that the absence is not a damaged store.",
+      "text": "the section justifies the change with \"A store with no runs table holds no runs\", which is false for a store that held runs and lost its table, and its endpoint makes the two states indistinguishable: `store_meta`'s schema version is written only after the runs table exists (`RunStore._record_schema_version`, called after `_migrate_runs`), so a store carrying a recorded version and no runs table is a store that lost its runs \u2014 the \"damaged file \u2026 into an empty population\" failure \u00a729 (plan.html:405) was opened to close \u2014 while a store with no version record and no runs table is the in-creation state the section cites.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8d7a1fb7dd7a65bb5bc95f267f453b0b3d0a46cf",
+  "plan_fingerprint": "1f75bdb8b13d63e4bb8fcd4246a8232060301dd37e348c884c1e3ea2df6d213a",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 111,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261117T133548828578-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "e5e744cffd90e3142d4748effcb9de5c0b7a9b05",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited log exists (28,200 bytes, revision `f668b34ef01b\u2026` on its header), commit `f668b34ef0` resolves to a commit in /home/ITER/mcintos/Code/reckon, and `tests/test_drain_lists_unloaded.py::test_whole_width_stores_once_and_releases_in_dependency_order` resolves at that file's line 92.",
+    "done_when": "a finding \u2014 s35's \"these still hold\" arms and its write paths omit the existing head-suite test that asserts the rule s35 reverses, tests/test_a_locked_store_is_not_read_as_missing_columns.py:37.",
+    "evidence_paths": "pass \u2014 the cited base log `~/.config/reckon/crew/runs/r-20261117T122213031771-promotion-after-ledger-leaves-git-s34/drain-repeats-base.log` resolves under the crew runs directory and the done-when puts every gate log under the run directory, not under a node-local temporary path.",
+    "naming": "pass \u2014 no plan label, section numbers or ticket numbers reach a symbol; the section names records (`stored_run_rows`, the ledger read) and states the behaviour rather than a code shape.",
+    "reasoning": "a finding \u2014 the endpoint's discriminator (\"only a runs table present with columns missing owes a migration\") also answers empty for a store that once had a runs table and lost it, the empty-population masking \u00a729 exists to end.",
+    "single_goal": "pass \u2014 s35 names one deliverable, an absent `runs` table answering empty through stored_run_rows and the ledger read, and its two preserved arms are behaviour, not a second deliverable.",
+    "wiring": "pass \u2014 s35 is declared `implementable` in `plan-section-declarations` and carried by the open followup f-hpdw-016 (plan.html:525); it has no upstream edge to miss because every section it depends on (\u00a729, done) has landed, and its citation of \u00a734's base measurement at `f668b34ef0` needs no wait."
+  },
+  "section_digests": {
+    "_document": "ef8704e9229f669b6d7f26f4a09b4a854e9d86803409327534ad3e68496fb3dc",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "73d5c5ce099e375a2b18ae59f31aec4205212d2104108d1b97ce543d20c55270",
+    "s31": "5e320fec30580df18f57b6d28c58a517e834ccc7f4632502d8abefcc9dc8a743",
+    "s32": "be917fc2f31d989ce173566c1819ca4f00641eda62fa8b26f1e5a2da43c522a9",
+    "s33": "013d38ead3ef1d626c6065009c19f475efba97993154035da7d5008a84bbe939",
+    "s34": "a7f89214ee3a5a396644615ec12dfa995cb463adfecee133ee1d5ca817bd291d",
+    "s35": "214358703c2e81563578bad519881f3e72ad15d71643b8f2e3d5d23d02f14a4f",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:48:32.839421+00:00",
+  "total": null
+}

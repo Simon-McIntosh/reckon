@@ -1,0 +1,175 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "With omit_failure=True the log independently names inherited while the receipt omits it; restoring the last-run-only reader accepts that receipt and raises the wrong added-failure refusal, so the required primary-suite-evidence exception match fails.",
+      "lines": [
+        363,
+        364
+      ]
+    },
+    {
+      "failure_condition": "Restoring the last-run-only reader rejects the honest receipt before a clean row can be returned; alternatively treating inherited as newly added prevents this clean outcome.",
+      "lines": [
+        368
+      ]
+    },
+    {
+      "failure_condition": "Returning inherited as added instead of subtracting the measured primary failures makes the independently expected empty added-ID set false.",
+      "lines": [
+        369
+      ]
+    },
+    {
+      "failure_condition": "Dropping the inherited ID or binding it to a commit other than the independently created and actually merged fixture primary changes the expected mapping; this is not merely the receipt echo, since selection comes from git history.",
+      "lines": [
+        370
+      ]
+    },
+    {
+      "failure_condition": "Always remeasuring instead of reading the cached receipt appends twice rather than once; never measuring appends zero times. The injected list element is fixture-controlled and this assertion proves call count only, not the requested revision.",
+      "lines": [
+        371
+      ]
+    }
+  ],
+  "assertion_independence": "No added regression assertion is a tautological input/output echo; the cache-call assertion intentionally proves cardinality only, and the inherited revision expectation comes from the fixture commit independently selected by production git traversal.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete_run at line 1381",
+    "reckon/crew/promotion_records.py:_evaluate_suite_delta at line 1564",
+    "reckon/crew/promotion_records.py:_merged_primary_baseline.usable at lines 1292 and 1306"
+  ],
+  "completed_at": "2026-11-17T13:01:10Z",
+  "dispatched_at": "2026-11-17T12:56:33Z",
+  "evidence_caveat": "The source armed baseline remains e76577d9450dd76d22e4782b4a882b7eb997a0d3 as dispatched; this incremental review base is 30ebc5c13551530a260841f17f2847f1ed16b481. Canonical arm logs add a revision header and retain their originals byte-for-byte. No suite rerun was necessary.",
+  "findings": [],
+  "importer_evidence": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case",
+        "tests/test_the_ledger_writer_refuses_a_fold.py::test_a_hold_check_leaves_the_aggregate_row_count_unchanged",
+        "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged",
+        "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_idle_reap_leaves_the_aggregate_row_count_unchanged"
+      ],
+      "log_digest": "0d5b876596c0064be848c9f4a2f7999cf0f9d5ca0502d10935b3f16449e7e853",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/repair-importer-base.log",
+      "revision": "e76577d9450dd76d22e4782b4a882b7eb997a0d3",
+      "summary": "4 failed, 214 passed in 35.39s"
+    },
+    "head": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 4,
+      "failure_ids": [
+        "tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case",
+        "tests/test_the_ledger_writer_refuses_a_fold.py::test_a_hold_check_leaves_the_aggregate_row_count_unchanged",
+        "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged",
+        "tests/test_the_ledger_writer_refuses_a_fold.py::test_the_idle_reap_leaves_the_aggregate_row_count_unchanged"
+      ],
+      "log_digest": "381bab47bc63eb0746e187812e287730d08bd87bea1a8ee4c3087bfee590e57a",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/repair-importer-head.log",
+      "revision": "21ab9fdae21a6084a8383f06c68bfc9a079448cb",
+      "summary": "4 failed, 229 passed in 35.27s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read the sole incremental commit 21ab9fdae21a6084a8383f06c68bfc9a079448cb against previously reviewed 30ebc5c13551530a260841f17f2847f1ed16b481; the source delegates receipt agreement and the test adds two composite-log parameter cases.",
+    "done_when": "prompt.txt:220 and resume-2-advice.txt require the section cases, failing negative control and zero importer delta; composite-reproduction.log records 2 failed before repair, repair-focused.log records 20 passed, and the paired importer logs retain the same four failure IDs.",
+    "goal": "prompt.txt:38 requires attribution to the measured merged-primary revision; the incremental repair at reckon/crew/promotion_records.py:1282 now preserves earlier CTest-label failures through the shared receipt owner.",
+    "manifest": "manifest.md records the repair commit, completed 58/73-test suite arms and all repair logs; both canonical logs preserve the complete original bytes after their additional revision header.",
+    "write_paths": "manifest.md:3 and resume-1-advice.txt:1 grant promotion_records.py and the named test file; commit 21ab9fdae21a6084a8383f06c68bfc9a079448cb changes only these two granted paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_base_failure_is_not_charged_to_the_run.py:363 rejects an omitted earlier failure and :368 admits an honest composite receipt, both reddening under the restored last-run-only reader as composite-reproduction.log demonstrates.",
+    "evidence": "repair-focused.log records 20 passed at the reviewed head, composite-reproduction.log records both new cases failing at the prior head, and the manifest-named armed logs record completed 58/73-test arms with zero added failures.",
+    "fit": "reckon/crew/promotion_records.py:1282 follows the surrounding private-helper and deferred-import idiom, and the added test at tests/test_a_base_failure_is_not_charged_to_the_run.py:320 uses the existing isolated scenario fixture with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:1282 validates the complete CTest gate while retaining completion, exact revision/command and terminal-exit checks, answering the previously recorded blocking defect.",
+    "reuse": "reckon/crew/promotion_records.py:1285 delegates to the existing promotion_evidence.py:1589 receipt owner and its format-aware span at :1572; the new test and measure closure at tests/test_a_base_failure_is_not_charged_to_the_run.py:320 and :357 extend the existing scenario and measurement seam.",
+    "scope_discipline": "the incremental diff changes only reckon/crew/promotion_records.py and tests/test_a_base_failure_is_not_charged_to_the_run.py, both granted in manifest.md:3 and the explicit extension in resume-1-advice.txt:1."
+  },
+  "negative_control_evidence": {
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_a_base_failure_is_not_charged_to_the_run.py::test_a_composite_ctest_primary_receipt_covers_every_label[False]",
+      "tests/test_a_base_failure_is_not_charged_to_the_run.py::test_a_composite_ctest_primary_receipt_covers_every_label[True]"
+    ],
+    "log_digest": "1a131cede30a30f1202954ef10205b6ad9d4dc7a80ff4d6bd7803b8492306655",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/composite-reproduction.log",
+    "revision": "30ebc5c13551530a260841f17f2847f1ed16b481",
+    "summary": "2 failed, 13 deselected in 12.26s"
+  },
+  "prior_finding_resolution": {
+    "file": "reckon/crew/promotion_records.py",
+    "line": 1282,
+    "reason": "Removed unconditional last_run_text and duplicate count/id comparison; now delegates to the format-aware receipt owner with completion and terminal-exit checks retained.",
+    "state": "answered"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires attribution to the measured merged-primary revision; the incremental repair at reckon/crew/promotion_records.py:1282 now preserves earlier CTest-label failures through the shared receipt owner.\nVERDICT done_when: prompt.txt:220 and resume-2-advice.txt require the section cases, failing negative control and zero importer delta; composite-reproduction.log records 2 failed before repair, repair-focused.log records 20 passed, and the paired importer logs retain the same four failure IDs.\nVERDICT write_paths: manifest.md:3 and resume-1-advice.txt:1 grant promotion_records.py and the named test file; commit 21ab9fdae21a6084a8383f06c68bfc9a079448cb changes only these two granted paths.\nVERDICT manifest: manifest.md records the repair commit, completed 58/73-test suite arms and all repair logs; both canonical logs preserve the complete original bytes after their additional revision header.\nVERDICT diff: read the sole incremental commit 21ab9fdae21a6084a8383f06c68bfc9a079448cb against previously reviewed 30ebc5c13551530a260841f17f2847f1ed16b481; the source delegates receipt agreement and the test adds two composite-log parameter cases.\nCALL_SITES: reckon/crew/promotion.py:complete_run at line 1381, reckon/crew/promotion_records.py:_evaluate_suite_delta at line 1564, reckon/crew/promotion_records.py:_merged_primary_baseline.usable at lines 1292 and 1306\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:1282 validates the complete CTest gate while retaining completion, exact revision/command and terminal-exit checks, answering the previously recorded blocking defect.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-focused.log records 20 passed at the reviewed head, composite-reproduction.log records both new cases failing at the prior head, and the manifest-named armed logs record completed 58/73-test arms with zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the incremental diff changes only reckon/crew/promotion_records.py and tests/test_a_base_failure_is_not_charged_to_the_run.py, both granted in manifest.md:3 and the explicit extension in resume-1-advice.txt:1.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_base_failure_is_not_charged_to_the_run.py:363 rejects an omitted earlier failure and :368 admits an honest composite receipt, both reddening under the restored last-run-only reader as composite-reproduction.log demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_records.py:1282 follows the surrounding private-helper and deferred-import idiom, and the added test at tests/test_a_base_failure_is_not_charged_to_the_run.py:320 uses the existing isolated scenario fixture with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_records.py:1285 delegates to the existing promotion_evidence.py:1589 receipt owner and its format-aware span at :1572; the new test and measure closure at tests/test_a_base_failure_is_not_charged_to_the_run.py:320 and :357 extend the existing scenario and measurement seam.\n",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T125521334540-review-of-a-base-failure-is-not-charged-to-the-run-21ab9fdae21a/review.txt",
+  "reproduction": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/composite-reproduction.log",
+    "quote": "SuiteDeltaError: cannot read completed primary suite evidence at merged revision 0e861ecc298868e43b24ee6874a7f806ff473707",
+    "summary": "2 failed, 13 deselected in 12.26s"
+  },
+  "reuse_search": {
+    "added_definitions": "No added production definition; new parameterized regression test reuses scenario, and its measure closure supplies the existing measurement seam.",
+    "owners_opened": [
+      "reckon/crew/promotion_evidence.py:_receipt_mismatches",
+      "reckon/crew/promotion_evidence.py:_text_the_receipt_describes",
+      "tests/test_a_base_failure_is_not_charged_to_the_run.py:scenario"
+    ],
+    "searched": "receipt count and identity validation, format-aware log spans in promotion_evidence.py and promotion_records.py; isolated scenario and measurement seam in the existing test module"
+  },
+  "review_run_id": "r-20261117T125521334540-review-of-a-base-failure-is-not-charged-to-the-run-21ab9fdae21a",
+  "reviewed_base_sha": "30ebc5c13551530a260841f17f2847f1ed16b481",
+  "reviewed_head_sha": "21ab9fdae21a6084a8383f06c68bfc9a079448cb",
+  "reviewed_run_id": "r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": "1134cc615ef14c5586966593c9d3c6261e35e30f9189924abbd347017142edec",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/repair-after_suite-canonical.log",
+      "revision": "21ab9fdae21a6084a8383f06c68bfc9a079448cb",
+      "summary": "73 passed in 59.47s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": "f05ee5eec3517a42ae91c6b97bbf97c431e21703cea0c38a385051e6b4c31ad5",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/repair-baseline_suite-canonical.log",
+      "revision": "e76577d9450dd76d22e4782b4a882b7eb997a0d3",
+      "summary": "58 passed in 37.87s"
+    }
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:04:42.204904+00:00",
+  "total": 120
+}

@@ -72,6 +72,7 @@ from contextvars import ContextVar
 from datetime import UTC, date, datetime
 from html.parser import HTMLParser
 from pathlib import Path
+from threading import local
 from typing import IO, Any, TextIO
 
 from reckon._schema import PlanRef, is_section_identity
@@ -392,6 +393,9 @@ def _resolve_html_file(
 # ── JSON-backed helpers (index / project slugs) ────────────────────────────
 
 
+_HELD_PATH_LOCKS = local()
+
+
 @contextmanager
 def _serialized_path_lock(path: Path, namespace: str):
     """Serialise a read-check-replace critical section for one store file.
@@ -400,12 +404,28 @@ def _serialized_path_lock(path: Path, namespace: str):
     produce a lost update whose counter still advances: nothing raises a
     conflict, so nothing can be noticed. Holding this lock makes the check and
     the replacement one step, so the writer that arrives second is decided by
-    the file rather than by scheduling.
+    the file rather than by scheduling. Nested entries by the owning process
+    and thread reuse the hold; a copied context cannot lend it to another owner.
     """
-    identity = hashlib.sha256(str(path.resolve()).encode()).hexdigest()
+    resolved = str(path.resolve())
+    identity = hashlib.sha256(resolved.encode()).hexdigest()
     lock_path = _config_home() / "locks" / namespace / f"{identity}.lock"
-    with exclusive_lock(lock_path):
+    owner = (os.getpid(), str(lock_path.resolve()))
+    held = getattr(_HELD_PATH_LOCKS, "paths", None)
+    if held is None:
+        held = set()
+        _HELD_PATH_LOCKS.paths = held
+    if owner in held:
+        # Keep the outer descriptor open: closing another descriptor would
+        # release this process's record lock before the transaction ends.
         yield
+        return
+    with exclusive_lock(lock_path):
+        held.add(owner)
+        try:
+            yield
+        finally:
+            held.remove(owner)
 
 
 @contextmanager
