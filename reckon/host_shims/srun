@@ -1,7 +1,7 @@
 #!/bin/sh
 # reckon-shim: a PATH lookup skips any file carrying this token, so no shim
 # resolves to another checkout's shim (reckon/shim_lookup.py).
-# A thin srun shim: refuse an implicit nested launch from inside the held job.
+# Refuse implicit nested launches and re-enter the worker fence in tasks.
 #
 # The decision lives in reckon/nested_launch.py, which reads the process's own
 # cgroup line through reckon.host.host_facts. This file only resolves an

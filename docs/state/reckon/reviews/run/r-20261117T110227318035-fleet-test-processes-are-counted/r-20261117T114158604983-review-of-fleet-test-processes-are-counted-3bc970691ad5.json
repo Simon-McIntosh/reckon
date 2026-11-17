@@ -1,0 +1,116 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "Counting the service, counting the foreign allocation, exempting a heavy tree, double-counting the nested runner, dropping helper RSS or misrouting the inherited run changes the independent constants 2 trees, 5 processes, 18432 bytes, 9216 bytes per owner or the seeded session identities.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:108-119"
+    },
+    {
+      "failure_condition": "Omitting or corrupting the persisted JSON makes disk content differ from the returned sample; this checks persistence, not independent numerical correctness, which preceding assertions provide.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:120"
+    },
+    {
+      "failure_condition": "Restoring a command-text pytest substring matcher recognizes a service, a script argument or an unevaluated shell command as a runner instead of returning None.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:133"
+    },
+    {
+      "failure_condition": "Removing each file-count, worker-count, elapsed-time, CPU-time or executed-runner check flips the expected tree-count decision for at least one parameterized case; light is a test expectation and is never passed to the function.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:188"
+    },
+    {
+      "failure_condition": "Considering only root CPU exempts the 31+30 second descendant tree and changes the asserted tree count from 1 to 0.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:199"
+    },
+    {
+      "failure_condition": "Restoring the first commit calculation without reaped-child ticks changes expected CPU 71 to 1 and wrongly exempts the tree.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:212-214"
+    },
+    {
+      "failure_condition": "A shell CLI failure, missing or incorrectly serialized new columns, lost run attribution, absent alert or absent snapshot fails the corresponding return-code, fixed-value, run-id, alert-text or snapshot-count assertion.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:228-237"
+    },
+    {
+      "failure_condition": "Letting failed sampler execution abort fleet-health fails returncode; representing failure as numeric zero fails both independent unknown-field assertions.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:249-251"
+    },
+    {
+      "failure_condition": "Dropping duties fails length 2; omitting command or run attribution fails literal substrings; removing project, session, age or current-job filters fails the corresponding empty-list assertion; returning stale duties for an explicit empty sample fails the final empty-list assertion.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:270-286"
+    },
+    {
+      "failure_condition": "Removing the direct integration fails independent length 2; removing or changing only the station integration fails composition equality, which supplements the independent direct count and the separately tested duty contents.",
+      "lines": "tests/test_fleet_test_processes_are_counted.py:305-306"
+    }
+  ],
+  "assertion_independence": "No assertion uses an expected output value passed unchanged as the same output to the code under test; persistence equality and composition equality are deliberately round-trip/parity checks supplemented by independent fixed-value assertions.",
+  "call_site_count": 4,
+  "call_sites": [
+    "bin/fleet-health:90",
+    "reckon/crew/fleet_supervisor.py:main",
+    "reckon/crew/obligations.py:_obligations_view:4443",
+    "reckon/crew/obligation_snapshot.py:payload_for:2053"
+  ],
+  "completed_at": "2026-11-17T11:49:15Z",
+  "dispatched_at": "2026-11-17T11:43:33Z",
+  "failure_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110227318035-fleet-test-processes-are-counted/after-suite-final-1794914720942708299.log",
+    "after_summary": "84 passed in 38.19s",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110227318035-fleet-test-processes-are-counted/baseline_suite-1794914372200057428.log",
+    "baseline_summary": "58 passed in 34.28s",
+    "note": "This delta is the armed baseline_suite/after_suite pair; the broader importer comparison is recorded separately."
+  },
+  "findings": [
+    {
+      "file": "bin/fleet-health",
+      "line": "78",
+      "severity": "blocking",
+      "text": "blocking: The new TSV header adds test_trees, test_rss_bytes and test_runs without updating the existing exact-header assertion at tests/test_fleet_health.py:223; the final importer log records that newly failing test, so the required no-added-importer-failures condition needs a scoped repair before landing."
+    }
+  ],
+  "importer_added_failure_count": 1,
+  "importer_added_failure_ids": [
+    "tests/test_fleet_health.py::test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns"
+  ],
+  "importer_removed_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]"
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read abbce4e3da6d362ee4f64b7dfcc0eec70e0cc9be and 3bc970691ad589154df018c51494ece4a16bd1aa against 421f01042a982737973e1d9d65121120ddaf7bd5; the five-file diff adds the sampler, both duty integrations and 26 regression cases, followed by focused-runner and reaped-child CPU corrections.",
+    "done_when": "Read prompt.txt:209-210 and the recorded gates; the focused gate passes 26 cases and the declared mutation fails 12, but importer-final-head-1794914811582803648.log:1934 records one added header assertion failure and the plan's 24-hour live percentage remains unmeasured.",
+    "goal": "Read prompt.txt:38; fleet_supervisor.py:469-638 and bin/fleet-health:90 implement attributed allocation-local tree counts, resident bytes, and coordinator duties.",
+    "manifest": "Read manifest.md and its referenced receipts; both commit identities and final-head logs reconcile, and its outside_scope field correctly discloses the importer regression.",
+    "write_paths": "Read prompt.txt:124-129 and resume-1-advice.txt:1; all five changed paths are inside the original scope or its explicit two-file extension."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_test_processes_are_counted.py:96-306 independently asserts fixed tree counts, bytes, exclusions, owner routing and both compositions, and restoring the command-text matcher makes 12 recorded cases fail, though tests/test_fleet_health.py:223 still needs its header contract updated.",
+    "evidence": "tests/test_fleet_test_processes_are_counted.py passes 26 recorded cases and its mutation fails 12, but bin/fleet-health:78 leaves the required importer arm with one new failure and no 24-hour receipt exists.",
+    "fit": "reckon/crew/fleet_supervisor.py:585-638 uses the existing state-directory and atomic JSON writer conventions, and the small integrations at obligations.py:4441 and obligation_snapshot.py:2051 follow adjacent lazy imports with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:469-638 counts disjoint trees and routes their commands to the owning session, while live deployment and the 24-hour observation remain outstanding.",
+    "reuse": "Searches for executed runners, light-test parsing, VmRSS and descendant collectors found no allocation-aware test sampler; fleet_supervisor.py:1316-1346 owns command-only service reads and process_signal.py:127-145,471-491 owns signalling identities and live descendants, while the additions extend fleet health and share one duty helper across both compositions.",
+    "scope_discipline": "The five changed paths match prompt.txt:124-129 plus the obligations.py and obligation_snapshot.py grants in resume-1-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38; fleet_supervisor.py:469-638 and bin/fleet-health:90 implement attributed allocation-local tree counts, resident bytes, and coordinator duties.\nVERDICT done_when: Read prompt.txt:209-210 and the recorded gates; the focused gate passes 26 cases and the declared mutation fails 12, but importer-final-head-1794914811582803648.log:1934 records one added header assertion failure and the plan's 24-hour live percentage remains unmeasured.\nVERDICT write_paths: Read prompt.txt:124-129 and resume-1-advice.txt:1; all five changed paths are inside the original scope or its explicit two-file extension.\nVERDICT manifest: Read manifest.md and its referenced receipts; both commit identities and final-head logs reconcile, and its outside_scope field correctly discloses the importer regression.\nVERDICT diff: Read abbce4e3da6d362ee4f64b7dfcc0eec70e0cc9be and 3bc970691ad589154df018c51494ece4a16bd1aa against 421f01042a982737973e1d9d65121120ddaf7bd5; the five-file diff adds the sampler, both duty integrations and 26 regression cases, followed by focused-runner and reaped-child CPU corrections.\nCALL_SITES: bin/fleet-health:90, reckon/crew/fleet_supervisor.py:main, reckon/crew/obligations.py:_obligations_view:4443, reckon/crew/obligation_snapshot.py:payload_for:2053\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:469-638 counts disjoint trees and routes their commands to the owning session, while live deployment and the 24-hour observation remain outstanding.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_fleet_test_processes_are_counted.py passes 26 recorded cases and its mutation fails 12, but bin/fleet-health:78 leaves the required importer arm with one new failure and no 24-hour receipt exists.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five changed paths match prompt.txt:124-129 plus the obligations.py and obligation_snapshot.py grants in resume-1-advice.txt:1.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fleet_test_processes_are_counted.py:96-306 independently asserts fixed tree counts, bytes, exclusions, owner routing and both compositions, and restoring the command-text matcher makes 12 recorded cases fail, though tests/test_fleet_health.py:223 still needs its header contract updated.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:585-638 uses the existing state-directory and atomic JSON writer conventions, and the small integrations at obligations.py:4441 and obligation_snapshot.py:2051 follow adjacent lazy imports with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Searches for executed runners, light-test parsing, VmRSS and descendant collectors found no allocation-aware test sampler; fleet_supervisor.py:1316-1346 owns command-only service reads and process_signal.py:127-145,471-491 owns signalling identities and live descendants, while the additions extend fleet health and share one duty helper across both compositions.\nFINDING bin/fleet-health:78 blocking: The new TSV header adds test_trees, test_rss_bytes and test_runs without updating the existing exact-header assertion at tests/test_fleet_health.py:223; the final importer log records that newly failing test, so the required no-added-importer-failures condition needs a scoped repair before landing.\n",
+  "remaining_evidence": "Deploy composed gate and sampler, then observe live fleet for 24 hours and measure zero heavy-test trees in at least 99% of samples.",
+  "review_run_id": "r-20261117T114158604983-review-of-fleet-test-processes-are-counted-3bc970691ad5",
+  "reviewed_base_sha": "421f01042a982737973e1d9d65121120ddaf7bd5",
+  "reviewed_head_sha": "3bc970691ad589154df018c51494ece4a16bd1aa",
+  "reviewed_run_id": "r-20261117T110227318035-fleet-test-processes-are-counted",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:01:11.162265+00:00",
+  "total": 113
+}

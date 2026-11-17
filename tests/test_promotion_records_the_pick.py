@@ -23,7 +23,7 @@ import pytest
 
 from reckon import crew, ledger
 from reckon.crew import picker as picker_module
-from reckon.crew.runs import read_pointer
+from reckon.crew.runs import dispatch_field, read_pointer
 
 PROJECT = "proj"
 
@@ -119,20 +119,27 @@ def _deliver(record: dict) -> None:
     manifest.write_text(f"node: {record['node']['id']}\nstatus: complete\n")
 
 
-def _commit_work(repo: Path) -> str:
-    (repo / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
+def _commit_work(record: dict) -> str:
+    """Commit the run's declared work on the history the run itself carries.
+
+    A dispatch cuts the run its own worktree, and a promotion counts only what
+    the run committed there, so the fixture commits in that tree rather than in
+    the primary checkout the run was cut from.
+    """
+    tree = Path(str(read_pointer(record["run_id"])["worktree"]))
+    (tree / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
     subprocess.run(
-        ["git", "add", "reckon/target.py"], cwd=repo, check=True, capture_output=True
+        ["git", "add", "reckon/target.py"], cwd=tree, check=True, capture_output=True
     )
     subprocess.run(
         ["git", "commit", "-q", "-m", "feat: the run's declared work"],
-        cwd=repo,
+        cwd=tree,
         check=True,
         capture_output=True,
     )
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
-        cwd=repo,
+        cwd=tree,
         check=True,
         capture_output=True,
         text=True,
@@ -255,11 +262,11 @@ def test_promotion_waits_for_the_in_flight_pick_and_records_it(
     _detached_picker_thread(monkeypatch, workers)
     record = _dispatch_override(repo)
     _deliver(record)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     _init_ledger(repo)
     assert entered.wait(5), "the advisory pick never started"
     # The pick is still running, so the run carries no answer to promote yet.
-    assert read_pointer(record["run_id"])["picker_selection"] is None
+    assert dispatch_field(read_pointer(record["run_id"]), "picker_selection") is None
 
     result: dict = {}
 
@@ -303,13 +310,13 @@ def test_promotion_names_the_timeout_when_the_pick_never_lands(
     _detached_picker_thread(monkeypatch, workers)
     record = _dispatch_override(repo)
     _deliver(record)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     _init_ledger(repo)
     # The pick is held open, so it cannot answer during the git work above or
     # while the promotion runs: the wait must time out rather than racing a
     # wall-clock delay against the intervening work.
     assert entered.wait(5), "the advisory pick never started"
-    assert read_pointer(record["run_id"])["picker_selection"] is None
+    assert dispatch_field(read_pointer(record["run_id"]), "picker_selection") is None
     try:
         row = crew.complete(
             record["run_id"],
@@ -332,7 +339,7 @@ def test_an_overruled_hold_records_its_own_route_mode(home, repo, monkeypatch) -
     _pick(monkeypatch, _HOLD_ANSWER)
     record = _dispatch_override(repo)
     _deliver(record)
-    _commit_work(repo)
+    _commit_work(record)
     _init_ledger(repo)
 
     row = _promote(record["run_id"], repo)
@@ -426,11 +433,11 @@ def test_promotion_waits_from_the_pick_start_not_the_run_start(
         watch_required=False,
     )
     _deliver(record)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     _init_ledger(repo)
     # The pick delays past promotion's arrival, so it is genuinely in flight and
     # only a wait measured from the pick's own start lets it land.
-    assert read_pointer(record["run_id"])["picker_selection"] is None
+    assert dispatch_field(read_pointer(record["run_id"]), "picker_selection") is None
 
     row = crew.complete(
         record["run_id"],

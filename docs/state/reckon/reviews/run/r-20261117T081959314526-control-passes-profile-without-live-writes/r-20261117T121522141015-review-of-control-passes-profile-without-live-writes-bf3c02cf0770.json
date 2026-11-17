@@ -1,0 +1,139 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "regression_that_fails": "Bypassing require_copy permits aliases or calls prepare; retained negative-control.log has five failures.",
+      "tests": "real-home aliases and CLI refusal"
+    },
+    {
+      "regression_that_fails": "Source-byte mutation, omitted path rebinding, receipt omission or external symlink traversal fails fixture comparisons; input_digest(input_listing) establishes internal consistency only.",
+      "tests": "copy digest, inventory, remapping and symlinks"
+    },
+    {
+      "regression_that_fails": "Missing fetch/iteration accounting changes independently expected six returned rows and 27 bytes; missing durable decode changes expected one decoded row.",
+      "tests": "store reads and decoded-row counter"
+    },
+    {
+      "regression_that_fails": "Removing the fence check, tracing or error capture changes expected refusal, allocation lower bound or exit status; receipt/output digest equality checks propagation only.",
+      "tests": "fence-required, memory and failure receipts"
+    },
+    {
+      "regression_that_fails": "Not ticking station leaves the positive marker absent; differing completed-row timestamp fails agreement; omitting admission lock acquisition leaves no lock; admission is not None is only import coverage.",
+      "tests": "actual single pass and finished markers"
+    },
+    {
+      "regression_that_fails": "Incorrect queued/refused counts fail; unchanged counts with missing persisted rows do not fail, as finding records.",
+      "tests": "dispatch counts"
+    },
+    {
+      "regression_that_fails": "Writable outer root permits forbidden write and fails refusal; read-only copy fails allowed-file content assertion.",
+      "tests": "external write refusal and positive copy write"
+    },
+    {
+      "regression_that_fails": "Nonzero CLI, missing profile, changed original snapshot or runtime pollution fails; receipt/output digest equality checks propagation only.",
+      "tests": "fenced CLI and snapshot reuse"
+    },
+    {
+      "regression_that_fails": "Removing inventory existence guard or require_snapshot calls the subprocess spy or returns success instead of 2.",
+      "tests": "missing source and changed snapshot"
+    },
+    {
+      "regression_that_fails": "Removing private spill directory/environment causes the 32 MiB temporary table to fail in the fence; SQL sum is compared with an independent byte total.",
+      "tests": "SQLite spill"
+    },
+    {
+      "regression_that_fails": "Restoring once-mode swallow yields DID NOT RAISE as retained resumed-before-repair.log shows; persisted finish marker or held lease fails independent cleanup assertions.",
+      "tests": "refused station tick"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "scripts/profile_control_pass.py:main",
+    "scripts/profile_control_pass.py:_pass",
+    "reckon/crew_follow_commands.py:crew_station"
+  ],
+  "completed_at": "2026-11-17T12:24:04Z",
+  "dispatched_at": "2026-11-17T12:17:11Z",
+  "findings": [
+    {
+      "file": "tests/test_a_control_pass_profiles_without_live_writes.py",
+      "line": "229",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_dispatch_stores_every_entry compares the returned queued count with entries supplied to _pass and never reads persisted requests; returning the requested count while dropping queue writes leaves it green, so it cannot prove the persistence its name claims."
+    },
+    {
+      "file": "scripts/profile_control_pass.py",
+      "line": "570",
+      "severity": "non-blocking",
+      "text": "non-blocking: The default 1800-second timeout cannot complete the measured station population, whose authorized replay takes 2512.220987588167 seconds; the original timing measure remains unmet and must remain explicit in coordinator writeback."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commits 8d480ca2b762038437c808056ccf17d4dde906b1, a062ec27b9ed61fe7ed186f4129074e1dbdecfba and bf3c02cf07700c3727dead211aa3e058c4b862f9 against e1ddc62a3324811de996c18e764c22204ec0a7f8; scripts/profile_control_pass.py adds isolation and measurement, its test adds controls and reckon/crew/station.py:1613 propagates once-mode tick errors.",
+    "done_when": "The live pointer requires section tests, a failing negative control and no added importer failures; resumed-committed-gate.log records 80 passed, negative-control.log records five intended failures and importer logs have the same six failures, while station-authorised-profile.json misses the live plan's 1800-second operational target.",
+    "goal": "The live pointer's goal is completed profiled dispatch, admission and station passes; scripts/profile_control_pass.py:349 invokes the owners and four retained profile records report zero exits with memory peaks and allocation sites.",
+    "manifest": "manifest.md names three verified commits and durable receipts and explicitly records copied-source integrity adjudication, the authorized extended replay and the unmet original station time bound.",
+    "write_paths": "The live pointer and manifest declare the profiler, admission, station, dedicated test and evidence paths; all three paths in the actual diff are declared."
+  },
+  "justifications": {
+    "durability": "tests/test_a_control_pass_profiles_without_live_writes.py exercises denied aliases, external writes, absent or altered inputs and a refused station tick, but its dispatch test at :229 checks returned counts without independently reading stored requests.",
+    "evidence": "resumed-committed-gate.log records 80 passed at the reviewed head and four integrity receipts say unchanged, but station-authorised-profile.json records 2512.220987588167 seconds against docs/plans/the-fleet-node-stays-inside-its-memory.html:93's 1800-second target.",
+    "fit": "scripts/profile_control_pass.py uses mechanism-based names and context managers, and reckon/crew/station.py:1613 preserves continuous-service cleanup and retries while propagating once-mode failures.",
+    "goal_fidelity": "scripts/profile_control_pass.py:349 reaches the real owners and all four completed profile records carry peaks and ten sites, with station timing still outside the original bound.",
+    "reuse": "Capability searches over scripts and reckon found no control-memory/per-store-decoding profiler; scripts/profile_control_pass.py:349 wraps queue_batch, admit_until_stopped, run_station and station_obligations.publish, while the examined replay_promotion_drain.py:_fence_batch_script and _worker_fence.py:fence_argv own distinct batch/worker mount policies.",
+    "scope_discipline": "The diff changes only scripts/profile_control_pass.py, reckon/crew/station.py and tests/test_a_control_pass_profiles_without_live_writes.py, all declared in the source live pointer and manifest."
+  },
+  "operational_caveats": {
+    "byte_semantics": "Logical returned UTF-8 payload, not physical I/O; decoded durable rows and station cache misses exclude projection rows; RSS includes tracing overhead.",
+    "copied_source_integrity_adjudicated": true,
+    "extended_replay_authorized": true,
+    "station_measured_seconds": 2512.220987588167,
+    "station_original_bound_seconds": 1800,
+    "station_physical_input_digest_differs_after_archive_restore_and_path_rebinding": true
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The live pointer's goal is completed profiled dispatch, admission and station passes; scripts/profile_control_pass.py:349 invokes the owners and four retained profile records report zero exits with memory peaks and allocation sites.\nVERDICT done_when: The live pointer requires section tests, a failing negative control and no added importer failures; resumed-committed-gate.log records 80 passed, negative-control.log records five intended failures and importer logs have the same six failures, while station-authorised-profile.json misses the live plan's 1800-second operational target.\nVERDICT write_paths: The live pointer and manifest declare the profiler, admission, station, dedicated test and evidence paths; all three paths in the actual diff are declared.\nVERDICT manifest: manifest.md names three verified commits and durable receipts and explicitly records copied-source integrity adjudication, the authorized extended replay and the unmet original station time bound.\nVERDICT diff: Read commits 8d480ca2b762038437c808056ccf17d4dde906b1, a062ec27b9ed61fe7ed186f4129074e1dbdecfba and bf3c02cf07700c3727dead211aa3e058c4b862f9 against e1ddc62a3324811de996c18e764c22204ec0a7f8; scripts/profile_control_pass.py adds isolation and measurement, its test adds controls and reckon/crew/station.py:1613 propagates once-mode tick errors.\nCALL_SITES: scripts/profile_control_pass.py:main, scripts/profile_control_pass.py:_pass, reckon/crew_follow_commands.py:crew_station\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: scripts/profile_control_pass.py:349 reaches the real owners and all four completed profile records carry peaks and ten sites, with station timing still outside the original bound.\nSCORE evidence: 16\nJUSTIFICATION evidence: resumed-committed-gate.log records 80 passed at the reviewed head and four integrity receipts say unchanged, but station-authorised-profile.json records 2512.220987588167 seconds against docs/plans/the-fleet-node-stays-inside-its-memory.html:93's 1800-second target.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff changes only scripts/profile_control_pass.py, reckon/crew/station.py and tests/test_a_control_pass_profiles_without_live_writes.py, all declared in the source live pointer and manifest.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_control_pass_profiles_without_live_writes.py exercises denied aliases, external writes, absent or altered inputs and a refused station tick, but its dispatch test at :229 checks returned counts without independently reading stored requests.\nSCORE fit: 20\nJUSTIFICATION fit: scripts/profile_control_pass.py uses mechanism-based names and context managers, and reckon/crew/station.py:1613 preserves continuous-service cleanup and retries while propagating once-mode failures.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over scripts and reckon found no control-memory/per-store-decoding profiler; scripts/profile_control_pass.py:349 wraps queue_batch, admit_until_stopped, run_station and station_obligations.publish, while the examined replay_promotion_drain.py:_fence_batch_script and _worker_fence.py:fence_argv own distinct batch/worker mount policies.\nFINDING tests/test_a_control_pass_profiles_without_live_writes.py:238 non-blocking: test_dispatch_stores_every_entry compares the returned queued count with entries supplied to _pass and never reads persisted requests; returning the requested count while dropping queue writes leaves it green, so it cannot prove the persistence its name claims.\nFINDING scripts/profile_control_pass.py:567 non-blocking: The default 1800-second timeout cannot complete the measured station population, whose authorized replay takes 2512.220987588167 seconds; the original timing measure remains unmet and must remain explicit in coordinator writeback.\n",
+  "review_run_id": "r-20261117T121522141015-review-of-control-passes-profile-without-live-writes-bf3c02cf0770",
+  "reviewed_base_sha": "e1ddc62a3324811de996c18e764c22204ec0a7f8",
+  "reviewed_head_sha": "bf3c02cf07700c3727dead211aa3e058c4b862f9",
+  "reviewed_run_id": "r-20261117T081959314526-control-passes-profile-without-live-writes",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/control-passes-profile-without-live-writes /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_control_pass_profiles_without_live_writes.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081959314526-control-passes-profile-without-live-writes/head-suite.log",
+      "observed_failure_ids": [],
+      "revision": "a062ec27b9ed61fe7ed186f4129074e1dbdecfba"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/control-passes-profile-without-live-writes /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081959314526-control-passes-profile-without-live-writes/base-suite.log",
+      "observed_failure_ids": [],
+      "revision": "e1ddc62a3324811de996c18e764c22204ec0a7f8"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:28:57.648726+00:00",
+  "total": 110
+}

@@ -1,0 +1,117 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reinstating run_store._archive_path/_read_attached_tables/_record_rows access or sqlite3 imports makes the boundary assertions fail, as boundary-reproduction.log records.",
+      "lines": "185-186"
+    },
+    {
+      "failure_condition": "Opening an absent database in create mode returns a value or creates the file; the None or filesystem assertion fails.",
+      "lines": "295-296"
+    },
+    {
+      "failure_condition": "The encoded reader drops, duplicates or reorders either independently inserted identity; returned ids differ from the fixture rows.",
+      "lines": "306,310"
+    },
+    {
+      "failure_condition": "Leaving a read cursor or transaction open across yield causes sync_run to fail its bounded writer commit before later assertions.",
+      "lines": "308-309"
+    },
+    {
+      "failure_condition": "Ignoring hot-store stamps leaves the token unchanged; stale or missing durable payloads cannot return the literal rewritten session.",
+      "lines": "312-313"
+    },
+    {
+      "failure_condition": "Dropping project filtering leaks the known populated project into the independently empty project.",
+      "lines": "315"
+    },
+    {
+      "failure_condition": "Omitting attached archive rows loses the independently inserted identities after retirement.",
+      "lines": "325"
+    },
+    {
+      "failure_condition": "Ignoring archive changes leaves the token unchanged; stale archived payloads cannot contain the literal archive-author session.",
+      "lines": "329-330"
+    },
+    {
+      "failure_condition": "Swallowing unreadable-store errors fails pytest.raises; modifying the corrupt database fails the independent byte comparison.",
+      "lines": "335-337"
+    },
+    {
+      "failure_condition": "Removing the public-boundary helper calls would leave the private-access regression unguarded; each existing parse-count test calls that helper.",
+      "lines": "199,230"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:2956 compose_owed_plan_reviews",
+    "reckon/crew/plan_review.py:4594 plan_authoring_runs",
+    "reckon/crew/plan_review.py:4127 stored_run_payloads",
+    "reckon/crew/plan_review.py:4225 plan_authoring_run"
+  ],
+  "completed_at": "2026-11-17T09:38:47Z",
+  "dispatched_at": "2026-11-17T09:34:01Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081127777327-owed-review-pass-pays-for-change-s33/repair-after-suite.log",
+      "revision": "c70245dc300c671387cb9998a5f7556a7beb7848",
+      "summary": "60 passed in 50.80s"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T081127777327-owed-review-pass-pays-for-change-s33/baseline-suite.log",
+      "revision": "d0b16d70143dda6140081fd63eaaeda728a0a699",
+      "summary": "58 passed in 38.74s"
+    },
+    "caveat": "Shared-process importing comparison recorded 14 added failure IDs, none repeated in the later per-file head; the latter method does not prove shared-process interactions absent.",
+    "import_comparison": "file-base-imports.log: isolated_files=252 failing_ids=104 incomplete_files=0; file-head-imports.log: isolated_files=253 failing_ids=99 incomplete_files=0; both EXIT=1; file-import-comparison.json records zero added ids",
+    "negative_control": "repair-negative-control.log: 2 failed in 4.07s; EXIT=1; changed counts plans=51 reviews=50 runs=20000",
+    "recorded_boundary_failure": "AssertionError: the plan reader reaches private store names: ['_archive_path', '_read_attached_tables', '_record_rows']; 2 failed in 3.15s; EXIT=1"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites",
+    "diff": "Read sole new commit c70245dc300c671387cb9998a5f7556a7beb7848 against prior reviewed head e505ca84ca4052f79ee70b75505dffcb0b936ab9; its three-file diff replaces private store access with a public lazy reader and adds boundary and reader-contract assertions.",
+    "done_when": "Live docs/plans/history-persists-as-detail-washes-out.html section 33 and source prompt.txt:175 require zero warm parses, changed-input parsing, controls and importing-test parity; repair-after-suite.log records 60 passes and both recorded controls fail two tests, with broader shared-process caveats retained.",
+    "goal": "Source prompt.txt:38 requires changed-input-only parsing; the incremental repair in reckon/crew/plan_review.py:4127 delegates encoded history to the public run-store reader while retaining per-row reuse.",
+    "manifest": "Source manifest.md records complete at c70245dc300c671387cb9998a5f7556a7beb7848, baseline_suite and after_suite backed by readable logs, and both the shared-process failures and isolated-file comparison.",
+    "write_paths": "Source resume-1-advice.txt explicitly extends scope to reckon/run_store.py for one public encoded reader; the incremental diff changes only that file, reckon/crew/plan_review.py and the declared regression test."
+  },
+  "justifications": {
+    "durability": "tests/test_an_owed_review_pass_pays_for_what_changed.py:185-186 rejects reinstated private access and :295-337 guards absence, writer freedom, rewrite, retirement, archive token and corruption, although the legacy-schema activity branch lacks a dedicated new assertion.",
+    "evidence": "Source repair-after-suite.log records 60 passed with EXIT=0 and boundary-reproduction.log records the private-access assertion failing at e505, but the 14 shared-process additions are cleared only under the later isolated-file execution method.",
+    "fit": "reckon/run_store.py:650 follows adjacent stored_run_rows at :714 for path resolution, joined records and RuntimeError refusal, and its added definitions use mechanism-based names.",
+    "goal_fidelity": "reckon/crew/plan_review.py:4127 obtains a lazy public snapshot and :4155 still memoizes selection before consuming rows, preserving the zero-parse warm path.",
+    "reuse": "Capability searches found encoded joining and activity selection owned by reckon/run_store.py:_record_rows and decoded public selection by stored_run_rows; :650 extends that owner with lazy encoded access and calls _record_rows rather than forking its join.",
+    "scope_discipline": "The three paths in commit c70245dc300c671387cb9998a5f7556a7beb7848 match source prompt.txt:95-97 plus the narrow run_store.py extension in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires changed-input-only parsing; the incremental repair in reckon/crew/plan_review.py:4127 delegates encoded history to the public run-store reader while retaining per-row reuse.\nVERDICT done_when: Live docs/plans/history-persists-as-detail-washes-out.html section 33 and source prompt.txt:175 require zero warm parses, changed-input parsing, controls and importing-test parity; repair-after-suite.log records 60 passes and both recorded controls fail two tests, with broader shared-process caveats retained.\nVERDICT write_paths: Source resume-1-advice.txt explicitly extends scope to reckon/run_store.py for one public encoded reader; the incremental diff changes only that file, reckon/crew/plan_review.py and the declared regression test.\nVERDICT manifest: Source manifest.md records complete at c70245dc300c671387cb9998a5f7556a7beb7848, baseline_suite and after_suite backed by readable logs, and both the shared-process failures and isolated-file comparison.\nVERDICT diff: Read sole new commit c70245dc300c671387cb9998a5f7556a7beb7848 against prior reviewed head e505ca84ca4052f79ee70b75505dffcb0b936ab9; its three-file diff replaces private store access with a public lazy reader and adds boundary and reader-contract assertions.\nCALL_SITES: reckon/crew/resumption.py:2956 compose_owed_plan_reviews, reckon/crew/plan_review.py:4594 plan_authoring_runs, reckon/crew/plan_review.py:4127 stored_run_payloads, reckon/crew/plan_review.py:4225 plan_authoring_run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:4127 obtains a lazy public snapshot and :4155 still memoizes selection before consuming rows, preserving the zero-parse warm path.\nSCORE evidence: 18\nJUSTIFICATION evidence: Source repair-after-suite.log records 60 passed with EXIT=0 and boundary-reproduction.log records the private-access assertion failing at e505, but the 14 shared-process additions are cleared only under the later isolated-file execution method.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths in commit c70245dc300c671387cb9998a5f7556a7beb7848 match source prompt.txt:95-97 plus the narrow run_store.py extension in resume-1-advice.txt.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_owed_review_pass_pays_for_what_changed.py:185-186 rejects reinstated private access and :295-337 guards absence, writer freedom, rewrite, retirement, archive token and corruption, although the legacy-schema activity branch lacks a dedicated new assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:650 follows adjacent stored_run_rows at :714 for path resolution, joined records and RuntimeError refusal, and its added definitions use mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found encoded joining and activity selection owned by reckon/run_store.py:_record_rows and decoded public selection by stored_run_rows; :650 extends that owner with lazy encoded access and calls _record_rows rather than forking its join.\n",
+  "review_limits": "Incremental review only, e505..c702; inspected exact git objects because assigned review worktree HEAD is aa4befe26b9a593abd1a43d2870d963dc45d8f07; no test rerun or mutation; scope extension verified in source resume advice.",
+  "review_run_id": "r-20261117T093158833754-review-of-owed-review-pass-pays-for-change-s33-c70245dc300c",
+  "reviewed_base_sha": "e505ca84ca4052f79ee70b75505dffcb0b936ab9",
+  "reviewed_head_sha": "c70245dc300c671387cb9998a5f7556a7beb7848",
+  "reviewed_run_id": "r-20261117T081127777327-owed-review-pass-pays-for-change-s33",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparing_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T10:53:10.765926+00:00",
+  "total": 117
+}

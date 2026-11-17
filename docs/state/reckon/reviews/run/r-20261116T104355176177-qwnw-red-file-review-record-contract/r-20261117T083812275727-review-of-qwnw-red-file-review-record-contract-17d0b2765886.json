@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3655",
+    "reckon/crew/promotion_requests.py:393"
+  ],
+  "completed_at": "2026-11-17T08:48:36.843Z",
+  "dispatched_at": "2026-11-17T08:48:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3320",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered-record test reads only the parent directory's name, where reckon/crew/recovery_review_delivery.py:174 also anchors on the runs root, so a declared path under any directory named review-records/ is judged delivered here that the filer would ignore, and a review can be refused for a record no promotion would read; the code is moved from the inline base body, so this change carries the gap rather than introducing it."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1583",
+      "severity": "non-blocking",
+      "text": "non-blocking: _refused_delivered_review_read already walks declared review-record paths, parses each and asks review.store_review_refusals, while reckon/crew_run_commands.py:3315 repeats that traversal and aggregation instead of calling or extending it, so what counts as a delivered record must change in both places."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3656",
+      "severity": "non-blocking",
+      "text": "non-blocking: the accepted-paths widening has no test -- both green cases write the record on a path the run already declared, so dropping the accepted list from the declaration at :3315 leaves every assertion in tests/test_review_record_contract.py true while the widen path silently stops being checked."
+    },
+    {
+      "file": "tests/test_review_record_contract.py",
+      "line": "287",
+      "severity": "non-blocking",
+      "text": "non-blocking: **_kwargs accepts any keyword the rule passes, so the double no longer pins the one-argument call shape the lambda it replaces did; naming the keyword would keep that check while still allowing the snapshot the rule now passes."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): reckon/crew_run_commands.py:3655 is the guard's only caller inside crew complete, and reckon/crew/promotion_requests.py:393 re-enters that command with COMMAND_REPLY set, so the drain reaches the same guard before the request branch.",
+    "diff": "read commit by commit over 24bc79d8..17d0b276; the node's own work is 717c111c3f (the hoisted guard plus one test-double signature), c820c173d0 (an Iterable import), 515a1c6e38/9dbb79b090/feedab093c/17d0b276 (the evidence fragment) and merge 9053048f44, whose conflict resolution keeps primary's _accept_a_matching_project at :3652 ahead of this node's guard at :3655, both before any request is written.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importers arm adding no failure, and a logged base control; logs/node-head.log carries `# revision: 17d0b276` and `# slurm_job: unset` with `11 passed` and `EXIT=0`, logs/node-base.log ends `4 failed, 7 passed` / `EXIT=1` at 24bc79d8, logs/sbatch-gate5.log wraps the gate as a batch job, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-record-contract.html names both causes with their verdicts.",
+    "goal": "the goal is that tests/test_review_record_contract.py passes in full, and the landed change hoists the review-record refusal to reckon/crew_run_commands.py:3655, ahead of the queued-request branch at :3659, so at head 17d0b276 the file reads 11 passed in 1.03s with EXIT=0 (my own run of the named test file, logs/review-check-head.log).",
+    "manifest": "read manifest.md; it states status complete, seven commits, `11 passed` at head against `4 failed, 7 passed` at 24bc79d8, the armed suite pair at 58 passed on both sides, the importers arm at 0 added failing ids, and it names the test logs I opened.",
+    "write_paths": "the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the three paths the node's own commits change -- reckon/crew_run_commands.py, tests/test_review_record_contract.py and that fragment -- all lie inside them; the other 659 paths in the 24bc79d8..17d0b276 range arrive with the merge of primary 648a141a93 that the done_when instructs."
+  },
+  "justifications": {
+    "durability": "tests/test_review_record_contract.py:262 reddens with the guard put back behind the queued-request branch -- logs/node-base.log records exactly that shape, exit 0 with a request receipt -- so the arm that catches the regression exists and was measured, while the accepted-paths widening at :3656 has no arm at all.",
+    "evidence": "logs/node-head.log and logs/node-base.log each carry a revision header, a runner summary and a bare EXIT line -- 11 passed / 0 at 17d0b276 and 4 failed, 7 passed / 1 at 24bc79d8 -- though the base arm was measured at 24bc79d8 rather than the done_when's 8d50b0333f.",
+    "fit": "the helper at reckon/crew_run_commands.py:3288 follows the module's private, keyword-only, deferred-import, failure-naming docstring style beside _refuse_a_flag_as_a_reason, though its quoted Iterable annotation has no `from __future__ import annotations` in the module to justify it",
+    "goal_fidelity": "reckon/crew_run_commands.py:3655 asks the refusal before the queued-request branch at :3659, and I re-ran tests/test_review_placeholder.py at 17d0b276 myself: 11 passed, EXIT=0.",
+    "reuse": "reckon/crew/recovery_review_delivery.py:153 already owns which declared path is a run review's own record and anchors it on the runs root at :174, while the location test the new helper carries re-implements a weaker version rather than extending it; only the refusal rule itself is delegated to reckon/crew/review.py:1118.",
+    "scope_discipline": "the node's authored commits touch only reckon/crew_run_commands.py, tests/test_review_record_contract.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-record-contract.html, all inside the manifest's declared reckon, tests and fragment paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_review_record_contract.py passes in full, and the landed change hoists the review-record refusal to reckon/crew_run_commands.py:3655, ahead of the queued-request branch at :3659, so at head 17d0b276 the file reads 11 passed, EXIT=0 in my own run of the named test file (logs/review-check-head.log).\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an importers arm adding no failure, and a logged base control; logs/node-head.log carries `# revision: 17d0b276` with `# slurm_job: unset` and ends `11 passed` / `EXIT=0`, logs/node-base.log ends `4 failed, 7 passed` / `EXIT=1` at 24bc79d8, logs/sbatch-gate5.log wraps the gate as a batch job, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-record-contract.html names both causes with their verdicts.\nVERDICT write_paths: the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the three paths the node's own commits change -- reckon/crew_run_commands.py, tests/test_review_record_contract.py and that fragment -- all lie inside them; the other 659 paths in the 24bc79d8..17d0b276 range arrive with the merge of primary 648a141a93 that the done_when instructs.\nVERDICT manifest: read manifest.md; it states status complete, seven commits, `11 passed` at head against `4 failed, 7 passed` at 24bc79d8, the armed suite pair at 58 passed on both sides, the importers arm at 0 added failing ids, and it names the test logs I opened.\nVERDICT diff: read commit by commit over 24bc79d8..17d0b276; the node's own work is 717c111c3f (the hoisted guard plus one test-double signature), c820c173d0 (an Iterable import), 515a1c6e38/9dbb79b090/feedab093c/17d0b276 (the evidence fragment) and merge 9053048f44, whose conflict resolution keeps primary's project identity check at :3652 ahead of this node's guard at :3655, both before any request is written.\nCALL_SITES: reckon/crew_run_commands.py:3655, reckon/crew/promotion_requests.py:393\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3655 asks the refusal before the queued-request branch at :3659, and I re-ran tests/test_review_record_contract.py at 17d0b276 myself: 11 passed, EXIT=0.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/node-head.log and logs/node-base.log each carry a revision header, a runner summary and a bare EXIT line -- 11 passed / 0 at 17d0b276 and 4 failed, 7 passed / 1 at 24bc79d8 -- though the base arm was measured at 24bc79d8 rather than the done_when's 8d50b0333f.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node's authored commits touch only reckon/crew_run_commands.py, tests/test_review_record_contract.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-record-contract.html, all inside the manifest's declared reckon, tests and fragment paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_review_record_contract.py:262 reddens with the guard put back behind the queued-request branch -- logs/node-base.log records exactly that shape, exit 0 with a request receipt -- so the arm that catches the regression exists and was measured, while the accepted-paths widening at :3656 has no arm at all.\nSCORE fit: 17\nJUSTIFICATION fit: the helper at reckon/crew_run_commands.py:3288 follows the module's private, keyword-only, deferred-import, failure-naming docstring style beside _refuse_a_flag_as_a_reason, though its quoted Iterable annotation has no `from __future__ import annotations` in the module to justify it.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_review_delivery.py:153 already owns which declared path is a run review's own record and anchors it on the runs root at :174, while the location test the new helper carries re-implements a weaker version rather than extending it; only the refusal rule itself is delegated to reckon/crew/review.py:1118.\nFINDING reckon/crew_run_commands.py:3320 non-blocking: the delivered-record test reads only the parent directory's name, where reckon/crew/recovery_review_delivery.py:174 also anchors on the runs root, so a declared path under any directory named review-records/ is judged delivered here that the filer would ignore, and a review can be refused for a record no promotion would read; the code is moved from the inline base body, so this change carries the gap rather than introducing it.\nFINDING reckon/crew/obligations.py:1583 non-blocking: _refused_delivered_review_read already walks declared review-record paths, parses each and asks review.store_review_refusals, while reckon/crew_run_commands.py:3315 repeats that traversal and aggregation instead of calling or extending it, so what counts as a delivered record must change in both places.\nFINDING reckon/crew_run_commands.py:3656 non-blocking: the accepted-paths widening has no test -- both green cases write the record on a path the run already declared, so dropping the accepted list from the declaration at :3315 leaves every assertion in tests/test_review_record_contract.py true while the widen path silently stops being checked.\nFINDING tests/test_review_record_contract.py:287 non-blocking: **_kwargs accepts any keyword the rule passes, so the double no longer pins the one-argument call shape the lambda it replaces did; naming the keyword would keep that check while still allowing the snapshot the rule now passes.",
+  "review_run_id": "r-20261117T083812275727-review-of-qwnw-red-file-review-record-contract-17d0b2765886",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "17d0b27658869a18869c1753a8e76660da92d0c4",
+  "reviewed_run_id": "r-20261116T104355176177-qwnw-red-file-review-record-contract",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T10:51:54.664233+00:00",
+  "total": 95
+}

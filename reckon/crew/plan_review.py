@@ -4085,6 +4085,80 @@ def _run_moment(record: Mapping[str, Any]) -> float | None:
     return ledger.run_activity_seconds(record)
 
 
+def _authoring_row(payload: str, detail: str | None) -> dict[str, Any] | None:
+    """Decode only the fields needed to select a plan's newest author."""
+    record = {**json.loads(payload), **(json.loads(detail) if detail else {})}
+    return _authoring_pointer(record)
+
+
+def _authoring_pointer(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The author identity and activity shared by pointers and stored rows."""
+    from reckon import ledger
+
+    plan = _run_plan(record)
+    moment = _run_moment(record)
+    session = str(record.get("session") or "").strip()
+    run_id = str(record.get("run_id") or "").strip()
+    if not plan or moment is None or not session or not run_id:
+        return None
+    return {
+        "plan": plan,
+        "moment": moment,
+        "session": session,
+        "run_id": run_id,
+        "order": ledger.promotion_order_key(record),
+    }
+
+
+def _stored_authoring_runs(project: str, moment: float) -> list[dict[str, Any]] | None:
+    """Reuse stored author selections, decoding each row only when it changes.
+
+    The store's change token invalidates the selection, and each encoded row's
+    digest invalidates its parse. The time bucket includes the entire authoring
+    window; the caller still checks exact ages on every pass. A new bucket or
+    an archive edit refreshes selection without decoding unchanged rows. Only
+    the newest eligible author per plan is retained in a selection's answer.
+    """
+    from reckon import run_store
+
+    path = run_store.store_path()
+    bucket = int(moment // PLAN_REVIEW_BURST_SECONDS)
+    boundary = (bucket - 1) * PLAN_REVIEW_BURST_SECONDS
+    snapshot = run_store.stored_run_payloads(
+        project, path=path, activity_since=boundary
+    )
+    if snapshot is None:
+        return None
+    stamp, rows = snapshot
+
+    def read() -> list[dict[str, Any]]:
+        authors = []
+        for run_id, payload, detail in rows:
+            digest = hashlib.sha256(
+                (payload + "\0" + (detail or "")).encode("utf-8")
+            ).hexdigest()
+            author = file_memo.memoized_key(
+                "plan-authoring-row",
+                (str(path), project, run_id, digest),
+                lambda payload=payload, detail=detail: _authoring_row(payload, detail),
+            )
+            if author is not None:
+                authors.append(author)
+        newest = {}
+        # Equal activity stamps retain the ledger's first promotion-order row.
+        for author in sorted(authors, key=lambda row: row["order"]):
+            held = newest.get(author["plan"])
+            if held is None or author["moment"] > held["moment"]:
+                newest[author["plan"]] = author
+        return list(newest.values())
+
+    return file_memo.memoized_key(
+        "plan-authoring-selection",
+        (str(path), project, stamp, bucket),
+        read,
+    )
+
+
 def plan_authoring_runs(
     project: str,
     *,
@@ -4113,27 +4187,32 @@ def plan_authoring_runs(
     moment = time.time() if now_seconds is None else now_seconds
     newest: dict[str, tuple[float, str, str]] = {}
     live = runs.list_live(project=project) if pointers is None else pointers
-    candidates: list[dict[str, Any]] = [dict(pointer) for pointer in live]
+    candidates = [
+        author
+        for pointer in live
+        if (author := _authoring_pointer(pointer)) is not None
+    ]
     try:
-        rows, _version = ledger.read_records(
-            project,
-            with_figures=False,
-            activity_since=moment - PLAN_REVIEW_BURST_SECONDS,
-        )
+        stored = _stored_authoring_runs(project, moment)
+        if stored is None:
+            rows, _version = ledger.read_records(
+                project,
+                with_figures=False,
+                activity_since=moment - PLAN_REVIEW_BURST_SECONDS,
+            )
+            stored = [
+                author
+                for row in rows
+                if (author := _authoring_pointer(row)) is not None
+            ]
     except Exception:  # noqa: BLE001 — an unreadable ledger names no run
-        rows = []
-    candidates.extend(rows)
-    for record in candidates:
-        plan = _run_plan(record)
-        if not plan:
+        stored = []
+    candidates.extend(stored)
+    for author in candidates:
+        plan, started = author["plan"], author["moment"]
+        if moment - started > PLAN_REVIEW_BURST_SECONDS:
             continue
-        started = _run_moment(record)
-        if started is None or moment - started > PLAN_REVIEW_BURST_SECONDS:
-            continue
-        session = str(record.get("session") or "").strip()
-        run_id = str(record.get("run_id") or "").strip()
-        if not session or not run_id:
-            continue
+        run_id, session = author["run_id"], author["session"]
         held = newest.get(plan)
         if held is None or started > held[0]:
             newest[plan] = (started, run_id, session)
@@ -6449,7 +6528,9 @@ def project_section_readiness(
             section_verdicts_by_plan,
         )
 
-        with roadmap_build_scope(resolve_coordinators=False, audit_landings=False) as scope:
+        with roadmap_build_scope(
+            resolve_coordinators=False, audit_landings=False
+        ) as scope:
             discovered = _discover_project(project, None)
             roadmap = scope.built
             if roadmap is None:

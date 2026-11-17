@@ -41,7 +41,10 @@ so a harness can drive this reader against a temporary tree instead of the
 machine's own state.
 
 A user config file, ``<config home>/fleet/services.json``, may declare standing
-services as service names mapped to argv lists. Each declared service is started
+services as service names mapped to argv lists, or mappings with ``argv``,
+``fleet`` and optional positive integer ``memory_limit_bytes``. The limit is
+RLIMIT_AS on each process, inherited across exec and fork; it is not an
+aggregate child-tree memory bound. Each declared service is started
 as this batch step's own-session child behind a lock in the runtime directory,
 restarted with backoff when it exits, and stopped on reload by the pid recorded
 for it; each one's output is appended to a bounded log under the state
@@ -69,7 +72,14 @@ import tempfile
 import termios
 import threading
 import time
-from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import (
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    Sequence,
+)
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -296,8 +306,85 @@ def _short_hostname(name: str | None = None) -> str:
     return (socket.gethostname() if name is None else str(name)).split(".")[0]
 
 
-def log(message: str) -> None:
-    print(f"[{_utc_now()}] {message}", flush=True)
+def log(message: str, *, file: Any = None) -> None:
+    print(f"[{_utc_now()}] {message}", file=file, flush=True)
+
+
+def resolved_environment(repository: Path) -> Path:
+    """The shared environment a checkout or provisioned tree resolves to."""
+    return (repository / ".venv").resolve()
+
+
+def environment_interpreters(repository: Path) -> tuple[Path, ...]:
+    """Resolve interpreter aliases to their regular files, including external ones.
+
+    Resolve afresh on every call: an environment manager can install another
+    interpreter or replace an alias between health samples. Configuration
+    helpers such as python-config are not interpreter entry points.
+    """
+    binaries = resolved_environment(repository) / "bin"
+    targets = set()
+    try:
+        aliases = list(binaries.iterdir())
+    except FileNotFoundError:
+        return ()
+    for alias in aliases:
+        if not re.fullmatch(r"(?:pythonw?|pypy)(?:\d+(?:\.\d+)*)?[dt]?", alias.name):
+            continue
+        try:
+            target = alias.resolve(strict=True)
+            if stat.S_ISREG(target.stat().st_mode):
+                targets.add(target)
+        except FileNotFoundError:
+            continue
+    return tuple(sorted(targets))
+
+
+def check_environment_interpreters(
+    repositories: Iterable[Path], *, report: Callable[[str], None] | None = None
+) -> int:
+    """Remove every write bit and return the count still writable after repair.
+
+    A refused repair stays in the count and is logged, so zero means the check
+    observed read-only files. Resolution errors propagate rather than reporting
+    an unchecked environment as healthy.
+    """
+    report = log if report is None else report
+    writable = 0
+    targets = {
+        target for repo in repositories for target in environment_interpreters(repo)
+    }
+    for target in sorted(targets):
+        mode = target.stat().st_mode
+        if not mode & 0o222:
+            continue
+        try:
+            target.chmod(stat.S_IMODE(mode) & ~0o222)
+        except OSError as exc:
+            report(f"interpreter permission repair failed: {target}: {exc}")
+        if target.stat().st_mode & 0o222:
+            writable += 1
+        else:
+            report(f"interpreter made read-only: {target}")
+    return writable
+
+
+def sample_interpreter_permissions() -> int:
+    """Check the registered checkouts and emit one health-series reading."""
+    from reckon.flight import FlightConfigError, mounted_project_docs
+
+    def report(message: str) -> None:
+        log(message, file=sys.stderr)
+
+    try:
+        remaining = check_environment_interpreters(
+            (docs.parent for docs in mounted_project_docs().values()), report=report
+        )
+    except (OSError, ValueError, RuntimeError, FlightConfigError) as exc:
+        report(f"interpreter permission check failed: {exc}")
+        return 1
+    print(remaining, flush=True)
+    return 0
 
 
 def stripped_variables(environ: Mapping[str, str]) -> list[str]:
@@ -720,12 +807,13 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
     if sampler is None:
         log(f"no node sampler: {name} is not on PATH")
         return None
+    sampler_environment = {**environ, "RECKON_SHIM_PYTHON": sys.executable}
     process = subprocess.Popen(
         [sampler],
-        env=dict(environ),
+        env=sampler_environment,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=None,
         start_new_session=True,
     )
     log(f"node sampler {sampler} started as pid {process.pid}")
@@ -773,9 +861,25 @@ def service_log_directory(environ: Mapping[str, str] | None = None) -> Path:
     return state_directory(environ) / SERVICE_LOG_DIRECTORY_NAME
 
 
+@dataclass
+class _ServiceDeclaration:
+    argv: list[str]
+    memory_limit_bytes: int | None = None
+
+
 def declared_services(
     environ: Mapping[str, str] | None = None,
 ) -> dict[str, list[str]] | None:
+    """The declared service commands, preserving the argv-only interface."""
+    declarations = _service_declarations(environ)
+    if declarations is None:
+        return None
+    return {name: entry.argv for name, entry in declarations.items()}
+
+
+def _service_declarations(
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, _ServiceDeclaration] | None:
     """The services the user's config declares, or None if it cannot be read.
 
     A file that is absent declares nothing. A file that is present but cannot
@@ -800,7 +904,7 @@ def declared_services(
     if not isinstance(raw, Mapping):
         log(f"services config {path} is {type(raw).__name__}, not a mapping")
         return None
-    services: dict[str, list[str]] = {}
+    services: dict[str, _ServiceDeclaration] = {}
     own_fleet = fleet_name(environ)
     for name, entry in raw.items():
         if not isinstance(name, str) or not SAFE_NAME.fullmatch(name):
@@ -823,7 +927,15 @@ def declared_services(
             continue
         if owner != own_fleet:
             continue
-        services[name] = list(argv)
+        limit = entry.get("memory_limit_bytes") if isinstance(entry, Mapping) else None
+        if limit is not None and (
+            type(limit) is not int or limit <= 0 or limit > sys.maxsize
+        ):
+            log(
+                f"refused service {name}: memory_limit_bytes must be a positive integer"
+            )
+            return None
+        services[name] = _ServiceDeclaration(list(argv), limit)
     return services
 
 
@@ -1507,6 +1619,7 @@ class _ServiceState:
     """
 
     argv: list[str]
+    memory_limit_bytes: int | None = None
     pid: int | None = None
     owned: bool = False
     delay: float = FIRST_BACKOFF_SECONDS
@@ -1793,6 +1906,7 @@ class DeclaredServices:
     def _restart_locked(self, name: str, state: _ServiceState) -> None:
         """Stop the stale copy before starting its replacement on selected code."""
         argv, image = list(state.argv), state.start_image
+        memory_limit_bytes = state.memory_limit_bytes
         window = state.reload_window
         if window is not None:
             window = follower_reload.ReloadWindow.for_supervisor(name, state.pid)
@@ -1811,6 +1925,7 @@ class DeclaredServices:
         if window is not None:
             window.reloaded(self._code_stamp_value())
         replacement = self._states.setdefault(name, _ServiceState(argv=argv))
+        replacement.memory_limit_bytes = memory_limit_bytes
         replacement.start_image = image
         replacement.image_pin = _pin_image(image)
         self._start_or_backoff_locked(name, argv)
@@ -1849,17 +1964,28 @@ class DeclaredServices:
         not disturb what it runs. A config that cannot be read changes nothing,
         so a half-read file never stops every service.
         """
-        declared = declared_services(self._environ)
+        declared = _service_declarations(self._environ)
         if declared is None:
             return
         with self._guard:
             for name in list(self._states):
                 if name not in declared:
                     self._stop_locked(name)
-            for name, argv in declared.items():
+            for name, declaration in declared.items():
+                argv = declaration.argv
                 state = self._states.get(name)
+                if (
+                    state is not None
+                    and state.memory_limit_bytes != declaration.memory_limit_bytes
+                ):
+                    if not self._stop_locked(name):
+                        continue
+                    state = None
                 if state is None:
-                    state = _ServiceState(argv=list(argv))
+                    state = _ServiceState(
+                        argv=list(argv),
+                        memory_limit_bytes=declaration.memory_limit_bytes,
+                    )
                     self._states[name] = state
                 else:
                     state.argv = list(argv)
@@ -1880,6 +2006,21 @@ class DeclaredServices:
                     lock_held(name, self._runtime)
                     or process_runs_service(pid, name, state.argv)
                 ):
+                    limit = state.memory_limit_bytes
+                    if limit is not None:
+                        try:
+                            _soft, hard = resource.prlimit(pid, resource.RLIMIT_AS)
+                            limit_matches = (
+                                hard != resource.RLIM_INFINITY and hard <= limit
+                            )
+                        except (OSError, ValueError):
+                            limit_matches = False
+                        if not limit_matches:
+                            log(
+                                f"declared service {name} needs memory_limit_bytes={limit}; restarting"
+                            )
+                            self._restart_locked(name, state)
+                            continue
                     decision = self._code_decision(name, pid, state)
                     if decision == "restart":
                         self._restart_locked(name, state)
@@ -1950,6 +2091,11 @@ class DeclaredServices:
             pass_path.with_suffix(".pass.reload").unlink(missing_ok=True)
         child_environ = self._child_environ(image)
         child_environ[SERVICE_PASS_PATH_ENV] = str(pass_path)
+        child_environ.pop("RECKON_SERVICE_MEMORY_LIMIT_BYTES", None)
+        if state is not None and state.memory_limit_bytes is not None:
+            child_environ["RECKON_SERVICE_MEMORY_LIMIT_BYTES"] = str(
+                state.memory_limit_bytes
+            )
         try:
             with open(log_path, "ab") as sink:
                 process = subprocess.Popen(
@@ -2150,7 +2296,15 @@ class DeclaredServices:
                     if lease is not None:
                         lease.release()
                     state.next_attempt = now + delay
-                    log(f"declared service {name} exited; restart in {delay:.0f}s")
+                    bound = (
+                        f"; memory_limit_bytes={state.memory_limit_bytes} "
+                        "(per-process address space, not an aggregate child-tree limit)"
+                        if state.memory_limit_bytes is not None
+                        else ""
+                    )
+                    log(
+                        f"declared service {name} exited; restart in {delay:.0f}s{bound}"
+                    )
                 if state.next_attempt is not None and now >= state.next_attempt:
                     state.next_attempt = None
                     if self._start_locked(name, state.argv) is None:
@@ -2315,6 +2469,25 @@ def run_declared_service(
         os.fstat(descriptor).st_ino,
         _stamp_or_unknown(_source_code_stamp),
     )
+    requested_limit = environ.get("RECKON_SERVICE_MEMORY_LIMIT_BYTES")
+    if requested_limit is not None:
+        try:
+            limit = int(requested_limit)
+            if limit <= 0 or limit > sys.maxsize:
+                raise ValueError("memory limit must be a positive integer")  # noqa: TRY301 - reject before applying a process limit
+            _soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+            applied = limit if hard == resource.RLIM_INFINITY else min(limit, hard)
+            resource.setrlimit(resource.RLIMIT_AS, (applied, applied))
+        except (OSError, ValueError, OverflowError) as exc:
+            log(
+                f"refused service {name}: cannot apply memory_limit_bytes={requested_limit}: {exc}"
+            )
+            os.close(descriptor)
+            return 2
+        log(
+            f"declared service {name} memory_limit_bytes={applied} "
+            "(per-process address space, not an aggregate child-tree limit)"
+        )
     os.execvp(argv[0], list(argv))  # noqa: S606 - replaces this image, no shell
     raise AssertionError("execvp returned")
 
@@ -3156,6 +3329,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Enter either the one-shot session start or the request loop."""
     arguments = list(sys.argv[1:] if argv is None else argv)
     environ = os.environ
+    if arguments == ["check-interpreters"]:
+        return sample_interpreter_permissions()
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a
         # kill, so the sizing client's detach in its finally block still runs.

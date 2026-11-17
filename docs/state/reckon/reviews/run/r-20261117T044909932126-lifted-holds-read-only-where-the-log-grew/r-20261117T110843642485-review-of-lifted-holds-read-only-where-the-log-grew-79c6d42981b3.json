@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "tests/test_lifted_holds_read_only_what_was_appended.py:119": "Fails if the first call does not pass every one of the 5,000 complete report lines to json.loads.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:123": "Fails if the independent whole-file reference does not establish a nonempty set smaller than the line count, checking that the fixture contains both lifts and dry-run reports.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:124": "Fails if the first incremental result differs from the separately parsed whole-file reference.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:129": "Fails if an unchanged second call decodes any line; the recorded base-read mutation reproduces this as assert 5000 == 0.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:130": "Fails if the cached second result changes from the independent whole-file result, including a regression that returns an empty set without decoding.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:140": "Fails if the next call decodes other than the three newly appended report lines.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:141": "Fails if the post-append result differs from a separate whole-file parse of the enlarged log.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:142": "Fails if the three new reports do not enlarge the prior lifted set.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:149": "Fails if shortening the log does not restart at byte zero and decode all four remaining lines.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:150": "Fails if the result after shortening differs from the separate whole-file parse of that shortened log.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:151": "Fails if the larger log's prior answer survives after the file is shortened.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:164": "Fails if the initial six-line history is not observed before testing replacement.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:173": "Fails if the longer replacement at a new inode is treated as an append instead of decoding all twelve replacement lines.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:174": "Fails if the replacement result differs from the separate whole-file parse of the replacement file.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:175": "Fails if the old file's lifted pair is retained after replacement.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:193": "Fails if the decoder sees the unterminated half-line or misses any of the twenty complete lines; clamp-mutation.log records the removed-clamp regression as assert 21 == 20.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:194": "Fails if the partial-read result differs from a separate whole-file parse, which ignores the malformed trailing fragment.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:195": "Fails if the incomplete report is counted as a lifted hold before its newline arrives.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:199": "Fails if the stored append offset advances past the last newline while the half-line remains on disk.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:207": "Fails if completing the fragment produces zero or more than one decoder call.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:208": "Fails if the completed report's expected pair is not added to the lifted set.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:209": "Fails if the completed-read result differs from the separate whole-file parse.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:229": "Fails if the seed call does not return all twenty expected lifted pairs.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:230": "Fails if the seed call does not decode its twenty complete lines.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:249": "Synchronization assertion: fails if the test does not release the held first reader within five seconds.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:265": "Fails if the first reader does not reach the append reader within five seconds, so the planned overlap cannot proceed.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:276": "Fails if either concurrent reader raises an exception.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:277": "Fails if either concurrent reader remains alive after its five-second join.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:280": "Fails if overlapping reads lose any of the twenty seeded or three appended pairs; race-negative-control.log shows the split-lock mutation fails here with only the appended pairs retained.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:283": "Fails if any line is handed to the decoder more than once during the concurrent reads and final check.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:284": "Fails if the decoder sees any payload other than the three appended lines or misses one of them."
+  },
+  "assertion_independence": "No assertion compares the function result with the same object passed to it: result sets use a separate whole-file parser or a separately enumerated fixture set, while decode counts and payloads come from the recording json.loads wrapper. The expected race pairs are generated from fixture indices rather than the returned set.",
+  "call_sites": [
+    "reckon/crew/resumption.py:2685 sweep -> _lifted_holds",
+    "reckon/crew/resumption.py:819 _lifted_holds -> recovery_wait.appended_lines"
+  ],
+  "completed_at": "2026-11-17T11:25:40Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-17T11:10:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator granted reckon/crew/recovery_wait.py with crew resume --reopen --write-path, so the node extends the existing incremental-read owner instead of duplicating it, as the prior review's reuse finding required; the path is ratified with --accept-path at landing",
+      "recorded_at": "2026-11-17T11:27:25.774621+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "line": 170,
+      "severity": "blocking",
+      "text": "The dispatched write fence in the source prompt grants resumption.py, the new test, the evidence fragment, and the figure directory, but not recovery_wait.py; this new helper is outside the declared scope and must be authorized or moved before the node lands."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commits 66a9cb034b8a82a3b7c71b5abc1c87c59fdd8314, 612f7f2dc32b923da317e653435d45b805c8ae98, 39524c0f369897ad2566b06ad3087fa9b56fc6e8, 19e566b147d8aebcd768df31348e58b0dbefef97 and 79c6d42981b3839401e3d38f9ef7d8968378fd50 against base 73e2f52fa998607d07caffa8dfcc9f9f1c8cce62; the series adds incremental reads and tests, factors the shared reader, adds evidence, fixes the overlapping-read race, and updates the evidence, with recovery_wait.py out of scope.",
+    "done_when": "docs/plans/the-monitor-reads-each-fact-once.html:816 specifies the 5,000/0/3/truncation counts and whole-file equivalence; the named test asserts them, gate.log records 4 passed, and the matched arms record 58 passed at base and 62 at head.",
+    "goal": "docs/plans/the-monitor-reads-each-fact-once.html:816 requires decoding only appended recovery-log lines; reckon/crew/resumption.py:819 now reads the tail, preserves prior lifted pairs, and resets the set when the reader reports a restart.",
+    "manifest": "The source manifest.md records complete status, five commits, the gate and matched-arm logs, and three mutation logs, but its orientation_write_paths adds recovery_wait.py even though source prompt.txt:94 does not grant it.",
+    "write_paths": "The source prompt.txt:94 grants resumption.py, the test, the evidence fragment and figure directory; the diff also changes reckon/crew/recovery_wait.py, which is outside that declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_lifted_holds_read_only_what_was_appended.py:129, :193 and :280 fail respectively under the recorded base-read, no-clamp and split-lock mutations, with independent result/decode observations.",
+    "evidence": "gate.log records 4 passed EXIT=0 and the matched base/head logs record 58/62 passed EXIT=0 with a zero failure delta; the source manifest records lint results, but no lint log is listed.",
+    "fit": "reckon/crew/recovery_wait.py:170 extends the existing complete-line reader at :194 and uses the module's stream-scan state and locking idiom without plan-labelled names.",
+    "goal_fidelity": "reckon/crew/resumption.py:819 reads newly appended lines and atomically advances the lifted set and offset, while the test covers replacement and shortening.",
+    "reuse": "The capability search found reckon/crew/recovery_wait.py:194 already owns stream identity, byte offsets and complete-line reads; appended_lines at :170 extends that owner and resumption.py:819 reuses it.",
+    "scope_discipline": "source prompt.txt:94 does not grant reckon/crew/recovery_wait.py, which the diff adds at line 170, so this fenced path violation prevents acceptance as scoped."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/the-monitor-reads-each-fact-once.html:816 requires decoding only appended recovery-log lines; reckon/crew/resumption.py:819 reads the tail, preserves prior lifted pairs, and resets when the reader reports a restart.\nVERDICT done_when: docs/plans/the-monitor-reads-each-fact-once.html:816 specifies the 5,000/0/3/truncation counts and whole-file equivalence; the named test asserts them, gate.log records 4 passed, and matched arms record 58 passed at base and 62 at head.\nVERDICT write_paths: source prompt.txt:94 grants resumption.py, the test, the evidence fragment and figure directory; the diff also changes reckon/crew/recovery_wait.py, which is outside scope.\nVERDICT manifest: source manifest.md records complete status, five commits, gate and matched-arm logs, and three mutation logs, but its orientation_write_paths adds recovery_wait.py without a grant in prompt.txt:94.\nVERDICT diff: read commits 66a9cb034b8a82a3b7c71b5abc1c87c59fdd8314, 612f7f2dc32b923da317e653435d45b805c8ae98, 39524c0f369897ad2566b06ad3087fa9b56fc6e8, 19e566b147d8aebcd768df31348e58b0dbefef97 and 79c6d42981b3839401e3d38f9ef7d8968378fd50 against base 73e2f52fa998607d07caffa8dfcc9f9f1c8cce62; the commits add incremental reads/tests, reuse the stream reader, record evidence, fix the race, and update evidence.\nCALL_SITES: reckon/crew/resumption.py:2685 sweep -> _lifted_holds, reckon/crew/resumption.py:819 _lifted_holds -> recovery_wait.appended_lines\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:819 reads newly appended lines and advances the lifted set and offset together, with replacement and shortening coverage.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log records 4 passed EXIT=0 and matched arms record 58/62 passed EXIT=0 with zero added failures; lint results appear in the manifest without a listed log.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: source prompt.txt:94 does not grant reckon/crew/recovery_wait.py, which the diff adds at line 170.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_lifted_holds_read_only_what_was_appended.py:129, :193 and :280 fail under the recorded base-read, no-clamp and split-lock mutations.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_wait.py:170 extends the existing reader and follows its stream-scan idiom without forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/recovery_wait.py:194 owns the stream offset and complete-line mechanism that appended_lines at :170 extends.\nFINDING reckon/crew/recovery_wait.py:170 blocking: the dispatched prompt's write fence grants resumption.py, the test, the evidence fragment and figure directory, but not recovery_wait.py; this new helper is outside declared scope and must be authorized or moved before the node lands.",
+  "review_run_id": "r-20261117T110843642485-review-of-lifted-holds-read-only-where-the-log-grew-79c6d42981b3",
+  "reviewed_base_sha": "73e2f52fa998607d07caffa8dfcc9f9f1c8cce62",
+  "reviewed_commits": [
+    "66a9cb034b8a82a3b7c71b5abc1c87c59fdd8314",
+    "612f7f2dc32b923da317e653435d45b805c8ae98",
+    "39524c0f369897ad2566b06ad3087fa9b56fc6e8",
+    "19e566b147d8aebcd768df31348e58b0dbefef97",
+    "79c6d42981b3839401e3d38f9ef7d8968378fd50"
+  ],
+  "reviewed_head_sha": "79c6d42981b3839401e3d38f9ef7d8968378fd50",
+  "reviewed_run_id": "r-20261117T044909932126-lifted-holds-read-only-where-the-log-grew",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T11:40:50.023225+00:00",
+  "total": 102
+}

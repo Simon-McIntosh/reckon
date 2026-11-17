@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 import sys
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime, timedelta
@@ -742,6 +743,41 @@ def prompt_without_anchored_edit_instruction(prompt: str) -> str:
     return prompt
 
 
+def worker_gate_commands(
+    *, project: str, run_id: str, worktree: str, done_when: str
+) -> str:
+    """Compose executable gate calls using the run's own identity and partition."""
+    from reckon.crew.standing_suite import node_gate_partition
+
+    prefix = [sys.executable, "-c", "from reckon.cli import main; main()", "crew"]
+    options = [
+        "--project",
+        project,
+        "--run",
+        run_id,
+        "--checkout-path",
+        worktree,
+        "--partition",
+        node_gate_partition(done_when),
+    ]
+    source = shlex.quote(str(Path(__file__).resolve().parents[2]))
+    gate = f"PYTHONPATH={source} " + shlex.join(
+        [*prefix, "verify-gate", "--worker", *options]
+    )
+    arms = f"PYTHONPATH={source} " + shlex.join([*prefix, "suite", "run", *options])
+    return (
+        "\nFENCE — COMPOSED GATE CALLS\n"
+        "  Commit the measured work first: each call measures committed revisions.\n"
+        "  Scoped gate (add --command with a quoted command for a different scoped check):\n"
+        f"    {gate}\n"
+        "  Base and head arms (each resolves the declared suite over its own tree):\n"
+        f"    {arms}\n"
+        "  Each call creates its own logs and returns JSON. Copy tests and test_logs\n"
+        "  from the scoped gate, and baseline_suite and after_suite from the arms,\n"
+        "  into your manifest. Keep the returned revision, command and receipt.\n"
+    )
+
+
 def compose_prompt(
     *,
     node: TaskNode,
@@ -937,6 +973,10 @@ RUNTIME FILESYSTEM
         )
     else:
         suite_gate_block = ""
+    if suite_command and run_id:
+        suite_gate_block += worker_gate_commands(
+            project=project, run_id=run_id, worktree=worktree, done_when=node.done_when
+        )
     # The check is composed with this run's own id so the worker can execute the
     # line as written. A composing caller that supplies no id still gets a
     # runnable instruction rather than a command that silently checks nothing.

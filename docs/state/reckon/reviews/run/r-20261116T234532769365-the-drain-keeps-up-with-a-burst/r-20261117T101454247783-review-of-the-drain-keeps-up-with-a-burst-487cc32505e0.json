@@ -1,0 +1,97 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "a_commitless_promotion_finishes_beside_a_landing[True]": "Retaining the individual group admission reservation blocks the separately signalled report event while the landing waits for release; stage-reservation-negative.log records that exact assertion failure.",
+    "a_measurement_wait_holds_no_preparation_slot": "Removing the handoff prevents reported.wait from succeeding while three measurements block at width two; removing the width cap changes independently observed active and maximum counts from two; final cleanup fails on leaked work.",
+    "a_release_record_holds_the_branch_before_another_ledger_write": "Restoring commit-only acquisition lets second_write become set before finish_release; line 639 fails, as final-revised-release-negative.log demonstrates; removing persistence or failing the second thread also fails lines 647-652.",
+    "a_replay_refuses_completion_with_a_queued_request": "Removing the end-of-drain queue check loses the required RuntimeError while a separately injected request remains REQUESTED; final-revised-completion-negative.log records the red control.",
+    "a_replay_write_refusal_fails_the_run_even_when_execution_catches_it": "Removing the final refusal check makes main return instead of raising and writes an output artifact; removing the underlying guard changes known source contents; accepted-write-negative.log records DID NOT RAISE RuntimeError with one refusal.",
+    "batch_relay_reads_immutable_objects_and_returns_remote_logs": "Losing repository/log relocation makes Git fail while the private Git directory is deliberately hidden; losing PATH restoration makes the fake scheduler refuse with exit 97; losing returned logs or changing source content fails independently read known object bytes.",
+    "real_replay_exercises_guards_and_a_positive_control additions": "Leaving inherited scratch/runtime roots makes the independently resolved path-containment assertions fail; leaking active requests or threads makes the new literal-zero/empty assertions fail; the fixture separately observes real ledger append and a refused unavailable request.",
+    "release_record_is_written_under_the_branch_lease": "Removing early acquisition makes the observer at test line 547 see no lease; the test reaches the actual release writer rather than a supplied receipt.",
+    "relocation_uses_the_longest_path_and_clears_process_handles additions": "Retaining launcher_host and launcher_job_id makes the production foreign-host classifier return true and leaves nested launcher ids non-null, as isolated-launcher-negative.log shows; no new durability credit is assigned for the pre-existing indistinguishable longest-prefix fixture."
+  },
+  "assertion_independence": "Every added assertion above has a named failing regression; none is credited merely for echoing its input. Release payload persistence compares a row read from disk, so skipping the writer removes the release field and fails the assertion.",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/admission/service.py:257",
+    "reckon/crew/promotion.py:2367",
+    "reckon/crew/promotion.py:3087",
+    "reckon/crew/promotion_records.py:1137",
+    "reckon/crew/queue_landing.py:1254",
+    "reckon/crew/promotion_release.py:803",
+    "reckon/crew_run_commands.py:4584",
+    "scripts/replay_promotion_drain.py:847",
+    "scripts/replay_promotion_drain.py:946"
+  ],
+  "completed_at": "2026-11-17T10:23:42Z",
+  "dispatched_at": "2026-11-17T10:17:46Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234532769365-the-drain-keeps-up-with-a-burst/isolated-assigned.log",
+      "revision": "487cc32505e01e3d8645d0db0ea3029c92c0eed5",
+      "summary": "84 passed in 44.73s"
+    },
+    "baseline_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234532769365-the-drain-keeps-up-with-a-burst/baseline-assigned.log",
+      "revision": "606afde873e4bd9e8425c33892fd944b6c33a9c3",
+      "summary": "58 passed in 38.17s"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call sites",
+    "diff": "read the eleven manifest-listed commits after 8ed595380ba2351031e4a0ffc43e2f88e664db03 through 487cc32505e01e3d8645d0db0ea3029c92c0eed5, including the primary merge resolution; source changes wrap release writes, hand off measurement preparation, retain group admission semantics and repair isolated replay transport and completion checks.",
+    "done_when": "live docs/plans/delivered-work-lands-without-a-coordinator.html section s4 and resume-4-advice.txt accept the earlier 202.9317 versus 112.8214/hour pair; the current-product receipt completes 106 matching verdicts with zero active requests, while final matched arms time out before draining and the broader importer adds one fenced-out failure.",
+    "goal": "prompt.txt:38 requires at least 30 promotions/hour without blocked requests spending preparation slots; promotion.py:1848 and landing_measure.py:127 repair release serialization and measurement handoff, and real-receipt-stage-head.log records a completed 175.4905/hour replay.",
+    "manifest": "manifest.md records completed 58-pass baseline and 84-pass after arms, a 140-pass integrated gate, mutation failures, the accepted historical pair, the current completion receipt, the final setup timeouts and the two explicitly fenced-out issues.",
+    "write_paths": "prompt.txt:95 and resume-2-advice.txt grant the original scope plus promotion.py and promotion_scope.py; the worker-authored six-path projection against authorized primary 612546bc295419d34f112a50d8214249425c0437 stays within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_the_drain_keeps_up_with_a_burst.py:639 fails on premature release-ledger writes, :391 fails on retained individual admission reservations, :338 fails on swallowed source-write refusals, and :149 fails on retained scheduler handles, with corresponding nonzero mutation receipts.",
+    "evidence": "baseline-assigned.log records 58 passed and isolated-assigned.log records 84 passed with EXIT=0, but real-receipt-isolated-base.log and real-receipt-isolated-head.log both end EXIT=124, so the higher-than-base result relies on the explicitly accepted earlier pair rather than a fresh matched final-head pair.",
+    "fit": "promotion.py:1848 composes the existing promotion_scope.py:70 context manager and release writer, while landing_measure.py:179 follows its decorator and context-manager idiom and all added source names describe their mechanism.",
+    "goal_fidelity": "promotion.py:1848 now leases before the real ledger update, landing_measure.py:127 releases preparation before measurement waiting, and real-receipt-stage-head.log settles 106 requests at 175.4905/hour with no active work, subject to the accepted historical-pair authority in resume-4-advice.txt.",
+    "reuse": "promotion.py:1848 wraps promotion_release.py:734, landing_measure.py:127 extends its measurement owner using existing promotion leases and width, and the replay-only relay composes landing_measure.py:850 batch execution rather than replacing it; capability searches across reckon/crew and scripts found no existing owner for replaying node-local Git inputs through a shared log relay.",
+    "scope_discipline": "the six worker-authored paths in git diff 612546bc295419d34f112a50d8214249425c0437..487cc32505e01e3d8645d0db0ea3029c92c0eed5 match the expanded grants in prompt.txt and resume-2-advice.txt; inherited primary changes are separated from authored work."
+  },
+  "notes": "Read-only delta review since the prior reviewed head. The assigned review tree HEAD is c27d520c58835b4f02e37859fb8a5f45ebd44c18; source and line citations were read explicitly at 487cc32505 using git show/grep, not assumed from that tree. Coordinator resume-4-advice.txt explicitly accepts the historical matched rate pair. Final matched arms timed out during private worker fixture restoration before _drain; no final paired speedup is inferred. The stage replay and final product-module identity provide separate current-product completion evidence. Broader importer and direct CLI release bypass are recorded only under manifest outside_scope as instructed.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires at least 30 promotions/hour without blocked requests spending preparation slots; promotion.py:1848 and landing_measure.py:127 repair release serialization and measurement handoff, and real-receipt-stage-head.log records a completed 175.4905/hour replay.\nVERDICT done_when: live docs/plans/delivered-work-lands-without-a-coordinator.html section s4 and resume-4-advice.txt accept the earlier 202.9317 versus 112.8214/hour pair; the current-product receipt completes 106 matching verdicts with zero active requests, while final matched arms time out before draining and the broader importer adds one fenced-out failure.\nVERDICT write_paths: prompt.txt:95 and resume-2-advice.txt grant the original scope plus promotion.py and promotion_scope.py; the worker-authored six-path projection against authorized primary 612546bc295419d34f112a50d8214249425c0437 stays within those grants.\nVERDICT manifest: manifest.md records completed 58-pass baseline and 84-pass after arms, a 140-pass integrated gate, mutation failures, the accepted historical pair, the current completion receipt, the final setup timeouts and the two explicitly fenced-out issues.\nVERDICT diff: read the eleven manifest-listed commits after 8ed595380ba2351031e4a0ffc43e2f88e664db03 through 487cc32505e01e3d8645d0db0ea3029c92c0eed5, including the primary merge resolution; source changes wrap release writes, hand off measurement preparation, retain group admission semantics and repair isolated replay transport and completion checks.\nCALL_SITES: reckon/crew/admission/service.py:257, reckon/crew/promotion.py:2367, reckon/crew/promotion.py:3087, reckon/crew/promotion_records.py:1137, reckon/crew/queue_landing.py:1254, reckon/crew/promotion_release.py:803, reckon/crew_run_commands.py:4584, scripts/replay_promotion_drain.py:847, scripts/replay_promotion_drain.py:946\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion.py:1848 now leases before the real ledger update, landing_measure.py:127 releases preparation before measurement waiting, and real-receipt-stage-head.log settles 106 requests at 175.4905/hour with no active work, subject to the accepted historical-pair authority in resume-4-advice.txt.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline-assigned.log records 58 passed and isolated-assigned.log records 84 passed with EXIT=0, but real-receipt-isolated-base.log and real-receipt-isolated-head.log both end EXIT=124, so the higher-than-base result relies on the explicitly accepted earlier pair rather than a fresh matched final-head pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the six worker-authored paths in git diff 612546bc295419d34f112a50d8214249425c0437..487cc32505e01e3d8645d0db0ea3029c92c0eed5 match the expanded grants in prompt.txt and resume-2-advice.txt; inherited primary changes are separated from authored work.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_drain_keeps_up_with_a_burst.py:639 fails on premature release-ledger writes, :391 fails on retained individual admission reservations, :338 fails on swallowed source-write refusals, and :149 fails on retained scheduler handles, with corresponding nonzero mutation receipts.\nSCORE fit: 20\nJUSTIFICATION fit: promotion.py:1848 composes the existing promotion_scope.py:70 context manager and release writer, while landing_measure.py:179 follows its decorator and context-manager idiom and all added source names describe their mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: promotion.py:1848 wraps promotion_release.py:734, landing_measure.py:127 extends its measurement owner using existing promotion leases and width, and the replay-only relay composes landing_measure.py:850 batch execution rather than replacing it; capability searches across reckon/crew and scripts found no existing owner for replaying node-local Git inputs through a shared log relay.\n",
+  "reuse_search": "Searched measurement capacity, lease/resource ownership, batch submission, remote Git/log transport and path relocation in reckon/crew and scripts; opened promotion_scope, promotion_release, landing_measure partition_batch and queue_landing measurement admission. The added release wrapper wraps its owner; measurement handoff extends its owner; the replay transport wraps existing real batch execution.",
+  "review_run_id": "r-20261117T101454247783-review-of-the-drain-keeps-up-with-a-burst-487cc32505e0",
+  "reviewed_base_sha": "8ed595380ba2351031e4a0ffc43e2f88e664db03",
+  "reviewed_commits": [
+    "c7b05e4f00e2dd08d55bf80e6b635fc53692ffec",
+    "ebe3718ed1fb6dd2d9b92fe9e33da6739a82d47f",
+    "c74226848d91c86850865ba5cff4c7470f6d7855",
+    "e471ea588cad2ce835e439bc958eca978266ecc9",
+    "025b8dfe0f9cadd4791fa1b347a8560db4c0d696",
+    "21e52f6e6479ad605d15149d7a2356b114f25dbd",
+    "8843f803a0cfbd4fb2cf87b2ebb99ef6a086acf2",
+    "83c4d3e1a9456f273bb971d127554739a0ff15c6",
+    "ccbfe41377bef48a34c26695cb8f61bfa3ec9a07",
+    "180cfbe45c93af2caa3420bf55e26aa83b981f2a",
+    "487cc32505e01e3d8645d0db0ea3029c92c0eed5"
+  ],
+  "reviewed_head_sha": "487cc32505e01e3d8645d0db0ea3029c92c0eed5",
+  "reviewed_run_id": "r-20261116T234532769365-the-drain-keeps-up-with-a-burst",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T10:25:25.527290+00:00",
+  "total": 117
+}
