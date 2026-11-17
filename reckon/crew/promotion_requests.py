@@ -982,6 +982,11 @@ class PromotionService:
                     self._release(owner)
                     self._release(slot)
                     continue
+                if request.get("kind") != "landing-group":
+                    # A group excludes new individual landings. Individuals
+                    # prepare together and serialize only their branch writes.
+                    self._release(branch)
+                    branch = None
             thread = threading.Thread(
                 target=Context().run,
                 args=(self._run, request, owner, *([branch] if branch else []), slot),

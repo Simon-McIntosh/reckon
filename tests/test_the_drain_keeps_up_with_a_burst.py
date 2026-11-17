@@ -341,7 +341,7 @@ def test_a_replay_write_refusal_fails_the_run_even_when_execution_catches_it(
     assert not output.exists()
 
 
-def _queue_for_repository(run_id, repository, *, role="implement"):
+def _queue_for_repository(run_id, repository, *, role="implement", land=False):
     runs._write_json(
         runs.pointer_path(run_id),
         {
@@ -354,7 +354,9 @@ def _queue_for_repository(run_id, repository, *, role="implement"):
             "phase": "complete",
         },
     )
-    return promotion_requests.request_promotion(run_id)
+    return promotion_requests.request_promotion(
+        run_id, kind="command" if land else "complete", options={"land": land}
+    )
 
 
 def _write_branch(repository):
@@ -365,10 +367,11 @@ def _write_branch(repository):
         acquire(repository)
 
 
-def test_a_commitless_promotion_finishes_beside_a_landing(tmp_path):
+@pytest.mark.parametrize("land", [False, True])
+def test_a_commitless_promotion_finishes_beside_a_landing(tmp_path, land):
     first, report = "r-held-landing", "r-report"
-    _queue_for_repository(first, tmp_path / "repo")
-    _queue_for_repository(report, tmp_path / "repo", role="review")
+    _queue_for_repository(first, tmp_path / "repo", land=land)
+    _queue_for_repository(report, tmp_path / "repo", role="review", land=land)
     landed, release, reported = threading.Event(), threading.Event(), threading.Event()
 
     def execute(request):
