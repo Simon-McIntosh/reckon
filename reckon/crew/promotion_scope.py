@@ -3,6 +3,7 @@ from __future__ import annotations
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
 import difflib
+import hashlib
 import html
 import json
 import os
@@ -10,8 +11,11 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC
 from pathlib import Path
 from typing import Any
@@ -58,6 +62,90 @@ from reckon.crew.runs import (
 )
 
 _ZERO_COUNT = re.compile(r"0+")
+_BRANCH_WRITES: ContextVar[dict | None] = ContextVar("promotion_branch_writes", default=None)
+_BRANCH_WRITER_CHANGED = threading.Condition()
+
+
+@contextmanager
+def _branch_write_scope():
+    """Hold a branch claim only between the first write and its commit."""
+    if _BRANCH_WRITES.get() is not None:
+        yield
+        return
+    token = _BRANCH_WRITES.set({})
+    try:
+        yield
+    finally:
+        _release_branch_write()
+        _BRANCH_WRITES.reset(token)
+
+
+def _branch_write_key(checkout: Path) -> str:
+    from reckon.git_head import _common_git_directory, _git_directory
+
+    directory = _git_directory(checkout)
+    common, branch = checkout.resolve(), "HEAD"
+    if directory is not None:
+        common = directory.resolve()
+        head = directory / "HEAD"
+        if head.is_file():
+            contents = head.read_text().strip()
+            if contents.startswith("ref:"):
+                common = _common_git_directory(directory).resolve()
+                branch = contents
+    return "promotion-branch-" + hashlib.sha256(f"{common}\n{branch}".encode()).hexdigest()[:24]
+
+
+def _acquire_branch_write(checkout: Path | None) -> None:
+    scope = _BRANCH_WRITES.get()
+    if scope is None or checkout is None or scope.get("lease") is not None:
+        return
+    from reckon.crew.promotion import _PromotionLeaseRenewer
+    from reckon.crew.promotion_requests import (
+        PREPARATION_DONE,
+        PROMOTION_STAGE,
+        claim_promotion_lease,
+    )
+
+    release_preparation = PREPARATION_DONE.get()
+    if release_preparation is not None:
+        release_preparation()
+    mark_stage = PROMOTION_STAGE.get()
+    if mark_stage is not None:
+        mark_stage("branch-wait")
+    name = _branch_write_key(checkout)
+    deadline = time.monotonic() + 300
+    with _BRANCH_WRITER_CHANGED:
+        while (lease := claim_promotion_lease(name)) is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CrewError(f"branch-writing lease remained held for {checkout}")
+            _BRANCH_WRITER_CHANGED.wait(min(2.0, remaining))
+    renewer = _PromotionLeaseRenewer(lease)
+    renewer.start()
+    scope.update(lease=lease, renewer=renewer)
+    if mark_stage is not None:
+        mark_stage("branch-write")
+
+
+def _release_branch_write() -> None:
+    scope = _BRANCH_WRITES.get()
+    if not scope or scope.get("lease") is None:
+        return
+    from reckon.crew.promotion_requests import PROMOTION_STAGE, release_promotion_lease
+
+    scope.pop("renewer").stop()
+    with _BRANCH_WRITER_CHANGED:
+        release_promotion_lease(scope.pop("lease"))
+        _BRANCH_WRITER_CHANGED.notify_all()
+    mark_stage = PROMOTION_STAGE.get()
+    if mark_stage is not None:
+        mark_stage("bookkeeping")
+
+
+def _branch_plan_text_edits() -> dict:
+    scope = _BRANCH_WRITES.get()
+    return scope.setdefault("plan_text_edits", {}) if scope is not None else {}
 
 
 def _manifest_cites_a_commit(
@@ -1643,6 +1731,14 @@ def _record_landing_comment(
         if started:
             payload["status"] = "in-progress"
         try:
+            _acquire_branch_write(Path(root) if root is not None else None)
+            scope = _BRANCH_WRITES.get()
+            if scope is not None and not scope.get("plan_checked"):
+                _branch_plan_text_edits().update(_refuse_unrelated_plan_edit(
+                    project=project, plan=plan, root=root,
+                    checkout=Path(root) if root is not None else None,
+                ))
+                scope["plan_checked"] = True
             _store.write_plan(
                 project,
                 plan,
@@ -2939,6 +3035,26 @@ def _commit_preserving_plan_text(
 
 
 def _commit_landing_writes(
+    *, run_id: str, verdict: str, checkout: Path, paths: Sequence[Path],
+    subject: str | None = None, body: str | None = None,
+    store_row_written: bool = False, plan_text_edits: Mapping[Path, str] | None = None,
+) -> dict[str, Any]:
+    """Commit available landing writes under the lazy branch lease."""
+    if not any(Path(path).is_file() for path in paths):
+        return {"committed": False, "reason": "no_write"}
+    with _branch_write_scope():
+        _acquire_branch_write(checkout)
+        try:
+            return _commit_branch_writes(
+                run_id=run_id, verdict=verdict, checkout=checkout, paths=paths,
+                subject=subject, body=body, store_row_written=store_row_written,
+                plan_text_edits=plan_text_edits,
+            )
+        finally:
+            _release_branch_write()
+
+
+def _commit_branch_writes(
     *,
     run_id: str,
     verdict: str,

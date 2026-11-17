@@ -1845,6 +1845,33 @@ def _budget_overrun_facts(
     }
 
 
+def _record_release_on_ledger(**kwargs):
+    """Serialize the release row update together with its landing commit."""
+    from reckon.crew.promotion_scope import (
+        _acquire_branch_write,
+        _branch_write_scope,
+        _release_branch_write,
+    )
+
+    with _branch_write_scope():
+        _acquire_branch_write(kwargs.get("checkout"))
+        try:
+            return _write_release_record(**kwargs)
+        finally:
+            _release_branch_write()
+
+
+def _with_branch_write_scope(function):
+    @wraps(function)
+    def invoke(*args, **kwargs):
+        from reckon.crew.promotion_scope import _branch_write_scope
+
+        with _branch_write_scope():
+            return function(*args, **kwargs)
+
+    return invoke
+
+
 @dataclass
 class _PlanWriteSnapshot:
     """The plan and its path's index state before a landing writes them."""
@@ -2162,6 +2189,7 @@ def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callabl
 
 
 @operational_read
+@_with_branch_write_scope
 @_preserve_plan_on_refusal
 def _complete_locked(
     run_id: str,
@@ -2239,18 +2267,11 @@ def _complete_locked(
     # half-landed, uncommitted state behind.
     _require_committable_checkout(checkout, run_id)
     tree = _record_tree(record)
-    # A landing that will carry the plan file must not sweep an unrelated
-    # uncommitted edit into its commit. The check runs here, before either
-    # store is written, so a refusal leaves no ledger row and no plan comment
-    # for the next promotion to read as an unrelated edit.
-    plan_text_edits = {}
-    if not shadow:
-        plan_text_edits = _refuse_unrelated_plan_edit(
-            project=project,
-            plan=str(node.get("plan") or ""),
-            root=ledger_root,
-            checkout=checkout,
-        )
+    # The comment captures pending plan text after acquiring the branch lease;
+    # the same mapping then carries that projection through the commit.
+    from reckon.crew.promotion_scope import _branch_plan_text_edits
+
+    plan_text_edits = _branch_plan_text_edits()
     # Every ledger read between here and the append is served from one index
     # decode per read key: the landing checks and this record's own read
     # re-read the same ledger milliseconds apart, and each read decoded the
@@ -2888,6 +2909,9 @@ def _complete_locked(
     # be written, so it can extend them without reading the ledger.
     profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
+        from reckon.crew.promotion_scope import _acquire_branch_write
+
+        _acquire_branch_write(checkout)
         written = ledger.append_run(project, run, root=ledger_root)
     except ledger.LedgerError as exc:
         # Another completion can land after the read above. Treat only an
@@ -3811,7 +3835,6 @@ from reckon.crew.promotion_release import (
     _harvest_lane_receipt,
     _other_live_run_citations,
     _receipt_unmeasured_reason,
-    _record_release_on_ledger,
     _record_tree,
     _record_worktree,
     _release_after_promotion,
@@ -3827,6 +3850,9 @@ from reckon.crew.promotion_release import (
     _unreconciled_live_runs,
     _update_run_record,
     remove_cited_arms,
+)
+from reckon.crew.promotion_release import (
+    _record_release_on_ledger as _write_release_record,
 )
 from reckon.crew.promotion_scope import (
     _OPEN_OPERATION_MARKERS,
