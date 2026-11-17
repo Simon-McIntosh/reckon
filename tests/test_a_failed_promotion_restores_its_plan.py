@@ -221,20 +221,21 @@ def test_cleanup_failure_preserves_the_committed_comment(
 
 @pytest.mark.parametrize("edit", ["state", "text", "comment", "staged", "index_only"])
 @pytest.mark.parametrize("boundary", ["profile", "store", "commit"])
-def test_a_refusal_preserves_an_interleaved_same_plan_edit(
+def test_a_refusal_preserves_an_unserialized_same_plan_edit(
     repository: Path, monkeypatch: pytest.MonkeyPatch, edit: str, boundary: str
 ) -> None:
     path = repository / PLAN_PATH
     before = _plan_snapshot(repository)
     peer_snapshot = []
 
+    # A writer that bypasses the plan lock must still fail the ownership check.
     def edit_then_refuse(*args, **kwargs):
         assert "Delivered the change" in path.read_text()
         if edit in {"state", "staged"}:
             state, version = _store.read_plan(
                 PROJECT, PLAN, repository, artifact_type="plan"
             )
-            _store.write_plan(
+            _store._write_state_locked(
                 PROJECT,
                 PLAN,
                 {**state, "summary": "Peer edit remains"},
@@ -243,26 +244,21 @@ def test_a_refusal_preserves_an_interleaved_same_plan_edit(
                 artifact_type="plan",
             )
         elif edit == "text":
-            with _store._serialized_path_lock(path, "plans"):
-                path.write_text(
-                    path.read_text().replace(
-                        '<h2 id="delivery">Delivery</h2>',
-                        '<h2 id="delivery">Peer delivery</h2>',
-                    )
+            path.write_text(
+                path.read_text().replace(
+                    '<h2 id="delivery">Delivery</h2>',
+                    '<h2 id="delivery">Peer delivery</h2>',
                 )
+            )
         elif edit == "comment":
-            with _store._serialized_path_lock(path, "plans"):
-                path.write_text(
-                    path.read_text().replace("Delivered the change", "Peer correction")
-                )
+            path.write_text(
+                path.read_text().replace("Delivered the change", "Peer correction")
+            )
         else:
             working = path.read_bytes()
-            with _store._serialized_path_lock(path, "plans"):
-                path.write_bytes(
-                    working.replace(b"Delivery</h2>", b"Peer delivery</h2>")
-                )
-                git(repository, "add", "--", PLAN_PATH)
-                path.write_bytes(working)
+            path.write_bytes(working.replace(b"Delivery</h2>", b"Peer delivery</h2>"))
+            git(repository, "add", "--", PLAN_PATH)
+            path.write_bytes(working)
         if edit == "staged":
             git(repository, "add", "--", PLAN_PATH)
         peer_snapshot.append(_plan_snapshot(repository))
@@ -300,7 +296,7 @@ def test_a_refusal_preserves_an_edit_that_precedes_the_comment(
         state, version = _store.read_plan(
             PROJECT, PLAN, repository, artifact_type="plan"
         )
-        _store.write_plan(
+        _store._write_state_locked(
             PROJECT,
             PLAN,
             {**state, "summary": "Peer edit remains"},
@@ -404,7 +400,7 @@ def test_a_merged_peer_comment_survives_a_failed_commit(
                 "body": "<p>A peer's independently delivered comment</p>",
             }
         )
-        _store.write_plan(
+        _store._write_state_locked(
             PROJECT,
             PLAN,
             {**state, "comments": comments},
@@ -431,3 +427,271 @@ def test_a_merged_peer_comment_survives_a_failed_commit(
     assert path.read_bytes() == merged_bytes[0]
     assert "A peer's independently delivered comment" in path.read_text()
     assert git(repository, "diff", "--cached", "--name-only", "--", PLAN_PATH) == ""
+
+
+def test_snapshot_uses_the_comment_owners_transformation(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon.crew import promotion_scope
+
+    before = _plan_snapshot(repository)
+    monkeypatch.setattr(promotion_scope, "RUN_COMMENT_PREFIX", "c-delivered-")
+
+    def refuse(*args, **kwargs):
+        state, _version = _store.read_plan(
+            PROJECT, PLAN, repository, artifact_type="plan"
+        )
+        assert state["comments"]["delivery"][0]["id"] == f"c-delivered-{RUN_ID}"
+        raise CrewError("injected refusal with the owner's comment identity")
+
+    monkeypatch.setattr(promotion, "_profile_fold_anchor", refuse)
+    with pytest.raises(CrewError, match="restored plan document"):
+        _promote(repository)
+    assert _plan_snapshot(repository) == before
+
+
+@pytest.mark.parametrize("boundary", ["before_comment", "profile", "store", "commit"])
+def test_the_plan_lock_covers_the_snapshot_through_restoration(
+    repository: Path, monkeypatch: pytest.MonkeyPatch, boundary: str
+) -> None:
+    import subprocess
+    import threading
+
+    path = repository / PLAN_PATH
+    before = path.read_bytes()
+    start = threading.Event()
+    attempted = threading.Event()
+    finished = threading.Event()
+    observed = []
+    errors = []
+
+    def editor():
+        try:
+            assert start.wait(5)
+            attempted.set()
+            with _store._serialized_path_lock(path, "plans"):
+                observed.append(path.read_bytes())
+                path.write_bytes(
+                    observed[-1].replace(b"Delivery</h2>", b"Peer delivery</h2>")
+                )
+                git(repository, "add", "--", PLAN_PATH)
+        except (
+            AssertionError,
+            CrewError,
+            OSError,
+            subprocess.CalledProcessError,
+        ) as error:
+            errors.append(error)
+        finally:
+            finished.set()
+
+    def refuse(*args, **kwargs):
+        start.set()
+        assert attempted.wait(5)
+        assert not finished.wait(0.2), "editor entered the snapshot transaction"
+        if boundary == "store":
+            raise ledger.LedgerError("injected serialized promotion refusal")
+        raise CrewError("injected serialized promotion refusal")
+
+    if boundary == "before_comment":
+        monkeypatch.setattr(promotion, "_record_landing_comment", refuse)
+    elif boundary == "profile":
+        monkeypatch.setattr(promotion, "_profile_fold_anchor", refuse)
+    elif boundary == "store":
+        monkeypatch.setattr(ledger, "append_run", refuse)
+    else:
+
+        def stop(stage):
+            if stage == "the promotion commit":
+                refuse()
+
+        monkeypatch.setattr(promotion, "_stop_at_stage_boundary", stop)
+    worker = threading.Thread(target=editor)
+    worker.start()
+    try:
+        with pytest.raises(
+            (CrewError, ledger.LedgerError), match="restored plan document"
+        ):
+            _promote(repository)
+    finally:
+        start.set()
+        worker.join(5)
+    assert not worker.is_alive()
+    assert not errors
+    assert observed == [before]
+    assert "Peer delivery" in path.read_text()
+    assert "Peer delivery" in git(repository, "show", f":{PLAN_PATH}")
+
+
+def test_a_copied_context_cannot_lend_its_plan_lock_to_another_thread(
+    repository: Path,
+) -> None:
+    import subprocess
+    import threading
+    from contextvars import copy_context
+
+    path = repository / PLAN_PATH
+    attempted = threading.Event()
+    acquired = threading.Event()
+    errors = []
+
+    def editor():
+        try:
+            attempted.set()
+            with _store._serialized_path_lock(path, "plans"):
+                acquired.set()
+                path.write_bytes(
+                    path.read_bytes().replace(b"Delivery</h2>", b"Peer delivery</h2>")
+                )
+                git(repository, "add", "--", PLAN_PATH)
+        except (
+            AssertionError,
+            CrewError,
+            OSError,
+            subprocess.CalledProcessError,
+        ) as error:
+            errors.append(error)
+
+    worker = None
+    try:
+        with _store._serialized_path_lock(path, "plans"):
+            worker = threading.Thread(target=copy_context().run, args=(editor,))
+            worker.start()
+            assert attempted.wait(5)
+            assert not acquired.wait(0.2), (
+                "a copied context borrowed another thread's lock"
+            )
+    finally:
+        if worker is not None:
+            worker.join(10)
+    assert not worker.is_alive()
+    assert not errors
+    assert acquired.is_set()
+    assert "Peer delivery" in path.read_text()
+    assert "Peer delivery" in git(repository, "show", f":{PLAN_PATH}")
+
+
+def test_a_copied_context_cannot_revive_a_released_plan_lock(
+    repository: Path,
+) -> None:
+    import subprocess
+    import threading
+    from contextvars import copy_context
+
+    path = repository / PLAN_PATH
+    with _store._serialized_path_lock(path, "plans"):
+        stale = copy_context()
+    holding = threading.Event()
+    release = threading.Event()
+    written = threading.Event()
+    errors = []
+
+    def editor():
+        try:
+            with _store._serialized_path_lock(path, "plans"):
+                holding.set()
+                assert release.wait(5)
+                path.write_bytes(
+                    path.read_bytes().replace(b"Delivery</h2>", b"Peer delivery</h2>")
+                )
+                written.set()
+        except (
+            AssertionError,
+            CrewError,
+            OSError,
+            subprocess.CalledProcessError,
+        ) as error:
+            errors.append(error)
+
+    def read_after_editor():
+        with _store._serialized_path_lock(path, "plans"):
+            assert written.is_set(), "a copied context revived its released lock"
+            assert "Peer delivery" in path.read_text()
+
+    worker = threading.Thread(target=editor)
+    worker.start()
+    timer = threading.Timer(0.2, release.set)
+    try:
+        assert holding.wait(5)
+        timer.start()
+        stale.run(read_after_editor)
+    finally:
+        release.set()
+        worker.join(10)
+        timer.cancel()
+        if timer.ident is not None:
+            timer.join(5)
+    assert not worker.is_alive()
+    assert not errors
+
+
+@pytest.mark.parametrize("boundary", ["profile", "commit"])
+def test_a_failed_promotion_preserves_a_plan_absent_from_head(
+    repository: Path, monkeypatch: pytest.MonkeyPatch, boundary: str
+) -> None:
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    before = _plan_snapshot(repository)
+    _force_failure(repository, monkeypatch, boundary)
+    with pytest.raises(CrewError, match="injected"):
+        _promote(repository)
+    assert _plan_snapshot(repository) == before
+
+
+def test_a_successful_promotion_can_commit_a_plan_absent_from_head(
+    repository: Path,
+) -> None:
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    result = _promote(repository)
+    assert result["plan_comment"]["recorded"]
+    assert "Delivered the change" in git(repository, "show", f"HEAD:{PLAN_PATH}")
+
+
+def test_a_staging_refusal_restores_a_plan_the_commit_owner_removed(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+
+    from reckon.crew import promotion_scope
+
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    before = _plan_snapshot(repository)
+    monkeypatch.setattr(
+        promotion_scope,
+        "_stage_landing_writes",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            ["git", "add"], 128, "", "injected staging refusal"
+        ),
+    )
+    with pytest.raises(CrewError, match="injected staging refusal"):
+        _promote(repository)
+    assert _plan_snapshot(repository) == before
+
+
+def test_a_refusal_preserves_a_deletion_the_commit_owner_did_not_report(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = repository / PLAN_PATH
+
+    def delete_then_refuse(*args, **kwargs):
+        path.unlink()
+        raise CrewError("injected refusal after an unowned deletion")
+
+    monkeypatch.setattr(promotion, "_commit_landing_writes", delete_then_refuse)
+    with pytest.raises(CrewError, match="preserving the other writer's deletion"):
+        _promote(repository)
+    assert not path.exists()
+
+
+def test_a_staged_untracked_plan_is_refused_without_removing_it(
+    repository: Path,
+) -> None:
+    git(repository, "rm", "--cached", "--", PLAN_PATH)
+    git(repository, "commit", "-q", "-m", "test: leave plan untracked")
+    git(repository, "add", "--", PLAN_PATH)
+    before = _plan_snapshot(repository)
+    with pytest.raises(CrewError, match="uncommitted change"):
+        _promote(repository)
+    assert _plan_snapshot(repository) == before
