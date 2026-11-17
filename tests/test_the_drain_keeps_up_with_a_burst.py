@@ -168,6 +168,14 @@ def _queue_for_repository(run_id, repository, *, role="implement"):
     return promotion_requests.request_promotion(run_id)
 
 
+def _write_branch(repository):
+    from reckon.crew import promotion_scope
+
+    acquire = getattr(promotion_scope, "_acquire_branch_write", None)
+    if acquire is not None:
+        acquire(repository)
+
+
 def test_a_commitless_promotion_finishes_beside_a_landing(tmp_path):
     first, report = "r-held-landing", "r-report"
     _queue_for_repository(first, tmp_path / "repo")
@@ -176,6 +184,7 @@ def test_a_commitless_promotion_finishes_beside_a_landing(tmp_path):
 
     def execute(request):
         if request["run_id"] == first:
+            _write_branch(tmp_path / "repo")
             landed.set()
             assert release.wait(5), "the fixture did not release its landing"
         else:
@@ -186,6 +195,7 @@ def test_a_commitless_promotion_finishes_beside_a_landing(tmp_path):
     try:
         service.tick()
         assert landed.wait(2)
+        service.tick()
         assert reported.wait(0.5), "commit-less promotion waited behind a landing"
         assert not release.is_set()
     finally:
@@ -202,10 +212,14 @@ def test_two_landings_on_one_branch_never_overlap(tmp_path):
 
     def execute(request):
         if request["run_id"] == first:
+            _write_branch(tmp_path / "repo")
             began.set()
             assert release.wait(5), "the fixture did not release its landing"
-        elif not release.is_set():
-            overlapped.set()
+        else:
+            assert began.wait(2)
+            _write_branch(tmp_path / "repo")
+            if not release.is_set():
+                overlapped.set()
         return {"ok": True, "record": {"commits": []}}
 
     service = promotion_requests.PromotionService(width=2, execute=execute)
@@ -229,9 +243,11 @@ def test_landings_for_different_repositories_do_not_wait(tmp_path):
 
     def execute(request):
         if request["run_id"] == first:
+            _write_branch(tmp_path / "one")
             began.set()
             assert release.wait(5), "the fixture did not release its landing"
         else:
+            _write_branch(tmp_path / "two")
             concurrent.set()
         return {"ok": True, "record": {"commits": []}}
 
@@ -239,6 +255,7 @@ def test_landings_for_different_repositories_do_not_wait(tmp_path):
     try:
         service.tick()
         assert began.wait(2)
+        service.tick()
         assert concurrent.wait(0.5), "another repository waited behind a landing"
     finally:
         release.set()

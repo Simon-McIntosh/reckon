@@ -34,6 +34,7 @@ from datetime import (
     datetime,
     timezone,
 )
+from functools import wraps
 from pathlib import (
     Path,
 )
@@ -1843,6 +1844,18 @@ def _budget_overrun_facts(
 
 
 @operational_read
+def _with_branch_write_scope(function):
+    @wraps(function)
+    def invoke(*args, **kwargs):
+        from reckon.crew.promotion_scope import _branch_write_scope
+
+        with _branch_write_scope():
+            return function(*args, **kwargs)
+
+    return invoke
+
+
+@_with_branch_write_scope
 def _complete_locked(
     run_id: str,
     *,
@@ -1922,14 +1935,9 @@ def _complete_locked(
     # uncommitted edit into its commit. The check runs here, before either
     # store is written, so a refusal leaves no ledger row and no plan comment
     # for the next promotion to read as an unrelated edit.
-    plan_text_edits = {}
-    if not shadow:
-        plan_text_edits = _refuse_unrelated_plan_edit(
-            project=project,
-            plan=str(node.get("plan") or ""),
-            root=ledger_root,
-            checkout=checkout,
-        )
+    from reckon.crew.promotion_scope import _branch_plan_text_edits
+
+    plan_text_edits = _branch_plan_text_edits()
     # Every ledger read between here and the append is served from one index
     # decode per read key: the landing checks and this record's own read
     # re-read the same ledger milliseconds apart, and each read decoded the
@@ -2564,6 +2572,9 @@ def _complete_locked(
     # be written, so it can extend them without reading the ledger.
     profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
+        from reckon.crew.promotion_scope import _acquire_branch_write
+
+        _acquire_branch_write(checkout)
         written = ledger.append_run(project, run, root=ledger_root)
     except ledger.LedgerError as exc:
         # Another completion can land after the read above. Treat only an
