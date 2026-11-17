@@ -10,6 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
+from reckon import file_memo
 from reckon.capabilities import _charged_input_from_usage
 from reckon.crew import runs
 from reckon.crew.node import (
@@ -298,6 +299,21 @@ def _last_tool_call(log: Path) -> tuple[str, str] | None:
 
 def _tail_tool_call(log: Path) -> tuple[tuple[str, str] | None, int]:
     """The last tool call in a stream, and the offset that read reached.
+
+    The answer is reused while the stream's bytes are unchanged. A tick asks
+    this of every live run, and the scan walks backwards until it finds a tool
+    call — the whole stream when there is none — so an unmemoised read makes
+    each tick's cost the fleet's stream volume rather than the bytes that
+    arrived since the last one. A stream that grew is a different file identity
+    and is read again.
+    """
+    return file_memo.memoized(
+        "stream_last_tool_call", log, lambda: _read_last_tool_call(log)
+    )
+
+
+def _read_last_tool_call(log: Path) -> tuple[str, str] | None:
+    """The tool call a stream most recently started, read from its end.
 
     Lines are taken newest first, and the first one that starts a tool call
     answers. A line that begins in an earlier block is carried back until its
@@ -1705,7 +1721,18 @@ def _stream_holds_assistant_record(path: Path) -> bool:
     has answered keeps that answer without reading at all. A line that does not
     parse is passed over, exactly as the tail read passes over one, so a
     trailing partial write is never read as a record that completed.
+
+    The answer is also memoized against the stream's identity, so a tick over a
+    quiet fleet opens no stream at all: the assistant record a run holds does
+    not stop existing between one tick and the next.
     """
+    return file_memo.memoized(
+        "stream_assistant_record", path, lambda: _scan_stream_assistant_record(path)
+    )
+
+
+def _scan_stream_assistant_record(path: Path) -> bool:
+    """Whether a stream holds at least one complete assistant record, scanned."""
     scan = _stream_scan(path)
     if scan is None:
         return False
