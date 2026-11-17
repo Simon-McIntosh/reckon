@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;],&quot;s7&quot;:[&quot;work-flows-to-the-lane#s77&quot;],&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s13&quot;],&quot;s10&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s7&quot;],&quot;s9&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s2&quot;,&quot;dispatch-admission-and-landing-take-seconds#s3&quot;,&quot;dispatch-admission-and-landing-take-seconds#s4&quot;,&quot;dispatch-admission-and-landing-take-seconds#s5&quot;,&quot;dispatch-admission-and-landing-take-seconds#s6&quot;,&quot;dispatch-admission-and-landing-take-seconds#s7&quot;,&quot;dispatch-admission-and-landing-take-seconds#s8&quot;,&quot;dispatch-admission-and-landing-take-seconds#s10&quot;]}">
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -118,17 +118,20 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-17T01:09:00Z">
-    <div class="r-comment-body"><p>§5 landed by direct merge (head <code>d8d75400a9</code>), on the lead's instruction. A plan write&#x27;s readiness and closure fields are read through the roadmap snapshot in place of composing a roadmap ahead of it; a metadata write and an unchanged declaration build none. Review 120 of 120. Merged candidate gate: 21 passed in 8.37s.</p></div>
-</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T00:58:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>adcc599978</code>), on the lead's instruction. A dispatch preview's scope report reads only the claims the candidate's paths and repositories can meet: 243 git calls fall under 20 in the 240-pointer case, and three live previews took 23, 10 and 7 seconds, a median of 10 s against 86 s before. Review 120 of 120, 41 importer files with no added failure, merged candidate gate 4 of 4.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261117T001508255515-review-of-a-dispatch-checks-the-claims-its-paths-can-meet-adcc5999781a" data-who="reckon-build" data-when="2026-11-17T00:23:22Z">
     <div class="r-comment-body"><p>Independently reviewed base 606afde873e4bd9e8425c33892fd944b6c33a9c3 through head adcc5999781a74a9d313bab00ad45a349a508776; all six dimensions score 20/20, no findings, armed gate and importer logs both yield zero added failures.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-11-17T01:09:00Z">
+    <div class="r-comment-body"><p>§5 landed by direct merge (head <code>d8d75400a9</code>), on the lead's instruction. A plan write's readiness and closure fields are read through the roadmap snapshot in place of composing a roadmap ahead of it; a metadata write and an unchanged declaration build none. Review 120 of 120. Merged candidate gate: 21 passed in 8.37s.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261117T004536561311-review-of-a-plan-write-returns-current-readiness-d8d75400a919" data-who="reckon-build" data-when="2026-11-17T00:52:19Z">
     <div class="r-comment-body"><p>Independent review of c6274b6a0e6698ed29f59c3027552f4e795abc10..d8d75400a919375427a905a0e051933a3c07f7f4 found no defects; all six dimensions score 20/20, with zero added failures derived from completed base/head logs.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261117T005028812634-review-of-a-slow-project-does-not-hold-the-refresh-e5e928379223" data-who="reckon-build" data-when="2026-11-17T00:57:30Z">
+    <div class="r-comment-body"><p>Reviewed base 3c3aefe8aa6d3231b99011f7b14baa23eda9b14f through head e5e928379223b13acafb80aceab14bb8cf350d1e; six dimension scores and six checklist verdicts parsed; zero added failures; one blocking reader integration finding and one non-blocking assertion finding.</p></div>
 </div>
 </section>
   </main>
