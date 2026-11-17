@@ -1337,6 +1337,67 @@ def _failed_measurement_gate(record: Mapping[str, Any], gate_verdict: str) -> bo
     return measurement_run and str(gate_verdict).strip().lower() == "failed"
 
 
+def _primary_test_scope(
+    record: Mapping[str, Any], revision: str, command: str
+) -> tuple[str, list[str], dict[str, Any]]:
+    """Exclude named test files absent at the primary revision being measured.
+
+    Keep the scope supplied to the runner consistent with its command: its
+    missing-test support must not transplant head-only tests into primary.
+    Unknown revision contents leave the command intact so the measurement
+    still has to prove it ran, rather than asserting an empty baseline.
+    """
+    tree = _scope_tree(record)
+    words = _command_words(command)
+    named: dict[str, str] = {}
+    for word in words:
+        path = Path(word.partition("::")[0])
+        if not is_collectible_test_path(str(path)):
+            continue
+        if path.is_absolute():
+            if tree is None:
+                continue
+            try:
+                path = path.relative_to(tree)
+            except ValueError:
+                continue
+        named[word] = path.as_posix()
+    candidates = list(dict.fromkeys(named.values()))
+    present = _paths_present_in_tree(tree, revision, candidates)
+    absent = [
+        path for path in candidates if present is not None and path not in present
+    ]
+    resolved = _scoped_suite_command(record, revision=revision)
+    if absent and SCOPED_SUITE_PLACEHOLDER not in _declared_command_text(record):
+        # The measurement runner accepts one argv command with leading
+        # assignments. Rebuilding a shell program would change its meaning.
+        if any(character in command for character in ";&|<>`$\n"):
+            return resolved, [], {**record, "base_sha": revision}
+        retained = []
+        leading = True
+        for word in words:
+            if named.get(word) in absent:
+                continue
+            if leading and _is_environment_assignment(word):
+                name, _, value = word.partition("=")
+                retained.append(f"{name}={shlex.quote(value)}")
+                continue
+            leading = False
+            target = word
+            if word in named:
+                _, separator, selector = word.partition("::")
+                target = named[word] + separator + selector
+            retained.append(shlex.quote(target))
+        resolved = (
+            " ".join(retained) if any(path not in absent for path in candidates) else ""
+        )
+    node = dict(record.get("node") or {})
+    node["write_paths"] = [
+        path for path in _repository_write_paths(record) if path not in absent
+    ]
+    return resolved, absent, {**record, "base_sha": revision, "node": node}
+
+
 def _merged_primary_baseline(
     run_id: str,
     record: Mapping[str, Any],
@@ -1344,6 +1405,7 @@ def _merged_primary_baseline(
     head: str,
     command: str,
     dry_run: bool,
+    waiver_reason: str = "",
 ) -> dict[str, Any] | None:
     """Measure the same suite at the primary revision this run actually merged.
 
@@ -1359,8 +1421,7 @@ def _merged_primary_baseline(
     primary = promotion_evidence._merged_primary_revision(record, head)
     if not primary:
         return None
-    primary_record = {**record, "base_sha": primary}
-    command = _scoped_suite_command(primary_record, revision=primary)
+    command, absent, primary_record = _primary_test_scope(record, primary, command)
     if not command:
         return None
     key = hashlib.sha256(json.dumps([primary, command]).encode()).hexdigest()
@@ -1386,9 +1447,14 @@ def _merged_primary_baseline(
 
     cached = _read_json_object(receipt)
     if usable(cached):
-        return cached
+        return {**cached, "absent_test_files": absent}
     if dry_run:
-        return {"status": "would-measure", "revision": primary, "command": command}
+        return {
+            "status": "would-measure",
+            "revision": primary,
+            "command": command,
+            "absent_test_files": absent,
+        }
     declaration = gate_declaration(record)
     measured = _measure_missing_arms(
         run_id,
@@ -1400,11 +1466,23 @@ def _merged_primary_baseline(
     )
     arm = measured.get("baseline_suite") if isinstance(measured, Mapping) else None
     if not isinstance(arm, Mapping) or not usable(arm):
+        if waiver_reason.strip():
+            return {
+                "status": "waived",
+                "revision": primary,
+                "command": command,
+                "absent_test_files": absent,
+                "waiver_reason": waiver_reason.strip(),
+                "measurement_refusal": "cannot read completed primary suite evidence",
+            }
         raise ledger.SuiteDeltaError(
             f"cannot read completed primary suite evidence at merged revision {primary}",
             missing_fields=["primary_suite"],
         )
-    normalized = ledger.normalized_suite_observation(arm)
+    normalized = {
+        **ledger.normalized_suite_observation(arm),
+        "absent_test_files": absent,
+    }
     receipt.parent.mkdir(parents=True, exist_ok=True)
     receipt.write_text(json.dumps(normalized, sort_keys=True), encoding="utf-8")
     return normalized
@@ -1669,7 +1747,12 @@ def _evaluate_suite_delta(
     effective_baseline = normalized_baseline
     if added:
         primary_suite = _merged_primary_baseline(
-            run_id, record, head=head, command=suite_command, dry_run=dry_run
+            run_id,
+            record,
+            head=head,
+            command=suite_command,
+            dry_run=dry_run,
+            waiver_reason=waiver,
         )
         if primary_suite and primary_suite.get("status") == "would-measure":
             return {
@@ -1680,7 +1763,7 @@ def _evaluate_suite_delta(
                 "primary_suite": primary_suite,
                 "added_failure_ids": added,
             }
-        if primary_suite:
+        if primary_suite and primary_suite.get("status") != "waived":
             uncovered = ledger.added_failure_ids(primary_suite, {"failure_ids": added})
             inherited = {
                 failure_id: primary_suite["revision"]

@@ -236,3 +236,23 @@ def test_unresolvable_revision_is_unknown_instead_of_absent(scenario):
     assert promotion_records._paths_present_in_tree(
         scenario["worker"], scenario["primary"], [EXISTING, ADDED]
     ) == {EXISTING}
+
+
+@pytest.mark.parametrize("spelling", ["relative", "absolute", "selector"])
+def test_filtered_command_preserves_environment_and_targets_primary(scenario, spelling):
+    names = [EXISTING, ADDED]
+    if spelling == "absolute":
+        names = [str(scenario["worker"] / path) for path in names]
+    elif spelling == "selector":
+        names = [f"./{EXISTING}::test_existing", f"./{ADDED}::test_added"]
+    command = f"LABEL='two words' {PREFIX} " + " ".join(map(shlex.quote, names))
+    record = {**scenario["record"], "suite_command": command}
+    selected, absent, narrowed = promotion_records._primary_test_scope(
+        record, scenario["primary"], command
+    )
+    assert absent == [ADDED]
+    assert shlex.split(selected)[:2] == ["LABEL=two words", "PYTHONPATH=."]
+    assert shlex.split(selected)[-1] == (
+        f"{EXISTING}::test_existing" if spelling == "selector" else EXISTING
+    )
+    assert promotion_records._node_test_files(narrowed) == [EXISTING]
