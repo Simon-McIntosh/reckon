@@ -369,6 +369,13 @@ def decision_digest(result: dict) -> str:
     release tick fires on the first pass and is paced away on the ones after
     it. That is pacing rather than a decision about any request, and comparing
     it would read a cadence as a behaviour change.
+
+    The series is meant to be compared between two revisions pass by pass, not
+    within one run: a pass writes handovers and verdicts, so on a home with a
+    live queue the next pass reads what this one left and may decide
+    differently. ``decisions_steady`` therefore reports a run whose passes
+    agreed, which is the case for an input at rest, and the caller compares two
+    runs by their ``decision_digests`` lists.
     """
 
     def scrubbed(value, *, key: str = ""):
