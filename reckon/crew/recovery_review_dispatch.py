@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import math
 import re
 import shutil
 import subprocess
@@ -4615,6 +4614,64 @@ def _dispatch_composed_review(
 REVIEW_REQUEST_DEADLINE_SECONDS = 600
 
 
+def _stage_percentile(values: Sequence[float], quantile: float) -> float | None:
+    """A quantile of the stage sample, read by the profile's own rule.
+
+    The percentile the census quotes is the run-time profile's — the module that
+    already owns how this repository reads a distribution over stage samples —
+    so a change there reaches the census instead of leaving a second convention
+    to drift beside it. Imported here rather than at module scope because the
+    profile reaches the dispatcher, which imports this module while it loads.
+    """
+    from reckon.crew import run_time_profile
+
+    return run_time_profile._percentile(values, quantile)
+
+
+def _stage_percentile(values: Sequence[float], quantile: float) -> float | None:
+    """A quantile of the stage sample, read by the profile's own rule.
+
+    The percentile the census quotes is the run-time profile's — the module that
+    already owns how this repository reads a distribution over stage samples —
+    so a change there reaches the census instead of leaving a second convention
+    to drift beside it. Imported here rather than at module scope because the
+    profile reaches the dispatcher, which imports this module while it loads.
+    """
+    from reckon.crew import run_time_profile
+
+    return run_time_profile._percentile(values, quantile)
+
+
+def _inherit_review_priority(
+    record: Mapping[str, Any], review_run_id: str
+) -> str | None:
+    """Give the review request the priority of the run it reviews.
+
+    A review of a run the coordinator ranked one way is the same piece of work
+    as that run's next step, so the queue this request lands in must not order
+    it by a default the reviewed run never chose. Only a priority the reviewed
+    run actually carries is copied: a run with none leaves the review with none.
+    """
+    priority = record.get("priority_override")
+    if not isinstance(priority, int) or isinstance(priority, bool):
+        return None
+    if not review_run_id:
+        return None
+    def inherit(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["priority_override"] = priority
+        pointer["priority_override_set_at"] = _utc_now()
+        pointer["priority_override_reason"] = (
+            f"inherited from the reviewed run {record.get('run_id')}"
+        )
+        return pointer
+
+    try:
+        runs._mutate_pointer(review_run_id, inherit)
+    except (CrewError, OSError, ValueError):
+        return None
+    return f"the review inherits priority {priority} from the run it reviews"
+
+
 def review_stage_instants(run_id: str) -> dict[str, str | None]:
     """The first instant of each handoff the receipts hold for one run.
 
@@ -4646,12 +4703,19 @@ def review_stage_instants(run_id: str) -> dict[str, str | None]:
 
 
 def _lag_seconds(left: str | None, right: str | None) -> float | None:
-    """The interval between two stored instants, or ``None`` when either is absent."""
+    """The interval between two stored instants, or ``None`` when it is unknown.
+
+    Unknown covers three readings, and none of them is a duration: either
+    instant missing, and a right-hand instant earlier than its left-hand one.
+    A receipted request that precedes its delivery is out of order, not a
+    zero-length interval, and reporting it as zero is the same claim the census
+    refuses to make about a delivery it never saw.
+    """
     start = parse_utc(left)
     end = parse_utc(right)
-    if start is None or end is None:
+    if start is None or end is None or end < start:
         return None
-    return max(0.0, (end - start).total_seconds())
+    return (end - start).total_seconds()
 
 
 def _request_evidenced(record: Mapping[str, Any] | None) -> bool:
@@ -4691,13 +4755,6 @@ def _is_review_subject(
     return False
 
 
-def _nearest_rank(values: Sequence[float], quantile: float) -> float | None:
-    """The nearest-rank quantile of the sample, so a small sample names a member."""
-    if not values:
-        return None
-    ordered = sorted(values)
-    rank = max(1, min(len(ordered), math.ceil(quantile * len(ordered))))
-    return ordered[rank - 1]
 
 
 def _unrequested_reason(
@@ -4796,6 +4853,20 @@ def review_request_census(
             "launch_lag_seconds": launch_lag,
         }
         rows.append(row)
+        if request_lag is None and instants["requested_at"]:
+            # A request receipted before the delivery it belongs to is out of
+            # order, which is an interval nobody can quote rather than a request
+            # nobody made: it is counted with the unrecorded requests so the
+            # obligation list stays a statement about requests that are absent.
+            unrecorded.append(
+                {
+                    "run_id": run_id,
+                    "delivered_at": delivered_at,
+                    "status": "out-of-order",
+                    "review_run_id": None,
+                }
+            )
+            continue
         if request_lag is None:
             age = _lag_seconds(delivered_at, moment.isoformat())
             age = int(age) if age is not None else 0
@@ -4842,13 +4913,13 @@ def review_request_census(
             "request_unrecorded": len(unrecorded),
         },
         "request_lag_seconds": {
-            "p50": _nearest_rank(request_lags, 0.50),
-            "p90": _nearest_rank(request_lags, 0.90),
+            "p50": _stage_percentile(request_lags, 0.50),
+            "p90": _stage_percentile(request_lags, 0.90),
             "max": max(request_lags) if request_lags else None,
         },
         "launch_lag_seconds": {
-            "p50": _nearest_rank(launch_lags, 0.50),
-            "p90": _nearest_rank(launch_lags, 0.90),
+            "p50": _stage_percentile(launch_lags, 0.50),
+            "p90": _stage_percentile(launch_lags, 0.90),
             "max": max(launch_lags) if launch_lags else None,
         },
         "request_unrecorded": unrecorded,

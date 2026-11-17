@@ -72,6 +72,25 @@ def _delivered(run_id: str) -> str:
     return str(instants["delivered_at"])
 
 
+def _first_receipt(run_id: str, stage: str) -> str:
+    """The first instant the run's journal records for one stage."""
+    instants = [
+        str(row["at"])
+        for row in stage_receipts.read_receipts(run_id)
+        if row.get("stage") == stage and row.get("at")
+    ]
+    assert instants, f"no {stage} receipt for {run_id}"
+    return min(instants)
+
+
+def _receipt_gap(run_id: str, first: str, second: str) -> float:
+    """The interval between two stages, read from the journal."""
+    return (
+        datetime.fromisoformat(_first_receipt(run_id, second))
+        - datetime.fromisoformat(_first_receipt(run_id, first))
+    ).total_seconds()
+
+
 def _held_tick(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> tuple[threading.Thread, threading.Event, threading.Event]:
@@ -142,16 +161,23 @@ def test_a_delivered_run_is_requested_inside_the_window_while_a_tick_is_held(
         assert instants["requested_at"], (
             "the reflex reached the run without recording the request's instant"
         )
-        assert instants["delivered_at"] == delivered_at
+        # The instant the census reads is the first receipt the run's own
+        # journal holds for the delivery, read here independently of the census.
+        assert instants["delivered_at"] == _first_receipt(run_id, "delivery_recorded")
         census = recovery_review_dispatch.review_request_census(
             [run_id], pointers=[runs.read_pointer(run_id)]
         )
         row = census["rows"][0]
         assert row["request_lag_seconds"] is not None
         assert row["request_lag_seconds"] <= WINDOW_SECONDS, row
+        # The interval is the distance between the two receipts, not a figure
+        # the census chose: recompute it from the journal.
+        assert row["request_lag_seconds"] == _receipt_gap(
+            run_id, "delivery_recorded", "review_requested"
+        )
         # The launch is a separate interval: a slow launch is not a late request.
-        assert "launch_lag_seconds" in row
-        assert census["request_lag_seconds"]["p90"] == row["request_lag_seconds"]
+        assert row["launch_lag_seconds"] != row["request_lag_seconds"]
+        assert census["request_lag_seconds"]["max"] == row["request_lag_seconds"]
         assert census["counts"]["requested"] == 1
         assert census["obligations"] == []
     finally:
@@ -265,3 +291,160 @@ def test_a_recorded_refusal_is_the_obligations_reason(
     )
     assert len(census["obligations"]) == 1, census
     assert "the lane has no room" in census["obligations"][0]["reason"]
+
+
+def test_the_census_quantiles_are_the_samples_own_rule(
+    isolated_project: tuple[Path, Path], controlled_clock: dict
+) -> None:
+    """Two lags of known size: the p50 names the near one, the p90 the far one."""
+    config_home, repo = isolated_project
+    records = []
+    for run_id, lag in (("r-lag-near", 5), ("r-lag-far", 100)):
+        record = _scoring_pointer(config_home, repo, run_id)
+        stage_receipts.record_stage(
+            run_id,
+            "delivery_recorded",
+            at="2026-01-01T00:00:00.000000Z",
+        )
+        stage_receipts.record_stage(
+            run_id,
+            "review_requested",
+            at=(
+                datetime(2026, 1, 1, 0, 0, tzinfo=UTC) + timedelta(seconds=lag)
+            ).isoformat().replace("+00:00", "Z"),
+        )
+        records.append(record)
+
+    census = recovery_review_dispatch.review_request_census(
+        [str(record["run_id"]) for record in records], pointers=records
+    )
+    assert [row["request_lag_seconds"] for row in census["rows"]] == [5.0, 100.0]
+    assert census["request_lag_seconds"] == {"p50": 5.0, "p90": 100.0, "max": 100.0}
+
+
+def test_a_request_receipted_before_its_delivery_is_not_an_obligation(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """An out-of-order pair is an interval nobody can quote, not a request never made."""
+    config_home, repo = isolated_project
+    run_id = "r-receipts-out-of-order"
+    record = _scoring_pointer(config_home, repo, run_id)
+    stage_receipts.record_stage(
+        run_id, "delivery_recorded", at="2026-01-01T00:10:00.000000Z"
+    )
+    stage_receipts.record_stage(
+        run_id, "review_requested", at="2026-01-01T00:00:00.000000Z"
+    )
+
+    census = recovery_review_dispatch.review_request_census(
+        [run_id],
+        now=datetime(2026, 1, 1, 1, tzinfo=UTC),
+        pointers=[record],
+    )
+    assert census["counts"]["unrequested"] == 0
+    assert census["request_unrecorded"][0]["status"] == "out-of-order"
+    assert census["obligations"] == []
+
+
+def test_a_live_pointer_says_a_run_is_a_review_without_a_prefixed_id(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """The pointer answers too: a reviewer whose id carries no prefix owes nothing."""
+    config_home, repo = isolated_project
+    run_id = "r-hands-off-reviewer"
+    record = _scoring_pointer(config_home, repo, run_id)
+    record["node"] = {**(record.get("node") or {}), "id": "review-of-r-source"}
+    runs._write_json(runs.pointer_path(run_id), record)
+    _delivered(run_id)
+
+    census = recovery_review_dispatch.review_request_census(
+        [run_id],
+        now=datetime(2026, 1, 1, 1, tzinfo=UTC),
+        pointers=[record],
+    )
+    assert census["rows"] == []
+
+
+def test_the_review_requests_the_priority_of_the_run_it_reviews(
+    isolated_project: tuple[Path, Path], controlled_clock: dict, monkeypatch
+) -> None:
+    """The request lands in the queue ranked as the reviewed run was."""
+    config_home, repo = isolated_project
+    run_id = "r-prioritised-source"
+    record = _scoring_pointer(config_home, repo, run_id)
+    record["priority_override"] = 7
+    runs._write_json(runs.pointer_path(run_id), record)
+    _delivered(run_id)
+
+    with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
+        report = resumption.sweep(
+            PROJECT, config=CONFIG, launcher=lambda *a, **k: os.getpid()
+        )
+    dispatched = [
+        row for row in report["reviews"].get("reports") or () if row.get("dispatched")
+    ]
+    assert dispatched, report["reviews"]
+    review_run_id = str(dispatched[0].get("run_id") or "")
+    assert review_run_id, dispatched
+    review = runs.read_pointer(review_run_id)
+    # The review's pointer is built from the run it reviews, so the request
+    # carries that run's ranking without the dispatch choosing one: the value a
+    # coordinator set on the reviewed run is the value the queue orders its
+    # review by.
+    assert review.get("priority_override") == 7, review
+    _release_armed_producer()
+
+
+def test_an_unrequested_runs_obligation_reaches_the_duty_rows(
+    isolated_project: tuple[Path, Path], tmp_path: Path, controlled_clock: dict
+) -> None:
+    """The reason the census found is the reason the pane's duty row carries.
+
+    A report nobody reads is not a reminder, so the case follows the obligation
+    out of the sweep and into the station's own failure record, which is what
+    the obligations view renders. The row is read back from that record, not
+    from the report the sweep returned.
+    """
+    config_home, repo = isolated_project
+    run_id = "r-owed-and-unserved"
+    record = _scoring_pointer(config_home, repo, run_id)
+    record["session"] = "session-nobody-serves"
+    runs._write_json(runs.pointer_path(run_id), record)
+    delivered_at = _delivered(run_id)
+
+    controlled_clock["now"] = datetime.fromisoformat(delivered_at) + timedelta(
+        seconds=601
+    )
+    with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
+        report = resumption.sweep(
+            PROJECT, config=CONFIG, launcher=lambda *a, **k: os.getpid()
+        )
+    owed = [
+        row
+        for row in report["reviews"].get("failed") or ()
+        if str(row.get("run_id") or "") == run_id
+    ]
+    assert owed, report["reviews"]
+    assert (
+        "no armed follower serves session 'session-nobody-serves'" in owed[0]["error"]
+    ), owed[0]
+
+    store = station_store.StationStore(tmp_path / "station")
+    station_obligations.record_sweep_report(store, PROJECT, SESSION, report)
+    rows = station_obligations._with_sweep_failures(
+        {"project": PROJECT, "obligations": [], "summary": {}},
+        [
+            failure
+            for failures in station_obligations.prune_sweep_failures(
+                store, PROJECT
+            ).values()
+            for failure in failures
+        ],
+    )["obligations"]
+    named = [row for row in rows if str(row.get("run_id") or "") == run_id]
+    assert named, rows
+    assert (
+        "no armed follower serves session 'session-nobody-serves'"
+        in named[0]["detail"]
+    ), named[0]
+    _release_armed_producer()

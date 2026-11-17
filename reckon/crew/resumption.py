@@ -3021,11 +3021,36 @@ def sweep(
                 pointers=live,
             )
             if census["obligations"]:
-                review_requests = {"obligations": census["obligations"]}
+                review_requests = {
+                    "obligations": census["obligations"],
+                    "deadline_seconds": census["deadline_seconds"],
+                }
         except Exception as exc:  # noqa: BLE001 - a reading must not fail a sweep
             review_requests = {"error": str(exc)}
     if review_requests.get("obligations"):
         report["review_requests"] = review_requests
+        # The obligation has to reach the row a coordinator reads, not only this
+        # pass's return value: the station keeps the review pass's owed rows per
+        # session and turns each into a duty, which is the one channel from a
+        # sweep to the pane and to the obligations view. The row says what the
+        # pass failed to do — request the review — and carries the run's own
+        # reason, so the duty names both.
+        owed = [
+            {
+                "run_id": str(obligation["run_id"]),
+                "error": (
+                    "the review pass requested no review for this delivered run "
+                    f"within {review_requests['deadline_seconds']} s: "
+                    f"{obligation['reason']}"
+                ),
+            }
+            for obligation in review_requests["obligations"]
+            if obligation.get("run_id")
+        ]
+        if owed:
+            block = reviews if isinstance(reviews, dict) else {}
+            block["failed"] = [*(block.get("failed") or ()), *owed]
+            report["reviews"] = block
     if any(
         plan_reviews.get(key)
         for key in ("composed", "skipped", "notes", "failed", "error")
