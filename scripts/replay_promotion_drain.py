@@ -464,7 +464,11 @@ def batch_relay(arguments: list[str], config: dict) -> int:
         position = relocated.index("--wrap") + 1
         relocated[position] = _fence_batch_script(relocated[position], config["logs"])
     try:
-        return subprocess.run([config["command"], *relocated], check=False).returncode
+        return subprocess.run(
+            [config["command"], *relocated],
+            check=False,
+            env={**os.environ, "PATH": config["path"]},
+        ).returncode
     finally:
         for original, shared in logs.items():
             for suffix in ("", ".scheduler"):
@@ -498,6 +502,7 @@ def _batch_transport(root: Path, repositories: dict, sources: dict, shared: Path
         json.dumps(
             {
                 "command": shutil.which("sbatch"),
+                "path": os.environ["PATH"],
                 "repositories": entries,
                 "logs": str(logs),
             }

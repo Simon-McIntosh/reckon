@@ -714,7 +714,9 @@ def test_batch_relay_reads_immutable_objects_and_returns_remote_logs(tmp_path, m
     binary.mkdir()
     command = binary / "sbatch"
     command.write_text(
-        f"#!{sys.executable}\nimport pathlib,subprocess,sys\n"
+        f"#!{sys.executable}\nimport pathlib,shutil,subprocess,sys\n"
+        "if pathlib.Path(shutil.which('sbatch')).resolve()!=pathlib.Path(__file__).resolve():\n"
+        " sys.stderr.write('underlying scheduler resolved the relay again\\n');raise SystemExit(97)\n"
         f"private=pathlib.Path({str(private / '.git')!r})\n"
         "hidden=private.with_name('unavailable-git');private.rename(hidden)\n"
         "try:\n"
