@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -178,6 +178,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261116T231144992075-review-of-the-promotion-queue-serves-fairly-18f4fdaf71e1" data-who="reckon-build" data-when="2026-11-16T23:17:23Z">
     <div class="r-comment-body"><p>Independently reviewed repair 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e..18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf; both previous blockers answered, six dimensions scored 20/20, no new findings and zero added failures; canonical and revision-specific parsed records stored outside the worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261116T222157542493-the-promotion-queue-serves-fairly" data-who="reckon-build" data-when="2026-11-16T23:01:39Z">
+    <div class="r-comment-body"><p>Promotion requests retain review, starvation, priority and fair session ordering (B/C at positions 3/4 in the 70-request case); only requested rows consume simulated future turns, running/parked counts stay separate, and rate-report windows no longer alter drain ordering. Six scoped cases pass; armed repair base/head pass 61/64 tests; 16 importer files add zero failures (same five IDs); reversing the repair fails both accounting cases and the rate-window case, and run-name order reproduces B=68/C=69.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§3 landed (head <code>e44a9454d7</code>, review 120 of 120, no added failures). A repeated completion call now re-evaluates a parked request and dates the check, and a request parked for more than 30 minutes is an obligation naming its condition. The worker's replay showed the base drain already promotes a repaired request when a slot is free, so the section's first case was already met; the congested case is §12.</p></div>
