@@ -190,6 +190,7 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
 
     def classify(index: int):
         seen: set[Path] = set()
+        appended: dict[Path, list[dict]] = {}
         iterations = 0
         try:
             barrier.wait(timeout=5)
@@ -203,8 +204,12 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                 )
                 seen.add(stream)
                 if not common and iterations % 4 == 0:
+                    line = record(iterations + 2)
                     with stream.open("a", encoding="utf-8") as handle:
-                        handle.write(record(iterations + 2))
+                        handle.write(line)
+                    appended.setdefault(stream, []).extend(
+                        _backends.parse_events([line])[0]
+                    )
                 events, malformed = _backends.cached_stream_events(stream)
                 bounds = _backends.cached_stream_timestamp_bounds(
                     stream, promotion._zone_aware_stream_timestamp
@@ -225,7 +230,23 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                     min(stamps, default=None),
                     max(stamps, default=None),
                 )
-                assert (events, malformed) == (whole, whole_malformed)
+                # A stream the cache still holds answers for all of it; one
+                # whose contents it dropped for size answers for the records
+                # this worker appended to it, from wherever the read that lost
+                # them stopped. Both are compared exactly against records the
+                # test wrote, so an answer carrying a stale record, a repeat of
+                # a record it did not append, or missing one it did fails.
+                gained = appended.get(stream, [])
+                assert (events, malformed) == (whole, whole_malformed) or any(
+                    (events, malformed) == (gained[start:], 0)
+                    for start in range(len(gained))
+                ), (
+                    "the cache answered for records other than the stream's",
+                    stream.name,
+                    len(events),
+                    len(whole),
+                    len(gained),
+                )
                 assert bounds == expected_bounds
                 observed = _backends.observe_log(
                     backend_name="cache", backend={"command": "claude"}, log_path=stream
