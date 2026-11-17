@@ -845,6 +845,10 @@ def stored_run_rows(
     ``path`` names the store to read and falls back to the resolved location,
     so a caller comparing two stores — or a probe holding its own fixture —
     reads the one it named rather than whichever store this machine routes to.
+
+    Each record is answered as the promotion wrote it: the row's routing key
+    (``project``) lives in the column that finds the row, not in the record, so
+    it is not part of the answer.
     """
     target = store_path() if path is None else Path(path)
     if not target.exists():
@@ -869,11 +873,13 @@ def stored_run_rows(
                 records.append({"run_id": str(run_id)})
             else:
                 records.append(
-                    run_record.normalize_outside_scope_paths(
-                        {
-                            **json.loads(payload),
-                            **(json.loads(detail) if detail else {}),
-                        }
+                    _without_routing_key(
+                        run_record.normalize_outside_scope_paths(
+                            {
+                                **json.loads(payload),
+                                **(json.loads(detail) if detail else {}),
+                            }
+                        )
                     )
                 )
         return records
@@ -908,6 +914,21 @@ def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
     return run_record.normalize_outside_scope_paths(
         {name: value for name, value in row.items() if value is not None}
     )
+
+
+def _without_routing_key(record: Mapping[str, Any]) -> dict[str, Any]:
+    """The record a stored row answers, without the key that routed it there.
+
+    ``project`` is how a row is found, not a field of the run record: the runs
+    column carries it and every read filters on it, while a promotion writes
+    the record to its file with no such key. The durable readers
+    (``get_run``, ``durable_rows``) declare it back onto the record they
+    answer; the ledger's stored read answers the record itself, so it is
+    dropped here and the two agree with the file the promotion wrote.
+    """
+    answered = dict(record)
+    answered.pop("project", None)
+    return answered
 
 
 def _durable_record(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
