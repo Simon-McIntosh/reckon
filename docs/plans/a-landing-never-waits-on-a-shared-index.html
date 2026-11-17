@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="95">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -376,6 +376,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
     <div class="r-comment-body"><p>A landing's staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock's age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T234114614573-review-of-stale-lock-reuses-owners-s12-8c1ac9168e9a" data-who="reckon-build" data-when="2026-11-17T00:01:31.108Z">
+    <div class="r-comment-body"><p>reviewed r-20261115T123706643397-stale-lock-reuses-owners-s12 at base 622ef4617d73a4af8ecf7dc5926996910a4ca29f and head 8c1ac9168e9a49715726ecf7ddaf0ea2ad0efc4e; parsed record scores 109/120 (goal_fidelity 19, evidence 16, scope_discipline 20, durability 17, fit 17, reuse 20), 0 added failures, four non-blocking findings (fragment added-id figure, fragment gate-after revision, two undriven refusal-path recorders, held_by now nullable).</p></div>
 </div>
 </section>
 </main>
