@@ -453,7 +453,7 @@ def _apply_orientation_check(
             return
         reported = parse_manifest(manifest.read_text())
     names = ("orientation_worktree", "orientation_base_sha", "orientation_write_paths")
-    if not any(name in reported for name in names):
+    if not any(reported.get(name) for name in names):
         return
 
     raw_paths = reported.get("orientation_write_paths", [])

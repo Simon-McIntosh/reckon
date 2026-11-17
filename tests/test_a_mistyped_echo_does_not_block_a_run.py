@@ -199,6 +199,14 @@ def test_an_empty_echo_of_the_scope_is_repaired(delivered):
     assert record["orientation_check"]["repaired_echo"]["write_paths"]["reported"] == []
 
 
+def test_an_absent_orientation_echo_does_not_assert_a_mismatch(delivered):
+    record, manifest = delivered
+    manifest.write_text("status: complete\n")
+    _apply_orientation_check(record, manifest)
+    assert "orientation_check" not in record
+    assert classify_pointer(record)["classification"] == "promotable"
+
+
 def test_an_unchanged_classification_reuses_the_git_reading(delivered, monkeypatch):
     from reckon.crew import dispatch_sessions
 
