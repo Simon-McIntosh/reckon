@@ -542,10 +542,13 @@ def test_a_group_and_an_individual_landing_share_the_branch_lease(fleet):
     first = fleet.deliver("alpha", 1)
     second = fleet.deliver("beta", 2)
     third = fleet.deliver("gamma", 3)
+    first["pointer"].update(session="first-session", priority_override=10)
+    second["pointer"].update(session="second-session", priority_override=90)
     group = _request(fleet, [first, second])
-    promotion_requests.request_promotion(
+    queued = promotion_requests.request_promotion(
         group["run_id"], kind="landing-group", options=group["options"]
     )
+    assert queued["priority_override"] == 90
     promotion_requests.request_promotion(
         third["pointer"]["run_id"], kind="command", options=third["options"]
     )
@@ -570,6 +573,9 @@ def test_a_group_and_an_individual_landing_share_the_branch_lease(fleet):
     assert service.tick() == [third["pointer"]["run_id"]]
     service.settle(15)
     assert active == [group["run_id"], third["pointer"]["run_id"]]
+    receipt = promotion_requests.read_promotion(second["pointer"]["run_id"])
+    assert receipt["session"] == "second-session"
+    assert receipt["priority_override"] == 90
 
 
 def test_a_failed_promotion_row_does_not_admit_a_group(fleet, monkeypatch):

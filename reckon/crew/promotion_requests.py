@@ -338,6 +338,15 @@ def request_promotion(
             "requested_at": _now(),
             "options": json.loads(json.dumps(dict(options or {}), default=str)),
         }
+        if kind == "landing-group":
+            priorities = [
+                _override(member["pointer"])
+                for member in request["options"].get("members") or ()
+            ]
+            request["priority_override"] = max(
+                (priority for priority in priorities if priority is not None),
+                default=request["priority_override"],
+            )
         runs._write_json(path, request)
         _mark_pointer(request, REQUESTED)
         return request
@@ -489,7 +498,15 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
     for member in (request.get("options") or {}).get("members") or ():
         member_id = str(member["pointer"]["run_id"])
         if member_id != run_id:
-            member_receipt = {**receipt, "run_id": member_id, "group_run_id": run_id}
+            member_receipt = {
+                **receipt,
+                "run_id": member_id,
+                "group_run_id": run_id,
+                "session": str(member["pointer"].get("session") or ""),
+                "priority_override": _override(member["pointer"]),
+                "node": (member["pointer"].get("node") or {}).get("id", ""),
+                "plan": str(member["pointer"].get("plan") or ""),
+            }
             runs._write_json(_receipt_path(member_id), member_receipt)
             _mark_pointer(member_receipt, phase)
             _record_drained(member_receipt)
