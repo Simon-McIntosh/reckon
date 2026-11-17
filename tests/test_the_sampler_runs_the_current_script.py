@@ -203,3 +203,48 @@ def test_an_unreadable_series_is_preserved_on_refusal(tmp_path, contents):
         fleet_node.append_node_reading(path)
     assert path.read_text() == contents
     assert set(tmp_path.iterdir()) == {path, path.with_name(path.name + ".lock")}
+
+
+def test_sampling_without_interpreter_overrides_uses_the_project_environment(tmp_path):
+    from tests.test_fleet_health import BASE, run_pass, sample_rows, sandbox
+
+    box = sandbox(tmp_path, extra_env=BASE)
+    box.env.pop("FLEET_DISK_PYTHON", None)
+    box.env.pop("RECKON_SHIM_PYTHON", None)
+    mounts = box.root / "mounts.json"
+    mounts.write_text("{}")
+    box.env.update(
+        {
+            "RECKON_MOUNTS_PATH": str(mounts),
+            "FLEET_SESSION_TMP_ROOT": str(box.root / "scratch"),
+            "FLEET_RUNTIME_DIR": str(box.root / "runtime"),
+            "FLEET_NODE_TMP_ROOT": str(box.root),
+        }
+    )
+    system_python = box.root / "stubbin" / "python3"
+    attempted = box.root / "system-python-used"
+    system_python.write_text(
+        '#!/bin/bash\nprintf "%s\\n" "$*" >> '
+        + shlex.quote(str(attempted))
+        + "\nexit 91\n"
+    )
+    system_python.chmod(0o755)
+    result = run_pass(box.env)
+    assert result.returncode == 0, result.stderr
+    assert not attempted.exists(), attempted.read_text() if attempted.exists() else ""
+    row = sample_rows(box)[0]
+    assert row["session_scratch_bytes"] == "0", result.stderr
+    assert row["writable_interpreters"] == "0", result.stderr
+    assert row["test_trees"] == "0", result.stderr
+    assert row["test_rss_bytes"] == "0", result.stderr
+    sample = json.loads((box.state / supervisor.NODE_DISK_RECORD).read_text())
+    for column, field in (
+        ("node_tmp_total_bytes", "total_bytes"),
+        ("node_tmp_used_bytes", "used_bytes"),
+        ("node_tmp_free_bytes", "free_bytes"),
+        ("node_tmp_free_inodes", "free_inodes"),
+    ):
+        assert int(row[column]) == sample[field]
+    print(
+        "unconfigured sampler: project interpreter used for all four helpers; disk fields published"
+    )
