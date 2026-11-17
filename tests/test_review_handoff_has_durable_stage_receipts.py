@@ -664,3 +664,57 @@ def test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_f
         assert receipts.receipt_path(run_id).read_bytes() == journal
     finally:
         service._release(slot)
+
+
+def test_durable_receipts_leave_public_payload_bytes_unchanged(clock):
+    run_id = "r-byte-neutral-receipts"
+    pointer = _pointer(run_id)
+    moment = clock.now(UTC).timestamp()
+    event = {
+        "event": "transition",
+        "project": "sample",
+        "run_id": run_id,
+        "node": "fixture",
+        "session": "owner",
+        "from_state": "working",
+        "to_state": "complete",
+        "observed_at": datetime.fromtimestamp(moment, UTC).isoformat(),
+        "working": 0,
+        "blocked": 0,
+        "unpromoted": 1,
+    }
+    result = {
+        "record": {"run_id": run_id, "status": "complete", "commits": ["work"]},
+        "result": {"steps": {"land": {"ok": True}}},
+    }
+
+    def public_bytes():
+        snapshot = recovery_watch._compute_watch_snapshot(
+            pointer, moment=moment, stall_seconds=300, pointers=[pointer]
+        )
+        return (
+            runs.pointer_path(run_id).read_bytes(),
+            json.dumps(pointer, sort_keys=True).encode(),
+            json.dumps(event, sort_keys=True).encode(),
+            recovery_watch.format_watch_transition(event).encode(),
+            json.dumps(snapshot, sort_keys=True).encode(),
+            json.dumps(
+                recovery_watch._fleet_counts({run_id: snapshot}), sort_keys=True
+            ).encode(),
+            json.dumps(result, sort_keys=True).encode(),
+        )
+
+    before = public_bytes()
+    receipts.note_delivery(event)
+    receipts.note_delivery(event, shown=True)
+    receipts.note_promotion_outcome(
+        {"run_id": run_id, "request_id": "a" * 32}, requests.PROMOTED, result
+    )
+    assert [row["stage"] for row in receipts.read_receipts(run_id)] == [
+        "delivery_recorded",
+        "delivery_shown",
+        "promotion_outcome",
+        "promotion_settled",
+        "landing",
+    ]
+    assert public_bytes() == before
