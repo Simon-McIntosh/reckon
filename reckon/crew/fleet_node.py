@@ -166,6 +166,15 @@ _ACTIVE_JOB_STATES = frozenset(
         "SUSPENDED",
     }
 )
+_SCHEDULER_COLUMNS = [
+    "job_id",
+    "node",
+    "scheduler_state",
+    "scheduler_reason",
+    "scheduler_running",
+    "scheduler_event",
+    "source",
+]
 _HEALTH_COLUMNS = [
     "utc",
     "load1",
@@ -185,14 +194,11 @@ _HEALTH_COLUMNS = [
     "top_parent",
     "writable_interpreters",
     "job_oom_kill",
-    "job_id",
-    "node",
-    "scheduler_state",
-    "scheduler_reason",
-    "scheduler_running",
-    "scheduler_event",
-    "source",
+    *_SCHEDULER_COLUMNS,
     "session_scratch_bytes",
+    "test_trees",
+    "test_rss_bytes",
+    "test_runs",
     "node_tmp_total_bytes",
     "node_tmp_used_bytes",
     "node_tmp_free_bytes",
@@ -278,15 +284,7 @@ def append_scheduler_reading(directory: Path, row: Mapping[str, str]) -> bool:
         if not header:
             header = _HEALTH_COLUMNS
             csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(header)
-        if not {
-            "job_id",
-            "node",
-            "scheduler_state",
-            "scheduler_reason",
-            "scheduler_running",
-            "scheduler_event",
-            "source",
-        }.issubset(header):
+        if not set(_SCHEDULER_COLUMNS).issubset(header):
             raise FleetNodeError(f"health series lacks scheduler columns: {path}")
         # Only the tail is read, keeping each tick independent of series age.
         stream.flush()

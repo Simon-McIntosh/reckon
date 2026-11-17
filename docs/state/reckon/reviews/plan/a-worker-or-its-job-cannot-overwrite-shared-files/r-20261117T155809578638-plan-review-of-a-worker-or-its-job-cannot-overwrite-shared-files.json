@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T16:01:36.447Z",
+  "dispatched_at": "2026-11-17T16:00:37Z",
+  "findings": [
+    {
+      "anchor": "plan.html:24",
+      "id": "wiring-1",
+      "reason": "without the edges the section can be dispatched before the job-fence mechanism it measures, and its base-revision control would measure an unfenced job rather than a refused bind.",
+      "text": "\u00a711 has no `depends-on` entry although its done-when asserts \"the decoy write of \u00a74 is still refused\" and it writes `reckon/nested_launch.py`, the job-fence path \u00a79 landed, so the declared DAG places \u00a711 with no upstream and a batch dispatch has no gate holding it behind the two landed sections its measure needs",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:122",
+      "id": "wiring-2",
+      "reason": "the followup is the sentence a coordinator reads to order the run, so an omission there sends \u00a710 out before the section it waits on.",
+      "text": "the followup body is the dispatch order and still reads \"\u00a79 follows \u00a74. \u00a710 runs last\", naming no \u00a711, while plan.html:24 now makes \u00a711 upstream of \u00a710; an orchestrator dispatching from this followup orders the last node ahead of its own declared dependency",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:116",
+      "id": "done_when-1",
+      "reason": "an unobservable clause in a done-when either passes vacuously or is dropped at build time, and it is the clause that keeps the fix from leaving invented directories on every node it lands on.",
+      "text": "\"the directory is absent from the job's node afterwards\" has no witness: the directory is node-local, the job's node is chosen by the scheduler and is not pinned, and the submitting worker cannot read another node's /tmp, so the clause can only be attested by the code under test's own receipt and cannot fail independently",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3f6377943350d6e2229f6e0601aa01d24270d7ac",
+  "plan_fingerprint": "a6bcbcc28633290685c6c2af224e23d2644b41b24c74e1743e20846049c13e50",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261117T155809578638-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "ecfac45075783e76012b453d60d5d9675e9e9867",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resolving as the surface does, \u00a711's write paths exist in the repository (`reckon/nested_launch.py`, `reckon/_worker_fence.py`, `reckon/host_shims/sbatch`, `reckon/host_shims/srun` all present under /home/ITER/mcintos/Code/reckon), and `tests/test_a_job_fence_starts_on_any_node.py` is a new file named as a write target, not a pointer to something renamed or deleted.",
+    "done_when": "a finding \u2014 \u00a711's done-when at plan.html:116 measures \"the directory is absent from the job's node afterwards\" from the submitting worker's side, which cannot see the job node's node-local /tmp; the rest of the section (exit zero in both launch forms, present-and-empty for the job, \u00a74's decoy still refused, base arm non-zero) is measurable and names a control.",
+    "evidence_paths": "pass \u2014 \u00a711 names no scratchpad or node-local log location; its rehearsal is a job-based gate whose receipts fall under the run's durable paths as \u00a74's already do, and the declarations change adds no path.",
+    "naming": "pass \u2014 \u00a711 introduces no symbol, comment or filename carrying a plan label, stage name or ticket number; its only new name is a behaviour-stating test filename.",
+    "reasoning": "pass \u2014 the stated mechanism matches what the fence actually composes: `reckon/_worker_fence.py:2071` skips an absent root \"and a bind whose source is absent refuses the whole launch\", while the run's own scratch is `by_construction` and is \"granted here while absent and created there before the fence runs\", which is exactly the refused source \u00a711 blames; the endpoint (a job whose node lacks the fleet node's directory starts anyway, with sealed paths still absent) is reachable and the section prescribes no code path, step sequence or function.",
+    "single_goal": "pass \u2014 \u00a711 names one deliverable (a submitted job's fence starts on a node that lacks the fleet node's local directories); the present-and-empty, gone-on-exit and sealed-stays-absent clauses are facets of that one endpoint, not a second deliverable.",
+    "wiring": "a finding \u2014 the newly added \u00a711 carries no `depends-on` edge at plan.html:24 even though its done-when rides on \u00a74's job re-entry and on \u00a79's job-fence recipe, and the followup at plan.html:122 still ends its ordering with \"\u00a710 runs last\" while \u00a710 now declares \u00a711 upstream of it."
+  },
+  "section_digests": {
+    "_document": "08d5b3600d88c224bb3de0b32fd7be04cb87400912edf549ea8fc70c61bc108b",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "2921806863fa66f192dc45d31056b040e9e07cc5f67e20df721264aafdecb087",
+    "s11": "a23ab44da2be981ee6a354e5c6393269b7bec3c26c755667911cf7cc88de1a44",
+    "s2": "672162d0e96a24a032f95b7ade817c96cf03b6d88f8f4c83f57f8e7b253409ce",
+    "s3": "9b6d5901be84127eaa75a84242d4374832a661d904144efdfaa597367a03eaac",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "4d339ca4c2860c39db4a36518f8045c9b620085666f9beffdd963261346af665",
+    "s7": "2099f1fb292d04b4514f50a5dac17e2c0480f9b2d27c3a83ba62c45c0c7e1afb",
+    "s8": "1b886461a44e82b5dcefddc891828d3bd8e080296db484cac33bf8e4d032637f",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:14:39.040267+00:00",
+  "total": null
+}

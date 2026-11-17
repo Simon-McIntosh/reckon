@@ -222,6 +222,15 @@ def record_written(project: str, row: Mapping[str, Any], root=None) -> None:
         )
 
 
+def _stamp_text(identity: Any) -> str:
+    """The text a source stamp is recorded as, and the one it is read back as.
+
+    One encoder for both sides. A writer and a comparison that spelled the same
+    identity two ways would refuse every stamp the writer left.
+    """
+    return json.dumps(identity)
+
+
 def _source_written(connection, path: Path) -> None:
     from reckon import file_memo
 
@@ -231,7 +240,7 @@ def _source_written(connection, path: Path) -> None:
         return
     connection.execute(
         "INSERT OR REPLACE INTO sources VALUES (?, ?)",
-        (str(path.resolve()), json.dumps(stamp)),
+        (str(path.resolve()), _stamp_text(stamp)),
     )
 
 
@@ -314,7 +323,7 @@ def _current(connection: sqlite3.Connection, project: str, root) -> bool:
         "SELECT stamp FROM sources WHERE name=?", (str(aggregate),)
     ).fetchone()
     try:
-        actual = json.dumps(file_memo.file_signature(aggregate))
+        actual = _stamp_text(file_memo.file_signature(aggregate))
     except FileNotFoundError:
         actual = None
     generation = ledger.ledger_generation(project)
@@ -699,20 +708,45 @@ def has_row(project: str, run_id: str, root=None) -> bool:
 
 
 def matches_sources(project: str, root, signature: tuple) -> bool:
-    """Use the held reader's existing stat snapshot to validate the fast path."""
+    """Use the held reader's existing stat snapshot to validate the fast path.
+
+    The projection is filed from one of two authorities, and each is validated
+    against the identity its own answer depends on.
+
+    Where a run store exists the projection's rows are the store's rows, so the
+    store's signature is the identity that says whether the projection still
+    describes it, and :func:`_ensure` is asked to bring the projection current
+    first. The per-run documents are copies the store already holds, so
+    requiring a stamp per document would refuse on every tick of an
+    installation whose documents predate the index — a stamp names a source for
+    a read that never makes it, and the answer the read would give comes from
+    the store.
+
+    Where no store exists the documents are the authority, so every document
+    the held listing holds now must be stamped at the identity it holds now. A
+    stamp left behind by a document that has since been removed is not
+    consulted: nothing prunes the table but a full rebuild, and the read files
+    rows from the population it lists, not from the one the table once listed.
+    """
     path = index_path(project, root)
     if not path.exists():
         return False
     try:
-        with contextlib.closing(sqlite3.connect(path)) as connection:
-            if not connection.execute(
-                "SELECT 1 FROM metadata WHERE key='ready'"
-            ).fetchone():
+        store_backed = _store_signature() is not None
+        _ensure(project, root)
+        if store_backed:
+            with contextlib.closing(_connect(path, read_only=True)) as current:
+                return _current(current, project, root)
+        with contextlib.closing(_connect(path)) as connection:
+            metadata = dict(connection.execute("SELECT key, value FROM metadata"))
+            if metadata.get("ready") != "1":
                 return False
             stored = dict(connection.execute("SELECT name, stamp FROM sources"))
         aggregate, stamp, documents = signature[:3]
-        actual = {aggregate: json.dumps(stamp)} if stamp is not None else {}
-        actual.update((name, json.dumps(identity)) for name, identity in documents[1])
-        return stored == actual
+        if stamp is not None and stored.get(aggregate) != _stamp_text(stamp):
+            return False
+        return all(
+            stored.get(name) == _stamp_text(identity) for name, identity in documents[1]
+        )
     except (OSError, sqlite3.Error):
         return False

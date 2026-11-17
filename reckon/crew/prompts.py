@@ -34,6 +34,103 @@ DURABLE_WRITE_CONTRACT = (
     "  preceding a long generation survives that generation failing."
 )
 
+
+def _resolved_exclusive_patterns(project: str, worktree: str) -> tuple[str, ...]:
+    """The classes git cannot reconcile in this checkout, for the scope block.
+
+    The brief states what the fence seals, so it reads the list the launch's
+    fence is composed from (``unmergeable_patterns``) rather than the shipped
+    defaults alone: a project's own declared patterns name paths its worker is
+    refused for, and a brief that left them out would describe a narrower seal
+    than the one in force.
+
+    A declaration that cannot be read, and a worktree that does not exist, fall
+    back to the shipped classes. Composing a prompt must not fail on a fence
+    declaration another surface already reports, and the shipped classes are
+    what such a fence seals anyway.
+    """
+    from reckon.crew.runs import DEFAULT_EXCLUSIVE_PATHS, unmergeable_patterns
+
+    try:
+        return tuple(unmergeable_patterns(project or None, Path(worktree)))
+    except (OSError, ValueError):
+        return tuple(DEFAULT_EXCLUSIVE_PATHS)
+
+
+# The heading the scope fence is carried under. One spelling, so a reader
+# handed two briefs compares the same marker, and a test can find the block
+# without parsing prose.
+SCOPE_HEADING = (
+    "FENCE — SCOPE (the worktree is writable; the declared paths say where the "
+    "change is expected)"
+)
+
+
+def scope_block(
+    node: TaskNode, *, paths: Iterable[str] = (), patterns: Iterable[str] = ()
+) -> str:
+    """Compose the scope fence: what may be written, and what is expected.
+
+    A dispatched node may change any file in its repository that git can
+    reconcile, so the fence states the worktree as writable and the declared
+    paths as the place its change is expected. Only the classes git cannot
+    reconcile are writable when declared, and those are named here so a worker
+    learns the rule from the brief it was handed rather than from a refusal at
+    promotion.
+
+    ``paths`` and ``patterns`` are the declarations to state. A caller that
+    composes with nothing reads the node's own write paths and the shipped
+    classes alone, which is what a node declaring no write path is fenced
+    against. ``compose_prompt`` passes the resolved list, so a project's own
+    exclusive patterns — the ones its fence actually seals — are named beside
+    the shipped ones rather than left out of the brief. A
+    declaration written absolutely names a location outside the checkout — a
+    role's own delivery root — so it is stated as a delivery grant rather than
+    as an expected edit.
+
+    A node that declares no repository path is stated that way rather than as an
+    empty list: the repository is its writable scope, and printing "none" under
+    a heading that reads "nothing outside them" is what told a worker its whole
+    scope was an evidence fragment.
+    """
+    from reckon.crew.runs import DEFAULT_EXCLUSIVE_PATHS
+
+    declared = [str(path) for path in (paths or node.write_paths) if str(path).strip()]
+    repository_paths = [path for path in declared if not Path(path).is_absolute()]
+    delivery = [path for path in declared if Path(path).is_absolute()]
+    lines = [
+        SCOPE_HEADING,
+        "  Writable: the whole worktree — any file git can merge, declared or not.",
+        "  The declared paths are where this node's change is expected, and a review",
+        "  compares your diff against them; editing a mergeable file outside them",
+        "  neither refuses nor blocks the node.",
+    ]
+    if repository_paths:
+        lines.append("  Expected:")
+        lines.extend(f"  {path}" for path in repository_paths)
+    else:
+        lines.extend(
+            [
+                "  Expected: the repository itself. No write path is declared, so",
+                "  nothing narrows what this node is expected to change.",
+            ]
+        )
+    if delivery:
+        lines.append(
+            "  Delivery grants outside the repository (named, not expected edits):"
+        )
+        lines.extend(f"  {path}" for path in delivery)
+    exclusive = list(patterns) or list(DEFAULT_EXCLUSIVE_PATHS)
+    lines.extend(
+        [
+            "  Writable only when a dispatch declares it: a path a merge cannot",
+            f"  reconcile — {', '.join(exclusive)} — plus any pattern this project adds.",
+            "  The fence holds those read-only where none is declared.",
+        ]
+    )
+    return "\n".join(lines)
+
+
 # The falsifiable-evidence contract, embedded in every composed prompt beside
 # the durable-write one. It lives here for the same reason its sibling does:
 # the prompt embeds no protocol reference by design, so a discipline carried
@@ -859,7 +956,9 @@ def compose_prompt(
         f"{sys.executable} -c 'from reckon.crew.dispatch import _peer_command; "
         "raise SystemExit(_peer_command())'"
     )
-    scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
+    scope_lines = scope_block(
+        node, patterns=_resolved_exclusive_patterns(project, worktree)
+    )
     section = f" {node.section}" if node.section else ""
     # The plan pointer is the plan-section read instruction, and the plan name
     # and section it names are the whole of it. A brief alone replaces that
@@ -1059,12 +1158,11 @@ ROLE     {node.role}
 
 {closure_authority_contract}
 
-FENCE — SCOPE (declared write paths; nothing outside them)
 {scope_lines}
 
 CONCURRENT NODES (information only; overlapping source and test edits are allowed)
-  Work in your own worktree within your declared write paths. Git merge reconciles
-  shared edits; a real conflict returns to the worker for a merge repair.
+  Work in your own worktree. Git merge reconciles shared edits; a real conflict
+  returns to the worker for a merge repair.
 {peer_lines}
 
 PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endpoint {peer_channel}.

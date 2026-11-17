@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import ledger
+from reckon import crew, ledger
 from reckon.crew import (
     obligations,
     promotion_checks,
@@ -194,7 +194,11 @@ def test_a_gate_log_without_an_exit_record_names_the_log_and_the_record(
     duties = obligations.obligations(PROJECT, SESSION)["obligations"]
     landing_rows = [item for item in duties if item["kind"] == "landing-refused"]
     assert landing_rows, duties
-    text = str(landing_rows[0]["reason"])
+    row = landing_rows[0]
+    assert row["record_action"] == "observe"
+    assert guard in row["reason"]
+    record = crew.observe(row["run_id"])
+    text = str(record["admission_landing"]["remedy"])
     assert gate_log in text
     assert "EXIT=<n>" in text
 

@@ -4348,13 +4348,23 @@ def _last_line_boundary(path: Path) -> int:
     return start + cut + 1
 
 
-def _stream_lines_from(path: Path, offset: int) -> tuple[list[str], int]:
+def _stream_lines_from(
+    path: Path, offset: int, *, count: bool = True
+) -> tuple[list[str], int]:
     """The complete records a stream holds from one boundary, and the next one.
 
     Only whole lines are returned, and the offset that comes back sits after
     the last of them. A record still being written is therefore left for the
     read that finds it finished, which is the difference between reading a
     record once and reading it as a fragment followed by its remainder.
+
+    ``count`` is the producer's parsed-byte accounting: the incremental readers
+    that stand in for the producer's own fold of a poll pass it, so the bytes
+    they parse are the ones the registration reports. A reader scanning a
+    stream for its own answer -- one that does not stand in for the poll's fold
+    -- passes ``count=False``, because its bytes are not the fleet traffic the
+    producer reports and counting them twice reports a poll that parsed twice
+    what it owed.
     """
     try:
         with path.open("rb") as handle:
@@ -4366,7 +4376,8 @@ def _stream_lines_from(path: Path, offset: int) -> tuple[list[str], int]:
     if cut < 0:
         return [], offset
     text = data[: cut + 1].decode("utf-8", errors="replace")
-    _count_parsed_bytes(cut + 1)
+    if count:
+        _count_parsed_bytes(cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 

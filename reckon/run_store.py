@@ -236,7 +236,7 @@ def _table_columns(
     return frozenset(str(desc[0]) for desc in described.description)
 
 
-def _refuse_owed_migration(connection: sqlite3.Connection, path: Path) -> None:
+def _refuse_owed_migration(connection: sqlite3.Connection, path: Path) -> bool:
     """Refuse a store that owes its migration rather than answer it partially.
 
     The read-only readers cannot run the backfill themselves: opening the store
@@ -246,19 +246,32 @@ def _refuse_owed_migration(connection: sqlite3.Connection, path: Path) -> None:
     ``payload`` column reports no record at all while the id columns still list
     every id.
 
-    The table's own shape is what decides, not the schema record: a store whose
-    columns are complete reads correctly whatever ``store_meta`` says, and a
-    store carrying every column but no version record is the state a migration
-    leaves when it commits the backfill and is interrupted before writing that
-    record.
+    True means the table is readable. False means neither the table nor a
+    schema record exists yet, so creation has no runs to answer with. A schema
+    record is written only after the table exists; a recorded store without
+    that table is damaged. Complete columns read correctly without a record,
+    including when migration stops after committing its backfill.
     """
     try:
         columns = _table_columns(connection)
+        if not columns:
+            try:
+                recorded = connection.execute(
+                    "SELECT 1 FROM store_meta WHERE key = ?", (_SCHEMA_RECORD_KEY,)
+                ).fetchone()
+            except sqlite3.OperationalError as exc:
+                if str(exc) != "no such table: store_meta":
+                    raise
+                recorded = None
+            if recorded is None:
+                return False
+            # Creation can finish between the table check and the record read.
+            columns = _table_columns(connection)
     except sqlite3.Error as exc:
         raise _unreadable(path, f"{type(exc).__name__}: {exc}") from exc
     missing = sorted(_RUNS_COLUMNS - columns)
     if not missing:
-        return
+        return True
     raise _unreadable(
         path,
         "it owes the schema migration "
@@ -838,7 +851,8 @@ def stored_run_rows(
         return None
     connection = _open_readonly(target)
     try:
-        _refuse_owed_migration(connection, target)
+        if not _refuse_owed_migration(connection, target):
+            return []
         schemas = _read_attached_tables(connection, target)
         records = []
         for run_id, payload, detail in _record_rows(
@@ -2025,7 +2039,8 @@ def indexed_run_ids(project: str) -> set[str] | None:
         return None
     connection = _open_readonly(path)
     try:
-        _refuse_owed_migration(connection, path)
+        if not _refuse_owed_migration(connection, path):
+            return set()
         try:
             ids = {
                 str(row[0])

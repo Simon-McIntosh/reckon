@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import time
+from collections import OrderedDict
 from contextvars import ContextVar
 from fnmatch import fnmatchcase
 from pathlib import Path
@@ -701,35 +702,91 @@ def _lane_cause_signature_text(lowered: str) -> str:
 
 
 # The newest terminal result of a stream, kept per process by the stream's
-# path, inode, size and mtime. Every producer pass asks it of every run whose
-# worker has gone, and finding it means parsing the whole stream; a stream that
-# has not changed since the last ask has the same newest result. The store is
-# cleared whole when it reaches its bound.
-_NEWEST_RESULTS: dict[tuple[str, int, int, int], Mapping[str, Any] | None] = {}
+# path, together with the cursor the scan reached. Every producer pass asks it
+# of every run whose worker is doing anything, and a live worker appends to its
+# stream continuously, so the ask is paid per pass per run for as long as the
+# run lasts. The cursor is what keeps that affordable: a stream that has only
+# grown since the last ask is read from the byte after its last complete record
+# rather than from its first, so a pass pays for the bytes appended since it
+# last looked instead of the whole stream.
+#
+# The cursor carries the identity of the file it was reached in (device, inode,
+# size, mtime), the offset after the last complete record, and the opening's
+# fingerprint at that offset -- the same sample `_backends` records and re-reads
+# for its parsed-stream cache, so one sample size governs every rewrite check.
+# A file whose identity is unchanged is answered without opening it; one that
+# grew at the same inode and still opens with the recorded bytes resumes at the
+# cursor; one that was replaced or rewritten is read from its first record,
+# because an offset into a predecessor's bytes means nothing in a file that never
+# held them. The store is bounded per process and evicts its oldest cursor, so a
+# long-lived station does not carry every stream it has ever read.
+_NEWEST_RESULTS: OrderedDict[str, dict[str, Any]] = OrderedDict()
 _NEWEST_RESULTS_LIMIT = 4096
 
 
+def _fold_result_lines(
+    lines: Sequence[str], result: Mapping[str, Any] | None
+) -> Mapping[str, Any] | None:
+    """The newest ``result`` record among ``lines``, or ``result`` when none is."""
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, Mapping) and event.get("type") == "result":
+            result = event
+    return result
+
+
 def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
-    """The stream's last ``result`` record, parsed again only when it changed.
+    """The stream's last ``result`` record, reading only what changed.
+
+    A stream whose identity has not moved since the last ask is answered from
+    the held cursor without opening it; one that has only grown is read from
+    the record boundary the cursor reached; one that was replaced or rewritten
+    is read from its first record. The caller's answer is the same record a
+    whole-stream scan finds, which is what the cursor buys: a pass that looks
+    at a live stream pays for the bytes its worker appended, not for its size.
 
     Raises ``OSError`` when the stream cannot be read, as a direct read would.
     """
+    from reckon import _backends
+
     info = path.stat()
-    key = (str(path), info.st_ino, info.st_size, info.st_mtime_ns)
-    if key in _NEWEST_RESULTS:
-        return _NEWEST_RESULTS[key]
+    key = str(path)
+    identity = (info.st_ino, info.st_size, info.st_mtime_ns)
+    cursor = _NEWEST_RESULTS.get(key)
+    if cursor is not None and cursor["identity"] == identity:
+        _NEWEST_RESULTS.move_to_end(key)
+        return cursor["result"]
     result: Mapping[str, Any] | None = None
-    with path.open(encoding="utf-8", errors="replace") as stream:
-        for line in stream:
-            try:
-                event = json.loads(line)
-            except ValueError:
-                continue
-            if isinstance(event, Mapping) and event.get("type") == "result":
-                result = event
-    if len(_NEWEST_RESULTS) >= _NEWEST_RESULTS_LIMIT:
-        _NEWEST_RESULTS.clear()
-    _NEWEST_RESULTS[key] = result
+    offset = 0
+    resumable = (
+        cursor is not None
+        and cursor["inode"] == info.st_ino
+        and info.st_size >= int(cursor["offset"])
+        and _backends._stream_head_intact(path, cursor["head"])
+    )
+    if resumable:
+        result = cursor["result"]
+        offset = int(cursor["offset"])
+    # The scan answers its own question about the stream rather than standing in
+    # for the producer's fold of a poll, so its bytes are not the fleet traffic
+    # the producer's registration reports: counting them would report a poll
+    # that parsed twice the growth it owed.
+    lines, reached = _backends._stream_lines_from(path, offset, count=False)
+    result = _fold_result_lines(lines, result)
+    entry = {
+        "identity": identity,
+        "inode": info.st_ino,
+        "offset": reached,
+        "head": _backends.stream_head_fingerprint(path, offset=reached),
+        "result": result,
+    }
+    _NEWEST_RESULTS[key] = entry
+    _NEWEST_RESULTS.move_to_end(key)
+    while len(_NEWEST_RESULTS) > _NEWEST_RESULTS_LIMIT:
+        _NEWEST_RESULTS.popitem(last=False)
     return result
 
 

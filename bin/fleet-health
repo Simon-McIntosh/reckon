@@ -88,12 +88,19 @@ over_load() { awk -v l="$1" -v t="$2" 'BEGIN { exit !(l > t) }'; }
 "$health_python" -m reckon.crew.fleet_node --initialise-series "$out" || exit 1
 
 # Resume the last readable count so restarting the sampler does not hide a kill.
-last_kills=$(awk -F '\t' 'NR > 1 && $18 ~ /^[0-9]+$/ {n=$18} END {print n}' "$out")
+last_kills=$(awk -F '\t' '
+    NR == 1 {for (i=1; i<=NF; i++) if ($i == "job_oom_kill") column=i; next}
+    column && $column ~ /^[0-9]+$/ {n=$column}
+    END {print n}' "$out")
 last_snapshot=0
 count=0
 while :; do
     session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
     writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
+    test_sample=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-test-processes) || test_sample=$'unknown\tunknown\t[]'
+    IFS=$'\t' read -r test_trees test_rss test_runs <<< "$test_sample"
+    test_rss=${test_rss:-unknown}
+    test_runs=${test_runs:-[]}
     read -r load1 load5 _ < "$procdir/loadavg"
     running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
     blocked=$(awk '/^procs_blocked/ {print $2}' "$procdir/stat")
@@ -122,14 +129,17 @@ while :; do
     disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-python3}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
     read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\t%s\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
-        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" "$session_scratch" \
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" "$session_scratch" "$test_trees" "$test_rss" "$test_runs" \
         "${disk_total:-unknown}" "${disk_used:-unknown}" "${disk_free:-unknown}" "${disk_inodes:-unknown}" \
         | "$health_python" -m reckon.crew.fleet_node --append-node-row "$out" || exit 1
 
     reason=""
-    [ "$tasks" -gt "$TASKS_ALERT" ] && reason="$tasks tasks"
+    if [[ "$test_trees" =~ ^[0-9]+$ ]] && [ "$test_trees" -gt 0 ]; then
+        reason="$test_trees test trees ($test_rss resident bytes): $test_runs"
+    fi
+    [ "$tasks" -gt "$TASKS_ALERT" ] && reason="${reason:+$reason, }$tasks tasks"
     [ "$python" -gt "$PYTHON_ALERT" ] && reason="${reason:+$reason, }$python python processes"
     [ "${avail:-0}" -lt "$MEM_AVAIL_ALERT_MB" ] && reason="${reason:+$reason, }${avail} MB available"
     [ "${dstate:-0}" -gt "$DSTATE_ALERT" ] && reason="${reason:+$reason, }$dstate D-state processes"
