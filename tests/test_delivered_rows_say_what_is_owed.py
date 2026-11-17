@@ -295,6 +295,9 @@ def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
     result = CliRunner().invoke(cli.main, argv)
     assert result.exit_code == 0, result.output
     receipt = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
+    if role == "implement":
+        assert receipt["steps"]["land"]["pushed"], receipt
+        receipt = receipt["promotion"]
     assert receipt["pointer_removed"] is True, receipt
     assert Path(receipt["ledger_path"]).is_relative_to(repository), receipt[
         "ledger_path"
