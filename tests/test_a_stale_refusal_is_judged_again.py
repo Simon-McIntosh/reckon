@@ -151,6 +151,17 @@ def test_a_repeated_request_uses_the_same_revision_rule(monkeypatch):
     assert requests.request_promotion(current["run_id"])["phase"] == requests.REFUSED
 
 
+def test_an_explicit_retry_keeps_its_callers_options(monkeypatch):
+    _running(monkeypatch)
+    stale = _refused("r-explicit-retry", EARLIER_CODE)
+    retried = requests.request_promotion(
+        stale["run_id"], kind="command", options={"verdict": "not-run"}, retry=True
+    )
+    assert retried["phase"] == requests.REQUESTED
+    assert retried["kind"] == "command"
+    assert retried["options"] == {"verdict": "not-run"}
+
+
 @pytest.mark.parametrize(
     "outcome,phase",
     [

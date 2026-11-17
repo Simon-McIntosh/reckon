@@ -409,7 +409,7 @@ def request_promotion(
         ):
             return {**existing, "duplicate": True}
         pointer = runs.read_pointer(run_id)
-        if replaced_code:
+        if replaced_code and not retry:
             kind = str(existing["kind"])
             options = existing.get("options") or {}
         request = {
