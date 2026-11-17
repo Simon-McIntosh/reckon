@@ -61,4 +61,15 @@ EXIT=1</pre>
 4 passed in 3.03s
 EXIT=0</pre>
 <p>The suite arm at this head reads 58 passed and exits zero; <code>ruff check</code> reports the one pre-existing SIM102 that primary&#x27;s own copy of the file carries at line 3565, and <code>ruff format --check</code> is clean.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-arm-merge2">Arm at the second merge head, attributed</h4>
+<p>The arm adds failures against base, because primary advanced eight commits in the meantime. Attribution is therefore taken against primary rather than against base: the same 216 modules were run in a tree of <code>72af0d13dd</code> alone.</p>
+<pre># base 69fab1372f        105 failed, 1675 passed, 13 errors   114 ids
+# primary 72af0d13dd      67 failed, 1716 passed, 10 errors    77 ids
+# merge head 8c734a9ae3   65 failed, 1718 passed, 10 errors    75 ids
+# ids only at the merge head: 0
+# ids only at primary alone:  2
+#   test_a_queued_launch_never_classifies_the_fleet.py::test_the_launch_inputs_equal_the_base_except_for_backlog
+#   test_crew_recover.py::test_the_follow_loop_sweeps_on_a_cadence_not_every_iteration
+EXIT=1</pre>
+<p>So the merge adds no failing id, and the two ids it clears are exactly the ones the residual bound addresses: a queued launch whose manifest already carries a verdict, and a follow loop whose pointer its own launcher had left on a pre-spawn phase. The twenty-two ids that are red against base and green in both the primary tree and the merge head belong to primary&#x27;s own advance, since the primary tree reproduces every one of them with neither side of this node applied.</p>
 </section>
