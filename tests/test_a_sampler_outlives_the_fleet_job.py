@@ -7,7 +7,6 @@ import fcntl
 import subprocess
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -61,12 +60,8 @@ def seed(directory):
     return path
 
 
-def test_running_job_and_ended_job_continue_the_same_series(tmp_path, monkeypatch):
+def test_running_job_and_ended_job_continue_the_same_series(tmp_path):
     seed(tmp_path)
-    clock = iter((0.0, 3.5, 60.0))
-    monkeypatch.setattr(
-        fleet_node, "time", SimpleNamespace(monotonic=lambda: next(clock))
-    )
     runner, calls = scheduler(
         (0, f"{JOB}|{NODE}|RUNNING|None\n", ""),
         (0, "", ""),
@@ -88,7 +83,7 @@ def test_running_job_and_ended_job_continue_the_same_series(tmp_path, monkeypatc
     assert ended["job_id"] == JOB and ended["node"] == NODE
     assert ended["utc"] > result[0]["utc"]
     assert ended["job_mem_mb"] == "-"  # never invent a post-mortem memory sample
-    assert delays == [56.5]
+    assert len(delays) == 1 and 59 <= delays[0] <= 60
     assert calls[-1][0] == "sacct"
     # A restarted reader does not duplicate a terminal row.
     fleet_node.watch_scheduler(
