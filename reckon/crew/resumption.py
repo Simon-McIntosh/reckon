@@ -60,7 +60,7 @@ from reckon import budget as budget_module
 from reckon._backends import _human_age
 from reckon._store import write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
-from reckon.crew import plan_review, runs
+from reckon.crew import plan_review, recovery_wait, runs
 from reckon.crew.dispatch import (
     _WORKER_DONE_MANIFEST_STATUSES,
     BudgetHold,
@@ -777,15 +777,15 @@ def recovery_log_path(project: str) -> Path:
     return crew_home() / "recovery" / f"{readable or 'project'}.jsonl"
 
 
-# What the last read of each project's recovery log already decoded: the file's
-# identity, the byte offset through the last whole line it consumed, and the
-# lifted set those lines produced. The log only grows and each sweep re-derived
-# the same answer from all of it, which on a 41 MB record cost a fifth of the
-# sweep thread in ``json.loads`` alone.
-_LIFTED_HOLD_READS: dict[
-    str, tuple[tuple[int, int], int, frozenset[tuple[str, str]]]
-] = {}
-_LIFTED_HOLD_READS_LOCK = threading.Lock()
+# What each project's recovery log has already taught the sweep: the offset the
+# last read reached, and the lifted set those lines produced. The log only grows
+# and each sweep re-derived the same answer from all of it, which on a 41 MB
+# record cost a fifth of the sweep thread in ``json.loads`` alone. The read
+# itself — the byte offset, the whole-line clamp and the rejection of a replaced
+# or shortened file — is ``recovery_wait.appended_lines``, which the stream
+# readers share; what is kept here is only the answer those lines gave.
+_LIFTED_HOLDS: dict[str, tuple[int, frozenset[tuple[str, str]]]] = {}
+_LIFTED_HOLDS_LOCK = threading.Lock()
 
 
 def _lifted_holds(project: str) -> frozenset[tuple[str, str]]:
@@ -799,45 +799,21 @@ def _lifted_holds(project: str) -> frozenset[tuple[str, str]]:
     rewrites the pointer from a snapshot taken before the stamp, so the slot can
     read absent for a lift that happened.
 
-    Only the lines appended since the previous read are decoded, because the log
-    is append-only and a sweep already holds the answer for everything before
-    them. A log replaced or shortened since the last read is not the file those
-    lines came from, so it is read from the start.
+    Only the lines appended since the previous read are decoded, because a sweep
+    already holds the answer for everything before them. A log replaced or
+    shortened since the last read is read from the start: its earlier bytes are
+    no longer the file those lines came from, and the read reports a start
+    offset the recorded answer was not reached from.
     """
     path = recovery_log_path(project)
     key = str(path)
-    with _LIFTED_HOLD_READS_LOCK:
-        previous = _LIFTED_HOLD_READS.get(key)
-    try:
-        status = path.stat()
-    except OSError:
-        with _LIFTED_HOLD_READS_LOCK:
-            _LIFTED_HOLD_READS.pop(key, None)
-        return frozenset()
-    identity = (status.st_dev, status.st_ino)
-    unchanged = (
-        previous is not None
-        and previous[0] == identity
-        and status.st_size >= previous[1]
-    )
-    if unchanged:
-        offset, lifted = previous[1], previous[2]
-    else:
-        offset, lifted = 0, frozenset()
-    try:
-        with path.open("rb") as handle:
-            handle.seek(offset)
-            chunk = handle.read()
-    except OSError:
-        with _LIFTED_HOLD_READS_LOCK:
-            _LIFTED_HOLD_READS.pop(key, None)
-        return frozenset()
-    # Only whole lines are consumed. A writer appends a line at a time, so a
-    # read can land mid-line, and an offset advanced past that fragment would
-    # drop the lift the line records once it is complete.
-    consumed = chunk[: chunk.rfind(b"\n") + 1]
-    fresh = set(lifted)
-    for line in consumed.decode("utf-8").splitlines():
+    lines, offset, start = recovery_wait.appended_lines(path)
+    with _LIFTED_HOLDS_LOCK:
+        previous = _LIFTED_HOLDS.get(key)
+        lifted = (
+            set(previous[1]) if previous is not None and previous[0] == start else set()
+        )
+    for line in lines:
         if not line.strip():
             continue
         try:
@@ -856,10 +832,10 @@ def _lifted_holds(project: str) -> frozenset[tuple[str, str]]:
             run_id = str(entry.get("run_id") or "")
             signature = str(entry.get("hold") or "")
             if run_id and signature:
-                fresh.add((run_id, signature))
-    result = frozenset(fresh)
-    with _LIFTED_HOLD_READS_LOCK:
-        _LIFTED_HOLD_READS[key] = (identity, offset + len(consumed), result)
+                lifted.add((run_id, signature))
+    result = frozenset(lifted)
+    with _LIFTED_HOLDS_LOCK:
+        _LIFTED_HOLDS[key] = (offset, result)
     return result
 
 

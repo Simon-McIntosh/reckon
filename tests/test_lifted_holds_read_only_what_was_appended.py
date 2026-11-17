@@ -19,24 +19,25 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import resumption
+from reckon.crew import recovery_wait, resumption
 from reckon.crew.resumption import recovery_log_path
 
 PROJECT = "proj-alpha"
 LOG_LINES = 5_000
 
 
+def _pair(index: int) -> tuple[str, str]:
+    """The (run id, signature) pair the line at ``index`` records as lifted."""
+    return f"r-{index:06d}-node", f"hold-{index % 977}"
+
+
 def _report(index: int, *, dry_run: bool = False) -> str:
-    """One recovery-log line, in the shape a sweep appends."""
+    """One recovery log line, in the shape a sweep appends."""
+    run_id, hold = _pair(index)
     return json.dumps(
         {
             "dry_run": dry_run,
-            "resumed": [
-                {
-                    "run_id": f"r-{index:06d}-node",
-                    "hold": f"hold-{index % 977}",
-                }
-            ],
+            "resumed": [{"run_id": run_id, "hold": hold}],
         },
         sort_keys=True,
     )
@@ -79,7 +80,7 @@ class _RecordingLoads:
         self.lines: list[str] = []
 
     def __call__(self, payload, *args, **kwargs):
-        if isinstance(payload, str):
+        if isinstance(payload, (str, bytes)):
             self.lines.append(payload)
         return self._loads(payload, *args, **kwargs)
 
@@ -167,3 +168,37 @@ def test_a_replaced_log_is_read_from_the_start(
     assert recorder.count == len(replacement)
     assert set(replaced) == _base_lifted_holds(log, real_loads)
     assert not set(replaced) & {("r-000000-node", "hold-0")}
+
+
+def test_a_line_still_being_written_waits_for_its_newline(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A record landing mid-append is decoded once, by the read after it closes."""
+    recorder, real_loads = _record_loads(monkeypatch)
+    log = recovery_log_path(PROJECT)
+    complete = [_report(index) for index in range(20)]
+    _write_lines(log, complete)
+    pending = _report(999)
+    half = pending[: len(pending) // 2]
+    with log.open("a", encoding="utf-8") as handle:
+        handle.write(half)
+
+    recorder.reset()
+    first = resumption._lifted_holds(PROJECT)
+    assert recorder.count == len(complete)
+    assert set(first) == _base_lifted_holds(log, real_loads)
+    assert _pair(999) not in first
+    # The offset stopped at the last newline rather than at the end of the file,
+    # so the fragment waits for the bytes completing it.
+    scan = recovery_wait._STREAM_SCANS[str(log)]
+    assert scan.append_offset == log.stat().st_size - len(half)
+
+    # The bytes that complete the record land, and the next read decodes it —
+    # once, because the fragment itself was never consumed.
+    with log.open("a", encoding="utf-8") as handle:
+        handle.write(pending[len(half) :] + "\n")
+    recorder.reset()
+    second = resumption._lifted_holds(PROJECT)
+    assert recorder.count == 1
+    assert _pair(999) in second
+    assert set(second) == _base_lifted_holds(log, real_loads)
