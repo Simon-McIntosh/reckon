@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T21:25:06.067Z",
+  "dispatched_at": "2026-11-17T21:23:21Z",
+  "findings": [
+    {
+      "anchor": "plan.html:129",
+      "id": "wiring-1",
+      "reason": "the followup is what gets dispatched, and it currently omits the one section that gates \u00a711's live measure.",
+      "text": "the followup body orders \u00a72, \u00a74, \u00a75, \u00a76, \u00a77, \u00a78, \u00a79, \u00a710 and \"\u00a711 runs last\" but never names \u00a712, which the declarations now carry and which plan.html:24 makes a prerequisite of s11, while plan.html:134 records that \u00a72 to \u00a75's live-fleet measures cannot be met until \u00a712 replaces the sampler \u2014 so a dispatcher following the followup schedules the last section before the section its live measure depends on",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:123",
+      "id": "done_when-1",
+      "reason": "without a red arm for the reader the node can pass on the half of its deliverable that a reader actually depends on.",
+      "text": "\u00a712's done-when carries two independent arms but only one negative control, \"at the base revision the first sampler is still the one running after the re-execution and the added column is never written\", which falsifies the handover arm alone, leaving \"the row names its owner and does not say launches are held\" assertable green on unfixed code with nothing to show the guard fires",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:23",
+      "id": "done_when-2",
+      "reason": "a done declaration whose stated measure was never taken is the claim a later reader closes the section on, and it needs either the declarations moved back or the live clause moved out of those done-whens.",
+      "text": "`plan-section-declarations` marks s2, s3, s4 and s5 done while the plan's own comment at plan.html:134 records each one's live-fleet clause as not met (\"their live-fleet measures are not met until the sampler is replaced\"), and \u00a73's done-when requires \"over 24 hours on the live fleet \u2026 the count is zero in at least 99 % of samples\" \u2014 so the only record of that gap is a comment on a different section while the declarations read as satisfied",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:122",
+      "id": "single_goal-1",
+      "reason": "two mechanisms with two controls cannot be closed on one verdict, and the reader repair is the one a live reader feels today, so it should stand or fall on its own gate.",
+      "text": "\u00a712's deliverable states three separands: the sampler after a re-execution is the current script's with at most two missed samples, the series is carried over and widened, and a reader finding no disk sample names its owner and does not claim launches are held \u2014 the third lives in a different module from the first two, has its own test arm and its own negative control requirement, and its failure mode (a false hold reported on another host) is not the stale-script mechanism",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3845a12fe055e3b175e74f47984d4ecee9262d4e",
+  "plan_fingerprint": "ce95ffd04f62512a544be7e30a1258699d0ab0b31c4fc54328fc8a64d167ae2e",
+  "plan_slug": "the-fleet-node-stays-inside-its-memory",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261117T212120931852-plan-review-of-the-fleet-node-stays-inside-its-memory",
+  "reviewed_blob_sha": "7342f5c2399ee87b37c4a3033340a9d55e006369",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the three existing write paths (`reckon/crew/fleet_supervisor.py`, `bin/fleet-health`, `reckon/crew/obligations.py`) resolve in the reviewed tree, the fourth names the test the section creates, and \u00a72 to \u00a75 resolve in the same document.",
+    "done_when": "two findings \u2014 plan.html:123 gives \u00a712's reader arm no control of its own, and plan.html:23 declares s2 to s5 done while plan.html:134 records their live-fleet clauses unmet.",
+    "evidence_paths": "pass \u2014 \u00a712 writes nothing to a scratchpad or node-local temp path; its rehearsal figures are carried on its own landing record, and \u00a711 is the only section that needs its own durable evidence path.",
+    "naming": "pass \u2014 \u00a712's measures are stated as sampler, series and reader properties; the only section numbers are prose references to this plan's own sections, as the rest of the document uses.",
+    "reasoning": "pass \u2014 the stated root cause matches the code the plan describes: the sampler takes a lock before it runs (`start_health_sampler`, `fleet_supervisor.py:1467-1475`, \"a reload that calls this again starts a copy that exits at once\"), admission holds on an unavailable disk reading (`node_disk_admission_hold`, `admission/service.py:173-214`, `kind: node-disk-unreadable`), and the 16-column live series is consistent with a sampler older than \u00a72's 26-column schema.",
+    "single_goal": "a finding \u2014 \u00a712 carries the sampler handover and a separate reader-reporting repair as one node.",
+    "wiring": "a finding \u2014 the driving followup at plan.html:129 fixes an order that omits \u00a712 while plan.html:24 now makes s11 depend on s12."
+  },
+  "section_digests": {
+    "_document": "4ab8529afcac2cdfdbe713841f85b35fa25ffcb04b8da25e1bebf94bf1e4e4f7",
+    "s1": "bd4e46820d70a6901e2d82e4fd6386ec7b4fa86f0a54637a0bb22960399f70df",
+    "s10": "4a13c11c1e14c10049882930c77d89def15230051f81a97593bb783a653df453",
+    "s11": "2cedcb676942cd7a60f31c28a745cde686b2b3a65e6cbd434cd29a2fd4e8d5b9",
+    "s12": "ddd6d97387a749dadcad375aaa0ea9769a572635102cc5afb2759e6be06f68ca",
+    "s2": "e099a2cd38a025736e9e56d3728e4dddd0af9c52fc9a6715bbe53227288061de",
+    "s3": "198ecdb48c79a8e9327ee799e8ae423ad669b99caf5958eb17c4847fcaf6e528",
+    "s4": "f42cb9988f1651a81cf2a1997f16268ade2b7f46d203317d149e6e78087c8290",
+    "s5": "67913abf218447de7e81d67433a233675314c3ed29e2230e27f332dd33e09425",
+    "s6": "ad9cca097874b1a2c042499a7c033b9ec7993c818128b94e9b0b3533a9639b17",
+    "s7": "6c2cc89d6c033f4fbe71d654feb65918a822615cf9d78209cb44ce8ea4632243",
+    "s8": "afe6b663cea93b493c8b785d1e3e1c780c53b746cdc78e17515d9ef0f2b3bce7",
+    "s9": "87b1728646dee5714df7f9c7b104c9bc9a01cdbf9f98244f0af5553ab8e7c5a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:31:07.802477+00:00",
+  "total": null
+}
