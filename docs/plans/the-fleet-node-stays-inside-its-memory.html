@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-node-stays-in-service">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-worker-or-its-job-cannot-overwrite-shared-files#s7&quot;],&quot;s8&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s9&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s11&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s2&quot;,&quot;the-fleet-node-stays-inside-its-memory#s3&quot;,&quot;the-fleet-node-stays-inside-its-memory#s4&quot;,&quot;the-fleet-node-stays-inside-its-memory#s5&quot;,&quot;the-fleet-node-stays-inside-its-memory#s6&quot;,&quot;the-fleet-node-stays-inside-its-memory#s8&quot;,&quot;the-fleet-node-stays-inside-its-memory#s9&quot;,&quot;the-fleet-node-stays-inside-its-memory#s10&quot;,&quot;the-fleet-node-stays-inside-its-memory#s12&quot;]}">
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -131,12 +131,6 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s12" data-id="c-s12-sampler-replaced-by-hand" data-who="reckon-build" data-when="2026-11-17T21:58:00Z">
-    <div class="r-comment-body"><p>The sampler was replaced by hand at 21:50 UTC on 17 November on the lead's decision, by another session: the loop started on 16 November was stopped and the current script started in its place. Verified at 21:57 UTC: the series rows carry 33 columns and the disk sample is republished each minute. The live-fleet measures of §2 to §5 therefore run from 21:50 UTC on 17 November, not from each section's landing. The replacement is not a child of the supervisor, so §12 is still needed for the handover to happen without a hand restart.</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-s12-live-series-not-sampled" data-who="reckon-build" data-when="2026-11-17T21:20:00Z">
-    <div class="r-comment-body"><p>§2, §3, §4 and §5 are landed and are not yet sampling on the live fleet: the sampler running there predates all four and still writes 16 columns. Their rehearsal and test measures hold; their live-fleet measures are not met until the sampler is replaced, which §12 makes the supervisor do. A one-off replacement of the running sampler was not made: it needs the lead's decision.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
@@ -148,6 +142,15 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261117T111120978029-a-service-over-its-limit-restarts-alone" data-who="reckon-build" data-when="2026-11-17T11:36:33Z">
     <div class="r-comment-body"><p>Optional memory_limit_bytes now applies per-process RLIMIT_AS before service exec with fail-closed refusal and existing isolated restart backoff; 70 scoped checks passed (1 dedicated-allocation check skipped), a 768 MiB service restarted in a 2 GiB all_debug job with peer PID unchanged and oom_kill 0→0, while the unbounded control killed both stand-ins and raised oom_kill 0→2; importer comparison added zero failure IDs. Aggregate child-tree memory is not bounded.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-sampler-replaced-by-hand" data-who="reckon-build" data-when="2026-11-17T21:58:00Z">
+    <div class="r-comment-body"><p>The sampler was replaced by hand at 21:50 UTC on 17 November on the lead's decision, by another session: the loop started on 16 November was stopped and the current script started in its place. Verified at 21:57 UTC: the series rows carry 33 columns and the disk sample is republished each minute. The live-fleet measures of §2 to §5 therefore run from 21:50 UTC on 17 November, not from each section's landing. The replacement is not a child of the supervisor, so §12 is still needed for the handover to happen without a hand restart.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-live-series-not-sampled" data-who="reckon-build" data-when="2026-11-17T21:20:00Z">
+    <div class="r-comment-body"><p>§2, §3, §4 and §5 are landed and are not yet sampling on the live fleet: the sampler running there predates all four and still writes 16 columns. Their rehearsal and test measures hold; their live-fleet measures are not met until the sampler is replaced, which §12 makes the supervisor do. A one-off replacement of the running sampler was not made: it needs the lead's decision.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261117T223625972835-review-of-the-sampler-runs-the-current-script-6dfe8f2f47a6" data-who="reckon-build" data-when="2026-11-17T22:45:12Z">
+    <div class="r-comment-body"><p>Parsed exact-revision review stored with six scores, one blocking cross-path handover finding and zero added suite failure IDs.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
@@ -213,7 +216,7 @@
     <div class="r-comment-body"><p>Incremental review e9c999bf21a4db0918a05db01f1075faf9cb6bd0..beff6a53ab590e8bccf3ec98d47a5feac73f67c9 stored parsed; scores 20/10/20/19/20/20; zero in-scope findings and zero official added failing IDs; importer/live-hour gaps retained for coordinator.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261117T110445940804-node-disk-is-in-the-health-series" data-who="reckon-build" data-when="2026-11-17T16:52:20Z">
-    <div class="r-comment-body"><p>Merged final primary 7a34691de4fa9d1a19bffe9642b3323ae98fd7cc at beff6a53ab590e8bccf3ec98d47a5feac73f67c9, preserving its 29 health columns with the four disk fields last (33 total), primary by-name row reads and named scheduler validation, all three samplers, both sections&#x27; settings and obligation paths. Disk reserve remains 8 GiB and sample freshness 180 s. Fresh all_debug scope/head: 118 passed each; original baseline: 73 passed. One-mount, unbounded-freshness and suffix-validation mutations fail 1/2/2 tests; all seven actual scheduler refusals leave their series unchanged. Importer base/head failures 70/74: 68 inherited head ids attributed to primary, 6 added ungranted ids handed off. Jobs used authorized directory preparation with unchanged fence recipes.</p></div>
+    <div class="r-comment-body"><p>Merged final primary 7a34691de4fa9d1a19bffe9642b3323ae98fd7cc at beff6a53ab590e8bccf3ec98d47a5feac73f67c9, preserving its 29 health columns with the four disk fields last (33 total), primary by-name row reads and named scheduler validation, all three samplers, both sections' settings and obligation paths. Disk reserve remains 8 GiB and sample freshness 180 s. Fresh all_debug scope/head: 118 passed each; original baseline: 73 passed. One-mount, unbounded-freshness and suffix-validation mutations fail 1/2/2 tests; all seven actual scheduler refusals leave their series unchanged. Importer base/head failures 70/74: 68 inherited head ids attributed to primary, 6 added ungranted ids handed off. Jobs used authorized directory preparation with unchanged fence recipes.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-17T12:14:00Z">
     <div class="r-comment-body"><p>§6 landed through the crew's own promotion after its review (landing commit <code>7c327b389b</code>). A reader outside the fleet allocation records the job's scheduler state each minute in the same series and writes one row naming the end state and reason when the job ends; reviewed 118 of 120.</p></div>
