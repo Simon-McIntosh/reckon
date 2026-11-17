@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T14:17:27.931Z",
+  "dispatched_at": "2026-11-16T14:17:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-lifetime.html",
+      "line": 80,
+      "severity": "non-blocking",
+      "text": "the negative-control row quotes \"4 failed in 37.90s\" while logs/base-arm-watch-lifetime.log's own summary line reads \"4 failed in 37.51s\", so the receipt a reader is told to trust carries a figure no log it cites contains"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-lifetime.html",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "the base arm ran at 24bc79d8ee rather than at the branch the change was applied on, its fork point 52f2055b65, so the record never shows the file red at the revision the change sits on; I ran the same command at 655a2befa9 (primary, change absent) for the same four ids at EXIT=1, which closes the gap in this review rather than in the record"
+    },
+    {
+      "file": "tests/test_crew_watch_lifetime.py",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "_commit_id re-implements the revision-to-commit resolution the repository already owns at reckon/crew/promotion_evidence.py:525 (_commit_canonical_id via _resolve_commit), which tests/test_a_steady_tick_writes_no_known_answer.py:69 already calls, so this adds rather than extends the owner"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery_watch.py:2227 _ledger_landing_word, reckon/crew/recovery_watch.py:2300 _ledger_run_id_reader, reckon/crew/recovery_watch.py:2318 _departure_recorded_run_ids, reckon/crew/recovery_watch.py:4003 watch_follow, reckon/crew/recovery_classification.py:1093 _head_on_primary_branch, reckon/crew/recovery_classification.py:1167 _promoted_awaiting_merge, reckon/crew/recovery_classification.py:1200 _delivered_head",
+    "diff": "read commit by commit in the source worktree from 52f2055b65 to 645daca0624: 69a49b9c16 changes only tests/test_crew_watch_lifetime.py (+59/-13), adding _commit_id, the repo parameter and the row-at-landing calls, and 366d7a83ef, 6d3e173788 and 645daca0624 change only the evidence fragment, so no assertion is deleted or weakened and no reckon/ path is touched",
+    "done_when": "the done_when asks for the file to pass as an all_debug job with SLURM_JOB_ID unset, a base arm carrying its failing ids, an arm over the files that import the change, ruff clean, and the control logged in the fragment; the manifest records every arm and its log, and I re-ran the same command at 655a2befa9 (primary, change absent) for \"4 failed in 38.35s\" EXIT=1",
+    "goal": "the goal is \"Make tests/test_crew_watch_lifetime.py pass in full on the primary branch\", and the landed fixture repair at tests/test_crew_watch_lifetime.py:142-176 delivers exactly that with no product module touched, evidenced by logs/head-gate.log reading \"4 passed in 4.18s\" EXIT=0 at 6d3e173788",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104534646959-qwnw-red-file-crew-watch-lifetime/manifest.md; it states complete, names the literal gate command and six log paths whose headers carry revision, tree, cwd and imported module, records both suite arms as 58 passed, and gives each of the two causes a test-wrong verdict, with every figure reconciling to its log except the fragment's base duration at line 80",
+    "write_paths": "the declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and git diff --stat 52f2055b65 645daca0624 touches only tests/test_crew_watch_lifetime.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-lifetime.html, both inside it"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Make tests/test_crew_watch_lifetime.py pass in full on the primary branch\", and the landed fixture repair at tests/test_crew_watch_lifetime.py:142-176 delivers exactly that with no product module touched, evidenced by logs/head-gate.log reading \"4 passed in 4.18s\" EXIT=0 at 6d3e173788\nVERDICT done_when: the done_when asks for the file to pass as an all_debug job with SLURM_JOB_ID unset, a base arm carrying its failing ids, an arm over the files that import the change, ruff clean, and the control logged in the fragment; the manifest records every arm and its log, and I re-ran the same command at 655a2befa9 (primary, change absent) for \"4 failed in 38.35s\" EXIT=1\nVERDICT write_paths: the declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and git diff --stat 52f2055b65 645daca0624 touches only tests/test_crew_watch_lifetime.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-lifetime.html, both inside it\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104534646959-qwnw-red-file-crew-watch-lifetime/manifest.md; it states complete, names the literal gate command and six log paths whose headers carry revision, tree, cwd and imported module, records both suite arms as 58 passed, and gives each of the two causes a test-wrong verdict, with every figure reconciling to its log except the fragment's base duration at line 80\nVERDICT diff: read commit by commit in the source worktree from 52f2055b65 to 645daca0624: 69a49b9c16 changes only tests/test_crew_watch_lifetime.py (+59/-13), adding _commit_id, the repo parameter and the row-at-landing calls, and 366d7a83ef, 6d3e173788 and 645daca0624 change only the evidence fragment, so no assertion is deleted or weakened and no reckon/ path is touched\nCALL_SITES: reckon/crew/recovery_watch.py:2227 _ledger_landing_word, reckon/crew/recovery_watch.py:2300 _ledger_run_id_reader, reckon/crew/recovery_watch.py:2318 _departure_recorded_run_ids, reckon/crew/recovery_watch.py:4003 watch_follow, reckon/crew/recovery_classification.py:1093 _head_on_primary_branch, reckon/crew/recovery_classification.py:1167 _promoted_awaiting_merge, reckon/crew/recovery_classification.py:1200 _delivered_head\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_watch_lifetime.py:142-176 now writes the row a promotion writes and the file reaches \"4 passed\" at EXIT=0, which is the goal sentence verbatim\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate names the done_when's own command in the manifest and logs/head-gate.log records \"4 passed in 4.18s\" EXIT=0, but the control at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-lifetime.html:79-80 names 24bc79d8ee rather than the fork point and quotes a duration no cited log holds\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 52f2055b65 645daca0624 lists only tests/test_crew_watch_lifetime.py and the one evidence fragment, both under the declared write paths and neither under reckon/\nSCORE durability: 17\nJUSTIFICATION durability: reverting the fixture repair reinstates the four ids logs/base-arm-watch-lifetime.log fails, which I reproduced at 655a2befa9, so the guard fires on the regression it names, while this file asserts no \"complete\" answer and that direction lives at tests/test_a_promoted_run_is_not_landed_until_merged.py:110-149\nSCORE fit: 18\nJUSTIFICATION fit: the helper and docstrings at tests/test_crew_watch_lifetime.py:23-64 follow the file's own docstring-per-helper and subprocess idiom, use no name the repository forbids, and the commits carry a conventional subject and body\nSCORE reuse: 14\nJUSTIFICATION reuse: the revision-to-commit resolution at tests/test_crew_watch_lifetime.py:23 re-implements reckon/crew/promotion_evidence.py:525 _commit_canonical_id, which reaches recovery._resolve_commit and which tests/test_a_steady_tick_writes_no_known_answer.py:69 calls directly, so the addition duplicates the owner of that capability rather than extending it\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-lifetime.html:80 non-blocking: the negative-control row quotes \"4 failed in 37.90s\" while logs/base-arm-watch-lifetime.log's own summary line reads \"4 failed in 37.51s\", so the receipt a reader is told to trust carries a figure no log it cites contains\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-watch-lifetime.html:79 non-blocking: the base arm ran at 24bc79d8ee rather than at the branch the change was applied on, its fork point 52f2055b65, so the record never shows the file red at the revision the change sits on; I ran the same command at 655a2befa9 (primary, change absent) for the same four ids at EXIT=1, which closes the gap in this review rather than in the record\nFINDING tests/test_crew_watch_lifetime.py:23 non-blocking: _commit_id re-implements the revision-to-commit resolution the repository already owns at reckon/crew/promotion_evidence.py:525 (_commit_canonical_id via _resolve_commit), which tests/test_a_steady_tick_writes_no_known_answer.py:69 already calls, so this adds rather than extends the owner\n",
+  "review_run_id": "r-20261116T132932769180-review-of-qwnw-red-file-crew-watch-lifetime-645daca06245",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "645daca062458b6a9292551ea64744bf8a023c5b",
+  "reviewed_run_id": "r-20261116T104534646959-qwnw-red-file-crew-watch-lifetime",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:31:04.586475+00:00",
+  "total": 103
+}

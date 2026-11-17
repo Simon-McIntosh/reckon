@@ -143,7 +143,7 @@ def test_held_local_dispatch_is_one_queued_pointer_and_can_be_discarded(
     assert runs.list_live(project="proj") == []
 
 
-def test_metered_hold_has_no_queued_pointer(
+def test_metered_hold_is_queued_on_the_lane_it_waits_for(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _config(dispatch_repo, monkeypatch)
@@ -158,8 +158,24 @@ def test_metered_hold_has_no_queued_pointer(
             "--no-watch",
         ],
     )
-    assert result.exit_code == 75
-    assert runs.list_live(project="proj") == []
+    # A hold on any lane is a wait for room rather than a refusal: the request
+    # is stored as one queued pointer naming the lane it waits on, so the
+    # admission service launches it when that lane has room instead of the
+    # coordinator retrying a run id it has already been shown.
+    payload = backend_tests._payload(result)
+    assert result.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["queued"] is True
+    assert payload["position"] == 1
+    pointers = runs.list_live(project="proj")
+    assert len(pointers) == 1
+    assert pointers[0]["run_id"] == payload["run_id"]
+    assert pointers[0]["phase"] == "queued"
+    assert pointers[0]["backend"] == "beta"
+    assert pointers[0]["local"] is False
+    assert pointers[0]["session"] == "session"
+    assert pointers[0]["hold"]["held"] is True
+    assert pointers[0]["reason"]
 
 
 def test_named_local_backend_queues_without_a_local_flag(
@@ -201,7 +217,16 @@ def _queued_request(section: str, run_id: str) -> dict:
         "run_id": run_id,
         "project": "proj",
         "session": "session",
-        "node": {"id": "shared-node", "plan": "plan-a", "section": section},
+        # The node carries the fields ``TaskNode`` declares without a default:
+        # a queued pointer is rebuilt into that dataclass when its review
+        # contract is stamped, and ``as_dict`` always writes these, so a request
+        # missing one is not a request a dispatch could have stored.
+        "node": {
+            "id": "shared-node",
+            "goal": "queue one request per section",
+            "plan": "plan-a",
+            "section": section,
+        },
         "phase": "queued",
         "backend": "clive",
         "queued_at": joined,

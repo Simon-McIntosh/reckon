@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "remaining == []; ledger run-id set equals fixture run-id set; promoted_by == review-self; gate == not-run",
+      "failure_condition": "Removing the added scope-report ready branch leaves code/portfolio pointers and omits ledger rows; changing promotion attribution or gate verdict breaks the corresponding independent ledger read. The recorded base negative control fails both pass-count variants.",
+      "lines": "143-150"
+    },
+    {
+      "assertions": "all pointers remain; ledger empty; all refusal reasons name reservation",
+      "failure_condition": "Removing manual_landing_reason promotes valid reports, deletes pointers and writes rows. Wrong reason text fails for emitted entries; the reason-only all() is vacuous on an empty refusal list, but pointer and ledger checks independently assert the hold.",
+      "lines": "181-185"
+    },
+    {
+      "assertions": "not promoted; reason contains report; pointer survives",
+      "failure_condition": "Bypassing report parsing admits the deliberately unstructured report and changes promotion/pointer observations; an unrelated refusal may satisfy the broad report substring, so this is weaker than checking a precise refusal.",
+      "lines": "197-199"
+    },
+    {
+      "assertions": "self_promoted contains the plan fixture; exactly one row; attribution and gate values",
+      "failure_condition": "Breaking the existing plan delivery join omits self_promoted and its ledger row; changing those stored fields breaks the field assertions.",
+      "lines": "205-208"
+    },
+    {
+      "assertions": "not promoted; expected refusal substring; pointer survives for stale/wrong-project/undeclared cases",
+      "failure_condition": "Removing each freshness, project identity or declaration condition makes its adversarial input eligible and deletes its pointer; replacing the expected refusal with another reason fails the substring check. The wrong-subject case actually mutates project, not subject.",
+      "lines": "235-237"
+    },
+    {
+      "assertions": "review self-promotion returns None for implementation; refusal exists and is unaccepted; integrated verdict failed; independent failing-test id retained; pointer survives; ledger empty",
+      "failure_condition": "Applying the report bypass to implementation runs or ignoring the real assert-False merged-head gate violates rejection, pointer or ledger assertions; dropping or changing the gate test id violates the literal expected id read from the gate report.",
+      "lines": "276-287"
+    }
+  ],
+  "assertion_independence": "No added assertion simply compares an echoed input value with itself: run-id expectations are checked against independent pointer/ledger effects; refusal substrings are checked against generated refusals. Storage success itself is unasserted.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews",
+    "reckon/crew/recovery_review_acceptance.py:promote_review_run_itself",
+    "reckon/crew/recovery_review_dispatch.py:_release_delivered_review_claim",
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion_checks.py:_delivered_review_payloads_for_commit"
+  ],
+  "completed_at": "2026-11-17T00:50:46Z",
+  "dispatched_at": "2026-11-17T00:45:09Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233437459813-report-runs-are-promoted-from-their-record/after-suite.log",
+      "revision": "4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8",
+      "summary": "71 passed in 53.73s"
+    },
+    "baseline_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233437459813-report-runs-are-promoted-from-their-record/baseline-verified.log",
+      "revision": "891a4e54f19486e82117d68826044be51d2e0a8d",
+      "summary": "58 passed in 35.46s"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_delivery.py",
+      "line": "169",
+      "severity": "blocking",
+      "text": "blocking: the sidecar validation checks project and scope key but not subject; with subject missing or mistyped and an otherwise valid fresh report, the selected parser supplies the expected body subject and readiness succeeds, while delivered_code_reviews and delivered_portfolio_reviews filter that sidecar out, so promotion_checks.py:3016 and :3022 store nothing and promotion can remove the pointer with an outcome claiming the review was stored; validate the same subject the storage owner requires and assert the persisted record in the regression test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read fe1a7bc6568d6803fb730870d2b8deeabb2701de and 4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8 against base 891a4e54f19486e82117d68826044be51d2e0a8d; the second commit replaces direct report storage with existing walkers whose subject filter is stricter than the new readiness reader.",
+    "done_when": "source prompt.txt:250 and live plan section s6 require four one-pass promotions and preserved guards; after-suite.log records 71 passed, negative-control-final.log records two base failures, but the original 61-run comparison and both retained-fixture promotions remain unproved.",
+    "goal": "source prompt.txt GOAL extends unattended eligibility to report runs; recovery_review_acceptance.py:1233 admits code and portfolio reports, but an unchecked sidecar subject can produce promotion without storage.",
+    "manifest": "source manifest.md reports both commits, exact base/head arms, zero importer failure delta, broader synthetic census replay and the two retained fixtures waiting on a peer guard, with those limits stated explicitly.",
+    "write_paths": "source prompt.txt:94 grants three production modules, one test module and optional evidence paths; both commits change only the four granted Python files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_report_run_is_promoted_from_its_record.py:143 fails when scope-report admission is removed and lines 213 and 242 protect identity guards and implementation refusal, but no added assertion checks stored report contents or rejects a wrong sidecar subject.",
+    "evidence": "source after-suite.log ends with 71 passed and EXIT=0 against 58 base passes in baseline-verified.log, while census-replay-summary.json explicitly substitutes valid reports and cannot establish the original 61-run base comparison or the two retained promotions.",
+    "fit": "reckon/crew/recovery_review_delivery.py:131 uses mechanism-based names, lazy imports and CrewError refusals consistent with its existing delivery readers, and recovery_review_acceptance.py:1227 uses the existing landing reservation.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:1233 extends the existing promoter to valid scope reports, but reckon/crew/recovery_review_delivery.py:169 accepts a sidecar subject the storage walker rejects.",
+    "reuse": "capability searches for delivery enumeration, report parsing, report storage and manual reservations found plan_review.py:5142, :5249, :5451, :6831 and :6925 plus review_landing.manual_landing_reason; the added delivery reader wraps those owners and adds run-specific declaration and freshness validation.",
+    "scope_discipline": "both commit diffs contain only reckon/crew/recovery_review_acceptance.py, reckon/crew/promotion_checks.py, reckon/crew/recovery_review_delivery.py and tests/test_a_report_run_is_promoted_from_its_record.py, all granted by source prompt.txt:94."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt GOAL extends unattended eligibility to report runs; recovery_review_acceptance.py:1233 admits code and portfolio reports, but an unchecked sidecar subject can produce promotion without storage.\nVERDICT done_when: source prompt.txt:250 and live plan section s6 require four one-pass promotions and preserved guards; after-suite.log records 71 passed, negative-control-final.log records two base failures, but the original 61-run comparison and both retained-fixture promotions remain unproved.\nVERDICT write_paths: source prompt.txt:94 grants three production modules, one test module and optional evidence paths; both commits change only the four granted Python files.\nVERDICT manifest: source manifest.md reports both commits, exact base/head arms, zero importer failure delta, broader synthetic census replay and the two retained fixtures waiting on a peer guard, with those limits stated explicitly.\nVERDICT diff: read fe1a7bc6568d6803fb730870d2b8deeabb2701de and 4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8 against base 891a4e54f19486e82117d68826044be51d2e0a8d; the second commit replaces direct report storage with existing walkers whose subject filter is stricter than the new readiness reader.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews, reckon/crew/recovery_review_acceptance.py:promote_review_run_itself, reckon/crew/recovery_review_dispatch.py:_release_delivered_review_claim, reckon/crew/promotion.py:complete, reckon/crew/promotion_checks.py:_delivered_review_payloads_for_commit\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:1233 extends the existing promoter to valid scope reports, but reckon/crew/recovery_review_delivery.py:169 accepts a sidecar subject the storage walker rejects.\nSCORE evidence: 16\nJUSTIFICATION evidence: source after-suite.log ends with 71 passed and EXIT=0 against 58 base passes in baseline-verified.log, while census-replay-summary.json explicitly substitutes valid reports and cannot establish the original 61-run base comparison or the two retained promotions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commit diffs contain only reckon/crew/recovery_review_acceptance.py, reckon/crew/promotion_checks.py, reckon/crew/recovery_review_delivery.py and tests/test_a_report_run_is_promoted_from_its_record.py, all granted by source prompt.txt:94.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_report_run_is_promoted_from_its_record.py:143 fails when scope-report admission is removed and lines 213 and 242 protect identity guards and implementation refusal, but no added assertion checks stored report contents or rejects a wrong sidecar subject.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_review_delivery.py:131 uses mechanism-based names, lazy imports and CrewError refusals consistent with its existing delivery readers, and recovery_review_acceptance.py:1227 uses the existing landing reservation.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for delivery enumeration, report parsing, report storage and manual reservations found plan_review.py:5142, :5249, :5451, :6831 and :6925 plus review_landing.manual_landing_reason; the added delivery reader wraps those owners and adds run-specific declaration and freshness validation.\nFINDING reckon/crew/recovery_review_delivery.py:169 blocking: the sidecar validation checks project and scope key but not subject; with subject missing or mistyped and an otherwise valid fresh report, the selected parser supplies the expected body subject and readiness succeeds, while delivered_code_reviews and delivered_portfolio_reviews filter that sidecar out, so promotion_checks.py:3016 and :3022 store nothing and promotion can remove the pointer with an outcome claiming the review was stored; validate the same subject the storage owner requires and assert the persisted record in the regression test.\n",
+  "review_method": "Read-only static review of exact git blobs and recorded logs; no source mutation and no suite rerun.",
+  "review_run_id": "r-20261117T004334700837-review-of-report-runs-are-promoted-from-their-record-4d9433f24fad",
+  "reviewed_base_sha": "891a4e54f19486e82117d68826044be51d2e0a8d",
+  "reviewed_head_sha": "4d9433f24fadec6f7fc15964bfdd8a4d2cab92c8",
+  "reviewed_run_id": "r-20261116T233437459813-report-runs-are-promoted-from-their-record",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:59:08.554412+00:00",
+  "total": 108
+}

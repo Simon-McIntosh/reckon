@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s77">
+  <meta name="plan-recorded-at" content="2026-11-16">
+  <meta name="plan-verdict" content="passed">
+  <title>The obligation sweep shares the review index</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="the-obligation-sweep-shares-the-review-index-landing" data-node="the-obligation-sweep-shares-the-review-index" data-reckon="landed" data-when="2026-11-16">
+  <h2>The review lookup files each live pointer once and answers from that filing</h2>
+
+  <p id="the-obligation-sweep-shares-the-review-index-defect"><strong>The defect.</strong> The obligation sweep asks, for every delivered run, which live reviewer stands for its head, through <code>recovery_review_dispatch._review_in_flight</code>. That rule walked every live pointer and, per candidate, resolved the reviewed run's record directory through <code>runs.run_dir</code> — an existence check — and composed the candidate's dispatch to learn the head and project the rule keys on. A build makes <strong>800</strong> such asks over 200 live pointers: 160 from the sweep, one per delivered run, and 320 each from the classifier's and the round-id reader's own calls. On the fixture below that was <strong>20,920</strong> <code>Path.exists</code> and <code>Path.is_dir</code> calls made inside the lookups alone, out of 44,851 for the whole build.</p>
+
+  <p id="the-obligation-sweep-shares-the-review-index-what-landed"><strong>What landed.</strong> <code>_ReviewInFlightIndex</code> files each pointer once, in <code>_ReviewCandidateMap</code>: under every record directory its granted paths name, and — for a reviewer — under the run its declarations or its node id spell. Both filings are string reading, so an index costs no filesystem checks to build; a reviewer that spells neither lands in an unresolved list every query also examines, and the query reads that pointer's exact subject before matching it, so no candidate is lost. <code>standing_review</code> then runs the walk's own tests over the short list a run's identity selects, in the read's order, because the first candidate to match is the answer. <code>record_directory</code> answers a run this read holds a live pointer for from <code>runs.runs_dir() / run_id</code> with no check, which is exactly <code>run_dir</code> for such a run: <code>terminal_cleanup.archive_ended_run</code> refuses while a live pointer stands. <code>_review_query_fields</code> reads the head and project the rule keys on instead of composing the whole dispatch command. The sequence-identity cache of <code>_review_index</code> is unchanged: the classifier, the sweep and the round-id reader each hand their own list, and each list keeps its own index.</p>
+
+  <p id="the-obligation-sweep-shares-the-review-index-harness"><strong>The harness.</strong> <code>tests/test_the_obligation_sweep_shares_the_review_index.py</code> builds a temporary crew home holding 160 delivered implement runs, 40 of them with a live reviewer declaring the head-keyed record path of the run it reviews — 200 live pointers. <code>_CheckCounter</code> wraps <code>Path.exists</code> and <code>Path.is_dir</code> and records a call only while <code>obligations._in_flight_review</code>, <code>recovery_classification._review_run_in_flight</code> or <code>runs._in_flight_round_ids</code> is on the stack, so the count is the lookup's own cost rather than the build's. The test runs one <code>obligations.obligations(PROJECT, SESSION)</code>, reads the review each row names as in flight out of its own <code>next_command</code>, and spells the base read path out beside it — the full walk, every candidate examined, each candidate's record directory read again — so the pairing compared is the answer that cost produced.</p>
+
+  <p id="the-obligation-sweep-shares-the-review-index-gate"><strong>Gate.</strong> Base revision <strong>915acff37f</strong>. <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_obligation_sweep_shares_the_review_index.py</code>: <strong>1 passed, EXIT=0</strong>. The same build measured inside the lookups at base and at head: <strong>20,920</strong> checks at base, <strong>720</strong> at head — 3.6 per live pointer against a budget of 5, and 29&#215; fewer. All 160 rows carry a named review, the 40 reviewed runs are the 40 the base path matches, and the two pairings are equal.</p>
+
+  <p id="the-obligation-sweep-shares-the-review-index-negative-control"><strong>Negative control.</strong> The head's test file with the base read path restored in the working tree — the walk over every pointer, <code>record_directory</code> through <code>run_dir</code>, the head read from the composed dispatch — makes <strong>21,160</strong> checks: <strong>1 failed, EXIT=1</strong>, <code>the lookup made 21160 existence checks over 200 pointers</code>. The plan's floor of 20,000 is met by that arm and by no accident: it is the cost the rule pays when nothing is filed.</p>
+
+  <p id="the-obligation-sweep-shares-the-review-index-suite"><strong>Suite.</strong> The node's case plus the two files that guard the same module family. Base arm, which drops the node's cases because they do not exist at base: <strong>58 passed, EXIT=0</strong>. After arm: <strong>59 passed, EXIT=0</strong>. Added failure ids: <strong>none</strong>. Both arms ran on <code>all_debug</code> through <code>env -u SLURM_JOB_ID -u SLURMJOBID sbatch</code>, on compute nodes rather than the fleet node. The base arm's tree is an extraction of the base revision's tracked content carrying its own single-commit repository, because <code>tests/test_staged_write_inventory.py</code> reads <code>git ls-tree</code> in its own root; each log's header names the revision, the tree, the tree's own head and the literal command, and ends in a bare <code>EXIT=</code> line.</p>
+
+  <p id="the-obligation-sweep-shares-the-review-index-deviation"><strong>Reading the plan's numbers.</strong> The plan predicts the base pays "160 runs each sweeping 200 live candidates" and calls that at least 20,000. The measured base is 20,920 inside the lookups and 44,851 for the whole build: 800 asks rather than 160, because the classifier and the round-id reader ask the same rule for themselves, each ask examining every candidate, and the candidate reads themselves dominate rather than the count of asks. The reduction this node owns is in the checks per ask, which is what the tick's cost was made of; the number of asks is what an earlier node's sharing cut from 1,600 to 800, and this one leaves at 800.</p>
+
+  <p id="the-obligation-sweep-shares-the-review-index-logs"><strong>Logs.</strong> <code>logs/gate-head.log</code>, <code>logs/negative-control.log</code>, <code>logs/baseline-suite.log</code> and <code>logs/after-suite.log</code>, each headed with its revision and literal command and ending in a bare <code>EXIT=</code> line. <code>ruff check</code> reports no finding on the staged paths and <code>ruff format --check</code> reports them formatted.</p>
+</article>
+
+</body>
+</html>

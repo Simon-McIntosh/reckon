@@ -612,8 +612,7 @@ def velocity_cache_root():
 
 
 def _velocity_cache_path(repo, cache_root=None):
-    """One cache file per repository path.
-    """
+    """One cache file per repository path."""
     root = Path(cache_root) if cache_root is not None else velocity_cache_root()
     digest = hashlib.sha256(str(Path(repo).resolve()).encode()).hexdigest()
     return root / (digest + ".json")
@@ -786,6 +785,82 @@ def _read_run_rows(repo, head, project, cache):
     return rows, len(blobs)
 
 
+def _read_store_records(repo, head, project, run_store_db):
+    """Answer a project's runs from the run store once its committed files are gone.
+
+    The tree at ``head`` is the reader's first source: while it carries the
+    project's ledger or any of its per-run documents, those documents answer and
+    this returns nothing. Once they leave the tree — the cutover the plan makes
+    — the same history is only in the store, so a reader that stopped at the
+    tree would report a project with no runs rather than one whose history
+    moved.
+
+    Each stored row names the commit its own record file entered the tree at, so
+    the record is read from that revision in one batched object read rather than
+    from the row alone: the row carries the durable half, and the file still
+    carries the promotion record a rotation may have washed out. A row whose
+    file the store cannot place, or one written after the file left git, answers
+    from the row itself.
+
+    A tree with no ledger, a store with no row of the project's, and a history
+    that never carried the path are three different states. The first two
+    together mean the history moved and the store lost it, which is refused with
+    the store's own path named rather than answered as zero runs; a project
+    whose ledger never entered the tree genuinely has none, and answers empty.
+
+    Returns the records keyed by run id and the source each came from.
+    """
+    from reckon import run_store
+
+    ledger_path = "docs/state/" + project + "/crew.json"
+    runs_path = "docs/state/" + project + "/runs"
+    if _blob_sha(repo, head, ledger_path) is not None:
+        return {}, {}
+    if _run_blobs(repo, head, project):
+        return {}, {}
+    store = Path(run_store_db) if run_store_db else None
+    if store is not None:
+        rows = run_store.stored_run_rows(project, path=store)
+        if rows:
+            revisions = run_store.stored_run_revisions(project, path=store) or {}
+            specs = [
+                (revisions[row["run_id"]], f"{runs_path}/{row['run_id']}.json")
+                for row in rows
+                if revisions.get(row["run_id"])
+            ]
+            blobs = read_blobs(repo, specs)
+            records, sources = {}, {}
+            for row in rows:
+                run_id = row["run_id"]
+                revision = revisions.get(run_id)
+                raw = (
+                    blobs.get((revision, f"{runs_path}/{run_id}.json"))
+                    if revision
+                    else None
+                )
+                if raw is not None:
+                    document = json.loads(raw)
+                    records[run_id] = document.get("data", document)
+                    sources[run_id] = "run_store_record_revision"
+                else:
+                    records[run_id] = row
+                    sources[run_id] = "run_store_row"
+            return records, sources
+    tracked = (
+        run_git(repo, "log", "-1", "--format=%H", head, "--", ledger_path, runs_path)
+        .stdout.decode()
+        .strip()
+    )
+    if not tracked:
+        return {}, {}
+    raise RuntimeError(
+        f"velocity cannot answer {project}'s runs at {head}: the tree carries no "
+        f"ledger under docs/state/{project} and the run store "
+        f"({store if store is not None else 'none configured'}) holds none of "
+        "its rows, so no source holds the history this window asks about"
+    )
+
+
 def _capture_commits(repo, base, head):
     """Capture the primary-branch commits in ``base..head`` and their patches.
 
@@ -913,6 +988,14 @@ def capture_project(
     records, ledger_sha256 = _read_ledger(repo, head, project, ledger_cache)
     run_rows, per_run_files = _read_run_rows(repo, head, project, run_cache)
     records.update(run_rows)
+    # A tree whose ledger and run documents have left git answers from the run
+    # store, and the documents win any run id both hold: they are the record,
+    # and a stored row may be a rotated half of it.
+    store_records, store_sources = _read_store_records(
+        repo, head, project, run_store_db
+    )
+    for run_id, row in store_records.items():
+        records.setdefault(run_id, row)
     # Map every newly reachable commit to its first primary-branch appearance.
     seen = set(git(repo, "rev-list", base).decode().splitlines()) if base else set()
     introduction = {}
@@ -941,7 +1024,10 @@ def capture_project(
                     ),
                 }
             )
-    sources = dict.fromkeys(records, "committed_primary_snapshot")
+    sources = {
+        run_id: store_sources.get(run_id, "committed_primary_snapshot")
+        for run_id in records
+    }
     recovered = []
     database = Path(run_store_db) if run_store_db else None
     # Only a promotion with no committed record needs the fallback store, and a
@@ -951,9 +1037,7 @@ def capture_project(
     missing = sorted(
         rid
         for rid in set(promotions) - set(records)
-        if any(
-            stamp(start) <= item["epoch"] <= stamp(end) for item in promotions[rid]
-        )
+        if any(stamp(start) <= item["epoch"] <= stamp(end) for item in promotions[rid])
     )
     if database is not None and database.exists() and missing:
         with sqlite3.connect(f"file:{database}?mode=ro", uri=True) as connection:
@@ -1023,9 +1107,7 @@ def capture_project(
         row["unresolved_or_unreachable_commits"] = unresolved
         compact.append(row)
     product_commits = sum(
-        1
-        for c in history
-        if any(f["class"] in {"source", "tests"} for f in c["files"])
+        1 for c in history if any(f["class"] in {"source", "tests"} for f in c["files"])
     )
     print(
         project,
@@ -1209,44 +1291,26 @@ def replay(commits):
     return births
 
 
-def _record_file_additions(repo, base, head, runs_path, candidates, found):
+def _record_file_additions(repo, base, head, project, candidates, found):
     """Place candidate runs at the commit that added their own record file.
 
-    A run's ``docs/state/<project>/runs/<run_id>.json`` is added once, and a
-    path-limited log lists those additions without generating a patch, so this
-    is far cheaper than the ledger search over the same window. The adding
-    commit is an upper bound on the run's durable appearance in the primary
-    branch, the same kind of value the search reports, so the two are told
-    apart by the ``source`` each records rather than by their shape. The
-    returned mapping is empty for a run whose file is absent from the range,
-    which then falls through to the search.
+    The scan itself is :func:`reckon.run_store.record_file_additions`, which is
+    the single owner of "the commit a run's record file entered the tree at";
+    this only narrows its answer to the candidates still missing and shapes it
+    as the appearance the search reports. The adding commit is an upper bound on
+    the run's durable appearance in the primary branch, the same kind of value
+    the search reports, so the two are told apart by the ``source`` each records
+    rather than by their shape. A run whose file is absent from the range stays
+    out of the mapping, which then falls through to the search.
     """
+    from reckon import run_store
+
     added = {}
-    raw = git(
-        repo,
-        "log",
-        "--first-parent",
-        "--reverse",
-        "--diff-merges=first-parent",
-        "--format=%x1e%H%x09%ct",
-        "--diff-filter=A",
-        "--name-only",
-        _rev_range(base, head),
-        "--",
-        runs_path,
-    )
-    commit, epoch = None, None
-    for line in raw.split(b"\n"):
-        if line.startswith(b"\x1e"):
-            commit, value = line[1:].decode().split("\t")
-            epoch = int(value)
-            continue
-        name = line.decode().strip()
-        if not name.endswith(".json"):
-            continue
-        rid = name.rsplit("/", 1)[-1][: -len(".json")]
-        if rid in candidates and rid not in found:
-            added[rid] = [
+    for run_id, commit, epoch in run_store.record_file_additions(
+        repo, project, base=base, head=head
+    ):
+        if run_id in candidates and run_id not in found:
+            added[run_id] = [
                 {
                     "sha": commit,
                     "epoch": epoch,
@@ -1326,7 +1390,7 @@ def recover_ledger_clocks(
             # source.
             runs_path = "docs/state/" + project["project"] + "/runs"
             for rid, appearance in _record_file_additions(
-                repo, base, head, runs_path, candidates, found
+                repo, base, head, project["project"], candidates, found
             ).items():
                 candidates[rid]["promotion_commits"] = appearance
                 recovered[rid] = appearance
@@ -1803,14 +1867,26 @@ def promotion_receipts(paths, *, window_start=START, window_end=END):
     return landed
 
 
+#: The sources whose rows carry a record the primary branch once committed: the
+#: pinned ledger's own snapshot, and the two ways a store row re-reads that same
+#: committed record. A promoted revision found on one of them is the marker the
+#: landing rule accepts; the durable row a store falls back to carries the same
+#: record, so it carries the same marker.
+COMMITTED_RECORD_SOURCES = frozenset(
+    ("committed_primary_snapshot", "run_store_record_revision", "run_store_row")
+)
+
+
 def _landed_in_window(run, receipts, start, end):
     """Census landed rule: an in-window promote commit, a committed marker, or a receipt.
 
     The promote commit must be on the primary first parent and carry the
     ``promote(<run>):`` colon subject; a bare ``promote(<run>)`` merged in from a
-    branch is not a landing on the primary line. A committed ``promoted_revision``
-    in the pinned ledger proves a promotion no later than the cutoff. A promotion
-    receipt in the coordinator transcript covers a node promoted without either.
+    branch is not a landing on the primary line. A ``promoted_revision`` on a row
+    whose record the primary branch committed — the pinned ledger's snapshot, or
+    a store row re-served from that same committed record — proves a promotion
+    no later than the cutoff. A promotion receipt in the coordinator transcript
+    covers a node promoted without either.
     """
     for promotion in run.get("promotion_commits") or []:
         epoch = promotion.get("epoch")
@@ -1818,8 +1894,8 @@ def _landed_in_window(run, receipts, start, end):
             continue
         if promotion.get("first_parent") and promotion.get("colon_subject"):
             return True
-    if run.get("promoted_revision") and (
-        run.get("record_source") == "committed_primary_snapshot"
+    if run.get("promoted_revision") and run.get("record_source") in (
+        COMMITTED_RECORD_SOURCES
     ):
         return True
     return run.get("run_id") in receipts

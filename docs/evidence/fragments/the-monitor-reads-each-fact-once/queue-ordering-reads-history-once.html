@@ -1,0 +1,94 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s76">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <meta name="evidence-commit" content="272a3bc0e7">
+  <title>Queue ordering reads section history once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="queue-ordering-reads-history-once">
+  <h2>Queue ordering reads section history once</h2>
+
+  <p><strong>The defect.</strong> The queue ordering rebuilds the roadmap
+  whenever a plan input moves — a plan edited, a tick written to the sprint
+  index — and every rebuild asked
+  <code>section_holds.held_section_blockers</code> for the project's promoted
+  rows. Those rows come from the run store, which gains a few an hour, so each
+  rebuild decoded the project's whole history out of a 797 MB SQLite file on
+  GPFS to reproduce the answer it had read a minute earlier. The same store
+  refused promotions with <code>database is locked</code> through the night, so
+  the read cost the writers as well as the tick.</p>
+
+  <p><strong>What changed.</strong> <code>run_store.store_stamp</code> names the
+  store's current contents: the file's stat identity (device, inode, size,
+  mtime, ctime) plus the database header's change counter, so a commit that
+  writes into a freed page is seen even when the file's size and timestamp do
+  not move. The section history read keeps its rows beside that token and
+  answers from them while the token is unchanged. The token is taken before the
+  read and again after it, and the rows are kept only when the two agree: a
+  promotion landing mid-read would otherwise be cached as already seen, and the
+  section it delivered would read free until some later promotion. An absent
+  store reads uncached, so the file-backed index path is untouched.</p>
+
+  <p><strong>The measure.</strong> Over a temporary crew home whose run store
+  holds 2,000 promoted rows over three plans, beside 20 queued requests, the
+  queue ordering is computed three times. A recording stand-in wraps
+  <code>run_store.stored_run_rows</code> and counts the rows every read
+  decodes. Each ordering is preceded by a move of the sprint index, an input
+  the ordering's own roadmap memo watches, so each one rebuilds the roadmap
+  rather than answering from its priority build:</p>
+
+  <table>
+    <thead>
+      <tr><th>ordering</th><th>rows decoded</th><th>placements</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>first, store unchanged</td><td>2,000</td><td>20 placed</td></tr>
+      <tr><td>second, roadmap rebuilt</td><td>0</td><td>equal to the first</td></tr>
+      <tr><td>third, roadmap rebuilt</td><td>0</td><td>equal to the first</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The store moving.</strong> Recording one promotion through
+  <code>run_store.append</code> and ordering again decodes the store again, and
+  the section history the ordering was given carries the promoted row: the
+  delivered section reads held by that row rather than by the contents read
+  before it. The places themselves do not move, because the fixture's live set
+  places this queue and a promoted row adds a hold rather than a readiness
+  term — the same answer the base revision gives for the same store, which the
+  matched arms show by running this file against both.</p>
+
+  <p><strong>The write that lands mid-read.</strong> A third case writes the
+  promotion from inside the population's own read, after the rows have
+  returned and before the token beside them is taken. The next ordering decodes
+  the store again rather than answering from rows that never saw the
+  promotion.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation restores the base
+  read — <code>section_holds._history_rows</code> calling
+  <code>ledger.picker_runs</code> directly — and the second ordering then
+  decodes the 2,000 rows again, which is the failure
+  <code>tests/test_queue_ordering_reads_history_once.py</code> reports. The base
+  revision's own tree, carrying the same test file, fails the same assertion,
+  so the defect was reproduced before it was repaired rather than assumed.</p>
+
+  <p><strong>Files.</strong> <code>reckon/run_store.py</code> (the change
+  token), <code>reckon/crew/section_holds.py</code> (the read keyed on it),
+  <code>tests/test_queue_ordering_reads_history_once.py</code> (the three
+  cases).</p>
+</section>
+</main>
+</body>
+</html>

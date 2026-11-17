@@ -1,0 +1,121 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "digests": {
+        "s30": "6b2330c549684f55894c7eeec6454c27341b1abe4b6cafad0b7a63b290fd6025"
+      },
+      "reason": "section 30 was edited to answer the two findings of review r-20261116T034037730316 exactly as those answers state: the first case is now the measured manifest and names which case fails at its base, and the refusal is narrowed to items that are not paths; no other section changed",
+      "units": [
+        "s30"
+      ],
+      "when": "2026-11-16T06:27:29.750267+00:00"
+    }
+  ],
+  "completed_at": "2026-11-16T04:20:49.205Z",
+  "dispatched_at": "2026-11-16T04:19:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261116T034037730316-plan-review-of-queued-work-needs-no-workaround/plan.html:337",
+      "id": "done_when-1",
+      "reason": "a control that already passes at base measures nothing, so the section's first deliverable must be dropped or the claimed defect line replaced with one that actually fails at e35fd9f935.",
+      "text": "the negative control says the first case is refused at the base revision as an unresolvable commit, but the base (e35fd9f935) reads a commitless role's raw commits field and returns an absence for the exact line quoted in the Why; tests/test_a_read_only_run_promotes_without_a_hand_edit.py, whose REVIEW_COMMITS_PROSE is \"none \u2014 this node writes a review record outside the repository\", passes 4/4 at that revision, and `_opens_with_an_absence_word` on the Why's verbatim line prints True, so the test this node adds would be green on the unfixed base and its mask rule fires on both arms",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/queued-work-needs-no-workaround/r-20261116T034037730316-plan-review-of-queued-work-needs-no-workaround/plan.html:337",
+      "id": "reasoning-1",
+      "reason": "the node would build a fault for the legitimate review-record path and regress the read-only promotions \u00a719/\u00a725 produced, so the clause should be narrowed to items inside the repository that are not paths, and the outside-repository case dropped.",
+      "text": "the second deliverable, \"a changed-paths item that is not a path inside the run's repository is reported as a fault in the manifest\", contradicts both the Why and the base: the Why itself says the review's deliverable lives under review-records/ outside the repository, while `_changed_paths_inside_repository` (reckon/crew/promotion_scope.py:148-167) deliberately narrows the commit guard to in-repository items and lets a report-only run promote when its changed paths are outside, so implementing the clause would newly refuse the very read-only manifests the section says were repaired by hand, and it also restates a case the base already resolves as a defect",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6c60810d26045e94e361a3087f517c735a7cb747",
+  "plan_fingerprint": "34cabf0cbae8c2a53851789cf4a408ebd2e5b1ae72ed72a2ee77d7670f90466f",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 134,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "finding": "done_when-1",
+      "reason": "The finding is right and concerns the new section 30 only: its first case already passes at the base, so that deliverable measures nothing. Section 30 is not queued; its author revises the case to a line that fails at the base, or drops it, before any node is dispatched on it. No other section's endpoint is touched, so the requests queued on section 29 stay covered.",
+      "when": "2026-11-16T06:15:59.441719+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "finding": "reasoning-1",
+      "reason": "The finding is right and concerns the new section 30 only: a review record path outside the repository is legitimate and must not be reported as a fault. Section 30 is not queued; its author narrows the clause to in-repository items that are not paths before any node is dispatched on it. No other section's endpoint is touched.",
+      "when": "2026-11-16T06:16:06.012104+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "reason": "The finding is right and concerns the new section 30 only: its first case already passes at the base, so that deliverable measures nothing. Section 30 is not queued; its author revises the case to a line that fails at the base, or drops it, before any node is dispatched on it. No other section's endpoint is touched, so the requests queued on section 29 stay covered.",
+      "when": "2026-11-16T06:15:59.441719+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "8e41a6d3-d0e0-4927-afd1-771942ebfe6a",
+      "reason": "The finding is right and concerns the new section 30 only: a review record path outside the repository is legitimate and must not be reported as a fault. Section 30 is not queued; its author narrows the clause to in-repository items that are not paths before any node is dispatched on it. No other section's endpoint is touched.",
+      "when": "2026-11-16T06:16:06.012104+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/queued-work-needs-no-workaround/r-20261116T034037730316-plan-review-of-queued-work-needs-no-workaround.json",
+  "review_run_id": "r-20261116T034037730316-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "9a0da4e15ea97130adbe0b4676738ed023a889b1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 plan.html resolves from the docs tree, and the cited fragment path is the forward-declared control location every section in this plan uses; the referenced roles' behaviour was checked in worktree files, and the plan names no symbol anyway.",
+    "done_when": "a finding \u2014 \u00a730's negative control, \"at the base revision the first case is refused as an unresolvable commit\", cannot fire because the base already reads the cited commits line as a declaration.",
+    "evidence_paths": "pass \u2014 the node's control log lands at docs/evidence/fragments/queued-work-needs-no-workaround/s30.html, the same durable fragments directory the plan's landed sections use (s19.html, s20.html, s25.html, s26.html present).",
+    "naming": "pass \u2014 s30's text carries no ticket numbers or plan labels into code; it states the mechanism (absences read for what they are) and names no symbol.",
+    "reasoning": "a finding \u2014 the Why's mechanisms for both halves are already the base's behaviour, and the deliverable's second clause would add a refusal where the base deliberately accepts an outside-repository path.",
+    "single_goal": "pass \u2014 s30 names one deliverable: a read-only manifest's stated reason and a non-path item are classified correctly. Vocabulary and message shape are one goal, not two.",
+    "wiring": "pass \u2014 s30 is declared implementable in plan-section-declarations and \u00a719/\u00a725, the sections it builds on, are recorded done; no depends-on is needed and the followup's section list is prose the coordinator does not read, which earlier reviews raised and the author declined."
+  },
+  "section_digests": {
+    "_document": "034ec014e43a943f5fb071ee3efdf92fbf42d9c61ee3548fc0d2b4648344527a",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "04f04dd8812de5d9c7b9410b01df1ecca1b5d54a6033156ef6c0e016e94d83a8",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s26": "86ee010dedc3babeebe536a7600e36d642ff7e96b15d2ca37ba6543b3da2caa0",
+    "s27": "77553fb962d6e701c89758fbdc77af812395fd33dff4a7bb97d3449f9a7a549a",
+    "s28": "7456663a1516834f96910a588c2bfef971ac8759485a26e01d93ff834ae5b664",
+    "s29": "686297f9ec76495ef83e0a8d37508cdd135e76797ea84024eaec7dc24e571e08",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s30": "3744d8634159eadee796e182272bb6bdaac2db1b4c4d474bad09d253255b2ea8",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T04:37:47.338775+00:00",
+  "total": null
+}

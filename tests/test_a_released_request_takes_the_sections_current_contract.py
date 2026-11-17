@@ -90,7 +90,7 @@ def _write_plan(repository: Path, done_when: str) -> None:
 
 
 def _commit(repository: Path, message: str) -> None:
-    _run(repository, "add", "--", "docs")
+    _run(repository, "add", "--", "docs", "src")
     _run(repository, "commit", "-q", "-m", message)
 
 
@@ -112,6 +112,11 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         encoding="utf-8",
     )
     (repository / "docs" / "plans").mkdir(parents=True)
+    # The section's write-paths sentence names ``src/one.py``, and a derived
+    # path is refused unless it is present under the dispatched repository or
+    # sits in a present directory.
+    (repository / "src").mkdir()
+    (repository / "src" / "one.py").write_text("VALUE = 1\n", encoding="utf-8")
     _write_plan(repository, OLD_DONE_WHEN)
     _run(repository, "init", "-q", "-b", "main")
     _run(repository, "config", "user.email", "worker@example.invalid")

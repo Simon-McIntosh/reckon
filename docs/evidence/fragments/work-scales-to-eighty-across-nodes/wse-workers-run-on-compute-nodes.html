@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-scales-to-eighty-across-nodes">
+  <meta name="plan-evidence-for" content="work-scales-to-eighty-across-nodes">
+  <title>Workers run on compute nodes | reckon</title>
+  <meta name="node-id" content="wse-workers-run-on-compute-nodes">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A worker on a compute node leaves no scratch on the fleet node</h1>
+      <p class="lead">A dispatch composes a worker's launch on the fleet node and places the worker as a scheduler step, which runs it on the compute node the allocation is held on. The one path a launch owns beneath a node's <code>/tmp</code> is the run's own scratch directory. The composition created it on the host that composed the argv, so every compute-node worker left a scratch directory for itself on the fleet node's local disk, and the node that actually ran it created nothing. The run's scratch is now created where the worker runs and granted by the fence whether or not the composing host has it.</p>
+    </header>
+
+    <section id="wse-workers-run-on-compute-nodes-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/_worker_fence.py</code>: <code>worker_scratch_write_roots()</code> identifies the handed writable roots that are some run's own scratch directory &mdash; a child of the shared node-local scratch root, never the root itself. <code>fence_argv</code> grants those by construction, so the absent-on-this-host scratch directory still composes its <code>--bind</code> pair while every other absent root keeps composing no grant.</li>
+        <li><code>reckon/_backends.py</code>: <code>launch_plan</code> creates every handed fence root except those, so composing a launch on the fleet node writes no run scratch on the fleet node's disk.</li>
+        <li><code>reckon/crew/dispatch_launch.py</code>: <code>placed_step_argv()</code> names the placement test once (an <code>srun --jobid=</code> step). <code>_worker_runtime_environment</code> creates the run's scratch only for a worker that runs as the launcher's own child, and otherwise only names the path in <code>TMPDIR</code>. <code>step_node_directories</code> takes <code>expected</code> sources, so the placed step's wrapper <code>mkdir -p</code>s the run's scratch directory on its own node before the fence is exec'd.</li>
+        <li><code>tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py</code> (new): a composed fenced launch with a synthetic host scratch root, the placed step's node-directory list, and the launcher-child case that must still make the directory here.</li>
+      </ul>
+    </section>
+
+    <section id="wse-workers-run-on-compute-nodes-gate">
+      <h2>The gate</h2>
+      <table>
+        <thead><tr><th>Check</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Node tests at the head, <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py</code></td><td>61 passed, <code>EXIT=0</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/after_arm.log</code></td></tr>
+          <tr><td>The same two base-revision tests, resolved over the base tree</td><td>58 passed, <code>EXIT=0</code> &mdash; the same two files without the new one</td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/baseline_arm.log</code></td></tr>
+          <tr><td>Negative control: <code>worker_scratch_write_roots</code> made to answer nothing, restoring the pre-change rule</td><td>1 failed, 2 passed, <code>EXIT=1</code> &mdash; <code>test_composing_a_launch_creates_no_scratch_for_a_worker_elsewhere</code> reports that the run's scratch directory <em>was created on the composing host</em></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T200804650837-wse-workers-run-on-compute-nodes/logs/negative_control_scratch_on_composer.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The measure this node owns is the defect above, and it reads as a directory count: with the change, a composed launch places <strong>0</strong> run scratch directories under the composing host's scratch root, and the placed step's node-directory list names the run's scratch directory so the worker's own node makes it before the fence runs. At the base rule, applied as the negative control, the same composition creates <strong>1</strong> &mdash; the run's directory, under the composer's scratch root. The rehearsal this section's done-when describes (twenty workers through the scheduler, each delivering, reviewed and landing, with the fleet node's memory read before and during) is the separately dispatched test node's measure, not this one's.</p>
+    </section>
+
+    <section id="wse-workers-run-on-compute-nodes-cases">
+      <h2>What the test shows</h2>
+      <ul>
+        <li>A composed fenced launch leaves the run's scratch directory absent on the composing host, and still carries the <code>--bind</code> pair that grants it, so the grant is not lost by not creating it.</li>
+        <li>A placed step's node-directory list names the run's scratch directory although it is absent on this host, and names nothing when the source is read only from this host's disk &mdash; the two readings differ by the placement decision alone.</li>
+        <li>A worker that runs as the launcher's own child still gets its scratch directory created here, so the rule is placement and not the run: an unplaced worker would otherwise be the only one whose <code>TMPDIR</code> nobody makes.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

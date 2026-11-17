@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/budget.py:preflight",
+    "reckon/budget.py:_ledger_readings",
+    "reckon/ledger.py:load",
+    "reckon/ledger.py:indexed_headers",
+    "reckon/ledger.py:read_records"
+  ],
+  "completed_at": "2026-11-16T08:54:21.079Z",
+  "dispatched_at": "2026-11-16T08:53:49Z",
+  "findings": [
+    {
+      "file": "tests/test_a_served_turn_refutes_the_refusal.py",
+      "line": 56,
+      "severity": "non-blocking",
+      "text": "the stand-in declares picker_only keyword-only, but reckon/ledger.py:2324 declares it positional-or-keyword before the '*', so a positional call load(project, root, True) of the kind reckon/ledger.py:1614 picker_runs makes would raise TypeError under the file's stub; the docstring at tests/test_a_served_turn_refutes_the_refusal.py:62 ('carrying its whole signature') and the landing fragment's 'declared signature' row overstate fidelity to the seam."
+    },
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "the done_when orders the current origin/main merged before the rerun, and the manifest records origin/main read at cb557f97 with git fetch refused, so the passing arm was measured at the base revision plus this node's commit rather than against a post-merge tree; the merge-free measurement is defensible here because the two revisions are equal, but the record's evidence_inputs is the only place that says so, and it rests on a ref read rather than a fetched remote."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-served-turn-refutes-the-refusal.html",
+      "line": 29,
+      "severity": "non-blocking",
+      "text": "the cause row states the stand-in carries 'the keyword-only picker_only', which is the stub's shape rather than reckon/ledger.py:2324's, so the fragment records the divergence named above as though it were the declared seam."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal, 'Make tests/test_a_served_turn_refutes_the_refusal.py pass in full on the primary branch', against logs/gate-head.log: tests/test_a_served_turn_refutes_the_refusal.py:52-72 now carries the ledger seam's signature and the file reads 8 passed with EXIT=0 at head 84fe7a8d, so the file passes in full; the commit is not merged onto origin/main (which reads cb557f97), so 'on the primary branch' rests on promotion rather than on the landed diff.\nVERDICT done_when: the done_when names 7 failing tests at 8d50b0333f, a head run of the named file on all_debug with SLURM_JOB_ID unset, each cause with a test-wrong/product-wrong verdict, and a negative control logged beside the head run; logs/negative-control-base-cb557f97.log:1-3 and logs/gate-head.log:1-3 assert the arms, and logs/base-8d50b0333f-repro-cb557f97.log carries the same seven ids the base arm reports, while the done_when's first step (merge current origin/main) was not performed because git fetch is refused on this host and origin/main already reads cb557f97.\nVERDICT write_paths: read the node's declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two node-id files; git diff --name-only cb557f97..84fe7a8d lists tests/test_a_served_turn_refutes_the_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-served-turn-refutes-the-refusal.html, both inside them, and no file under reckon/ appears.\nVERDICT manifest: read manifest.md of the reviewed run; it records status complete, commit 84fe7a8d, the gate command on line 15, three log paths, the base arm's seven failing ids, after_suite 0 failures with completed true, and its negative_control_log names logs/negative-control-base-cb557f97.log.\nVERDICT diff: read the single commit 84fe7a8d against base cb557f97: tests/test_a_served_turn_refutes_the_refusal.py:52-72 replaces a two-positional-argument lambda with the ledger load stand-in tests/test_a_served_turn_refutes_the_refusal.py:102-106, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-served-turn-refutes-the-refusal.html is the landing fragment; no assertion line and no product module changed.\nCALL_SITES: reckon/budget.py:preflight, reckon/budget.py:_ledger_readings, reckon/ledger.py:load, reckon/ledger.py:indexed_headers, reckon/ledger.py:read_records\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: logs/gate-head.log:6 reads 8 passed with EXIT=0 at 84fe7a8d, so tests/test_a_served_turn_refutes_the_refusal.py passes in full, though the commit sits on base cb557f97 rather than on origin/main.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log and logs/negative-control-base-cb557f97.log carry the head and base arms at the revisions the manifest names, and added_failures_from_gate_logs over those two files returns (0, []).\nSCORE reuse: 16\nJUSTIFICATION reuse: no shared owner for a ledger stub exists under tests/ - a capability search for empty_ledger and for monkeypatch.setattr(ledger, \"load\") found only per-file local stubs, and the added helper is one of those.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only cb557f97..84fe7a8d names only tests/test_a_served_turn_refutes_the_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-served-turn-refutes-the-refusal.html, both declared.\nSCORE durability: 17\nJUSTIFICATION durability: reverting tests/test_a_served_turn_refutes_the_refusal.py:52-72 to the two-positional-argument lambda reddens the seven base ids in logs/negative-control-base-cb557f97.log, and logs/guard-fires-mutation.log:4 shows the served-turn rule disabled reads 3 failed.\nSCORE fit: 14\nJUSTIFICATION fit: tests/test_a_served_turn_refutes_the_refusal.py:56 narrows picker_only to keyword-only against reckon/ledger.py:2324, so the stand-in is not the seam's declared signature its docstring at :62 claims.\nFINDING tests/test_a_served_turn_refutes_the_refusal.py:56 non-blocking: the stand-in declares picker_only keyword-only, but reckon/ledger.py:2324 declares it positional-or-keyword before the '*', so a positional call load(project, root, True) of the kind reckon/ledger.py:1614 picker_runs makes would raise TypeError under the file's stub; the docstring at tests/test_a_served_turn_refutes_the_refusal.py:62 ('carrying its whole signature') and the landing fragment's 'declared signature' row overstate fidelity to the seam.\nFINDING manifest.md:18 non-blocking: the done_when orders the current origin/main merged before the rerun, and the manifest records origin/main read at cb557f97 with git fetch refused, so the passing arm was measured at the base revision plus this node's commit rather than against a post-merge tree; the merge-free measurement is defensible here because the two revisions are equal, but the record's evidence_inputs is the only place that says so, and it rests on a ref read rather than a fetched remote.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-served-turn-refutes-the-refusal.html:29 non-blocking: the cause row states the stand-in carries 'the keyword-only picker_only', which is the stub's shape rather than reckon/ledger.py:2324's, so the fragment records the divergence named above as though it were the declared seam.\n",
+  "review_run_id": "r-20261116T081749449736-review-of-qwnw-red-file-a-served-turn-refutes-the-refusal-84fe7a8d6223",
+  "reviewed_base_sha": "cb557f9711670ca8a00dd1d6dd22a17b42d3a51e",
+  "reviewed_head_sha": "84fe7a8d6223f24f1f038ad58f5a036ba37a61e9",
+  "reviewed_run_id": "r-20261116T031642817864-qwnw-red-file-a-served-turn-refutes-the-refusal",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:16:16.990751+00:00",
+  "total": 102,
+  "verdicts": [
+    {
+      "item": "goal",
+      "verdict": "read the node goal, 'Make tests/test_a_served_turn_refutes_the_refusal.py pass in full on the primary branch', against logs/gate-head.log: tests/test_a_served_turn_refutes_the_refusal.py:52-72 now carries the ledger seam's signature and the file reads 8 passed with EXIT=0 at head 84fe7a8d, so the file passes in full; the commit is not merged onto origin/main (which reads cb557f97), so 'on the primary branch' rests on promotion rather than on the landed diff."
+    },
+    {
+      "item": "done_when",
+      "verdict": "the done_when names 7 failing tests at 8d50b0333f, a head run of the named file on all_debug with SLURM_JOB_ID unset, each cause with a test-wrong/product-wrong verdict, and a negative control logged beside the head run; logs/negative-control-base-cb557f97.log:1-3 and logs/gate-head.log:1-3 assert the arms, and logs/base-8d50b0333f-repro-cb557f97.log carries the same seven ids the base arm reports, while the done_when's first step (merge current origin/main) was not performed because git fetch is refused on this host and origin/main already reads cb557f97."
+    },
+    {
+      "item": "write_paths",
+      "verdict": "read the node's declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two node-id files; git diff --name-only cb557f97..84fe7a8d lists tests/test_a_served_turn_refutes_the_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-served-turn-refutes-the-refusal.html, both inside them, and no file under reckon/ appears."
+    },
+    {
+      "item": "manifest",
+      "verdict": "read manifest.md of the reviewed run; it records status complete, commit 84fe7a8d, the gate command on line 15, three log paths, the base arm's seven failing ids, after_suite 0 failures with completed true, and its negative_control_log names logs/negative-control-base-cb557f97.log."
+    },
+    {
+      "item": "diff",
+      "verdict": "read the single commit 84fe7a8d against base cb557f97: tests/test_a_served_turn_refutes_the_refusal.py:52-72 replaces a two-positional-argument lambda with the ledger load stand-in tests/test_a_served_turn_refutes_the_refusal.py:102-106, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-served-turn-refutes-the-refusal.html is the landing fragment; no assertion line and no product module changed."
+    }
+  ]
+}

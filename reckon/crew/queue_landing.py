@@ -2045,6 +2045,11 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
 
         manual_reason = manual_landing_reason(pointer)
         if manual_reason:
+            from reckon.crew.recovery_classification import _promotion_command
+
+            remedy = _promotion_command(run_id, pointer, entries)
+            if "crew complete" in remedy:
+                remedy += " --land"
             previous = pointer.get("admission_landing") or {}
             if previous.get("guard") != manual_reason or previous.get("head") != head:
                 _record_attempt(
@@ -2055,7 +2060,7 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
                     code_stamp=_landing_code_stamp(),
                     review_stamp=manual_reason,
                     previous=previous,
-                    remedy=f"reckon crew complete --run {run_id} --gate passed --land",
+                    remedy=remedy,
                 )
                 obligations.append(
                     {

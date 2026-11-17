@@ -1,0 +1,85 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_arm": {
+    "command": "env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-landing-runs-beside-admission/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_landing_runs_beside_admission.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104921585262-qwnw-red-file-landing-runs-beside-admission/gate-head-all_debug.log",
+    "revision": "2e3d44ff5b4a9d6d572632158232063d2b7dde1d",
+    "summary": "6 passed in 3.44s"
+  },
+  "base_arm": {
+    "command": "env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-landing-runs-beside-admission/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_landing_runs_beside_admission.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_landing_runs_beside_admission.py::test_a_land_step_past_its_bound_is_stopped_and_refused",
+      "tests/test_landing_runs_beside_admission.py::test_the_land_step_waives_the_impl_move_the_beat_makes"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104921585262-qwnw-red-file-landing-runs-beside-admission/base-landing-runs-beside-admission.log",
+    "revision": "ba3443a9ae6a2bc171c76560016a6ca24e055f02",
+    "summary": "2 failed, 4 passed in 2.74s"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T16:03:28.330Z",
+  "dispatched_at": "2026-11-16T16:03:09Z",
+  "findings": [
+    {
+      "file": "tests/test_landing_runs_beside_admission.py",
+      "line": "222",
+      "severity": "non-blocking",
+      "text": "non-blocking: `bound = 0.25` and the `_measure_timeout` stub at :223 are inert \u2014 no assertion reads the bound \u2014 so the case renamed \"past its bound\" no longer measures anything about the bound and over-reads the coverage a reader takes from the name."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104921585262-qwnw-red-file-landing-runs-beside-admission/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's arm over the files importing what the node changed is neither run nor recorded; the selection is empty because no module imports a test file, so the clause holds vacuously and the manifest should state the empty selection rather than leave it unread."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 398015d5d5, the node's own base \u2014 ba3443a9ae..398015d5d5 carries another run's queue-ordering commits and is not this node's diff; 2c59c1e35d rewrites the two red cases onto the queued promotion request, f24044e991 reflows the import, and 3079aa32d7, b7cefa1006 and 2e3d44ff5b add and correct the evidence fragment.",
+    "done_when": "the done_when asks for the named file passing in full as an all_debug job, a stated verdict per cause and an importer arm adding no failure; gate-head-all_debug.log:1-4 names revision 2e3d44ff5b, the worktree module reckon/crew/queue_landing.py, partition all_debug and slurm_job_id_in_env=unset, its tail reads \"6 passed\" followed by EXIT=0, base-landing-runs-beside-admission.log reads \"2 failed, 4 passed\" EXIT=1 with both failing ids, and the manifest states both causes as test-wrong, but the importer arm is neither run nor recorded (see finding).",
+    "goal": "the node's goal is that tests/test_landing_runs_beside_admission.py passes in full on the primary branch; at head 2e3d44ff5b tests/test_landing_runs_beside_admission.py passes 6/6 in gate-head-all_debug.log, and git diff --stat 398015d5d5 2e3d44ff5b shows the node changed only that file and its own evidence fragment, so the deliverable is reached at the reviewed head with the post-merge run left to the merge test node.",
+    "manifest": "read the reviewed run's manifest.md; it reports status complete, commits 2c59c1e35d f24044e991 3079aa32d7 b7cefa1006 2e3d44ff5b, changed_paths the two landed files, the single-file gate command, three test logs, and baseline_suite/after_suite at ba3443a9ae and 2e3d44ff5b with completed true and failure counts 2 and 0.",
+    "write_paths": "the node's fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a figures directory; git diff --stat 398015d5d5 2e3d44ff5b lists exactly tests/test_landing_runs_beside_admission.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-landing-runs-beside-admission.html, both inside it."
+  },
+  "justifications": {
+    "durability": "the fragment's two recorded mutations redden each repaired case (tests/test_landing_runs_beside_admission.py:242 fails when _land runs the step synchronously, and :339-344 reddens when the waiver leaves _land_command), while the assertion dropped from the second case is covered at tests/test_the_landing_pass_measures_and_lands.py:517.",
+    "evidence": "gate-head-all_debug.log and base-landing-runs-beside-admission.log each carry a revision header, the imported module path and a bare EXIT line whose ids and counts match the manifest's baseline_suite and after_suite, but the done_when's importer arm is recorded nowhere.",
+    "fit": "the repaired cases keep the module's docstring, fixtures and monkeypatch idiom at tests/test_landing_runs_beside_admission.py:211-253 and add no identifier the repository naming rules forbid.",
+    "goal_fidelity": "the named file passes in full at the reviewed head in gate-head-all_debug.log and the rewritten cases at tests/test_landing_runs_beside_admission.py:211-343 read the queued request the product now records.",
+    "reuse": "the cases read the record through reckon/crew/promotion_requests.py:223 read_promotion, the owner of the promotion request, instead of restating its shape, and the diff adds no new definition.",
+    "scope_discipline": "git diff --stat 398015d5d5 2e3d44ff5b changes only tests/test_landing_runs_beside_admission.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-landing-runs-beside-admission.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_landing_runs_beside_admission.py passes in full on the primary branch; at head 2e3d44ff5b tests/test_landing_runs_beside_admission.py passes 6/6 in gate-head-all_debug.log, and git diff --stat 398015d5d5 2e3d44ff5b shows the node changed only that file and its own evidence fragment, so the deliverable is reached at the reviewed head with the post-merge run left to the merge test node.\nVERDICT done_when: the done_when asks for the named file passing in full as an all_debug job, a stated verdict per cause and an importer arm adding no failure; gate-head-all_debug.log:1-4 names revision 2e3d44ff5b, the worktree module reckon/crew/queue_landing.py, partition all_debug and slurm_job_id_in_env=unset, its tail reads \"6 passed\" followed by EXIT=0, base-landing-runs-beside-admission.log reads \"2 failed, 4 passed\" EXIT=1 with both failing ids, and the manifest states both causes as test-wrong, but the importer arm is neither run nor recorded (see finding).\nVERDICT write_paths: the node's fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a figures directory; git diff --stat 398015d5d5 2e3d44ff5b lists exactly tests/test_landing_runs_beside_admission.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-landing-runs-beside-admission.html, both inside it.\nVERDICT manifest: read the reviewed run's manifest.md; it reports status complete, commits 2c59c1e35d f24044e991 3079aa32d7 b7cefa1006 2e3d44ff5b, changed_paths the two landed files, the single-file gate command, three test logs, and baseline_suite/after_suite at ba3443a9ae and 2e3d44ff5b with completed true and failure counts 2 and 0.\nVERDICT diff: read commit by commit from 398015d5d5, the node's own base \u2014 ba3443a9ae..398015d5d5 carries another run's queue-ordering commits and is not this node's diff; 2c59c1e35d rewrites the two red cases onto the queued promotion request, f24044e991 reflows the import, and 3079aa32d7, b7cefa1006 and 2e3d44ff5b add and correct the evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the named file passes in full at the reviewed head in gate-head-all_debug.log and the rewritten cases at tests/test_landing_runs_beside_admission.py:211-343 read the queued request the product now records.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head-all_debug.log and base-landing-runs-beside-admission.log each carry a revision header, the imported module path and a bare EXIT line whose ids and counts match the manifest's baseline_suite and after_suite, but the done_when's importer arm is recorded nowhere.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 398015d5d5 2e3d44ff5b changes only tests/test_landing_runs_beside_admission.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-landing-runs-beside-admission.html.\nSCORE durability: 18\nJUSTIFICATION durability: the fragment's two recorded mutations redden each repaired case (tests/test_landing_runs_beside_admission.py:242 fails when _land runs the step synchronously, and :339-344 reddens when the waiver leaves _land_command), while the assertion dropped from the second case is covered at tests/test_the_landing_pass_measures_and_lands.py:517.\nSCORE fit: 19\nJUSTIFICATION fit: the repaired cases keep the module's docstring, fixtures and monkeypatch idiom at tests/test_landing_runs_beside_admission.py:211-253 and add no identifier the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the cases read the record through reckon/crew/promotion_requests.py:223 read_promotion, the owner of the promotion request, instead of restating its shape, and the diff adds no new definition.\nFINDING tests/test_landing_runs_beside_admission.py:222 non-blocking: `bound = 0.25` and the `_measure_timeout` stub at :223 are inert \u2014 no assertion reads the bound \u2014 so the case renamed \"past its bound\" no longer measures anything about the bound and over-reads the coverage a reader takes from the name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104921585262-qwnw-red-file-landing-runs-beside-admission/manifest.md:12 non-blocking: the done_when's arm over the files importing what the node changed is neither run nor recorded; the selection is empty because no module imports a test file, so the clause holds vacuously and the manifest should state the empty selection rather than leave it unread.",
+  "review_run_id": "r-20261116T153604238576-review-of-qwnw-red-file-landing-runs-beside-admission-2e3d44ff5b4a",
+  "reviewed_base_sha": "ba3443a9ae6a2bc171c76560016a6ca24e055f02",
+  "reviewed_head_sha": "2e3d44ff5b4a9d6d572632158232063d2b7dde1d",
+  "reviewed_run_id": "r-20261116T104921585262-qwnw-red-file-landing-runs-beside-admission",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T153604238576-review-of-qwnw-red-file-landing-runs-beside-admission-2e3d44ff5b4a"
+  },
+  "reviewer_run_id": "r-20261116T153604238576-review-of-qwnw-red-file-landing-runs-beside-admission-2e3d44ff5b4a",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:14:47.530212+00:00",
+  "total": 112
+}

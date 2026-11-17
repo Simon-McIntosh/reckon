@@ -833,7 +833,7 @@ def test_two_review_ready_items_carry_their_own_run_command(
     )
     for run_id in (FIRST_RUN_ID, SECOND_RUN_ID):
         line = next(item for item in review if item.split()[2] == run_id)
-        assert f"reckon crew complete --run {run_id} " in line, line
+        assert line.endswith(f"reckon crew observe --run {run_id}"), line
     assert lines[0].startswith(
         f"reckon obligations for session {SESSION} (project {PROJECT}): "
         "2 outstanding, oldest "

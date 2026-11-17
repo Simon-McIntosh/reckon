@@ -1,0 +1,26 @@
+<section id="qwnw-red-file-crew-cross-project-claims-second-launch-landing">
+<h3>Cross-project claim coverage passes in full</h3>
+<p>
+  <code>tests/test_crew_cross_project_claims.py</code> goes from 8 failed and 2 passed at revision
+  <code>0e0f25b0f9</code> to <strong>10 passed</strong> at head. One cause, verdict <strong>test
+  wrong</strong>: a live write claim now fences only a path git cannot reconcile, while every claiming
+  fixture named a plain source path, so no refusal fired. Fixtures now claim non-mergeable artifacts
+  (generated state under <code>docs/state</code>, <code>pyproject.toml</code>) and every assertion they
+  made is still made — containment named <code>claimed_path</code>, the owning
+  <code>run_id</code>/<code>project</code>, the unchanged worktree list, the derived cross-repository
+  path, the "disregarded" warning, <code>commit(s) beyond its base</code>,
+  <code>uncommitted change</code>, and <code>is still running</code>.
+</p>
+<p>
+  The guards were shown to fire: a plugin forcing <code>_claim_paths_share</code> to
+  <code>True</code> restores exactly the same eight failing ids against the updated file. The base and head
+  runs and that mutation are recorded in
+  <code>docs/evidence/fragments/queued-work-needs-no-workaround/red-file-crew-cross-project-claims.html</code>;
+  raw logs sit in the node's run directory under <code>logs/</code>.
+</p>
+<p>
+  <code>ruff format --check</code> is clean on the changed file. <code>ruff check</code> reports one
+  finding, <code>I001</code> on the import block, which is present verbatim at the base revision and in a
+  region this node did not touch; per the repo's pre-commit policy it is left for the lint sweep.
+</p>
+</section>

@@ -5,9 +5,10 @@ from __future__ import annotations
 import html
 import json
 import re
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from bs4 import BeautifulSoup
 from bs4.element import Doctype
@@ -850,7 +851,31 @@ def _section_paragraph(landing: SectionLanding, plan_slug: str) -> str:
     )
 
 
-def _node_rows(landings: Sequence[SectionLanding]) -> list[str]:
+def _fragment_href(node: str, plan_slug: str, project: str, root: Path | None) -> str:
+    """The served address of a landed node's own fragment, or ``""`` for none.
+
+    A node's fragment is optional, so the overview links one only where it was
+    written: the file's presence under the plan's fragment directory is the
+    whole test. Nothing of the fragment's text is read — the overview states
+    what its own sources hold and the link lets a reader open the record the
+    node authored. The href is project-absolute, the same shape a fragment link
+    in a plan section's comment takes: ``/<project>/evidence/fragments/...``.
+    """
+    if root is None or not node or not plan_slug:
+        return ""
+    relative = f"docs/evidence/fragments/{plan_slug}/{node}.html"
+    if not (root / relative).is_file():
+        return ""
+    return f"/{project}/evidence/fragments/{plan_slug}/{node}.html"
+
+
+def _node_rows(
+    landings: Sequence[SectionLanding],
+    *,
+    plan_slug: str = "",
+    project: str = "",
+    root: Path | None = None,
+) -> list[str]:
     """One row per landed node, stating how many attempts that node took."""
     rows: list[str] = []
     for landing in landings_that_landed(landings):
@@ -866,6 +891,7 @@ def _node_rows(landings: Sequence[SectionLanding]) -> list[str]:
                 if str(commit).strip()
             )
             run_id = str(latest.get("run_id") or "")
+            fragment = _fragment_href(node, plan_slug, project, root)
             rows.append(
                 "      <tr>"
                 f"<td>{_escape(node)}</td>"
@@ -875,9 +901,17 @@ def _node_rows(landings: Sequence[SectionLanding]) -> list[str]:
                 f"<td>{commits or '—'}</td>"
                 f"<td>{_format_seconds(latest.get('worker_seconds'))}</td>"
                 f"<td>{_source('run', run_id, run_id)}</td>"
+                f"<td>{_fragment_link(fragment)}</td>"
                 "</tr>"
             )
     return rows
+
+
+def _fragment_link(href: str) -> str:
+    """The row cell linking a node's own fragment, or an em dash for none."""
+    if not href:
+        return "—"
+    return f'<a class="node-fragment" href="{_escape(href)}">fragment</a>'
 
 
 def landings_that_landed(
@@ -1046,12 +1080,13 @@ def _overview_block(
     """The sourced overview: a paragraph per section, one row per landed node."""
     plan_slug = str(plan.get("slug") or "").strip()
     paragraphs = [_section_paragraph(landing, plan_slug) for landing in landings]
-    rows = _node_rows(landings)
+    rows = _node_rows(landings, plan_slug=plan_slug, project=project, root=root)
     figures = _figure_blocks(landings)
     origin = f'{APPEND_ORIGIN_ATTRIBUTE}="{OVERVIEW_ORIGIN_VALUE}"'
     header = (
         "      <thead><tr><th>Node</th><th>Section</th><th>Attempts</th>"
         "<th>Gate</th><th>Commits</th><th>Worker time</th><th>Source</th>"
+        "<th>Fragment</th>"
         "</tr></thead>"
     )
     table = (
@@ -1087,6 +1122,261 @@ def _overview_block(
             "  </section>",
         ]
     )
+
+
+@dataclass(frozen=True, slots=True)
+class SprintPlanRow:
+    """One member plan of a closing sprint, read from its own record.
+
+    The counts are the ones the plan's closure overview states: sections it
+    landed, the runs that landed them and their worker time. ``href`` is the
+    plan document the row links, empty when the sprint names a plan with no
+    document — a row must never link a page that is not there.
+    """
+
+    slug: str
+    title: str
+    status: str
+    href: str
+    sections_landed: int
+    runs: int
+    worker_seconds: int
+    headline: str
+    figures: tuple[LandedFigure, ...] = ()
+
+
+_SPRINT_PAGE_SUFFIX = "-closing"
+
+
+def sprint_page_path(docs_dir: Path, sprint_id: str) -> Path:
+    """The closing page one sprint's close writes, under the evidence archive.
+
+    The page is an evidence record, not a sprint resource: a second file in the
+    sprint root would be discovered as a sprint of its own, and the closing page
+    documents what the sprint's plans landed rather than the sprint's schedule.
+    """
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "-", str(sprint_id or "").strip()).strip("-")
+    if not stem:
+        raise EvidenceSynthesisError(
+            f"sprint id {sprint_id!r} names no page: a closing page needs an id"
+        )
+    return docs_dir / "evidence" / "archive" / f"{stem}{_SPRINT_PAGE_SUFFIX}.html"
+
+
+def _plan_page_href(project: str, resource: Any) -> str:
+    """The served address of a plan document, or the empty string without one.
+
+    The address names the file rather than the SPA's extensionless route, so
+    every link the page writes resolves to a document in the repository.
+    """
+    relative = getattr(resource, "relative_path", None)
+    if relative is None:
+        return ""
+    return f"/{project}/{relative}"
+
+
+def _headline_result(landings: Sequence[SectionLanding], summary: str) -> str:
+    """The plan's headline result: what its latest landing recorded.
+
+    A plan with no landing line falls back to the summary it was authored with,
+    and one with neither says so rather than rendering an empty cell that reads
+    as a result.
+    """
+    for landing in reversed(landings_that_landed(landings)):
+        text = " ".join(
+            BeautifulSoup(landing.landing, "html.parser").get_text(" ").split()
+        )
+        if text:
+            return text
+    return summary.strip() or "no result recorded"
+
+
+def read_sprint_plan_row(docs_dir: Path, project: str, slug: str) -> SprintPlanRow:
+    """Read one member plan through the reading the closure overview built.
+
+    Sections landed, runs and worker time come from
+    :func:`read_section_landings` — the one reading a plan's overview renders —
+    rather than from a second walk of the ledger, so the sprint page and the
+    plan's overview cannot state different counts for the same plan.
+    """
+    resource = resolve_resource(
+        docs_dir, project, slug, artifact_type="plan", include_archived=False
+    )
+    if resource is None:
+        return SprintPlanRow(
+            slug=slug,
+            title=slug,
+            status="no plan document",
+            href="",
+            sections_landed=0,
+            runs=0,
+            worker_seconds=0,
+            headline="the sprint names a plan with no document",
+        )
+    source = resource.path.read_text(encoding="utf-8")
+    plan = _plan_html.parse_plan(resource.path, slug)
+    try:
+        records = ledger.runs(project, root=docs_dir.parent, plan=slug)
+    except ledger.LedgerError as exc:
+        raise EvidenceSynthesisError(
+            f"cannot read the ledger for project {project!r}, plan {slug!r}: {exc}"
+        ) from exc
+    records = sorted(
+        records,
+        key=lambda record: (
+            str(record.get("completed_at") or ""),
+            str(record.get("run_id") or ""),
+        ),
+    )
+    landings = read_section_landings(
+        plan, source, records, project, root=docs_dir.parent
+    )
+    landed = landings_that_landed(landings)
+    return SprintPlanRow(
+        slug=slug,
+        title=str(plan.get("title") or slug),
+        status=str(plan.get("status") or "unrecorded"),
+        href=_plan_page_href(project, resource),
+        sections_landed=len(landed),
+        runs=len(records),
+        worker_seconds=sum(
+            int(record.get("worker_seconds") or 0) for record in records
+        ),
+        headline=_headline_result(landings, str(plan.get("summary") or "")),
+        figures=tuple(figure for landing in landings for figure in landing.figures),
+    )
+
+
+def _sprint_row(row: SprintPlanRow) -> str:
+    """One table row: the plan, its status, what it landed and its result."""
+    name = (
+        f'<a href="{_escape(row.href)}">{_escape(row.title)}</a>'
+        if row.href
+        else _escape(row.title)
+    )
+    return (
+        "      <tr>"
+        f"<td>{name}</td>"
+        f"<td>{_escape(row.status)}</td>"
+        f"<td>{row.sections_landed}</td>"
+        f"<td>{row.runs}</td>"
+        f"<td>{_format_seconds(row.worker_seconds)}</td>"
+        f"<td>{_escape(row.headline)}</td>"
+        "</tr>"
+    )
+
+
+def render_sprint_page(
+    project: str, sprint_id: str, rows: Sequence[SprintPlanRow]
+) -> str:
+    """Render one closing page: a row per member plan, its figures, its totals."""
+    stem = sprint_page_path(Path("."), sprint_id).stem
+    title = f"{sprint_id} — closing sprint"
+    sections_landed = sum(row.sections_landed for row in rows)
+    runs = sum(row.runs for row in rows)
+    worker_seconds = sum(row.worker_seconds for row in rows)
+    figures = _figure_blocks(
+        [
+            SectionLanding(
+                section=row.slug,
+                label=row.title,
+                declaration="",
+                done_when="",
+                landing_comment_id="",
+                landing="",
+                runs=(),
+                figures=row.figures,
+            )
+            for row in rows
+        ]
+    )
+    table = [
+        '    <section id="sprint-plans">',
+        "      <h2>Member plans</h2>",
+        "      <table>",
+        (
+            "        <thead><tr><th>Plan</th><th>Status</th>"
+            "<th>Sections landed</th><th>Runs</th>"
+            "<th>Worker time</th><th>Headline result</th></tr></thead>"
+        ),
+        "        <tbody>",
+        *[_sprint_row(row) for row in rows],
+        "        </tbody>",
+        "      </table>",
+        "    </section>",
+    ]
+    totals = [
+        '    <section id="sprint-totals">',
+        "      <h2>Totals</h2>",
+        (
+            f"      <p>{len(rows)} plan(s), {sections_landed} section(s) landed, "
+            f"{runs} run(s), {_format_seconds(worker_seconds)} of worker time.</p>"
+        ),
+        "    </section>",
+    ]
+    figure_section = [
+        '    <section id="sprint-figures">',
+        "      <h2>Figures</h2>",
+        *(figures or ["      <p>No member plan's overview carries a figure.</p>"]),
+        "    </section>",
+    ]
+    return "\n".join(
+        [
+            "<!doctype html>",
+            '<html lang="en">',
+            "<head>",
+            '  <meta charset="utf-8">',
+            '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+            f'  <meta name="docs-project" content="{_escape(project)}">',
+            '  <meta name="reckon-type" content="evidence">',
+            f'  <meta name="plan-slug" content="{_escape(stem)}">',
+            f'  <meta name="plan-title" content="{_escape(title)}">',
+            f"  <title>{_escape(title)}</title>",
+            "</head>",
+            "<body>",
+            ' <main class="plan-doc">',
+            f"  <h1>{_escape(title)}</h1>",
+            f"  <p>What the {len(rows)} plan(s) of this sprint landed, read from "
+            "their own closure readings and the runs their ledger holds. Every "
+            "link resolves to a document, and every figure is one a landed run "
+            "named.</p>",
+            *table,
+            *figure_section,
+            *totals,
+            " </main>",
+            "</body>",
+            "</html>",
+            "",
+        ]
+    )
+
+
+def write_sprint_page(
+    docs_dir: Path, project: str, sprint_id: str, slugs: Sequence[str]
+) -> Path:
+    """Write the closing page for one sprint from its member plans' readings.
+
+    A sprint close owes one page, so its failure is the close's failure: a
+    sprint recorded as closed with no page would leave the work unreadable.
+    """
+    rows = [read_sprint_plan_row(docs_dir, project, slug) for slug in slugs]
+    destination = sprint_page_path(docs_dir, sprint_id)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    from reckon._store import write_atomically
+
+    rendered = render_sprint_page(project, sprint_id, rows)
+    try:
+        write_atomically(
+            destination,
+            lambda handle: handle.write(rendered),
+            fsync=False,
+            mode=0o600,
+        )
+    except OSError as exc:
+        raise EvidenceSynthesisError(
+            f"cannot write the closing page {destination}: {exc}"
+        ) from exc
+    return destination
 
 
 def _render_document(

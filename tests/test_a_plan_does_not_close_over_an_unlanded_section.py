@@ -9,10 +9,11 @@ A done section that states no done-when is outside the rule: it gives the plan's
 reasons, so no node could have landed it and it owes no account.
 
 The rule applies to a section marked done after it landed. The store records no
-per-section tick time, so the mark is read from the section's own last recorded
-activity — a comment on it, or the completion time of a run naming it — held
-against one fixed instant. A section recorded before that instant, or recorded
-nowhere at all, was already done when the rule landed and owes nothing.
+per-section tick time, so the mark is read from the section's own earliest
+recorded activity — its first comment, or the completion time of the earliest
+run naming it — held against one fixed instant. A section recorded before that
+instant, or recorded nowhere at all, was already done when the rule landed and
+owes nothing.
 """
 
 from __future__ import annotations
@@ -287,3 +288,48 @@ def test_a_stamp_only_the_shared_parser_reads_places_the_section(
         _store.apply_ops(state, [CLOSE], False)
 
     assert "s1" in str(refusal.value)
+
+
+def test_the_cache_of_a_close_reads_the_ledger_once_for_every_owing_section(
+    mounted_plan: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Two sections owe an account and the close reads one population for both:
+    # a per-section read walks the store twice to answer one question. The
+    # document is given directly so both sections may state a done-when.
+    from reckon import ledger
+
+    calls: list[object] = []
+
+    def counted(*args: object, **kwargs: object) -> list[dict]:
+        calls.append(args)
+        return []
+
+    monkeypatch.setattr(ledger, "runs", counted)
+    state = _plan_state()
+    # Both sections were recorded after the rule landed, so both are inside
+    # its reach and neither is exempt for silence.
+    state["comments"]["s2"] = [_activity(DONE_AFTER_THE_RULE)]
+    double = DOCUMENT.replace(
+        "<p>This section gives the plan's reasons and states no measure.</p>",
+        "<p><strong>Done when</strong> the second guard refuses the write.</p>",
+    )
+
+    with pytest.raises(_store.OpError) as refusal:
+        _store._require_every_landed_section_answered(state, double)
+
+    assert "s1" in str(refusal.value) and "s2" in str(refusal.value)
+    assert len(calls) == 1, "the close reads the ledger once, not once per section"
+
+
+def test_a_state_that_names_no_plan_is_refused_rather_than_read_as_unlanded() -> None:
+    # The ledger is keyed by project and slug. A state naming neither cannot be
+    # checked, and treating it as a plan with no run record would refuse a
+    # refusal: the state is refused naming the identity it lacks.
+    state = _plan_state()
+    del state["project"]
+    del state["slug"]
+
+    with pytest.raises(_store.OpError) as refusal:
+        _store._require_every_landed_section_answered(state, DOCUMENT)
+
+    assert "no project and no slug" in str(refusal.value)

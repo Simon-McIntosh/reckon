@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:2979",
+    "reckon/crew/recovery_review_dispatch.py:3074",
+    "reckon/crew/recovery_watch.py:1640",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/serve.py:902"
+  ],
+  "call_sites_note": "five production readers of the changed classification were opened at the cited lines; the review reflex at recovery_review_dispatch.py:2979 is the one the recorded defect reached.",
+  "completed_at": "2026-11-16T15:34:47.541Z",
+  "dispatched_at": "2026-11-16T15:34:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html",
+      "line": "125",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states tests/test_a_starting_run_is_classified.py is green in the head arm, but that file appears nowhere in the head arm's command \u2014 logs/head-importers.log:1 lists the population and omits it \u2014 so the guard for the arm this change narrows has no recorded head run."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html",
+      "line": "67",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm's population is the 110 test files importing recovery_classification, which misses files that reach classify_pointer through the re-export at reckon/crew/recovery.py:83 \u2014 including tests/test_a_starting_run_is_classified.py \u2014 so the reported 44-to-43 delta does not cover those importers."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued/logs/head-target-file.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the gate as a job on all_debug, but the log records only the revision, worktree and command under env -u SLURM_JOB_ID, and the reviewed run's own allocation was job 1319168 on partition sun, so the named partition was substituted without a recorded submission."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued/logs/base-importers.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm's module-under-test header reads a path ending reckon/__init__..py, with a doubled dot that names no file, so the base arm's import provenance cannot be checked from its own header even though the tree line names the tree correctly."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites through the review reflex and the live views",
+    "diff": "read commit by commit against the base \u2014 4a8a6c2d24 adds the `not manifest_status` term at reckon/crew/recovery_classification.py:1838, 4dea651bd9 adds the evidence fragment, and a34e5162a2 edits only that fragment's arm rows, with no test file and no assertion touched anywhere.",
+    "done_when": "the done_when asks for the file in full at head as an all_debug job with SLURM_JOB_ID unset, no added failure over the importing test files, and a base negative control; logs/base-target-file.log:6 and logs/head-target-file.log:1 record the control and the pass and logs/base-importers.log:1 versus logs/head-importers.log:1 differ by one repaired id and add none, but no log or manifest records an all_debug job.",
+    "goal": "the node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full on the primary branch; the landed term at reckon/crew/recovery_classification.py:1838 stops a pre-spawn phase label from outranking a verdict on disk, and logs/head-target-file.log:1 reads 4 passed EXIT=0 at the reviewed head where logs/base-target-file.log:6 read 3 failed.",
+    "manifest": "read; it states status complete, commits 4a8a6c2d24 4dea651bd9 a34e5162a2, the gate command, base and head target logs, both suite arms at 0 failures, both importer arms, and negative_control_log logs/base-target-file.log at 3 failed EXIT=1.",
+    "write_paths": "the node's declared paths in dispatch-detail.json are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 655a2befa979af690bab537523cd9ad97dc108c5..a34e5162a2e6eaae257016edfbebd0f975642a0c touches only reckon/crew/recovery_classification.py and one fragment under that directory."
+  },
+  "justifications": {
+    "durability": "tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:258 asserts a real router hold was raised by a `starting` pointer carrying a complete manifest at :195, and logs/base-target-file.log:6 shows that assertion failing before the change, so reverting recovery_classification.py:1838 reddens it.",
+    "evidence": "logs/head-target-file.log:1 records 4 passed EXIT=0 with SLURM_JOB_ID unset but names no all_debug job, so the done_when's named environment is unmeasured even though logs/base-target-file.log:6 shows FFF. (3 failed) for the same file at the base revision.",
+    "fit": "the added term sits inside the existing `pre_spawn_waiting` expression at reckon/crew/recovery_classification.py:1838 and reads the same `manifest_status` truthiness the arms below it already use at :1945, with no new name introduced.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1838 adds the manifest_status term to the pre-spawn arm so a delivered pointer still carrying a `starting` label is classified from its verdict, and logs/head-target-file.log:1 records the goal's file at 4 passed EXIT=0 at the reviewed head.",
+    "reuse": "the change adds no definition; a search over reckon/crew for an existing launched-versus-declared predicate found the `launched` pid/launched_at term at reckon/crew/recovery_classification.py:1849 and the manifest_status reading at :1362, and the hunk reuses both rather than forking a second liveness rule.",
+    "scope_discipline": "the diff changes reckon/crew/recovery_classification.py:1838-1842 and adds one fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html, both inside the declared fence and with no test file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full on the primary branch; reckon/crew/recovery_classification.py:1838 adds the manifest_status term that stops a pre-spawn label outranking a verdict on disk, and logs/head-target-file.log:1 reads 4 passed EXIT=0 at the reviewed head.\nVERDICT done_when: the done_when asks for the file in full at head as an all_debug job with SLURM_JOB_ID unset plus no added failure over the importing files and a base negative control; logs/base-target-file.log:5 and logs/head-target-file.log:1 record the control and the pass, logs/base-importers.log:1 and logs/head-importers.log:1 differ by one repaired id and add none, but no log or manifest records an all_debug job.\nVERDICT write_paths: the declared paths in dispatch-detail.json are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 655a2befa979af690bab537523cd9ad97dc108c5..a34e5162a2e6eaae257016edfbebd0f975642a0c touches only reckon/crew/recovery_classification.py and one fragment under that directory.\nVERDICT manifest: read; it states status complete, commits 4a8a6c2d24 4dea651bd9 a34e5162a2, the gate command, base and head target logs, both suite arms at 0 failures, both importer arms, and negative_control_log logs/base-target-file.log at 3 failed EXIT=1.\nVERDICT diff: read commit by commit against the base \u2014 4a8a6c2d24 adds the not-manifest_status term at reckon/crew/recovery_classification.py:1838, 4dea651bd9 adds the evidence fragment, and a34e5162a2 edits only that fragment's arm rows, with no test file and no assertion touched anywhere.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:2979, reckon/crew/recovery_review_dispatch.py:3074, reckon/crew/recovery_watch.py:1640, reckon/crew/queue_landing.py:1704, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1838 classifies a delivered starting pointer from its verdict, and logs/head-target-file.log:1 records the goal's file at 4 passed EXIT=0 at the reviewed head.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/head-target-file.log:1 records 4 passed EXIT=0 with SLURM_JOB_ID unset but no all_debug job, and logs/base-target-file.log:6 shows FFF. for the same file at the base revision.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff changes reckon/crew/recovery_classification.py:1838-1842 and adds one fragment, both inside the declared fence, with no test file touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:258 fails at base per logs/base-target-file.log:6 because a manifest-bearing starting pointer never dispatches, so reverting recovery_classification.py:1838 reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: the term sits inside the existing pre_spawn_waiting expression at reckon/crew/recovery_classification.py:1838 and reads the same manifest_status truthiness used below at :1945.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; the launched pid term at reckon/crew/recovery_classification.py:1849 and the manifest_status reading at :1362 are reused rather than forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html:125 non-blocking: the fragment states tests/test_a_starting_run_is_classified.py is green in the head arm, but that file appears nowhere in logs/head-*; the guard for the arm this change narrows has no recorded head run.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued.html:67 non-blocking: the importer arm population is keyed to the literal module name and omits importers of the re-export at reckon/crew/recovery.py:83, including tests/test_a_starting_run_is_classified.py.\nFINDING logs/head-target-file.log:1 non-blocking: the done_when requires the gate as a job on all_debug, but the log records none and the run's allocation was job 1319168 on partition sun.\nFINDING logs/base-importers.log:4 non-blocking: the base arm's module-under-test header names a doubled-dot path that exists nowhere, so its import provenance cannot be checked from the header.\n",
+  "review_run_id": "r-20261116T145001121580-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-a34e5162a2e6",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "a34e5162a2e6eaae257016edfbebd0f975642a0c",
+  "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+    "reviewer_run_id": "r-20261116T145001121580-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-a34e5162a2e6"
+  },
+  "reviewer_run_id": "r-20261116T145001121580-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-a34e5162a2e6",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:18:09.033416+00:00",
+  "total": 105
+}

@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/merge.py:1544 _release_run_workspace reads obligations._held_worktree_records",
+    "reckon/crew/obligations.py:3667 the per-session held-worktree duties read the same derivation"
+  ],
+  "completed_at": "2026-11-16T10:05:40.898Z",
+  "dispatched_at": "2026-11-16T10:05:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate header records revision 9527583d while the node landed 2fa14563fd, so the gate revision and the promoted head disagree in the record; the trailing commit touches only this fragment and the test module is byte-identical at both revisions, but the log alone does not say so."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "non-blocking: the prose states the head run is the command the manifest's tests: line records, but that line is the env -u SLURM_JOB_ID ... sbatch --wait wrapper while the fragment prints the inner pytest command, so a re-runner following the manifest is not handed the command the header shows."
+    },
+    {
+      "file": "logs/base-suite-arm.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base and head suite arms name the same # tree: worktree and differ only in their labelled revision, and the two collected files neither import the changed module nor the changed test file, so the 58-passed pair reads identically with the change absent and cannot detect a regression in it."
+    }
+  ],
+  "head_log_revision": "9527583d2281604e625e62776935b25afba7e28f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production code reaches the landed change, which is a test fixture and an evidence fragment; the production reader the fixture exercises is obligations._held_worktree_records, reached from reckon/crew/merge.py:1544 and reckon/crew/obligations.py:3667.",
+    "diff": "read all three commits against base 0e0f25b0f941 commit by commit: 980a8e8a8a adds a file and a commit inside each of the twenty fixture worktrees at tests/test_held_worktree_records_match_each_record_once.py:56-58, and 9527583d22 plus 2fa14563fd write the evidence fragment only, with no product file and no assertion changed.",
+    "done_when": "the done_when names the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, each cause with a product-or-test verdict, and no assertion weakened; the manifest's tests: line names the sbatch submission and the two gate logs record 5 passed EXIT=0 at head and 2 failed EXIT=1 at base, with the cause named in the manifest and the fragment.",
+    "goal": "the node's goal is to make tests/test_held_worktree_records_match_each_record_once.py pass in full on the primary branch; the landed change repairs the fixture's missing unmerged work so the derivation stops dropping all twenty trees, and the file reads 5 passed at head.",
+    "manifest": "read; status complete, commits 980a8e8a8a, 9527583d22 and 2fa14563fd, changed_paths the test module and the fragment, both gate logs and both suite arm logs named, baseline_suite 0 failures at 0e0f25b0 and after_suite 0 failures at 980a8e8a, and the two base failing ids under evidence_inputs.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its named fragment and a figures directory; the two paths in the diff and in the manifest are both inside it."
+  },
+  "justifications": {
+    "durability": "reinstating the defect reddens tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree and ::test_the_worktree_records_equal_the_whole_ledger_derivation, which logs/base-node-test-all_debug.log:25-26 shows with both ids and EXIT=1, so the guard fires; a fixture that wrote its file without committing would leave the tree held by its uncommitted change instead, and no assertion in the file distinguishes that path.",
+    "evidence": "logs/head-node-test-all_debug.log records all_debug job 1319586 as 5 passed with EXIT=0 and logs/base-node-test-all_debug.log records job 1319587 as 2 failed, 3 passed with EXIT=1, both complete and both cited by the manifest, but the head log names revision 9527583d rather than the landed 2fa14563fd and both suite arms collect two files that neither import nor exercise the changed module.",
+    "fit": "tests/test_held_worktree_records_match_each_record_once.py:56-58 follows the same worktree-add then add-and-commit idiom as tests/test_crew_promotion_scope.py:103-110, and the added commit subject test: leave <node> work unmerged names no plan, sprint, ticket or author.",
+    "goal_fidelity": "tests/test_held_worktree_records_match_each_record_once.py:44-62 now leaves each fixture tree carrying a commit the primary ref cannot reach, the state reckon/crew/obligations.py:3227 demands before it keeps a tree, and the file passes 5 of 5 at head; the on-the-primary-branch half of the goal rests on promotion because the manifest records that origin/main could not be fetched.",
+    "reuse": "the diff adds no definition of its own, extending the file's existing _worktree at tests/test_held_worktree_records_match_each_record_once.py:44 over the shared tests/helpers/git.py wrapper; a capability search over tests/ for a fixture registering a worktree with unmerged commits found only per-module helpers (tests/test_crew_promotion_scope.py:103 _detached_tree plus _commit_allowed), so there is no owner to extend.",
+    "scope_discipline": "git diff --stat 0e0f25b0f941..2fa14563fd1e lists only tests/test_held_worktree_records_match_each_record_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html, both inside the declared fence, and the source worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_held_worktree_records_match_each_record_once.py pass in full on the primary branch; the landed change repairs the fixture's missing unmerged work so the derivation stops dropping all twenty trees, and the file reads 5 passed at head, with the test module byte-identical at 9527583d and the landed 2fa14563fd.\nVERDICT done_when: the done_when names the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, each cause with a product-or-test verdict, and no assertion weakened or deleted; the manifest's tests: line names the sbatch submission, logs/head-node-test-all_debug.log records job 1319586 with 5 passed and EXIT=0, and logs/base-node-test-all_debug.log records revision 0e0f25b0 at job 1319587 with 2 failed, 3 passed and EXIT=1, so the gate asserts the measure.\nVERDICT write_paths: the node was fenced to reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its named fragment and a figures directory; git diff --stat 0e0f25b0f941..2fa14563fd1e lists exactly tests/test_held_worktree_records_match_each_record_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html, both inside that fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031901379109-qwnw-red-file-held-worktree-records-match-each-record-once/manifest.md; status complete, commits 980a8e8a8a, 9527583d22 and 2fa14563fd, changed_paths the test module and the fragment, both gate logs and both suite arm logs named, baseline_suite 0 failures at 0e0f25b0 and after_suite 0 failures at 980a8e8a, and the two base failing ids recorded under evidence_inputs.\nVERDICT diff: read all three commits against base 0e0f25b0f941 commit by commit; 980a8e8a8a writes a file and a commit inside each of the twenty fixture worktrees at tests/test_held_worktree_records_match_each_record_once.py:56-58, 9527583d22 and 2fa14563fd write the evidence fragment only, and no product file and no assertion changed.\nCALL_SITES: reckon/crew/merge.py:1544 _release_run_workspace, reckon/crew/obligations.py:3667 held-worktree duties\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_held_worktree_records_match_each_record_once.py:44-62 leaves each fixture tree carrying a commit the primary ref cannot reach, the state reckon/crew/obligations.py:3227 demands before it keeps a tree, and the file passes 5 of 5 at head.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-node-test-all_debug.log records all_debug job 1319586 as 5 passed with EXIT=0 and logs/base-node-test-all_debug.log records job 1319587 as 2 failed, 3 passed with EXIT=1, both complete and both cited by the manifest, but the head log names revision 9527583d rather than the landed 2fa14563fd and both suite arms collect two files that neither import nor exercise the changed module.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 0e0f25b0f941..2fa14563fd1e lists only tests/test_held_worktree_records_match_each_record_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html, both inside the declared fence.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the defect reddens tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree and ::test_the_held_trees_equal_the_whole_ledger_derivation, which logs/base-node-test-all_debug.log:25-26 shows with both ids and EXIT=1, so the guard fires; a fixture that writes its file without committing would leave the tree held by its uncommitted change instead, and no assertion in the file distinguishes that path.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_held_worktree_records_match_each_record_once.py:56-58 follows the worktree-add then add-and-commit idiom of tests/test_crew_promotion_scope.py:103-110 and names no plan, sprint, ticket or author.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, extending the file's own _worktree at tests/test_held_worktree_records_match_each_record_once.py:44 over tests/helpers/git.py, and a search over tests/ for a fixture registering a worktree with unmerged commits found only per-module helpers such as tests/test_crew_promotion_scope.py:103.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html:33 non-blocking: the head gate header records revision 9527583d while the node landed 2fa14563fd, so the gate revision and the promoted head disagree in the record even though the test module is byte-identical at both revisions.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktree-records-match-each-record-once.html:40 non-blocking: the prose says the head run is the command the manifest's tests: line records, but that line is the sbatch wrapper and the fragment prints the inner pytest command.\nFINDING logs/base-suite-arm.log:2 non-blocking: the base and head suite arms name the same # tree: worktree and differ only by their revision label, and both collected files neither import the changed module nor the changed test file, so the 58-passed pair cannot detect a regression in this change.",
+  "review_run_id": "r-20261116T100346631052-review-of-qwnw-red-file-held-worktree-records-match-each-record-once-2fa14563fd1e",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "2fa14563fd1e556e080110702e909e1b6dfd1af3",
+  "reviewed_run_id": "r-20261116T031901379109-qwnw-red-file-held-worktree-records-match-each-record-once",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T100346631052-review-of-qwnw-red-file-held-worktree-records-match-each-record-once-2fa14563fd1e"
+  },
+  "reviewer_run_id": "r-20261116T100346631052-review-of-qwnw-red-file-held-worktree-records-match-each-record-once-2fa14563fd1e",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:27:14.906559+00:00",
+  "total": 115
+}

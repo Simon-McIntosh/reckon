@@ -45,7 +45,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 plt.style.use("data-ink")
 
-from reckon import _plan_html  # noqa: E402
+from reckon import _plan_html, run_store  # noqa: E402
 from reckon.crew import plan_review  # noqa: E402
 
 REVIEWS_ROOT = Path.home() / ".config/reckon/crew/reviews"
@@ -323,21 +323,30 @@ def plan_relative_path(record):
     return f"docs/plans/{record['plan_slug']}.html"
 
 
-def load_dispatch_times(repos, projects):
-    """Build-dispatch times per (project, plan); role ``review`` is excluded."""
+def load_dispatch_times(projects):
+    """Build-dispatch times per (project, plan); role ``review`` is excluded.
+
+    The times come from the run store rather than from a checkout's
+    ``docs/state/<project>/crew.json``. That file is the ledger's old aggregate
+    and leaves git at the cutover, so a reader keyed on it loses every dispatch
+    time the change it was measuring was dispatched under.
+
+    A store that is absent, unreadable, or holding no row of a project asked
+    about raises with the store's own path named. Answering an empty mapping
+    there would fold every plan's dispatch times out of the cadence figures with
+    nothing failing, which is the defect this read replaces.
+    """
     times: dict[tuple[str, str], list[datetime]] = collections.defaultdict(list)
+    store = run_store.store_path()
     for project in projects:
-        repo = repos.get(project)
-        if repo is None:
-            continue
-        ledger = repo / "docs" / "state" / project / "crew.json"
-        if not ledger.is_file():
-            continue
-        try:
-            data = json.loads(ledger.read_text(encoding="utf-8"))["data"]
-        except (OSError, json.JSONDecodeError, KeyError):
-            continue
-        for row in data.get("runs", []):
+        rows = run_store.stored_run_rows(project)
+        if not rows:
+            raise RuntimeError(
+                f"no stored run rows for {project}: the review-cycle figure reads "
+                f"dispatch times from the run store {store}, which is absent, "
+                "unreadable or holds none of this project's runs"
+            )
+        for row in rows:
             if not row.get("plan") or row.get("role") == "review":
                 continue
             moment = parse_ts(row.get("dispatched_at")) or parse_ts(
@@ -655,7 +664,7 @@ def main():
     ]
 
     # ── Q5: counterfactual replay ───────────────────────────────────────────
-    dispatch_times = load_dispatch_times(repos, {key[0] for key in plans})
+    dispatch_times = load_dispatch_times({key[0] for key in plans})
     note(f"dispatch times loaded for {len(dispatch_times)} plans; replaying mechanisms")
     mechanisms: dict[str, dict] = {}
     lost_lists: dict[str, list[str]] = {}

@@ -1,0 +1,103 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T23:08:26.029Z",
+  "dispatched_at": "2026-11-16T23:08:07Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_claims.py:427 reckon/crew/dispatch_plan.py:1119",
+      "id": "duplicate_owner-1",
+      "reason": "the measured 241 dispositions and 959 git calls come from un-narrowed call sites, not from missing machinery, so the plan should state the endpoint as every caller narrowing and the brief must name the owner to extend.",
+      "text": "\u00a72's endpoint (the scope check costs what the candidate node's paths can meet) is already implemented and already wired on both admission paths (`reckon/crew/dispatching/preparation.py:762` and `reckon/crew/dispatching/launch.py:897` pass `candidate_paths`/`candidate_repositories`), and the only exhaustive read left on the preview path is the `report_live_conflicts` call at `reckon/crew/dispatch_plan.py:1119`, which passes no candidates; the same un-narrowed read recurs at `reckon/crew/dispatch_claims.py:2097` (`_racing_claim_current`, inside the racing wait) while `reckon/crew/dispatch_claims.py:2580` already shows the narrowed call shape",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_requests.py:461 reckon/crew/promotion_requests.py:437",
+      "id": "duplicate_owner-2",
+      "reason": "the section reads as a new caching layer when the injection point exists, and the plan should state that the sibling call sites keep the same one-listing contract or that one pass holds one listing.",
+      "text": "\u00a73's one-listing-per-pass already has both halves: `_resolved_reviewed_run_id` accepts a shared `pointers=` argument (`reckon/crew/recovery_review_delivery.py:231`) that `_pending_requests` does not supply, so `_reviewed_run_id` resolves each review request with its own listing; the same un-shared listing recurs at `reckon/crew/recovery_review_dispatch.py:1007`, `reckon/crew/recovery_review_dispatch.py:3025`, `reckon/crew/recovery_review_dispatch.py:3612`, `reckon/crew/recovery_review_dispatch.py:3930`, `reckon/crew/promotion_scope.py:645` and `reckon/crew/promotion_scope.py:872`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/station_store.py:793 reckon/roadmap_snapshot.py:1",
+      "id": "duplicate_owner-3",
+      "reason": "the refresh should adopt the snapshot's currency and staleness rules, so its no-input-read and pending-with-age tests measure an existing owner rather than a second one.",
+      "text": "\u00a74's two behaviours are already owned: `pointer_is_current` (`reckon/crew/station_store.py:793`) exists so an unchanged pointer is not re-read, and `reckon/roadmap_snapshot.py` owns a key over the store's write counter and the project's live runs, with the recorded rule that a stale record is answered from and marked stale rather than reported slow; a refresh that invents its own pending state beside it creates a second staleness rule for one project's answer",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_edit_plan.py:1487 reckon/roadmap_snapshot.py:1",
+      "id": "duplicate_owner-4",
+      "reason": "a 0/1 build count can be met by a private cache that diverges on invalidation, and the plan's own equality clause requires the snapshot key, so the section must be written to it.",
+      "text": "\u00a75's build no roadmap / at most one / never reuse across a change is exactly the key `reckon/roadmap_snapshot.py` documents (plan state, HEAD, the store write counter, live runs, the composing code), and the write path at `reckon/mcp_edit_plan.py:1487` recomposes ahead of that owner; the change is to route the write's two returned fields through the snapshot, not to add build counting beside it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/run_store.py:82 reckon/run_store.py:988",
+      "id": "duplicate_owner-5",
+      "reason": "the plan should state the endpoint as the plan-keyed query over the store's own query keys and archive tables, so the worker extends `reckon/run_store.py` rather than building a parallel index the archive path will drift from.",
+      "text": "\u00a76's plan-scoped read already has its owner and its indexes: `_RUNS_INDEXES` is generated from `QUERY_KEYS` (`reckon/run_store.py:80-83`) and the archive carries `archive.idx_runs_project` and `archive.idx_runs_node` (`reckon/run_store.py:988-991`), so visiting the whole of 11,360 rows to return 196 describes a query shape, not a missing index; a side index or payload-scan limit added in \u00a76 would be a second owner of one query contract across the hot store and its archive",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/admission/service.py:153 reckon/crew/admission/service.py:254",
+      "id": "duplicate_owner-6",
+      "reason": "the plan already describes the same endpoint (stage times summing to the pass within 5 %), so this changes the brief's reuse map rather than the plan's record.",
+      "text": "\u00a77 asks for receipts that name each stage with its time, but `_record_stage_timings` already writes `release_seconds`, `waits_seconds`, `launch_seconds` and `land_seconds` per pass and already takes the wait stage from its own clock; what is genuinely missing is the reads inside each stage, so a second receipt family for the same pass is a duplicate of the owner",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/admission/service.py:153",
+      "id": "thin_wrapper-1",
+      "reason": "without the per-read attribution on the existing verdict row, \u00a79's ten live receipts reconcile against two records for one pass.",
+      "text": "\u00a77's receipt is a thin layer over `_record_stage_timings` and gives no reason that recorder cannot carry the per-read split itself; the same shape recurs where \u00a73 and \u00a74 each would wrap `list_live` and `pointer_is_current` without saying why they cannot be extended",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "dispatch-admission-and-landing-take-seconds#s4",
+      "id": "interface_budget-1",
+      "reason": "the section must account for its added surface in its own text, and adopting the snapshot's existing stale-not-slow answer would retire \u00a74's addition.",
+      "text": "public_definitions 2875, cli_options 515, mcp_views 15, refusal_families 25; \u00a74 adds a new `pending` answer state carrying an age to the refresh surface and \u00a77 adds new receipt fields, and neither section names a state or field it retires or merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cd4989a553a395d668ca359ebf745b8453d0ac55",
+  "plan_fingerprint": "8c46603460f5fae01f6210f051dbbd32bc5dd677152b1cba321a55256fb6c8ab",
+  "plan_slug": "dispatch-admission-and-landing-take-seconds",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261116T224718143417-plan-review-of-dispatch-admission-and-landing-take-seconds",
+  "reviewed_blob_sha": "6a3b00d393a5ead06e594a866e68f0574ad26b93",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the seven endpoints concentrate in four existing owners (`reckon/crew/dispatch_claims.py`, `reckon/roadmap_snapshot.py`, `reckon/run_store.py`, `reckon/crew/admission/service.py`); no new module is needed to hide the behaviour each section asks for.",
+    "duplicate_owner": "a finding \u2014 every section's read-shape change has an existing owner, and the design otherwise re-implements keyed reuse (`reckon/roadmap_snapshot.py`), pointer currency (`reckon/crew/station_store.py`) and query indexing (`reckon/run_store.py`) rather than extending them.",
+    "interface_budget": "a finding \u2014 public_definitions 2875, cli_options 515, mcp_views 15, refusal_families 25; \u00a74 adds a `pending` answer state with an age and \u00a77 adds new receipt fields while neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 the machinery \u00a72 asks for already exists and is reachable by extension: `_repository_scope_claims(candidate_paths=..., candidate_repositories=...)` in `reckon/crew/dispatch_claims.py:427` with the `relevant` gate at `:515` that costs no git at all for a pointer that can meet none of the candidate's roots.",
+    "thin_wrapper": "a finding \u2014 \u00a77 proposes a per-read timing receipt beside `_record_stage_timings`, which already records release/waits/launch/land seconds for every pass, so the added layer lacks a reason the existing recorder cannot be extended."
+  },
+  "section_digests": {
+    "_document": "52d3cb357dabc3e6ade5946a7a910dd261be2d8d8340b374877fa93eabaa6a67",
+    "s1": "e76e79408be253cc9da0cd82405aba89521a59ead734ee7d67f25e26068d92cf",
+    "s2": "73c4675971f5638dbffe1136f6b8ea20824222d71c524da69e2463791effa692",
+    "s3": "35075997a5d01d69d6eac597cea2d2c1c57d2c8249219f7c7750c23fa8519506",
+    "s4": "1ee1a1b21fec6d04864c1f1797db084853fd0a7f4a8c4e427aff98de08b32fd4",
+    "s5": "abace43633aabf7305a0de765490d3900806213fcb169d000628ca8a55b805c4",
+    "s6": "38f4540197fe7398d662581bf5e8c17570ad0022c1a1020a96aa323a851aa2e0",
+    "s7": "556b9d120d72f5065d1b15d94a1f1c32c14e97b9fea322ebaf1256da6068cdb1",
+    "s8": "893644bacd5913157eced1d4117e20c5a6e11c6a7efe3d03ac92354dc3d4478e",
+    "s9": "6f26bdcc08d167715f8dec974b6d1896ce290dd363cfd619f0ef6867e48a18ab"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:56:46.248738+00:00",
+  "total": null
+}

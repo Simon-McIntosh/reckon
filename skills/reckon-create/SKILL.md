@@ -91,7 +91,13 @@ characterisations, and reference analyses that inform â€” but do not describe â€
 A third type, **evidence** (`reckon-type=evidence`, `docs/evidence/`), is the
 outcome-record flavour: it carries `plan-evidence-for` naming the plan(s) whose
 execution it documents. Landed records authored under `docs/research/` for
-historical reasons still MUST carry `plan-evidence-for`.
+historical reasons still MUST carry `plan-evidence-for`. A per-node evidence
+fragment is optional and most nodes write none: a landing leaves its `landing:`
+line, its run record and its gate log, and writes a fragment only for a
+negative result or a mechanism that does not fit a landing line. Nothing
+splices a fragment into a plan's landed record, which is synthesized once at
+closure and links the fragment from the node's row without reproducing its
+text.
 
 **When ambiguous, default to plan.**
 

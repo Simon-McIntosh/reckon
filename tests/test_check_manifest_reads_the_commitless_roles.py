@@ -29,10 +29,14 @@ RUN_ID = "r-20261004T122758429270-investigate-out-of-repository"
 PROJECT = "nova"
 COMMIT_FINDING = "status is complete but no commit is recorded"
 
+# Every delivered manifest states whether the run received a coordinator message,
+# because a run's own receipts are what promotion reconciles the statement
+# against; this fixture's run has an empty inbox, so it owes the absence.
 MANIFEST = """\
 node: verify-{run}
 status: complete
 commits: {commits}
+messages_received: none
 changed_paths:
   - {deliverable}
 tests: focused check passed

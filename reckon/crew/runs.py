@@ -2940,7 +2940,7 @@ def _unloaded_sections(
         if not isinstance(node, Mapping):
             node = {}
         return (
-            str(node.get("plan") or record.get("plan") or ""),
+            str(node.get("plan") or "") or ledger.row_plan(record),
             _plan_html.section_record_id(node.get("section") or record.get("section")),
         )
 

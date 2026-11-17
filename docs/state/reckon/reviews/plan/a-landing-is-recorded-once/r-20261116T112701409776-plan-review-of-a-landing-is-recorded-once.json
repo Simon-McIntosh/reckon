@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T11:36:01.688Z",
+  "dispatched_at": "2026-11-16T11:31:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-recorded-once.html:63",
+      "id": "reasoning-1",
+      "reason": "the section title is the node's dispatch goal, and worded as it is a worker can re-pin the passing \"no overview\" case instead of adding the missing no-document case, which is exactly the defect \u00a77 exists to repair.",
+      "text": "the section title says the page's link is withheld for a plan with no overview, while the body at line 65 and the page's own rule (`SprintPlanRow.href` is empty only when `resolve_resource` finds no document, reckon/evidence.py:1132-1141,1216-1222) name a plan with no document; the existing fixture Gamma is a plan with a document and no overview whose row is asserted to be linked (tests/test_a_closing_sprint_gets_one_page.py:327-333), so a goal line taken from the title names the case that already passes",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1fa5dd0e4d6c22da8ca665133038db4d832ebb8f",
+  "plan_fingerprint": "3a338298cf6edc249e44b07c73b4de499145cd4fef98a6a194a462ff1bf48e42",
+  "plan_slug": "a-landing-is-recorded-once",
+  "plan_version": 33,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "64076bc61e4ae3ffa21485fbf61bea3e6dabe188",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the section title now reads 'a link to a plan with no document', matching the body and the page's rule",
+      "reason": "",
+      "when": "2026-11-16T12:34:46.863234+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "64076bc61e4ae3ffa21485fbf61bea3e6dabe188",
+      "commit_basis": "edit",
+      "note": "the section title now reads 'a link to a plan with no document', matching the body and the page's rule",
+      "reason": "",
+      "when": "2026-11-16T12:34:46.863234+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-landing-is-recorded-once/r-20261116T112701409776-plan-review-of-a-landing-is-recorded-once.json",
+  "review_run_id": "r-20261116T112701409776-plan-review-of-a-landing-is-recorded-once",
+  "reviewed_blob_sha": "c8c4820c007683987f7a235e61e0245b45f4dcba",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 s7 cites no file or commit, and the plan's own citations resolve (docs/research/per-node-evidence-costs-and-closure-overview.html, docs/evidence/fragments/a-landing-is-recorded-once/alro-s2.html).",
+    "done_when": "pass \u2014 the landed-count case holds a fixture where the two counts differ (one section declared done with no landing comment and no run, beside landed sections) and the no-document case holds a member plan whose row must carry no link, with the link check's removal named as a logged negative control.",
+    "evidence_paths": "pass \u2014 s7 names no scratch or node-local temporary path; the red run it requires is logged in the node's run directory, the same place \u00a74's live-store log was written.",
+    "naming": "pass \u2014 the section title and body carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 evidence.py:1132-1141,1216-1222 does withhold a link only for a plan with no document, so the body's corrected rule is right; the unchanged h2 at docs/plans/a-landing-is-recorded-once.html:63 still names \"a link with no overview\".",
+    "single_goal": "pass \u2014 both cases strengthen one test file (`tests/test_a_closing_sprint_gets_one_page.py`) against one renderer (`SprintPlanRow`/`_sprint_row`), so a single verdict closes them.",
+    "wiring": "pass \u2014 s7 declares no `depends-on` and the followup's \"waits on nothing unlanded\" holds: the only upstream of its measure, \u00a75 (declared `done`), has landed, and the plan's dependency map (`plan-section-depends-on`: s3\u2192s2, s5\u2192s3, s6\u2192s3,s4) needs no s7 edge."
+  },
+  "section_digests": {
+    "_document": "adc7645beac52f5e7e417176e14e21f4a6a21a5befe2160e351c6cc78e7c8764",
+    "s1": "107014e26b98292ffe827eb29fb169b9ff2e26fc6f99ce0d3dac1dd8d543e299",
+    "s2": "38498c026b7b067ab097f661d4566ba96d7387bbad6f1443f6efe8553028ad77",
+    "s3": "a5e609ffdda00e04f8733b82de5f610463e4e7e07405c102c8f9cb9a361a9065",
+    "s4": "54a1a65310aa7822cfb6a65e1d8146f73832f68b7cb39dcc5e8010905f8962ff",
+    "s5": "70388ed2fe3a64b08e6ce5b7d84d907144450ecd34194e69c68fb2bdcf1d356b",
+    "s6": "d9ecbed9ebd9623931f066c7bba6503312395ed81a9723445cb56f2ea79c19ab",
+    "s7": "923b20245a6c46b8fe0afc298655099f7b5a6525297f7261390162e8755cfbea"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:44:06.481873+00:00",
+  "total": null
+}

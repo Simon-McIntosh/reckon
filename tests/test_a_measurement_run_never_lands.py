@@ -1,6 +1,6 @@
 """A measurement run builds and gates exactly as an implement run does, and lands not.
 
-§13 of the token report measures each arm on the same already-landed sections,
+The paired replay report measures each arm on the same already-landed sections,
 so a replay run must build and gate like any implementation run and then be
 picked up by nothing: the review reflex composes no review for it, the lander
 never takes it, and ``crew complete`` writes a row whose outcome is
@@ -31,6 +31,7 @@ from reckon import cli as cli_module
 from reckon.crew import (
     open_run_index,
     queue_landing,
+    recovery_classification,
     recovery_review_dispatch,
     runs,
 )
@@ -40,8 +41,8 @@ from tests.helpers.git import git as _git
 
 PROJECT = "proj"
 PLAN = "plan-a"
-LANDED_SECTION = "s13"
-OPEN_SECTION = "s14"
+LANDED_SECTION = "landed"
+OPEN_SECTION = "open"
 SESSION = "session-measurement"
 NODE_ID = "measurement-fixture"
 REASON = "every arm builds the same landed section so their figures are comparable"
@@ -71,10 +72,10 @@ PLAN_HTML = (
     '<meta name="reckon-type" content="plan">\n'
     '<meta name="plan-slug" content="plan-a">\n'
     '<meta name="plan-section-declarations" content="'
-    "{&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}"
+    "{&quot;landed&quot;:&quot;done&quot;,&quot;open&quot;:&quot;implementable&quot;}"
     '">\n'
-    '<h2 id="s13">§13 — A measurement run builds and gates but never lands</h2>\n'
-    '<h2 id="s14">§14 — Every arm replays the same landed sections</h2>\n'
+    '<h2 id="landed">A completed task</h2>\n'
+    '<h2 id="open">An open task</h2>\n'
 )
 
 
@@ -124,6 +125,15 @@ def measurement_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
     )
     return repository
+
+
+def _attach_primary_remote(repository: Path, tmp_path: Path) -> str:
+    """Publish the primary branch and return its remote head."""
+    remote = tmp_path / "origin.git"
+    _git(tmp_path, "init", "--bare", "-q", "--initial-branch=main", str(remote))
+    _git(repository, "remote", "add", "origin", str(remote))
+    _git(repository, "push", "-q", "--set-upstream", "origin", "main")
+    return _git(repository, "rev-parse", "origin/main")
 
 
 def _dispatch(
@@ -398,6 +408,40 @@ def test_complete_records_a_measured_row_and_leaves_the_branch_alone(
     assert not worktree.is_dir(), "a measurement run kept its worktree"
 
 
+def test_a_measurement_complete_records_without_advancing_the_primary_branch(
+    measurement_repo: Path, tmp_path: Path
+) -> None:
+    """Record a completed replay even when its delivered head is off origin/main."""
+    primary_head = _attach_primary_remote(measurement_repo, tmp_path)
+    run = _delivered_measurement_run(measurement_repo, tmp_path)
+    assert not _git_succeeds(
+        measurement_repo, "merge-base", "--is-ancestor", run["head"], "origin/main"
+    )
+
+    result = _complete(run, measurement_repo, tmp_path)
+
+    assert result.exit_code == 0, result.output
+    row = open_run_index.row_for_run(PROJECT, run["run_id"], measurement_repo)
+    assert row is not None, result.output
+    assert row["outcome"] == "measured", row.get("outcome")
+    assert _git(measurement_repo, "rev-parse", "origin/main") == primary_head
+
+
+def test_a_complete_measurement_is_promotable_without_a_review(
+    measurement_repo: Path, tmp_path: Path
+) -> None:
+    """Classify the same completed pointer as promotable, with no review owed."""
+    _attach_primary_remote(measurement_repo, tmp_path)
+    run = _delivered_measurement_run(measurement_repo, tmp_path)
+    _end_worker(run["run_id"])
+    pointer = runs.read_pointer(run["run_id"])
+
+    result = recovery_classification.classify_pointer(pointer, pointers=[pointer])
+
+    assert result["classification"] == "promotable", result["detail"]
+    assert "no review is owed" in result["detail"], result["detail"]
+
+
 # ── a landed section is dispatchable only under the flag ─────────────────────
 
 
@@ -502,9 +546,12 @@ def test_the_lander_attempts_a_landing_once_its_skip_is_removed(
 def test_the_reflex_composes_a_review_once_its_skip_is_removed(
     measurement_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Removing the reflex's skip composes one, so the run was review-eligible."""
+    """Removing both review protections makes the reflex compose a review."""
     run = _delivered_measurement_run(measurement_repo, tmp_path)
     _end_worker(run["run_id"])
+    monkeypatch.setattr(
+        recovery_classification, "_is_measurement_run", lambda _record: False
+    )
     monkeypatch.setattr(
         recovery_review_dispatch,
         "_measurement_run_refusal",
