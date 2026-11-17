@@ -3470,6 +3470,8 @@ def _complete_many(run_ids, parameters):
                 "ledger_path",
                 "merged",
                 "worktree_released",
+                "review_filed",
+                "refused",
             )
             if key in result
         }
