@@ -172,7 +172,9 @@ def test_writes_keep_the_readers_plan_identity(tmp_path, identity):
     if selected:
         _assert_reference(
             run_store.stored_run_rows("project", path=path, plan=selected),
-            [{"project": "project", **row}],
+            # The project files the row in its column rather than adding a field
+            # to it, so the record answered is the one the writer passed.
+            [dict(row)],
         )
     assert run_store.stored_run_rows("project", path=path, plan="ignored") == []
 

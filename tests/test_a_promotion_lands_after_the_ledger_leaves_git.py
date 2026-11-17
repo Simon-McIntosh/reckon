@@ -102,7 +102,8 @@ def test_a_repository_without_commits_accepts_its_first_run(tmp_path: Path) -> N
     result = ledger.append_run(PROJECT, {"run_id": "r-first"}, root=root)
 
     assert result["store"] == {"status": "written"}
-    assert _rows() == {"r-first": {"run_id": "r-first", "project": PROJECT}}
+    # The project files the row in its column; it is not a field of the record.
+    assert _rows() == {"r-first": {"run_id": "r-first"}}
     assert Path(result["path"]) == ledger.run_path(PROJECT, "r-first", root)
     assert Path(result["path"]).is_file()
     assert not ledger.ledger_path(PROJECT, root).exists()

@@ -926,6 +926,20 @@ def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
     )
 
 
+def _answer_identity(record: Mapping[str, Any], project: str) -> dict[str, Any]:
+    """A stored record answered as it was written, with the project it is filed under.
+
+    The payload is the record the promotion wrote, so it is answered as it
+    stands rather than re-split: a row written before the write stopped
+    injecting the project states one of its own, and a row written since does
+    not. The column supplies it when the record does not, so both answer the
+    identity the file is filed under.
+    """
+    answer = dict(record)
+    answer.setdefault("project", project)
+    return answer
+
+
 def _durable_record(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """The durable content the store holds for a run record.
 
@@ -1765,7 +1779,7 @@ class RunStore:
             ).fetchone()
             if row is None:
                 return None
-        return _durable_record(str(row[1] or ""), _decoded_record(row[0]))
+        return _answer_identity(_decoded_record(row[0]), str(row[1] or ""))
 
     def _run_project(self, run_id: str) -> str | None:
         """The project column of one row, archived rows included."""
@@ -1834,7 +1848,7 @@ class RunStore:
                 ).fetchall()
             )
         return {
-            str(run_id): _durable_record(project, _decoded_record(payload))
+            str(run_id): _answer_identity(_decoded_record(payload), project)
             for run_id, payload in rows
             if payload is not None
         }
