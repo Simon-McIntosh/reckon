@@ -1643,6 +1643,8 @@ def _compute_watch_snapshot(
         stale_after_seconds=stall_seconds,
         **({"pointers": pointers} if pointers is not None else {}),
     )
+    from reckon.crew.stage_receipts import observe_review_delivery
+    observe_review_delivery(pointer, pointers=pointers)
     # Which repair records count as open is the reflex's own question, so it is
     # asked of the owner of that reading rather than answered here. The import
     # is deferred because this module is reachable from the reflex's own import

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -15,6 +17,7 @@ from reckon import cli, crew_follow_commands
 from reckon.crew import (
     dispatch_launch,
     recovery_liveness,
+    recovery_review_delivery,
     recovery_review_dispatch,
     recovery_watch,
     review,
@@ -63,6 +66,61 @@ def _pointer(run_id):
     return pointer
 
 
+def _direct_review(run_id, clock, *, reviewer_id=None, body_updates=None):
+    reviewer_id = reviewer_id or f"r-20260101T000000000000-review-{run_id}"
+    head = "a" * 40
+    path = Path(
+        review.run_review_record_paths(
+            runs.run_dir(run_id), run_id, reviewed_head_sha=head
+        )[-1]
+    )
+    manifest = runs.run_dir(reviewer_id) / "manifest.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text("status: complete\n")
+    pointer = {
+        "run_id": reviewer_id,
+        "project": "sample",
+        "session": "owner",
+        "role": "review",
+        "launch": "in-harness",
+        "phase": "complete",
+        "created_at": clock.now(UTC).isoformat(),
+        "manifest_path": str(manifest),
+        "node": {
+            "id": f"review-of-{run_id}",
+            "role": "review",
+            "time_budget": "10m",
+            "write_paths": [str(path)],
+        },
+    }
+    runs._write_json(runs.pointer_path(reviewer_id), pointer)
+    body = {
+        "status": "parsed",
+        "project": "sample",
+        "reviewed_run_id": run_id,
+        "review_run_id": reviewer_id,
+        "reviewed_base_sha": "b" * 40,
+        "reviewed_head_sha": head,
+        "scores": dict.fromkeys(review.REVIEW_DIMENSIONS, 20),
+    }
+    body.update(body_updates or {})
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(body))
+    written = clock.now(UTC).timestamp()
+    os.utime(path, (written, written))
+    os.utime(manifest, (written + 0.25, written + 0.25))
+    return pointer, path, body, written
+
+
+def _observe_review(pointer, clock):
+    return recovery_watch._compute_watch_snapshot(
+        pointer,
+        moment=clock.now(UTC).timestamp(),
+        stall_seconds=300,
+        pointers=[pointer],
+    )
+
+
 def _lifecycle(run_id, tmp_path, monkeypatch):
     pointer = _pointer(run_id)
     event = _delivery(run_id)
@@ -80,20 +138,16 @@ def _lifecycle(run_id, tmp_path, monkeypatch):
         prefer_local=True,
     )
     assert not report["dispatched"]
-    reviewer = {"run_id": f"review-{run_id}", "reviewed_run_id": run_id}
+    reviewer = {
+        "run_id": f"r-20260101T000000000000-review-{run_id}",
+        "reviewed_run_id": run_id,
+    }
     receipts.note_review(reviewer, "review_admitted")
     receipts.note_review(reviewer, "review_started")
-    review._write_record(
-        tmp_path / f"{run_id}.json",
-        {
-            "status": "parsed",
-            "project": "sample",
-            "reviewed_run_id": run_id,
-            "review_run_id": reviewer["run_id"],
-            "reviewed_head_sha": "a" * 40,
-            "scores": dict.fromkeys(review.REVIEW_DIMENSIONS, 20),
-        },
+    reviewer, _, _, _ = _direct_review(
+        run_id, clock=receipts.datetime, reviewer_id=reviewer["run_id"]
     )
+    _observe_review(reviewer, receipts.datetime)
     refused = requests.request_promotion(run_id)
     service = requests.PromotionService(
         execute=lambda _: {"ok": False, "reason": "review requires a repair"}
@@ -395,3 +449,87 @@ def test_supervisor_records_delivery_without_waiting_for_the_monitor(
     before = receipts.receipt_path(run_id).read_bytes()
     _delivery(run_id)
     assert receipts.receipt_path(run_id).read_bytes() == before
+
+
+def test_a_direct_review_file_is_dated_before_later_filing(clock, tmp_path):
+    run_id = "r-direct-delivery"
+    _pointer(run_id)
+    _delivery(run_id)
+    pointer, path, body, written = _direct_review(run_id, clock)
+    delivered = recovery_review_delivery.review_delivered(pointer)
+    assert delivered is not None
+    assert delivered["record_mtime"] == written
+    for _ in range(30):
+        clock.now(UTC)
+    _observe_review(pointer, clock)
+    rows = [
+        row
+        for row in receipts.read_receipts(run_id)
+        if row["stage"] == "review_record_written"
+    ]
+    assert len(rows) == 1, rows
+    assert datetime.fromisoformat(rows[0]["at"]).timestamp() == written
+    assert rows[0]["attempt"] == pointer["run_id"]
+    assert path.read_text() == json.dumps(body)
+    before = receipts.receipt_path(run_id).read_bytes()
+    review._write_record(tmp_path / "filed-copy.json", body)
+    _observe_review(pointer, clock)
+    assert receipts.receipt_path(run_id).read_bytes() == before
+
+
+def test_filing_direct_json_keeps_its_original_write_instant(clock, monkeypatch):
+    run_id = "r-direct-filing"
+    _pointer(run_id)
+    _delivery(run_id)
+    pointer, _, _, written = _direct_review(run_id, clock)
+    monkeypatch.setattr(review, "unresolved_reviewed_revision", lambda _: None)
+    for _ in range(40):
+        clock.now(UTC)
+    filed = review.file_delivered_run_review_report(
+        pointer, run_directory=runs.run_dir(run_id)
+    )
+    assert filed["filed"] and filed["refused"] == [], filed
+    rows = [
+        row
+        for row in receipts.read_receipts(run_id)
+        if row["stage"] == "review_record_written"
+    ]
+    assert len(rows) == 1
+    assert datetime.fromisoformat(rows[0]["at"]).timestamp() == written
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"status": "unparsed"},
+        {"scores": {}},
+        {"review_run_id": "r-another-review"},
+        {"reviewed_head_sha": "c" * 40},
+    ],
+)
+def test_an_incomplete_or_foreign_direct_file_stamps_no_completion(clock, updates):
+    run_id = "r-invalid-direct-file"
+    _pointer(run_id)
+    _delivery(run_id)
+    pointer, _, _, _ = _direct_review(run_id, clock, body_updates=updates)
+    assert recovery_review_delivery.review_delivered(pointer) is None
+    _observe_review(pointer, clock)
+    assert not any(
+        row["stage"] == "review_record_written"
+        for row in receipts.read_receipts(run_id)
+    )
+
+
+def test_a_second_review_without_its_request_has_unknown_time(clock):
+    run_id = "r-review-rounds"
+    receipts.record_stage(run_id, "delivery_recorded")
+    receipts.record_stage(run_id, "delivery_shown")
+    receipts.record_stage(run_id, "review_requested", attempt="head-a")
+    for stage in ("review_admitted", "review_started", "review_record_written"):
+        receipts.record_stage(run_id, stage, attempt="reviewer-a")
+    # The next reviewer has no request receipt of its own.
+    for stage in ("review_admitted", "review_started", "review_record_written"):
+        receipts.record_stage(run_id, stage, attempt="reviewer-b")
+    census = receipts.stage_census([run_id])
+    assert census["unknown_seconds"] > 0, census
+    assert census["intervals"][5]["stage"] == "unknown"

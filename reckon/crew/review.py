@@ -3741,7 +3741,9 @@ def file_delivered_run_review_report(
             refused.append({"record": str(source), "reason": brief_refusal})
             continue
         try:
-            filed.append(store_review(body))
+            from reckon.crew.stage_receipts import review_file_instant
+            with review_file_instant(source):
+                filed.append(store_review(body))
         except (ValueError, OSError) as exc:
             refused.append({"record": str(source), "reason": str(exc)})
             continue

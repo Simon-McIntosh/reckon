@@ -22,6 +22,8 @@ import os
 import re
 from collections import Counter
 from collections.abc import Iterable, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -60,6 +62,9 @@ _PREVIOUS = {
     "landing": "promotion_settled",
 }
 _PAIRED = frozenset({"review_started", "review_record_written", "promotion_outcome"})
+_REVIEW_FILE_INSTANT: ContextVar[str | None] = ContextVar(
+    "review_file_instant", default=None
+)
 
 
 def receipt_path(run_id: str) -> Path:
@@ -286,7 +291,47 @@ def note_review_record(record: Mapping[str, Any]) -> None:
         record_stage(
             subject,
             "review_record_written",
+            at=_REVIEW_FILE_INSTANT.get(),
             attempt=str(record.get("review_run_id") or ""),
+        )
+
+
+@contextmanager
+def review_file_instant(path: Path):
+    """Carry an original delivery's write time through a later store copy."""
+    instant = datetime.fromtimestamp(path.stat().st_mtime, UTC).isoformat()
+    token = _REVIEW_FILE_INSTANT.set(instant)
+    try:
+        yield
+    finally:
+        _REVIEW_FILE_INSTANT.reset(token)
+
+
+def observe_review_delivery(pointer: Mapping[str, Any], *, pointers=None) -> None:
+    """Stamp a directly written file only when the delivery owner accepts it."""
+    from reckon.crew import recovery_review_delivery as delivery
+
+    if not delivery._is_review_run(pointer):
+        return
+    project = str(pointer.get("project") or "")
+    completed = delivery._delivered_review_record(pointer, project, pointers=pointers)
+    if completed is None:
+        return
+    written, path = completed
+    read = delivery._read_review_record(path)
+    if read is None or read[1] != written:
+        return
+    body, _ = read
+    subject = str(body.get("reviewed_run_id") or "")
+    directory = delivery._review_record_delivery_directory(
+        pointer, project, pointers=pointers
+    )
+    if subject and (directory is None or directory.name == subject):
+        record_stage(
+            subject,
+            "review_record_written",
+            at=datetime.fromtimestamp(written, UTC).isoformat(),
+            attempt=str(pointer.get("run_id") or ""),
         )
 
 
