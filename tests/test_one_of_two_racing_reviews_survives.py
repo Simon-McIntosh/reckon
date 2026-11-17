@@ -35,6 +35,11 @@ dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "race-claim-fixture"
 NODE_ID = "node-racing"
+# The one path both dispatches declare. It is an exclusive artifact class, so
+# the sharing policy cannot exempt it: two worktrees editing a mergeable source
+# file are told to go ahead and merge, and the racing order is only observable
+# where the paths really are contended.
+RACED_PATH = "docs/evidence/archive/race-landed.html"
 SESSION = "session-race-claim"
 REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
@@ -128,7 +133,7 @@ def _node(config_home: Path) -> crew.TaskNode:
         role="implement",
         spec_level="guided",
         done_when="pytest reports exactly one of two racing claims proceeds",
-        write_paths=["src/claimed.py"],
+        write_paths=[RACED_PATH],
         time_budget="20m",
         manifest_path=str(config_home / "manifests" / f"{NODE_ID}.md"),
     )
@@ -170,7 +175,7 @@ def _plant_peer_claim(
         "run_id": peer_run_id,
         "project": PROJECT,
         "repo": str(repo),
-        "node": {"id": "node-peer", "write_paths": ["src/claimed.py"]},
+        "node": {"id": "node-peer", "write_paths": [RACED_PATH]},
         "phase": phase,
         "created_at": registered_at,
     }
@@ -266,7 +271,7 @@ def test_the_claim_registered_second_is_refused_naming_the_first(
         _dispatch(config_home, repo)
 
     assert refusal.value.run_id == peer_run_id
-    assert "src/claimed.py" in str(refusal.value)
+    assert RACED_PATH in str(refusal.value)
     # The refused dispatch left nothing of itself behind.
     assert live_pointers_naming(NODE_ID) == []
 
@@ -384,9 +389,9 @@ def _claim(run_id: str, registered_at: str, *, launched: bool = False):
         repository=None,
         run_id=run_id,
         node_id="node-peer",
-        path="src/claimed.py",
-        absolute_path=Path("/repo/claimed.py"),
-        declared_path="src/claimed.py",
+        path=RACED_PATH,
+        absolute_path=Path("/repo") / RACED_PATH,
+        declared_path=RACED_PATH,
         registered_at=registered_at,
         launched=launched,
     )
