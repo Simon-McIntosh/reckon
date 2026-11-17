@@ -746,6 +746,151 @@ def retire_stuck_review_pointers(*, only_run: str = "") -> list[dict[str, Any]]:
     return retired
 
 
+def landed_workspace_refusal(
+    pointer: Mapping[str, Any], repository: Path, primary: str
+) -> str:
+    """Read the evidence that must survive before a merged run can be retired."""
+    from reckon.crew import merge, routing
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.promotion_evidence import _commit_canonical_id
+
+    manifest = _fresh_manifest(pointer)
+    if manifest is None:
+        return "the manifest is unreadable or does not belong to this attempt"
+    if manifest.get("status") != "complete":
+        return "the manifest does not declare a completed delivery"
+    for citation in manifest.get("commits") or ():
+        resolved = _commit_canonical_id(repository, str(citation))
+        if not resolved:
+            return f"manifest commit {citation!r} does not resolve"
+        if not merge._is_ancestor(repository, resolved, primary):
+            return f"manifest commit {citation!r} is not on the primary branch"
+    value = str(pointer.get("worktree") or "")
+    if not value or not Path(value).exists():
+        return ""
+    tree = Path(value)
+    claims = [
+        run_id
+        for run_id in routing._live_pointer_worktrees().get(tree.resolve(), ())
+        if run_id != pointer.get("run_id")
+    ]
+    inspected = routing._inspect_workspace(repository, tree, primary, claims)
+    if inspected["dirty"]:
+        return "worktree has uncommitted files: " + "; ".join(inspected["dirty"])
+    if inspected["classification"] != "integrated":
+        return "worktree cannot be released: " + str(inspected["classification"])
+    return ""
+
+
+def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
+    """Finish promoted live workspaces after an independently published merge.
+
+    The promotion row proves delivery and the published branch proves integration.
+    Refuse unsafe evidence before touching the workspace. Compare the complete
+    pointer under its lock so a resumed attempt cannot lose its tree or pointer.
+    The release receipt and section declaration precede pointer retirement; a
+    failed write leaves the pointer for the next pass to finish.
+    """
+    from reckon.crew import merge, promotion, promotion_release
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+    from reckon.crew.review_landing import finish_landing
+
+    results: list[dict[str, Any]] = []
+    for pointer in runs.list_live():
+        run_id = str(pointer.get("run_id") or "")
+        project = str(pointer.get("project") or "")
+        if not run_id or not project or (only_run and run_id != only_run):
+            continue
+        if not pointer.get("worktree") or pointer.get("landing_group"):
+            continue
+        row = _promoted_row(project, run_id)
+        head = _reviewed_head(row) if row else ""
+        if not head or _promotion_lease_held(run_id) or _reviewed_run_is_busy(pointer):
+            continue
+        try:
+            repository = merge.project_repository(project)
+            remote = merge.head_on_remote_branch(repository, head)
+            primary = str(remote["remote_head"] or "")
+            on_branch = remote["on_branch"]
+            if on_branch is None and remote["cause"] == merge.REMOTE_UNCONFIGURED:
+                primary = merge._rev_parse(
+                    repository, merge._current_branch(repository)
+                )
+                on_branch = merge._is_ancestor(repository, head, primary)
+            if on_branch is not True:
+                continue
+            refusal = landed_workspace_refusal(pointer, repository, primary)
+            release = {}
+
+            def finish(
+                current: Mapping[str, Any],
+                *,
+                expected=pointer,
+                repository=repository,
+                primary=primary,
+                row=row,
+                project=project,
+                run_id=run_id,
+            ) -> bool:
+                nonlocal refusal, release
+                if dict(current) != expected:
+                    refusal = "the live pointer changed before workspace release"
+                    return False
+                refusal = landed_workspace_refusal(current, repository, primary)
+                if refusal:
+                    return False
+                release = promotion_release._release_run_workspace(
+                    current,
+                    integration_repo=repository,
+                    integration_commit=primary,
+                    gate=str(row.get("gate") or ""),
+                )
+                release, updated = promotion._record_release_on_ledger(
+                    project=project,
+                    root=repository,
+                    run_id=run_id,
+                    release=release,
+                    checkout=repository,
+                    after_merge=True,
+                )
+                if (
+                    updated is None
+                    or (release.get("landing_check") or {}).get("ok") is False
+                ):
+                    refusal = "the workspace outcome could not be recorded"
+                    return False
+                if not release.get("worktree_released"):
+                    refusal = str(
+                        release.get("worktree_withheld") or "workspace release withheld"
+                    )
+                    return False
+                refusal = finish_landing(current, run_id)
+                return not refusal
+
+            retired = retire_pointer_if(run_id, finish) if not refusal else POINTER_HELD
+            if retired == POINTER_RETIRED:
+                clear_pending(run_id)
+                waiters = promotion._release_waiters_of_the_landed_section(pointer)
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "already-landed",
+                        "head": head,
+                        "release": release,
+                        "waiters": waiters,
+                    }
+                )
+            elif refusal:
+                results.append(
+                    {"run_id": run_id, "status": "release-refused", "error": refusal}
+                )
+        except (runs.CrewError, merge.MergeError, OSError, ValueError) as exc:
+            results.append(
+                {"run_id": run_id, "status": "release-refused", "error": str(exc)}
+            )
+    return results
+
+
 def finish_pending_landings(
     *, now: float | None = None, land=None, live_run_ids=None, only_run: str = ""
 ) -> list[dict[str, Any]]:
@@ -760,6 +905,9 @@ def finish_pending_landings(
     lander = land or merge.land
     results: list[dict[str, Any]] = finish_landing_groups(only_run=only_run)
     results.extend(retire_stuck_review_pointers(only_run=only_run))
+    released = release_merged_promotions(only_run=only_run)
+    results.extend(released)
+    handled = {row["run_id"] for row in released}
     directory = pending_dir()
     if not directory.is_dir():
         return results
@@ -774,7 +922,12 @@ def finish_pending_landings(
             continue
         run_id = str(record.get("run_id") or "")
         project = str(record.get("project") or "")
-        if not run_id or not project or (only_run and run_id != only_run):
+        if (
+            run_id in handled
+            or not run_id
+            or not project
+            or (only_run and run_id != only_run)
+        ):
             continue
         group_id = str((record.get("pointer") or {}).get("landing_group") or "")
         if group_id and group_path(group_id).exists():
