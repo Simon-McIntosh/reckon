@@ -1,0 +1,135 @@
+<section id="qwnw-red-file-dispatch-returns-without-worker-landing">
+  <h2><code>tests/test_dispatch_returns_without_worker.py</code> passes in full</h2>
+
+  <p><strong>Verdict per cause: one product regression and one placement
+  mistake in the case itself.</strong> The product cause is the boundary check
+  below; the placement cause is the case's base sitting beneath the node's own
+  <code>/tmp</code>, which is where the promotion gate puts it and where a
+  fenced worker cannot see it. Neither was a test encoding a retired rule.</p>
+
+  <ul>
+    <li><strong>The repository-tree boundary check exempted every source
+    path.</strong> <code>_repository_tree_boundary_violations</code> asked
+    <code>_claim_paths_share(shared_files, changed, changed)</code> — whether
+    two claims on the path would share — and every source and test path shares,
+    so the scan reported no source edit at all. The delegated-launch case sees
+    it as an empty violation list for a stray edit at its declared path in the
+    main checkout. The filter now asks the project's own declaration
+    (<code>changed not in shared_files</code>), which is what the comment above
+    it and the two cases in <code>tests/test_boundary_check_reads_two_trees.py</code>
+    and <code>tests/test_boundary_check_reads_only_declared_roots.py</code> have
+    always described.</li>
+    <li><strong>The fixture repository published no sharing declaration.</strong>
+    A project that declares nothing shares its source paths by default, so no
+    boundary violation is possible there. The fixture now writes
+    <code>docs/state/sample/shared-write-paths.json</code> with
+    <code>{"shared_roots": []}</code>, the same declaration the boundary modules'
+    fixtures carry.</li>
+  </ul>
+
+  <p><strong>Not a cause: the scratch headroom refusal.</strong> Run in place on
+  this node, five cases fail with
+  <code>tmp-headroom-refusal: … bytes free, floor 5368709120</code> — the node's
+  <code>/tmp</code> held 0.7–1.1 GB free at the time, and the check reads the
+  filesystem the run's scratch sits on. The rule is right and is exercised by
+  <code>tests/test_dispatch_refuses_without_tmp_headroom.py</code>; the gate
+  therefore runs where the scratch disk has room, as its done-when says (a job
+  on <code>all_debug</code>, 24 GB free there).</p>
+
+  <h3 id="qwnw-red-file-dispatch-returns-without-worker-arms">Base and head</h3>
+
+  <table id="qwnw-red-file-dispatch-returns-without-worker-runs">
+    <thead>
+      <tr><th>revision</th><th>where</th><th>result</th><th>failing ids</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>0e0f25b0f941</code></td>
+        <td>base tree extracted from the base revision, TMPDIR under the run
+        directory</td>
+        <td>1 failed, 9 passed</td>
+        <td><code>test_a_delegated_launch_records_a_boundary_snapshot</code></td>
+      </tr>
+      <tr>
+        <td><code>d3acd1579122</code></td>
+        <td>the node's worktree, job on <code>all_debug</code> (node
+        <code>98dci4-clu-3142</code>), TMPDIR under the run directory,
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td>10 passed</td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td><code>0e0f25b0f941</code></td>
+        <td>a clone checked out at the base revision, job on
+        <code>98dci4-clu-4073</code>, TMPDIR and the test base both under the
+        node's <code>/tmp</code> — the geometry the promotion gate uses</td>
+        <td>5 failed, 5 passed</td>
+        <td><code>test_dispatch_returns_once_its_supervisor_runs</code>,
+        <code>test_sigkill_to_dispatch_leaves_the_worker_marker</code>,
+        <code>test_sigkill_to_the_worker_is_recorded</code>,
+        <code>test_a_discarded_run_is_not_recreated</code>,
+        <code>test_a_delegated_launch_records_a_boundary_snapshot</code></td>
+      </tr>
+      <tr>
+        <td><code>7b003650da6a</code></td>
+        <td>the node's worktree, job on
+        <code>98dci4-clu-4073</code>, TMPDIR and the test base both
+        under the node's <code>/tmp</code></td>
+        <td>10 passed</td>
+        <td>none</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> The base run of the named file, at
+  <code>0e0f25b0f941</code>, failed on
+  <code>tests/test_dispatch_returns_without_worker.py::test_a_delegated_launch_records_a_boundary_snapshot</code>
+  with <code>AssertionError: a stray uncommitted edit at the run's declared path
+  in the main checkout was not reported, so the boundary check is not reading
+  this lane's snapshot</code> and <code>assert []</code>. The same case passes at
+  head, and the four cases that read the boundary check through promotion pass
+  as well: the arm over the five test files that import what changed went from
+  five failures in 48 tests to none.</p>
+
+  <p><strong>The suite the fence names, on both revisions.</strong>
+  <code>tests/test_staged_write_inventory.py</code> together with
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> reads
+  <code>58 passed</code> at <code>0e0f25b0f941</code> (a clone checked out at
+  that revision) and <code>58 passed</code> at <code>7b003650da6a</code>, so the
+  change adds nothing to clear there and takes nothing away.</p>
+
+  <h3 id="qwnw-red-file-dispatch-returns-without-worker-node-tmp">A base beneath the node's own <code>/tmp</code></h3>
+
+  <p><strong>The second cause was the case's own placement, not the
+  product.</strong> The promotion gate runs the file with its base under
+  <code>/tmp</code> with the crew harness's own <code>TMPDIR</code>, and a
+  fenced worker's <code>/tmp</code> is its own scratch directory mounted over
+  the node tmp
+  (<code>reckon._worker_fence.worker_tmp_mount_source</code>). Inside the
+  worker's view the host's <code>/tmp</code> is therefore absent rather than
+  read-only. The case's stub backend is written into <code>bin-&lt;case&gt;</code>
+  beside the base, so it was absent too and the launch died before the stub ran.
+  The run's own <code>stderr.log</code> carries the proof, with nothing after
+  it:</p>
+
+  <pre><code>bwrap: execvp /tmp/qwnw-repro-1320746/basetemp/dispatch-returns0/bin-returns/claude: No such file or directory</code></pre>
+
+  <p>The supervisor was running and the worker never was, which is what the four
+  spawn-lane cases reported: "the supervisor neither spawned nor kept a worker,"
+  "the worker named on the record is not running," "the worker had already
+  exited." Nothing about dispatch, the boundary scan or the supervisor's own
+  spawn was wrong; the case had put the program it launches behind the one tree
+  the fence guarantees a worker cannot see.</p>
+
+  <p><strong>The repair is where the base lives.</strong> <code>/var/tmp</code>
+  is the node's other temp root and the fence does not overlay it, so the base —
+  repository, stub backends, worktrees and the marker directory the stub writes
+  — is now created there by <code>GATE_BASE_ROOT</code> rather than inherited
+  from the caller. The file therefore passes whether the harness puts its
+  basetemp under <code>/tmp</code> or anywhere else. The marker directory moved
+  under that base for the same reason: a directory beneath the node tmp is not
+  reachable from inside the worker, so the stub could neither wait for its
+  release file nor leave a marker, and handing the directory to the launch as
+  the fleet runtime directory only granted it when the harness happened to pin
+  that variable itself.</p>
+</section>

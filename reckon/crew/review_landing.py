@@ -71,7 +71,11 @@ def replay_candidate(
 ) -> dict[str, Any]:
     """Run the recorded gate in the partition's own checkout of this candidate."""
     from reckon import flight
-    from reckon.crew.promotion_gate import _merged_gate_finding, _rewrite_worktree_roots
+    from reckon.crew.promotion_gate import (
+        _merged_gate_finding,
+        _rewrite_worktree_roots,
+        _unused_log_path,
+    )
 
     repo = Path(str(pointer["repo"]))
     project, run_id = str(pointer["project"]), str(pointer["run_id"])
@@ -103,7 +107,7 @@ def replay_candidate(
     )
     runner.partitioned = True
     directory = runs.run_dir(run_id) / "review-landing"
-    log = directory / f"gate-{candidate}.log"
+    log = _unused_log_path(directory / f"gate-{candidate}.log")
     arm = landing_measure._arm(
         ["sh", "-c", command],
         repo,

@@ -179,6 +179,11 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
     ``--plan-link``/``--unplanned-reason`` pass-through would keep every one of
     them green. This runs the command as written so the flags are read from the
     argv a coordinator actually types.
+
+    ``--wait`` is what makes the invocation synchronous. Without it the command
+    only records a durable promotion request and returns the receipt, which the
+    fleet service then carries out, so the row these cases read would not exist
+    yet at the moment they look for it.
     """
     from click.testing import CliRunner
 
@@ -203,6 +208,7 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
             str(gate_log),
             "--waive-live-run",
             _PLUMBING_WAIVER,
+            "--wait",
             *extra,
         ],
     )
@@ -214,7 +220,7 @@ def test_the_cli_refuses_an_implement_brief_run_without_an_owner(
     run_id = "r-20260930T080400000000-node-a"
     _write_pointer(repository, run_id, role="implement")
     gate_log = tmp_path / "gate.log"
-    gate_log.write_text("probe check passed\n", encoding="utf-8")
+    gate_log.write_text("probe check passed\nEXIT=0\n", encoding="utf-8")
 
     refused = _invoke_complete_cli(run_id, gate_log)
 
@@ -228,7 +234,7 @@ def test_the_cli_plan_link_reaches_the_row(repository: Path, tmp_path: Path) -> 
     run_id = "r-20260930T080500000000-node-a"
     _write_pointer(repository, run_id, role="implement")
     gate_log = tmp_path / "gate.log"
-    gate_log.write_text("probe check passed\n", encoding="utf-8")
+    gate_log.write_text("probe check passed\nEXIT=0\n", encoding="utf-8")
 
     promoted = _invoke_complete_cli(run_id, gate_log, "--plan-link", "plan-a")
 
@@ -242,7 +248,7 @@ def test_the_cli_unplanned_reason_reaches_the_row(
     run_id = "r-20260930T080600000000-node-a"
     _write_pointer(repository, run_id, role="implement")
     gate_log = tmp_path / "gate.log"
-    gate_log.write_text("probe check passed\n", encoding="utf-8")
+    gate_log.write_text("probe check passed\nEXIT=0\n", encoding="utf-8")
 
     promoted = _invoke_complete_cli(
         run_id, gate_log, "--unplanned-reason", "a probe changes no plan"

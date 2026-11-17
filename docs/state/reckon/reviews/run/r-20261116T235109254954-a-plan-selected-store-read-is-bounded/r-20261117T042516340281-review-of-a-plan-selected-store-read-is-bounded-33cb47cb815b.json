@@ -1,0 +1,123 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "The only new assertion in the delta is the combined-filter equality call; no assertion compares against a self-moving supplied value. Existing decode/timing and corrupt-history refusal assertions were retained and their recorded negative controls were read.",
+  "assertion_review": [
+    {
+      "assertion": "_assert_reference(combined plan/activity read, exhaustive rows filtered by completed_at year)",
+      "fails_if": "Removing the SQL plan predicate admits 19950 recent unrelated rows; removing both indexed and Python activity predicates admits the 25 archived old matches; losing hot recent matches yields fewer than the independently expected 25 rows. The expected rows come from an unselected exhaustive read, with no node or identity restriction to mask a broken combined query.",
+      "independence": "The literal query threshold and the fixture-year oracle are different derivations; no expected result is copied from the combined read.",
+      "path": "tests/test_plan_selected_store_read_is_bounded.py:130-138"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/ledger.py:2437 load",
+    "reckon/mcp_views.py:1934 _section_attempt_count_uncached",
+    "reckon/crew/dispatching/preparation.py:143"
+  ],
+  "completed_at": "2026-11-17T04:34:08Z",
+  "dispatched_at": "2026-11-17T04:29:22Z",
+  "failure_delta_evidence": {
+    "after_exit_status": 0,
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/merged-gate.log",
+    "after_revision": "33cb47cb815ba4532fe8facaf2b51313d74127bb",
+    "after_summary": "85 passed in 58.65s",
+    "baseline_exit_status": 1,
+    "baseline_failure_ids": [
+      "tests/test_a_scanning_store_read_holds_no_lock.py::test_a_record_write_completes_while_selection_is_paused[plan]"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resumed-baseline.log",
+    "baseline_revision": "c6274b6a0e6698ed29f59c3027552f4e795abc10",
+    "baseline_summary": "1 failed, 69 passed in 53.34s",
+    "completed": true
+  },
+  "findings": [],
+  "importer_delta_evidence": {
+    "added_failure_count": 3,
+    "added_failure_ids": [
+      "tests/test_append_run_writes_one_run_file.py::test_byte_scan_miss_never_parses_aggregate_or_opens_other_run",
+      "tests/test_every_ledger_question_reads_the_store.py::test_store_selection_uses_the_ledger_plan_owner[False]",
+      "tests/test_every_ledger_question_reads_the_store.py::test_store_selection_uses_the_ledger_plan_owner[True]"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/merged-importers.log",
+    "after_summary": "71 failed, 489 passed, 4 warnings, 1 error in 266.70s (0:04:26)",
+    "authorization": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resume-1-advice.txt",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/resumed-baseline-importers.log",
+    "baseline_summary": "73 failed, 473 passed, 4 warnings in 1597.34s (0:26:37)",
+    "resolved_failure_ids": [
+      "tests/test_crew_promotion.py::test_promotion_audits_only_its_own_worktree",
+      "tests/test_queue_ordering_reads_history_once.py::test_a_recorded_promotion_is_read_and_holds_its_section",
+      "tests/test_queue_ordering_reads_history_once.py::test_a_store_that_moves_while_it_is_read_is_not_kept",
+      "tests/test_queue_ordering_reads_history_once.py::test_an_unchanged_store_answers_every_rebuild_without_a_read"
+    ]
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified three production callers at the reviewed head.",
+    "diff": "Read the five commits touching these paths since 03617feef883e4ca63307323f5316355ad6c0b93, including the combined merge diff; reckon/run_store.py retains both indexed behaviors and the test adds independent combined-filter equality at tests/test_plan_selected_store_read_is_bounded.py:130.",
+    "done_when": "Source prompt.txt:257 and live plan s6 require bounded 20000-row selection, equality, refusal and importer parity; merged-gate.log records 85 passed at the final head, while importer parity remains qualified by the completion exception in resume-1-advice.txt.",
+    "goal": "Source prompt.txt:38 asks for indexed plan selection; the merge at reckon/run_store.py:406 preserves plan-index selection alongside activity predicates and shared hot/archive migration.",
+    "manifest": "Source manifest.md records final head 33cb47cb815ba4532fe8facaf2b51313d74127bb and completed baseline_suite/after_suite logs whose summaries and EXIT lines reconcile with one baseline failure and zero after failures.",
+    "write_paths": "Source prompt.txt:94-98 grants reckon/run_store.py and tests/test_plan_selected_store_read_is_bounded.py, and resume-2-advice.txt authorizes merging primary; the reviewed delta in these two paths stays within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_selected_store_read_is_bounded.py:130-138 compares combined selection against independently filtered exhaustive rows, failing if plan membership or activity filtering is lost, while :120-121 continues to reject exhaustive plan scans.",
+    "evidence": "Source merged-gate.log proves 85 passed at the reviewed head and its armed delta is zero, but importer logs add three out-of-scope IDs against baseline under resume-1-advice.txt, qualifying the parity requirement in prompt.txt:257.",
+    "fit": "reckon/run_store.py:406-443 extends the existing SQL query builder, :909 uses the migration transaction idiom, and the added helper at :770 uses mechanism-based naming.",
+    "goal_fidelity": "reckon/run_store.py:406-438 selects by the existing plan index while retaining activity filtering, and :894-924 preserves derived plan identity while backfilling both schemas.",
+    "reuse": "Capability searches for activity timestamp derivation and SQL adapters found reckon/ledger.py:1718 as the owner, and the sole added definition reckon/run_store.py:770 wraps that owner rather than duplicating its timestamp semantics.",
+    "scope_discipline": "The two-path delta from the previous reviewed head matches source prompt.txt:94-98 and the merge authorized by resume-2-advice.txt; other primary-branch changes were excluded from this review."
+  },
+  "negative_control_evidence": {
+    "archive_refusal_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/archive-negative-control.log",
+    "archive_refusal_summary": "1 failed, 14 deselected in 1.05s",
+    "exit_status": 1,
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235109254954-a-plan-selected-store-read-is-bounded/negative-control.log",
+    "quote": "AssertionError: decoded 20100 payloads for 50 matches",
+    "summary": "3 failed, 12 deselected in 1.88s"
+  },
+  "new_definition_reuse": [
+    {
+      "definition": "reckon/run_store.py:770 _payload_activity_seconds",
+      "owner": "reckon/ledger.py:1718 run_activity_seconds",
+      "relationship": "wraps the existing owner for SQL insertion and amendment; extends the store owner",
+      "searched": "activity timestamp derivation and SQLite create_function adapters across reckon/**/*.py"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 asks for indexed plan selection; the merge at reckon/run_store.py:406 preserves plan-index selection alongside activity predicates and shared hot/archive migration.\nVERDICT done_when: Source prompt.txt:257 and live plan s6 require bounded 20000-row selection, equality, refusal and importer parity; merged-gate.log records 85 passed at the final head, while importer parity remains qualified by the completion exception in resume-1-advice.txt.\nVERDICT write_paths: Source prompt.txt:94-98 grants reckon/run_store.py and tests/test_plan_selected_store_read_is_bounded.py, and resume-2-advice.txt authorizes merging primary; the reviewed delta in these two paths stays within those grants.\nVERDICT manifest: Source manifest.md records final head 33cb47cb815ba4532fe8facaf2b51313d74127bb and completed baseline_suite/after_suite logs whose summaries and EXIT lines reconcile with one baseline failure and zero after failures.\nVERDICT diff: Read the five commits touching these paths since 03617feef883e4ca63307323f5316355ad6c0b93, including the combined merge diff; reckon/run_store.py retains both indexed behaviors and the test adds independent combined-filter equality at tests/test_plan_selected_store_read_is_bounded.py:130.\nCALL_SITES: reckon/ledger.py:2437 load, reckon/mcp_views.py:1934 _section_attempt_count_uncached, reckon/crew/dispatching/preparation.py:143\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_store.py:406-438 selects by the existing plan index while retaining activity filtering, and :894-924 preserves derived plan identity while backfilling both schemas.\nSCORE evidence: 18\nJUSTIFICATION evidence: Source merged-gate.log proves 85 passed at the reviewed head and its armed delta is zero, but importer logs add three out-of-scope IDs against baseline under resume-1-advice.txt, qualifying the parity requirement in prompt.txt:257.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-path delta from the previous reviewed head matches source prompt.txt:94-98 and the merge authorized by resume-2-advice.txt; other primary-branch changes were excluded from this review.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_plan_selected_store_read_is_bounded.py:130-138 compares combined selection against independently filtered exhaustive rows, failing if plan membership or activity filtering is lost, while :120-121 continues to reject exhaustive plan scans.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:406-443 extends the existing SQL query builder, :909 uses the migration transaction idiom, and the added helper at :770 uses mechanism-based naming.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for activity timestamp derivation and SQL adapters found reckon/ledger.py:1718 as the owner, and the sole added definition reckon/run_store.py:770 wraps that owner rather than duplicating its timestamp semantics.\n",
+  "review_run_id": "r-20261117T042516340281-review-of-a-plan-selected-store-read-is-bounded-33cb47cb815b",
+  "review_scope": {
+    "commits_read": [
+      "9e7c48b6e119716d6d470e13779a7772286891aa",
+      "bacf1c28e6b713f2ba9681b0c62cd1c632ca3e84",
+      "8e2e94859eac20a7c379ee62ee4c6c8aa6388dde",
+      "b3247871677631318f13642d58fbdf331ea25ae1",
+      "33cb47cb815ba4532fe8facaf2b51313d74127bb"
+    ],
+    "paths": [
+      "reckon/run_store.py",
+      "tests/test_plan_selected_store_read_is_bounded.py"
+    ],
+    "prior_reviewed_head": "03617feef883e4ca63307323f5316355ad6c0b93"
+  },
+  "reviewed_base_sha": "03617feef883e4ca63307323f5316355ad6c0b93",
+  "reviewed_head_sha": "33cb47cb815ba4532fe8facaf2b51313d74127bb",
+  "reviewed_run_id": "r-20261116T235109254954-a-plan-selected-store-read-is-bounded",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T05:12:09.294837+00:00",
+  "total": 118
+}

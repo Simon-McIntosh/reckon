@@ -746,8 +746,9 @@ def launch_search_path(
     kernel refuses the same writes the shim would. The shim starts an
     interpreter on every git call, about 1,900 file operations on shared
     storage, and a fenced fleet spent that on a guarantee it already had. The
-    scheduler shims follow only inside an allocation, because there is no
-    scheduler out of one to refuse.
+    scheduler shims accompany every fenced worker so its submitted tasks
+    re-enter the fence. They also accompany unfenced workers inside an
+    allocation to refuse implicit nested launches.
 
     An inherited entry holding a reckon shim for any of those tools is dropped,
     whichever checkout it belongs to. A dispatch from a worktree or a copy of
@@ -773,7 +774,7 @@ def launch_search_path(
     placement = _current_host_facts() if facts is None else facts
     git_shims = str(_worker_git_shim_directory())
     directories = [] if fenced else [git_shims]
-    if placement.in_allocation:
+    if fenced or placement.in_allocation:
         directories.append(str(_worker_shim_directory()))
     # An inherited git shim is dropped even when this launch prepends none, so
     # a fenced worker's git resolves to the real tool rather than to a shim

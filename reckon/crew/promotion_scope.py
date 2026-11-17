@@ -3,6 +3,7 @@ from __future__ import annotations
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
 import difflib
+import hashlib
 import html
 import json
 import os
@@ -10,8 +11,11 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC
 from pathlib import Path
 from typing import Any
@@ -33,6 +37,7 @@ from reckon.crew.node import (
 from reckon.crew.plan_review import RUN_COMMENT_PREFIX
 from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
+    _citation_tokens,
     parse_manifest,
     path_within_declared_scope,
 )
@@ -58,6 +63,90 @@ from reckon.crew.runs import (
 )
 
 _ZERO_COUNT = re.compile(r"0+")
+_BRANCH_WRITES: ContextVar[dict | None] = ContextVar("promotion_branch_writes", default=None)
+_BRANCH_WRITER_CHANGED = threading.Condition()
+
+
+@contextmanager
+def _branch_write_scope():
+    """Hold a branch claim only between the first write and its commit."""
+    if _BRANCH_WRITES.get() is not None:
+        yield
+        return
+    token = _BRANCH_WRITES.set({})
+    try:
+        yield
+    finally:
+        _release_branch_write()
+        _BRANCH_WRITES.reset(token)
+
+
+def _branch_write_key(checkout: Path) -> str:
+    from reckon.git_head import _common_git_directory, _git_directory
+
+    directory = _git_directory(checkout)
+    common, branch = checkout.resolve(), "HEAD"
+    if directory is not None:
+        common = directory.resolve()
+        head = directory / "HEAD"
+        if head.is_file():
+            contents = head.read_text().strip()
+            if contents.startswith("ref:"):
+                common = _common_git_directory(directory).resolve()
+                branch = contents
+    return "promotion-branch-" + hashlib.sha256(f"{common}\n{branch}".encode()).hexdigest()[:24]
+
+
+def _acquire_branch_write(checkout: Path | None) -> None:
+    scope = _BRANCH_WRITES.get()
+    if scope is None or checkout is None or scope.get("lease") is not None:
+        return
+    from reckon.crew.promotion import _PromotionLeaseRenewer
+    from reckon.crew.promotion_requests import (
+        PREPARATION_DONE,
+        PROMOTION_STAGE,
+        claim_promotion_lease,
+    )
+
+    release_preparation = PREPARATION_DONE.get()
+    if release_preparation is not None:
+        release_preparation()
+    mark_stage = PROMOTION_STAGE.get()
+    if mark_stage is not None:
+        mark_stage("branch-wait")
+    name = _branch_write_key(checkout)
+    deadline = time.monotonic() + 300
+    with _BRANCH_WRITER_CHANGED:
+        while (lease := claim_promotion_lease(name)) is None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CrewError(f"branch-writing lease remained held for {checkout}")
+            _BRANCH_WRITER_CHANGED.wait(min(2.0, remaining))
+    renewer = _PromotionLeaseRenewer(lease)
+    renewer.start()
+    scope.update(lease=lease, renewer=renewer)
+    if mark_stage is not None:
+        mark_stage("branch-write")
+
+
+def _release_branch_write() -> None:
+    scope = _BRANCH_WRITES.get()
+    if not scope or scope.get("lease") is None:
+        return
+    from reckon.crew.promotion_requests import PROMOTION_STAGE, release_promotion_lease
+
+    scope.pop("renewer").stop()
+    with _BRANCH_WRITER_CHANGED:
+        release_promotion_lease(scope.pop("lease"))
+        _BRANCH_WRITER_CHANGED.notify_all()
+    mark_stage = PROMOTION_STAGE.get()
+    if mark_stage is not None:
+        mark_stage("bookkeeping")
+
+
+def _branch_plan_text_edits() -> dict:
+    scope = _BRANCH_WRITES.get()
+    return scope.setdefault("plan_text_edits", {}) if scope is not None else {}
 
 
 def _manifest_cites_a_commit(
@@ -291,16 +380,25 @@ def _require_commit_for_changed_manifest(
 
 
 def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
-    """Resolve every recorded revision to its canonical commit object id."""
+    """Resolve every recorded revision to its canonical commit object id.
+
+    An entry's ids are read as tokens: a revision followed by the subject it was
+    committed under, and several revisions in one entry, both resolve to the
+    commits they name, and the delivery check reads its citations the same way,
+    so a manifest the check accepted is not refused here for spelling its
+    citation as a log line. An entry whose leading revision admission reads by
+    its own rule is read through that rule as a second attempt, so both
+    spellings resolve.
+    """
     from reckon.crew.queue_landing import _delivered_revision
 
-    commits = []
+    commits: list[str] = []
     for revision in revisions:
-        # A citation may carry its subject. Read its leading revision by the
-        # same rule as admission, leaving other revision spellings for git.
-        candidate = _delivered_revision([revision]) or revision
-        commit = _resolve_commit(cwd, candidate)
-        if not commit:
+        resolved = _entry_commits(cwd, revision)
+        if not resolved:
+            candidate = _delivered_revision([revision]) or revision
+            resolved = _entry_commits(cwd, str(candidate))
+        if not resolved:
             # A commit that resolves somewhere else is not a bad sha, it is a
             # node whose write target was not its run repository — dispatched
             # without --repo and pointed at a foreign checkout by prose. Naming
@@ -322,8 +420,20 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
                 "list or JSON-list entries containing an id optionally followed "
                 "by its subject, or list entries written as 'commit: <id>'"
             )
-        commits.append(commit)
+        for commit in resolved:
+            if commit not in commits:
+                commits.append(commit)
     return commits
+
+
+def _entry_commits(cwd: Path, entry: str) -> list[str]:
+    """The commits one citation entry names, in the order it writes them."""
+    found: list[str] = []
+    for candidate in [entry, *_citation_tokens(str(entry))]:
+        resolved = _resolve_commit(cwd, candidate)
+        if resolved and resolved not in found:
+            found.append(resolved)
+    return found
 
 
 def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
@@ -945,9 +1055,10 @@ def _repository_tree_boundary_violations(
         # The membership test is the declaration's own: a claim on a source path
         # shares by default, and reading that default here would exempt every
         # path a merge can reconcile and leave this guard with nothing to
-        # refuse. A path a live peer holds under its own declaration is the
-        # peer's work, not this run's, so it is exempt too; a path the peer does
-        # not declare stays charged here.
+        # refuse — which is how a stray source edit went unreported, since every
+        # source and test path shares. A path a live peer holds under its own
+        # declaration is the peer's work, not this run's, so it is exempt too; a
+        # path the peer does not declare stays charged here.
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
@@ -1445,6 +1556,43 @@ def _worker_authored_landing_record(
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
+def _landing_comment_update(
+    state: Mapping[str, Any],
+    *,
+    section: str,
+    run_id: str,
+    narrative: str,
+    author: str,
+    when: str,
+) -> tuple[dict[str, Any], str, dict[str, str], dict[str, Any] | None]:
+    """Prepare one idempotent comment append without changing the input state."""
+    anchor = section_anchor(section)
+    comment = {
+        "id": f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}",
+        "who": author,
+        "when": when,
+        "body": f"<p>{html.escape(narrative)}</p>",
+    }
+    comments = {
+        key: list(items) for key, items in (state.get("comments") or {}).items()
+    }
+    items = comments.setdefault(anchor, [])
+    existing = next(
+        (item for item in items if str(item.get("id") or "") == comment["id"]),
+        None,
+    )
+    if existing is None:
+        items.append(comment)
+    elif html.unescape(str(existing.get("body") or "")) != html.unescape(
+        comment["body"]
+    ):
+        items[items.index(existing)] = {**existing, **comment}
+    payload = {**state, "comments": comments}
+    if str(state.get("status") or "").strip().lower() in {"draft", "pending"}:
+        payload["status"] = "in-progress"
+    return payload, anchor, comment, existing
+
+
 def _record_landing_comment(
     *,
     project: str,
@@ -1484,40 +1632,34 @@ def _record_landing_comment(
     body_text = landing or narrative
     if not body_text or not plan:
         return {"recorded": False, "reason": "empty_narrative"}
-    comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
-    anchor = section_anchor(section)
-    desired_body = f"<p>{html.escape(body_text)}</p>"
-    worker_recorded = bool(
-        not landing
-        and worker_tree
-        and _worker_authored_landing_record(
-            tree=worker_tree,
-            commits=worker_commits,
-            project=project,
-            plan=plan,
-            comment_id=comment_id,
-        )
-    )
-    # A plan's status is set by hand, so nothing moves it when work starts. The
-    # first landing is the moment work has demonstrably begun, and this append
-    # is already a versioned read-modify-write of the plan, so the flip rides in
-    # the same write rather than costing a second one. Only a plan that still
-    # reads ``draft`` or ``pending`` moves; every other status — ``active``,
-    # ``blocked``, the terminal states — is authored and left alone.
-    in_progress_states = frozenset({"draft", "pending"})
+    worker_recorded: bool | None = None
     for _attempt in range(4):
         state, version = _store.read_plan(project, plan, root, artifact_type="plan")
         if not state or state.get("type") != "plan":
             return {"recorded": False, "reason": "plan_unavailable"}
-        started = str(state.get("status") or "").strip().lower() in in_progress_states
-        comments = {
-            key: list(items) for key, items in (state.get("comments") or {}).items()
-        }
-        items = comments.setdefault(anchor, [])
-        existing = next(
-            (item for item in items if str(item.get("id") or "") == comment_id),
-            None,
+        payload, anchor, comment, existing = _landing_comment_update(
+            state,
+            section=section,
+            run_id=run_id,
+            narrative=body_text,
+            author=author,
+            when=when,
         )
+        comment_id = comment["id"]
+        desired_body = comment["body"]
+        started = payload.get("status") != state.get("status")
+        if worker_recorded is None:
+            worker_recorded = bool(
+                not landing
+                and worker_tree
+                and _worker_authored_landing_record(
+                    tree=worker_tree,
+                    commits=worker_commits,
+                    project=project,
+                    plan=plan,
+                    comment_id=comment_id,
+                )
+            )
         if existing is not None:
             if worker_recorded:
                 return {
@@ -1557,18 +1699,6 @@ def _record_landing_comment(
                 # rather than repeating wording its author cannot reconstruct.
                 if not _ledger_holds_row(project, root, run_id, unreadable=False):
                     superseded = _strip_tags(str(existing.get("body") or ""))
-                    for position, item in enumerate(items):
-                        if item is existing:
-                            items[position] = {
-                                **existing,
-                                "who": author,
-                                "when": when,
-                                "body": desired_body,
-                            }
-                            break
-                    payload = {**state, "comments": comments}
-                    if started:
-                        payload["status"] = "in-progress"
                     try:
                         _store.write_plan(
                             project,
@@ -1630,25 +1760,17 @@ def _record_landing_comment(
                 "section": anchor,
                 "reason": "worker_authored_landing_record",
             }
-        items.append(
-            {
-                "id": comment_id,
-                "who": author,
-                "when": when,
-                "body": desired_body,
-            }
-        )
-        payload: dict[str, Any] = {**state, "comments": comments}
-        if started:
-            payload["status"] = "in-progress"
         try:
+            _acquire_branch_write(Path(root) if root is not None else None)
+            scope = _BRANCH_WRITES.get()
+            if scope is not None and not scope.get("plan_checked"):
+                _branch_plan_text_edits().update(_refuse_unrelated_plan_edit(
+                    project=project, plan=plan, root=root,
+                    checkout=Path(root) if root is not None else None,
+                ))
+                scope["plan_checked"] = True
             _store.write_plan(
-                project,
-                plan,
-                payload,
-                version,
-                root,
-                artifact_type="plan",
+                project, plan, payload, version, root, artifact_type="plan"
             )
         except _store.VersionConflict:
             continue
@@ -2938,6 +3060,26 @@ def _commit_preserving_plan_text(
 
 
 def _commit_landing_writes(
+    *, run_id: str, verdict: str, checkout: Path, paths: Sequence[Path],
+    subject: str | None = None, body: str | None = None,
+    store_row_written: bool = False, plan_text_edits: Mapping[Path, str] | None = None,
+) -> dict[str, Any]:
+    """Commit available landing writes under the lazy branch lease."""
+    if not any(Path(path).is_file() for path in paths):
+        return {"committed": False, "reason": "no_write"}
+    with _branch_write_scope():
+        _acquire_branch_write(checkout)
+        try:
+            return _commit_branch_writes(
+                run_id=run_id, verdict=verdict, checkout=checkout, paths=paths,
+                subject=subject, body=body, store_row_written=store_row_written,
+                plan_text_edits=plan_text_edits,
+            )
+        finally:
+            _release_branch_write()
+
+
+def _commit_branch_writes(
     *,
     run_id: str,
     verdict: str,

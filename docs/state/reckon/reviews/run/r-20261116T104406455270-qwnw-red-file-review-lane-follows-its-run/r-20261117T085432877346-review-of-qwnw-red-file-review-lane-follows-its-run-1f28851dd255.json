@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py::test_promotion_offers_every_commit_after_a_repair"
+  ],
+  "assertion_audit": {
+    "tests/test_review_lane_follows_its_run.py:234": "Fails if the composer answers dispatched False for a pointer carrying phase 'starting' beside a complete manifest; logs/base-control.log records exactly that refusal at 24bc79d8ee, so restoring the phase-first reading reddens it.",
+    "tests/test_review_lane_follows_its_run.py:261": "Fails if the fallback lands on the excluded local lane; the assertion reads the backend the composer wrote to the review pointer, not the constant it was handed.",
+    "tests/test_review_lane_follows_its_run.py:291": "Fails if a fully excluded wave dispatches instead of refusing, or refuses without naming the exclusion key; the base control shows KeyError 'awaiting_lane' as the symptom of never reaching the refusal arm.",
+    "tests/test_review_lane_follows_its_run.py:325": "Fails if the sweep composes a run its own session does not own; both sides are read back out of the store after the sweep."
+  },
+  "assertion_independence": "The node adds no assertion of its own: its diff is one predicate in classify_pointer plus an evidence fragment. Its regression guard is the four pre-existing cases logs/base-control.log carries red at 24bc79d8ee, and each of those reads store state the composer wrote rather than the fixture values the test handed in, so no added assertion compares a value against the same variable the test passed in.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3229",
+    "reckon/crew/recovery_watch.py:1809",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/crew/directory.py:342",
+    "reckon/serve.py:902",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/promotion_release.py:1169"
+  ],
+  "completed_at": "2026-11-17T08:55:58.476Z",
+  "dispatched_at": "2026-11-17T08:55:44Z",
+  "evidence_caveats": [
+    "logs/after-arm.log was overwritten on 2026-11-17T01:39 by the merge-head re-run (job 1321294): it now names revision 45e653ee77 and logs/after-arm.ids holds 29 ids, so the pre-merge head arm the fragment quotes at line 23 has no retained receipt, and logs/slurm-base-arm.out and logs/slurm-after-arm.out are 0 bytes.",
+    "logs/base-arm.log (2026-11-16T13:23, revision 24bc79d8ee) is the base arm shared by both arm pairs, so the 53-id base side is receipted; only the head side was replaced.",
+    "The base revision's failure_id list writes two parametrised test ids on one line each, which is why the manifest's 53 ids exceed the base log's 42 FAILED plus 10 ERROR lines by one; the after arm matches exactly at 29 = 19 FAILED + 10 ERROR.",
+    "The fragment's provenance check for the single added id (the same case run against the primary tree at 70e048c78f) has no log of its own in the run directory, only the quoted assertion text.",
+    "The reviewed head is unreachable from main and origin/main, so the fragment and the run's own predicate edits are absent from primary; primary carries the equivalent rule in its own pre_spawn_reads_as_claim predicate."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm paragraph quotes 'the two failure-id sets are identical: 53 ids each, zero added, zero removed' for jobs 1319846 and 1319861, but the only retained receipts are the merge-head pair \u2014 logs/after-arm.log was overwritten at 2026-11-17T01:39 by job 1321294 and logs/after-arm.ids holds 29 ids \u2014 so that claim cannot be read back from any log the record keeps and contradicts the ids file cited beside it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed head 1f28851dd2 is contained by no ref and is not an ancestor of refs/heads/main or origin/main, while promote 4134da9488 records the run as passed, so primary carries neither this fragment nor any of the run's own edits and the named file's passing run on primary belongs to primary's own predicate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call sites, the decisive one being reckon/crew/recovery_review_dispatch.py:3229, which classifies the record and refuses with 'the run is not awaiting review (%s)' on anything but 'scoring' \u2014 the exact refusal logs/base-control.log records for the four red cases.",
+    "diff": "Read the six commits 55e48f3bd8, b0fc763fc0, 7fd9d970ac, 45e653ee77, 2091615cbc and 1f28851dd2 against base 24bc79d8ee: 55e48f3bd8 is 13 lines in classify_pointer, four commits are the evidence fragment, and 45e653ee77 is the ordered merge whose resolution drops this run's single condition for primary's two-predicate form, so the pre-spawn hunk at the reviewed head is primary's.",
+    "done_when": "Read the done_when at dispatch-detail.json and each receipt it names; logs/gate-head.log records the named file at 6 passed EXIT=0, logs/base-control.log records the four ids it requires red at 24bc79d8ee with EXIT=1, sacct shows jobs 1319800, 1319846, 1319861, 1321288 and 1321294 all on all_debug, and the importing arm reads 53 ids at base against 29 at the merge head, so its 'adds no failure' clause is the one number the record does not meet literally.",
+    "goal": "Read dispatch-detail.json .admit_request.node.goal ('Make tests/test_review_lane_follows_its_run.py pass in full on the primary branch'); logs/gate-head.log:1 names revision 45e653ee77 and its summary reads '6 passed in 52.10s' with EXIT=0, and an independent rerun of that file at primary 85d8d48a6e reads 6 passed in 53.68s with EXIT=0.",
+    "manifest": "Read manifest.md; it states status complete, names the gate command, cites gate-head.log, base-control.log, base-arm.log and after-arm.log, and its quoted '6 passed in 52.10s', '4 failed, 2 passed in 1.75s', '43 failed, 801 passed, 14 warnings, 10 errors' and '19 failed, 825 passed, 14 warnings, 10 errors' figures reconcile with those logs' own summary lines.",
+    "write_paths": "Read manifest.md:3 declaring reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the run's own commits touch only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html, both inside that scope, while the docs/plans and docs/state paths in the base-to-head range belong to primary commits the ordered merge pulled in."
+  },
+  "justifications": {
+    "durability": "tests/test_review_lane_follows_its_run.py:234 asserts the composer dispatched on a pointer whose manifest is terminal, and logs/base-control.log shows that same case red at 24bc79d8ee, so dropping the terminal-manifest precedence at reckon/crew/recovery_classification.py:1976 reddens it again.",
+    "evidence": "logs/gate-head.log and logs/base-control.log are gate-shaped receipts whose summary lines carry the done_when's 6-passed and 4-failed figures, but the importing arm's head receipt was overwritten by the merge-head re-run, so one quoted arm claim has no readable log.",
+    "fit": "the change sits inside classify_pointer's parenthesised pre-spawn predicate at reckon/crew/recovery_classification.py:1964-1978 at the reviewed head, introduces no new name, and the fragment follows the section/id idiom of the other files under docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal_fidelity": "the done_when's named file passes in full at the reviewed head (logs/gate-head.log, 6 passed EXIT=0) and at primary 85d8d48a6e today (independent rerun, 6 passed EXIT=0), which is the goal sentence exactly.",
+    "reuse": "the landed edit extends the existing owner reckon/crew/recovery_classification.py:1964 rather than adding a second pre-spawn reading, and a search of reckon for other terminal-manifest-status predicates found only consumers of TERMINAL_MANIFEST_STATUSES, imported and reused rather than re-derived.",
+    "scope_discipline": "every path the run's own commits touch is inside the three declared write paths at manifest.md:3, the merge commit 45e653ee77 carries primary's tree because the done_when ordered the merge, and no test or production file is added by the fragment commits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read dispatch-detail.json .admit_request.node.goal ('Make tests/test_review_lane_follows_its_run.py pass in full on the primary branch'); logs/gate-head.log:1 names revision 45e653ee77 and its summary reads '6 passed in 52.10s' with EXIT=0, and an independent rerun of that file at primary 85d8d48a6e reads 6 passed in 53.68s with EXIT=0.\nVERDICT done_when: Read the done_when at dispatch-detail.json and each receipt it names; logs/gate-head.log records the named file at 6 passed EXIT=0, logs/base-control.log records the four ids it requires red at 24bc79d8ee with EXIT=1, sacct shows jobs 1319800, 1319846, 1319861, 1321288 and 1321294 all on all_debug, and the importing arm reads 53 ids at base against 29 at the merge head with one added id, so the 'adds no failure' clause is the one number the record does not meet literally.\nVERDICT write_paths: Read manifest.md:3 declaring reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the run's own commits touch only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html, both inside that scope, while the docs/plans and docs/state paths in the base-to-head range belong to primary commits the ordered merge pulled in.\nVERDICT manifest: Read manifest.md; it states status complete, names the gate command, cites gate-head.log, base-control.log, base-arm.log and after-arm.log, and its quoted '6 passed in 52.10s', '4 failed, 2 passed in 1.75s', '43 failed, 801 passed, 14 warnings, 10 errors' and '19 failed, 825 passed, 14 warnings, 10 errors' figures reconcile with those logs' own summary lines.\nVERDICT diff: Read all six commits 55e48f3bd8, b0fc763fc0, 7fd9d970ac, 45e653ee77, 2091615cbc and 1f28851dd2 against base 24bc79d8ee: 55e48f3bd8 is a 13-line predicate in classify_pointer, four commits are the evidence fragment, and the merge 45e653ee77 resolves the pre-spawn conflict by taking primary's two predicates whole, so the pre-spawn hunk at the reviewed head is primary's form carrying the same terminal-manifest precedence.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3229, reckon/crew/recovery_watch.py:1809, reckon/crew/recovery_watch.py:750, reckon/crew/directory.py:342, reckon/serve.py:902, reckon/crew/forgotten_runs.py:94, reckon/crew/promotion_release.py:1169\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the done_when's named file passes in full at the reviewed head (logs/gate-head.log, 6 passed EXIT=0) and at primary 85d8d48a6e today (independent rerun, 6 passed EXIT=0), satisfying the goal sentence exactly.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log and logs/base-control.log carry the done_when's head and base figures with exit codes, but logs/after-arm.log was overwritten by the merge-head re-run so the fragment's line-23 arm claim has no readable receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the run's own commits touch only reckon/crew/recovery_classification.py and the one fragment declared at manifest.md:3, and the wider base-to-head range is primary's tree pulled in by the merge the done_when ordered.\nSCORE durability: 18\nJUSTIFICATION durability: the four cases at tests/test_review_lane_follows_its_run.py:226-329 are red at 24bc79d8ee in logs/base-control.log for the exact refusal the restored predicate reproduces, so the guard reddens on that regression even though the run added no assertion of its own.\nSCORE fit: 18\nJUSTIFICATION fit: the landed hunk sits in classify_pointer's own parenthesised predicate at reckon/crew/recovery_classification.py:1964-1978, adds no identifier and introduces no vocabulary the module does not already use.\nSCORE reuse: 20\nJUSTIFICATION reuse: the landed edit extends the owner of the reading, reckon/crew/recovery_classification.py:1964, and reuses TERMINAL_MANIFEST_STATUSES at line 23 rather than deriving the terminal set again.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html:23 non-blocking: the arm paragraph quotes 'the two failure-id sets are identical: 53 ids each, zero added, zero removed' for jobs 1319846 and 1319861, but the only retained receipts are the merge-head pair, because logs/after-arm.log was overwritten at 2026-11-17T01:39 by job 1321294 and logs/after-arm.ids holds 29 ids, so that claim cannot be read back from any log the record keeps and contradicts the ids file cited beside it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-lane-follows-its-run.html:1 non-blocking: the reviewed head 1f28851dd2 is contained by no ref and is not an ancestor of refs/heads/main or origin/main, while promote 4134da9488 records the run as passed, so primary carries neither this fragment nor any of the run's own edits and the named file's passing run on primary belongs to primary's own predicate.\n",
+  "review_run_id": "r-20261117T085432877346-review-of-qwnw-red-file-review-lane-follows-its-run-1f28851dd255",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_commits": [
+    "55e48f3bd8ed8d1ee85b4b520194c43a973da2e0",
+    "b0fc763fc015506ff7309a054327ff4e3e5b5c0a",
+    "7fd9d970acd2fe7c30f39193013d043801abcbd7",
+    "45e653ee7791897510f3c76d0e73b2ca117a20f2",
+    "2091615cbc02733c25feda34ad56fcb210e9423d",
+    "1f28851dd255d984473247dfc8ea9e857aa2b681"
+  ],
+  "reviewed_head_sha": "1f28851dd255d984473247dfc8ea9e857aa2b681",
+  "reviewed_run_id": "r-20261116T104406455270-qwnw-red-file-review-lane-follows-its-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T09:11:25Z",
+  "total": 111
+}
