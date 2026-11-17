@@ -924,6 +924,26 @@ def build_merge_commit(
     return commit
 
 
+def build_merge_group(repo: Path, base: str, heads: Iterable[str]) -> str:
+    """Compose reviewed heads into one candidate without moving a branch.
+
+    Each merge retains both parents, so publication and recovery can prove
+    that every member is incorporated by ancestry as well as by its markers.
+    """
+    candidate = base
+    for head in dict.fromkeys(heads):
+        if _is_ancestor(repo, head, candidate):
+            continue
+        candidate = build_merge_commit(
+            repo,
+            candidate,
+            head,
+            "merge: compose compatible reviewed deliveries",
+            "Retain each reviewed delivery in the candidate proved by the combined gate.",
+        )
+    return candidate
+
+
 def _git_dir(repo: Path) -> Path:
     result = _run(repo, "rev-parse", "--absolute-git-dir")
     return Path(result.stdout.strip() or (repo / ".git"))
