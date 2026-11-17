@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="313">
+<meta name="plan-version" content="315">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1031,6 +1031,12 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104435052104-qwnw-red-file-promotion-never-amends-its-commit" data-who="reckon-build" data-when="2026-11-16T11:36:58.958Z">
     <div class="r-comment-body"><p>tests/test_promotion_never_amends_its_commit.py passes 5/5 at head as all_debug job 1319808 with SLURM_JOB_ID unset, against 4 failed and 1 passed at 24bc79d8ee; three test encodings were stale and no product source changed — the case now passes --wait for the synchronous outcome it asserts on, the clean landing check carries the unstaged key the receipt reports, and the release replay returns the recorded release unchanged with no landing_check, asserted by full equality rather than a filtered comparison.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104459305059-qwnw-red-file-hot-path-reads-only-live-runs" data-who="reckon-build" data-when="2026-11-16T11:25:26.045Z">
+    <div class="r-comment-body"><p>The section-declaration duty derives a session's merged runs from the live-run index (ledger.session_rows over open_run_index.dispatched_rows) instead of the complete ledger, and the station fixture authors its section record under the heading it owns with the fields a section record requires; tests/test_hot_path_reads_only_live_runs.py reads 14 passed at head on all_debug against 2 failed at aa086f1e29</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-per-change" data-who="reckon-build" data-when="2026-11-16T11:28:11.962Z">
+    <div class="r-comment-body"><p>Repaired the held-tree read-once fixture. Its twenty trees were clean and reachable, so the unmerged-work rule removed them before any naming rule ran and four cases read an empty derivation; each tree now carries one commit its primary branch does not reach, the assertions are unchanged, and the file passes 4/4 at head against 4 failed at base, as all_debug job 1319739.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
