@@ -6,7 +6,12 @@ import threading
 import pytest
 
 from reckon.crew import promotion_requests, runs
-from scripts.replay_promotion_drain import collect, replay, validate_dataset
+from scripts.replay_promotion_drain import (
+    collect,
+    protect_sources,
+    replay,
+    validate_dataset,
+)
 
 START = "2026-11-16T21:00:00Z"
 END = "2026-11-16T22:30:00Z"
@@ -136,6 +141,22 @@ def test_empty_real_replay_reports_no_rate(tmp_path):
         replay(collect(tmp_path / "empty", START, END), sources={}, assets=tmp_path)
 
 
+def test_replay_refuses_a_write_to_its_original_inputs(tmp_path):
+    crew = tmp_path / "source"
+    crew.mkdir()
+    source = crew / "known-present.json"
+    source.write_text("original")
+    data = {"header": {"source_crew": str(crew)}}
+    protection = protect_sources(data, {"projects": {}}, tmp_path / "output.json")
+    try:
+        with pytest.raises(PermissionError, match="original source"):
+            source.write_text("changed")
+        assert source.read_text() == "original"
+        assert protection["refusals"] == 1
+    finally:
+        protection["active"] = False
+
+
 def _queue_for_repository(run_id, repository, *, role="implement"):
     runs._write_json(
         runs.pointer_path(run_id),
@@ -245,3 +266,57 @@ def test_landings_for_different_repositories_do_not_wait(tmp_path):
         release.set()
         service.begin_drain()
         assert service.wait_for_in_flight(10) == []
+
+
+def test_linked_checkouts_of_one_branch_share_a_lease(tmp_path):
+    from reckon.crew.promotion_scope import _branch_write_key
+
+    shared = tmp_path / "objects"
+    keys = []
+    for name in ("one", "two"):
+        private = shared / "worktrees" / name
+        private.mkdir(parents=True)
+        (private / "commondir").write_text("../..")
+        (private / "HEAD").write_text("ref: refs/heads/main\n")
+        checkout = tmp_path / name
+        checkout.mkdir()
+        (checkout / ".git").write_text(f"gitdir: {private}\n")
+        keys.append(_branch_write_key(checkout))
+    assert keys[0] == keys[1]
+    (private / "HEAD").write_text("ref: refs/heads/other\n")
+    assert _branch_write_key(checkout) != keys[0]
+
+
+def test_a_detached_checkout_keeps_its_lease_key_when_it_commits(tmp_path):
+    from reckon.crew.promotion_scope import _branch_write_key
+
+    directory = tmp_path / ".git"
+    directory.mkdir()
+    (directory / "HEAD").write_text("a" * 40)
+    before = _branch_write_key(tmp_path)
+    (directory / "HEAD").write_text("b" * 40)
+    assert _branch_write_key(tmp_path) == before
+
+
+def test_a_refusal_releases_the_branch_and_rates_count_only_successes(tmp_path):
+    first, second = "r-refused-writer", "r-next-writer"
+    _queue_for_repository(first, tmp_path / "repo")
+
+    def execute(request):
+        _write_branch(tmp_path / "repo")
+        if request["run_id"] == first:
+            raise promotion_requests.CrewError("controlled refusal")
+        return {"ok": True, "record": {"commits": []}}
+
+    service = promotion_requests.PromotionService(width=1, execute=execute)
+    service.tick()
+    assert service.wait_for_in_flight(10) == []
+    _queue_for_repository(second, tmp_path / "repo")
+    service.tick()
+    assert service.wait_for_in_flight(10) == []
+    assert promotion_requests.read_promotion(second)["phase"] == "promoted"
+    report = promotion_requests.promotion_queue_report()
+    assert report["promoted_last_window"] == 1
+    assert report["refused_last_window"] == 1
+    assert report["successful_promotions_per_hour"] == 1
+    assert report["rate_bounded_by"] in report["stage_seconds_last_window"]
