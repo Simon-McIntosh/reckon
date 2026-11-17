@@ -23,9 +23,9 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="102">
+<meta name="plan-version" content="103">
 <meta name="plan-modified" content="2026-11-17">
-<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s26&quot;:[&quot;history-persists-as-detail-washes-out#s21&quot;,&quot;history-persists-as-detail-washes-out#s22&quot;,&quot;history-persists-as-detail-washes-out#s23&quot;,&quot;history-persists-as-detail-washes-out#s24&quot;,&quot;history-persists-as-detail-washes-out#s25&quot;,&quot;history-persists-as-detail-washes-out#s28&quot;,&quot;history-persists-as-detail-washes-out#s29&quot;],&quot;s27&quot;:[&quot;history-persists-as-detail-washes-out#s26&quot;]}">
 </head>
 <body>
@@ -422,7 +422,7 @@
 <p><strong>Done when.</strong> New tests, each failing at the base revision. On a store holding 20,000 runs of which 50 were active in the window, <code>ledger.read_records(project, with_figures=False, activity_since=...)</code> reads a number of rows bounded by the active runs, not by the history. Negative control: restore the base full-history scan, and the row-count assertion fails. These still hold: the read answers the same runs it answers at the base revision, including runs whose only recent stamp is the last of the four the bound reads. The tests importing <code>reckon.run_store</code> or <code>reckon.ledger</code> add no failure against the base on all_debug, with every log under the run directory. Write paths: <code>reckon/run_store.py</code>, <code>reckon/ledger.py</code> and a new test.</p>
 
     <h2 id="s33">An owed-plan-review pass pays only for what changed</h2>
-<section data-reckon="section" data-id="s33" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s33" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> reckon-96's 60 s py-spy profile of the station at 04:27Z on 17 November, with the station on tree a6258eb01a after §32 landed, put <code>resumption.sweep</code> at 88% of one thread and <code>compose_owed_plan_reviews</code> at 32% of it: <code>plan_authoring_runs</code> 14%, <code>list_plan_reviews</code> 9.5% and <code>_project_plan_paths</code> 7%. The profile is kept at <code>~/.cache/reckon-landing/station-prof-post-s81.raw</code>. Each of the three already runs once per pass, since <code>eae15928ac</code>; the 32% is three whole-project reads repeated on every tick, a project-wide review listing, a plan-path resolution and an authoring read, whatever changed since the previous pass, against a station tick whose target is 10 s.</p>
 <p><strong>Done when.</strong> New tests, each failing at the base revision. On a fixture of 50 plans and 20,000 stored runs, a second <code>compose_owed_plan_reviews</code> pass made with nothing changed since the first parses no review record, no plan file and no stored run, and a pass made after one plan and one run change parses only what changed. Negative control: disable the reuse between passes, and the second pass re-parses every review record and the parse-count assertion fails. These still hold: every pass composes the same owed reviews it composes at the base revision. The tests importing <code>reckon.crew.plan_review</code> or <code>reckon.crew.resumption</code> add no failure against the base on all_debug, with every log under the run directory. Write paths: <code>reckon/crew/plan_review.py</code>, <code>reckon/crew/resumption.py</code> and a new test.</p>
 
@@ -502,10 +502,11 @@
     <div class="r-fu-body"><p>§22 re-lands the store read with a bounded load after its revert; §24, §28 and §29 as before. §26 waits on §21 to §25, §28 and §29; §27 on §26.</p></div>
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §22</pre>
     </article>
-<article class="r-fu" data-id="f-hpdw-014" data-status="open" data-written-by="reckon-56" data-written-at="2026-11-17" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-hpdw-014" data-status="resolved" data-written-by="reckon-56" data-written-at="2026-11-17" data-recommends-skill="" data-resolved-at="2026-11-17T11:14:35+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §33</h4>
     <div class="r-fu-body"><p>§33 makes the station's owed-plan-review pass pay only for what changed since the previous pass, removing the three whole-project reads it repeats every tick.</p></div>
     <pre class="r-fu-prompt">/reckon-build history-persists-as-detail-washes-out §33</pre>
+    <p class="r-fu-outcome"><p>§33 landed: the owed-plan-review pass reuses stored author selections and reads through <code>run_store.stored_run_payloads</code>; on 50 plans and 20,000 runs an unchanged pass parses no review, plan or run (heads e505ca84ca and c70245dc30, both reviewed clean).</p></p>
     </article>
 </section>
 
@@ -675,12 +676,6 @@
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261116T224515143735-activity-read-costs-what-was-active-s32" data-who="reckon-build" data-when="2026-11-17T00:37:36Z">
     <div class="r-comment-body"><p>Activity-bounded ledger reads materialize 100 rows (~2800 SQLite VM steps) for 50 active among 20000 historical runs, versus 20050 rows (~500900 steps) at base. Explicit insertion order preserves hot/archive scan behavior; atomic backfills recover interrupted migrations. Landing-read fixture batching retains all reader assertions. Expanded all_debug gate: base 72 passed, repaired head 77 passed, zero added failures; restored full-history reader fails four row-count checks.</p></div>
 </div>
-<div class="r-comment" data-section="s7" data-id="c-20260923T1545-s7-moved" data-who="reckon-ship" data-when="2026-09-23T15:45:00Z">
-    <div class="r-comment-body"><p>This section's nodes are carried by <code>the-ledger-is-one-file-per-run</code> (8637fa06). Measures are now stated for all four, including the roster node the read-back found had none. Read that plan, not this section, for the per-run ledger.</p></div>
-</div>
-<div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
-    <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
-</div>
 <div class="r-comment" data-section="s33" data-id="c-run-r-20261117T084211138352-review-of-owed-review-pass-pays-for-change-s33-e505ca84ca40" data-who="reckon-build" data-when="2026-11-17T08:50:35Z">
     <div class="r-comment-body"><p>Independent review of e505ca84ca4052f79ee70b75505dffcb0b936ab9 records six scores, no blocking findings and zero added failing ids; coordinator owns integration.</p></div>
 </div>
@@ -689,6 +684,12 @@
 </div>
 <div class="r-comment" data-section="s33" data-id="c-run-r-20261117T081127777327-owed-review-pass-pays-for-change-s33" data-who="reckon-build" data-when="2026-11-17T09:25:45Z">
     <div class="r-comment-body"><p>Stored author reuse now consumes the public run_store.stored_run_payloads reader, which owns connection, archive token, record join and unreadable-store refusal. On 50 plans/20000 runs, unchanged passes parse 0 review/plan/run inputs and a plan/run edit parses only that plan (2 parser calls) and 1 run. Both tests reject the private boundary at e505 and disabled reuse at repaired head; delivery gate 60/0 versus 58/0 at base; all 253 importing files complete in per-file processes with 0 added failing ids against 252 base files.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260923T1545-s7-moved" data-who="reckon-ship" data-when="2026-09-23T15:45:00Z">
+    <div class="r-comment-body"><p>This section's nodes are carried by <code>the-ledger-is-one-file-per-run</code> (8637fa06). Measures are now stated for all four, including the roster node the read-back found had none. Read that plan, not this section, for the per-run ledger.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260923T141652653142-review-of-history-persists-as-detail-washes-out" data-who="reckon-ship" data-when="2026-09-23T15:39:47.829Z">
+    <div class="r-comment-body"><p>read-back found 50 sentences with two readings, 43 load-bearing, and node 4 without a measure; the per-run ledger moved to its own plan</p></div>
 </div>
 </section>
 </main>
