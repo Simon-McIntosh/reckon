@@ -77,7 +77,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager, redirect_stdout, suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -637,7 +637,8 @@ def sample_session_scratch(environ: Mapping[str, str] | None = None) -> int:
     try:
         sample = session_scratch_sample(environ)
     except (OSError, ValueError, TimeoutError) as exc:
-        alert(f"session scratch sample unknown: {exc}", environ)
+        with redirect_stdout(sys.stderr):
+            alert(f"session scratch sample unknown: {exc}", environ)
         print("unknown")
         return 1
     state = state_directory(environ)
@@ -646,8 +647,9 @@ def sample_session_scratch(environ: Mapping[str, str] | None = None) -> int:
     path = health / f"{sample['job_id']}-{_short_hostname()}-session-scratch.jsonl"
     with path.open("a", encoding="utf-8") as output:
         output.write(json.dumps(sample) + "\n")
-    for item in sample["obligations"]:
-        alert(f"{sample['utc']} obligation: {item['reason']}", environ)
+    with redirect_stdout(sys.stderr):
+        for item in sample["obligations"]:
+            alert(f"{sample['utc']} obligation: {item['reason']}", environ)
     if sample["obligations"]:
         (state / NOTICE_NAME).write_text(
             "\n".join(item["reason"] for item in sample["obligations"]) + "\n"

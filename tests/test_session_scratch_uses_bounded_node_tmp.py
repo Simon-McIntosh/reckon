@@ -154,7 +154,9 @@ def test_sampling_follows_no_symlinks_and_reports_no_false_zero(
 def test_sampling_walk_has_a_time_bound(scratch, monkeypatch):
     supervisor.prepare_session_tmp(scratch, "busy")
     ticks = iter((0, 16))
-    monkeypatch.setattr(supervisor.time, "monotonic", lambda: next(ticks))
+    monkeypatch.setattr(
+        supervisor, "time", SimpleNamespace(monotonic=lambda: next(ticks))
+    )
     with pytest.raises(TimeoutError, match="15 seconds"):
         supervisor.session_scratch_sample(scratch)
 
@@ -180,7 +182,7 @@ def test_flight_defaults_and_host_override(tmp_path):
 def test_health_sampler_calls_scratch_sampling_and_keeps_the_reading(
     tmp_path, monkeypatch
 ):
-    from test_fleet_health import sandbox
+    from tests.test_fleet_health import sandbox
 
     box = sandbox(tmp_path)
     stub = box.root / "stubbin" / "scratch-python"
