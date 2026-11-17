@@ -363,6 +363,12 @@ def decision_digest(result: dict) -> str:
     the request lists a pass returned and never over how long each stage took:
     a duration differs between two runs of the same input and would make the
     digest say the decisions moved when only the clock did.
+
+    ``release`` and ``landing`` are dropped for the same reason. Each runs on a
+    clock of its own — the multi-pass mode calls the pass body directly, so the
+    release tick fires on the first pass and is paced away on the ones after
+    it. That is pacing rather than a decision about any request, and comparing
+    it would read a cadence as a behaviour change.
     """
 
     def scrubbed(value, *, key: str = ""):
@@ -371,7 +377,15 @@ def decision_digest(result: dict) -> str:
                 name: scrubbed(item, key=str(name))
                 for name, item in value.items()
                 if not str(name).endswith(_TIMING_SUFFIX)
-                and name not in {"seconds", "started_at", "ended_at", "moment"}
+                and name
+                not in {
+                    "seconds",
+                    "started_at",
+                    "ended_at",
+                    "moment",
+                    "release",
+                    "landing",
+                }
             }
         if isinstance(value, (list, tuple)):
             return [scrubbed(item, key=key) for item in value]
