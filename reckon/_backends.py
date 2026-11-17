@@ -3721,10 +3721,303 @@ def cached_stream_events(path: str | Path) -> tuple[list[dict[str, Any]], int]:
         return entry.events, entry.malformed
 
 
-def cached_stream_timestamp_bounds(
+# ── The per-stream summary ────────────────────────────────────────────────────
+# What a caller derives from a stream — its observation, and the bounds of the
+# stamps its records state — is kept per stream under the identity of the file
+# it was read from. A stream that has not moved is then answered without
+# touching its bytes at all, and one that has grown is read only from the
+# offset the last read reached. The records themselves are not retained here:
+# the summary holds what the tick asked the stream for, so its size is bounded
+# by the runs the process is watching rather than by the bytes of every stream
+# it has seen, and a stream the events cache has evicted is still answered from
+# its summary until the run falls out of that window.
+_STREAM_SUMMARY_LOCK = threading.RLock()
+_STREAM_SUMMARIES: OrderedDict[str, _StreamSummary] = OrderedDict()
+_STREAM_SUMMARY_LIMIT = 2048
+# The stamp readers a summary answers. A stream is folded for every reader
+# already seen when its bytes are in hand, so a reader that arrives after a
+# stream was last read does not send the process back through its records.
+_STREAM_BOUND_READERS: set[Callable[[object], datetime | None]] = set()
+
+
+@dataclass
+class _StreamFold:
+    """One observation's fold over a stream, extended with each read."""
+
+    backend_name: str
+    backend: dict[str, Any]
+    elapsed_seconds: float | None
+    receipt: object | None
+    observation: Observation
+
+
+@dataclass
+class _StreamSummary:
+    """One stream's derived readings for the file version last read."""
+
+    dev: int
+    ino: int
+    size: int
+    mtime_ns: int
+    offset: int
+    head: dict[str, Any]
+    folds: dict[str, _StreamFold] = field(default_factory=dict)
+    bounds: dict[Any, tuple] = field(default_factory=dict)
+
+    @property
+    def identity(self) -> tuple[int, int, int, int]:
+        return (self.dev, self.ino, self.size, self.mtime_ns)
+
+
+def _observation_settings_key(
+    backend_name: str,
+    backend: Mapping[str, Any],
+    elapsed_seconds: float | None,
+    receipt: object | None,
+) -> str:
+    """The identity of everything an observation is a function of besides bytes."""
+    settings = json.dumps(backend, sort_keys=True, default=repr)
+    return repr((backend_name, settings, elapsed_seconds, receipt))
+
+
+def _extend_stamp_bounds(
+    first: tuple[datetime, str] | None,
+    last: tuple[datetime, str] | None,
+    events: Sequence[Mapping[str, Any]],
+    reader: Callable[[object], datetime | None],
+) -> tuple[tuple[datetime, str] | None, tuple[datetime, str] | None]:
+    """Extend one stream's zoned-stamp bounds over the records just read."""
+    for event in events:
+        stamp = event.get("timestamp")
+        if not isinstance(stamp, str):
+            continue
+        parsed = reader(stamp)
+        if parsed is None:
+            continue
+        point = (parsed, stamp)
+        if first is None or parsed < first[0]:
+            first = point
+        if last is None or parsed > last[0]:
+            last = point
+    return first, last
+
+
+def _publish_summary_records(
+    path: Path,
+    identity: tuple[int, int, int, int],
+    events: list[dict[str, Any]],
+    malformed: int,
+    whole: bool,
+    head: dict[str, Any],
+    ends_newline: bool,
+) -> None:
+    """Share the records a summary read with the events cache.
+
+    A stream is read once per version whichever reader asks first. A whole read
+    replaces the cache's copy, and a growth read is appended to the copy it
+    extends the summary from; a growth read of a stream whose events the cache
+    has evicted is left unpublished, because the segment alone is not the
+    stream the next events reader would need. Neither cache is then asked for
+    bytes the other has already decoded.
+    """
+    key = str(path.resolve())
+    with _PARSED_STREAM_LOCK:
+        live = _PARSED_STREAMS.get(key)
+        if live is not None and live.identity == identity:
+            return
+        if not whole:
+            if live is None or live.identity[:2] != identity[:2]:
+                return
+            combined = [*live.events, *events]
+            total = live.malformed + malformed
+            current = _ParsedStream(
+                identity=identity,
+                events=combined,
+                malformed=total,
+                head=head,
+                ends_newline=ends_newline,
+                timestamp_reader=live.timestamp_reader,
+                timestamp_bounds=live.timestamp_bounds,
+                pending_events=[*(live.pending_events or []), *events],
+                timestamp_version=live.timestamp_version,
+            )
+        else:
+            current = _ParsedStream(
+                identity=identity,
+                events=list(events),
+                malformed=malformed,
+                head=head,
+                ends_newline=ends_newline,
+            )
+        _PARSED_STREAMS[key] = current
+        _PARSED_STREAMS.move_to_end(key)
+        size = sum(entry.identity[2] for entry in _PARSED_STREAMS.values())
+        while size > _PARSED_STREAM_LIMIT and len(_PARSED_STREAMS) > 1:
+            _unused, evicted = _PARSED_STREAMS.popitem(last=False)
+            size -= evicted.identity[2]
+
+
+def _stream_summary(
+    path: Path,
+) -> tuple[_StreamSummary | None, list[dict[str, Any]], int, bool]:
+    """Bring one stream's summary up to the file's current bytes.
+
+    Returns the summary, the records this call read, the malformed count among
+    them, and whether they are the whole stream. A stream that is already at
+    the version the summary holds reads nothing and returns an empty list; a
+    stream that cannot be stat'd has no summary. A stream whose opening is no
+    longer the one the summary recorded — replaced, rewritten in place or
+    truncated — is read again whole, because an offset into a predecessor's
+    stream. The same growth is read once: records read here extend every fold
+    and every stamp bounds the summary already carries, so a later reader of
+    the same version parses none of them again.
+    """
+    try:
+        info = path.stat()
+    except OSError:
+        return None, [], 0, False
+    identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+    key = str(path.resolve())
+    with _STREAM_SUMMARY_LOCK:
+        stored = _STREAM_SUMMARIES.get(key)
+        if stored is not None and stored.identity == identity:
+            _STREAM_SUMMARIES.move_to_end(key)
+            return stored, [], 0, False
+    grows = (
+        stored is not None
+        and (stored.dev, stored.ino) == (info.st_dev, info.st_ino)
+        and info.st_size > stored.size
+        and _stream_head_intact(path, stored.head)
+    )
+    if grows:
+        lines, end = _stream_lines_from(path, stored.offset)
+        events, malformed = parse_events(lines)
+        ends_newline = True
+        whole = False
+    else:
+        try:
+            entry = _cached_stream_entry(path)
+        except OSError:
+            return None, [], 0, False
+        events = entry.events
+        malformed = entry.malformed
+        ends_newline = entry.ends_newline
+        end = entry.identity[2] if ends_newline else _last_line_boundary(path)
+        identity = entry.identity
+        whole = True
+    head = stream_head_fingerprint(path, offset=end)
+    with _STREAM_SUMMARY_LOCK:
+        live = _STREAM_SUMMARIES.get(key)
+        if live is not None and live is not stored and live.identity == identity:
+            # Another reader brought this same version in while this one read
+            # the bytes; its summary is the one everybody shares.
+            return live, [], 0, False
+        folds: dict[str, _StreamFold] = dict(stored.folds) if stored else {}
+        bounds = dict(stored.bounds) if stored else {}
+        for fold_key, fold in list(folds.items()):
+            observation = _observe_events(
+                backend_name=fold.backend_name,
+                backend=fold.backend,
+                events=events,
+                malformed=malformed,
+                elapsed_seconds=fold.elapsed_seconds,
+                receipt=fold.receipt,
+                state=None if whole else fold.observation.stream_state,
+            )
+            observation.stream_state["offset"] = end
+            folds[fold_key] = _StreamFold(
+                fold.backend_name,
+                fold.backend,
+                fold.elapsed_seconds,
+                fold.receipt,
+                observation,
+            )
+        if whole:
+            bounds = {
+                reader: _extend_stamp_bounds(None, None, events, reader)
+                for reader in _STREAM_BOUND_READERS
+            }
+        else:
+            bounds = {
+                reader: _extend_stamp_bounds(first, last, events, reader)
+                for reader, (first, last) in bounds.items()
+            }
+        summary = _StreamSummary(
+            dev=identity[0],
+            ino=identity[1],
+            size=identity[2],
+            mtime_ns=identity[3],
+            offset=end,
+            head=head,
+            folds=folds,
+            bounds=bounds,
+        )
+        _STREAM_SUMMARIES[key] = summary
+        _STREAM_SUMMARIES.move_to_end(key)
+        while len(_STREAM_SUMMARIES) > _STREAM_SUMMARY_LIMIT:
+            _STREAM_SUMMARIES.popitem(last=False)
+    if not whole:
+        _publish_summary_records(
+            path, identity, events, malformed, whole, head, ends_newline
+        )
+    return summary, events, malformed, whole
+
+
+def _summarised_observation(
+    *,
+    backend_name: str,
+    backend: Mapping[str, Any],
+    log_path: str | Path,
+    elapsed_seconds: float | None,
+    receipt: object | None,
+) -> Observation | None:
+    """The observation a stream's summary holds, reading only what grew."""
+    path = Path(log_path)
+    summary, events, malformed, whole = _stream_summary(path)
+    if summary is None:
+        return None
+    settings = _observation_settings_key(
+        backend_name, backend, elapsed_seconds, receipt
+    )
+    with _STREAM_SUMMARY_LOCK:
+        fold = summary.folds.get(settings)
+    if fold is None:
+        if not whole:
+            try:
+                entry = _cached_stream_entry(path)
+            except OSError:
+                return None
+            events = entry.events
+            malformed = entry.malformed
+        observation = _observe_events(
+            backend_name=backend_name,
+            backend=backend,
+            events=events,
+            malformed=malformed,
+            elapsed_seconds=elapsed_seconds,
+            receipt=receipt,
+            state=None,
+        )
+        observation.stream_state["offset"] = summary.offset
+        fold = _StreamFold(
+            backend_name,
+            dict(backend),
+            elapsed_seconds,
+            receipt,
+            observation,
+        )
+        with _STREAM_SUMMARY_LOCK:
+            live = _STREAM_SUMMARIES.get(str(path.resolve()))
+            if live is not None:
+                live.folds[settings] = fold
+        return copy.deepcopy(fold.observation)
+    return copy.deepcopy(fold.observation)
+
+
+def _events_timestamp_bounds(
     path: str | Path, reader: Callable[[object], datetime | None]
 ) -> tuple[tuple[datetime, str] | None, tuple[datetime, str] | None]:
-    """Return the earliest and latest zoned stream stamps, scanning only growth."""
+    """The bounds a stream's shared events cache answers only new bytes for."""
     entry = _cached_stream_entry(path)
     with _PARSED_STREAM_LOCK:
         version = entry.timestamp_version
@@ -3753,6 +4046,39 @@ def cached_stream_timestamp_bounds(
             entry.pending_events = None
             entry.timestamp_version += 1
     return first, last
+
+
+def cached_stream_timestamp_bounds(
+    path: str | Path, reader: Callable[[object], datetime | None]
+) -> tuple[tuple[datetime, str] | None, tuple[datetime, str] | None]:
+    """Return the earliest and latest zoned stream stamps, reading only growth.
+
+    The bounds are a summary of the whole stream, so they are kept beside the
+    stream's observation under the same file identity rather than recomputed
+    over records the process has already read. A stream whose summary is not
+    yet current is brought up to date by one read of what it gained, which also
+    extends every bounds already recorded for it; a reader the summary has not
+    served yet is answered by the shared events cache, which parses the whole
+    stream once and then only its growth.
+    """
+    source = Path(path)
+    _STREAM_BOUND_READERS.add(reader)
+    summary, events, _malformed, whole = _stream_summary(source)
+    if summary is not None:
+        with _STREAM_SUMMARY_LOCK:
+            stored = summary.bounds.get(reader)
+            if stored is not None:
+                return stored
+        if whole:
+            bounds = _extend_stamp_bounds(None, None, events, reader)
+        else:
+            bounds = _events_timestamp_bounds(path, reader)
+        with _STREAM_SUMMARY_LOCK:
+            live = _STREAM_SUMMARIES.get(str(source.resolve()))
+            if live is not None:
+                live.bounds[reader] = bounds
+        return bounds
+    return _events_timestamp_bounds(path, reader)
 
 
 def _apply_receipt_to_throughput(
@@ -4111,6 +4437,21 @@ def _observe_run_stream(
             detail=f"event log not written yet: {path}",
         )
         return obs
+    # The derived reading of this stream is held per file identity, so an
+    # unchanged stream costs no decode and a grown one is folded from the
+    # offset the last read reached. A ``resume`` is therefore only the fallback
+    # for a stream the summary has not seen: the summary is brought to the
+    # file's current bytes on every call and is never behind a caller's own
+    # cursor.
+    summarised = _summarised_observation(
+        backend_name=backend_name,
+        backend=backend,
+        log_path=path,
+        elapsed_seconds=elapsed_seconds,
+        receipt=receipt,
+    )
+    if summarised is not None:
+        return summarised
     carried = resume if isinstance(resume, Mapping) else {}
     state = carried.get("state")
     try:

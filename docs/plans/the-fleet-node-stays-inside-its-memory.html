@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="the-fleet-node-stays-inside-its-memory">
   <meta name="plan-title" content="The Fleet Node Stays Inside Its Memory">
-  <meta name="plan-summary" content="The fleet job was killed for memory 125 times in three days; date each kill, move tests and scratch off the node's memory, and bound the control services.">
+  <meta name="plan-summary" content="The fleet job was killed for memory 125 times in three days; date each kill, move tests and scratch off the node&#x27;s memory, and bound the control services.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="18.0">
@@ -20,11 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-node-stays-in-service">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-worker-or-its-job-cannot-overwrite-shared-files#s7&quot;],&quot;s8&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s9&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s7&quot;],&quot;s11&quot;:[&quot;the-fleet-node-stays-inside-its-memory#s2&quot;,&quot;the-fleet-node-stays-inside-its-memory#s3&quot;,&quot;the-fleet-node-stays-inside-its-memory#s4&quot;,&quot;the-fleet-node-stays-inside-its-memory#s5&quot;,&quot;the-fleet-node-stays-inside-its-memory#s6&quot;,&quot;the-fleet-node-stays-inside-its-memory#s8&quot;,&quot;the-fleet-node-stays-inside-its-memory#s9&quot;,&quot;the-fleet-node-stays-inside-its-memory#s10&quot;]}">
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
   <main class="plan-doc">
@@ -115,13 +117,21 @@
     <p><strong>Done when.</strong> The evidence record holds, for the 72 hours and beside the baseline: the kill count, with each kill dated; hours at or above 80 % and 90 % of the limit; the count of samples with a test process on the node; sessions' bytes under <code>/dev/shm</code>; the local disk's lowest free space; and the largest resident size of dispatch, admission and station. The section closes only when the kill count is zero and the job spends under one hour at or above 90 % of its limit; a miss leaves it open, recorded with the dated kills and the processes at each. A series with fewer than 4,000 samples fails as unread. The first figure of §1 is redrawn with both jobs on one axis. Write paths: <code>docs/evidence/archive/the-fleet-node-stays-inside-its-memory-landed.html</code> and <code>docs/figures/fleet-node-memory-after</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-tfnsiim-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-17" data-recommends-skill="/reckon-build the-fleet-node-stays-inside-its-memory">
-        <h4 class="r-fu-title">Date the kills first, then move scratch and bound the services</h4>
-        <div class="r-fu-body"><p>§2 comes first: every later section is judged by which kills remain. §4, §5, §6, §7 and §10 are independent of one another; §5 follows §4 at the merge, since both extend the health sample. §3 waits on the composed gate command in the write-safety plan. §8 and §9 wait on §7's profiles. §11 runs last.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-inside-its-memory</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tfnsiim-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-17" data-recommends-skill="/reckon-build the-fleet-node-stays-inside-its-memory" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Date the kills first, then move scratch and bound the services</h4>
+    <div class="r-fu-body"><p>§2 comes first: every later section is judged by which kills remain. §4, §5, §6, §7 and §10 are independent of one another; §5 follows §4 at the merge, since both extend the health sample. §3 waits on the composed gate command in the write-safety plan. §8 and §9 wait on §7's profiles. §11 runs last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-inside-its-memory</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261117T083906163283-review-of-a-memory-kill-is-dated-23f77ae28886" data-who="reckon-build" data-when="2026-11-17T08:54:08Z">
+    <div class="r-comment-body"><p>Independent exact-revision review complete: all six dimensions 20/20; zero findings; added_failure_count=0 derived from completed base/head logs; ready for coordinator consumption.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261117T081806617499-a-memory-kill-is-dated" data-who="reckon-build" data-when="2026-11-17T08:37:00Z">
+    <div class="r-comment-body"><p>Each health row now records job memory use, limit and cumulative oom_kill; rises bypass snapshot throttling and retain a dated RSS-sorted table and alert naming the largest processes. The 3 -&gt; 5 fixture raises one event and unchanged counts none; the absent-count mutation fails. A real 2 GiB all_debug OOM raised 0 -&gt; 1 with an event/table in 60.75 seconds at the production sixty-second cadence. Final gate: 73 passed versus base 68 passed, zero added failures.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

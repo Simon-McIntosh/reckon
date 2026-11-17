@@ -1,0 +1,48 @@
+<section id="qwnw-red-file-promotion-records-the-pick-landing">
+  <h2>The pick is read as dispatch detail, and the fixture commits in the run's own worktree</h2>
+
+  <p><strong>Base run.</strong> The named file at the base revision
+  <code>5c4ff349</code>, in a scratch tree, as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset: <code>3 failed, 3 passed</code>,
+  <code>EXIT=1</code>. All three failing ids raised
+  <code>KeyError: 'picker_selection'</code> at its
+  <code>read_pointer(record["run_id"])["picker_selection"]</code> line:
+  <code>test_promotion_waits_for_the_in_flight_pick_and_records_it</code>,
+  <code>test_promotion_names_the_timeout_when_the_pick_never_lands</code>,
+  <code>test_promotion_waits_from_the_pick_start_not_the_run_start</code>.</p>
+
+  <p><strong>Cause one: the test was wrong.</strong> The advisory pick is
+  dispatch-time detail — <code>reckon/crew/runs.py</code> lists
+  <code>picker_selection</code> in <code>DISPATCH_DETAIL_FIELDS</code>, so it is
+  written to the run's <code>dispatch-detail.json</code> and every product reader
+  takes it through <code>runs.dispatch_field</code>. The three assertions asked the
+  live pointer for the key and never reached the fact they assert.</p>
+
+  <p><strong>Cause two: the test was wrong.</strong> Behind the first failure the
+  same three ids refused promotion with <code>cites &lt;sha&gt;, which is not a
+  commit this run made beyond its base</code>. A promotion counts only what the run
+  committed on its own history, and a dispatch cuts the run its own worktree. The
+  fixture dispatched a run and then committed the work in the primary checkout the
+  run was cut from, so the cited commit was never the run's. It now commits in the
+  worktree the record names.</p>
+
+  <h3 id="qwnw-red-file-promotion-records-the-pick-arms">Arms</h3>
+
+  <table id="qwnw-red-file-promotion-records-the-pick-table">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file</td><td><code>cdceb9bb82</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base</td><td><code>5c4ff349</code></td>
+        <td>3 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the armed suite arm</td><td><code>cdceb9bb82</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite arm, base</td><td><code>5c4ff349</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>No assertion was deleted or weakened: a guard is read through the accessor
+  that owns it, and the fixture models a run's own history. <code>ruff check</code>
+  and <code>ruff format --check</code> pass on the changed file at both revisions.</p>
+</section>

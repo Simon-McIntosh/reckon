@@ -945,9 +945,10 @@ def _repository_tree_boundary_violations(
         # The membership test is the declaration's own: a claim on a source path
         # shares by default, and reading that default here would exempt every
         # path a merge can reconcile and leave this guard with nothing to
-        # refuse. A path a live peer holds under its own declaration is the
-        # peer's work, not this run's, so it is exempt too; a path the peer does
-        # not declare stays charged here.
+        # refuse — which is how a stray source edit went unreported, since every
+        # source and test path shares. A path a live peer holds under its own
+        # declaration is the peer's work, not this run's, so it is exempt too; a
+        # path the peer does not declare stays charged here.
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)

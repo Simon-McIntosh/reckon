@@ -924,6 +924,26 @@ def build_merge_commit(
     return commit
 
 
+def build_merge_group(repo: Path, base: str, heads: Iterable[str]) -> str:
+    """Compose reviewed heads into one candidate without moving a branch.
+
+    Each merge retains both parents, so publication and recovery can prove
+    that every member is incorporated by ancestry as well as by its markers.
+    """
+    candidate = base
+    for head in dict.fromkeys(heads):
+        if _is_ancestor(repo, head, candidate):
+            continue
+        candidate = build_merge_commit(
+            repo,
+            candidate,
+            head,
+            "merge: compose compatible reviewed deliveries",
+            "Retain each reviewed delivery in the candidate proved by the combined gate.",
+        )
+    return candidate
+
+
 def _git_dir(repo: Path) -> Path:
     result = _run(repo, "rev-parse", "--absolute-git-dir")
     return Path(result.stdout.strip() or (repo / ".git"))
@@ -1553,10 +1573,14 @@ def release_landed_worktrees(
     A run promoted on its own has already had its live pointer deleted, so the
     tree it left behind is named by its ledger row alone. Those rows are read by
     the one join that already answers which record holds which tree — the
-    obligations view's ``_held_worktree_records`` — rather than by a second
+    obligations view's ``_named_worktree_records`` — rather than by a second
     derivation kept here, and each tree is then released by the promotion's own
     release path, judged against the commit this merge wrote rather than against
     a checkout's ``HEAD``.
+
+    The view is the named-tree one rather than the duty one because the landing
+    this function follows is what empties a tree of work the primary branch
+    lacks: the duty view stops naming exactly the tree the landing may free.
 
     A tree is offered when its ``HEAD`` is the head this merge landed — the
     reviewed commit itself, or a commit beneath it. A tree holding a commit the
@@ -1580,7 +1604,7 @@ def release_landed_worktrees(
     reviewed = _rev_parse(checkout, head) if head else landed
     for project in names:
         try:
-            held = obligations._held_worktree_records(project)
+            held = obligations._named_worktree_records(project)
         except Exception as exc:  # noqa: BLE001 - a failed release never fails a merge
             result["withheld"].append(
                 {

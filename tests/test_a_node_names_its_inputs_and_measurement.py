@@ -365,6 +365,12 @@ def _dry_run_arguments(
         "session-fit-the-model",
         "--repo",
         str(repo),
+        # A brief implementing run owes a plan owner, and each test here is
+        # about the admission checks rather than that owner: state the reason
+        # so the fixture reaches the checks under test instead of the refusal
+        # that asks for the owner.
+        "--unplanned-reason",
+        "the fixture node fits a tape model no plan owns",
     ]
     for entry in inputs:
         arguments += ["--input", entry]

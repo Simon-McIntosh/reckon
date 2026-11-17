@@ -1348,6 +1348,17 @@ class WorktreeRecordIndex:
         """Whether ``record`` names ``worktree``, by the rule's own keys."""
         return any(record is existing for existing in self.records_naming(worktree))
 
+    def rows(self) -> tuple[Any, ...]:
+        """Every record filed, whether or not it names a tree.
+
+        A reader that needs the population this index was built from takes it
+        here rather than opening the ledger again: the index is updated from
+        the same identities the ledger's own reader validates, so what it holds
+        is as fresh as the records it was filed from. The rows are the reader's
+        own objects and are not copied.
+        """
+        return tuple(self._rows.values())
+
 
 def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
     """The worktree a run's own records name, preferring its live pointer.

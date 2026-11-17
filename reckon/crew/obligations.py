@@ -29,6 +29,7 @@ from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -50,6 +51,7 @@ from reckon.crew import (
     repair as repair_module,
 )
 from reckon.crew import review as review_module
+from reckon.crew.admission import verdicts as _verdicts
 from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
     CrewError,
@@ -563,7 +565,8 @@ def action_form(command: str) -> str | None:
     quotation mark — likewise has no form, so a stored command that cannot be
     parsed leaves the read it belongs to intact rather than failing it.
 
-    Every option on the command is rendered, and an option this form cannot
+    Complete already waits on the tool surface, so its CLI --wait flag adds
+    no argument. Every other option on the command is rendered, and one this form cannot
     carry — one with no tool parameter, one whose value is missing — makes the
     whole command unrenderable. Half a command is worse than a printed one: it
     reads as callable and is refused, or is silently called without the
@@ -590,10 +593,15 @@ def action_form(command: str) -> str | None:
     order: list[tuple[str, bool]] = []
     index = 3
     while index < len(tokens):
-        token = tokens[index]
-        if not token.startswith("-"):
+        word = tokens[index]
+        if not word.startswith("-"):
             return None
-        option, _, inline = token.partition("=")
+        # The complete action invokes crew_complete synchronously by default,
+        # so its CLI --wait flag requires no additional tool parameter.
+        if verb == "complete" and word == "--wait":
+            index += 1
+            continue
+        option, _, inline = word.partition("=")
         parameter = _action_parameter(option)
         if parameter is None:
             return None
@@ -682,6 +690,22 @@ def _seconds_since(value: Any, *, now: datetime) -> int:
     if stamp is None:
         return 0
     return max(0, int((now - stamp).total_seconds()))
+
+
+def _queued_hold(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The hold a queued request is under, composed by the admission package.
+
+    A request whose last attempt failed on a refusal that names its remedy is
+    held by that refusal, whatever hold the last pass wrote: the pass asks the
+    lane before it reads the request's back-off, and a lane with no slot answers
+    first. The composition lives with the admission records so this view, the
+    pass's own verdict row and the request's stored hold cannot disagree about
+    what holds one request.
+    """
+    named = _verdicts.failure_hold(pointer)
+    if named is not None:
+        return named
+    return queue_admission.recorded_pass_hold(pointer)
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
@@ -2017,12 +2041,16 @@ def _live_item(
     if kind in CLASSIFIER_DETAIL_DUTY_KINDS:
         item["reason"] = str(row.get("detail") or "")
     if kind == QUEUED_RUN_DUTY_KIND and pointer is not None:
-        hold = queue_admission.recorded_pass_hold(pointer)
+        hold = _queued_hold(pointer)
         verdict = str(hold.get("verdict") or "")
         if verdict:
-            reason = str(hold.get("reason") or "")
+            reason = _verdicts.hold_reason(hold)
             item["reason"] = f"{verdict}: {reason}" if reason else verdict
-            item["next_command"] = f"wait: {item['reason']}"
+            stamped = str(hold.get("recorded_at") or "").strip()
+            if stamped:
+                item["age_seconds"] = _seconds_since(stamped, now=now)
+            remedy = str(hold.get("remedy") or "")
+            item["next_command"] = remedy or f"wait: {item['reason']}"
     return item
 
 
@@ -2439,7 +2467,23 @@ def _queued_row_item(
         refusal = row.get("session_refusal")
         if isinstance(refusal, Mapping) and str(refusal.get("holder_run_id") or ""):
             return _scope_held_item(row, refusal=refusal, now=now)
-        return _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+        item = _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+        if isinstance(refusal, Mapping):
+            # The classification detail is replaced by a stuck sentence whenever
+            # the pass's last recorded verdict is old enough to read as stuck,
+            # and that sentence is about the phase rather than about the refusal
+            # that stops the launch. The refusal is the later answer to the same
+            # question — the session's own condition, with the command that
+            # clears it — so it is what the row says, with its age measured from
+            # the instant that refusal was recorded.
+            detail = str(refusal.get("detail") or "")
+            if detail:
+                item["reason"] = detail
+                item["next_command"] = str(refusal.get("next_command") or "")
+                stamped = str(refusal.get("recorded_at") or "").strip()
+                if stamped:
+                    item["age_seconds"] = _seconds_since(stamped, now=now)
+        return item
     ordered = placements() if callable(placements) else placements
     return _queued_item(
         row, placements=ordered, now=now, verdicts=verdicts, pointer=pointer
@@ -2881,6 +2925,8 @@ def _review_duty_item(
     may leave them out, and the queued reading reads the pointers and the
     ordering for itself when it needs them.
     """
+    if (row.get("delivery") or {}).get("status") == "promotion-queued":
+        return None
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
     if pointer is not None and not recovery_classification.completion_offer(
@@ -3142,6 +3188,10 @@ def _review_duty_item(
                     item["overdue_remedy"] = overdue_remedy
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
+    if item["kind"] in {"review-ready", "promotable-stale"} and pointer is not None:
+        item["next_command"] = recovery_classification._promotion_command(
+            str(row.get("run_id") or ""), pointer, list(row.get("manifest_commits") or [])
+        )
     return item
 
 
@@ -3382,8 +3432,38 @@ def _tree_holds_unmerged_work(tree: Path) -> bool:
     return _unmerged_commit_answer(tree) is not False
 
 
-def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
-    """Return the record holding each registered, present and unoccupied tree.
+@dataclass(frozen=True)
+class _RecordedPass:
+    """One record pass's answer: the trees still owed, every tree a row names,
+    and the rows it filed.
+
+    All three travel together because they are one read. A caller that needs the
+    history this pass read takes it from here instead of opening the ledger
+    again, which is what keeps two derivations of the same tick to one read; a
+    caller that needs every tree a row still names takes the same answer instead
+    of running a second pass for it.
+
+    ``rows`` is ``None`` when this pass filed nothing because a project with no
+    retained tree owes the hot path no history read at all. A caller that needs
+    the rows then keeps its own narrow read instead of answering with an empty
+    history.
+    """
+
+    held: dict[Path, Mapping[str, Any]]
+    named: dict[Path, Mapping[str, Any]]
+    rows: tuple[Mapping[str, Any], ...] | None
+
+    def trees(self, *, include_landed: bool = False) -> dict[Path, Mapping[str, Any]]:
+        """The trees owed, or every tree a row still names, as a fresh dict."""
+        return dict(self.named if include_landed else self.held)
+
+
+_EMPTY_PASS = _RecordedPass({}, {}, None)
+
+
+def _held_records_pass(project: str) -> _RecordedPass:
+    """Return held trees, every named tree, and the rows every record was filed
+    from.
 
     Source identities validate per-run files, live claims, the common Git
     registry and registered-tree presence. Unchanged inputs reuse the answer;
@@ -3393,10 +3473,14 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     An aggregate rewrite rebuilds the index because its envelope has no per-row
     identity. Reader failures retain the unrefused document-reader fallback.
     The read-only region shares parsed document views without copying them.
+    One pass answers both views a caller can want, so the trees a landing frees
+    and the history a duty needs cost one read between them. A project that owes
+    no tree duty answers the empty pass instead, whose rows are unknown, so the
+    hot path never reads a history it has no tree to justify.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
-        return {}
+        return _EMPTY_PASS
     repository = docs_dir.parent.resolve()
     with file_memo.read_only_region():
         key = (project, str(repository), _held_records_signature(project, repository))
@@ -3411,9 +3495,61 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
         )
 
 
+def _held_worktree_records(
+    project: str, *, include_landed: bool = False
+) -> dict[Path, Mapping[str, Any]]:
+    """Return the record holding each registered, present and unoccupied tree.
+
+    ``include_landed`` answers with every tree a row still names rather than
+    only the trees owed as duties. A landing empties a tree of work the primary
+    branch lacks, so the duty view drops exactly the trees a merge is about to
+    free; a caller deciding what may be released reads them through here.
+    """
+    return _held_records_pass(project).trees(include_landed=include_landed)
+
+
+def _named_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
+    """Every present, unoccupied tree a ledger row names, landed work or not.
+
+    A landing moves the branch the duty view judges a tree against, so the tree
+    the landing emptied stops being a duty at the very moment the landing is
+    the thing that could free it. The release reads this view instead.
+    """
+    return _held_worktree_records(project, include_landed=True)
+
+
+def recorded_run_rows(
+    project: str, repository: Path | None = None
+) -> list[Mapping[str, Any]] | None:
+    """The history rows this process already read for ``project``, or ``None``.
+
+    The held-record pass reads every run record once and then decodes only a
+    document whose identity moved, keeping the union it filed. A second
+    derivation of the same tick that needs the same history takes that union
+    here rather than opening the ledger again: the per-document identities
+    validate the answer on every read, so a row handed out is as fresh as the
+    held answer derived beside it.
+
+    ``None`` means this process holds no history for the project to hand out: its
+    mount is unknown, the caller names a different repository, or no tree is
+    held and no earlier tick read the ledger, which the hot path must not do for
+    a project that owes no tree duty. The caller keeps its own read in every
+    such case rather than answering with nothing. The rows are the reader's own
+    records in promotion order and are read, never written, by a caller.
+    """
+    docs_dir = _store._docs_dir_for_project(project)
+    if docs_dir is None:
+        return None
+    root = docs_dir.parent.resolve()
+    if repository is not None and root != repository.resolve():
+        return None
+    rows = _held_records_pass(project).rows
+    return None if rows is None else list(rows)
+
+
 def _held_records_read_uncached(
     project: str, repository: Path, signature: tuple[Any, ...]
-) -> dict[Path, Mapping[str, Any]]:
+) -> _RecordedPass:
     """Read the held-tree records once, inside the region a fresh read opens."""
     token = _HELD_SOURCE_SIGNATURE.set(signature)
     try:
@@ -3630,6 +3766,7 @@ class _HeldWorktreeState:
         self.extra: set[str] = set()
         self.trees: dict[Any, set[Path]] = {}
         self.inspected: set[Path] = set()
+        self.matched: dict[Path, Mapping[str, Any]] = {}
         self.held: dict[Path, Mapping[str, Any]] = {}
 
     def replace(
@@ -3653,9 +3790,16 @@ class _HeldWorktreeState:
         have taken: a tree that survived its run but holds nothing unmerged
         only costs someone a look, while a row claiming otherwise costs a
         reader their trust in every row beside it.
+
+        ``matched`` keeps the record of every inspected tree a row still names,
+        judged by nothing else. The duty view is the wrong answer for a caller
+        deciding which trees it may free: a landing empties the tree of exactly
+        the work the duty view judges against, so the tree the landing could
+        release stops being a duty as the landing completes.
         """
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
+            self.matched.pop(tree, None)
             for name in self.records.worktree_keys(tree):
                 self.trees[name].discard(tree)
                 if not self.trees[name]:
@@ -3667,23 +3811,35 @@ class _HeldWorktreeState:
         self.inspected = inspected
         for tree in affected & inspected:
             record = _holding_record(tree, self.records)
-            release = record.get("release") if record is not None else None
+            if record is None:
+                self.matched.pop(tree, None)
+                self.held.pop(tree, None)
+                continue
+            self.matched[tree] = record
+            release = record.get("release")
             if (
-                record is None
-                or (
-                    isinstance(release, Mapping)
-                    and release.get("worktree_released") is True
-                )
-                or not _tree_holds_unmerged_work(tree)
-            ):
+                isinstance(release, Mapping)
+                and release.get("worktree_released") is True
+            ) or not _tree_holds_unmerged_work(tree):
                 self.held.pop(tree, None)
             else:
                 self.held[tree] = record
 
 
+def _filed_rows(index: _HeldWorktreeState) -> tuple[Mapping[str, Any], ...]:
+    """The records an index was filed from, in promotion order.
+
+    A reader of the history wants the rows the ledger's own reader would have
+    returned, so they are ordered by the key :func:`reckon.ledger.load` sorts
+    its store rows by rather than by the order an incremental pass happened to
+    update them in.
+    """
+    return tuple(sorted(index.records.rows(), key=ledger.promotion_order_key))
+
+
 def _held_worktree_records_read(
     project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
-) -> dict[Path, Mapping[str, Any]]:
+) -> _RecordedPass:
     """Apply changed run documents and tree registrations to the previous answer.
 
     File identities are still validated, including in-place document edits.
@@ -3692,6 +3848,8 @@ def _held_worktree_records_read(
     An aggregate rewrite rebuilds the index because its JSON envelope carries
     no per-row change identities; a refused merged read keeps the unrefused
     document-reader fallback rather than losing duties from healthy records.
+    The rows the index was filed from travel with the answer, so a second
+    derivation of the same tick reads the history this one already read.
     """
     signature = (
         signature
@@ -3715,7 +3873,12 @@ def _held_worktree_records_read(
     with _HELD_READ_LOCK:
         previous = _HELD_RECORD_READS.get(cache_key) if reusable else None
         if previous is None and not inspected:
-            return {}
+            # Nothing is held and no answer stands from an earlier tick, so this
+            # read owes no history: a project with no retained tree answers no
+            # tree duty, and the one caller that wants the rows (the section-
+            # accounting duty) is told so by ``rows`` being None and asks the
+            # writers' own session projection instead.
+            return _EMPTY_PASS
         if previous is None or previous[0] != aggregate_stamp:
             fresh = _run_namings(project, repository)
             rows = (
@@ -3806,7 +3969,7 @@ def _held_worktree_records_read(
             _held_remember(
                 _HELD_RECORD_READS, cache_key, (aggregate_stamp, identities, index)
             )
-        return dict(index.held)
+        return _RecordedPass(dict(index.held), dict(index.matched), _filed_rows(index))
 
 
 def _held_worktrees_by_session(
@@ -4543,6 +4706,13 @@ def _obligations_view(
             if item is not None:
                 items.append(item)
             continue
+        if recovery_reading == "stopped" and str(row.get("detail") or "").startswith(
+            recovery_classification.SUPERVISOR_STOP_PREFIX
+        ):
+            item = _live_item(row, kind="force-stopped", now=now)
+            item["reason"] = str(row["detail"])
+            items.append(item)
+            continue
         if recovery_reading in RECOVERY_CLASSIFICATION_DUTY_KINDS:
             kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_reading]
         else:
@@ -4663,6 +4833,8 @@ def _obligations_view(
         ),
         "unreconciled_runs": int(unreconciled),
     }
+    delivery = recovery_classification.delivery_summary(classified, session=session)
+    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
     view = {
         "project": project,
         "session": session,
@@ -4680,6 +4852,7 @@ def _obligations_view(
             vocabulary=DUTY_ROW_FIELDS,
             sections=sections,
         ),
+        "remove_pointers": delivery["remove_pointers"],
         "summary": summary,
     }
     # Carried only when the session has one. The published snapshot is sliced

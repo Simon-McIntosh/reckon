@@ -1,0 +1,164 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The derivation's own pointer map or row list drops pointers, so a listing that returned nothing or a partial population cannot satisfy the counts below it.",
+      "lines": [
+        233,
+        251
+      ]
+    },
+    {
+      "fails_if": "Any reader lists the directory again inside the derivation; the base revision lists 427 times, per the recorded control log.",
+      "lines": [
+        234
+      ]
+    },
+    {
+      "fails_if": "Each reader decodes the pointer files again; the base revision decodes 128100 for the same 300-pointer fleet.",
+      "lines": [
+        238
+      ]
+    },
+    {
+      "fails_if": "The fixture derives no duties at all, which would let a one-listing count describe an empty derivation.",
+      "lines": [
+        246,
+        249,
+        250
+      ]
+    },
+    {
+      "fails_if": "The stand-in arm stops reproducing the per-reader read pattern, so the equality below would compare one path with itself.",
+      "lines": [
+        268
+      ]
+    },
+    {
+      "fails_if": "The published snapshot derives a pointer set, an unreconciled count or a per-session payload the per-reader read does not.",
+      "lines": [
+        272,
+        273,
+        274,
+        275,
+        276,
+        277
+      ]
+    }
+  ],
+  "assertion_independence": "No assertion compares a value against the same variable the test passed in: the listing and decode counters count production calls and decodes, the pointer and row counts are fixed by the 300-pointer fixture rather than by the snapshot, and the equality arm compares two derivations whose differing read patterns are themselves asserted at :268. The count of one at :234 is falsified by the recorded 427 of the control log.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1857",
+    "reckon/crew/station_subscriber.py:359",
+    "reckon/crew/obligations.py:4262",
+    "reckon/crew/obligations.py:4651",
+    "reckon/crew/station_obligations.py:331"
+  ],
+  "completed_at": "2026-11-17T00:26:16.525Z",
+  "dispatched_at": "2026-11-17T00:25:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the base-revision comparison is carried by the coordinator's matched arms: 946 test files importing the changed modules on all_debug (jobs 1321049-1321064, main aaa0a50980 vs merged 392e618a61), with every apparent addition rechecked three times (s81-final/merged-recheck.log, main-recheck2.log).",
+      "recorded_at": "2026-11-17T00:48:29.604802+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the extra listing is on the obligations view's own path, which the station's per-tick derivation does not take; s13, queued behind this section, takes a per-path census of the station after it lands and removes whatever dominant read remains.",
+      "recorded_at": "2026-11-17T00:48:32.342180+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the landing passes the literal relative gate command (PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_state_reads_the_live_pointers_once.py) and the coordinator's gate log from all_debug job 1321313, so the receipt carries a re-runnable command.",
+      "recorded_at": "2026-11-17T00:48:34.352685+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_fleet_state_reads_the_live_pointers_once.py",
+      "id": "ffac1f92498",
+      "line": 215,
+      "severity": "non-blocking",
+      "summary": "the equality arm compares against a stand-in, _base_reads, that yields one runs.list_live from inside the head code rather than against the base revision's derivation the section names, so a base-revision difference unrelated to the snapshot is not caught; the arm is at least shown to differ in read pattern at :268"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "id": "fadb86523fb",
+      "line": 4651,
+      "severity": "non-blocking",
+      "summary": "_obligations_view still calls runs.drain_unreconciled_by_session(project) without the snapshot it holds, so every obligations view lists and decodes the live directory once more, which is the reader this change taught the derivation to feed"
+    },
+    {
+      "file": "manifest.md",
+      "id": "f931d2c8917",
+      "line": 15,
+      "severity": "non-blocking",
+      "summary": "the tests line carries four results and prose after the literal gate command, so the line is not a re-runnable command for the promotion receipt; the command itself is literal and relative and its log ends EXIT=0"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit against a908b29cc0: c499c4ac39 adds the context manager and routes the derivation, c90e36abab moves the station pass onto it and deletes _pass_reviews_in_flight, 0cfea4bd34 stops rebuilding each pointer, feba05dead records the evidence fragment.",
+    "done_when": "The done-when names tests/test_fleet_state_reads_the_live_pointers_once.py over 300 pointers in three sessions with counted listings and decodes, equality per session and a base negative control; the file at :230-:250 and :258-:277 runs that, and logs/base-negative-control.log:28 records 427 listings and 128100 decodes at a908b29cc0, exceeding the named at-least-6 and at-least-1800 bounds.",
+    "goal": "Section 81's goal is one listing and one decode per pointer for a fleet-state derivation; reckon/crew/obligations.py:768 supplies the single publishing entry point and reckon/crew/obligation_snapshot.py:1857 takes it, so the derivation's own rows and every reader it reaches answer from one population.",
+    "manifest": "The reviewed run's manifest records the four commits c499c4ac39, c90e36abab, 0cfea4bd34 and feba05dead, and every figure it states reconciles with the log it names: 2 passed at head 0cfea4bd34, 58 passed for the base arm, 60 passed for the after arm.",
+    "write_paths": "The reviewed run's declared paths are reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, reckon/crew/runs.py, reckon/crew/station_subscriber.py, tests/test_fleet_state_reads_the_live_pointers_once.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/fleet-state-reads-the-live-pointers-once.html; git diff --stat a908b29cc0 feba05dead names those six and no other file."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_state_reads_the_live_pointers_once.py:234 and :238 redden on the reinstated regression, as logs/base-negative-control.log:28 shows with 427 listings and 128100 decodes where they require 1 and at most 300, and :268 keeps the two sides of the equality arm from being one path.",
+    "evidence": "The gate measures the done-when's own figures in logs/head-gate.log (2 passed EXIT=0) and logs/base-negative-control.log:28 (427 listings, 128100 decodes at the base revision), but the partition-job submission the done-when requires for the matched arms is recorded nowhere.",
+    "fit": "reckon/crew/obligations.py:768 sits beside the _VIEW_LIVE_POINTERS it publishes, keeps that existing variable name as the section required, and deletes the superseded _pass_reviews_in_flight rather than leaving two idioms.",
+    "goal_fidelity": "reckon/crew/obligations.py:768 owns the one entry point and reckon/crew/obligation_snapshot.py:1857 wraps the derivation in it, with station_subscriber.py:359 and obligations.py:4262 on the same entry point; only obligations.py:4651 still lists for itself.",
+    "reuse": "A capability search over reckon for a population-publishing scope (open_run_index.read_scope, process_signal.process_table_walk_once, review_heads_resolve_once, _classification_input_tick, resource_scan_scope) found no owner of a live-pointer population; this adds the first, and the two consumers it extends, recovery_classification.py:1246 classify_pointer and runs.py:3534 drain_unreconciled_by_session, already owned theirs and gained a parameter rather than a copy.",
+    "scope_discipline": "The base-to-head diff a908b29cc0..feba05dead changes exactly the four declared reckon/crew modules, the gate test and the node's fragment, and carries nothing the goal does not imply."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204443479737-fleet-state-reads-the-live-pointers-once/logs/base-negative-control.log",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Section 81 asks for one live-pointer population per fleet-state derivation; reckon/crew/obligations.py:768 adds live_pointer_snapshot and reckon/crew/obligation_snapshot.py:1857 wraps the derivation in it, with the station pass at reckon/crew/station_subscriber.py:359 and obligations() at reckon/crew/obligations.py:4262 on the same entry point and no hand-rolled set/reset pair left.\nVERDICT done_when: the measure is tests/test_fleet_state_reads_the_live_pointers_once.py over 300 pointers in three sessions with counted listings and decodes, per-session equality and a base negative control; :230-:250 and :258-:277 assert it and logs/base-negative-control.log:28 records 427 listings and 128100 decodes at a908b29cc0, exceeding the named at-least-6 and at-least-1800 bounds.\nVERDICT write_paths: the declared paths are the four reckon/crew modules, the gate test and the node's fragment; git diff --stat a908b29cc0 feba05dead names exactly those six files and no other.\nVERDICT manifest: read; it records the four commits and the figures 2 passed at head 0cfea4bd34, 58 passed for the base arm and 60 passed for the after arm, each reconciling with its log, and it records no partition-job submission for either matched arm.\nVERDICT diff: read all four commits against the base: c499c4ac39 adds the context manager and routes the derivation, c90e36abab moves the station pass onto it and deletes _pass_reviews_in_flight, 0cfea4bd34 stops rebuilding each pointer, feba05dead records the fragment.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1857, reckon/crew/station_subscriber.py:359, reckon/crew/obligations.py:4262, reckon/crew/obligations.py:4651, reckon/crew/station_obligations.py:331\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:768 is the single publisher and reckon/crew/obligation_snapshot.py:1857, station_subscriber.py:359 and obligations.py:4262 all take it, leaving only obligations.py:4651 listing for itself.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate.log ends EXIT=0 with 2 passed and logs/base-negative-control.log:28 records 427 listings and 128100 decodes, while the partition-job submission the done-when requires for the matched arms is recorded nowhere in the reviewed run's manifest.md:15.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a908b29cc0 feba05dead lists only reckon/crew/obligation_snapshot.py, obligations.py, runs.py, station_subscriber.py, the gate test and the fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fleet_state_reads_the_live_pointers_once.py:234 and :238 fail on the reinstated regression, as logs/base-negative-control.log:28 shows at 427 listings and 128100 decodes, and :268 keeps the equality arm from comparing one path with itself.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:768 publishes beside _VIEW_LIVE_POINTERS and keeps that name as the section required, and c90e36abab deletes no reader that still has a caller.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over reckon for a population-publishing scope found no prior owner; recovery_classification.py:1246 and runs.py:3534 already owned their capabilities and gained parameters, so nothing is duplicated.\nFINDING tests/test_fleet_state_reads_the_live_pointers_once.py:215 non-blocking: the equality arm compares against a stand-in, _base_reads, that yields one runs.list_live from inside the head code rather than against the base revision's derivation the section names, so a base-revision difference unrelated to the snapshot is not caught; the arm is at least shown to differ in read pattern at :268.\nFINDING reckon/crew/obligations.py:4651 non-blocking: _obligations_view still calls runs.drain_unreconciled_by_session(project) without the reviewed snapshot it holds, so each obligations view lists and decodes the live directory once more, the reader this change taught the derivation to feed.\nFINDING manifest.md:15 non-blocking: the tests line carries four results and prose after the literal gate command, so it is not a re-runnable command for the promotion receipt, though the command itself is literal and relative and its log ends EXIT=0.",
+  "review_run_id": "r-20261116T234745538923-review-of-fleet-state-reads-the-live-pointers-once-feba05dead55",
+  "reviewed_base_sha": "a908b29cc08378036206d6993e2566c9b33b7fd3",
+  "reviewed_head_sha": "feba05dead555d0e985942f08725f72a84001b90",
+  "reviewed_run_id": "r-20261116T204443479737-fleet-state-reads-the-live-pointers-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "structural_handover": {
+    "one_entry_point": "reckon/crew/obligations.py:768",
+    "publishers": [
+      "reckon/crew/obligations.py:4262",
+      "reckon/crew/station_subscriber.py:359",
+      "reckon/crew/obligation_snapshot.py:1857"
+    ]
+  },
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_state_reads_the_live_pointers_once.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204443479737-fleet-state-reads-the-live-pointers-once/logs/after-arm.log",
+      "revision": "0cfea4bd342d48b8c7b09721339b4c46fd264c06"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T204443479737-fleet-state-reads-the-live-pointers-once/logs/base-arm.log",
+      "revision": "a908b29cc08378036206d6993e2566c9b33b7fd3"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:43:52.391299+00:00",
+  "total": 112
+}

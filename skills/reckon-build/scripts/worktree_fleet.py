@@ -9,10 +9,10 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from collections.abc import Iterable
 from pathlib import Path
-
 
 SAFE_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
@@ -202,6 +202,21 @@ def provision_env_links(repo: Path, path: Path) -> dict[str, str]:
         if not target.exists():
             provisions[name] = f"skipped: no {name} at {target}"
             continue
+        if name == ".venv":
+            from reckon.crew.fleet_supervisor import (
+                check_environment_interpreters,
+                log,
+                resolved_environment,
+            )
+
+            remaining = check_environment_interpreters(
+                [repo], report=lambda message: log(message, file=sys.stderr)
+            )
+            if remaining:
+                raise FleetError(
+                    f"{remaining} interpreter(s) remain writable for {repo}"
+                )
+            target = resolved_environment(repo)
         link.symlink_to(target)
         provisions[name] = f"linked -> {target}"
     return provisions
