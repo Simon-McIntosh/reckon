@@ -176,7 +176,7 @@ def test_a_second_pass_pays_only_for_what_each_stream_gained(
         _backends.cached_stream_events(path)
         second_pass.append(_observe(path))
     assert recorder.bytes <= SECOND_PASS_ALLOWANCE, (
-        "a stream whose contents were evicted was parsed again from its first byte",
+        "the second pass parsed more than the bytes each stream gained",
         recorder.bytes,
         SECOND_PASS_ALLOWANCE,
         recorder.records,

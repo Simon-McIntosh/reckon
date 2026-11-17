@@ -532,6 +532,45 @@
     the evicted parsed-stream cache, the per-document digests and the per-run document reads, each of
     which is a whole-file re-read of an unchanged file.
 </p>
+    <h3 id="station-read-parsed-stream-cursor">The parsed-stream cache keeps the resume state the next pass asks for</h3>
+    <p>The cache that ranks first in the census re-read the whole population because it keeps only the
+    bytes it has decoded. It now keeps, beside them, one resume cursor per stream it has read — the
+    device, inode, size and mtime the read was taken at, the offset after the last complete record, and
+    the digest of the stream's opening — and keeps that cursor when the byte bound drops the stream's
+    records. A stream asked for again is read from its cursor when the file is the one the cursor
+    recorded and has only grown; a stream that was replaced, truncated or rewritten is still read from
+    its first byte, and the callers that need the whole stream — the admission and capacity scans, the
+    stamp bounds, a fold the summary has not yet built — ask for it explicitly. Holding the decoded
+    events instead of a cursor was measured and rejected: all of the live fleet's records cost about
+    504&nbsp;MB resident, against a 32&nbsp;MB bound.</p>
+    <table>
+      <thead><tr><th>Population</th><th>First pass</th><th>Second pass</th><th>Third pass</th></tr></thead>
+      <tbody>
+        <tr><td>Sixty two-megabyte fixture streams (125.84&nbsp;MB), bytes parsed through
+          <code>cached_stream_events</code></td>
+          <td>125.84&nbsp;MB</td><td>27,120&nbsp;B</td><td>—</td></tr>
+        <tr><td>The same fixture, bytes parsed <em>at the base revision</em> on its second pass</td>
+          <td colspan="3">125,562,900&nbsp;B, and the node's test fails on it</td></tr>
+        <tr><td>This fleet's live streams (61 pointers, 156.3&nbsp;MB), bytes parsed through
+          <code>cached_stream_events</code></td>
+          <td>157.3&nbsp;MB</td><td>2.4&nbsp;MB</td><td>1.4&nbsp;MB</td></tr>
+        <tr><td>Classification over 99 live pointers, bytes parsed in <code>classify_pointer</code></td>
+          <td>341.9&nbsp;MB</td><td>2.4&nbsp;MB</td><td>1.4&nbsp;MB</td></tr>
+      </tbody>
+    </table>
+    <p>The fixture's second pass parses the appended record twice per stream — once through the events
+    cache and once through the summary that folds the growth — so its 27,120&nbsp;B is 120 decodes of a
+    226&nbsp;byte record, and the allowance is the 600&nbsp;bytes per stream that this leaves headroom
+    under. The summaries are not merely cheap: every one of them equals a
+    fresh whole-stream parse, and the negative control runs the same test against an extracted base tree,
+    where the second pass parses 125,562,900&nbsp;B and the test fails. The live figures were taken in
+    this worktree's process over the fleet's own crew home, with no station running, so they compare the
+    read path and not the station's cost.</p>
+    <p>The §12 bound itself is unchanged by this measurement and remains unmet on the evidence above:
+    the remaining cost is the per-document digests and the per-run document reads, and the 60&nbsp;s live
+    window that would state the station's post-landing cost reads 20&nbsp;MB/min and 5&nbsp;% of one core
+    only once the station runs on the reloaded fleet node, which this worker could not do. That window
+    and those two figures are the coordinator's, and no after-window result is claimed here.</p>
   </main>
 </body>
 </html>
