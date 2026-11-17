@@ -1,0 +1,74 @@
+<section id="qwnw-red-file-ledger-promoted-rows-repair">
+<h3>A stored read answers the record the promotion wrote</h3>
+<p>Eight tests in <code>tests/test_ledger.py</code> were red on the primary branch at
+<code>f4403247ef233a2efb644c2deceb8165611da16c</code>. They were not eight defects. Six were one
+product defect on the store's write path; one was a completion reply that had been made compact
+without its reader following; one stated a per-checkout isolation that ended when the shared store
+became the reader.</p>
+<p>The product defect, reproduced before the repair: a promotion writes a run record carrying no
+<code>project</code> key, while the store's row for that run carried one, because the append injected
+the routing key into the durable payload. A read then answered a record that matched neither the
+record it was given nor the file it came from:</p>
+<pre id="qwnw-red-file-ledger-promoted-rows-probe"># before, module reckon/run_store.py at the base content
+column project: proj
+payload has project: True
+read has project: True
+read == record: False
+file == serialize(read): False
+# after, the same probe against the same module
+payload has project: False
+read has project: False
+read == record: True
+file == serialize(read): True</pre>
+<p>The repair moves the key to where it already belonged: the runs column, which every read already
+filters on. The payload is now the record the writer passed. The project a write files a row under
+is passed to the column separately, and a read that answers an identity — <code>get_run</code>,
+<code>durable_rows</code>, and the equality reference — declares the project from that column onto
+the record it answers, so both sides of a comparison agree field for field. Rows written before the
+repair keep their key in the payload; a rewrite through <code>sync_run</code> keeps the column it
+had.</p>
+<h4 id="qwnw-red-file-ledger-promoted-rows-causes">The three causes and their verdicts</h4>
+<ol id="qwnw-red-file-ledger-promoted-rows-cause-list">
+<li><strong>Product wrong</strong> — six tests compared a read row to the record the promotion was
+given and to the file that promotion wrote:
+<code>test_a_foreign_projects_promoted_row_reaches_its_registered_checkout</code>,
+<code>test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent</code>,
+<code>test_a_projects_own_checkout_remains_its_promotion_target</code>,
+<code>test_a_successful_index_write_follows_the_file_and_is_reported</code>,
+<code>test_a_failed_index_write_keeps_the_rows_already_written</code> and
+<code>test_the_crew_tool_reads_the_ledger_and_the_live_pointers</code>. The injected key broke both
+comparisons. Repaired in <code>reckon/run_store.py</code>; no assertion weakened. The one assertion
+naming the payload's own <code>project</code> now states where the project is held: the runs row's
+column, with the payload carrying no such key.</li>
+<li><strong>Test wrong</strong> — <code>test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one</code>
+encoded per-checkout isolation, true while the per-run documents were the ledger. One run store now
+answers a project's history for every checkout, so the test states the rule the code keeps: both runs
+answer from either checkout, and the path reports the tree that asked.</li>
+<li><strong>Test wrong</strong> — <code>test_complete_command_assumes_utc_for_a_naive_completion_stamp</code>
+read <code>payload["record"]</code> from a reply that is now the compact receipt naming
+<code>record_path</code>. The test reads the retained full outcome from that path; every field
+assertion is unchanged.</li>
+</ol>
+<p>The store's write path had three further readers declaring the injected key, none of them in the
+node's file: <code>test_writes_keep_the_readers_plan_identity</code> (five cases),
+<code>test_a_repository_without_commits_accepts_its_first_run</code>, and the seeding helpers of <code>test_a_scanning_store_read_holds_no_lock</code>,
+<code>test_an_owed_review_pass_pays_for_what_changed</code> and
+<code>test_the_landing_check_reads_only_the_runs_it_checks</code> (which built rows through the
+store's own split). Their expectations are updated to the rule the code now keeps, and the helpers
+pass the project to the column. No expectation lost a check.</p>
+<h4 id="qwnw-red-file-ledger-promoted-rows-runs">Measured runs</h4>
+<pre id="qwnw-red-file-ledger-promoted-rows-base-run"># revision: f4403247ef233a2efb644c2deceb8165611da16c
+# command: pytest -p no:cacheprovider -q tests/test_ledger.py
+# 8 failed, 89 passed  EXIT=1
+FAILED test_a_foreign_projects_promoted_row_reaches_its_registered_checkout
+FAILED test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent
+FAILED test_a_projects_own_checkout_remains_its_promotion_target
+FAILED test_complete_command_assumes_utc_for_a_naive_completion_stamp
+FAILED test_the_crew_tool_reads_the_ledger_and_the_live_pointers
+FAILED test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one
+FAILED test_a_successful_index_write_follows_the_file_and_is_reported
+FAILED test_a_failed_index_write_keeps_the_rows_already_written</pre>
+<pre id="qwnw-red-file-ledger-promoted-rows-head-run"># revision: 176a079263, the last commit that changes code (the repair sits on 4aed16d42e)
+# command: pytest -p no:cacheprovider -q tests/test_ledger.py
+# 97 passed in 124.91s (0:02:04)  EXIT=0</pre>
+</section>
