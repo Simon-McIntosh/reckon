@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/resumption.py:3019 resumption.sweep -> recovery_review_dispatch.review_request_census",
+    "reckon/crew/resumption.py:3038 resumption.sweep -> report[\"reviews\"][\"failed\"] (the owed rows the obligation is appended to)",
+    "reckon/crew/station_obligations.py:96 record_sweep_report -> reads report[\"reviews\"][\"failed\"] and persists it per session",
+    "reckon/crew/station_obligations.py:202 _with_sweep_failures -> renders each persisted failure as a duty row",
+    "reckon/crew/recovery_review_dispatch.py:4092 record_stage(run_id, \"review_requested\") -> the receipt the census reads as requested_at",
+    "reckon/crew/admission/launching.py:360 note_review(pointer, \"review_admitted\") -> the receipt the census reads as launched_at",
+    "reckon/crew/dispatch_launch.py:4402 note_review(current, \"review_admitted\") -> the second writer of the launched_at receipt",
+    "reckon/crew/stage_receipts.py:37 STAGES -> the stage vocabulary review_stage_instants indexes by name"
+  ],
+  "completed_at": "2026-11-17T23:12:00.892Z",
+  "dispatched_at": "2026-11-17T23:11:24Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-delivered-run-is-reviewed-within-minutes",
+      "recorded_at": "2026-11-17T23:41:30.714683+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html",
+      "line": 76,
+      "severity": "blocking",
+      "text": "The gate paragraph quotes '68 passed in 47.3 s at f4a8ef887b' as the head arm's log, but no log in the run directory carries that summary: after_suite-head.log and scoped-gate-1794956760.log are both at revision 8bf50b476f and read '68 passed in 52.82s' and '68 passed in 53.13s', the only '68 passed in 47.33s' text is a tool result in resume-3.jsonl:1205 that no reader can open as a receipt, and commit 8bf50b476f exists to replace exactly such an unreceipted figure. The number therefore cannot be reconciled with the log the paragraph names, in the one artefact whose purpose is to carry evidence."
+    },
+    {
+      "file": "negative-control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The log opens with '# command:' and carries no '# revision:' line, unlike every other gate log in the run directory, so the revision it reddened is unnamed; its failing ids and '3 failed, 7 passed', EXIT=1 summary are present and the in-window case is among them."
+    },
+    {
+      "file": "manifest.md",
+      "line": 30,
+      "severity": "non-blocking",
+      "text": "negative_control_note states the head arm log 'was rerun at the run head 789d5c72627f', while after_suite-head.log:1 and the manifest's own after_suite JSON both name 8bf50b476f99d6aa2553cb2c3b118778b4924b7c, so the note dates the arm to a superseded revision."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_delivered_run_is_reviewed_within_minutes.py:197-200 asserts launch_lag_seconds against the journal via _receipt_gap and against a literal 30.0, so dropping the review_admitted mapping at reckon/crew/recovery_review_dispatch.py:4650 leaves launched_at None and reddens the case.",
+    "evidence": "after_suite-head.log:6 records 68 passed EXIT=0 at 8bf50b476f and baseline_suite-head.log:6 58 passed EXIT=0 at 0c9f4fc8cd, but the fragment at line 76 quotes '68 passed in 47.3 s at f4a8ef887b', a summary no log in the run directory holds.",
+    "fit": "The increment follows the module's commented-constant and docstringed-reader idiom at reckon/crew/recovery_review_dispatch.py:4617, and leaves one definition where two stood.",
+    "goal_fidelity": "The increment repairs guards without changing the delivered behaviour at reckon/crew/recovery_review_dispatch.py:4846-4880, which is the census and obligation this section's goal names, while the fleet half of the measure stays recorded unmet in the fragment at line 101.",
+    "reuse": "_stage_percentile now delegates to reckon/crew/run_time_profile.py:107 _percentile, review_stage_instants reads stage_receipts.read_receipts, _is_review_subject calls the routing/_is_review_run owner, and the priority write that duplicated reckon/crew/queue_edit.py:564 is deleted.",
+    "scope_discipline": "Every path in 0c9f4fc8cd..8bf50b476f is one of the declared write paths, and the increment commits f4a8ef887b and 8bf50b476f touch only recovery_review_dispatch.py, the node test and the evidence fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261117T230954528654-review-of-a-delivered-run-is-reviewed-within-minutes-8bf50b476f99",
+  "reviewed_base_sha": "0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388",
+  "reviewed_head_sha": "8bf50b476f99d6aa2553cb2c3b118778b4924b7c",
+  "reviewed_run_id": "r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:25:22.435814+00:00",
+  "total": 104,
+  "verdicts": {
+    "diff": "Read commit by commit over 0c9f4fc8cd..8bf50b476f and the increment since the review at 789d5c72627f in full: f4a8ef887b deletes the duplicated _stage_percentile and the unreachable _inherit_review_priority from reckon/crew/recovery_review_dispatch.py and replaces the launch-lag assertions in the node test, and 8bf50b476f rewrites the gate paragraph of the evidence fragment; the earlier findings on the duplicated helper, the uncalled helper, the single-sample max assertion and the null-satisfied launch assertion are each answered in the landed text.",
+    "done_when": "The source done_when asks for a held-tick case at 120 s, a withheld-precondition obligation at ten minutes, and the live census over the last 50 delivered runs; tests/test_a_delivered_run_is_reviewed_within_minutes.py:172 asserts the 120 s window against the journal and :230 and :238 the obligation's two sides at 599 s and 601 s, and the fleet half is recorded unmet in docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:101-107 (request p90 917.1 s over five samples, a receipt population hours old).",
+    "goal": "The source node's goal is that a delivered run's review is requested inside 120 s, with the request-to-launch interval recorded apart and an obligation after ten minutes naming its reason; at the reviewed head reckon/crew/recovery_review_dispatch.py:4762 review_request_census reports request_lag_seconds and launch_lag_seconds apart (4862-4880) and raises the obligation at 4846-4857, and reckon/crew/resumption.py:3019 runs it on the sweep that makes the requests.",
+    "manifest": "The manifest of r-20261117T112942727363 reads status complete with nine commits, both suite arms as JSON (after_suite 8bf50b476f 68 passed, baseline_suite 0c9f4fc8cd 58 passed, both EXIT=0), the negative-control path, the live census figures, and its finding_answers for the earlier review; its negative_control_note at manifest.md:30 claims the head arm was rerun at 789d5c72627f while after_suite-head.log:1 names 8bf50b476f as its revision.",
+    "write_paths": "The reviewed increment 789d5c72627f..8bf50b476f, and the full node diff 0c9f4fc8cd..8bf50b476f behind it, touch exactly four paths (the evidence fragment, reckon/crew/recovery_review_dispatch.py, reckon/crew/resumption.py, tests/test_a_delivered_run_is_reviewed_within_minutes.py), all inside the five declared write paths; docs/figures/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes is declared and unused."
+  }
+}
