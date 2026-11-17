@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: logs/gate-base.log at 73a771cde3238af66d88944a3bae01debf09896f records 74 passed EXIT=0 with no FAILED line and logs/gate-after.log records 75 passed EXIT=0 with no FAILED line, so the set difference is empty (0). The after log actually ran at dc8a209001, not at the reviewed head, which is recorded as a finding; no test fails in either arm.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3204 (_terminal_lane_signal over a row)",
+    "reckon/crew/station.py:1303 (station tick calling store.classify_tick)",
+    "reckon/crew/recovery_memo.py:797 (_terminal_lane_signal calls _newest_result_event)"
+  ],
+  "completed_at": "2026-11-17T13:01:03.104Z",
+  "dispatched_at": "2026-11-17T13:00:37Z",
+  "findings": [
+    {
+      "file": "logs/gate-after.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "the head gate receipt names revision dc8a209001 over a five-file command including tests/test_producer_reads_only_what_changed.py, while the manifest's after_suite and test_logs name 157e612e11 and four files, so the recorded after arm cannot be tied to the revision this review read; re-run the arm at 157e612e11 or record the merged revision and its own command."
+    },
+    {
+      "file": "logs/ruff-check.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "the head ruff command names tests/test_a_lane_signal_reads_only_what_changed.py, a path that does not exist, so the node's new test file was not linted in the run recorded as adding no finding; re-running ruff check on the real three paths still reports only the two pre-existing PLW0603 findings, so the claim holds and only the receipt's command is wrong."
+    },
+    {
+      "file": "tests/test_a_lane_signal_reads_a_stream_once.py",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "the repair commit patches the cursor store with an OrderedDict in a test file outside the node's declared write paths, so a sibling's guard was edited from a fence that did not cover it."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "460",
+      "severity": "non-blocking",
+      "text": "the census the node itself ran names _backends._cached_stream_entry at 42.7 % as the dominant read while the change repairs the 19.5 % row, so the goal's sentence is met only in the second rank and the section's live bound stays open."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html",
+      "line": "122",
+      "severity": "non-blocking",
+      "text": "it says none of the remaining readers is reachable from this node's write scope, but reckon/file_memo.py was a declared path of this node and its content_digest is 12.4 % of the census at docs/research/monitor-storage-load-rca.html:462."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "the h3 ids station-cursor-census, -fixture, -arms and -remaining do not begin with the node id, which the sibling fragments under docs/evidence/fragments/the-monitor-reads-each-fact-once/ all do, so composed anchors can collide."
+    },
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": "762",
+      "severity": "non-blocking",
+      "text": "the cursor store duplicates the identity/offset/head resume reckon/_backends.py:3656 already owns rather than extending it, and the owner's 32 MB eviction is the reason this node did not reuse it; the primitives are shared, the store is not."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the five commits 77100cbd43, a11ff64808, 3d28583c0c, 5d61bd888a and 157e612e11 against base 73a771c; 553 insertions and 21 deletions over reckon/crew/recovery_memo.py, two test files, the RCA and one new fragment, and the last commit deletes the 256-byte head helpers and the duck-typed store probes the earlier commits added.",
+    "done_when": "the fixture half of the measure is asserted at tests/test_the_station_reads_only_what_changed.py:1025 and :1015 and the base-revision half is real, but the 20 MB/min and 5 % of one core conjunct is recorded as not met at docs/research/monitor-storage-load-rca.html:528 and the census window is 40 s rather than the 60 s the done_when names.",
+    "goal": "the node's goal is to remove the dominant read a 60 s per-path census names, and its own census at docs/research/monitor-storage-load-rca.html:460 ranks _backends._cached_stream_entry at 42.7 % above the recovery_memo._newest_result_event row at 19.5 % that the diff repairs.",
+    "manifest": "read; status complete, an unarmed-gate command of four files, a base arm of 74 passed and a head arm of 75 passed, a negative control that fails at 73a771c, and a cited after log whose header names dc8a209001 rather than the recorded 157e612e11.",
+    "write_paths": "the declared paths are reckon/crew, reckon/file_memo.py, tests/test_the_station_reads_only_what_changed.py, docs/research/monitor-storage-load-rca.html, the fragment and a figures directory; every diff path is inside them except tests/test_a_lane_signal_reads_a_stream_once.py."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_reads_only_what_changed.py:1025 reddens when _newest_result_event is put back to a whole-stream scan, which logs/negative-control.log records as second_tick_stream_bytes=11009290 against the same test passing with the cursor.",
+    "evidence": "logs/gate-after.log:1 names revision dc8a209001 and a five-file command while the manifest's after_suite records 157e612e11 and four files, and logs/station-read-census-40s.txt:6 windows 40 s rather than the 60 s the done_when names.",
+    "fit": "reckon/crew/recovery_memo.py:741-784 follows the module's store-and-comment idiom and its lazy _backends import matches reckon/crew/recovery_stream.py:569, but the fragment's section ids at docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html:43 break the node-id prefix every sibling fragment uses.",
+    "goal_fidelity": "docs/research/monitor-storage-load-rca.html:460 ranks _backends._cached_stream_entry at 42.7 % over the 19.5 % row the diff repairs, and the live windows at :517-518 read 1,131 MB/min at base against 1,376 with the cursor.",
+    "reuse": "reckon/crew/recovery_memo.py:762-784 keeps its own identity/offset/head cursor beside the one reckon/_backends.py:3656 already owns, although it delegates the byte read and the head sample to that owner's stream_head_fingerprint and _stream_lines_from.",
+    "scope_discipline": "tests/test_a_lane_signal_reads_a_stream_once.py:24 is edited by commit 157e612e11 while the declared write paths cover only tests/test_the_station_reads_only_what_changed.py among the test files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to remove the dominant read a 60 s per-path census names, and its own census at docs/research/monitor-storage-load-rca.html:460 ranks _backends._cached_stream_entry at 42.7 % above the recovery_memo._newest_result_event row at 19.5 % that the diff repairs, so the second-largest reader was made incremental and the dominant one was left.\nVERDICT done_when: the fixture half of the measure is asserted at tests/test_the_station_reads_only_what_changed.py:1025 and :1015 and the base-revision half is real, but the 20 MB/min and 5 % of one core conjunct is recorded as not met at docs/research/monitor-storage-load-rca.html:528 and the census window is 40 s rather than the 60 s the done_when names.\nVERDICT write_paths: the source node's fence was reckon/crew, reckon/file_memo.py, tests/test_the_station_reads_only_what_changed.py, docs/research/monitor-storage-load-rca.html, the fragment and a figures directory; every diff path is inside it except tests/test_a_lane_signal_reads_a_stream_once.py, which the repair commit edited to keep that sibling green.\nVERDICT manifest: read; it reports status complete with a 75-passed head arm over an unarmed-gate command that the fence did not ask for, a base arm of 74, a negative control that fails at 73a771c, and it cites logs/gate-after.log whose header names dc8a209001 and a five-file command rather than the 157e612e11 four-file pair after_suite records.\nVERDICT diff: read the five commits 77100cbd43, a11ff64808, 3d28583c0c, 5d61bd888a and 157e612e11 against base 73a771c; 553 insertions and 21 deletions over reckon/crew/recovery_memo.py, two test files, the RCA and one new fragment, and the last commit deletes the 256-byte head helpers and the duck-typed store probes the earlier commits added.\nCALL_SITES: reckon/crew/recovery_classification.py:3204 (_terminal_lane_signal over a row), reckon/crew/station.py:1303 (station tick calling store.classify_tick), reckon/crew/recovery_memo.py:797 (_terminal_lane_signal calls _newest_result_event)\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: docs/research/monitor-storage-load-rca.html:460 ranks _backends._cached_stream_entry at 42.7 % over the 19.5 % row the diff repairs, and the live windows at :517-518 read 1,131 MB/min at base against 1,376 with the cursor.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/gate-after.log:1 names revision dc8a209001 and a five-file command while the manifest's after_suite records 157e612e11 and four files, and logs/station-read-census-40s.txt:6 windows 40 s rather than the 60 s the done_when names.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: tests/test_a_lane_signal_reads_a_stream_once.py:24 is edited by commit 157e612e11 while the declared write paths cover only tests/test_the_station_reads_only_what_changed.py among the test files.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_station_reads_only_what_changed.py:1025 reddens when _newest_result_event is put back to a whole-stream scan, which logs/negative-control.log records as second_tick_stream_bytes=11009290 against the same test passing with the cursor.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_memo.py:741-784 follows the module's store-and-comment idiom and its lazy _backends import matches reckon/crew/recovery_stream.py:569, but the fragment's section ids at docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html:43 break the node-id prefix every sibling fragment uses.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/recovery_memo.py:762-784 keeps its own identity/offset/head cursor beside the one reckon/_backends.py:3656 already owns, although it delegates the byte read and the head sample to that owner's stream_head_fingerprint and _stream_lines_from.\nFINDING logs/gate-after.log:1 blocking: the head gate receipt names revision dc8a209001 over a five-file command including tests/test_producer_reads_only_what_changed.py, while the manifest's after_suite and test_logs name 157e612e11 and four files, so the recorded after arm cannot be tied to the revision this review read; re-run the arm at 157e612e11 or record the merged revision and its own command.\nFINDING logs/ruff-check.log:3 non-blocking: the head ruff command names tests/test_a_lane_signal_reads_only_what_changed.py, a path that does not exist, so the node's new test file was not linted in the run that is recorded as adding no finding; re-running ruff check on the real three paths still reports only the two pre-existing PLW0603 findings, so the claim holds and only the receipt's command is wrong.\nFINDING tests/test_a_lane_signal_reads_a_stream_once.py:24 non-blocking: the repair commit patches the cursor store with an OrderedDict in a test file outside the node's declared write paths, so a sibling's guard was edited from a fence that did not cover it.\nFINDING docs/research/monitor-storage-load-rca.html:460 non-blocking: the census the node itself ran names _backends._cached_stream_entry at 42.7 % as the dominant read while the change repairs the 19.5 % row, so the goal's sentence is met only in the second rank and the section's live bound stays open.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html:122 non-blocking: it says none of the remaining readers is reachable from this node's write scope, but reckon/file_memo.py was a declared path of this node and its content_digest is 12.4 % of the census at docs/research/monitor-storage-load-rca.html:462.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-reads-only-what-changed-after-one-pointer-read.html:43 non-blocking: the h3 ids station-cursor-census, -fixture, -arms and -remaining do not begin with the node id, which the sibling fragments under docs/evidence/fragments/the-monitor-reads-each-fact-once/ all do, so composed anchors can collide.\nFINDING reckon/crew/recovery_memo.py:762 non-blocking: the cursor store duplicates the identity/offset/head resume reckon/_backends.py:3656 already owns rather than extending it, and its 32 MB eviction is the reason this node did not reuse the owner; the primitives are shared, the store is not.",
+  "review_node": "review-of-the-station-reads-only-what-changed-after-one-pointer-read-157e612e114a",
+  "review_run_id": "r-20261117T125134243227-review-of-the-station-reads-only-what-changed-after-one-pointer-read-157e612e114a",
+  "reviewed_base_sha": "73a771cde3238af66d88944a3bae01debf09896f",
+  "reviewed_head_sha": "157e612e114acca29de7dd57ce9629b544cafb65",
+  "reviewed_run_id": "r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T125134243227-review-of-the-station-reads-only-what-changed-after-one-pointer-read-157e612e114a"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 8,
+    "reuse": 12,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:05:22.525546+00:00",
+  "total": 74
+}
