@@ -24,7 +24,7 @@
   <title>The Monitor Tells The Truth Under Load | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="96">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -224,8 +224,8 @@
 
     <h2 id="s29">The station records how long each tick stage took</h2>
 <section data-reckon="section" data-id="s29" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> The station tick's target is 10 s, and on 16 November it ran 4 to 7 minutes. The station records only the stage a running tick is in, never how long each finished stage took, so every attempt to meet the target has been aimed by sampling the process with py-spy, and a fix cannot be shown to have moved a stage. reckon-96 and reckon-56 each profiled the station that evening and could attribute only the active samples, not the time each stage spent.</p>
-<p><strong>Done when.</strong> New tests, each failing at the base revision. After every tick, the station store holds that tick's start, end and the duration of each stage it ran, readable without a session; <code>crew view fleet</code> or the station reading reports the last tick's total and its slowest stage. Negative control: remove the per-stage record, and the test reading the last tick's stage durations fails. These still hold: the current stage and the heartbeat are still published as they are now. The tests importing <code>reckon.crew.station</code> or <code>reckon.crew.station_store</code> add no failure against the base on all_debug, with every log under the run directory. Write paths: <code>reckon/crew/station.py</code>, <code>reckon/crew/station_store.py</code>, <code>reckon/crew/obligation_snapshot.py</code> and a new test.</p>
+<p><strong>Why.</strong> The station tick's target is 10 s, and on 16 November it ran 4 to 7 minutes. The station records only the stage a running tick is in, never how long each finished stage took, so every attempt to meet the target has been aimed by sampling the process with py-spy, and a fix cannot be shown to have moved a stage. reckon-96 and reckon-56 each profiled the station that evening (reckon-96's 60 s record is at <code>~/.cache/reckon-landing/station-prof-post-s77.raw</code>) and could attribute only the active samples, not the time each stage spent; the station table in <code>/tmp/39486-fleet/station.sqlite3</code> held only the current tick's start, stage and the previous tick's end.</p>
+<p><strong>Done when.</strong> New tests, each failing at the base revision. After every tick, the station store holds the duration of each stage that tick ran, readable without a session, and <code>crew view fleet</code> or the station reading reports the last tick's total and its slowest stage. Negative control: remove the per-stage record, and the test reading the last tick's stage durations fails. These still hold: each tick's start and end, the current stage and the heartbeat are still published as they are now. The tests importing <code>reckon.crew.station</code> or <code>reckon.crew.station_store</code> add no failure against the base on all_debug, with every log under the run directory. Write paths: <code>reckon/crew/station.py</code>, <code>reckon/crew/station_store.py</code>, <code>reckon/crew/obligation_snapshot.py</code> and a new test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -241,10 +241,16 @@
     <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load §21</pre>
     <p class="r-fu-outcome"><p>§3, §5, §6, §7, §9, §10, §14 to §17, §19, §21 and §22 to §27 have landed or are declared done; the remaining work is §28.</p></p>
     </article>
-<article class="r-fu" data-id="f-mttu-003" data-status="open" data-written-by="reckon-56" data-written-at="2026-11-16" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-mttu-003" data-status="resolved" data-written-by="reckon-56" data-written-at="2026-11-16" data-recommends-skill="" data-resolved-at="2026-11-17T00:19:53+00:00" data-resolved-by="reckon-56">
     <h4 class="r-fu-title">Land §28</h4>
     <div class="r-fu-body"><p>§28 keeps the station's heartbeat moving through a long tick, so panes stop drawing false producer-lost rows.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load §28</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-mttu-004, which carries §29 beside §28.</p></p>
+    </article>
+<article class="r-fu" data-id="f-mttu-004" data-status="open" data-written-by="reckon-56" data-written-at="2026-11-17" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §28 and §29</h4>
+    <div class="r-fu-body"><p>§28 keeps the station's heartbeat moving through a long tick; §29 records each tick's per-stage durations so the 10 s tick target can be measured.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-tells-the-truth-under-load §28 §29</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -359,6 +365,9 @@
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261116T110048425828-one-limit-row-per-pane-s27" data-who="reckon-build" data-when="2026-11-16T11:03:12Z">
     <div class="r-comment-body"><p>One limit reset now draws one row per pane however many followers serve it — `ticker.PaneRowPath` takes the pane's shared claim from its own session, `replay_row_policy` passes `NO_LIFT_CLAIM` so a recorded window keeps the lift ends it printed, and `follower_row_path` no longer duplicates the claim rule; 5 new cases (4 fail at 8104a1af), base arm 58 passed EXIT=0, after arm at the delivered head on all_debug 63 passed EXIT=0</p></div>
 </div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261116T221457986811-review-of-station-beat-survives-a-long-tick-s28-460c9c3faa0a" data-who="reckon-build" data-when="2026-11-16T22:21:46Z">
+    <div class="r-comment-body"><p>Parsed independent review at adde3bdc2df67f40b2f3f7a551d6f754774c65f5..460c9c3faa0a39593dde24b73e1ff5541d38fd83; six scores 19,19,20,18,19,20; zero added failures; one non-blocking shutdown finding; coordinator disposition remains.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261115T212555586749-review-of-held-drawn-by-its-owner-s3-dd6df313c008" data-who="reckon-build" data-when="2026-11-15T21:33:20.827Z">
     <div class="r-comment-body"><p>review of run r-20261115T145426280351-held-drawn-by-its-owner-s3 at head dd6df313 — goal_fidelity 17, evidence 15, scope_discipline 20, durability 15, fit 17, reuse 5; added_failure_count 0 from both recorded suite arms; five non-blocking findings, none holding the node.</p></div>
 </div>
@@ -427,9 +436,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261115T145806650328-hook-counts-what-is-owed-s9" data-who="reckon-build" data-when="2026-11-15T16:46:55Z">
     <div class="r-comment-body"><p>The obligations checklist counts what it prints and warns only a session holding unsettled work: the header and trailer figures come from the rendered rows, the session is read from its own pointers, and the absent-producer line is silent for a session holding none, keeping a due limit reset and the stop path's one-off reading. The hook's phase vocabulary and ended-pointer rule are compared against their owners by 8d7542b908, so a rename in either fails a test rather than drifting. Measured: 9 of the node's 19 cases red against fd2fe9c1, 77 passed at head fac68a9e, and each answering commit's check red when reverted.</p></div>
-</div>
-<div class="r-comment" data-section="s28" data-id="c-run-r-20261116T221457986811-review-of-station-beat-survives-a-long-tick-s28-460c9c3faa0a" data-who="reckon-build" data-when="2026-11-16T22:21:46Z">
-    <div class="r-comment-body"><p>Parsed independent review at adde3bdc2df67f40b2f3f7a551d6f754774c65f5..460c9c3faa0a39593dde24b73e1ff5541d38fd83; six scores 19,19,20,18,19,20; zero added failures; one non-blocking shutdown finding; coordinator disposition remains.</p></div>
 </div>
 </section>
 </main>
