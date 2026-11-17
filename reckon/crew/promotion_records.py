@@ -914,8 +914,8 @@ def _writes_product_source(record: Mapping[str, Any]) -> bool:
     """Whether any fenced write path names source outside the docs tree.
 
     A census is worth running exactly when the node can change the tree a census
-    reads. A node writing only documents and plans cannot add a staged writer or
-    any other runtime source the census inventories, so running the whole-tree
+    reads. A node writing only documents and plans cannot add a runtime state
+    writer or any other source the census inventories, so running the whole-tree
     census for it would spend its gate budget measuring work it did not touch.
     """
     return any(
@@ -935,7 +935,7 @@ def _scoped_suite_command(
 
     A node writing product source also measures the project's declared census
     tests, because a census is drawn from the whole tree rather than from one
-    node's scope, and a node that adds a staged writer would otherwise never run
+    node's scope, and a node that adds a runtime state writer would otherwise never run
     it. A node writing only documents and plans measures none of them.
 
     ``revision`` names the tree the command will run against, and the files are
@@ -1324,6 +1324,19 @@ def _record_measured_arms(run_id: str, head: str, measured: Mapping[str, Any]) -
         _mutate_pointer(run_id, amend)
 
 
+def _failed_measurement_gate(record: Mapping[str, Any], gate_verdict: str) -> bool:
+    """Whether this measurement run's own gate ended in failure.
+
+    Added suite failures are the measured result only when dispatch marked the
+    run for measurement and its completion reports a failed gate. The suite
+    pair alone cannot answer that: a passing gate can coexist with a failing
+    paired suite arm.
+    """
+    marker = record.get("measure_only")
+    measurement_run = isinstance(marker, Mapping) or bool(str(marker or "").strip())
+    return measurement_run and str(gate_verdict).strip().lower() == "failed"
+
+
 def _merged_primary_baseline(
     run_id: str,
     record: Mapping[str, Any],
@@ -1402,6 +1415,7 @@ def _evaluate_suite_delta(
     record: Mapping[str, Any],
     *,
     waiver_reason: str,
+    gate_verdict: str = "",
     dry_run: bool = False,
 ) -> dict[str, Any] | None:
     """Validate an armed run's paired suite evidence and calculate its delta.
@@ -1678,6 +1692,7 @@ def _evaluate_suite_delta(
                 "failure_ids": [*normalized_baseline["failure_ids"], *inherited],
             }
             added = ledger.added_failure_ids(effective_baseline, normalized_after)
+    failed_measurement = _failed_measurement_gate(record, gate_verdict)
     # Surface the worker's attribution on the stored record: each added
     # failure id beside the candidate merged commit that introduced it.
     # An entry naming a pre-existing failure is dropped rather than stored.
@@ -1715,7 +1730,7 @@ def _evaluate_suite_delta(
     # the one thing an arm waiver promises never to do, so an added failure is
     # refused even when the arm waiver was accepted. A waiver given for the
     # failure itself — no arm field covered — keeps its existing meaning.
-    if added and (not waiver or waived_arm_fields):
+    if added and not failed_measurement and (not waiver or waived_arm_fields):
         refusal = {
             "status": "refused",
             "suite_command": suite_command,
@@ -1735,6 +1750,12 @@ def _evaluate_suite_delta(
                 "failure or record the arm the pair was actually run with"
             )
         raise ledger.SuiteDeltaError(detail, added_failure_ids=added)
+    accepted_waiver_reason = waiver
+    if added and failed_measurement and not accepted_waiver_reason:
+        accepted_waiver_reason = (
+            "the failed gate's added suite failures are the measured result "
+            "for this measurement run"
+        )
     return {
         # A pair waived for its arms is waived even when the pair adds no
         # failure: the status names how the evidence was accepted, not only
@@ -1747,7 +1768,7 @@ def _evaluate_suite_delta(
         "failure_attribution": attribution,
         "inherited_failure_ids": inherited,
         "primary_suite": primary_suite,
-        "waiver_reason": waiver or None,
+        "waiver_reason": accepted_waiver_reason or None,
         # Which arm fields a waiver covered. Empty for a measured pair, so a
         # reader can tell an arm set that was waived from one that matched.
         "waiver_covered_fields": waived_arm_fields,
