@@ -195,6 +195,7 @@ _HEALTH_COLUMNS = [
     "writable_interpreters",
     "job_oom_kill",
     *_SCHEDULER_COLUMNS,
+    "session_scratch_bytes",
     "test_trees",
     "test_rss_bytes",
     "test_runs",

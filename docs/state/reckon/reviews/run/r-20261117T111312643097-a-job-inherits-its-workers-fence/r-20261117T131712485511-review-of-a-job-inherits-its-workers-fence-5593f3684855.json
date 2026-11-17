@@ -1,0 +1,116 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/host_shims/srun:65 (nested_launch.main -> fenced_scheduler_task:744)",
+    "reckon/host_shims/sbatch:65",
+    "reckon/host_shims/salloc:65",
+    "reckon/nested_launch.py:514 (_task_command spec[\"env\"] read by _TASK_REENTRY:506)",
+    "reckon/_worker_fence.py:2110 (composer that plants the recipe job_fence decodes)"
+  ],
+  "completed_at": "2026-11-17T13:51:17.813Z",
+  "dispatched_at": "2026-11-17T13:50:54Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-job-inherits-its-workers-fence",
+      "recorded_at": "2026-11-17T14:19:35.554688+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_job_inherits_its_workers_fence.py",
+      "line": "237",
+      "severity": "blocking",
+      "text": "blocking: the waived arm appends its own run row with {\"reason\": WAIVER_REASON} at line 229 and asserts the read-back equals that same constant, so the done_when's \"the run's ledger row carries the waiver reason for the job\" is asserted against a value the test supplied; no production path that records a waived worker's job is exercised and the assertion stays true if that recording were removed."
+    },
+    {
+      "file": "tests/test_a_job_inherits_its_workers_fence.py",
+      "line": "205",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert waived_environment == {}` compares the result of the test's own helper _unfenced_composition (line 243 returns {}) against the literal {}, so it cannot fail on any behaviour of the code under test."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "76",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment claims the fence name is read by the shim, the task bootstrap and job_fence \"so the three cannot disagree\", but the composer still emits the string literally at reckon/_worker_fence.py:2110, so retiring the constant would leave the writer on the old name and the reader on the new one."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1938",
+      "severity": "non-blocking",
+      "text": "non-blocking: _read_only_bind_sources already reads mount destinations out of a bwrap argv over _FENCE_BIND_FLAGS (line 1430), so fence_roots at reckon/nested_launch.py:420 is a second reader whose option table differs (it adds --ro-bind-try/--bind-try/--tmpfs the other omits) and the two will drift."
+    },
+    {
+      "file": "manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: both arms were run as `env -u RECKON_WORKER_FENCE ... python -m pytest -q ...` from /tmp/reckon-crew-scratch trees, so the recorded commands differ from the suite template promotion compares against and the measured environment is one promotion will not reproduce."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read the single commit 5593f36848551fde90b709bad110003f90dea5f9 against 9d7c24f9b4ff81bf882884b6779cb2dd82b7646d: reckon/nested_launch.py gains WORKER_FENCE_ENV, JobFence, fence_roots, job_fence and the spec[\"env\"] handoff (112 lines), and tests/test_a_job_inherits_its_workers_fence.py is new (265 lines); nothing else changed.",
+    "done_when": "The done_when (source prompt.txt:222) asks one fenced and one waived stand-in with the fenced job's roots equal to its worker's, the waived job reporting none, and the run row carrying the waiver reason; tests/test_a_job_inherits_its_workers_fence.py:191 asserts the root equality and line 213-215 the waived absence, while line 237 checks a waiver reason the test itself wrote into the row.",
+    "goal": "The goal (source prompt.txt:38) is a submitted job holding its worker's sealed and writable roots with a waived worker's job unfenced and its waiver recorded; reckon/nested_launch.py:455 job_fence reads the inherited recipe into roots and reckon/nested_launch.py:514 threads the channel name into the task spec, so a job's roots are its worker's mounts by construction, though no production producer calls job_fence and reckon/_worker_fence.py:2110 still plants the name as a literal.",
+    "manifest": "Read the source manifest.md: status complete, commits [\"5593f36...\"], baseline 58 passed EXIT=0 and after 62 passed EXIT=0 with failure_ids [] in both arms, plus negative_control.log 1 failed 3 passed EXIT=1; lines 24-25 show both arms ran with `env -u RECKON_WORKER_FENCE` from a /tmp scratch tree rather than the armed template.",
+    "write_paths": "The declared paths (source prompt.txt:124) are reckon/nested_launch.py, tests/test_a_job_inherits_its_workers_fence.py and a fragment/figure path; the diff touches only the first two, so it stays inside the grant and writes no fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_job_inherits_its_workers_fence.py:191 is a real guard whose reddening is shown in negative-control.log, but :237 asserts a reason the test itself passed to ledger.append_run and :205 compares the test's own literal {} to {}.",
+    "evidence": "manifest.md:24-25 record both arms completed with EXIT=0 (58 then 62 passed) at their own revisions, but the commands carry `env -u RECKON_WORKER_FENCE` from a /tmp scratch tree instead of prompt.txt:218's armed template on all_debug.",
+    "fit": "reckon/nested_launch.py:396 JobFence is a frozen dataclass with as_dict beside the module's existing module-level constants and pure readers, and its names follow the module's vocabulary.",
+    "goal_fidelity": "reckon/nested_launch.py:455 job_fence returns the worker's own mounts from the recipe the fence planted, meeting the job-reports-its-roots half, but no production caller consumes it and the waiver half rests on pre-existing reckon/crew/dispatching/launch.py:711.",
+    "reuse": "reckon/nested_launch.py:420 fence_roots re-implements the bwrap argv mount reader that reckon/crew/dispatch_launch.py:1938 (_read_only_bind_sources, flags at :1430) already owns instead of extending it.",
+    "scope_discipline": "git diff --stat 9d7c24f9..5593f36 lists only reckon/nested_launch.py and tests/test_a_job_inherits_its_workers_fence.py, both inside prompt.txt:124, with no fragment or figure written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal (source prompt.txt:38) is a submitted job holding its worker's sealed and writable roots with a waived worker's job unfenced and its waiver recorded; reckon/nested_launch.py:455 job_fence reads the inherited recipe into roots and reckon/nested_launch.py:514 threads the channel name into the task spec, so a job's roots are its worker's mounts by construction, though no production producer calls job_fence and reckon/_worker_fence.py:2110 still plants the name as a literal.\nVERDICT done_when: The done_when (source prompt.txt:222) asks one fenced and one waived stand-in with the fenced job's roots equal to its worker's, the waived job reporting none, and the run row carrying the waiver reason; tests/test_a_job_inherits_its_workers_fence.py:191 asserts the root equality and line 213-215 the waived absence, while line 237 checks a waiver reason the test itself wrote into the row.\nVERDICT write_paths: The declared paths (source prompt.txt:124) are reckon/nested_launch.py, tests/test_a_job_inherits_its_workers_fence.py and a fragment/figure path; the diff touches only the first two, so it stays inside the grant and writes no fragment.\nVERDICT manifest: Read the source manifest.md: status complete, commits [\"5593f36...\"], baseline 58 passed EXIT=0 and after 62 passed EXIT=0 with failure_ids [] in both arms, plus negative_control.log 1 failed 3 passed EXIT=1; lines 24-25 show both arms ran with `env -u RECKON_WORKER_FENCE` from a /tmp scratch tree rather than the armed template.\nVERDICT diff: Read the single commit 5593f36848551fde90b709bad110003f90dea5f9 against 9d7c24f9b4ff81bf882884b6779cb2dd82b7646d: reckon/nested_launch.py gains WORKER_FENCE_ENV, JobFence, fence_roots, job_fence and the spec[\"env\"] handoff (112 lines), and tests/test_a_job_inherits_its_workers_fence.py is new (265 lines); nothing else changed.\nCALL_SITES: reckon/host_shims/srun:65 (nested_launch.main -> fenced_scheduler_task:744), reckon/host_shims/sbatch:65, reckon/host_shims/salloc:65, reckon/nested_launch.py:514 (_task_command spec[\"env\"] read by _TASK_REENTRY:506), reckon/_worker_fence.py:2110 (composer that plants the recipe job_fence decodes)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:455 job_fence returns the worker's own mounts from the recipe the fence planted, meeting the job-reports-its-roots half, but no production caller consumes it and the waiver half rests on pre-existing reckon/crew/dispatching/launch.py:711.\nSCORE evidence: 13\nJUSTIFICATION evidence: manifest.md:24-25 record both arms completed with EXIT=0 (58 then 62 passed) at their own revisions, but the commands carry `env -u RECKON_WORKER_FENCE` from a /tmp scratch tree instead of prompt.txt:218's armed template on all_debug.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9d7c24f9..5593f36 lists only reckon/nested_launch.py and tests/test_a_job_inherits_its_workers_fence.py, both inside prompt.txt:124, with no fragment or figure written.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_job_inherits_its_workers_fence.py:191 is a real guard whose reddening is shown in negative-control.log, but :237 asserts a reason the test itself passed to ledger.append_run and :205 compares the test's own literal {} to {}.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/nested_launch.py:396 JobFence is a frozen dataclass with as_dict beside the module's existing module-level constants and pure readers, and its names follow the module's vocabulary.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/nested_launch.py:420 fence_roots re-implements the bwrap argv mount reader that reckon/crew/dispatch_launch.py:1938 (_read_only_bind_sources, flags at :1430) already owns instead of extending it.\nFINDING tests/test_a_job_inherits_its_workers_fence.py:237 blocking: the waived arm appends its own run row with {\"reason\": WAIVER_REASON} at line 229 and asserts the read-back equals that same constant, so the done_when's \"the run's ledger row carries the waiver reason for the job\" is asserted against a value the test supplied; no production path that records a waived worker's job is exercised and the assertion stays true if that recording were removed.\nFINDING tests/test_a_job_inherits_its_workers_fence.py:205 non-blocking: `assert waived_environment == {}` compares the result of the test's own helper _unfenced_composition (line 243 returns {}) against the literal {}, so it cannot fail on any behaviour of the code under test.\nFINDING reckon/nested_launch.py:76 non-blocking: the comment claims the fence name is read by the shim, the task bootstrap and job_fence \"so the three cannot disagree\", but the composer still emits the string literally at reckon/_worker_fence.py:2110, so retiring the constant would leave the writer on the old name and the reader on the new one.\nFINDING reckon/crew/dispatch_launch.py:1938 non-blocking: _read_only_bind_sources already reads mount destinations out of a bwrap argv over _FENCE_BIND_FLAGS (line 1430), so fence_roots at reckon/nested_launch.py:420 is a second reader whose option table differs (it adds --ro-bind-try/--bind-try/--tmpfs the other omits) and the two will drift.\nFINDING manifest.md:24 non-blocking: both arms were run as `env -u RECKON_WORKER_FENCE ... python -m pytest -q ...` from /tmp/reckon-crew-scratch trees, so the recorded commands differ from the suite template promotion compares against and the measured environment is one promotion will not reproduce.",
+  "review_run_id": "r-20261117T131712485511-review-of-a-job-inherits-its-workers-fence-5593f3684855",
+  "reviewed_base_sha": "9d7c24f9b4ff81bf882884b6779cb2dd82b7646d",
+  "reviewed_commits": [
+    "5593f36848551fde90b709bad110003f90dea5f9"
+  ],
+  "reviewed_head_sha": "5593f36848551fde90b709bad110003f90dea5f9",
+  "reviewed_run_id": "r-20261117T111312643097-a-job-inherits-its-workers-fence",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env -u RECKON_WORKER_FENCE PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_job_inherits_its_workers_fence.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111312643097-a-job-inherits-its-workers-fence/after-suite.log",
+      "revision": "5593f36848551fde90b709bad110003f90dea5f9",
+      "summary": "62 passed in 54.78s"
+    },
+    "baseline_suite": {
+      "command": "env -u RECKON_WORKER_FENCE PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111312643097-a-job-inherits-its-workers-fence/baseline-suite.log",
+      "revision": "9d7c24f9b4ff81bf882884b6779cb2dd82b7646d",
+      "summary": "58 passed in 48.18s"
+    },
+    "derivation": "added_failure_ids = failure ids in after_suite.log minus failure ids in baseline-suite.log, read from each log's own FAILED lines"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:11:59.090121+00:00",
+  "total": 83
+}

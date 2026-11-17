@@ -223,10 +223,10 @@ def test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns(
     assert line[0] == (
         _SAMPLE_HEADER
         + "\twritable_interpreters\tjob_oom_kill\tjob_id\tnode\tscheduler_state"
-        + "\tscheduler_reason\tscheduler_running\tscheduler_event\tsource"
+        + "\tscheduler_reason\tscheduler_running\tscheduler_event\tsource\tsession_scratch_bytes"
         + "\ttest_trees\ttest_rss_bytes\ttest_runs"
     )
-    assert line[-1].split("\t")[5] == "60"
+    assert list(csv.DictReader(line, delimiter="\t"))[-1]["dstate"] == "60"
 
     alert = box.alerts()
     assert "under pressure" in alert

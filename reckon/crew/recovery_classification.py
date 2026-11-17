@@ -3429,6 +3429,37 @@ def classify_pointer(
         classified["classification"] = PROMOTED_UNMERGED_STATE
         classified["detail"] = detail
         classified["next_action"] = f"reckon crew observe --run {run_id}"
+    elif settled in FLEET_SETTLED_STATES and record.get("worktree"):
+        # Integration settles the change; a workspace with unsafe evidence still
+        # owes a repair. Use the release pass's own reader for that refusal.
+        from reckon.crew.pending_landing import landed_workspace_refusal
+
+        checkout, head, row_read = _delivered_head(record)
+        refusal = ""
+        if row_read and head and checkout is not None:
+            try:
+                refusal = landed_workspace_refusal(
+                    record, checkout, _primary_branch_revision(checkout, moment)
+                )
+            except (CrewError, OSError, ValueError) as exc:
+                refusal = str(exc)
+        if refusal:
+            detail = "workspace release refused: " + refusal
+            classified["classification"] = "unreadable"
+            classified["recovery_classification"] = "unreadable"
+            classified["recovery"] = "repair"
+            classified["detail"] = detail
+            classified["next_action"] = (
+                f"repair workspace release for {run_id}: {refusal}"
+            )
+            classified["fleet_verdict"] = {
+                **classified["fleet_verdict"],
+                "state": "blocked",
+                "recovery_classification": "unreadable",
+                "detail": detail,
+            }
+        else:
+            classified["classification"] = settled
     elif settled in FLEET_SETTLED_STATES:
         # The ledger's word also names the lifecycle reading, so a committed
         # completion cannot read as two different outcomes on one row.

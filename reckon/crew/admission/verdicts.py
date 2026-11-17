@@ -492,6 +492,7 @@ def _pass_verdict_record(
         "launch_budget_seconds": result.get("launch_budget_seconds"),
         "launch_budget_exhausted": bool(result.get("launch_budget_exhausted")),
         "land_seconds": result.get("land_seconds"),
+        "reads": result.get("reads"),
         "lane": lane,
         "code_stamp": code_stamp,
         "gate": result.get("gate"),

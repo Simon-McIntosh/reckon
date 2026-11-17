@@ -97,13 +97,17 @@ _RUNS_COLUMN_DEFS = ", ".join(
     ]
 )
 _RUNS_CREATE = f'CREATE TABLE IF NOT EXISTS "runs" ({_RUNS_COLUMN_DEFS});'
+# Each declared index is named once, so the script that creates it and the
+# check that asks whether a store already carries it read the same declaration.
+_RUNS_INDEX_DEFS = (
+    *((f"idx_runs_{name}", f'"{name}"') for name in QUERY_KEYS),
+    ("idx_runs_project_activity", '"project", "activity_seconds"'),
+    ("idx_runs_activity", '"activity_seconds"'),
+)
+_RUNS_INDEX_NAMES = tuple(name for name, _columns in _RUNS_INDEX_DEFS)
 _RUNS_INDEXES = "".join(
-    f'CREATE INDEX IF NOT EXISTS "idx_runs_{name}" ON "runs" ("{name}");'
-    for name in QUERY_KEYS
-) + (
-    'CREATE INDEX IF NOT EXISTS "idx_runs_project_activity" '
-    'ON "runs" ("project", "activity_seconds");'
-    'CREATE INDEX IF NOT EXISTS "idx_runs_activity" ON "runs" ("activity_seconds");'
+    f'CREATE INDEX IF NOT EXISTS "{name}" ON "runs" ({columns});'
+    for name, columns in _RUNS_INDEX_DEFS
 )
 _ARCHIVE_RUNS_INDEXES = _RUNS_INDEXES.replace('EXISTS "', 'EXISTS archive."')
 _RUNS_SCHEMA = _RUNS_CREATE + _RUNS_INDEXES
@@ -1038,18 +1042,28 @@ class RunStore:
         answered by an index search rather than by a scan plus a per-row JSON
         parse, and run_id is indexed by the table's primary key.
 
-        The run migration is owed only until it has run. Once it completes it
-        records ``_STORE_SCHEMA_VERSION`` beside the store's rows, and every
-        later open on a store carrying that record skips the pass: the
-        companion tables are cheap to re-assert, while the runs backfill
-        decodes and rewrites every row and is the whole cost of opening the
-        store. A store recorded against a different declaration version — an
-        older one, from before this record existed, or one written by code
-        whose schema has since changed — still migrates.
+        The run migration is owed for a store that lacks something this code
+        declares. Once such a pass completes it records
+        ``_STORE_SCHEMA_VERSION`` beside the store's rows, and every later open
+        on a store carrying that record skips the question: the companion
+        tables are cheap to re-assert, while the runs backfill decodes and
+        rewrites every row and is the whole cost of opening the store.
+
+        A store recorded against any other version is asked what it lacks,
+        and a store that lacks nothing is left exactly as it is, recorded
+        version included. That case is not hypothetical: a process running
+        older code opens a store newer code has already migrated forward, so
+        the store carries every column this code declares plus the ones added
+        since. Migrating it would decode and rewrite every row to produce the
+        rows it already holds, and rewriting its record would stamp the store
+        as this older code's declaration. Only a missing column or index — or
+        a missing table — is work.
         """
         self._migrate_auxiliary()
         self._conn.executescript(_AUX_SCHEMA)
         if self._recorded_schema_version() == _STORE_SCHEMA_VERSION:
+            return
+        if not self._lacks_declaration():
             return
         self._migrate_runs()
         if self.archive_path.is_file():
@@ -1192,6 +1206,35 @@ class RunStore:
             return frozenset()
         return frozenset(str(desc[0]) for desc in described.description)
 
+    def _lacks_declaration(self) -> bool:
+        """True when the store lacks a runs column or index this code declares.
+
+        The question is coverage, not equality. A store written by newer code
+        holds every column this code declares beside the ones added since, and
+        that store is complete for this code: there is nothing to add and
+        nothing to backfill. Equality would call such a store different and
+        rewrite all of it, which is how older code came to migrate a newer
+        store. A runs table that is absent entirely is also coverage the store
+        lacks, so its answer is True rather than an error.
+        """
+        for table, schema in (("runs", "main"), ("archive.runs", "archive")):
+            if schema == "archive" and not self._attach_archive():
+                continue
+            columns = self._runs_columns(table)
+            if not columns >= _RUNS_COLUMNS:
+                return True
+            present = {
+                str(row[0])
+                for row in self._conn.execute(
+                    # The schema name is this method's own literal, not caller input.
+                    f'SELECT "name" FROM {schema}.sqlite_master WHERE "type" = ?',  # noqa: S608
+                    ("index",),
+                )
+            }
+            if not set(_RUNS_INDEX_NAMES) <= present:
+                return True
+        return False
+
     def _migrate_runs(self, table: str = "runs") -> None:
         """Ensure one runs table has the columns this code expects.
 
@@ -1199,12 +1242,17 @@ class RunStore:
         version that created it left it, so a store created under an older
         schema — the live store holds 22 rows under the original ten narrow
         columns — would fail every later write with a missing-column error.
-        When the columns are not the current set, each missing one is added
-        and the whole table is backfilled inside one transaction: a row that
-        holds a payload blob feeds the query-key columns from it, and a
-        payloadless row from the original narrow shape is rebuilt from its
-        own column values. The earlier rows stay readable through the durable
-        reader afterwards.
+        When a declared column is missing, it is added and the whole table is
+        backfilled inside one transaction: a row that holds a payload blob
+        feeds the query-key columns from it, and a payloadless row from the
+        original narrow shape is rebuilt from its own column values. The
+        earlier rows stay readable through the durable reader afterwards.
+
+        A store whose columns are a superset of the declaration — every one
+        this code declares, plus ones newer code added — is not missing
+        anything, so no row is decoded and no row is rewritten. Only the
+        indexes are re-asserted, which is what a store can be missing without
+        any of its rows changing.
         """
         columns = self._runs_columns(table)
         indexes = _RUNS_INDEXES if table == "runs" else _ARCHIVE_RUNS_INDEXES
@@ -1220,7 +1268,7 @@ class RunStore:
                 f"SELECT * FROM {table} LIMIT 0"  # noqa: S608 - a fixed table name
             ).description
         ]
-        if columns == _RUNS_COLUMNS:
+        if columns >= _RUNS_COLUMNS:
             self._conn.executescript(indexes)
             return
         details = "run_details" if table == "runs" else "archive.run_details"
@@ -1248,6 +1296,8 @@ class RunStore:
                         f'ALTER TABLE {table} ADD COLUMN "{name}" {kind}'
                     )
             for row in rows:
+                # The one per-row decode a backfill performs, named so a check
+                # can count the rows a migration rewrote.
                 record = _legacy_payload(dict(zip(names, row[:-1], strict=True)))
                 self._conn.execute(
                     update,
@@ -1371,16 +1421,22 @@ class RunStore:
         return _archive_path(self._path)
 
     def _attach_archive(self, *, create: bool = False) -> bool:
+        """Attach the retired-history file, creating and migrating it on demand.
+
+        ``create`` asks for the archive to hold this code's declared shape, and
+        that is owed whether this Open attached it now or an earlier check
+        attached it to ask what it lacks.
+        """
         if not self._archive_attached and (create or self.archive_path.is_file()):
             self._conn.execute(
                 "ATTACH DATABASE ? AS archive", (str(self.archive_path),)
             )
-            if create:
-                self._conn.executescript(_ARCHIVE_RUNS_SCHEMA)
-                # Both stores are migrated before the schema version is
-                # recorded, so an unchanged open owes neither backfill.
-                self._migrate_runs("archive.runs")
             self._archive_attached = True
+        if create and self._archive_attached:
+            self._conn.executescript(_ARCHIVE_RUNS_SCHEMA)
+            # Both stores are migrated before the schema version is
+            # recorded, so an unchanged open owes neither backfill.
+            self._migrate_runs("archive.runs")
         return self._archive_attached
 
     def _archived_ids(self, project: str | None = None) -> set[str]:

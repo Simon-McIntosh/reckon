@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;],&quot;s7&quot;:[&quot;work-flows-to-the-lane#s77&quot;],&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s13&quot;],&quot;s10&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s7&quot;],&quot;s9&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s2&quot;,&quot;dispatch-admission-and-landing-take-seconds#s3&quot;,&quot;dispatch-admission-and-landing-take-seconds#s4&quot;,&quot;dispatch-admission-and-landing-take-seconds#s5&quot;,&quot;dispatch-admission-and-landing-take-seconds#s6&quot;,&quot;dispatch-admission-and-landing-take-seconds#s7&quot;,&quot;dispatch-admission-and-landing-take-seconds#s8&quot;,&quot;dispatch-admission-and-landing-take-seconds#s10&quot;]}">
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -83,7 +83,7 @@
     <p><strong>Done when.</strong> A test reads one plan from a temporary hot-and-archive store of 20,000 rows of which 50 match. It visits at most a constant multiple of 50 payloads and returns the exhaustive reference, including rows whose plan identity comes from a node definition or a moved implementation. A changed plan identity, a replaced store and a newly archived row are all seen. Negative control: at the base the read visits the historical population; a reference with one matching archived row removed fails the equality check. The selected read takes under half the matched base time. Runs on <code>all_debug</code>; importers of the store add no failure against the base, measured on <code>rigel</code>. Write paths: <code>reckon/run_store.py</code> and <code>tests/test_plan_selected_store_read_is_bounded.py</code>.</p>
 
     <h2 id="s7">§7 — An admission receipt names the reads inside each stage</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> A freed slot is refilled only when a pass reaches it. One pass took 81.6 s, of which 79.9 s was releasing upstream waits and resolving holds before a single launch decision, and nine earlier passes ran from 72 to 472 s. Each receipt already records a time for its release, wait, launch and landing stages. What it does not record is which reads those stages made, so the cause of 80 s is not known. <code>work-flows-to-the-lane</code> §77 set the target of a pass filling the free slots within a minute and is still open; this section waits on it and measures what its receipts leave.</p>
     <p><strong>Deliverable.</strong> The existing per-pass receipt carries, inside its release and wait stages, each read with its count and its time. No second receipt is added.</p>
     <p><strong>Done when.</strong> A test runs one pass over a temporary crew home of 240 pointers and 80 requests and finds one receipt whose per-read times sum to each stage's time within 5 %, each read named. Negative control: a receipt with one read omitted fails the sum check. Ten consecutive receipts from the live service after landing are recorded in the evidence with their largest read named. The temporary-home run is on <code>rigel</code>; importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/admission/service.py</code> and <code>tests/test_an_admission_receipt_names_its_reads.py</code>.</p>
@@ -118,6 +118,9 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-11-17T14:33:00Z">
+    <div class="r-comment-body"><p>§7 landed through the crew's own promotion after its review (landing commit <code>5a320a4abf</code>). The per-pass admission receipt names each read inside its release and wait stages with its count and time; reviewed 108 of 120 with no blocking finding. The ten live receipts the section asks for are still to be recorded.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T00:58:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge (head <code>adcc599978</code>), on the lead's instruction. A dispatch preview's scope report reads only the claims the candidate's paths and repositories can meet: 243 git calls fall under 20 in the 240-pointer case, and three live previews took 23, 10 and 7 seconds, a median of 10 s against 86 s before. Review 120 of 120, 41 importer files with no added failure, merged candidate gate 4 of 4.</p></div>
 </div>
@@ -180,6 +183,12 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261117T042516340281-review-of-a-plan-selected-store-read-is-bounded-33cb47cb815b" data-who="reckon-build" data-when="2026-11-17T04:34:08Z">
     <div class="r-comment-body"><p>Independent incremental review stored parsed for final head 33cb47cb815ba4532fe8facaf2b51313d74127bb; goal 20, evidence 18, scope 20, durability 20, fit 20, reuse 20; no blocking findings; zero added armed failures.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T140745576604-review-of-an-admission-receipt-names-its-reads-38755d08ba26" data-who="reckon-build" data-when="2026-11-17T14:10:49.724Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261117T111344100542-an-admission-receipt-names-its-reads at 4b7aa8a071ed..38755d08ba26 is accepted on all six dimensions (108 of 120), with three non-blocking findings and added_failure_count 0; the ten live post-landing receipts stay owed after merge.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261117T111344100542-an-admission-receipt-names-its-reads" data-who="reckon-build" data-when="2026-11-17T13:01:20Z">
+    <div class="r-comment-body"><p>An admission pass&#x27;s receipt now carries, inside its release and wait stages, each read it made with its count and its seconds — release 99.9 %, wait 97.1-97.3 % of each stage&#x27;s own time on a temporary crew home of 240 pointers and 80 requests, every read named, and the same receipt with its heaviest read omitted fails the 5 % sum check.</p></div>
 </div>
 </section>
   </main>
