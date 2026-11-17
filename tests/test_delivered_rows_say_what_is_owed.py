@@ -12,7 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 import tests.test_review_promotion_waits_for_its_record as review_fixtures
-from reckon import cli, ledger
+from reckon import _plan_html, cli, ledger
 from reckon.crew import (
     obligation_snapshot,
     promotion_requests,
@@ -134,6 +134,28 @@ def _review_run(repository: Path, tmp_path: Path, run_id="review-delivered") -> 
     return pointer
 
 
+def _reserve_landing(repository: Path) -> None:
+    source = repository / "docs" / "plans" / f"{PLAN}.html"
+    state = _plan_html.read_state(source.read_text())
+    state["decisions"] = {
+        **state.get("decisions", {}),
+        "landing": {
+            "choice": "manual",
+            "rationale": "Confirm the delivered work before publication.",
+        },
+    }
+    source.write_text(_plan_html.write_state(source.read_text(), state))
+    git(repository, "add", str(source.relative_to(repository)))
+    git(
+        repository,
+        "commit",
+        "-qm",
+        "test: reserve delivery confirmation",
+        "-m",
+        "Exercise the coordinator's explicit delivery decision.",
+    )
+
+
 def _request(pointer: dict, *, requested_at: datetime, phase: str) -> None:
     runs._write_json(
         promotion_requests._request_path(pointer["run_id"]),
@@ -222,7 +244,7 @@ def test_delivered_counts_and_owed_rows_share_the_classified_population(
     print("pane:", pane)
     assert "1d" in pane and "2p" in pane and "@ 1" in pane, pane
     view = obligations.obligations(PROJECT, SESSION)
-    assert [row["run_id"] for row in view["obligations"]] == ["delivered"], view
+    assert view["obligations"] == [], view
     assert view["remove_pointers"] == ["landed"]
     assert view["summary"]["delivered"] == 1
     assert view["summary"]["promotion_queued"] == 2
@@ -242,11 +264,24 @@ def test_delivered_counts_and_owed_rows_share_the_classified_population(
 
 @pytest.mark.parametrize("role", ["implement", "investigate", "review"])
 def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
+    _reserve_landing(repository)
     pointer = (
         _review_run(repository, tmp_path)
         if role == "review"
         else _seed(repository, tmp_path, "delivered", role=role)
     )
+    if role == "implement":
+        from reckon.crew import routing
+
+        origin = tmp_path / "origin.git"
+        git(tmp_path, "init", "--bare", "-q", str(origin))
+        git(repository, "remote", "add", "origin", str(origin))
+        git(repository, "push", "-qu", "origin", "main")
+        worktree = routing._workspace_roots(repository)[0] / "delivery" / role
+        worktree.parent.mkdir(parents=True, exist_ok=True)
+        git(repository, "worktree", "add", "--detach", str(worktree), "HEAD")
+        pointer["worktree"] = str(worktree)
+        runs._write_json(runs.pointer_path(pointer["run_id"]), pointer)
     view = obligations.obligations(PROJECT, SESSION)
     [row] = [
         item for item in view["obligations"] if item["run_id"] == pointer["run_id"]
@@ -254,12 +289,15 @@ def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
     command = row["next_command"]
     print("owed command:", command)
     assert "<" not in command
-    assert row["next_action_form"] is not None
+    assert row["record_action"] == "observe"
     argv = shlex.split(command)
     assert argv.pop(0) == "reckon"
     result = CliRunner().invoke(cli.main, argv)
     assert result.exit_code == 0, result.output
-    receipt = json.loads(result.output)
+    receipt = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
+    if role == "implement":
+        assert receipt["steps"]["land"]["pushed"], receipt
+        receipt = receipt["promotion"]
     assert receipt["pointer_removed"] is True, receipt
     assert Path(receipt["ledger_path"]).is_relative_to(repository), receipt[
         "ledger_path"
@@ -275,6 +313,9 @@ def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
         row["run_id"] == pointer["run_id"]
         for row in ledger.runs(PROJECT, root=repository)
     )
+    if role == "implement":
+        assert git(origin, "rev-parse", "main") == git(repository, "rev-parse", "main")
+        assert git(origin, "show", "main:candidate.py") == "answer = 42"
 
 
 @pytest.mark.parametrize(
@@ -389,9 +430,11 @@ def test_the_owed_action_form_promotes_on_the_tool_surface(repository, tmp_path)
 
     from reckon import mcp
 
+    _reserve_landing(repository)
     pointer = _seed(repository, tmp_path, "mcp-delivered", role="investigate")
     [row] = obligations.obligations(PROJECT, SESSION)["obligations"]
-    form = row["next_action_form"]
+    form = obligations.action_form(row["next_command"])
+    assert form is not None
     parsed = ast.parse(form, mode="eval").body
     arguments = {
         keyword.arg: ast.literal_eval(keyword.value) for keyword in parsed.keywords

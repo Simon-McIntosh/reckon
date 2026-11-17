@@ -123,7 +123,7 @@ def test_a_clean_landing_releases_its_worktree_and_exits_zero(
     result = _complete_land(run)
 
     assert result.exit_code == 0, result.output
-    report = json.loads(result.output)
+    report = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
     assert report["merged"] is True, report
     landed = _git(run["repository"], "rev-parse", "main")
     # The marker the change introduced is on the primary branch and the remote,
@@ -148,7 +148,7 @@ def test_a_landing_whose_worktree_is_already_gone_reports_it_released(
     result = _complete_land(run)
 
     assert result.exit_code == 0, result.output
-    report = json.loads(result.output)
+    report = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
     assert report["release"]["worktree_released"] is True, report
     assert report["release"].get("worktree_absent") is True, report
     assert "worktree_withheld" not in report["release"], report
@@ -166,7 +166,7 @@ def test_a_tree_holding_a_commit_the_primary_lacks_is_withheld_until_it_lands(
     refused = _complete_land(run)
 
     assert refused.exit_code != 0, refused.output
-    report = json.loads(refused.output)
+    report = json.loads(Path(json.loads(refused.output)["record_path"]).read_text())
     assert run["worktree"].is_dir()
     assert report["worktree_released"] is False, report
     assert _git(run["origin"], "rev-parse", "main") == origin_before
