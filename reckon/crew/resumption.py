@@ -807,34 +807,41 @@ def _lifted_holds(project: str) -> frozenset[tuple[str, str]]:
     """
     path = recovery_log_path(project)
     key = str(path)
-    lines, offset, start = recovery_wait.appended_lines(path)
+    # The read advances the offset the next read starts from, so the set that
+    # offset stands for must be published by the same critical section. Split
+    # across two, two overlapping sweeps could read from an advanced offset
+    # while the stored answer still belonged to the older one: the later caller
+    # finds a start it never read from, discards the set, and publishes an
+    # offset past lines nobody counted — after which the sweep resumes a hold it
+    # already lifted.
     with _LIFTED_HOLDS_LOCK:
         previous = _LIFTED_HOLDS.get(key)
+        lines, offset, start = recovery_wait.appended_lines(path)
         lifted = (
             set(previous[1]) if previous is not None and previous[0] == start else set()
         )
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            report = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(report, Mapping):
-            continue
-        # A dry run appends its own line and lists what it *would* resume, so a
-        # preview is not a lift and must not retire a hold the sweep never took.
-        if report.get("dry_run"):
-            continue
-        for entry in report.get("resumed") or ():
-            if not isinstance(entry, Mapping):
+        for line in lines:
+            if not line.strip():
                 continue
-            run_id = str(entry.get("run_id") or "")
-            signature = str(entry.get("hold") or "")
-            if run_id and signature:
-                lifted.add((run_id, signature))
-    result = frozenset(lifted)
-    with _LIFTED_HOLDS_LOCK:
+            try:
+                report = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(report, Mapping):
+                continue
+            # A dry run appends its own line and lists what it *would* resume,
+            # so a preview is not a lift and must not retire a hold the sweep
+            # never took.
+            if report.get("dry_run"):
+                continue
+            for entry in report.get("resumed") or ():
+                if not isinstance(entry, Mapping):
+                    continue
+                run_id = str(entry.get("run_id") or "")
+                signature = str(entry.get("hold") or "")
+                if run_id and signature:
+                    lifted.add((run_id, signature))
+        result = frozenset(lifted)
         _LIFTED_HOLDS[key] = (offset, result)
     return result
 

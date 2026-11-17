@@ -14,6 +14,8 @@ than an inference from a set that happens to match.
 from __future__ import annotations
 
 import json
+import threading
+import time
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -87,6 +89,9 @@ class _RecordingLoads:
     @property
     def count(self) -> int:
         return len(self.lines)
+
+    def texts(self) -> list[str]:
+        return [payload.decode("utf-8") for payload in self.lines]
 
     def reset(self) -> None:
         self.lines.clear()
@@ -202,3 +207,78 @@ def test_a_line_still_being_written_waits_for_its_newline(
     assert recorder.count == 1
     assert _pair(999) in second
     assert set(second) == _base_lifted_holds(log, real_loads)
+
+
+def test_two_overlapping_reads_keep_every_lift(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A read that starts past unclaimed lines must not publish over them.
+
+    The offset a read advances and the set that offset stands for are one fact.
+    Published apart, a second read can take its start from the offset the first
+    has already advanced to while the stored set still belongs to the older one:
+    it finds a start it never read from, drops everything the first had counted
+    but not yet published, and records an offset past those lines — after which
+    the sweep resumes a hold it already lifted.
+    """
+    recorder, _ = _record_loads(monkeypatch)
+    log = recovery_log_path(PROJECT)
+    seeded = [_report(index) for index in range(20)]
+    _write_lines(log, seeded)
+    seeded_set = resumption._lifted_holds(PROJECT)
+    assert len(seeded_set) == len(seeded)
+    assert recorder.count == len(seeded)
+
+    appended = [_report(index) for index in range(20, 23)]
+    with log.open("a", encoding="utf-8") as handle:
+        for line in appended:
+            handle.write(line + "\n")
+
+    entered = threading.Event()
+    release = threading.Event()
+    real_appended = recovery_wait.appended_lines
+    held = {"first": False}
+
+    def blocking_appended(path):
+        """Advance past the read, then hold the first caller before it publishes."""
+        result = real_appended(path)
+        if held["first"]:
+            return result
+        held["first"] = True
+        entered.set()
+        assert release.wait(5), "the held read was never released"
+        return result
+
+    monkeypatch.setattr(recovery_wait, "appended_lines", blocking_appended)
+
+    failures: list[BaseException] = []
+
+    def read() -> None:
+        try:
+            resumption._lifted_holds(PROJECT)
+        except BaseException as error:  # noqa: BLE001 -- reported, not swallowed
+            failures.append(error)
+
+    recorder.reset()
+    held_thread = threading.Thread(target=read)
+    held_thread.start()
+    assert entered.wait(5), "the first read never reached its append read"
+
+    second_thread = threading.Thread(target=read)
+    second_thread.start()
+    # Give the second read the window to publish over the first. Where the two
+    # facts advance together the second call is waiting on the same lock here,
+    # and the assertion below is the same either way.
+    time.sleep(0.2)
+    release.set()
+    held_thread.join(5)
+    second_thread.join(5)
+    assert not failures, failures
+    assert not held_thread.is_alive() and not second_thread.is_alive()
+
+    final = resumption._lifted_holds(PROJECT)
+    assert set(final) == {_pair(index) for index in range(23)}
+
+    decoded = recorder.texts()
+    assert len(decoded) == len(set(decoded)), "a line was decoded twice"
+    assert set(decoded) == set(appended)
