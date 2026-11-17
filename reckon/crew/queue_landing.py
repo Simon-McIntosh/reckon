@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -2053,12 +2054,24 @@ def measure_landing_group(group: dict[str, Any]) -> str:
         )
     )
     for command in commands:
+        directory = (
+            runs.run_dir(str(group["run_id"]))
+            / "landing-measure"
+            / "groups"
+            / uuid.uuid4().hex
+            / hashlib.sha256(command.encode()).hexdigest()
+        )
         measured = _measure_delivery(
             {**synthetic, "suite_command": command},
             str(group["run_id"]),
             aggregate,
             str(repo),
             promoted=True,
+            request={
+                "config": dict(_measure_config(synthetic)),
+                "logs_dir": str(directory),
+                "primary": primary,
+            },
         )
         guard = _measure_guard(measured)
         if guard:

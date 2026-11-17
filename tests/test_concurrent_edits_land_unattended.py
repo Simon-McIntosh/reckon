@@ -348,3 +348,90 @@ def test_conflicting_heads_report_the_exact_path_and_other_side(fleet):
         merge.build_merge_group(fleet.repo, first["head"], [conflict["head"]])
     assert refused.value.paths == ["sample.py"]
     assert refused.value.base == first["head"]
+
+
+@pytest.mark.parametrize("later", [1, 2], ids=["second-landing", "third-landing"])
+def test_a_moved_primary_refreshes_a_clean_reviewed_candidate(fleet, later):
+    for index, name in enumerate(("alpha", "beta", "gamma"), 1):
+        fleet.deliver(name, index)
+    receipts = []
+    for member in fleet.members:
+        run_id = member["pointer"]["run_id"]
+        measured = queue_landing._measure_delivery(
+            member["pointer"],
+            run_id,
+            member["head"],
+            member["pointer"]["worktree"],
+            promoted=True,
+        )
+        assert not queue_landing._measure_guard(measured)
+        receipts.append(measured)
+    git(fleet.repo, "merge", "--ff-only", receipts[0].population["candidate_sha"])
+    member = fleet.members[later]
+    conflicts = queue_landing._merge_conflicts(member["pointer"], member["head"])
+    assert not conflicts
+    checked = queue_landing._verified_measurement(
+        member["pointer"]["run_id"], receipts[later].population["candidate_sha"]
+    )
+    assert checked.head == member["head"]
+    assert checked.population["main_sha"] == git(fleet.repo, "rev-parse", "HEAD")
+    assert not queue_landing._measure_guard(checked)
+
+
+def test_the_automatic_pass_queues_one_group_and_the_drain_publishes_it(
+    fleet, monkeypatch
+):
+    for index, name in enumerate(("alpha", "beta", "gamma"), 1):
+        fleet.deliver(name, index)
+    monkeypatch.setattr(
+        queue_landing.recovery,
+        "classify_pointer",
+        lambda pointer: {
+            "manifest_status": "complete",
+            "manifest_commits": [git(Path(pointer["worktree"]), "rev-parse", "HEAD")],
+        },
+    )
+    monkeypatch.setattr(queue_landing, "_owed_review_tiers", lambda pointer: [])
+    monkeypatch.setattr(queue_landing, "_red_suite_guard", lambda *args: "")
+    result = queue_landing.land_once()
+    ids = [member["pointer"]["run_id"] for member in fleet.members]
+    assert set(result["promotion_requested"]) == set(ids)
+    assert not fleet.measured, "individual gates ran before the group was composed"
+    service = promotion_requests.PromotionService(width=1)
+    assert len(service.tick()) == 1
+    service.settle(90)
+    receipt = promotion_requests.read_promotion(ids[0])
+    assert receipt["phase"] == promotion_requests.PROMOTED, receipt
+    assert len(fleet.measured) == 1
+    assert len(fleet.calls) == 3
+    for run_id in ids:
+        assert (
+            promotion_requests.read_promotion(run_id)["phase"]
+            == promotion_requests.PROMOTED
+        )
+
+
+def test_each_distinct_gate_keeps_its_own_candidate_log(fleet):
+    fleet.deliver("alpha", 1)
+    member = fleet.deliver("beta", 2)
+    member["pointer"]["suite_command"] += " -x"
+    request = _request(fleet)
+    assert commands._complete_landing_group(request)["ok"]
+    assert len(fleet.measured) == 2
+    paths = [item.suite["head"]["log_path"] for item in fleet.measured]
+    assert len(set(paths)) == 2
+    for path in paths:
+        assert Path(path).is_file()
+
+
+def test_recovery_refuses_a_ledger_row_for_another_delivered_head(fleet, monkeypatch):
+    fleet.deliver("alpha", 1)
+    fleet.deliver("beta", 2)
+    monkeypatch.setattr(
+        pending_landing,
+        "_promoted_row",
+        lambda *args: {"promoted_revision": fleet.base},
+    )
+    with pytest.raises(runs.CrewError, match="different head"):
+        commands._complete_landing_group(_request(fleet))
+    assert not fleet.measured and not fleet.calls

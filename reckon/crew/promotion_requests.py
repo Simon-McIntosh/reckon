@@ -267,7 +267,9 @@ def _mark_pointer(request: Mapping[str, Any], phase: str) -> None:
                 return
             pointer = runs.read_pointer(run_id)
             pointer["promotion_status"] = phase
-            pointer["promotion_request"] = str(_request_path(run_id))
+            pointer["promotion_request"] = str(
+                _request_path(str(request.get("group_run_id") or run_id))
+            )
             pointer["phase"] = (
                 phase
                 if phase in {REQUESTED, PROMOTED}
@@ -481,7 +483,10 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
     for member in (request.get("options") or {}).get("members") or ():
         member_id = str(member["pointer"]["run_id"])
         if member_id != run_id:
-            _mark_pointer({**receipt, "run_id": member_id}, phase)
+            member_receipt = {**receipt, "run_id": member_id, "group_run_id": run_id}
+            runs._write_json(_receipt_path(member_id), member_receipt)
+            _mark_pointer(member_receipt, phase)
+            _record_drained(member_receipt)
     return receipt
 
 

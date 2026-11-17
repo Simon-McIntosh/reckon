@@ -4212,6 +4212,10 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
             project = str(member["pointer"]["project"])
             row = pending_landing._promoted_row(project, run_id)
             if row is not None:
+                if _reviewed_head_of(row) != member["head"]:
+                    raise runs.CrewError(
+                        f"group member {run_id} was promoted at a different head"
+                    )
                 member["promotion"] = {"project": project, "record": dict(row)}
                 continue
             current, _tree = queue_landing.recovery._review_head_and_tree(
@@ -4293,6 +4297,7 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
             "run_id": leader,
             "members": list(group["members"]),
             "candidate": group["head"],
+            "commits": [member["head"] for member in group["members"].values()],
             "landing": report,
         }
     finally:
