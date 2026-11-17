@@ -1691,6 +1691,10 @@ class DeclaredServices:
         if state.reload_window is not None and not state.reload_window.due(
             current, publish=False
         ):
+            # No replacement follows a window that is not due, so a boundary
+            # requested earlier would hold the copy before its next pass with
+            # nothing left to release it.
+            (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
             return "adopt"
         if not recorded or recorded == _unknown_code_stamp():
             if not self._pass_allows_restart(name, pid):
@@ -1795,6 +1799,9 @@ class DeclaredServices:
             if window is None or not window.due(
                 self._code_stamp_value(), publish=False
             ):
+                # The copy replaced itself between the decision and this stop,
+                # so the boundary this restart requested is withdrawn with it.
+                (self._runtime / f"{name}.pass.reload").unlink(missing_ok=True)
                 return
         if not self._stop_locked(name):
             # The stale copy is still alive, so it still holds the lock and
