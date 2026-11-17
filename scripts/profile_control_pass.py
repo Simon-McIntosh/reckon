@@ -27,6 +27,7 @@ import time
 import tracemalloc
 from collections import defaultdict
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import patch
 from urllib.parse import unquote, urlparse
 
@@ -343,8 +344,89 @@ class AllocationSample:
         tracemalloc.stop()
 
 
+def resident_bytes() -> int:
+    """This process's resident set size now, not its high-water mark."""
+    with open("/proc/self/statm", encoding="ascii") as handle:
+        pages = int(handle.read().split()[1])
+    return pages * os.sysconf("SC_PAGE_SIZE")
+
+
+#: The result fields that describe when a pass ran rather than what it decided.
+_TIMING_SUFFIX = "_seconds"
+
+
+def decision_digest(result: dict) -> str:
+    """A digest of a pass's decisions, with every timing field removed.
+
+    A steady-memory measure across a hundred passes has to show the passes made
+    the same decisions throughout, so the comparison is over the verdicts and
+    the request lists a pass returned and never over how long each stage took:
+    a duration differs between two runs of the same input and would make the
+    digest say the decisions moved when only the clock did.
+    """
+
+    def scrubbed(value, *, key: str = ""):
+        if isinstance(value, dict):
+            return {
+                name: scrubbed(item, key=str(name))
+                for name, item in value.items()
+                if not str(name).endswith(_TIMING_SUFFIX)
+                and name not in {"seconds", "started_at", "ended_at", "moment"}
+            }
+        if isinstance(value, (list, tuple)):
+            return [scrubbed(item, key=key) for item in value]
+        return value
+
+    canonical = json.dumps(scrubbed(result), sort_keys=True, default=str)
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def _admission_passes(count: int) -> dict:
+    """Run ``count`` admission passes in this process, sampling after each.
+
+    Each pass is the one §7's single-pass profile runs: the launch boundary
+    returns a receipt, so admission still chooses, claims, writes handovers and
+    records its verdicts while no worker starts. The resident size is read
+    after every pass, so the tenth and the hundredth are compared on the same
+    measurement rather than inferred from a high-water mark, and each pass's
+    decisions are digested so a drift in behaviour shows up beside the memory
+    series.
+    """
+    samples = []
+    started = time.monotonic()
+    for index in range(1, count + 1):
+        result = _pass("admission", home=None, batch=None, entries=1, repository=None)
+        samples.append(
+            {
+                "pass": index,
+                "resident_bytes": resident_bytes(),
+                "decision_digest": decision_digest(result),
+            }
+        )
+    tenth = samples[min(9, len(samples) - 1)]["resident_bytes"]
+    last = samples[-1]["resident_bytes"]
+    digests = sorted({sample["decision_digest"] for sample in samples})
+    return {
+        "passes": len(samples),
+        "samples": samples,
+        "tenth_pass_resident_bytes": tenth,
+        "last_pass_resident_bytes": last,
+        "growth_ratio": round(last / tenth, 4) if tenth else None,
+        "within_twenty_percent": bool(tenth) and last <= tenth * 1.2,
+        "under_four_gib": last < 4 * 1024**3,
+        "decision_digests": digests,
+        "decisions_steady": len(digests) == 1,
+        "seconds": time.monotonic() - started,
+    }
+
+
 def _pass(
-    command: str, *, home: Path, batch: Path | None, entries: int, repository: Path
+    command: str,
+    *,
+    home: Path | None,
+    batch: Path | None,
+    entries: int,
+    repository: Path | None,
 ) -> dict:
     from reckon import flight
     from reckon.crew import dispatch_batch, station, station_store
@@ -438,8 +520,34 @@ def _pass(
     raise ValueError(f"unknown control command: {command}")
 
 
+class _Untraced:
+    """The allocation figures a multi-pass run does not collect.
+
+    A hundred traced passes cost more wall time than the measure is worth and
+    inflate the resident figures the measure exists to read, so the multi-pass
+    mode reads the resident size itself and reports no traced peak.
+    """
+
+    peak: ClassVar[int] = 0
+    current: ClassVar[int] = 0
+    high: ClassVar[int] = 0
+    sites: ClassVar[list] = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return None
+
+
 def profile(
-    command: str, *, home: Path, batch: Path | None, entries: int, repository: Path
+    command: str,
+    *,
+    home: Path,
+    batch: Path | None,
+    entries: int,
+    repository: Path,
+    passes: int = 1,
 ) -> dict:
     """Run only inside the fence, preserving failures as nonzero receipts."""
     if os.environ.get("RECKON_PROFILE_FENCED") != "1":
@@ -456,15 +564,26 @@ def profile(
     started = time.monotonic()
     error = None
     result = None
+    multi_pass = command == "admission" and passes > 1
+    sampler = _Untraced() if multi_pass else AllocationSample()
     try:
-        with AllocationSample() as allocations, stores.measure():
-            result = _pass(
-                command, home=home, batch=batch, entries=entries, repository=repository
+        with sampler as allocations, stores.measure():
+            result = (
+                _admission_passes(passes)
+                if multi_pass
+                else _pass(
+                    command,
+                    home=home,
+                    batch=batch,
+                    entries=entries,
+                    repository=repository,
+                )
             )
     except Exception as exc:  # noqa: BLE001 - failed passes must still deliver a receipt
         error = f"{type(exc).__name__}: {exc}"
     return {
         "command": command,
+        "passes": passes,
         "entries": entries if command == "dispatch" else None,
         "revision": subprocess.check_output(
             ["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True
@@ -562,6 +681,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--home", type=Path, required=True)
     parser.add_argument("--batch", type=Path)
     parser.add_argument("--entries", type=int, default=1)
+    parser.add_argument(
+        "--passes",
+        type=int,
+        default=1,
+        help="consecutive admission passes to run, sampling resident memory after each",
+    )
     parser.add_argument("--repository", type=Path, default=ROOT)
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--timeout", type=float, default=1800)
@@ -590,6 +715,7 @@ def main(argv: list[str] | None = None) -> int:
                 batch=args.batch,
                 entries=args.entries,
                 repository=args.repository,
+                passes=args.passes,
             )
             (args.home / f"profile-{args.command}-{args.entries}.json").write_text(
                 json.dumps(record, indent=2)
