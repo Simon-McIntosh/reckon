@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from completed source baseline-suite.log and repaired-after-suite.log: 58/67 passed, zero FAILED ids, both EXIT=0.",
+  "after_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_ledger_leaves_git.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/repaired-after-suite.log",
+    "measurement_cwd": "/tmp/ledger-gate-un7_6rzp/tree",
+    "measurement_module": "/tmp/ledger-gate-un7_6rzp/tree/reckon/ledger.py",
+    "partition": "all_debug",
+    "revision": "73c4787a40b8d49486bd2b4c7a4a65032d22f281"
+  },
+  "assertion_audit_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T230336720658-review-of-untracking-migration-s26-73c4787a40b8/assertion-audit.md",
+  "baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/baseline-suite.log",
+    "measurement_cwd": "/tmp/ledger-gate-_y2if1qz/tree",
+    "measurement_module": "/tmp/ledger-gate-_y2if1qz/tree/reckon/ledger.py",
+    "partition": "all_debug",
+    "revision": "e76577d9450dd76d22e4782b4a882b7eb997a0d3"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "scripts/import_runs_into_store.py:41 main and :76 __main__",
+    "reckon/ledger.py:2462 load and :2504 _load_file_history",
+    "reckon/ledger.py:3748 append_run",
+    "reckon/crew/promotion.py:2940 ledger.append_run"
+  ],
+  "completed_at": "2026-11-17T23:11:33Z",
+  "dispatched_at": "2026-11-17T23:06:39Z",
+  "findings": [
+    {
+      "file": "tests/test_the_ledger_leaves_git.py",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: _git duplicates the checked, captured-output git capability in tests/helpers/git.py:12 rather than wrapping it, and omits that owner's removal of the worker run identity, so temporary-repository mutations can diverge from the shared worker-isolation behavior."
+    }
+  ],
+  "inherited_history_note": "The broad base-to-head diff includes upstream history; attribution was checked against both merge parents, and no unrelated worker-owned change was found.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified scripts/import_runs_into_store.py:41 main and :76 __main__, reckon/ledger.py:2462 load and :2504 _load_file_history, reckon/ledger.py:3748 append_run, reckon/crew/promotion.py:2940 ledger.append_run",
+    "diff": "Read e76577d9450dd76d22e4782b4a882b7eb997a0d3..73c4787a40b8d49486bd2b4c7a4a65032d22f281, isolating migration commit 60c4622f5565 from parent 924dbcf611b7 and merge repair 73c4787a40b8 from incoming c1e1a66126e4; unrelated changes are inherited history, and the repair adds recursive index coverage without retaining ledger files.",
+    "done_when": "Read source prompt.txt:190-191 and live section measure; preservation-after.log records 18 mounts and 25266 matching canonical rows, live-import-canonical-parity.json records 53/53 incoming rows, and repaired-scoped-gate.log records 16 passing retirement/promotion tests.",
+    "goal": "Read source prompt.txt:38 and live docs/plans/history-persists-as-detail-washes-out.html:389-392; the repaired head removes tracked ledger projections while retaining store-backed history.",
+    "manifest": "Read source manifest.md:1-30 and its completed baseline_suite/after_suite receipts; baseline-suite.log and repaired-after-suite.log independently record 58/67 passes with no failure ids and EXIT=0.",
+    "write_paths": "Read source manifest.md:3; commit 60c4622f5565 changes three declared config/script/test paths and deletes 9891 ledger files, while repaired head versus incoming main deletes 9928 ledger files and changes only those same three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_leaves_git.py:34-225 guards retirement, ignore boundaries, canonical retention and refusals; repaired-negative-control.log records test_no_ledger_document_is_tracked failing at line 37 after crew.json is re-added, and assertion-audit.md names each assertion failure condition.",
+    "evidence": "Source baseline-suite.log/repaired-after-suite.log record 58/67 passes at the canonical base/head, repaired-scoped-gate.log records 16 passes, and preservation-after.log plus live-import-canonical-parity.json support canonical preservation.",
+    "fit": "scripts/import_runs_into_store.py:41 extends the existing argparse entry using established ledger/run_store APIs, and tests/test_the_ledger_leaves_git.py uses descriptive names and temporary repositories without forbidden labels.",
+    "goal_fidelity": ".gitignore:11-12 excludes retired projections, exact head has zero ledger tree entries, and reckon/ledger.py:2504 and :3748 retain stored reads and post-retirement appends.",
+    "reuse": "scripts/import_runs_into_store.py:51-53 wraps the existing import_ledger, load_auxiliary and compare owners, but tests/test_the_ledger_leaves_git.py:16 duplicates tests/helpers/git.py:12 instead of wrapping it, so the explicit rubric caps reuse at 5.",
+    "scope_discipline": "Both worker commits change only .gitignore, scripts/import_runs_into_store.py, tests/test_the_ledger_leaves_git.py and ledger documents under docs/state; relative to incoming main all 7222 other state paths survive unchanged."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and live docs/plans/history-persists-as-detail-washes-out.html:389-392; the repaired head removes tracked ledger projections while retaining store-backed history.\nVERDICT done_when: Read source prompt.txt:190-191 and live section measure; preservation-after.log records 18 mounts and 25266 matching canonical rows, live-import-canonical-parity.json records 53/53 incoming rows, and repaired-scoped-gate.log records 16 passing retirement/promotion tests.\nVERDICT write_paths: Read source manifest.md:3; commit 60c4622f5565 changes three declared config/script/test paths and deletes 9891 ledger files, while repaired head versus incoming main deletes 9928 ledger files and changes only those same three paths.\nVERDICT manifest: Read source manifest.md:1-30 and its completed baseline_suite/after_suite receipts; baseline-suite.log and repaired-after-suite.log independently record 58/67 passes with no failure ids and EXIT=0.\nVERDICT diff: Read e76577d9450dd76d22e4782b4a882b7eb997a0d3..73c4787a40b8d49486bd2b4c7a4a65032d22f281, isolating migration commit 60c4622f5565 from parent 924dbcf611b7 and merge repair 73c4787a40b8 from incoming c1e1a66126e4; unrelated changes are inherited history, and the repair adds recursive index coverage without retaining ledger files.\nCALL_SITES: scripts/import_runs_into_store.py:41 main and :76 __main__, reckon/ledger.py:2462 load and :2504 _load_file_history, reckon/ledger.py:3748 append_run, reckon/crew/promotion.py:2940 ledger.append_run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: .gitignore:11-12 excludes retired projections, exact head has zero ledger tree entries, and reckon/ledger.py:2504 and :3748 retain stored reads and post-retirement appends.\nSCORE evidence: 20\nJUSTIFICATION evidence: Source baseline-suite.log/repaired-after-suite.log record 58/67 passes at the canonical base/head, repaired-scoped-gate.log records 16 passes, and preservation-after.log plus live-import-canonical-parity.json support canonical preservation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both worker commits change only .gitignore, scripts/import_runs_into_store.py, tests/test_the_ledger_leaves_git.py and ledger documents under docs/state; relative to incoming main all 7222 other state paths survive unchanged.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_ledger_leaves_git.py:34-225 guards retirement, ignore boundaries, canonical retention and refusals; repaired-negative-control.log records test_no_ledger_document_is_tracked failing at line 37 after crew.json is re-added, and assertion-audit.md names each assertion failure condition.\nSCORE fit: 20\nJUSTIFICATION fit: scripts/import_runs_into_store.py:41 extends the existing argparse entry using established ledger/run_store APIs, and tests/test_the_ledger_leaves_git.py uses descriptive names and temporary repositories without forbidden labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: scripts/import_runs_into_store.py:51-53 wraps the existing import_ledger, load_auxiliary and compare owners, but tests/test_the_ledger_leaves_git.py:16 duplicates tests/helpers/git.py:12 instead of wrapping it, so the explicit rubric caps reuse at 5.\nFINDING tests/test_the_ledger_leaves_git.py:16 non-blocking: _git duplicates the checked, captured-output git capability in tests/helpers/git.py:12 rather than wrapping it, and omits that owner's removal of the worker run identity, so temporary-repository mutations can diverge from the shared worker-isolation behavior.\n",
+  "recommendation": "No blocking findings; coordinator should explicitly fold or exempt the non-blocking shared-helper duplication for this reviewed revision.",
+  "review_run_id": "r-20261117T230336720658-review-of-untracking-migration-s26-73c4787a40b8",
+  "reviewed_base_sha": "e76577d9450dd76d22e4782b4a882b7eb997a0d3",
+  "reviewed_head_sha": "73c4787a40b8d49486bd2b4c7a4a65032d22f281",
+  "reviewed_run_id": "r-20261115T211459261234-untracking-migration-s26",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:10:26.680755+00:00",
+  "total": 105
+}
