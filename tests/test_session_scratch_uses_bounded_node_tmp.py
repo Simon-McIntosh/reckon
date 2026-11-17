@@ -286,3 +286,53 @@ def test_excess_reaches_only_its_conversation_in_both_obligation_views(
             "obligations"
         ]
     )
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_session_policy_uses_the_shared_nearest_mount_classification(
+    tmp_path, monkeypatch, reverse
+):
+    from reckon.crew import dispatch_admission
+
+    memory = tmp_path / "memory"
+    disk = memory / "disk"
+    disk.mkdir(parents=True)
+    alias = tmp_path / "alias"
+    alias.symlink_to(memory, target_is_directory=True)
+    mounts = [(tmp_path, "xfs"), (memory, "tmpfs"), (disk, "ext4")]
+    monkeypatch.setattr(
+        dispatch_admission,
+        "_mount_table",
+        lambda: tuple(reversed(mounts)) if reverse else tuple(mounts),
+    )
+    assert dispatch_admission.path_filesystem_type(alias / "file") == "tmpfs"
+    assert dispatch_admission._path_is_tmpfs(alias / "file") is True
+    with pytest.raises(ValueError, match="requires local disk"):
+        supervisor._scratch_disk(alias / "file")
+    assert dispatch_admission.path_filesystem_type(alias / "disk" / "file") == "ext4"
+    assert dispatch_admission._path_is_tmpfs(alias / "disk" / "file") is False
+    assert supervisor._scratch_disk(alias / "disk" / "file") == disk / "file"
+    monkeypatch.setattr(dispatch_admission, "_mount_table", lambda: ())
+    assert dispatch_admission.path_filesystem_type(tmp_path) is None
+    with pytest.raises(ValueError, match="requires local disk"):
+        supervisor._scratch_disk(tmp_path)
+
+
+def test_session_checks_reuse_the_dispatch_mount_table_cache(tmp_path, monkeypatch):
+    from reckon.crew import dispatch_admission
+
+    reads = []
+    original = Path.read_text
+
+    def mountinfo(path, *args, **kwargs):
+        if str(path) == "/proc/self/mountinfo":
+            reads.append(path)
+            return "22 1 0:21 / / rw - ext4 /dev/root rw\n"
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", mountinfo)
+    monkeypatch.setattr(dispatch_admission, "_MOUNT_TABLE", {})
+    for _ in range(3):
+        assert supervisor._scratch_disk(tmp_path) == tmp_path.resolve()
+        assert dispatch_admission._path_is_tmpfs(tmp_path) is False
+    assert len(reads) == 1

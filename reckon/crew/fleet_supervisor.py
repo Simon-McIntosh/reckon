@@ -511,14 +511,10 @@ def session_tmp_directory(
 
 def _scratch_disk(directory: Path) -> Path:
     """Reject memory-backed mounts, including paths reached through symlinks."""
+    from reckon.crew.dispatch_admission import path_filesystem_type
+
     resolved = directory.resolve()
-    mount_type = ""
-    longest = -1
-    for line in Path("/proc/self/mountinfo").read_text().splitlines():
-        before, after = line.split(" - ", 1)
-        mount = Path(before.split()[4].replace("\\040", " "))
-        if resolved.is_relative_to(mount) and len(str(mount)) > longest:
-            longest, mount_type = len(str(mount)), after.split()[0]
+    mount_type = path_filesystem_type(resolved)
     if mount_type not in {"ext4", "xfs", "btrfs", "zfs", "overlay"}:
         raise ValueError(
             f"session scratch requires local disk: {resolved} ({mount_type})"
