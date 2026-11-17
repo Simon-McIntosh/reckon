@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": {
+    "tests/test_a_live_pointer_carries_no_clone_report.py:171": "Fails if the promotion stops recording the detector's report on the returned row; both sides read the monkeypatched detector's list against the promotion's own record.",
+    "tests/test_a_live_pointer_carries_no_clone_report.py:180": "Fails if any live-pointer write keeps clone_matches; logs/negative-control-base.log records this assertion red at 6686bb507f ('the live pointer carries the promotion's clone report'), so restoring the base runs.py:497 reddens it.",
+    "tests/test_a_live_pointer_carries_no_clone_report.py:186": "Fails if the field is lost from the committed ledger; the row is re-read through ledger.load rather than taken from the receipt the promotion returned.",
+    "tests/test_a_live_pointer_carries_no_clone_report.py:229": "Fails if _pointer_text hands the decoder the whole file; the base control records 'the listing parsed 8320157 bytes for this pointer', so reverting runs.py:1236's reduced text reddens it.",
+    "tests/test_a_live_pointer_carries_no_clone_report.py:230": "Fails if list_live returns the key; the base control shows the key returned at 6686bb507f.",
+    "tests/test_a_live_pointer_carries_no_clone_report.py:253": "Moves with its input: len(report) is read from the ledger row the test itself passes to _clone_week_cells, so no pointer-side regression reddens it.",
+    "tests/test_a_live_pointer_carries_no_clone_report.py:255": "Fails if the promotion receipt and the committed ledger row disagree on the report; both sides are reads of stored state rather than fixture values."
+  },
+  "assertion_independence": "The durable assertions are independent: line 186 re-reads the committed ledger through ledger.load and line 229 counts bytes through a recording stand-in whose positive control at line 231 proves the instrument decodes the whole file before the listing's own figure is believed. One assertion is not independent -- line 253 compares velocity's count against the length of the same row the test handed velocity -- and it is recorded as a non-blocking finding.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/runs.py:_write_json:495",
+    "reckon/crew/runs.py:_mutate_pointer:554",
+    "reckon/crew/runs.py:queue_dispatch:1023",
+    "reckon/crew/runs.py:record_stacked_dispatch:2356",
+    "reckon/crew/runs.py:read_pointer:1386",
+    "reckon/crew/runs.py:_list_live_records:1443",
+    "reckon/crew/pending_landing.py:mark_pending_landing_repair:336",
+    "reckon/velocity.py:_clone_week_cells:2873"
+  ],
+  "completed_at": "2026-11-17T21:20:52.607Z",
+  "dispatched_at": "2026-11-17T21:19:59Z",
+  "evidence_caveats": [
+    "logs/baseline-suite.log and logs/after-suite.log carry revision, host, tree, module.__file__ and the literal command, but no partition field, so 'all_debug' is the manifest's statement rather than a receipt visible in the log.",
+    "The fragment's arm paragraph names head revision 5b15fe3f3a while logs/after-suite.log opens '# revision: 7ca7a5a6e8'; the two shas differ only by the fragment commit, so the 61-passed figure stands but the cited sha has no log.",
+    "The done_when's importing-test clause is narrower than the change: 935 files under tests/ reference reckon.crew.runs and the arms run two of them.",
+    "The gate log's summary line is the figure the record quotes; the pre-change 8,320,157-byte figure comes from the negative control's failure message, not from a separate measurement log."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_a_live_pointer_carries_no_clone_report.py",
+      "line": "253",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert cell[\"matches\"] == len(report)` derives its expectation from the same ledger row the test hands to velocity._clone_week_cells, so the two sides move together; the row-keeps-report claim is already guarded against an independent read at line 186, and line 253 cannot redden on any pointer-side regression it might be read as covering."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm sentence names head revision 5b15fe3f3a while the only retained head receipt, logs/after-suite.log, opens '# revision: 7ca7a5a6e8', so the revision the fragment cites has no log a reader can open."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when clause 'the test files importing the changed modules add no failure' is measured over two test files, while 935 files under tests/ reference reckon.crew.runs, so the population the clause names is not the population the arms ran."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read both commits against base 6686bb507f: 5b15fe3f3a adds the field-drop helper and the write-side call plus the three-case test, 7ca7a5a6e8 adds the evidence fragment, and the code is a pointer-write omission, a top-level JSON member scanner with a parse-validated fallback, and a reduced pointer-text cache -- no unrelated edit inside the diff.",
+    "done_when": "Read the done_when in dispatch-detail.json and every receipt it names: cases (a), (b), (c) sit at tests/test_a_live_pointer_carries_no_clone_report.py:169-186, :208-230 and :240-255, logs/gate-head.log records '3 passed in 6.27s' with EXIT=0, logs/negative-control-base.log records '2 failed, 1 passed' with EXIT=1 naming the pointer carrying the report and 8320157 bytes parsed, the arm pair reads '58 passed' at base then '61 passed' at head, both EXIT=0, and ruff check plus ruff format --check over the 7ca7a5a6e8 blobs of the two staged source paths report 'All checks passed!' and '2 files already formatted' -- the clause the arms under-measure is 'the test files importing the changed modules', since 935 test files reference crew.runs and the arms name two.",
+    "goal": "Read dispatch-detail.json .admit_request.node.goal ('Keep the promotion clone report on the ledger row and off every live pointer list_live reads') and plan \u00a789 at docs/plans/the-monitor-reads-each-fact-once.html:840: the landed write guard POINTER_OMITTED_FIELDS applied in _write_json's live-pointer branch (reckon/crew/runs.py:240, runs.py:497) drops clone_matches from every pointer write, and the read reduction at runs.py:1142 keeps it out of every listing the node's own test exercises, so the goal holds.",
+    "manifest": "Read manifest.md: status complete, the tests line is the literal relative gate command, test_logs names gate-head.log, negative-control-base.log, baseline-suite.log and after-suite.log, and its quoted figures '3 passed', '2 failed, 1 passed', '58 passed' and '61 passed' reconcile with those logs' own summary lines, though the fragment's head-arm revision does not.",
+    "write_paths": "Read the five declared paths in the reviewed manifest (reckon/crew/promotion.py, reckon/crew/runs.py, tests/test_a_live_pointer_carries_no_clone_report.py, the evidence fragment and the figure directory): the two commits touch exactly three of them -- reckon/crew/runs.py (+158/-2), tests/test_a_live_pointer_carries_no_clone_report.py (+255) and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html (+47) -- and reckon/crew/promotion.py, though declared, needed no edit because the guard sits on the single write every pointer write passes through."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_pointer_carries_no_clone_report.py:180 and :229 redden when reckon/crew/runs.py:497 or runs.py:1236 is removed, proven by logs/negative-control-base.log at 6686bb507f, while case (c) at line 253 reads its own input back and guards nothing on the pointer side.",
+    "evidence": "logs/gate-head.log, logs/negative-control-base.log and the two arm logs are gate-shaped receipts whose summary lines carry the done_when's figures, but the arm population is two files where the clause says 'the test files importing the changed modules' (935 reference crew.runs) and the fragment cites a head revision no retained log names.",
+    "fit": "The addition follows the module's idiom -- a module constant and a leading-underscore helper beside _split_dispatch_detail at reckon/crew/runs.py:197, docstrings stating the failure each guard prevents, and no new public name.",
+    "goal_fidelity": "The write-side omission at reckon/crew/runs.py:497 covers every live-pointer write including pending_landing.mark_pending_landing_repair (reckon/crew/pending_landing.py:336), and the read reduction at runs.py:1142 sets the '201 bytes' figure against the base '8,320,157', so both halves of the goal are exercised.",
+    "reuse": "A capability search over reckon for a JSON text splicer found reckon/crew/review.py:3753 (_repaired_review_bytes) and reckon/velocity.py:1699, but both pass every value through json raw_decode and so materialise the 2-10 MB member this code must skip, and reckon/crew/reports.py:1336 scans a different syntax; no owner of 'locate and cut a top-level member without decoding it' exists, so the top-level walk at reckon/crew/runs.py:1142 is the first.",
+    "scope_discipline": "Every path in 6686bb507f..7ca7a5a6e8 is inside the declared write paths, and the 460 inserted lines are the guard, its test and the fragment with no unrelated hunk."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read dispatch-detail.json .admit_request.node.goal ('Keep the promotion clone report on the ledger row and off every live pointer list_live reads') and plan \u00a789 at docs/plans/the-monitor-reads-each-fact-once.html:840: the landed write guard POINTER_OMITTED_FIELDS applied in _write_json's live-pointer branch (reckon/crew/runs.py:240, runs.py:497) drops clone_matches from every live-pointer write, and the read reduction at runs.py:1142 keeps it out of every listing, so the goal holds.\nVERDICT done_when: Read the done_when in dispatch-detail.json and every receipt it names: cases (a), (b), (c) sit at tests/test_a_live_pointer_carries_no_clone_report.py:169-186, :208-230 and :240-255, logs/gate-head.log records '3 passed in 6.27s' with EXIT=0, logs/negative-control-base.log records '2 failed, 1 passed' with EXIT=1 naming the pointer carrying the report and 8320157 bytes parsed, the arm pair reads '58 passed' at base then '61 passed' at head, both EXIT=0, and ruff check plus ruff format --check over the 7ca7a5a6e8 blobs of the staged paths report 'All checks passed!' and '2 files already formatted' -- the clause the arms under-measure is 'the test files importing the changed modules', since 935 test files reference crew.runs and the arms name two.\nVERDICT write_paths: Read the five declared paths in the reviewed manifest: the two commits touch exactly three of them -- reckon/crew/runs.py (+158/-2), tests/test_a_live_pointer_carries_no_clone_report.py (+255) and the evidence fragment (+47) -- and reckon/crew/promotion.py, though declared, needed no edit because the guard sits on the single write every pointer write passes through.\nVERDICT manifest: Read manifest.md: status complete, the tests line is the literal relative gate command, test_logs names gate-head.log, negative-control-base.log, baseline-suite.log and after-suite.log, and its quoted figures '3 passed', '2 failed, 1 passed', '58 passed' and '61 passed' reconcile with those logs' own summary lines, though the fragment's head-arm revision does not.\nVERDICT diff: Read both commits against base 6686bb507f: 5b15fe3f3a adds the field-drop helper and its call plus the three-case test, 7ca7a5a6e8 adds the evidence fragment, and the code is a pointer-write omission, a top-level JSON member scanner with a parse-validated fallback, and a reduced pointer-text cache -- no unrelated edit inside the diff.\nCALL_SITES: reckon/crew/runs.py:_write_json:495, reckon/crew/runs.py:_mutate_pointer:554, reckon/crew/runs.py:queue_dispatch:1023, reckon/crew/runs.py:record_stacked_dispatch:2356, reckon/crew/runs.py:read_pointer:1386, reckon/crew/runs.py:_list_live_records:1443, reckon/crew/pending_landing.py:mark_pending_landing_repair:336, reckon/velocity.py:_clone_week_cells:2873\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The write-side omission at reckon/crew/runs.py:497 covers every live-pointer write including pending_landing.mark_pending_landing_repair (reckon/crew/pending_landing.py:336), and the read reduction at runs.py:1142 sets the 201-byte figure against the base 8,320,157, so both halves of the goal are exercised.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log, logs/negative-control-base.log and the two arm logs are gate-shaped receipts carrying the done_when's figures, but the arm population is two files where the clause says the test files importing the changed modules (935 reference crew.runs) and the fragment cites a head revision no retained log names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in 6686bb507f..7ca7a5a6e8 is inside the declared write paths, and the 460 inserted lines are the guard, its test and the fragment with no unrelated hunk.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_live_pointer_carries_no_clone_report.py:180 and :229 redden when reckon/crew/runs.py:497 or runs.py:1236 is removed, proven by logs/negative-control-base.log at 6686bb507f, while case (c) at line 253 reads its own input back and guards nothing on the pointer side.\nSCORE fit: 19\nJUSTIFICATION fit: The addition follows the module's idiom -- a module constant and a leading-underscore helper beside _split_dispatch_detail at reckon/crew/runs.py:197, docstrings stating the failure each guard prevents, and no new public name.\nSCORE reuse: 18\nJUSTIFICATION reuse: A capability search over reckon for a JSON text splicer found reckon/crew/review.py:3753 and reckon/velocity.py:1699, but both pass every value through json raw_decode and so materialise the multi-megabyte member this code must skip, and reckon/crew/reports.py:1336 scans a different syntax, so no owner of locate-and-cut-without-decoding exists.\nFINDING tests/test_a_live_pointer_carries_no_clone_report.py:253 non-blocking: the assertion derives its expectation from the same ledger row the test hands velocity._clone_week_cells, so it holds whatever the pointer side does and cannot redden on the regression it might be read as covering.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html:41 non-blocking: the arm sentence names head revision 5b15fe3f3a while the only retained head receipt opens '# revision: 7ca7a5a6e8', so the cited revision has no log a reader can open.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-pointer-carries-no-clone-report.html:41 non-blocking: the imports-no-failure clause is measured over two test files while 935 files under tests/ reference reckon.crew.runs, so the named population is not the population measured.\n",
+  "review_run_id": "r-20261117T211835235147-review-of-a-live-pointer-carries-no-clone-report-7ca7a5a6e8a6",
+  "reviewed_base_sha": "6686bb507fb3a782d371aec3fc3236a629e8b369",
+  "reviewed_commits": [
+    "5b15fe3f3a919f47cc1ed917ca0c561e3532c9ef",
+    "7ca7a5a6e8a66e5e836ff64d0978d3bac8cec36c"
+  ],
+  "reviewed_head_sha": "7ca7a5a6e8a66e5e836ff64d0978d3bac8cec36c",
+  "reviewed_run_id": "r-20261117T160244730423-a-live-pointer-carries-no-clone-report",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:52:00Z",
+  "total": 108
+}
