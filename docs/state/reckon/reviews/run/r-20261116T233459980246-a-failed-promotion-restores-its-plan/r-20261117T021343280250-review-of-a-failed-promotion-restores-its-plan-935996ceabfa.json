@@ -1,0 +1,458 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion simply checks an echo of a value supplied to the code under test. Snapshots at lines 288,321,431 are independently read from the repository after the peer write and before rollback; lines 379,380,432,433 observe filesystem/git state rather than returned input values. Synchronization and injection checks are distinguished above.",
+  "assertion_review": [
+    {
+      "failure_condition": "Injection precondition fails if promotion has not actually written the comment before the peer edit.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 232
+    },
+    {
+      "failure_condition": "Fixture check fails if the injected peer operation makes no repository change; this does not itself guard rollback.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 269
+    },
+    {
+      "failure_condition": "The raises context fails if the forced profile/store/commit refusal is swallowed.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 285
+    },
+    {
+      "failure_condition": "Fails if promotion never reaches the injected peer edit.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 287
+    },
+    {
+      "failure_condition": "Fails if stale rollback overwrites any independently captured peer digest/version/index/status; reversing the first repair does so.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 288
+    },
+    {
+      "failure_condition": "Fails if ownership refusal loses its preservation explanation.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 289
+    },
+    {
+      "failure_condition": "Fails if a refusal falsely reports restoration after preserving a peer edit.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 290
+    },
+    {
+      "failure_condition": "The raises context fails if the forced profile refusal is swallowed.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 319
+    },
+    {
+      "failure_condition": "Fails if rollback removes the independent state edit made before the comment writer; the first source reversal does so.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 321
+    },
+    {
+      "failure_condition": "Synchronization check fails if the staging injection never starts the editor within the bound.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 340
+    },
+    {
+      "failure_condition": "Synchronization check fails if the editor never reaches its lock attempt.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 362
+    },
+    {
+      "failure_condition": "The raises context fails if an actual staging refusal is swallowed or replaced with a different error.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 372
+    },
+    {
+      "failure_condition": "Fails if the editor remains blocked after the promotion finishes.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 377
+    },
+    {
+      "failure_condition": "Fails on an exception in the concurrent editor, preventing a dead writer from being counted as preserved.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 378
+    },
+    {
+      "failure_condition": "Fails if rollback erases the peer heading in the working file; the first source reversal does so.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 379
+    },
+    {
+      "failure_condition": "Fails if rollback erases the peer heading in the independently read git index; the first source reversal does so.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 380
+    },
+    {
+      "failure_condition": "The raises context fails if the merged peer case refuses before reaching the actual staging failure or swallows it.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 427
+    },
+    {
+      "failure_condition": "Fails if failed-commit rollback changes the independently captured merged plan bytes; reversing the final correction does so.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 431
+    },
+    {
+      "failure_condition": "Fails if the independent peer comment is erased, including if both stored and captured images accidentally lack it.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 432
+    },
+    {
+      "failure_condition": "Fails if rollback leaves the originally clean plan index staged.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 433
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1399 complete calls decorated _complete_locked",
+    "reckon/crew/promotion.py:2286 and 2865 _complete_locked calls _record_comment_with_snapshot",
+    "reckon/crew/promotion.py:2302 and 3010 _complete_locked calls _commit_with_plan_snapshot",
+    "reckon/crew/promotion_scope.py:2901-2926 and 2983-3007 staging/commit refusals perform the rollback protected by the wrapper"
+  ],
+  "checkout_observation": "Assigned read-only checkout HEAD is 3e05569385dffba17736002458e9ea014f6de716; reviewed files and owner implementations were read with git show at reviewed_head_sha, not inferred from checkout HEAD.",
+  "completed_at": "2026-11-17T02:24:26Z",
+  "dispatched_at": "2026-11-17T02:17:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 2006,
+      "severity": "non-blocking",
+      "text": "non-blocking: The new snapshot wrapper duplicates landing-comment construction (ID, escaped body, append, initial status and versioned rendering) from reckon/crew/promotion_scope.py:1450-1457,1481-1488,1566-1585 instead of extending that owner to expose its intended write. The ownership check now depends on two implementations staying identical; a later valid writer change can be refused as foreign content. The wrapper calls the owner afterward but its prediction duplicates the capability. Consolidate the pure transformation in the existing owner; current regression and importer evidence shows no present behavioral failure, so this does not block landing."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "header": "# revision: 935996ceabfae1086d0d43cb92f8316f4da61616; tree: /tmp/plan-ownership-z6n4o5sb; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-final-head.log",
+      "revision": "935996ceabfae1086d0d43cb92f8316f4da61616",
+      "summary": "95 passed in 45.94s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "header": "# revision: 891a4e54f19486e82117d68826044be51d2e0a8d; tree: /tmp/plan-ownership-po9q8l1d; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-original-base.log",
+      "revision": "891a4e54f19486e82117d68826044be51d2e0a8d",
+      "summary": "58 passed in 34.78s"
+    },
+    "incremental_base": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "header": "# revision: b8dc50aa168d697d3c8201c5a213282c8d610641; tree: /tmp/plan-ownership-0uyfa02x; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-parent-base.log",
+      "summary": "77 passed in 43.46s"
+    }
+  },
+  "importer_comparison": {
+    "added_failure_ids": [],
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 91,
+      "failure_ids": [
+        "tests/test_a_census_test_runs_in_every_product_gate.py::test_a_head_that_adds_an_unlisted_writer_is_refused",
+        "tests/test_a_census_test_runs_in_every_product_gate.py::test_a_census_already_red_at_base_adds_no_failure",
+        "tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py::test_the_fleet_reading_equality_detects_a_divergence",
+        "tests/test_a_discarded_request_stays_discarded.py::test_a_discard_arriving_while_the_launch_composes_is_refused",
+        "tests/test_a_discarded_request_stays_discarded.py::test_a_discard_outlives_a_refusal_by_another_guard",
+        "tests/test_a_promotion_holds_no_profile_build.py::test_a_base_the_fold_cannot_extend_is_rebuilt_not_stranded",
+        "tests/test_a_promotion_never_reads_unpromoted.py::test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger",
+        "tests/test_a_failed_landing_says_whether_its_row_survived.py::test_a_rolled_back_row_is_reported_when_only_a_stale_index_names_it",
+        "tests/test_a_landing_reads_the_control_the_run_recorded.py::test_a_run_keeping_no_red_log_is_measured_by_the_landing",
+        "tests/test_a_landing_reads_the_control_the_run_recorded.py::test_a_mutation_that_fails_nothing_is_refused",
+        "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py::test_stopped_artifact_peer_is_recorded_on_the_acceptance[False]",
+        "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py::test_stopped_artifact_peer_is_recorded_on_the_acceptance[True]",
+        "tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py::test_promotion_offers_every_commit_after_a_repair",
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_tree_the_promotion_released_is_not_offered",
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_held_tree_is_still_offered",
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_row_without_a_per_run_file_is_kept",
+        "tests/test_boundary_check_reads_only_declared_roots.py::test_a_stray_at_a_declared_path_inside_an_untracked_directory_is_refused",
+        "tests/test_boundary_check_reads_only_declared_roots.py::test_a_tracked_change_at_a_declared_path_is_still_refused",
+        "tests/test_boundary_check_reads_two_trees.py::test_a_fenced_run_is_still_refused_when_it_wrote_the_main_checkout",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_complete_reports_every_refusal.py::test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes",
+        "tests/test_control_gate_repairs.py::test_a_promotion_presenting_an_unresolvable_sha_names_it_in_the_refusal",
+        "tests/test_crew_boundary_waiver.py::test_boundary_refusal_promotes_under_waiver_with_reason_and_paths",
+        "tests/test_crew_boundary_waiver.py::test_boundary_waiver_past_the_age_bound_names_no_referent",
+        "tests/test_crew_boundary_waiver.py::test_boundary_refusal_without_waiver_is_still_refused",
+        "tests/test_crew_discard_reads_discarded.py::test_a_recorded_promotion_still_reads_promoted",
+        "tests/test_crew_discard_reads_discarded.py::test_a_promotion_outweighs_a_discard_marker",
+        "tests/test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory",
+        "tests/test_crew_test_role.py::test_role_write_scope_resolves_against_the_run_directory_not_a_repository",
+        "tests/test_crew_test_role.py::test_synthetic_wave_attribution_survives_in_the_promoted_ledger",
+        "tests/test_crew_test_role.py::test_test_role_cannot_waive_missing_attribution_for_an_added_failure",
+        "tests/test_a_review_promotes_what_it_passed.py::test_the_manifest_check_accepts_the_review_record_and_its_sibling",
+        "tests/test_a_review_promotes_what_it_passed.py::test_a_committed_path_outside_every_declaration_is_still_refused",
+        "tests/test_a_run_can_always_be_reconciled.py::test_a_run_whose_worktree_is_gone_promotes_with_one_acknowledgement",
+        "tests/test_crew_promotion.py::test_verify_gate_cli_records_a_finding_against_the_run",
+        "tests/test_crew_promotion.py::test_verify_gate_cli_records_an_agreeing_head_without_a_finding",
+        "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs",
+        "tests/test_one_reader_of_remaining_work.py::test_run_comment_prefix_has_one_owner",
+        "tests/test_promotion_blank_worktree_sites.py::test_boundary_violations_read_no_ambient_own_tree",
+        "tests/test_promotion_last_blank_worktree_site.py::test_blank_peer_worktree_grants_no_path_matches_the_ambient_tree",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[False-False]",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[False-True]",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[True-False]",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[True-True]",
+        "tests/test_promotion_records_the_pick.py::test_promotion_waits_for_the_in_flight_pick_and_records_it",
+        "tests/test_promotion_records_the_pick.py::test_promotion_names_the_timeout_when_the_pick_never_lands",
+        "tests/test_promotion_records_the_pick.py::test_promotion_waits_from_the_pick_start_not_the_run_start",
+        "tests/test_promotion_release.py::test_a_non_ancestor_worktree_is_kept_and_named_in_the_result",
+        "tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case",
+        "tests/test_dispatch_returns_without_worker.py::test_sigkill_to_dispatch_leaves_the_worker_marker",
+        "tests/test_queue_verbs.py::test_an_over_ceiling_edit_is_refused_and_stores_nothing",
+        "tests/test_receipt_names_the_rolled_back_row.py::test_survived_row_receipt_keeps_the_do_not_re_promote_wording",
+        "tests/test_dispatch_returns_without_worker.py::test_sigkill_to_the_worker_is_recorded",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits",
+        "tests/test_dispatch_returns_without_worker.py::test_a_delegated_launch_records_a_boundary_snapshot",
+        "tests/test_an_unchanged_run_needs_no_suite_pair.py::test_run_with_a_commit_past_base_is_still_refused",
+        "tests/test_an_unchanged_run_needs_no_suite_pair.py::test_empty_manifest_with_a_moved_worktree_is_still_refused",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_write_scope_agreement.py::test_a_declared_path_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_a_path_under_a_declared_directory_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_a_companion_source_path_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_a_path_under_an_absolute_inside_declaration_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_an_absolute_outside_declaration_accepts_a_repository_source_path_in_both",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/reports.py-declared0]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/reports.py-declared1]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[docs/figures/work-does-not-fall-to-the-coordinator/scope.svg-declared2]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[docs/figures/work-does-not-fall-to-the-coordinator/panels/agreement.svg-declared3]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[tests/test_write_scope_agreement.py-declared4]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/reports.py.bak-declared5]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/other.py-declared6]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-directory]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-directory-nested]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-directory-trailing-slash]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-file]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-tests-directory]",
+        "tests/test_write_scope_agreement.py::test_a_reclaimed_run_accepts_a_path_under_a_declared_directory_at_both",
+        "tests/test_write_scope_agreement.py::test_a_reclaimed_run_accepts_a_path_under_no_declaration_at_both",
+        "tests/test_write_scope_agreement.py::test_a_run_whose_worktree_still_exists_is_unaffected",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-directory]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-directory-nested]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-directory-trailing-slash]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-file]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-tests-directory]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[undeclared-path]",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation"
+      ],
+      "header": "# revision: 935996ceabfae1086d0d43cb92f8316f4da61616; tree: /tmp/plan-ownership-gq6ugh96; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_blocking_figure_finding_refuses_promotion.py tests/test_a_census_test_runs_in_every_product_gate.py tests/test_a_commit_lists_scope_is_measured_once.py tests/test_a_coordinator_holds_a_delivered_run.py tests/test_a_crew_verb_commits_its_state_record.py tests/test_a_ctest_gate_is_read_at_promotion.py tests/test_a_ctest_id_names_its_test.py tests/test_a_discard_keeps_the_admission_record.py tests/test_a_discard_releases_its_dispatch_claim.py tests/test_a_discarded_request_stays_discarded.py tests/test_a_discarded_review_never_shadows_a_promoted_one.py tests/test_a_discarded_run_is_never_listed_as_blocked.py tests/test_a_domain_waiver_is_written_to_the_promoted_row.py tests/test_a_dropped_request_strands_no_waiter.py tests/test_a_failed_landing_says_whether_its_row_survived.py tests/test_a_failed_promotion_restores_its_plan.py tests/test_a_finished_stream_is_parsed_once.py tests/test_a_floor_repair_and_a_promotion_are_exclusive.py tests/test_a_gate_meets_the_base_of_its_own_suite.py tests/test_a_gate_replay_runs_on_the_measure_partition.py tests/test_a_hand_merged_run_is_in_the_rollup.py tests/test_a_landed_section_releases_its_waiters.py tests/test_a_landing_judges_the_head_by_its_suite.py tests/test_a_landing_measures_a_mismatched_arm.py tests/test_a_landing_reads_the_control_the_run_recorded.py tests/test_a_landing_record_waits_for_the_merge.py tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py tests/test_a_landing_write_waits_out_a_held_index_lock.py tests/test_a_live_run_never_reads_dead.py tests/test_a_manifest_is_read_in_the_shapes_workers_write.py tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py tests/test_a_misnamed_delivered_review_is_filed.py tests/test_a_negative_control_is_read_from_the_runner.py tests/test_a_non_blocking_finding_is_deferred_at_landing.py tests/test_a_paired_dispatch_hides_each_arm.py tests/test_a_parsed_review_wins_over_an_incomplete_one.py tests/test_a_presented_head_covers_its_ancestors.py tests/test_a_promoted_code_review_is_stored.py tests/test_a_promoted_review_is_never_promoted_again.py tests/test_a_promotion_commit_survives_a_held_index_lock.py tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py tests/test_a_promotion_finishes_past_a_station_resume.py tests/test_a_promotion_holds_no_profile_build.py tests/test_a_promotion_never_reads_unpromoted.py tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py tests/test_a_promotion_releases_waiters_however_spelled.py tests/test_a_promotion_that_moved_under_itself_still_lands.py tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py tests/test_a_queued_launch_keeps_the_run_record.py tests/test_a_raced_promotion_still_lands.py tests/test_a_read_only_run_gets_a_claims_review.py tests/test_a_red_base_matches_bare_names.py tests/test_a_refused_promotion_leaves_its_plan_committed.py tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py tests/test_a_repair_round_reads_severity_and_dispositions.py tests/test_a_request_that_has_not_launched_is_not_drawn_working.py tests/test_a_resume_waits_out_a_promotion.py tests/test_a_reverted_ledger_row_reads_absent.py tests/test_a_review_is_not_refused_for_its_run.py tests/test_a_review_of_a_landed_run_is_retired.py tests/test_a_review_of_the_asserted_head_counts.py tests/test_a_review_promotes_what_it_passed.py tests/test_a_review_tier_reads_the_runs_whole_change.py tests/test_a_run_can_always_be_reconciled.py tests/test_a_run_comment_earns_no_plan_review.py tests/test_a_run_leaves_nothing_behind.py tests/test_a_run_spans_all_its_attempts.py tests/test_a_run_that_merged_primary_lands.py tests/test_a_runs_scratch_ends_with_the_run.py tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py tests/test_a_second_complete_finishes_cleanup.py tests/test_a_short_commit_list_is_reported.py tests/test_a_station_tick_delivers_and_lands_a_run.py tests/test_a_stopped_runs_claim_does_not_block_another_landing.py tests/test_a_tracked_landing_write_restores_under_a_held_lock.py tests/test_a_trailing_after_suite_arm_is_refused_by_name.py tests/test_a_wait_releases_when_its_upstream_lands.py tests/test_a_waiting_promotion_is_read_again.py tests/test_a_working_review_keeps_its_working_phase.py tests/test_a_worktree_held_row_is_rechecked_at_read.py tests/test_admission_survives_a_kill.py tests/test_an_acceptance_check_holds_no_lease.py tests/test_an_ended_attempt_holds_nothing.py tests/test_an_obligation_offers_only_measured_remedies.py tests/test_an_unchanged_run_needs_no_suite_pair.py tests/test_an_unfinished_promotion_is_retried.py tests/test_an_unlaunched_review_is_not_requested.py tests/test_an_unreadable_diff_owes_the_full_review.py tests/test_backend_reconstruction_settings.py tests/test_bookkeeping_follows_the_run.py tests/test_boundary_check_reads_only_declared_roots.py tests/test_boundary_check_reads_two_trees.py tests/test_brief_prompt.py tests/test_budget_overrun_notifies_worker.py tests/test_cleanly_reviewed_run_lands_itself.py tests/test_code_reload_never_cuts_off_a_promotion.py tests/test_codex_worker_time_is_measured.py tests/test_complete_reports_every_refusal.py tests/test_control_gate_checks_facts.py tests/test_control_gate_repairs.py tests/test_control_is_compared_with_the_head_arm.py tests/test_crew_boundary_waiver.py tests/test_crew_discard_reads_discarded.py tests/test_crew_gate_command_is_runnable.py tests/test_crew_launch_failure.py tests/test_crew_promotion.py tests/test_crew_promotion_scope.py tests/test_crew_shadow_contamination.py tests/test_crew_test_role.py tests/test_discard_releases_a_clean_worktree.py tests/test_discarded_run_promotes_after_its_commits_land.py tests/test_dispatch_reads_the_resolved_session.py tests/test_dispatch_returns_without_worker.py tests/test_domain_rules_reach_the_brief.py tests/test_empty_worktree_field_is_absent.py tests/test_every_failure_comparison_shares_one_rule.py tests/test_every_shared_home_lock_holds_across_nodes.py tests/test_failed_landing_leaves_nothing_behind.py tests/test_failure_classification.py tests/test_first_landing_marks_plan_in_progress.py tests/test_landing_comment_authorship.py tests/test_no_caller_waits_on_a_promotion.py tests/test_one_commit_citation_predicate.py tests/test_one_promotion_of_a_run_at_a_time.py tests/test_one_reader_of_remaining_work.py tests/test_one_run_cannot_stop_a_sweep.py tests/test_plan_edit_never_strands.py tests/test_promoted_review_never_held_for_landing_repair.py tests/test_promotion_blank_worktree_sites.py tests/test_promotion_checks_read_only_what_moved.py tests/test_promotion_landed_sweep.py tests/test_promotion_last_blank_worktree_site.py tests/test_promotion_never_amends_its_commit.py tests/test_promotion_queue_drains_at_slot_speed.py tests/test_promotion_readers_name_their_tree.py tests/test_promotion_reads_the_terminal_record.py tests/test_promotion_records_the_pick.py tests/test_promotion_release.py tests/test_promotion_releases_its_worktree.py tests/test_promotion_retires_a_disposable_identity.py tests/test_promotion_writes_the_landing_line.py tests/test_queue_verbs.py tests/test_receipt_after_release.py tests/test_receipt_names_the_rolled_back_row.py tests/test_refused_promotion_leaves_no_trace.py tests/test_refused_promotion_request_settles.py tests/test_replay_bound_follows_the_gate.py tests/test_review_promoted_before_its_run.py tests/test_review_promotion_waits_for_its_record.py tests/test_review_role_is_not_reviewed.py tests/test_reviews_read_the_committed_store_first.py tests/test_rollback_asks_head.py tests/test_scratch_housekeeping_is_not_printed.py tests/test_section_routing_reaches_dispatch.py tests/test_staged_write_inventory.py tests/test_stream_enumeration_reuses_metering.py tests/test_the_domain_waiver_reaches_every_surface.py tests/test_the_executable_role_set_is_one_constant.py tests/test_the_lander_reads_a_figure_review_through_its_owner.py tests/test_the_ledger_writer_refuses_a_fold.py tests/test_the_promotion_queue_serves_fairly.py tests/test_the_unreconciled_count_has_one_composition.py tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py tests/test_watch_stream_parse_is_cached.py tests/test_worker_scratch_lives_with_its_run.py tests/test_write_scope_agreement.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-final-importers.log",
+      "summary": "91 failed, 1150 passed, 15 warnings in 622.72s (0:10:22)"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 91,
+      "failure_ids": [
+        "tests/test_a_promotion_never_reads_unpromoted.py::test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger",
+        "tests/test_a_census_test_runs_in_every_product_gate.py::test_a_head_that_adds_an_unlisted_writer_is_refused",
+        "tests/test_a_census_test_runs_in_every_product_gate.py::test_a_census_already_red_at_base_adds_no_failure",
+        "tests/test_a_discarded_request_stays_discarded.py::test_a_discard_arriving_while_the_launch_composes_is_refused",
+        "tests/test_a_discarded_request_stays_discarded.py::test_a_discard_outlives_a_refusal_by_another_guard",
+        "tests/test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory",
+        "tests/test_a_failed_landing_says_whether_its_row_survived.py::test_a_rolled_back_row_is_reported_when_only_a_stale_index_names_it",
+        "tests/test_a_landing_reads_the_control_the_run_recorded.py::test_a_run_keeping_no_red_log_is_measured_by_the_landing",
+        "tests/test_a_landing_reads_the_control_the_run_recorded.py::test_a_mutation_that_fails_nothing_is_refused",
+        "tests/test_a_review_promotes_what_it_passed.py::test_the_manifest_check_accepts_the_review_record_and_its_sibling",
+        "tests/test_a_review_promotes_what_it_passed.py::test_a_committed_path_outside_every_declaration_is_still_refused",
+        "tests/test_a_run_can_always_be_reconciled.py::test_a_run_whose_worktree_is_gone_promotes_with_one_acknowledgement",
+        "tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py::test_promotion_offers_every_commit_after_a_repair",
+        "tests/test_boundary_check_reads_two_trees.py::test_a_fenced_run_is_still_refused_when_it_wrote_the_main_checkout",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_complete_reports_every_refusal.py::test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes",
+        "tests/test_control_gate_repairs.py::test_a_promotion_presenting_an_unresolvable_sha_names_it_in_the_refusal",
+        "tests/test_crew_boundary_waiver.py::test_boundary_refusal_promotes_under_waiver_with_reason_and_paths",
+        "tests/test_crew_boundary_waiver.py::test_boundary_waiver_past_the_age_bound_names_no_referent",
+        "tests/test_crew_boundary_waiver.py::test_boundary_refusal_without_waiver_is_still_refused",
+        "tests/test_crew_discard_reads_discarded.py::test_a_recorded_promotion_still_reads_promoted",
+        "tests/test_crew_discard_reads_discarded.py::test_a_promotion_outweighs_a_discard_marker",
+        "tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py::test_the_fleet_reading_equality_detects_a_divergence",
+        "tests/test_a_promotion_holds_no_profile_build.py::test_a_base_the_fold_cannot_extend_is_rebuilt_not_stranded",
+        "tests/test_crew_promotion.py::test_verify_gate_cli_records_a_finding_against_the_run",
+        "tests/test_crew_promotion.py::test_verify_gate_cli_records_an_agreeing_head_without_a_finding",
+        "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py::test_stopped_artifact_peer_is_recorded_on_the_acceptance[False]",
+        "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py::test_stopped_artifact_peer_is_recorded_on_the_acceptance[True]",
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_tree_the_promotion_released_is_not_offered",
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_held_tree_is_still_offered",
+        "tests/test_a_worktree_held_row_is_rechecked_at_read.py::test_a_row_without_a_per_run_file_is_kept",
+        "tests/test_an_unchanged_run_needs_no_suite_pair.py::test_run_with_a_commit_past_base_is_still_refused",
+        "tests/test_an_unchanged_run_needs_no_suite_pair.py::test_empty_manifest_with_a_moved_worktree_is_still_refused",
+        "tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs",
+        "tests/test_boundary_check_reads_only_declared_roots.py::test_a_stray_at_a_declared_path_inside_an_untracked_directory_is_refused",
+        "tests/test_boundary_check_reads_only_declared_roots.py::test_a_tracked_change_at_a_declared_path_is_still_refused",
+        "tests/test_dispatch_returns_without_worker.py::test_sigkill_to_dispatch_leaves_the_worker_marker",
+        "tests/test_dispatch_returns_without_worker.py::test_sigkill_to_the_worker_is_recorded",
+        "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated",
+        "tests/test_dispatch_returns_without_worker.py::test_a_delegated_launch_records_a_boundary_snapshot",
+        "tests/test_promotion_blank_worktree_sites.py::test_boundary_violations_read_no_ambient_own_tree",
+        "tests/test_promotion_last_blank_worktree_site.py::test_blank_peer_worktree_grants_no_path_matches_the_ambient_tree",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[False-False]",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[False-True]",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[True-False]",
+        "tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[True-True]",
+        "tests/test_promotion_records_the_pick.py::test_promotion_waits_for_the_in_flight_pick_and_records_it",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_promotion_records_the_pick.py::test_promotion_names_the_timeout_when_the_pick_never_lands",
+        "tests/test_promotion_records_the_pick.py::test_promotion_waits_from_the_pick_start_not_the_run_start",
+        "tests/test_promotion_release.py::test_a_non_ancestor_worktree_is_kept_and_named_in_the_result",
+        "tests/test_receipt_names_the_rolled_back_row.py::test_survived_row_receipt_keeps_the_do_not_re_promote_wording",
+        "tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits",
+        "tests/test_queue_verbs.py::test_an_over_ceiling_edit_is_refused_and_stores_nothing",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_crew_test_role.py::test_role_write_scope_resolves_against_the_run_directory_not_a_repository",
+        "tests/test_crew_test_role.py::test_synthetic_wave_attribution_survives_in_the_promoted_ledger",
+        "tests/test_crew_test_role.py::test_test_role_cannot_waive_missing_attribution_for_an_added_failure",
+        "tests/test_write_scope_agreement.py::test_a_declared_path_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_a_path_under_a_declared_directory_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_a_companion_source_path_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_a_path_under_an_absolute_inside_declaration_is_accepted_by_both",
+        "tests/test_write_scope_agreement.py::test_an_absolute_outside_declaration_accepts_a_repository_source_path_in_both",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/reports.py-declared0]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/reports.py-declared1]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[docs/figures/work-does-not-fall-to-the-coordinator/scope.svg-declared2]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[docs/figures/work-does-not-fall-to-the-coordinator/panels/agreement.svg-declared3]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[tests/test_write_scope_agreement.py-declared4]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/reports.py.bak-declared5]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree[reckon/crew/other.py-declared6]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-directory]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-directory-nested]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-directory-trailing-slash]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-file]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_an_absolute_declaration[inside-tests-directory]",
+        "tests/test_write_scope_agreement.py::test_a_reclaimed_run_accepts_a_path_under_a_declared_directory_at_both",
+        "tests/test_write_scope_agreement.py::test_a_reclaimed_run_accepts_a_path_under_no_declaration_at_both",
+        "tests/test_write_scope_agreement.py::test_a_run_whose_worktree_still_exists_is_unaffected",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-directory]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-directory-nested]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-directory-trailing-slash]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-file]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[declared-tests-directory]",
+        "tests/test_write_scope_agreement.py::test_the_two_surfaces_agree_on_a_reclaimed_worktree[undeclared-path]",
+        "tests/test_one_reader_of_remaining_work.py::test_run_comment_prefix_has_one_owner"
+      ],
+      "header": "# revision: b8dc50aa168d697d3c8201c5a213282c8d610641; tree: /tmp/plan-rollback-base-oqlhiyxg; command: PYTHONPATH=/tmp/plan-rollback-base-oqlhiyxg /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_blocking_figure_finding_refuses_promotion.py tests/test_a_census_test_runs_in_every_product_gate.py tests/test_a_commit_lists_scope_is_measured_once.py tests/test_a_coordinator_holds_a_delivered_run.py tests/test_a_crew_verb_commits_its_state_record.py tests/test_a_ctest_gate_is_read_at_promotion.py tests/test_a_ctest_id_names_its_test.py tests/test_a_discard_keeps_the_admission_record.py tests/test_a_discard_releases_its_dispatch_claim.py tests/test_a_discarded_request_stays_discarded.py tests/test_a_discarded_review_never_shadows_a_promoted_one.py tests/test_a_discarded_run_is_never_listed_as_blocked.py tests/test_a_domain_waiver_is_written_to_the_promoted_row.py tests/test_a_dropped_request_strands_no_waiter.py tests/test_a_failed_landing_says_whether_its_row_survived.py tests/test_a_failed_promotion_restores_its_plan.py tests/test_a_finished_stream_is_parsed_once.py tests/test_a_floor_repair_and_a_promotion_are_exclusive.py tests/test_a_gate_meets_the_base_of_its_own_suite.py tests/test_a_gate_replay_runs_on_the_measure_partition.py tests/test_a_hand_merged_run_is_in_the_rollup.py tests/test_a_landed_section_releases_its_waiters.py tests/test_a_landing_judges_the_head_by_its_suite.py tests/test_a_landing_measures_a_mismatched_arm.py tests/test_a_landing_reads_the_control_the_run_recorded.py tests/test_a_landing_record_waits_for_the_merge.py tests/test_a_landing_write_outlasts_a_briefly_held_index_lock.py tests/test_a_landing_write_waits_out_a_held_index_lock.py tests/test_a_live_run_never_reads_dead.py tests/test_a_manifest_is_read_in_the_shapes_workers_write.py tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py tests/test_a_misnamed_delivered_review_is_filed.py tests/test_a_negative_control_is_read_from_the_runner.py tests/test_a_non_blocking_finding_is_deferred_at_landing.py tests/test_a_paired_dispatch_hides_each_arm.py tests/test_a_parsed_review_wins_over_an_incomplete_one.py tests/test_a_presented_head_covers_its_ancestors.py tests/test_a_promoted_code_review_is_stored.py tests/test_a_promoted_review_is_never_promoted_again.py tests/test_a_promotion_commit_survives_a_held_index_lock.py tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py tests/test_a_promotion_finishes_past_a_station_resume.py tests/test_a_promotion_holds_no_profile_build.py tests/test_a_promotion_never_reads_unpromoted.py tests/test_a_promotion_reads_only_the_fleet_fields_it_records.py tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py tests/test_a_promotion_releases_waiters_however_spelled.py tests/test_a_promotion_that_moved_under_itself_still_lands.py tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py tests/test_a_queued_launch_keeps_the_run_record.py tests/test_a_raced_promotion_still_lands.py tests/test_a_read_only_run_gets_a_claims_review.py tests/test_a_red_base_matches_bare_names.py tests/test_a_refused_promotion_leaves_its_plan_committed.py tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py tests/test_a_repair_round_reads_severity_and_dispositions.py tests/test_a_request_that_has_not_launched_is_not_drawn_working.py tests/test_a_resume_waits_out_a_promotion.py tests/test_a_reverted_ledger_row_reads_absent.py tests/test_a_review_is_not_refused_for_its_run.py tests/test_a_review_of_a_landed_run_is_retired.py tests/test_a_review_of_the_asserted_head_counts.py tests/test_a_review_promotes_what_it_passed.py tests/test_a_review_tier_reads_the_runs_whole_change.py tests/test_a_run_can_always_be_reconciled.py tests/test_a_run_comment_earns_no_plan_review.py tests/test_a_run_leaves_nothing_behind.py tests/test_a_run_spans_all_its_attempts.py tests/test_a_run_that_merged_primary_lands.py tests/test_a_runs_scratch_ends_with_the_run.py tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py tests/test_a_second_complete_finishes_cleanup.py tests/test_a_short_commit_list_is_reported.py tests/test_a_station_tick_delivers_and_lands_a_run.py tests/test_a_stopped_runs_claim_does_not_block_another_landing.py tests/test_a_tracked_landing_write_restores_under_a_held_lock.py tests/test_a_trailing_after_suite_arm_is_refused_by_name.py tests/test_a_wait_releases_when_its_upstream_lands.py tests/test_a_waiting_promotion_is_read_again.py tests/test_a_working_review_keeps_its_working_phase.py tests/test_a_worktree_held_row_is_rechecked_at_read.py tests/test_admission_survives_a_kill.py tests/test_an_acceptance_check_holds_no_lease.py tests/test_an_ended_attempt_holds_nothing.py tests/test_an_obligation_offers_only_measured_remedies.py tests/test_an_unchanged_run_needs_no_suite_pair.py tests/test_an_unfinished_promotion_is_retried.py tests/test_an_unlaunched_review_is_not_requested.py tests/test_an_unreadable_diff_owes_the_full_review.py tests/test_backend_reconstruction_settings.py tests/test_bookkeeping_follows_the_run.py tests/test_boundary_check_reads_only_declared_roots.py tests/test_boundary_check_reads_two_trees.py tests/test_brief_prompt.py tests/test_budget_overrun_notifies_worker.py tests/test_cleanly_reviewed_run_lands_itself.py tests/test_code_reload_never_cuts_off_a_promotion.py tests/test_codex_worker_time_is_measured.py tests/test_complete_reports_every_refusal.py tests/test_control_gate_checks_facts.py tests/test_control_gate_repairs.py tests/test_control_is_compared_with_the_head_arm.py tests/test_crew_boundary_waiver.py tests/test_crew_discard_reads_discarded.py tests/test_crew_gate_command_is_runnable.py tests/test_crew_launch_failure.py tests/test_crew_promotion.py tests/test_crew_promotion_scope.py tests/test_crew_shadow_contamination.py tests/test_crew_test_role.py tests/test_discard_releases_a_clean_worktree.py tests/test_discarded_run_promotes_after_its_commits_land.py tests/test_dispatch_reads_the_resolved_session.py tests/test_dispatch_returns_without_worker.py tests/test_domain_rules_reach_the_brief.py tests/test_empty_worktree_field_is_absent.py tests/test_every_failure_comparison_shares_one_rule.py tests/test_every_shared_home_lock_holds_across_nodes.py tests/test_failed_landing_leaves_nothing_behind.py tests/test_failure_classification.py tests/test_first_landing_marks_plan_in_progress.py tests/test_landing_comment_authorship.py tests/test_no_caller_waits_on_a_promotion.py tests/test_one_commit_citation_predicate.py tests/test_one_promotion_of_a_run_at_a_time.py tests/test_one_reader_of_remaining_work.py tests/test_one_run_cannot_stop_a_sweep.py tests/test_plan_edit_never_strands.py tests/test_promoted_review_never_held_for_landing_repair.py tests/test_promotion_blank_worktree_sites.py tests/test_promotion_checks_read_only_what_moved.py tests/test_promotion_landed_sweep.py tests/test_promotion_last_blank_worktree_site.py tests/test_promotion_never_amends_its_commit.py tests/test_promotion_queue_drains_at_slot_speed.py tests/test_promotion_readers_name_their_tree.py tests/test_promotion_reads_the_terminal_record.py tests/test_promotion_records_the_pick.py tests/test_promotion_release.py tests/test_promotion_releases_its_worktree.py tests/test_promotion_retires_a_disposable_identity.py tests/test_promotion_writes_the_landing_line.py tests/test_queue_verbs.py tests/test_receipt_after_release.py tests/test_receipt_names_the_rolled_back_row.py tests/test_refused_promotion_leaves_no_trace.py tests/test_refused_promotion_request_settles.py tests/test_replay_bound_follows_the_gate.py tests/test_review_promoted_before_its_run.py tests/test_review_promotion_waits_for_its_record.py tests/test_review_role_is_not_reviewed.py tests/test_reviews_read_the_committed_store_first.py tests/test_rollback_asks_head.py tests/test_scratch_housekeeping_is_not_printed.py tests/test_section_routing_reaches_dispatch.py tests/test_staged_write_inventory.py tests/test_stream_enumeration_reuses_metering.py tests/test_the_domain_waiver_reaches_every_surface.py tests/test_the_executable_role_set_is_one_constant.py tests/test_the_lander_reads_a_figure_review_through_its_owner.py tests/test_the_ledger_writer_refuses_a_fold.py tests/test_the_promotion_queue_serves_fairly.py tests/test_the_unreconciled_count_has_one_composition.py tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py tests/test_watch_stream_parse_is_cached.py tests/test_worker_scratch_lives_with_its_run.py tests/test_write_scope_agreement.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/isolated-head-importers.log",
+      "summary": "91 failed, 1132 passed, 15 warnings in 643.38s (0:10:43)"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/promotion.py:1399 complete calls decorated _complete_locked, reckon/crew/promotion.py:2286 and 2865 _complete_locked calls _record_comment_with_snapshot, reckon/crew/promotion.py:2302 and 3010 _complete_locked calls _commit_with_plan_snapshot, reckon/crew/promotion_scope.py:2901-2926 and 2983-3007 staging/commit refusals perform the rollback protected by the wrapper",
+    "diff": "Read cd4c942c2c85af675343f2487285ab5875cb5ab2 and 935996ceabfae1086d0d43cb92f8316f4da61616 separately against their parents; the incremental diff adds protected ownership checks and 18 regression cases, with one non-blocking duplication in promotion.py:2000.",
+    "done_when": "Source prompt.txt:250 requires rollback, a failing control and no added importer failures; repair-final-head.log records 95 passed, both source reversals fail, and importer logs have the same 91 failure IDs.",
+    "goal": "Read source prompt.txt:38 and live plan section s15; promotion.py:1872-1997 and 2042-2101 answer the earlier stale-snapshot overwrite finding by checking ownership under the plan/index locks.",
+    "manifest": "Read source manifest.md, its baseline_suite/after_suite and actual named logs; the completed armed pair records 58/95 passes and zero added failure IDs, and repair-parent-base.log records 77 passes at the incremental base.",
+    "write_paths": "Source prompt.txt:95-98 grants the two changed paths; each repair commit changes only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_failed_promotion_restores_its_plan.py:288,321,379-380,431-433 independently observe peer bytes and staging, and reversing each answering source commit demonstrably reddens its added preservation cases.",
+    "evidence": "repair-final-head.log records 95 passed at the reviewed head, repair-reversed-answer.log records 17 failures, repair-final-reversed-correction.log records 2, and the actual importer failure-ID sets add zero.",
+    "fit": "reckon/crew/promotion.py:1983-1993 and 2049 reuse the repository plan lock and index retry idioms and the new definitions use mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion.py:1925-1979 refuses stale restoration under both locks, and 2049-2101 protects the commit rollback while retaining a commutative peer append.",
+    "reuse": "reckon/crew/promotion.py:2006-2038 independently reconstructs the landing-comment transformation already owned by promotion_scope.py:1450-1457,1481-1488,1566-1585, although the other added helpers wrap the existing lock, merge and commit owners.",
+    "scope_discipline": "Both repair commits change only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py, inside source prompt.txt:95-96."
+  },
+  "negative_controls": [
+    {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 17,
+      "failure_ids": [
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[profile-state]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[profile-text]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[profile-comment]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[profile-staged]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[profile-index_only]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[store-state]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[store-text]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[store-comment]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[store-staged]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[store-index_only]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[commit-state]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[commit-text]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[commit-comment]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[commit-staged]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_interleaved_same_plan_edit[commit-index_only]",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_refusal_preserves_an_edit_that_precedes_the_comment",
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_an_editor_waiting_on_the_commit_keeps_its_plan_and_staging"
+      ],
+      "header": "# revision: cd4c942c2c85af675343f2487285ab5875cb5ab2; tree: /tmp/plan-ownership-vaz3uvgn; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-reversed-answer.log",
+      "summary": "17 failed, 77 passed in 50.12s"
+    },
+    {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_a_failed_promotion_restores_its_plan.py::test_a_merged_peer_comment_survives_a_failed_commit",
+        "tests/test_promotion_writes_the_landing_line.py::test_concurrent_plan_edit_between_read_and_write_is_retried_not_lost"
+      ],
+      "header": "# revision: 935996ceabfae1086d0d43cb92f8316f4da61616; tree: /tmp/plan-ownership-z_ty134r; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py tests/test_promotion_writes_the_landing_line.py::test_concurrent_plan_edit_between_read_and_write_is_retried_not_lost",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-final-reversed-correction.log",
+      "summary": "2 failed, 94 passed in 47.15s"
+    }
+  ],
+  "prior_blocking_finding": "Answered: stale snapshot restoration is refused after an interleaved state, text, comment or index edit, and an editor waiting through the actual commit path retains its write.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and live plan section s15; promotion.py:1872-1997 and 2042-2101 answer the earlier stale-snapshot overwrite finding by checking ownership under the plan/index locks.\nVERDICT done_when: Source prompt.txt:250 requires rollback, a failing control and no added importer failures; repair-final-head.log records 95 passed, both source reversals fail, and importer logs have the same 91 failure IDs.\nVERDICT write_paths: Source prompt.txt:95-98 grants the two changed paths; each repair commit changes only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py.\nVERDICT manifest: Read source manifest.md, its baseline_suite/after_suite and actual named logs; the completed armed pair records 58/95 passes and zero added failure IDs, and repair-parent-base.log records 77 passes at the incremental base.\nVERDICT diff: Read cd4c942c2c85af675343f2487285ab5875cb5ab2 and 935996ceabfae1086d0d43cb92f8316f4da61616 separately against their parents; the incremental diff adds protected ownership checks and 18 regression cases, with one non-blocking duplication in promotion.py:2000.\nCALL_SITES: reckon/crew/promotion.py:1399 complete calls decorated _complete_locked, reckon/crew/promotion.py:2286 and 2865 _complete_locked calls _record_comment_with_snapshot, reckon/crew/promotion.py:2302 and 3010 _complete_locked calls _commit_with_plan_snapshot, reckon/crew/promotion_scope.py:2901-2926 and 2983-3007 staging/commit refusals perform the rollback protected by the wrapper\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1925-1979 refuses stale restoration under both locks, and 2049-2101 protects the commit rollback while retaining a commutative peer append.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-final-head.log records 95 passed at the reviewed head, repair-reversed-answer.log records 17 failures, repair-final-reversed-correction.log records 2, and the actual importer failure-ID sets add zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both repair commits change only reckon/crew/promotion.py and tests/test_a_failed_promotion_restores_its_plan.py, inside source prompt.txt:95-96.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_failed_promotion_restores_its_plan.py:288,321,379-380,431-433 independently observe peer bytes and staging, and reversing each answering source commit demonstrably reddens its added preservation cases.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion.py:1983-1993 and 2049 reuse the repository plan lock and index retry idioms and the new definitions use mechanism-based names.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion.py:2006-2038 independently reconstructs the landing-comment transformation already owned by promotion_scope.py:1450-1457,1481-1488,1566-1585, although the other added helpers wrap the existing lock, merge and commit owners.\nFINDING reckon/crew/promotion.py:2006 non-blocking: The new snapshot wrapper duplicates landing-comment construction (ID, escaped body, append, initial status and versioned rendering) from reckon/crew/promotion_scope.py:1450-1457,1481-1488,1566-1585 instead of extending that owner to expose its intended write. The ownership check now depends on two implementations staying identical; a later valid writer change can be refused as foreign content. The wrapper calls the owner afterward but its prediction duplicates the capability. Consolidate the pure transformation in the existing owner; current regression and importer evidence shows no present behavioral failure, so this does not block landing.\n",
+  "reuse_search": {
+    "added_definitions": "require_owned_content and require_owned_index extend the existing snapshot owner; restore_owned extends its restoration with the existing git-index retry owner; _commit_with_plan_snapshot wraps the existing commit owner and reuses store merge admission; _record_comment_with_snapshot wraps the writer but duplicates its payload derivation; added test and injection functions extend the existing regression test owner.",
+    "opened_owners": [
+      "reckon/crew/promotion_scope.py:_record_landing_comment",
+      "reckon/crew/promotion_scope.py:_commit_landing_writes",
+      "reckon/_store.py:_comment_append_onto_current"
+    ],
+    "searched_capabilities": [
+      "landing comment construction/rendering",
+      "plan write serialization",
+      "same-plan comment append merge",
+      "index ownership rollback",
+      "index lock retry"
+    ]
+  },
+  "review_run_id": "r-20261117T021343280250-review-of-a-failed-promotion-restores-its-plan-935996ceabfa",
+  "reviewed_base_sha": "b8dc50aa168d697d3c8201c5a213282c8d610641",
+  "reviewed_commits": [
+    "cd4c942c2c85af675343f2487285ab5875cb5ab2",
+    "935996ceabfae1086d0d43cb92f8316f4da61616"
+  ],
+  "reviewed_head_sha": "935996ceabfae1086d0d43cb92f8316f4da61616",
+  "reviewed_run_id": "r-20261116T233459980246-a-failed-promotion-restores-its-plan",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:29:24.231946+00:00",
+  "total": 105
+}

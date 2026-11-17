@@ -61,6 +61,7 @@ REVIEW_MANIFEST = """\
 node: review-of-{run}
 status: complete
 commits: none
+messages_received: none
 changed_paths:
 {paths}
 tests: record parsed, stored and parse-checked
@@ -206,6 +207,7 @@ def test_a_non_review_run_writing_a_record_is_not_status_checked(
         "node: node-a\n"
         "status: complete\n"
         "commits: abc1234\n"
+        "messages_received: none\n"
         "changed_paths:\n"
         f"  - {record}\n"
         "tests: focused check passed\n"

@@ -764,6 +764,50 @@ _VIEW_REVIEWS_IN_FLIGHT: ContextVar[Mapping[str, Any] | None] = ContextVar(
 )
 
 
+@contextmanager
+def live_pointer_snapshot(
+    project: str | None = None,
+    *,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> Iterator[list[dict[str, Any]]]:
+    """Publish one project's live pointers for the length of one derivation.
+
+    Every duty kind reads the same live pointers, so a derivation over several
+    of them would otherwise list and decode the directory once per reader, and
+    could report duties derived from different snapshots of it. The directory
+    is listed once here — or the caller's own pass's read is taken as given,
+    so a pass that already holds one population does not read a second — and
+    that population is yielded and published, so the derivation drawing its own
+    rows and every nested reader answer from one listing.
+
+    A snapshot handed in may span projects, and each reader asks for a project:
+    the listing is published under the project each pointer names, so a reader
+    gets its own project's pointers rather than another's.
+
+    The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
+    exactly as long as the block and no later read inherits it.
+    """
+    listing = (
+        list(pointers) if pointers is not None else runs.list_live(project=project)
+    )
+    published: dict[str, list[dict[str, Any]]] = {}
+    for pointer in listing:
+        published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
+    token = _VIEW_LIVE_POINTERS.set(
+        {name: tuple(rows) for name, rows in published.items()}
+    )
+    # The in-flight review answer is keyed on the snapshot that asked the
+    # question, so it is dropped with the previous snapshot rather than left
+    # holding a pass whose pointers have gone. A reader below fills it in for
+    # this listing; it outlives nothing.
+    reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
+    try:
+        yield listing
+    finally:
+        _VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
+        _VIEW_LIVE_POINTERS.reset(token)
+
+
 def _live_pointers(project: str) -> list[dict[str, Any]]:
     """The live pointers this view derives from, read once for the whole view.
 
@@ -1432,22 +1476,6 @@ def _pointer_review(
     return _in_flight_review(pointer, _launched_candidates(pointers))
 
 
-@contextmanager
-def _pass_reviews_in_flight() -> Iterator[None]:
-    """Scope the shared answer to the derivation that published the pointers.
-
-    The memo carries the pass's own snapshot so it can tell one pass from the
-    next, so it must not outlive the pass either. Publishing the empty answer
-    with a token and resetting it in a finally drops the memo when the
-    derivation ends, as the pointer snapshot itself is dropped.
-    """
-    token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
-    try:
-        yield
-    finally:
-        _VIEW_REVIEWS_IN_FLIGHT.reset(token)
-
-
 def _reviews_in_flight(project: str) -> Mapping[str, str | None]:
     """Every pointer's standing review, answered once for the whole pass.
 
@@ -1646,7 +1674,11 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
     what keeps the two surfaces from disagreeing about a refused request.
     """
     rows: list[dict[str, Any]] = []
-    for pointer in _live_pointers(project):
+    # The rows are classified from one snapshot of the view's pointers, and each
+    # row reads that same snapshot for a review that may stand for its head, so
+    # one fleet is classified from one read of the directory.
+    snapshot = _live_pointers(project)
+    for pointer in snapshot:
         # A pointer whose phase still reads queued while it carries
         # ``launched_at`` was launched and never had its phase advanced, so the
         # queued phase says nothing about the run. Classifying it as stored
@@ -1660,7 +1692,7 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
         ):
             subject = {**pointer, "phase": ""}
         try:
-            row = recovery.classify_pointer(subject)
+            row = recovery.classify_pointer(subject, pointers=snapshot)
         except Exception as error:  # noqa: BLE001 - one run must not fail the fleet
             # A classification that raises would otherwise take the whole
             # project's derivation with it, so no session's obligations are
@@ -4227,14 +4259,8 @@ def obligations(
     and a run in flight cannot appear in one duty and be absent from another
     read in the same view.
     """
-    with _pass_reviews_in_flight():
-        token = _VIEW_LIVE_POINTERS.set(
-            {project: tuple(runs.list_live(project=project))}
-        )
-        try:
-            return _obligations_view(project, session, fields=fields)
-        finally:
-            _VIEW_LIVE_POINTERS.reset(token)
+    with live_pointer_snapshot(project):
+        return _obligations_view(project, session, fields=fields)
 
 
 def _obligations_view(

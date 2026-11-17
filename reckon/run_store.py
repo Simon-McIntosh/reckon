@@ -81,20 +81,28 @@ ROW_REVISION = "revision"
 # The runs table built from QUERY_KEYS. Precomputed once at import so the
 # schema, the indexes and the insert all come from the same declaration and
 # no caller input ever reaches a string.
-_RUNS_COLUMNS = frozenset(("run_id", "payload", ROW_REVISION, *QUERY_KEYS))
+_RUNS_COLUMNS = frozenset(
+    ("run_id", "payload", ROW_REVISION, "activity_seconds", *QUERY_KEYS)
+)
 _RUNS_COLUMN_DEFS = ", ".join(
     [
         '"run_id" TEXT PRIMARY KEY',
         *(f'"{name}" TEXT' for name in QUERY_KEYS),
         f'"{ROW_REVISION}" TEXT',
         '"payload" TEXT NOT NULL',
+        '"activity_seconds" REAL',
     ]
 )
 _RUNS_CREATE = f'CREATE TABLE IF NOT EXISTS "runs" ({_RUNS_COLUMN_DEFS});'
 _RUNS_INDEXES = "".join(
     f'CREATE INDEX IF NOT EXISTS "idx_runs_{name}" ON "runs" ("{name}");'
     for name in QUERY_KEYS
+) + (
+    'CREATE INDEX IF NOT EXISTS "idx_runs_project_activity" '
+    'ON "runs" ("project", "activity_seconds");'
+    'CREATE INDEX IF NOT EXISTS "idx_runs_activity" ON "runs" ("activity_seconds");'
 )
+_ARCHIVE_RUNS_INDEXES = _RUNS_INDEXES.replace('EXISTS "', 'EXISTS archive."')
 _RUNS_SCHEMA = _RUNS_CREATE + _RUNS_INDEXES
 # The retired-history tables live in a file of their own, created from the same
 # declarations so a retirement moves a row without losing its revision.
@@ -109,10 +117,12 @@ _RUNS_INSERT_COLUMNS = ", ".join(
         *(f'"{name}"' for name in QUERY_KEYS),
         f'"{ROW_REVISION}"',
         '"payload"',
+        '"activity_seconds"',
     ]
 )
-_RUNS_INSERT_MARKS = ", ".join(
-    "?" for _name in ("run_id", *QUERY_KEYS, ROW_REVISION, "payload")
+_RUNS_INSERT_MARKS = (
+    ", ".join("?" for _name in ("run_id", *QUERY_KEYS, ROW_REVISION, "payload"))
+    + f", run_activity_seconds(?{len(QUERY_KEYS) + 3})"
 )
 _RUNS_INSERT = (
     f'INSERT INTO "runs" ({_RUNS_INSERT_COLUMNS}) VALUES ({_RUNS_INSERT_MARKS})'  # noqa: S608
@@ -130,6 +140,7 @@ _RUNS_UPDATE_SET = ", ".join(
         '"payload" = ?',
         *(f'"{name}" = ?' for name in QUERY_KEYS),
         f'"{ROW_REVISION}" = COALESCE(?, "{ROW_REVISION}")',
+        '"activity_seconds" = run_activity_seconds(?1)',
     ]
 )
 _RUNS_UPDATE = f'UPDATE "runs" SET {_RUNS_UPDATE_SET} WHERE "run_id" = ?'  # noqa: S608
@@ -329,9 +340,9 @@ def _record_rows(
 ) -> Iterator[tuple[Any, ...]]:
     """Read selected records through the single durable/detail join.
 
-    Plan selection searches its indexed column. Activity predicates consume a
-    buffered narrow projection after its cursor closes, then only matching
-    identities fetch the requested payload.
+    Plan and activity selection search their indexed columns. Activity
+    predicates consume a buffered narrow projection after its cursor closes,
+    then only matching identities fetch the requested payload.
     Python selection, decoding and consumption therefore hold no read lock.
     Encoded rows are buffered per query; identity batches stay below driver limits.
     """
@@ -348,6 +359,12 @@ def _record_rows(
     for schema in schemas:
         if schema not in ("main", "archive"):
             raise ValueError(f"unknown store schema {schema!r}")
+        indexed_activity = activity_since is not None and any(
+            column[0] == "activity_seconds"
+            for column in connection.execute(
+                f'SELECT * FROM "{schema}".runs LIMIT 0'  # noqa: S608 - fixed schema
+            ).description
+        )
         for batch in batches:
             params: list[Any] = []
             columns = []
@@ -385,11 +402,25 @@ def _record_rows(
                         params.extend(fields)
             query = (
                 f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
-                f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
             )
+            if plan and batch is None and not node:
+                query += "INDEXED BY idx_runs_plan "
+            elif indexed_activity and batch is None and not node:
+                # Force the range index rather than a project-only scan when
+                # the planner has no statistics for the recent population.
+                query += (
+                    "INDEXED BY idx_runs_project_activity "
+                    if project is not None
+                    else "INDEXED BY idx_runs_activity "
+                )
+            query += f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
             clauses = []
             if project is not None:
-                clauses.append("r.project = ?")
+                # Identity and node lookups must not fall back to walking the
+                # project's history after the activity range selected its ids.
+                clauses.append(
+                    "+r.project = ?" if batch is not None or node else "r.project = ?"
+                )
                 params.append(project)
             if batch is not None:
                 clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
@@ -402,8 +433,14 @@ def _record_rows(
             if plan:
                 clauses.append("r.plan = ?")
                 params.append(plan)
+            if indexed_activity:
+                clauses.append("r.activity_seconds >= ?")
+                params.append(activity_since)
             if clauses:
                 query += " WHERE " + " AND ".join(clauses)
+            # Range indexes also compete for unbounded project reads. Keep
+            # insertion order explicit whichever index supplies the rows.
+            query += " ORDER BY r.rowid"
             cursor = connection.execute(query, params)
             try:
                 rows = cursor.fetchall()
@@ -730,6 +767,13 @@ def _split_durable(project: str, record: Mapping[str, Any]) -> tuple[str, dict, 
     return run_id, payload, detail
 
 
+def _payload_activity_seconds(payload: str) -> float | None:
+    """Cache the ledger's timestamp semantics once per inserted or amended row."""
+    from reckon import ledger
+
+    return ledger.run_activity_seconds(json.loads(payload))
+
+
 class RunStore:
     """One embedded SQLite store, creating its schema on first use."""
 
@@ -748,6 +792,9 @@ class RunStore:
             timeout=RECORD_BUSY_TIMEOUT_SECONDS
             if busy_timeout is None
             else busy_timeout,
+        )
+        self._conn.create_function(
+            "run_activity_seconds", 1, _payload_activity_seconds, deterministic=True
         )
         if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
             self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
@@ -828,10 +875,12 @@ class RunStore:
         reader afterwards.
         """
         columns = self._runs_columns(table)
+        indexes = _RUNS_INDEXES if table == "runs" else _ARCHIVE_RUNS_INDEXES
         if not columns:
             self._conn.executescript(
                 _RUNS_SCHEMA if table == "runs" else _ARCHIVE_RUNS_SCHEMA
             )
+            self._conn.executescript(indexes)
             return
         names = [
             str(desc[0])
@@ -840,8 +889,7 @@ class RunStore:
             ).description
         ]
         if columns == _RUNS_COLUMNS:
-            if table == "runs":
-                self._conn.executescript(_RUNS_INDEXES)
+            self._conn.executescript(indexes)
             return
         details = "run_details" if table == "runs" else "archive.run_details"
         rows = self._conn.execute(
@@ -854,11 +902,19 @@ class RunStore:
             else _RUNS_UPDATE.replace('"runs"', "archive.runs")
         )
         with self._conn:
+            # DDL needs an explicit transaction: implicit transactions begin
+            # only at the first data write, leaving added columns behind if
+            # the backfill fails and making a retry mistake shape for completion.
+            if not self._conn.in_transaction:
+                self._conn.execute("BEGIN IMMEDIATE")
             # Added columns are nullable because SQLite cannot add a NOT NULL
             # payload without rebuilding the table; the backfill supplies it.
-            for name in (*QUERY_KEYS, ROW_REVISION, "payload"):
+            for name in (*QUERY_KEYS, ROW_REVISION, "payload", "activity_seconds"):
                 if name not in columns:
-                    self._conn.execute(f'ALTER TABLE {table} ADD COLUMN "{name}" TEXT')
+                    kind = "REAL" if name == "activity_seconds" else "TEXT"
+                    self._conn.execute(
+                        f'ALTER TABLE {table} ADD COLUMN "{name}" {kind}'
+                    )
             for row in rows:
                 record = _legacy_payload(dict(zip(names, row[:-1], strict=True)))
                 self._conn.execute(
@@ -870,8 +926,7 @@ class RunStore:
                         record["run_id"],
                     ),
                 )
-            if table == "runs":
-                self._conn.executescript(_RUNS_INDEXES)
+            self._conn.executescript(indexes)
 
     def append(self, project: str, record: Mapping[str, Any]) -> None:
         """Insert one run's durable record and its wide detail in one transaction.
@@ -993,10 +1048,6 @@ class RunStore:
                 # Both stores are migrated before the schema version is
                 # recorded, so an unchanged open owes neither backfill.
                 self._migrate_runs("archive.runs")
-                for name in QUERY_KEYS:
-                    self._conn.execute(
-                        f'CREATE INDEX IF NOT EXISTS archive."idx_runs_{name}" ON runs("{name}")'
-                    )
             self._archive_attached = True
         return self._archive_attached
 

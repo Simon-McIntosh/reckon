@@ -3320,7 +3320,10 @@ def _commit_state_write(
     the merge's lock wait, so a transient hold is waited out rather than
     refusing the state write; a failure with no lock behind it, or a lock that
     outlasts the wait's attempts, raises as before, naming the lock in the
-    second case. Returns the number of retries the wait made, so a caller that
+    second case. A lock the wait proves stale is cleared by it, and that
+    clearing is stated on stderr with the lock and the age it stood for, so a
+    lock that disappeared out from under a shared checkout is never one nobody
+    accounted for. Returns the number of retries the wait made, so a caller that
     records a write which waited has the count.
 
     The commit is skipped while a merge is in progress: a commit made there
@@ -3350,6 +3353,7 @@ def _commit_state_write(
         DEFAULT_ATTEMPTS,
         _index_lock_held,
         _run_waiting_out_a_held_index_lock,
+        note_stale_index_lock_removal,
     )
 
     relative_args = [str(relative) for relative in relative_paths]
@@ -3363,7 +3367,7 @@ def _commit_state_write(
         )
 
     staged, stage_retries = _run_waiting_out_a_held_index_lock(
-        checkout, stage, sleep=sleep
+        checkout, stage, sleep=sleep, on_stale_removed=note_stale_index_lock_removal
     )
     if staged.returncode != 0:
         if _index_lock_held(checkout):
@@ -3397,7 +3401,7 @@ def _commit_state_write(
         )
 
     committed, commit_retries = _run_waiting_out_a_held_index_lock(
-        checkout, commit, sleep=sleep
+        checkout, commit, sleep=sleep, on_stale_removed=note_stale_index_lock_removal
     )
     if committed.returncode != 0:
         subprocess.run(
@@ -4819,6 +4823,21 @@ from reckon.run_record import (  # noqa: E402, F401
     underivable_duration,
     unmeasured_clone_report,
 )
+
+
+def session_rows(
+    project: str, session: str | None = None, root: str | Path | None = None
+) -> list[dict[str, Any]]:
+    """Rows one dispatched session owns, selected from the live-run index.
+
+    Promoted work leaves the live index before its section is accounted for, so
+    this answers for a session's own runs from the projection the writers keep
+    rather than by reading every finished run's document.
+    """
+    from reckon.crew import open_run_index
+
+    with open_run_index.read_scope():
+        return open_run_index.dispatched_rows(project, session, root)
 
 
 def open_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:

@@ -127,6 +127,15 @@ def test_selected_read_visits_only_matching_payloads(history, monkeypatch, field
 
 def test_selection_composes_with_identity_node_and_activity(history):
     expected = _reference(history)
+    _assert_reference(
+        run_store.stored_run_rows(
+            "project",
+            path=history,
+            plan="selected",
+            activity_since=datetime(2025, 1, 1, tzinfo=UTC).timestamp(),
+        ),
+        [row for row in expected if row["completed_at"].startswith("2026")],
+    )
     actual = run_store.stored_run_rows(
         "project",
         path=history,

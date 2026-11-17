@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3216",
+    "reckon/crew/recovery_review_dispatch.py:3311",
+    "reckon/crew/recovery_watch.py:1640",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/serve.py:902"
+  ],
+  "call_sites_note": "five production readers of the changed classification were opened at the cited lines in the reviewed head; the review reflex at recovery_review_dispatch.py:3216 is the one the pre-spawn arm reaches, refusing to dispatch unless the row classifies as `scoring`.",
+  "completed_at": "2026-11-17T00:12:18.366Z",
+  "dispatched_at": "2026-11-17T00:11:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1849",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `not _spawn_evidence(record)` term the merge introduces has no test in the reviewed range that names or exercises it \u2014 commit e75c89f5c8 added none and no test file references `_spawn_evidence` \u2014 so a later change that dropped it would leave the gate green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued/logs/head-target-file.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the gate as a job on all_debug, but the head log records only the revision, tree and command under env -u SLURM_JOB_ID and names no job or partition, so the environment the done_when names is unmeasured."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites, chiefly the review reflex at reckon/crew/recovery_review_dispatch.py:3216 which refuses to dispatch unless the classification is `scoring`, the arm the manifest term makes reachable",
+    "diff": "read against both parents of ba47ab1d: against a34e5162 the file gains `not _spawn_evidence(record)` at :1849 and the rewritten comment at :1827-1845, against 68b300d99f it gains `not manifest_status` at :1850 and the verdict paragraph at :1841-1845, so neither parent's guard was dropped and no test file changed.",
+    "done_when": "the done_when asks for the file in full at head as an all_debug job with SLURM_JOB_ID unset, an arm over the importing test files adding no failure, and a base negative control; logs/head-target-file.log:1 records the unset-variable run at ba47ab1d at 4 passed EXIT=0 with logs/base-target-file.log recording 3 failed at base and logs/base-importers.log versus logs/head-importers.log differing by one repaired id; no log names an all_debug job.",
+    "goal": "the source node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full on the primary branch; the commit this review covers, ba47ab1d, resolves the merge so the arm at reckon/crew/recovery_classification.py:1847 keeps both guards, and logs/head-target-file.log:1 reads 4 passed EXIT=0 at that head.",
+    "manifest": "read; it records status complete, commits 4a8a6c2d24 4dea651bd9 a34e5162a2 ba47ab1d, the gate command run at ba47ab1d, base and head target logs, both suite arms at 0 failures, and its merge note that both pre-spawn guards were kept.",
+    "write_paths": "the node's declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and that fragment plus its figure directory (prompt.txt:84-89); the merge's authored change touches only reckon/crew/recovery_classification.py:1827-1851 and :3313."
+  },
+  "justifications": {
+    "durability": "tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:263-276 asserts a queued review for a `starting` pointer carrying a complete manifest and logs/base-target-file.log records 3 failed at base, so reverting `not manifest_status` at recovery_classification.py:1850 reddens it, while the `not _spawn_evidence(record)` term at :1849 has no test in the reviewed range and rests on tests/test_a_launched_run_reads_launched.py:136 only through an `expected not in ('', 'idle')` assertion that never names the term.",
+    "evidence": "logs/head-target-file.log:1 records 4 passed EXIT=0 at revision ba47ab1d and both armed suite arms record 0 failures (logs/baseline-suite.log, logs/after-suite.log), but no log records the all_debug job the done_when names.",
+    "fit": "the two terms sit in the existing `pre_spawn_waiting` expression at reckon/crew/recovery_classification.py:1847, `_spawn_evidence` is imported through the module's existing lazy-import block at :3313, and no new name is introduced.",
+    "goal_fidelity": "the delta a34e5162a2..ba47ab1d composes both pre-spawn guards at reckon/crew/recovery_classification.py:1847-1851 and logs/head-target-file.log:1 records the goal's file at 4 passed EXIT=0 at the reviewed head.",
+    "reuse": "the merge adds no definition: `_spawn_evidence` is owned by reckon/crew/recovery_liveness.py:727 and imported at reckon/crew/recovery_classification.py:3313, so the resolution extends the existing liveness owner rather than forking a second spawn test.",
+    "scope_discipline": "the merge's authored resolution is confined to reckon/crew/recovery_classification.py:1827-1851 and :3313, inside the declared `reckon` path, and touches no test file; the other files the merge commit carries are primary's second-parent content, not this run's writing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py pass in full on the primary branch; the reviewed commit ba47ab1d resolves the merge so the arm at reckon/crew/recovery_classification.py:1847 keeps both guards, and logs/head-target-file.log:1 reads 4 passed EXIT=0 at that head.\nVERDICT done_when: the done_when asks for the file in full at head as an all_debug job with SLURM_JOB_ID unset, an arm over the importing test files adding no failure, and a base negative control; logs/head-target-file.log:1 records the unset-variable run at ba47ab1d at 4 passed EXIT=0 with logs/base-target-file.log recording 3 failed at base and logs/base-importers.log versus logs/head-importers.log differing by one repaired id, but no log names an all_debug job.\nVERDICT write_paths: the node's declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and that fragment plus its figure directory (prompt.txt:84-89); the merge's authored change touches only reckon/crew/recovery_classification.py:1827-1851 and :3313.\nVERDICT manifest: read; it records status complete, commits 4a8a6c2d24 4dea651bd9 a34e5162a2 ba47ab1d, the gate command run at ba47ab1d, base and head target logs, both suite arms at 0 failures, and its merge note that both pre-spawn guards were kept.\nVERDICT diff: read against both parents of ba47ab1d: against a34e5162 the file gains `not _spawn_evidence(record)` at :1849 and the rewritten comment at :1827-1845, against 68b300d99f it gains `not manifest_status` at :1850 and the verdict paragraph at :1841-1845, so neither parent's guard was dropped and no test file changed.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3216, reckon/crew/recovery_review_dispatch.py:3311, reckon/crew/recovery_watch.py:1640, reckon/crew/queue_landing.py:1704, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta a34e5162a2..ba47ab1d composes both pre-spawn guards at reckon/crew/recovery_classification.py:1847-1851 and logs/head-target-file.log:1 records the goal's file at 4 passed EXIT=0 at the reviewed head.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-target-file.log:1 records 4 passed EXIT=0 at revision ba47ab1d and both armed suite arms record 0 failures, but no log records the all_debug job the done_when names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the merge's authored resolution is confined to reckon/crew/recovery_classification.py:1827-1851 and :3313 and touches no test file.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:263-276 reddens on reverting `not manifest_status` at recovery_classification.py:1850 while the `not _spawn_evidence(record)` term at :1849 has no test in the reviewed range.\nSCORE fit: 18\nJUSTIFICATION fit: the two terms sit inside the existing `pre_spawn_waiting` expression at reckon/crew/recovery_classification.py:1847 and `_spawn_evidence` is imported through the existing lazy-import block at :3313, with no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: `_spawn_evidence` is owned by reckon/crew/recovery_liveness.py:727 and imported at recovery_classification.py:3313, so the merge extends that owner instead of forking a second spawn test.\nFINDING reckon/crew/recovery_classification.py:1849 non-blocking: the `not _spawn_evidence(record)` term the merge introduces has no test in the reviewed range that names or exercises it \u2014 e75c89f5c8 added none and no test file references `_spawn_evidence` \u2014 so a later change that dropped it would leave the gate green.\nFINDING /home/.../logs/head-target-file.log:1 non-blocking: the done_when requires the gate as a job on all_debug, but the head log records only revision, tree and command under env -u SLURM_JOB_ID and names no job or partition.",
+  "review_run_id": "r-20261116T233236358086-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-ba47ab1d656e",
+  "reviewed_base_sha": "a34e5162a2e6eaae257016edfbebd0f975642a0c",
+  "reviewed_head_sha": "ba47ab1d656ecc8312de8dc29ff058ec1203bb51",
+  "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewed_run_id": "r-20261116T105012384890-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued",
+    "reviewer_run_id": "r-20261116T233236358086-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-ba47ab1d656e"
+  },
+  "reviewer_run_id": "r-20261116T233236358086-review-of-qwnw-red-file-an-automatic-review-held-by-a-full-lane-is-queued-ba47ab1d656e",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:41:00.050775+00:00",
+  "total": 106
+}
