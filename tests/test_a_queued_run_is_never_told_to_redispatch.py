@@ -138,7 +138,7 @@ def test_a_live_named_run_keeps_the_queued_request_on_that_runs_command(
 
     duties = obligations_module.obligations(PROJECT, SESSION)["obligations"]
     assert [item["kind"] for item in duties] == ["queued-awaiting-session"]
-    assert duties[0]["next_command"] == action
+    assert duties[0]["next_command"] == "reckon crew observe --run run-still-open"
     _assert_no_redispatch(duties[0])
 
 

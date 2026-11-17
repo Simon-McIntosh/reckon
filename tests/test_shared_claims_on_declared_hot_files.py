@@ -1,12 +1,13 @@
-"""A declared shared file admits co-claimants on the real dispatch path.
+"""A mergeable file admits co-claimants on the real dispatch path.
 
 Four cases run against a synthesized repository driven through ``crew.dispatch``
 -- the entry a real ``crew dispatch`` reaches, whose refusal is raised by
 ``dispatch._raise_repository_scope_conflict``. The list names ``pkg/hot.py``:
-two dispatches claiming that file both launch; an unlisted file is refused
-against a live claim on it; a directory claim overlapping the shared file is
-refused; and with the list absent the shared file is refused. A fifth case shows
-both co-claimants remain visible in the read model.
+two dispatches claiming that file both launch; a path a textual merge cannot
+reconcile, such as a plan document, is refused against a live claim on it, and a
+directory claim over one is refused; and with the list absent a source file
+still shares, because a mergeable declaration meets its peer at git merge. A
+fifth case shows both co-claimants remain visible in the read model.
 """
 
 from __future__ import annotations
@@ -23,8 +24,8 @@ from reckon import crew
 PROJECT = "shared-proj"
 PLAN = "shared-claims"
 SHARED_FILE = "pkg/hot.py"
-UNLISTED_FILE = "pkg/cold.py"
-DIRECTORY = "pkg"
+PLAN_DOCUMENT = f"docs/plans/{PLAN}.html"
+PLAN_DIRECTORY = "docs/plans"
 REASON = "concurrent editors work in separate functions"
 
 CONFIG = {
@@ -47,7 +48,6 @@ def repository(tmp_path: Path, home: Path) -> Path:
     repo = tmp_path / "repository"
     (repo / "pkg").mkdir(parents=True)
     (repo / SHARED_FILE).write_text("# shared hot module\n", encoding="utf-8")
-    (repo / UNLISTED_FILE).write_text("# unlisted module\n", encoding="utf-8")
     (repo / "docs" / "plans").mkdir(parents=True)
     (repo / "docs" / "plans" / f"{PLAN}.html").write_text(
         "<!doctype html>\n<html><head>\n"
@@ -143,38 +143,48 @@ def test_two_dispatches_on_a_listed_file_both_launch(repository: Path) -> None:
     assert crew.pointer_path(joiner["run_id"]).is_file()
 
 
-def test_an_unlisted_file_is_refused_against_a_live_claim(repository: Path) -> None:
-    """Case two: a path not named in the list keeps the whole-file refusal."""
+def test_an_unlisted_path_keeps_the_artifact_refusal(repository: Path) -> None:
+    """Case two: the list admits no source hold, and an artifact keeps one.
+
+    The list names only ``pkg/hot.py``. The whole-file refusal here belongs to
+    the class a textual merge cannot reconcile -- a plan document -- so a listed
+    source path grants nothing to an artifact and a source file needs no entry
+    at all.
+    """
     _declare(repository, [{"path": SHARED_FILE, "reason": REASON}])
-    owner = _dispatch(repository, "owner", UNLISTED_FILE)
+    owner = _dispatch(repository, "owner", PLAN_DOCUMENT)
 
     with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(repository, "joiner", UNLISTED_FILE)
+        _dispatch(repository, "joiner", PLAN_DOCUMENT)
 
     assert refusal.value.run_id == owner["run_id"]
 
 
-def test_a_directory_claim_containing_a_shared_file_is_refused(
+def test_a_directory_claim_over_an_artifact_is_refused(
     repository: Path,
 ) -> None:
-    """Case three: only the named file is shareable, not the directory."""
+    """Case three: a folder shares as mergeable files beneath it do.
+
+    A plan document is a path a textual merge cannot reconcile, so a claim on
+    its directory overlaps it however broad the folder is.
+    """
     _declare(repository, [{"path": SHARED_FILE, "reason": REASON}])
-    owner = _dispatch(repository, "owner", SHARED_FILE)
+    owner = _dispatch(repository, "owner", PLAN_DOCUMENT)
 
     with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(repository, "joiner", DIRECTORY)
+        _dispatch(repository, "joiner", PLAN_DIRECTORY)
 
     assert refusal.value.run_id == owner["run_id"]
 
 
-def test_a_shared_file_is_refused_when_no_list_is_present(repository: Path) -> None:
-    """Case four: an absent list leaves the whole-file refusal unchanged."""
+def test_a_source_file_shares_when_no_list_is_present(repository: Path) -> None:
+    """Case four: an absent list still shares a mergeable source file."""
     owner = _dispatch(repository, "owner", SHARED_FILE)
+    joiner = _dispatch(repository, "joiner", SHARED_FILE)
 
-    with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(repository, "joiner", SHARED_FILE)
-
-    assert refusal.value.run_id == owner["run_id"]
+    assert owner["run_id"] != joiner["run_id"]
+    assert crew.pointer_path(owner["run_id"]).is_file()
+    assert crew.pointer_path(joiner["run_id"]).is_file()
 
 
 def test_both_co_claimants_stay_visible_in_the_read_model(repository: Path) -> None:

@@ -111,6 +111,13 @@ def _history_row(project, run_id, root=None):
     )
 
 
+def _history_dispatched_rows(project, session=None, root=None):
+    rows = _history_rows(project, root)
+    if session is None:
+        return rows
+    return [row for row in rows if str(row.get("session") or "") == str(session)]
+
+
 def _history_session(project, session, root=None):
     rows = [
         row for row in _history_rows(project, root) if row.get("session_id") == session
@@ -624,6 +631,34 @@ def rows_naming_trees(
                 parsed = json.loads(row[0])
                 result[parsed["run_id"]] = parsed
     return _hydrate(project, list(result.values()))
+
+
+@_read_fallback(_history_dispatched_rows)
+def dispatched_rows(
+    project: str, session: str | None = None, root=None
+) -> list[dict[str, Any]]:
+    """The rows one dispatched session owns, read without opening a run's file.
+
+    The projection's ``session`` column holds the worker's own harness session,
+    which is a different key from the crew session that dispatched the run, so
+    the filter reads the field the stored record carries. Rows are ordered by
+    completion, then identity, so two reads of one projection agree.
+    """
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        if session is None:
+            query, arguments = "SELECT payload FROM records", ()
+        else:
+            query = (
+                "SELECT payload FROM records WHERE json_extract(payload, '$.session')=?"
+            )
+            arguments = (str(session),)
+        rows = [
+            json.loads(payload)
+            for (payload,) in connection.execute(
+                f"{query} ORDER BY completed, run_id", arguments
+            )
+        ]
+    return _hydrate(project, rows) if _store_signature() is not None else rows
 
 
 @_read_fallback(_history_session)

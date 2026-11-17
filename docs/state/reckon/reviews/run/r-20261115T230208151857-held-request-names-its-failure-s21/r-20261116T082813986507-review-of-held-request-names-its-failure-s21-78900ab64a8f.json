@@ -1,0 +1,104 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate records: baseline_suite (revision 1edf1b0dba794, logs/baseline-suite.log) records '58 passed in 43.02s' with EXIT=0 and failure_ids [], and after_suite (revision 78900ab64a8f, logs/after-suite.log) records '62 passed in 48.49s' with EXIT=0 and failure_ids []; the set difference is empty, so added_failure_count is 0. The wider no-regression sweep the manifest cites (logs/narrow-base.log 64 failed against logs/narrow-head.log 65 failed) differs by one head-only id, tests/test_obligations_read_the_station.py::test_an_exported_snapshot_with_a_stale_heartbeat_names_its_age, which neither suite arm names; I recomputed the set difference over both logs and that id is the whole head-only side with nothing base-only. It fails on the age word '5m' asserted at tests/test_obligations_read_the_station.py:416, in a module the diff does not touch, but no base repeat of that id is on disk to open.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/mcp_views.py:4654 (obligations_module.obligations -> _live_item -> _queued_hold)",
+    "reckon/hooks/coordinator_obligations.py:202 (_obligations_view, the stop hook's derivation)",
+    "reckon/crew/obligation_snapshot.py:1681 (station snapshot export through the same module)",
+    "reckon/crew/obligations.py:1900 (_live_item reading _queued_hold for a queued-run duty row)",
+    "reckon/crew/admission/launching.py:589 (_verdicts._verdict_row, the pass's own verdict log)",
+    "reckon/crew/admission/launching.py:607 (_verdicts._verdict_row, the refusal row)",
+    "reckon/crew/admission/launching.py:845 (_verdicts._verdict_row, the requeued row)",
+    "reckon/crew/admission/launching.py:1013 (_record_failure_hold in _record_queued_failure)"
+  ],
+  "completed_at": "2026-11-16T08:53:13.564Z",
+  "dispatched_at": "2026-11-16T08:52:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "verdict strings re-spelled beside their owning module; they match today, and consolidating the vocabulary is a follow-up",
+      "recorded_at": "2026-11-17T04:02:53.762834+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "two of three call sites are unpinned by the gate; a coverage gap, not a behaviour defect",
+      "recorded_at": "2026-11-17T04:03:26.764155+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "a substring match chooses which capacity reason to show; an unmatched wording shows verbatim, which is safe",
+      "recorded_at": "2026-11-17T04:03:40.064977+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/admission/verdicts.py",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: CAPACITY_HOLD_VERDICTS at line 36 ('held-for-allowance'), PLAN_REVIEW_HOLD_VERDICT at 46 and REFUSED_ATTEMPT_HOLD_VERDICT at 48 re-spell verdict strings whose vocabulary is owned by reckon/crew/admission/shared.py:233 (HOLD_VERDICTS) and :257 (_RETRY_HOLD_VERDICTS) instead of referencing it, so a verdict renamed in the owner leaves this module emitting a string no reader recognises while both spellings still agree and nothing fails."
+    },
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": "839",
+      "severity": "non-blocking",
+      "text": "non-blocking: two of the three _record_failure_hold call sites, :839 in _requeue_admitted_failures and :941 in _restore_queued, are unpinned by the gate - only the _record_queued_failure call at :1013 is driven by tests/test_a_held_request_names_its_failure.py - so a repair that drops either restore-path call restores the stale pass hold there and reddens no assertion."
+    },
+    {
+      "file": "reckon/crew/admission/verdicts.py",
+      "line": "107",
+      "severity": "non-blocking",
+      "text": "non-blocking: hold_reason decides which capacity reason may be shown by matching four substrings over that reason, so a capacity hold whose refusal is worded without one of them is published verbatim on the obligations row - the outcome the goal forbids - and a genuine wait whose text merely contains 'router' is blanked to a bare verdict; tests/test_a_held_request_names_its_failure.py:239 pins only the router-sentence spelling, so neither direction of that error is measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T230208151857-held-request-names-its-failure-s21/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: the no-regression line attributes the one head-only failing id to a flake that 'fails at the BASE revision too on repeat runs', but logs/ holds no base repeat of it - narrow-base.log records 64 failing ids against narrow-head.log's 65, and the head-only id tests/test_obligations_read_the_station.py::test_an_exported_snapshot_with_a_stale_heartbeat_names_its_age is a claim whose supporting run a reader cannot open."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call sites, listed in the record's call_sites; the writers are launching.py:839, :941 and :1013, the pass's own row is _verdict_row reached at launching.py:589, :607 and :845, and the reader reaches obligations.py:1900 through mcp_views.py:4654, coordinator_obligations.py:202 and obligation_snapshot.py:1681, each receiving the same duty-row shape the tests assert.",
+    "diff": "read commit by commit against 1edf1b0dba794: d258315975 carries failure_hold, hold_reason and the _record_failure_hold writer with its three call sites plus obligations._queued_hold and the _live_item/_queued_row_item reads; 108127bb6b keeps a row's own age when its hold is undated; 6c49a8dadd rewords only the lane's own hold; ab6f4218a2 and 78900ab64a add only the evidence fragment, and no plan HTML, plan meta or shared index is touched.",
+    "done_when": "the done_when asks for new tests red at the base that carry the failure and its remedy on the hold and on the obligations row, take the lane's figure off both surfaces, age a hold from the reason it shows, and draw a full-lane hold as a wait that blocks no stop; tests/test_a_held_request_names_its_failure.py:159-166, :185-192, :215-217 and :234-240 assert each clause, logs/base-arm-new-test.log records all four FAILED at 1edf1b0dba794 with assertion failures on exactly those lines, and logs/after-suite.log records '62 passed' with EXIT=0 at 78900ab64a8f.",
+    "goal": "the node goal is to show a held request's latest failure and its remedy and to draw a full-lane hold as queued; reckon/crew/admission/verdicts.py:51 composes the hold from the stored refusal plus the remedy recovery_classification._queued_failure_remedy already parses, launching.py:745 writes it at the three places a failed attempt's record is composed, obligations.py:1900 reads it for the duty row, verdicts.py:143 recomposes the pass's verdict row through the same reader, and logs/base-arm-new-test.log:29 shows the same request carrying the lane hold at the base revision instead.",
+    "manifest": "read the reviewed manifest: status complete at 78900ab64a8f, five commits named, the gate command recorded literally, baseline_suite 58 passed and after_suite 62 passed both with EXIT=0 and failure_ids [], a negative control at '1 failed, 3 passed' with EXIT=1, and eight log paths, four of which I opened to their bare EXIT= line.",
+    "write_paths": "the declared write paths are reckon/crew/admission/verdicts.py, reckon/crew/admission/launching.py, reckon/crew/obligations.py, the new test file and the fragment under docs/evidence/fragments/the-monitor-tells-the-truth-under-load/; git diff --stat 1edf1b0d..78900ab lists exactly those five files (479 insertions, 5 deletions) and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_names_its_failure.py:159 classifies the hold's verdict from the failure text rather than echoing it and logs/negative-control.log reddens that case with the writer disabled while the other three stay green, but launching.py:839 and :941 have no case of their own, so a repair that drops those two calls regresses silently.",
+    "evidence": "logs/base-arm-new-test.log records '4 failed' with EXIT=1 at 1edf1b0dba794 on the named assertion lines and logs/after-suite.log records '62 passed' with EXIT=0 at head, but the done_when's last clause - the importers of reckon.crew.obligations and admission adding no failure against the base - rests on the 64-against-65 narrow sweep whose single delta the manifest attributes to a flake no log on disk demonstrates.",
+    "fit": "the additions follow the surrounding register - module-private helpers, and a lazy import at verdicts.py:77 with its cycle recorded in the docstring - but verdicts.py:94 adds a second top-level hold_reason beside resume.py:91 and standing_suite.py:515, which callers must alias as recovery_review_acceptance.py:16 already does.",
+    "goal_fidelity": "reckon/crew/admission/verdicts.py:51 ranks the request's own refusal above the pass's capacity hold and launching.py:745, verdicts.py:143 and obligations.py:1900 all compose through it, so the hold, the pass row and the duty row name one failure and one remedy, and a lane-only hold keeps the waiting reading that verdicts.py:94 strips the router sentence from.",
+    "reuse": "verdicts.py:51 delegates to recovery_classification.py:347 and :232 rather than parsing the refusal a second time, so the definition extends the owner of 'which refusal holds a queued request and what clears it'; the capability I searched for and found unowned is the textual recognition of the lane's capacity sentence (holds.py:305 matches exception prefixes, not a reason string), and the verdict vocabulary it keys on is re-spelled at verdicts.py:36 rather than referenced from admission/shared.py:233.",
+    "scope_discipline": "every path in git diff --stat 1edf1b0d..78900ab is one of the five declared write paths, and the diff carries no plan edit, no index write and no unrelated reformatting."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to show a held request's latest failure and its remedy and to draw a full-lane hold as queued; reckon/crew/admission/verdicts.py:51 composes the hold from the stored refusal plus the remedy recovery_classification._queued_failure_remedy already parses, launching.py:745 writes it where a failed attempt's record is composed, obligations.py:1900 reads it for the duty row, verdicts.py:143 recomposes the pass's verdict row through the same reader, and logs/base-arm-new-test.log:29 shows the same request carrying the lane hold at the base revision instead.\nVERDICT done_when: the done_when asks for new tests red at the base that carry the failure and its remedy on the hold and on the obligations row, take the lane's figure off both surfaces, age a hold from the reason it shows, and draw a full-lane hold as a wait that blocks no stop; tests/test_a_held_request_names_its_failure.py:159-166, :185-192, :215-217 and :234-240 assert each clause, logs/base-arm-new-test.log records all four FAILED at 1edf1b0dba794 with assertion failures on exactly those lines, and logs/after-suite.log records '62 passed' with EXIT=0 at 78900ab64a8f.\nVERDICT write_paths: the declared write paths are reckon/crew/admission/verdicts.py, reckon/crew/admission/launching.py, reckon/crew/obligations.py, the new test file and the fragment under docs/evidence/fragments/the-monitor-tells-the-truth-under-load/; git diff --stat 1edf1b0d..78900ab lists exactly those five files (479 insertions, 5 deletions) and nothing else.\nVERDICT manifest: read the reviewed manifest; status complete at 78900ab64a8f, five commits named, the gate command recorded literally, baseline_suite 58 passed and after_suite 62 passed both with EXIT=0 with failure_ids [], a negative control at '1 failed, 3 passed' with EXIT=1, and eight log paths, four of which I opened to their bare EXIT= line.\nVERDICT diff: read commit by commit against 1edf1b0dba794 - d258315975 carries failure_hold, hold_reason and the _record_failure_hold writer with its three call sites plus obligations._queued_hold and the _live_item/_queued_row_item reads, 108127bb6b keeps a row's own age when its hold is undated, 6c49a8dadd rewords only the lane's own hold, and ab6f4218a2 and 78900ab64a add only the evidence fragment; no plan HTML, plan meta or shared index is touched.\nCALL_SITES: reckon/mcp_views.py:4654, reckon/hooks/coordinator_obligations.py:202, reckon/crew/obligation_snapshot.py:1681, reckon/crew/obligations.py:1900, reckon/crew/admission/launching.py:589, reckon/crew/admission/launching.py:607, reckon/crew/admission/launching.py:845, reckon/crew/admission/launching.py:1013\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/admission/verdicts.py:51 ranks the request's own refusal above the pass's capacity hold and launching.py:745, verdicts.py:143 and obligations.py:1900 all compose through it, so the hold, the pass row and the duty row name one failure and one remedy.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/base-arm-new-test.log records '4 failed' with EXIT=1 at 1edf1b0dba794 on the named assertion lines and logs/after-suite.log records '62 passed' with EXIT=0 at head, but the done_when's suite clause rests on the 64-against-65 narrow sweep whose one delta the manifest attributes to a flake no log on disk demonstrates.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 1edf1b0d..78900ab (verdicts.py, launching.py, obligations.py, tests/test_a_held_request_names_its_failure.py, the fragment) is inside the five declared write paths and nothing else is touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_held_request_names_its_failure.py:159 classifies the verdict from the failure text rather than echoing it and logs/negative-control.log reddens that case with the writer disabled while the other three stay green, but launching.py:839 and :941 have no case of their own so a repair that drops those two calls regresses silently.\nSCORE fit: 15\nJUSTIFICATION fit: the helpers follow the surrounding register and the lazy import at verdicts.py:77 records its cycle, but verdicts.py:94 adds a second hold_reason beside resume.py:91 and standing_suite.py:515, which callers must alias as recovery_review_acceptance.py:16 already does.\nSCORE reuse: 16\nJUSTIFICATION reuse: verdicts.py:51 delegates to recovery_classification.py:347 and :232 rather than parsing the refusal again, and the only duplication is the verdict vocabulary re-spelled at verdicts.py:36 instead of referenced from admission/shared.py:233.\nFINDING reckon/crew/admission/verdicts.py:36 non-blocking: CAPACITY_HOLD_VERDICTS at line 36, PLAN_REVIEW_HOLD_VERDICT at 46 and REFUSED_ATTEMPT_HOLD_VERDICT at 48 re-spell verdict strings owned by admission/shared.py:233 and :257 instead of referencing them, so a verdict renamed in the owner leaves this module emitting a string no reader recognises.\nFINDING reckon/crew/admission/launching.py:839 non-blocking: two of the three _record_failure_hold call sites, :839 and :941, are unpinned by the gate - only the _record_queued_failure call at :1013 is driven by the new tests - so a repair that drops either restore-path call restores the stale pass hold there and reddens no assertion.\nFINDING reckon/crew/admission/verdicts.py:107 non-blocking: hold_reason decides which capacity reason may be shown by matching four substrings over that reason, so a capacity hold worded without one of them is published verbatim on the obligations row and a genuine wait whose text merely contains 'router' is blanked, and tests/test_a_held_request_names_its_failure.py:239 pins only the router-sentence spelling so neither error is measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T230208151857-held-request-names-its-failure-s21/manifest.md:14 non-blocking: the no-regression line attributes the one head-only failing id to a flake that fails at the base revision too on repeat runs, so logs/ holds no base repeat of it and the supporting run a reader would open does not exist.",
+  "review_node": "review-of-held-request-names-its-failure-s21-78900ab64a8f",
+  "review_run_id": "r-20261116T082813986507-review-of-held-request-names-its-failure-s21-78900ab64a8f",
+  "reviewed_base_sha": "1edf1b0dba79409ef5ac2b8db39965725b53c63c",
+  "reviewed_head_sha": "78900ab64a8f04146f0f452e1242e046977e87cf",
+  "reviewed_run_id": "r-20261115T230208151857-held-request-names-its-failure-s21",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T082813986507-review-of-held-request-names-its-failure-s21-78900ab64a8f"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:17:28.318189+00:00",
+  "total": 98
+}

@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:1663",
+    "reckon/crew/recovery_review_dispatch.py:2979",
+    "reckon/crew/recovery_review_dispatch.py:3074",
+    "reckon/crew/query.py:597",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-16T16:07:38.838Z",
+  "dispatched_at": "2026-11-16T16:07:17Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed manifest's artifacts line records every arm the done_when names except the ruff pair, and the run's logs directory holds no ruff output, so the clause \"ruff check and ruff format --check report nothing new on the changed paths\" is unrecorded; verified independently, the same single pre-existing SIM102 at reckon/crew/recovery_classification.py:3251 reports at both 655a2befa9 and 0a5911ecb2 and ruff format --check reports the file already formatted, so nothing new is introduced but a later reader cannot re-read that from the run."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm the done_when names as the check \u2014 the target file as an all_debug job with SLURM_JOB_ID unset \u2014 is recorded at 7a104067b9, one commit before the delivered head, so the delivered head's green comes from the in-tree run at logs/head-target-file.log rather than the all_debug job; the gap is one doc commit plus a merge adding only section_holds.py and run_store.py, neither reachable from the changed classification, so the measure is met in substance."
+    }
+  ],
+  "head_log_revision": "0a5911ecb22cd4821e55dff9715be66494b8482d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s): obligations.py, two in recovery_review_dispatch.py, query.py, recovery_watch.py and serve.py all reach classify_pointer's pre-spawn branch.",
+    "diff": "read commit by commit against 655a2befa9; bcbb2fadb0 is 12 added and 2 deleted lines of one boolean clause at reckon/crew/recovery_classification.py:1839, the four docs commits edit only the landing fragment's arm table, and 0a5911ecb2 is the instructed origin/main merge carrying section_holds.py, run_store.py and a peer test file.",
+    "done_when": "the done_when names the file green as an all_debug job with SLURM_JOB_ID unset, a base of three red at 655a2befa9, no added failure over the importing test files, and ruff clean on the changed paths; logs/all-debug-target-file.log records \"3 passed\" EXIT=0 under \"env -u SLURM_JOB_ID\", logs/baseline-target-file.log records \"3 failed\" EXIT=1 with the three ids, the importer id sets differ by 0 added and 9 fixed, but no ruff arm is recorded.",
+    "goal": "the node's goal is that tests/test_a_review_row_knows_the_producer_is_down.py passes in full on the primary branch; the landed repair at reckon/crew/recovery_classification.py:1839 lets a present manifest decide the reading, and logs/head-target-file.log records \"3 passed in 1.29s\" EXIT=0 for that file at 0a5911ecb2.",
+    "manifest": "read; status complete, commits bcbb2fadb0 f75f6418e9 7a104067b9 5d8e6d0bfa 24f28d2b02 a802d260d5 0a5911ecb2, tests naming the single-file pytest command, baseline_suite and after_suite both exit 0 with 0 failures, and a landing line naming the 3-failed-to-3-passed figure.",
+    "write_paths": "the node was fenced to reckon, tests, the evidence fragment directory and its figures directory; the diff's two paths \u2014 reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html \u2014 are both inside that fence."
+  },
+  "justifications": {
+    "durability": "dropping the added `not manifest_present` clause at reckon/crew/recovery_classification.py:1839 reinstates the pre-spawn reading and reproduces logs/baseline-target-file.log's three failing ids, so the guard reddens on exactly this regression; the run added no assertion of its own and no assertion compares a value the test passed in against the same value.",
+    "evidence": "the gate arms at logs/baseline-suite.log and logs/after-suite.log read \"58 passed\" EXIT=0 on both sides and the importer id sets differ by 0 added, but the done_when's ruff clause has no log anywhere and the all_debug arm at logs/all-debug-target-file.log ran at 7a104067b9 rather than at the delivered 0a5911ecb2.",
+    "fit": "the clause mirrors the `launched` rule immediately below it at reckon/crew/recovery_classification.py:1850 and introduces no new symbol, so there is no name to weigh against the repository's naming rules.",
+    "goal_fidelity": "the three ids failing at 655a2befa9 in logs/baseline-target-file.log read \"3 passed in 1.29s\" EXIT=0 at 0a5911ecb2 in logs/head-target-file.log, so the file the goal names is green; the \"on the primary branch\" clause belongs to promotion rather than to this diff.",
+    "reuse": "the change reuses the `manifest_present` value already computed at reckon/crew/recovery_classification.py:1285 by `_run_chain_manifest_freshness`; a search over reckon/crew for an owner of \"a manifest decides the reading\" found only its existing uses at lines 1573, 2041 and 2599 of the same function, so the addition extends that owner rather than forking it.",
+    "scope_discipline": "the node's own commits touch only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html, both inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_review_row_knows_the_producer_is_down.py passes in full on the primary branch; the landed repair at reckon/crew/recovery_classification.py:1839 lets a present manifest decide the reading, and head-target-file.log records \"3 passed in 1.29s\" EXIT=0 for that file at 0a5911ecb2.\nVERDICT done_when: the done_when names the file green as an all_debug job with SLURM_JOB_ID unset, a base of three red at 655a2befa9, no added failure over the importing test files, and ruff clean on the changed paths; logs/all-debug-target-file.log records \"3 passed\" EXIT=0 under \"env -u SLURM_JOB_ID\", logs/baseline-target-file.log records \"3 failed\" EXIT=1 with the three ids, the importer id sets differ by 0 added and 9 fixed, but no ruff arm is recorded in the manifest or the run's logs.\nVERDICT write_paths: the node was fenced to reckon, tests, the evidence fragment directory and its figures directory; the diff's two paths \u2014 reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html \u2014 are both inside that fence.\nVERDICT manifest: read at r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down/manifest.md; status complete, commits bcbb2fadb0 f75f6418e9 7a104067b9 5d8e6d0bfa 24f28d2b02 a802d260d5 0a5911ecb2, tests naming the single-file pytest command, baseline_suite and after_suite both exit 0 with 0 failures, and a landing line naming the 3-failed-to-3-passed figure.\nVERDICT diff: read commit by commit against 655a2befa9; bcbb2fadb0 is 12 added and 2 deleted lines of one boolean clause at reckon/crew/recovery_classification.py:1839, f75f6418e9 7a104067b9 5d8e6d0bfa 24f28d2b02 a802d260d5 edit only the landing fragment's arm table, and 0a5911ecb2 is the instructed origin/main merge carrying section_holds.py, run_store.py and a peer test file.\nCALL_SITES: reckon/crew/obligations.py:1663, reckon/crew/recovery_review_dispatch.py:2979, reckon/crew/recovery_review_dispatch.py:3074, reckon/crew/query.py:597, reckon/crew/recovery_watch.py:750, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the three ids failing at 655a2befa9 in logs/baseline-target-file.log read \"3 passed in 1.29s\" EXIT=0 at 0a5911ecb2 in logs/head-target-file.log, so the file the goal names is green; the \"on the primary branch\" clause belongs to promotion rather than to this diff.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate arms at logs/baseline-suite.log and logs/after-suite.log read \"58 passed\" EXIT=0 on both sides and the importer id sets differ by 0 added, but the done_when's ruff clause has no log anywhere and the all_debug arm at logs/all-debug-target-file.log ran at 7a104067b9 rather than at the delivered 0a5911ecb2.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node's own commits touch only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html, both inside the declared fence.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the added `not manifest_present` clause at reckon/crew/recovery_classification.py:1839 reinstates the pre-spawn reading and reproduces logs/baseline-target-file.log's three failing ids, so the guard reddens on exactly this regression; the run added no assertion of its own and no assertion compares a value the test passed in against the same value.\nSCORE fit: 20\nJUSTIFICATION fit: the clause mirrors the `launched` rule immediately below it at reckon/crew/recovery_classification.py:1850 and introduces no new symbol, so there is no name to weigh against the repository's naming rules.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses the `manifest_present` value already computed at reckon/crew/recovery_classification.py:1285 by `_run_chain_manifest_freshness`; a search over reckon/crew for an owner of \"a manifest decides the reading\" found only its existing uses at lines 1573, 2041 and 2599 of the same function, so the addition extends that owner rather than forking it.\nFINDING manifest.md:21 non-blocking: the reviewed manifest's artifacts line records every arm the done_when names except the ruff pair, and the run's logs directory holds no ruff output, so the clause \"ruff check and ruff format --check report nothing new on the changed paths\" is unrecorded; I verified it independently \u2014 the same single pre-existing SIM102 at reckon/crew/recovery_classification.py:3251 reports at both 655a2befa9 and 0a5911ecb2 and ruff format --check reports the file already formatted, so nothing new is introduced but a later reader cannot re-read that from the run.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html:33 non-blocking: the arm the done_when names as the check \u2014 the target file as an all_debug job with SLURM_JOB_ID unset \u2014 is recorded at 7a104067b9, one commit before the delivered head, so the delivered head's green comes from the in-tree run at logs/head-target-file.log rather than the all_debug job; the gap is one doc commit plus a merge that adds only section_holds.py and run_store.py, neither reachable from the changed classification, so the measure is met in substance.",
+  "review_run_id": "r-20261116T154511639958-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-0a5911ecb22c",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "0a5911ecb22cd4821e55dff9715be66494b8482d",
+  "reviewed_run_id": "r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T154511639958-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-0a5911ecb22c"
+  },
+  "reviewer_run_id": "r-20261116T154511639958-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-0a5911ecb22c",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T17:20:00+00:00",
+  "total": 114
+}

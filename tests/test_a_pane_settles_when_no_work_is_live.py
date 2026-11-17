@@ -426,7 +426,12 @@ class _Host:
 
     def request(self, project: str, session: str) -> None:
         assert self._process is not None and self._process.stdin is not None
-        line = json.dumps({"project": project, "session": session}) + "\n"
+        # The mark is the writing side's statement that the pair is the calling
+        # session's own, and a host restarts or settles a child only for a pair
+        # it can vouch for: without it the host drops the child as a running
+        # host drops another session's follower.
+        payload = {"project": project, "session": session, "owner_checked": True}
+        line = json.dumps(payload) + "\n"
         self._process.stdin.write(line.encode())
         self._process.stdin.flush()
 

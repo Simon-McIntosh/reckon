@@ -6,6 +6,7 @@ import importlib
 import json
 import subprocess
 from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -94,10 +95,15 @@ def _node(name: str, *, section: str = "dispatch") -> TaskNode:
 
 
 def _selection(backend: str, *, model: str = "") -> dict:
+    # The router stamps every routed answer with the instant its route was
+    # chosen, and a launch replays a pick only while that instant is fresh. A
+    # fixture answer without it is not one. The value is read here rather than
+    # written down, so the test measures the rule instead of the clock.
     return {
         "action": "route",
         "backend": backend,
         "model": model or ("requested-model" if backend == METERED else "local-model"),
+        "picked_at": datetime.now(UTC).isoformat(),
         "reason": f"fixture chooses {backend}",
         "offered": [],
     }
@@ -236,7 +242,9 @@ def test_metered_wait_keeps_its_pick_and_launches_after_upstream_lands(
     waiting = runs.read_pointer(request_id)
     assert waiting["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
     assert waiting["backend"] == METERED
-    assert waiting["picker_selection"]["reason"] == "fixture chooses beta"
+    assert runs.dispatch_field(waiting, "picker_selection")["reason"] == (
+        "fixture chooses beta"
+    )
 
     _land_upstream(repository)
     order = queue_admission.fair_share_admission_order
@@ -256,8 +264,10 @@ def test_metered_wait_keeps_its_pick_and_launches_after_upstream_lands(
     assert result["launched"] == [request_id]
     launched = runs.read_pointer(request_id)
     assert launched["backend"] == METERED
-    assert launched["picker_selection"]["reason"] == "fixture chooses beta"
-    assert launched["admit_request"]["backend"] == METERED
+    assert runs.dispatch_field(launched, "picker_selection")["reason"] == (
+        "fixture chooses beta"
+    )
+    assert runs.dispatch_field(launched, "admit_request")["backend"] == METERED
 
 
 def test_queued_pick_launches_the_selected_nondefault_model(
@@ -298,7 +308,10 @@ def test_queued_pick_launches_the_selected_nondefault_model(
             picked_model="astra",
         )
     request_id = held.value.queued["run_id"]
-    assert runs.read_pointer(request_id)["picker_selection"]["model"] == "astra"
+    assert (
+        runs.dispatch_field(runs.read_pointer(request_id), "picker_selection")["model"]
+        == "astra"
+    )
 
     _land_upstream(repository)
     assert _admit(config)["launched"] == [request_id]
@@ -335,7 +348,7 @@ def test_a_move_launches_on_its_explicit_destination(
     )
     assert moved["backend"] == LOCAL
     assert moved["lane_move"]["to_backend"] == LOCAL
-    assert moved["picker_selection"]["backend"] == METERED
+    assert runs.dispatch_field(moved, "picker_selection")["backend"] == METERED
 
 
 def test_pace_hold_falls_back_when_a_picked_request_becomes_ready(
@@ -355,7 +368,10 @@ def test_pace_hold_falls_back_when_a_picked_request_becomes_ready(
     assert run["backend"] == LOCAL
     assert run["route_fallback"]["from_backend"] == METERED
     assert "hard ceiling" in run["route_fallback"]["reason"]
-    assert run["admit_request"]["route_fallback"] == run["route_fallback"]
+    assert (
+        runs.dispatch_field(run, "admit_request")["route_fallback"]
+        == (run["route_fallback"])
+    )
 
 
 def test_ready_pace_hold_launches_on_open_local_lane(

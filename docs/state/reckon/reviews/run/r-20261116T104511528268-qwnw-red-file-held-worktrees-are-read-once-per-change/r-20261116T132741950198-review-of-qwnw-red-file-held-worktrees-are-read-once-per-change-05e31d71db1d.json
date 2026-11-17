@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "02018821b8d121a7924a6ca7fbaf8742efc9883d",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:_held_worktree_records",
+    "reckon/crew/obligations.py:_HeldWorktreeState.refresh_trees",
+    "reckon/crew/obligation_snapshot.py:fleet_state",
+    "reckon/crew/station_obligations.py:refresh"
+  ],
+  "completed_at": "2026-11-16T14:14:49.755Z",
+  "dispatched_at": "2026-11-16T14:14:28Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-are-read-once-per-change.html",
+      "id": "f4bffb1b790",
+      "line": "383",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run block and both suite-arm blocks quote revision 4054db96c6 instead of the reviewed head 05e31d71db1d, so a reader comparing the gate receipt's revision against the promoted commits sees an unexplained mismatch; the two later commits touch only that fragment and the test bytes measured are the same at both revisions."
+    }
+  ],
+  "head_log_revision": "4054db96c634db4c6350a94ce1259eb77ab1fad7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all three commits against base 02018821b8d1; 4054db96c6 adds eight fixture lines at tests/test_held_worktrees_are_read_once_per_change.py:51-58, d6ff80c7bb and 05e31d71db1d add only the evidence fragment, and the test file is byte-identical between 4054db96c6 and the reviewed head 05e31d71db1d.",
+    "done_when": "the done_when names the file passing in full as an all_debug job whose run unsets SLURM_JOB_ID, and logs/head-gate-all_debug.log records 4 passed in 3.98s with EXIT=0 for the pytest command on tests/test_held_worktrees_are_read_once_per_change.py, and sacct reports job 1319739 as COMPLETED 0:0 on node 98dci4-clu-3142.",
+    "goal": "the goal is that tests/test_held_worktrees_are_read_once_per_change.py passes in full on the primary branch, and the landed fixture change at tests/test_held_worktrees_are_read_once_per_change.py:51-58 gives each of the twenty registered trees one commit its primary branch does not reach, so _tree_holds_unmerged_work answers True and all four cases pass.",
+    "manifest": "read; it reports 4 passed at head against 4 failed at base, both suite arms at 58 passed, ruff clean on the changed test path, and names its five logs, while its head gate log records revision 4054db96c6 rather than the reviewed head.",
+    "write_paths": "the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches only tests/test_held_worktrees_are_read_once_per_change.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-are-read-once-per-change.html, both inside that grant, and changes no production source."
+  },
+  "justifications": {
+    "durability": "reverting tests/test_held_worktrees_are_read_once_per_change.py:51-58 reinstates the drop of clean trees and reddens all four cases as logs/base-gate.log records, but the change adds no assertion of its own.",
+    "evidence": "logs/head-gate-all_debug.log ends 4 passed in 3.98s and EXIT=0 for the gate command the done_when names, though its header records 4054db96c6 rather than the reviewed head 05e31d71db1d.",
+    "fit": "the added lines follow the fixture's existing git() call style from tests/helpers/git.py and the module's comment convention at tests/test_held_worktrees_are_read_once_per_change.py:51-55.",
+    "goal_fidelity": "tests/test_held_worktrees_are_read_once_per_change.py:56-58 supplies the unmerged commit reckon/crew/obligations.py:3336 requires before a retained tree is held, so the file's four cases pass in full.",
+    "reuse": "the change adds no definition; the filter it satisfies stays the one owner at reckon/crew/obligations.py:3336 rather than a forked copy, and a capability search over reckon/ found no second held-tree filter.",
+    "scope_discipline": "every path in the diff is inside the declared paths, tests/test_held_worktrees_are_read_once_per_change.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_held_worktrees_are_read_once_per_change.py passes in full on the primary branch, and the landed fixture change at tests/test_held_worktrees_are_read_once_per_change.py:51-58 gives each of the twenty registered trees one commit its primary branch does not reach, so _tree_holds_unmerged_work answers True and all four cases pass.\nVERDICT done_when: the done_when names the file passing in full as an all_debug job whose run unsets SLURM_JOB_ID, and logs/head-gate-all_debug.log records 4 passed in 3.98s with EXIT=0 for the pytest command on tests/test_held_worktrees_are_read_once_per_change.py, and sacct reports job 1319739 as COMPLETED 0:0 on node 98dci4-clu-3142.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff touches only tests/test_held_worktrees_are_read_once_per_change.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-are-read-once-per-change.html, both inside that grant, and changes no production source.\nVERDICT manifest: read; it reports 4 passed at head against 4 failed at base, both suite arms at 58 passed, ruff clean on the changed test path, and names its five logs, while its head gate log records revision 4054db96c6 rather than the reviewed head.\nVERDICT diff: read all three commits against base 02018821b8d1; 4054db96c6 adds eight fixture lines at tests/test_held_worktrees_are_read_once_per_change.py:51-58, d6ff80c7bb and 05e31d71db1d add only the evidence fragment, and the test file is byte-identical between 4054db96c6 and the reviewed head 05e31d71db1d.\nCALL_SITES: reckon/crew/obligations.py:_held_worktree_records, reckon/crew/obligations.py:_HeldWorktreeState.refresh_trees, reckon/crew/obligation_snapshot.py:fleet_state, reckon/crew/station_obligations.py:refresh\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_held_worktrees_are_read_once_per_change.py:56-58 supplies the unmerged commit reckon/crew/obligations.py:3336 requires before a retained tree is held, so the file's four cases pass in full.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-gate-all_debug.log ends 4 passed in 3.98s and EXIT=0 for the gate command the done_when names, though its header records 4054db96c6 rather than the reviewed head 05e31d71db1d.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared paths, tests/test_held_worktrees_are_read_once_per_change.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE durability: 17\nJUSTIFICATION durability: reverting tests/test_held_worktrees_are_read_once_per_change.py:51-58 reinstates the drop of clean trees and reddens all four cases as logs/base-gate.log records, but the change adds no assertion of its own.\nSCORE fit: 18\nJUSTIFICATION fit: the added lines follow the fixture's existing git() call style from tests/helpers/git.py and the module's comment convention at tests/test_held_worktrees_are_read_once_per_change.py:51-55.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; the filter it satisfies stays the one owner at reckon/crew/obligations.py:3336 rather than a forked copy, and a capability search over reckon/ found no second held-tree filter.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-held-worktrees-are-read-once-per-change.html:383 non-blocking: the head-run block and both suite-arm blocks quote revision 4054db96c6 instead of the reviewed head 05e31d71db1d, so a reader comparing the gate receipt's revision against the promoted commits sees an unexplained mismatch; the two later commits touch only that fragment and the test bytes measured are the same at both revisions.\n",
+  "review_run_id": "r-20261116T132741950198-review-of-qwnw-red-file-held-worktrees-are-read-once-per-change-05e31d71db1d",
+  "reviewed_base_sha": "02018821b8d121a7924a6ca7fbaf8742efc9883d",
+  "reviewed_head_sha": "05e31d71db1d7362ff91cdbb0bf3b3f037c11295",
+  "reviewed_run_id": "r-20261116T104511528268-qwnw-red-file-held-worktrees-are-read-once-per-change",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T14:34:32.234721+00:00",
+  "total": 109
+}

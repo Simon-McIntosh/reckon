@@ -1,0 +1,86 @@
+<section id="qwnw-red-file-backend-sandbox-delivery">
+<h2>The backend sandbox-delivery file passes in full, and each cause has a verdict</h2>
+
+<p>The file <code>tests/test_backend_sandbox_delivery.py</code> reported three failing tests at revision <code>69fab1372f16686ce6acdb6094a357c6f6bfe18d</code> (which is also the head of <code>origin/main</code> as this worktree holds it): two fail on any node, and the third fails wherever <code>TMPDIR</code> is unset. Each is its own cause and each verdict is <em>test wrong</em> — none encodes a rule the product keeps any more. No product line changed.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-cause-1">Cause 1 — the Claude grant test measured the fence, not the dialect</h3>
+
+<p><code>test_claude_read_only_grant_excludes_the_worktree</code> composed a launch with the fence default, then asserted the repository path appears nowhere in <code>plan.argv</code>. The fence binds the worktree read-only, so its <code>bwrap</code> vector names that path by design; the failing assertion was against <code>--ro-bind</code>, not against <code>--add-dir</code>. The test's own grant assertion — the writable-directory grant computed by <code>sandbox_write_roots</code> never contains the repository — held and still holds.</p>
+
+<p><strong>Verdict: test wrong.</strong> The repair passes <code>fence=False</code>, the same repair its codex sibling already carried, and its docstring now states why the wrapper is absent. Every assertion is unchanged: the worktree is absent from the <code>--add-dir</code> grant and absent from the whole dialect vector.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-cause-2">Cause 2 — the Codex argv pin was a literal from before three overrides existed</h3>
+
+<p><code>test_codex_read_only_argv_is_unchanged</code> compares the whole vector byte for byte. The dialect now composes three option pairs this literal did not carry: <code>-c mcp_servers=…</code> (the table disabling undeclared inherited servers), <code>-c hooks.PostToolUse=…</code> and <code>-c hooks.state=…</code> (the inbox hook and the session-flag trust read from the harness at launch). None belongs to the sandbox tier; all three are deliberate and are covered by their own tests (<code>tests/test_codex_inbox_trust.py</code>, <code>tests/test_workers_start_without_reckon_mcp.py</code>).</p>
+
+<p><strong>Verdict: test wrong.</strong> The repair keeps the byte-for-byte pin and extends the expected vector to the one the product composes. Two properties are made true of the pin that were not:</p>
+
+<ul>
+<li>the hook-trust probe is answered in the test rather than against whatever <code>codex</code> the machine carries, so the trust words are a fixed value the pin owns;</li>
+<li><code>fence_home</code> points into <code>tmp_path</code>, so the MCP override is resolved from a home the test creates rather than the operator's <code>~/.codex/config.toml</code>, which would otherwise rewrite the expected <code>mcp_servers</code> table on another machine.</li>
+</ul>
+
+<p>No assertion was deleted or narrowed; the expected vector grew, and the cwd assertion is untouched.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-cause-3">Cause 3 — the computed-roots test read the machine's <code>TMPDIR</code></h3>
+
+<p><code>test_claude_read_only_grants_every_computed_write_root</code> asserted that every root <code>sandbox_write_roots</code> computes reaches a fenced launch's <code>--add-dir</code> grant. <code>delivery_write_roots</code> names the ambient temp root (<code>tempfile.gettempdir()</code>) for the tier, and the fence seals the node's own <code>/tmp</code> read-only for every run. The assertion therefore holds exactly when the ambient root lies <em>beneath</em> that seal — a run-scoped <code>TMPDIR</code>, as this worktree's shells set — and fails on a compute node, where <code>TMPDIR</code> is unset and the ambient root <em>is</em> the seal. Reproduced in place at the delivered head:</p>
+
+<pre>env -u TMPDIR PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_backend_sandbox_delivery.py
+E           AssertionError: assert '/tmp' in ['/tmp/pytest-of-mcintos/pytest-0/test_claude_read_only_grants_e0/reports', '/tmp/pytest-of-mcintos/pytest-0/test_claude_read_only_grants_e0/run']
+1 failed, 3 passed in 2.14s</pre>
+
+<p><strong>Verdict: test wrong.</strong> Two deliberate rules meet here and the fence states both: the tier names the ambient root, and a root at or above a seal is withheld rather than re-opened. The test spliced them into one environment-dependent claim. The repair pins the ambient root into <code>tmp_path</code> for the case that asserts every computed root survives, and adds a second case stating the rule the code keeps for a sealed temp root — the seal is withheld and every other computed root still reaches the grant. Both cases read the same on any node.</p>
+
+<p>One product wart is recorded rather than repaired here, because it is a design decision this node does not own: on a node whose <code>TMPDIR</code> is unset, no writable temp root reaches a fenced worker at all — the run directory is the only scratch it gets.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-negative-control">Negative control — the base run of the file, with its failing ids</h3>
+
+<p>Before any repair, at <code>69fab1372f</code>, <code>SLURM_JOB_ID</code> unset and <code>TMPDIR</code> unset, which is the configuration a compute node gives:</p>
+
+<pre># revision: 69fab1372f16686ce6acdb6094a357c6f6bfe18d (base content of the named file)
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery
+# command: env -u TMPDIR -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_backend_sandbox_delivery.py
+.FFF                                                                     [100%]
+FAILED tests/test_backend_sandbox_delivery.py::test_claude_read_only_grants_every_computed_write_root
+FAILED tests/test_backend_sandbox_delivery.py::test_claude_read_only_grant_excludes_the_worktree
+FAILED tests/test_backend_sandbox_delivery.py::test_codex_read_only_argv_is_unchanged
+3 failed, 1 passed in 2.99s
+EXIT=1</pre>
+
+<p>The same base content with <code>TMPDIR</code> pointing at a run scratch reads <code>2 failed, 2 passed</code>: the first two ids above, the ambient-root one passing because the ambient root is then beneath the seal. Both logs are kept in the run directory. The full text of the three-id run is the file <code>docs/evidence/fragments/queued-work-needs-no-workaround/red-file-backend-sandbox-delivery.html</code>.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-head-run">Head run of the named file</h3>
+
+<p>At <code>e76c9704da</code>, <code>SLURM_JOB_ID</code> unset:</p>
+
+<pre># revision: e76c9704da95bdad87730c1a521ba0b5f102e274
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-backend-sandbox-delivery
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_backend_sandbox_delivery.py
+.....                                                                    [100%]
+5 passed in 2.39s
+EXIT=0</pre>
+
+<p>The same commit with <code>TMPDIR</code> unset reads <code>5 passed</code> in 2.85s. The file has five tests because cause 3's repair splits one case into two; nothing was dropped.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-arms">The arm over the files that use what the test measures</h3>
+
+<p>49 test files use <code>launch_plan</code> or <code>sandbox_write_roots</code>. The same selection was run against the base file content at <code>69fab1372f</code> and against the repaired file, and the three failing ids are exactly the repaired set, with no failure added:</p>
+
+<table>
+<tr><th>arm</th><th>revision</th><th>result</th><th>failing ids</th></tr>
+<tr><td>base</td><td><code>69fab1372f</code> (base file content)</td><td>16 failed, 469 passed, <code>EXIT=1</code></td><td>16, including all three repaired ids</td></tr>
+<tr><td>after</td><td><code>e76c9704da</code></td><td>14 failed, 472 passed, <code>EXIT=1</code></td><td>the same 16 less the three repaired — nothing added</td></tr>
+</table>
+
+<p>The fourteen that remain fail in nine other files and are outside this node's declared scope — they are not the named file, and their causes are not this node's: <code>test_a_paired_dispatch_hides_each_arm.py</code> (1), <code>test_anchored_edit_codex_arm.py</code> (2), <code>test_crew_lane_change.py</code> (2), <code>test_direct_resume_needs_an_observed_death.py</code> (1), <code>test_dispatch_attaches_the_figures.py</code> (1), <code>test_dispatch_counts_worker_slots.py</code> (1), <code>test_dispatch_names_a_model.py</code> (1), <code>test_harness_home_is_not_in_the_worktree.py</code> (2), <code>test_launch_plan_fences_the_home.py</code> (3). The suite arm promotion runs before and after the change — <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — reads 58 passed <code>EXIT=0</code> on both arms.</p>
+
+<h3 id="qwnw-red-file-backend-sandbox-delivery-lint">Lint and format on the changed path</h3>
+
+<pre>.venv/bin/python -m ruff check tests/test_backend_sandbox_delivery.py
+All checks passed!
+EXIT=0
+.venv/bin/python -m ruff format --check tests/test_backend_sandbox_delivery.py
+1 file already formatted
+EXIT=0</pre>
+</section>

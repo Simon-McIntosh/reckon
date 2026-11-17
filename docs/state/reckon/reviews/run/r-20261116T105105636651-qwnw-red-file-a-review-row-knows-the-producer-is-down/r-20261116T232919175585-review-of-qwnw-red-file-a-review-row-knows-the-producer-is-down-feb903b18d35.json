@@ -1,0 +1,57 @@
+{
+  "added_failure_basis": "baseline_suite 58 passed EXIT=0 with 0 failure ids and after_suite 58 passed EXIT=0 with 0 failure ids, read from logs/baseline-suite.log and logs/after-suite.log; the importer arms add nothing, 0 ids newly failing and 24 base ids no longer failing, derived line by line from logs/baseline-importers.log and logs/after-importers.log",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/directory.py:342",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/obligations.py:1663",
+    "reckon/crew/pending_landing.py:378",
+    "reckon/crew/promotion.py:1126",
+    "reckon/crew/promotion_release.py:1169",
+    "reckon/crew/query.py:597",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/crew/recovery_review_acceptance.py:1676"
+  ],
+  "completed_at": "2026-11-16T23:32:37.750Z",
+  "dispatched_at": "2026-11-16T23:32:19Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down/logs/head-ids.txt",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded importer id artifact holds 45 lines while logs/after-importers.log at feb903b18d reports 20 failed and 10 errors, 30 ids; the 15 extra lines are ids that fail at base and pass at the repaired head, so a reader re-deriving the delta from this file sees failures the head does not have. The manifest's own figures do reproduce from the logs (0 ids newly failing, 24 base ids no longer failing at line level), so the claim stands and only the artifact is stale."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered arm table still names the named check at 7a104067b9 and both importer arms at bcbb2fadb0, while the arms were re-recorded at the repaired head feb903b18d (logs/all-debug-target-file.log records job 1320709 with SLURM_JOB_ID unset and logs/after-importers.log's header names feb903b18d), so the record's table describes an earlier head than the one it is delivered at; the cited logs do name feb903b18d, which is why this does not hold the node."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_review_row_knows_the_producer_is_down.py pass in full on the primary branch; the only commit gained since the reviewed head is the merge feb903b18d, whose own contribution against main's 9ad5e64e87 is 9 added lines at reckon/crew/recovery_classification.py:1837-1852 and :3314, and logs/head-target-file.log records \"3 passed\" EXIT=0 for that file at feb903b18d.\nVERDICT done_when: the done_when names the file green as an all_debug job with SLURM_JOB_ID unset against 3 red at the node's base, no added failure over the importing files, a logged negative control and a clean ruff pair; logs/all-debug-target-file.log records job 1320709 at feb903b18d with SLURM_JOB_ID unset reading \"3 passed\" EXIT=0, logs/baseline-suite.log and logs/after-suite.log read \"58 passed\" EXIT=0 on both arms, and the importer logs give 0 ids newly failing and 24 base ids fixed, but no ruff arm exists anywhere under logs/.\nVERDICT write_paths: the node was fenced to reckon, tests, the evidence fragment directory and its figures directory; the gained commit touches only reckon/crew/recovery_classification.py, which is inside that fence.\nVERDICT manifest: read; status complete, its evidence_inputs state that main had replaced the pre-spawn conditions with `not _spawn_evidence(record)` while this run had added `not manifest_present` and that both were kept, and its artifacts line records the target file 3 passed in place and on all_debug at feb903b18d (job 1320709) plus the importer arm at the repaired head.\nVERDICT diff: read commit by commit; the gained commit feb903b18d is a two-parent merge whose second parent is main 9ad5e64e87 and whose own contribution is 9 added lines to reckon/crew/recovery_classification.py with none removed: the comment clause about spawn evidence, `and not _spawn_evidence(record)` at line 1850, and the `_spawn_evidence` re-export at line 3314.\nCALL_SITES: reckon/crew/directory.py:342, reckon/crew/forgotten_runs.py:94, reckon/crew/obligations.py:1663, reckon/crew/pending_landing.py:378, reckon/crew/promotion.py:1126, reckon/crew/promotion_release.py:1169, reckon/crew/query.py:597, reckon/crew/queue_landing.py:1704, reckon/crew/recovery_review_acceptance.py:1676\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the file the goal names reads 3 passed EXIT=0 at feb903b18d in logs/head-target-file.log, and the merge keeps the manifest guard at reckon/crew/recovery_classification.py:1851 that makes it pass rather than replacing it.\nSCORE evidence: 17\nJUSTIFICATION evidence: every arm the done_when names except ruff is re-recorded at feb903b18d in the logs cited (head-target-file.log, all-debug-target-file.log job 1320709, after-suite.log), but the ruff pair has no log and the arm table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html:33 still names the earlier heads.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit changes one file, reckon/crew/recovery_classification.py, inside the declared reckon path, and its only content beyond the merge of main is the comment rewrite beside the predicate it edits.\nSCORE durability: 18\nJUSTIFICATION durability: the fixture at tests/test_a_review_row_knows_the_producer_is_down.py:79-101 carries no pid, budget, worker record, stream or stderr path, so dropping `and not manifest_present` at reckon/crew/recovery_classification.py:1851 still reinstates the three failing ids of logs/baseline-target-file.log, and the conjunct added at line 1850 does not let the run's three tests pass on the wrong arm.\nSCORE fit: 20\nJUSTIFICATION fit: the import at reckon/crew/recovery_classification.py:3314 joins the existing lazy re-export block of underscore names from .recovery_liveness, and the rewritten comment matches that block, introducing no new symbol or name.\nSCORE reuse: 20\nJUSTIFICATION reuse: `_spawn_evidence` is owned by reckon/crew/recovery_liveness.py:727 and used there at :776, and the gained line imports that owner instead of defining a second spawn-evidence reader beside it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down/logs/head-ids.txt:1 non-blocking: the recorded importer id artifact holds 45 lines while logs/after-importers.log at feb903b18d reports 20 failed and 10 errors, 30 ids; the 15 extra lines are ids that fail at base and pass at the repaired head, so a reader re-deriving the delta from this file sees failures the head does not have, even though the manifest's 0-added and 24-fixed figures do reproduce from the logs.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html:33 non-blocking: the delivered arm table still names the named check at 7a104067b9 and both importer arms at bcbb2fadb0, while the arms were re-recorded at the repaired head feb903b18d (all-debug-target-file.log job 1320709, after-importers.log header), so the record's table describes an earlier head than the one it is delivered at.",
+  "review_run_id": "r-20261116T232919175585-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-feb903b18d35",
+  "reviewed_base_sha": "0a5911ecb22cd4821e55dff9715be66494b8482d",
+  "reviewed_head_sha": "feb903b18d35b2bdd5985f9cb629d036ab9b4bf3",
+  "reviewed_run_id": "r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T232919175585-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-feb903b18d35"
+  },
+  "reviewer_run_id": "r-20261116T232919175585-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-feb903b18d35",
+  "scope_note": "second review of this run, covering only the commits gained since the review at 0a5911ecb22cd4821e55dff9715be66494b8482d: the merge feb903b18d and its contribution to reckon/crew/recovery_classification.py",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:20:00+00:00",
+  "total": 114
+}

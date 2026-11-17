@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived by reckon.crew.review.added_failures_from_gate_logs from the reviewed run's own suite pair: logs/armed-baseline.log at 963de3f5e0722419a4ad234f71cd7b192f228a3f reads '58 passed in 41.14s' with EXIT=0, and logs/armed-final.log at acee65b1d4834368050c36271daeb42520cdae9b reads '58 passed in 46.03s' with EXIT=0; neither log carries a FAILED or ERROR line, so the reader returns (0, []). The instrument was positive-controlled on the same two logs' format: reading logs/gate-delivered.log as the base and logs/head-base-negative-control.log as the head returns 4 added ids, so a zero here is a measured zero and not a blind reader.",
+  "after_gate_log_revision": "acee65b1d4834368050c36271daeb42520cdae9b",
+  "baseline_gate_log_revision": "963de3f5e0722419a4ad234f71cd7b192f228a3f",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:4043 (the fleet tick classifies every live pointer through the narrowed arm)",
+    "reckon/crew/recovery_watch.py:4131 (the review reflex reads the classification before composing)",
+    "reckon/crew/recovery_review_dispatch.py:3216 (the reflex's own classification read)",
+    "reckon/crew/queue_landing.py:1704 (landing accepts or refuses on the classification)",
+    "reckon/crew/directory.py:342 (the session directory's live view)",
+    "reckon/crew/resume.py:274 (resume decides from the classification)",
+    "reckon/crew/pending_landing.py:378 (a pending landing's row)",
+    "reckon/crew/promotion.py:1126 (a promotion reads the classification)"
+  ],
+  "completed_at": "2026-11-17T01:19:19.213Z",
+  "dispatched_at": "2026-11-17T01:18:34Z",
+  "findings": [
+    "non-blocking: reckon/crew/recovery_classification.py:1851 \u2014 the merge preserved primary main's spawn-evidence arm, but no test in the reviewed tree distinguishes it: grep for `_spawn_evidence` over tests/ returns no hits, and the closest behavioural guards (tests/test_working_reads_working_at_once.py:341, tests/test_a_live_run_never_reads_dead.py:494) reach the same reading through `_observed_phase`'s stream_shows_work argument, so a later merge that drops the arm would redden nothing this node gates on. Fold into a node that adds a case for a pre-spawn pointer whose spawn evidence is a pid or a launch log rather than a working stream.",
+    "non-blocking: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html:145 \u2014 the fragment quotes the merge arm's summary as `63 failed, 1717 passed, 13 errors in 1048.21s` while logs/importer-arm-merge.log's own summary line reads `63 failed, 1717 passed, 61 warnings, 13 errors in 1048.21s`; the omission drops a field of the line it quotes, which is how a quoted metric stops reconciling with the log it cites. No measured figure is wrong. Exempted: the dropped token is a warning count, not a result."
+  ],
+  "item_verdicts": {
+    "diff": "Read both gained commits against 5d343db2f505: a39a5e4037 is a two-parent merge whose own conflict resolution (git show --remerge-diff) touches only reckon/crew/recovery_classification.py, adding `and not _spawn_evidence(record)` beside the run's `and not manifest_status` and merging both comments; acee65b1d483 changes only the 37-line evidence fragment. No conflict marker survives in either file and the merge names both parents.",
+    "done_when": "The done_when names the node's file passing at head on an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, an importer arm and a base negative control; logs/gate-delivered.log names partition=all_debug job=1320842 at the reviewed head with `env -u SLURM_JOB_ID` in its command, logs/importer-arm-merge.log names job=1320659, and logs/head-base-negative-control.log still reports the four base ids, so the gate asserts the stated measure.",
+    "goal": "The node goal is to make tests/test_review_reflex_selects_a_backend.py pass in full on the primary branch; the gained merge resolution keeps both narrowings of the pre-spawn arm at reckon/crew/recovery_classification.py:1848-1852, and logs/gate-delivered.log at acee65b1d4834368050c36271daeb42520cdae9b reads `4 passed in 51.83s` EXIT=0.",
+    "manifest": "Read the reviewed manifest at status complete: it records the gate at acee65b1d483 as `4 passed in 51.83s` EXIT=0 on all_debug job 1320842, baseline_suite and after_suite each 58 passed EXIT=0, negative_control_log as a bare path, and its checkpoint names the merge a39a5e4037 and the both-arms resolution; every one of those receipts is on disk as recorded.",
+    "write_paths": "The reviewed manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the gained commits touch reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html and nothing else, both inside the fence, and no test file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_review_reflex_selects_a_backend.py pass in full on the primary branch; the gained merge resolution keeps both narrowings of the pre-spawn arm at reckon/crew/recovery_classification.py:1848-1852, and logs/gate-delivered.log at the reviewed head reads `4 passed in 51.83s` EXIT=0.\nVERDICT done_when: the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset plus a per-cause verdict, an importer arm and a base negative control; logs/gate-delivered.log names partition=all_debug job=1320842 at acee65b1d483 with `env -u SLURM_JOB_ID` in its command and reads 4 passed EXIT=0, logs/importer-arm-merge.log names job=1320659, and logs/head-base-negative-control.log reports the four base ids.\nVERDICT write_paths: the declared paths include reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the gained commits touch reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html only, both inside the fence, and no test file.\nVERDICT manifest: read the reviewed manifest; status complete, gate `4 passed in 51.83s` EXIT=0 at acee65b1d483 on all_debug job 1320842, baseline_suite and after_suite each 58 passed EXIT=0, and negative_control_log a bare path, all on disk as recorded.\nVERDICT diff: read both gained commits against 5d343db2f505; a39a5e4037's own conflict resolution (git show --remerge-diff) touches only reckon/crew/recovery_classification.py, keeping `and not manifest_status` beside `and not _spawn_evidence(record)`, and acee65b1d483 changes only the 37-line evidence fragment, with no conflict marker in either file.\nCALL_SITES: reckon/crew/recovery_watch.py:4043, reckon/crew/recovery_watch.py:4131, reckon/crew/recovery_review_dispatch.py:3216, reckon/crew/queue_landing.py:1704, reckon/crew/directory.py:342, reckon/crew/resume.py:274, reckon/crew/pending_landing.py:378, reckon/crew/promotion.py:1126\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1848-1852 is the single conjunction the node set out to fix, and the gate at acee65b1d483 records the file passing in full.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-delivered.log runs the node's file at the reviewed head itself and logs/added-control-primary.log shows the six ids the merge arm gained are red at 9c9fa0ab0d in the same seven-id order, so the inherited ids are measured rather than argued.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --remerge-diff a39a5e4037 names reckon/crew/recovery_classification.py alone as the merge's resolution and acee65b1d483 changes only the fragment, both inside the declared fragment and reckon paths.\nSCORE durability: 16\nJUSTIFICATION durability: the manifest arm at reckon/crew/recovery_classification.py:1850 is guarded by the four cases logs/head-base-negative-control.log shows failing without it, while the merged spawn arm at line 1851 has no test in the tree that distinguishes it from the stream_shows_work reading downstream.\nSCORE fit: 19\nJUSTIFICATION fit: the landed lines extend the existing conjunct at reckon/crew/recovery_classification.py:1848 rather than adding a branch, and the merged comment keeps the module's own before/after-None idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition introduces no new definition; it reuses the owner of its capability, `_spawn_evidence` at reckon/crew/recovery_liveness.py:727, which the module already imports at line 3509, and a search of reckon/crew for a second spawn-evidence predicate found only those two call sites.\nFINDING reckon/crew/recovery_classification.py:1851 non-blocking: the spawn-evidence arm the merge preserved has no test in the reviewed tree that distinguishes it from the downstream stream_shows_work reading, so a later merge dropping it would redden nothing this node gates on; fold into a node adding a case for a pre-spawn pointer whose spawn evidence is a pid or a launch log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-reflex-selects-a-backend.html:145 non-blocking: the fragment quotes the merge arm as `63 failed, 1717 passed, 13 errors in 1048.21s` while the log's summary line reads `63 failed, 1717 passed, 61 warnings, 13 errors in 1048.21s`, dropping a field of the line it quotes; no measured figure is wrong, so exempted.",
+  "review_run_id": "r-20261116T233618354474-review-of-qwnw-red-file-review-reflex-selects-a-backend-acee65b1d483",
+  "reviewed_base_choice": "5d343db2f505c49a61721f0775671bb7383f552d is the head the stored review read, so the commits gained since that review are exactly git log 5d343db2f505..acee65b1d483: the merge a39a5e4037 that brings primary main 9c9fa0ab0db43f84ec89962a2e70692881495527 in, and acee65b1d483 which records it in the fragment. git show --remerge-diff a39a5e4037 shows the merge's own conflict resolution touching one file, reckon/crew/recovery_classification.py, and nothing else.",
+  "reviewed_base_sha": "5d343db2f505c49a61721f0775671bb7383f552d",
+  "reviewed_head_sha": "acee65b1d4834368050c36271daeb42520cdae9b",
+  "reviewed_run_id": "r-20261116T104236378482-qwnw-red-file-review-reflex-selects-a-backend",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T233618354474-review-of-qwnw-red-file-review-reflex-selects-a-backend-acee65b1d483"
+  },
+  "rubric": "scores",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:45:00+00:00",
+  "total": 114
+}

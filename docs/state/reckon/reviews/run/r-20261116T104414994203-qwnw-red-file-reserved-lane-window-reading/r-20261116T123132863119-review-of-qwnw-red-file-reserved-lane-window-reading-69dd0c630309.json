@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:916 crew pick -> snapshot.candidates",
+    "reckon/crew/picker/snapshot.py:1500 candidates",
+    "reckon/crew/picker/snapshot.py:1309 _reserved_lane_exclusion (reached from :1827)"
+  ],
+  "completed_at": "2026-11-16T13:23:31.746Z",
+  "dispatched_at": "2026-11-16T13:23:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-reserved-lane-window-reading.html",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the fragment cites its green run at b2461f88fb and job 1319750, while the run's own gate log logs/gate-head-run.log is the run at the reviewed head 69dd0c63 and no log on record carries job 1319750, so the citation cannot be resolved from the landed artefacts."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-reserved-lane-window-reading.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the recorded command carries an unsubstituted --basetemp=$RUN/scratch/pytest-base placeholder, so a reader cannot re-run the cited command as printed and the manifest's tests line is the only re-runnable form of it."
+    }
+  ],
+  "head_log_revision": "69dd0c63030968c4081c65b1fb65413b6f904d22",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "The landed change is a test file and an evidence fragment, so no production module imports it (a grep for test_reserved_lane_window_reading across reckon and tests finds only the file itself); the production paths its assertions exercise were read: the crew pick command, snapshot.candidates and _reserved_lane_exclusion.",
+    "diff": "Read commit by commit against aa086f1e29: 083f4bfbc9 flips three parametrised expectations and the routine-pick expectation to withheld and adds one reason assertion at tests/test_reserved_lane_window_reading.py:256, b2461f88fb adds the evidence fragment, and 69dd0c63 restates only the fragment's green-run citation and basetemp argument.",
+    "done_when": "The done_when requires the file to pass in full as an all_debug job with SLURM_JOB_ID unset, a product-wrong or test-wrong verdict per cause, and an arm over importing test files adding no failure; logs/gate-head-run.log reads 14 passed EXIT=0 at 69dd0c63 with SLURM_JOB_ID unset, the manifest gives test wrong in all four naming 8f84806ed7 and b14e289ffe, and both suite arms read 58 passed EXIT=0.",
+    "goal": "The node's goal is that tests/test_reserved_lane_window_reading.py passes in full; the landed test-file change at tests/test_reserved_lane_window_reading.py:73,131,254 restores four stale expectations to the rule reckon/crew/picker/snapshot.py:1810 enforces, so the file passes 14 of 14 as logs/gate-head-run.log records.",
+    "manifest": "Read; it states status complete, commits 083f4bfbc9, b2461f88fb and 69dd0c63, the gate 14 passed EXIT=0 as an all_debug job with SLURM_JOB_ID unset, the negative control's four failing ids at EXIT=1, both suite arms 58 passed EXIT=0, and the red picker-dispatch arm under outside_scope.",
+    "write_paths": "The node's fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff aa086f1e29..69dd0c63 touches only tests/test_reserved_lane_window_reading.py and the fragment inside that directory, with no product path changed."
+  },
+  "justifications": {
+    "durability": "tests/test_reserved_lane_window_reading.py:73 and :131 redden if snapshot.py:1810's enforce_reservation clause stops excluding the lane, and the added assertion at :256 reddens on an empty reason string if the tier-floor exclusion is removed instead.",
+    "evidence": "logs/gate-head-run.log reads 14 passed EXIT=0 at revision 69dd0c6303 with SLURM_JOB_ID unset, and logs/negative-control-base-test.log reads 4 failed, 10 passed EXIT=1 over the base test file, though logs/collateral-picker-arm.log is red at 10 failed with no base arm recorded beside it.",
+    "fit": "the renamed test at tests/test_reserved_lane_window_reading.py:132 follows the sibling file's name-states-the-rule idiom and reuses tests/test_picker_reserved_lanes.py:217 _reserved_reason, though the evidence fragment at line 13 leaves an unsubstituted placeholder in its recorded command.",
+    "goal_fidelity": "tests/test_reserved_lane_window_reading.py:73,131,254 restore the file's four stale expectations to the rule reckon/crew/picker/snapshot.py:1810 enforces, and logs/gate-head-run.log records 14 passed at 69dd0c63.",
+    "reuse": "the diff adds no definition, the one added assertion calls the shared helper tests/test_picker_reserved_lanes.py:217 _reserved_reason, and a search over reckon/crew and tests/ for another module importing the changed file found none.",
+    "scope_discipline": "git diff --stat aa086f1e29..69dd0c63 lists only tests/test_reserved_lane_window_reading.py and the evidence fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that tests/test_reserved_lane_window_reading.py passes in full; the landed test-file change at tests/test_reserved_lane_window_reading.py:73,131,254 restores four stale expectations to the rule reckon/crew/picker/snapshot.py:1810 enforces, so the file passes 14 of 14 as logs/gate-head-run.log records.\nVERDICT done_when: The done_when requires the file to pass in full as an all_debug job with SLURM_JOB_ID unset, a product-wrong or test-wrong verdict per cause, and an arm over importing test files adding no failure; logs/gate-head-run.log reads 14 passed EXIT=0 at 69dd0c63 with SLURM_JOB_ID unset, the manifest gives test wrong in all four naming 8f84806ed7 and b14e289ffe, and both suite arms read 58 passed EXIT=0.\nVERDICT write_paths: The node's fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff aa086f1e29..69dd0c63 touches only tests/test_reserved_lane_window_reading.py and the fragment inside that directory, with no product path changed.\nVERDICT manifest: Read; it states status complete, commits 083f4bfbc9, b2461f88fb and 69dd0c63, the gate 14 passed EXIT=0 as an all_debug job with SLURM_JOB_ID unset, the negative control's four failing ids at EXIT=1, both suite arms 58 passed EXIT=0, and the red picker-dispatch arm under outside_scope.\nVERDICT diff: Read commit by commit against aa086f1e29: 083f4bfbc9 flips three parametrised expectations and the routine-pick expectation to withheld and adds one reason assertion at tests/test_reserved_lane_window_reading.py:256, b2461f88fb adds the evidence fragment, and 69dd0c63 restates only the fragment's green-run citation and basetemp argument.\nCALL_SITES: reckon/crew_dispatch_commands.py:916 crew pick -> snapshot.candidates, reckon/crew/picker/snapshot.py:1500 candidates, reckon/crew/picker/snapshot.py:1309 _reserved_lane_exclusion (reached from :1827)\nSCORE goal_fidelity: 18\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 17\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: tests/test_reserved_lane_window_reading.py:73,131,254 restore the file's four stale expectations to the rule reckon/crew/picker/snapshot.py:1810 enforces, and logs/gate-head-run.log records 14 passed at 69dd0c63.\nJUSTIFICATION evidence: logs/gate-head-run.log reads 14 passed EXIT=0 at revision 69dd0c6303 with SLURM_JOB_ID unset, and logs/negative-control-base-test.log reads 4 failed, 10 passed EXIT=1 over the base test file, though logs/collateral-picker-arm.log is red at 10 failed with no base arm recorded beside it.\nJUSTIFICATION scope_discipline: git diff --stat aa086f1e29..69dd0c63 lists only tests/test_reserved_lane_window_reading.py and the evidence fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both inside the declared fence.\nJUSTIFICATION durability: tests/test_reserved_lane_window_reading.py:73 and :131 redden if snapshot.py:1810's enforce_reservation clause stops excluding the lane, and the added assertion at :256 reddens on an empty reason string if the tier-floor exclusion is removed instead.\nJUSTIFICATION fit: the renamed test at tests/test_reserved_lane_window_reading.py:132 follows the sibling file's name-states-the-rule idiom and reuses tests/test_picker_reserved_lanes.py:217 _reserved_reason, though the evidence fragment at line 13 leaves an unsubstituted placeholder in its recorded command.\nJUSTIFICATION reuse: the diff adds no definition, the one added assertion calls the shared helper tests/test_picker_reserved_lanes.py:217 _reserved_reason, and a search over reckon/crew and tests/ for another module importing the changed file found none.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-reserved-lane-window-reading.html:12 non-blocking: the fragment cites its green run at b2461f88fb and job 1319750, while the run's own gate log logs/gate-head-run.log is the run at the reviewed head 69dd0c63 and no log on record carries job 1319750, so the citation cannot be resolved from the landed artefacts.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-reserved-lane-window-reading.html:13 non-blocking: the recorded command carries an unsubstituted --basetemp=$RUN/scratch/pytest-base placeholder, so a reader cannot re-run the cited command as printed and the manifest's tests line is the only re-runnable form of it.",
+  "review_run_id": "r-20261116T123132863119-review-of-qwnw-red-file-reserved-lane-window-reading-69dd0c630309",
+  "reviewed_base_sha": "aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b",
+  "reviewed_head_sha": "69dd0c63030968c4081c65b1fb65413b6f904d22",
+  "reviewed_run_id": "r-20261116T104414994203-qwnw-red-file-reserved-lane-window-reading",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T123132863119-review-of-qwnw-red-file-reserved-lane-window-reading-69dd0c630309"
+  },
+  "reviewer_run_id": "r-20261116T123132863119-review-of-qwnw-red-file-reserved-lane-window-reading-69dd0c630309",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:16:28.922897+00:00",
+  "total": 110
+}

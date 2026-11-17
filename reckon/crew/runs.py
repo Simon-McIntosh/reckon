@@ -2940,7 +2940,7 @@ def _unloaded_sections(
         if not isinstance(node, Mapping):
             node = {}
         return (
-            str(node.get("plan") or record.get("plan") or ""),
+            str(node.get("plan") or "") or ledger.row_plan(record),
             _plan_html.section_record_id(node.get("section") or record.get("section")),
         )
 
@@ -3531,17 +3531,24 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     return result
 
 
-def drain_unreconciled_by_session(project: str) -> dict[str, int]:
+def drain_unreconciled_by_session(
+    project: str, *, pointers: Iterable[Mapping[str, Any]] | None = None
+) -> dict[str, int]:
     """The drain's unreconciled count for every session, derived once.
 
     A sweep needs the count for each session it publishes for, and deriving the
     rows once and partitioning them per session keeps that from repeating every
     pointer's classification for each reader. Rows with no recorded owner count
     for every session, exactly as :func:`drain` counts them.
+
+    ``pointers`` is the snapshot the caller's own pass is deriving from, so a
+    reader already holding one population counts over it instead of listing and
+    decoding every pointer again. With none the directory is listed here.
     """
     from reckon.crew.recovery import _partition_session_rows
 
-    rows = _closure_rows(list_live(project=project))
+    population = list_live(project=project) if pointers is None else list(pointers)
+    rows = _closure_rows(population)
     counts: dict[str, int] = {}
     for session in {str(row.get("session") or "") for row in rows} | {""}:
         counted, _peers = _partition_session_rows(rows, session)

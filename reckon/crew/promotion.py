@@ -23,17 +23,20 @@ from collections.abc import (
 from contextlib import (
     ExitStack,
     contextmanager,
+    nullcontext,
     suppress,
 )
 from dataclasses import (
     dataclass,
     field,
+    replace,
 )
 from datetime import (
     UTC,
     datetime,
     timezone,
 )
+from functools import wraps
 from pathlib import (
     Path,
 )
@@ -294,6 +297,117 @@ def _newer_attempt_named(run_id: str, record: Mapping[str, Any]) -> str:
     return f": attempt {attempt} was recorded after this promotion read the pointer"
 
 
+def _pointer_attempt(pointer: Mapping[str, Any]) -> int | None:
+    """The attempt a pointer names, or None when it names none."""
+    try:
+        return int(pointer.get("attempt"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _attempt_reservation(run_id: str, attempt: int) -> dict[str, Any]:
+    """The launch reservation a later attempt left in the run directory.
+
+    The reservation names the process that took the attempt and the door that
+    asked for it, so it is the only record a refusal can quote for a launch
+    whose pointer carries just the supervisor's own pid. The file is parsed by
+    its owner, ``dispatch_launch._read_reservation``, so every reader of a
+    reservation agrees about what one is; this reader adds only the check that
+    the record names the run it was looked up for, because a file naming another
+    run is no record of this one. A reservation the launch never wrote reads the
+    same as an unreadable one.
+    """
+    from reckon.crew.dispatch_launch import _read_reservation
+
+    loaded = _read_reservation(run_dir(run_id) / f"attempt-{attempt}.reservation")
+    if loaded is None or str(loaded.get("run_id") or "") != run_id:
+        return {}
+    return dict(loaded)
+
+
+def _launching_process_named(run_id: str, record: Mapping[str, Any]) -> str:
+    """Name the launch that owns the pointer this promotion could not retire.
+
+    A refusal is only as useful as the launch it points at: the attempt number
+    says which attempt to look for, and the reservation beside the run says
+    which process took it and which process launched that, which is what an
+    operator needs to find the work in flight instead of guessing from a pid
+    naming a supervisor they never started.
+    """
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return ""
+    attempt = _pointer_attempt(current)
+    if attempt is None or attempt == _pointer_attempt(record):
+        return ""
+    reservation = _attempt_reservation(run_id, attempt)
+    from reckon.crew.dispatch_launch import _reservation_launcher
+
+    launcher = _reservation_launcher(reservation).get("pid") if reservation else None
+    host = str(reservation.get("launcher_host") or "").strip()
+    supervisor = reservation.get("supervisor_pid") or current.get("pid")
+    named = ""
+    if launcher is not None:
+        on_host = f" on host {host}" if host else ""
+        named = f", launched by pid {launcher}{on_host}"
+        if supervisor is not None and supervisor != launcher:
+            named += f" (supervisor pid {supervisor})"
+    elif current.get("pid") is not None:
+        named = f", run by pid {current['pid']}"
+    return named
+
+
+def _attempt_has_ended(run_id: str, pointer: Mapping[str, Any]) -> bool:
+    """Whether the attempt a pointer names recorded its own end.
+
+    An attempt's exit receipt is the account its launch writes when it ends and
+    the same fact frees its launch reservation. A pointer naming an attempt
+    whose receipt is on disk therefore names work that is over, whatever state
+    the pointer's own fields are in.
+    """
+    attempt = _pointer_attempt(pointer)
+    if attempt is None:
+        return False
+    from reckon.crew.dispatch_launch import _reserved_attempt_ended
+
+    return _reserved_attempt_ended(run_dir(run_id), attempt)
+
+
+def _retire_a_pointer_whose_attempt_ended(
+    run_id: str, record: Mapping[str, Any]
+) -> bool:
+    """Finish cleanup against a pointer a later, ended launch left behind.
+
+    A promotion whose own attempt is no longer the pointer's cannot retire the
+    attempt it read, and refusing leaves the run's cleanup to a coordinator who
+    has to stop and discard it by hand although its row is already written.
+    When the attempt now on the pointer recorded its end, this promotion
+    completes the cleanup its own attempt started: the pointer goes, and the
+    run directory keeps the ended attempt's receipts. The pointer is removed
+    only while it still names the attempt this reading saw, so a launch that
+    started after it is left to its own promotion.
+    """
+    from reckon.crew import pending_landing
+
+    try:
+        current = read_pointer(run_id)
+    except CrewError:
+        return False
+    if _pointer_attempt(current) in (None, _pointer_attempt(record)):
+        return False
+    if not _attempt_has_ended(run_id, current):
+        return False
+    identity = pending_landing.attempt_identity(current)
+    return (
+        pending_landing.retire_pointer_if(
+            run_id,
+            lambda observed: pending_landing.attempt_identity(observed) == identity,
+        )
+        == pending_landing.POINTER_RETIRED
+    )
+
+
 def _keep_pointer_for_pending_landing(run_id: str) -> bool:
     """Mark the live pointer a promotion could not remove, or report failure.
 
@@ -458,6 +572,11 @@ def _remove_promoted_pointer_or_defer(
     still finishes it. A pointer another attempt owns is left exactly as it is:
     marking it would send that attempt into the repair-only branch with no
     record of its own to finish.
+
+    A pointer a later launch moved to its own attempt needs no landing repair
+    once the attempt it belongs to has ended: that launch recorded its own end,
+    so the promotion finishes cleanup by removing the pointer rather than
+    parking the run behind a mark nothing will come back for.
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
@@ -473,6 +592,10 @@ def _remove_promoted_pointer_or_defer(
                 return True
             _mark_promoted_pointer(run_id)
             return False
+        if not finishing_another_writers_row and _retire_a_pointer_whose_attempt_ended(
+            run_id, record
+        ):
+            return True
         if finishing_another_writers_row:
             _record_a_raced_landing(run_id, record, reviewed_head=reviewed_head)
             retired = _retire_a_raced_pointer(run_id, record)
@@ -485,7 +608,8 @@ def _remove_promoted_pointer_or_defer(
         if not _keep_pointer_for_pending_landing(run_id):
             raise CrewError(
                 f"run {run_id!r} changed while promotion ran"
-                f"{_newer_attempt_named(run_id, record)} and its pointer "
+                f"{_newer_attempt_named(run_id, record)}"
+                f"{_launching_process_named(run_id, record)} and its pointer "
                 "could not be marked for the landing pass: its promotion is "
                 "recorded, and the merge of its reviewed head is left to the "
                 "landing record this promotion wrote"
@@ -494,7 +618,8 @@ def _remove_promoted_pointer_or_defer(
             return False
         raise CrewError(
             f"run {run_id!r} changed while promotion ran"
-            f"{_newer_attempt_named(run_id, record)}; its promotion is "
+            f"{_newer_attempt_named(run_id, record)}"
+            f"{_launching_process_named(run_id, record)}; its promotion is "
             "recorded and its pointer is kept, marked pending_landing_repair, so "
             "the next landing pass finishes the merge of its reviewed head"
         ) from exc
@@ -1720,7 +1845,324 @@ def _budget_overrun_facts(
     }
 
 
+@dataclass
+class _PlanWriteSnapshot:
+    """The plan and its path's index state before a landing writes them."""
+
+    checkout: Path
+    path: Path
+    content: bytes
+    mode: int
+    index: str
+    head_entry: str
+    run_id: str
+    head_content: bytes
+    commit_attempted: bool = False
+    rollback_content: bytes | None = None
+    expected_content: bytes | None = None
+
+    def index_entry(self) -> str:
+        return _git(
+            self.checkout, "ls-files", "--stage", "-z", "--", str(self.path)
+        ).stdout
+
+    def committed_entry(self) -> str:
+        return _git(self.checkout, "ls-tree", "-z", "HEAD", "--", str(self.path)).stdout
+
+    def require_owned_content(self, current: bytes) -> None:
+        """Accept only exact preimages or the rendered write this run intended."""
+        if current not in (self.content, self.expected_content, self.rollback_content):
+            raise CrewError(
+                "plan content changed after the snapshot; preserving the other writer's plan"
+            )
+
+    def require_owned_index(self, current: bytes) -> None:
+        entry = self.index_entry()
+        if entry == self.index:
+            return
+        if self.commit_attempted:
+            relative = self.path.relative_to(self.checkout).as_posix()
+            mode = "100755" if self.mode & 0o111 else "100644"
+            blob = _git(
+                self.checkout, "hash-object", "--", str(self.path)
+            ).stdout.strip()
+            if entry == f"{mode} {blob} 0\t{relative}\0":
+                return
+            if self.rollback_content is not None:
+                metadata, name = self.head_entry.split("\t", 1)
+                head_mode, _kind, head_blob = metadata.split()
+                if entry == f"{head_mode} {head_blob} 0\t{name}":
+                    return
+        raise CrewError(
+            "plan index changed after the snapshot; preserving the other writer's staging"
+        )
+
+    def restore(self, *, plan_locked: bool = False) -> None:
+        from reckon.crew.merge import _run_waiting_out_a_held_index_lock
+        from reckon.crew.promotion_scope import (
+            _INDEX_LOCK_RETRY_ATTEMPTS,
+            _INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        )
+
+        index_path = Path(
+            _git(self.checkout, "rev-parse", "--git-path", "index").stdout.strip()
+        )
+        if not index_path.is_absolute():
+            index_path = self.checkout / index_path
+        lock_path = index_path.with_name(index_path.name + ".lock")
+
+        def restore_owned(_attempt: int) -> subprocess.CompletedProcess:
+            try:
+                handle = lock_path.open("xb")
+            except FileExistsError:
+                return subprocess.CompletedProcess(
+                    ["git", "update-index"],
+                    128,
+                    "",
+                    f"Unable to create '{lock_path}': File exists",
+                )
+            try:
+                current = self.path.read_bytes()
+                self.require_owned_content(current)
+                self.require_owned_index(current)
+                if self.path.stat().st_mode != self.mode:
+                    raise CrewError(
+                        "plan mode changed after the snapshot; preserving the other writer's plan"
+                    )
+                index_changed = self.index_entry() != self.index
+                if index_changed:
+                    # The real index lock covers the ownership check and the
+                    # publication; git edits this run's private index copy.
+                    handle.write(index_path.read_bytes())
+                    handle.close()
+                    relative = self.path.relative_to(self.checkout).as_posix()
+                    object_length = len(
+                        _git(self.checkout, "rev-parse", "HEAD").stdout.strip()
+                    )
+                    entries = f"0 {'0' * object_length}\t{relative}\0" + self.index
+                    result = subprocess.run(
+                        ["git", "update-index", "-z", "--index-info"],
+                        cwd=self.checkout,
+                        input=entries,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                        env={**os.environ, "GIT_INDEX_FILE": str(lock_path)},
+                    )
+                    if result.returncode:
+                        return result
+                if current != self.content:
+                    _store.write_atomically(
+                        self.path,
+                        lambda target: target.write(self.content),
+                        binary=True,
+                        mode=self.mode,
+                    )
+                if index_changed:
+                    restored_index = lock_path.read_bytes()
+                    _store.write_atomically(
+                        index_path,
+                        lambda target: target.write(restored_index),
+                        binary=True,
+                        mode=index_path.stat().st_mode,
+                    )
+                if (
+                    self.path.read_bytes() != self.content
+                    or self.index_entry() != self.index
+                ):
+                    raise CrewError(
+                        "the restored plan or index entry differs from its snapshot"
+                    )
+                return subprocess.CompletedProcess(["git", "update-index"], 0, "", "")
+            finally:
+                handle.close()
+                lock_path.unlink()
+
+        # Editors use this same resource lock. The git index lock also excludes
+        # a stager between the ownership check and the path-specific update.
+        with (
+            nullcontext()
+            if plan_locked
+            else _store._serialized_path_lock(self.path, "plans")
+        ):
+            restored, _retries = _run_waiting_out_a_held_index_lock(
+                self.checkout,
+                restore_owned,
+                attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+                retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+            )
+            if restored.returncode:
+                raise CrewError(
+                    restored.stderr.strip() or "could not restore the plan index entry"
+                )
+
+
+def _record_comment_with_snapshot(
+    snapshot: _PlanWriteSnapshot | None, **kwargs: Any
+) -> dict:
+    if snapshot is not None:
+        from reckon import _plan_html
+
+        narrative = str(kwargs.get("landing") or kwargs.get("narrative") or "").strip()
+        if narrative:
+            state = _store._state_from_text(
+                kwargs["project"], snapshot.content.decode("utf-8"), kwargs.get("root")
+            )
+            comments = {
+                key: list(entries)
+                for key, entries in (state.get("comments") or {}).items()
+            }
+            entries = comments.setdefault(section_anchor(kwargs["section"]), [])
+            comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', snapshot.run_id)}"
+            if not any(entry.get("id") == comment_id for entry in entries):
+                entries.append(
+                    {
+                        "id": comment_id,
+                        "who": kwargs["author"],
+                        "when": kwargs["when"],
+                        "body": f"<p>{html.escape(narrative)}</p>",
+                    }
+                )
+                payload = {
+                    **state,
+                    "comments": comments,
+                    "version": int(state.get("version") or 0) + 1,
+                    "modified": _store.date.today().isoformat(),
+                }
+                if state.get("status") in {"draft", "pending"}:
+                    payload["status"] = "in-progress"
+                snapshot.expected_content = _plan_html.write_state(
+                    snapshot.content.decode("utf-8"),
+                    payload,
+                    drop_authored_impl_meta=True,
+                ).encode("utf-8")
+    return _record_landing_comment(**kwargs)
+
+
+def _commit_with_plan_snapshot(
+    snapshot: _PlanWriteSnapshot | None, **kwargs: Any
+) -> dict:
+    if snapshot is None:
+        return _commit_landing_writes(**kwargs)
+    # The commit helper may roll back its staging. Keep an editor out of that
+    # interval too, so that rollback cannot erase a concurrent plan write.
+    with _store._serialized_path_lock(snapshot.path, "plans"):
+        current = snapshot.path.read_bytes()
+        checkpoint = snapshot
+        try:
+            snapshot.require_owned_content(current)
+        except CrewError:
+            from bs4 import BeautifulSoup
+
+            from reckon import _plan_html
+
+            if snapshot.expected_content is None:
+                raise
+            intended = _plan_html.read_state(snapshot.expected_content.decode("utf-8"))
+            actual = _plan_html.read_state(current.decode("utf-8"))
+            merged = _store._comment_append_onto_current(actual, intended)
+            held_comments = actual.get("comments") or {}
+            kept = all(
+                entry in held_comments.get(section, [])
+                for section, entries in (intended.get("comments") or {}).items()
+                for entry in entries
+            )
+            rendered = _plan_html.write_state(
+                snapshot.expected_content.decode("utf-8"),
+                actual,
+                drop_authored_impl_meta=True,
+            ).encode("utf-8")
+            same_document = BeautifulSoup(
+                rendered.decode("utf-8"), "html.parser"
+            ) == BeautifulSoup(current.decode("utf-8"), "html.parser")
+            if merged is None or not kept or not same_document:
+                raise
+            # A commutative peer append may land with this run. Its full bytes
+            # and staging become the commit's rollback target, never the older
+            # snapshot that predates the peer's comment.
+            checkpoint = replace(
+                snapshot,
+                content=current,
+                mode=snapshot.path.stat().st_mode,
+                index=snapshot.index_entry(),
+                expected_content=current,
+                rollback_content=None,
+                commit_attempted=False,
+            )
+        checkpoint.require_owned_index(current)
+        checkpoint.commit_attempted = True
+        try:
+            return _commit_landing_writes(**kwargs)
+        except BaseException:
+            if checkpoint.path.read_bytes() == checkpoint.head_content:
+                checkpoint.rollback_content = checkpoint.head_content
+            if checkpoint is not snapshot:
+                checkpoint.restore(plan_locked=True)
+            raise
+
+
+def _preserve_plan_on_refusal(promote: Callable[..., dict[str, Any]]) -> Callable:
+    """Restore uncommitted plan writes on every exit that refuses a landing."""
+
+    @wraps(promote)
+    def guarded(run_id: str, **kwargs: Any) -> dict[str, Any]:
+        record = kwargs.get("record")
+        if record is None:
+            record = read_pointer(run_id)
+        record = {**record, **read_dispatch_detail(record)}
+        root = kwargs.get("root")
+        if root is None:
+            root = record.get("repo")
+        project = str(record.get("project") or "")
+        plan = str((record.get("node") or {}).get("plan") or "")
+        path = (
+            _store._resolve_html_file(project, plan, root, artifact_type="plan")
+            if root is not None and plan and not _is_shadow(record)
+            else None
+        )
+        if path is None:
+            return promote(run_id, **kwargs)
+        checkout = Path(root).expanduser().resolve()
+        path = path.resolve()
+        with _store._serialized_path_lock(path, "plans"):
+            snapshot = _PlanWriteSnapshot(
+                checkout=checkout,
+                path=path,
+                content=path.read_bytes(),
+                mode=path.stat().st_mode,
+                index=_git(
+                    checkout, "ls-files", "--stage", "-z", "--", str(path)
+                ).stdout,
+                head_entry=_git(
+                    checkout, "ls-tree", "-z", "HEAD", "--", str(path)
+                ).stdout,
+                run_id=run_id,
+                head_content=_git(
+                    checkout, "show", f"HEAD:{path.relative_to(checkout).as_posix()}"
+                ).stdout.encode("utf-8"),
+            )
+        kwargs["_plan_snapshot"] = snapshot
+        try:
+            return promote(run_id, **kwargs)
+        except BaseException as exc:
+            # A committed landing survives a cleanup failure. Rewinding its
+            # plan here would stage a reversal of a commit that already landed.
+            if snapshot.committed_entry() != snapshot.head_entry:
+                raise
+            try:
+                snapshot.restore()
+            except (CrewError, OSError) as restore_error:
+                message = f"{exc}; could not restore plan document and index entry {path}: {restore_error}"
+            else:
+                message = f"{exc}; restored plan document, version and index entry {path} to their pre-promotion state"
+            exc.args = (message,)
+            raise
+
+    return guarded
+
+
 @operational_read
+@_preserve_plan_on_refusal
 def _complete_locked(
     run_id: str,
     *,
@@ -1758,6 +2200,7 @@ def _complete_locked(
     landing: Mapping[str, Any] | None = None,
     promoted_by: str = "",
     ledger_reads: ExitStack | None = None,
+    _plan_snapshot: _PlanWriteSnapshot | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -1840,7 +2283,8 @@ def _complete_locked(
                 comment = (
                     {"recorded": False, "reason": "shadow evidence does not land code"}
                     if shadow
-                    else _record_landing_comment(
+                    else _record_comment_with_snapshot(
+                        _plan_snapshot,
                         project=project,
                         plan=str(node.get("plan") or ""),
                         section=str(node.get("section") or ""),
@@ -1855,7 +2299,8 @@ def _complete_locked(
                     )
                 )
                 landing_check = _report_landing_check(
-                    _commit_landing_writes(
+                    _commit_with_plan_snapshot(
+                        _plan_snapshot,
                         plan_text_edits=plan_text_edits,
                         run_id=run_id,
                         verdict=str(gate).strip().lower(),
@@ -2417,7 +2862,8 @@ def _complete_locked(
                 ),
             }
             if _measurement_reason(record)
-            else _record_landing_comment(
+            else _record_comment_with_snapshot(
+                _plan_snapshot,
                 project=project,
                 plan=str(node.get("plan") or ""),
                 section=str(node.get("section") or ""),
@@ -2443,11 +2889,31 @@ def _complete_locked(
     profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
         written = ledger.append_run(project, run, root=ledger_root)
-    except ledger.LedgerError:
+    except ledger.LedgerError as exc:
         # Another completion can land after the read above. Treat only an
         # observed matching record as success; every other ledger error is
-        # still a refusal.
-        existing = row_for_run(project, run_id, ledger_root)
+        # still a refusal. A failed lookup must also restore the plan write:
+        # a store that cannot accept a row may be unable to read it back.
+        existing = None
+        try:
+            existing = row_for_run(project, run_id, ledger_root)
+        finally:
+            if existing is None:
+                # The outer snapshot checks ownership under the plan writer's
+                # lock before restoring; returning this path to HEAD here
+                # would erase an editor's uncommitted write before that check.
+                rollback = {}
+                _record_landing_refusal(
+                    run_id,
+                    step="run-store",
+                    message=str(exc),
+                    checkout=checkout,
+                    rollback=rollback,
+                )
+                if not all(rollback.values()):
+                    raise ledger.LedgerError(
+                        f"{exc}{_unrestored_landing_writes(rollback)}"
+                    ) from exc
         if existing is None:
             raise
         already_promoted = True
@@ -2541,7 +3007,8 @@ def _complete_locked(
         # next promotion runs sees the run exactly as it was before the commit.
         _stop_at_stage_boundary("the promotion commit")
         landing_check = _report_landing_check(
-            _commit_landing_writes(
+            _commit_with_plan_snapshot(
+                _plan_snapshot,
                 plan_text_edits=plan_text_edits,
                 run_id=run_id,
                 verdict=str(gate).strip().lower(),
@@ -3418,6 +3885,7 @@ from reckon.crew.promotion_scope import (
     _shadow_stream_contamination,
     _snapshot_entries,
     _strip_store_owned_content,
+    _unrestored_landing_writes,
     _wall_exceeded_budget,
     _worker_authored_landing_record,
     _write_shadow_patch,

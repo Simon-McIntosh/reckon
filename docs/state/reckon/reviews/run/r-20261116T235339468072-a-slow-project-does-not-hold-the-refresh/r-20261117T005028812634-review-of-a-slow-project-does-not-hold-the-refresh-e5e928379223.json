@@ -1,0 +1,163 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The positive controls contain no real duties, invalidating an empty-result parity or absence claim.",
+      "lines": "118,156,262"
+    },
+    {
+      "fails_if": "The input hold is not entered or the case does not release its worker; these validate the fixture, not product behavior.",
+      "lines": "132,139,209"
+    },
+    {
+      "fails_if": "Restoring the global report lock prevents READY finishing before the ten-second bound while SLOW holds pruning; the base negative control records this failure.",
+      "lines": "143-148"
+    },
+    {
+      "fails_if": "The independently derived cold payload differs from the completed stored answer, including missing or changed duties.",
+      "lines": "155"
+    },
+    {
+      "fails_if": "Removing pending publication loses retained duties or the stale age, timestamp, or reason; the base negative control loses the stale marker.",
+      "lines": "158-161,218-219"
+    },
+    {
+      "fails_if": "The stale key and the identity in the current stored row differ; both moving together does not fail, so this checks internal consistency only (finding recorded).",
+      "lines": "220-222"
+    },
+    {
+      "fails_if": "Export is missing/different, unfinished SLOW is no longer in flight, completed READY is absent or wrongly heartbeat-stale, or the hold was released before the independent export.",
+      "lines": "165-166,223,249-265"
+    },
+    {
+      "fails_if": "Workers leak, completed rows remain stale or empty, or an unchanged supplied payload moves identity/changed_at; supplying the previous payload deliberately creates an unchanged derivation and does not make the independent stored stamp assertions tautological.",
+      "lines": "170-172,269-280"
+    },
+    {
+      "fails_if": "An unread first refresh manufactures a document, age, export, or station answer; the independently nonempty READY control establishes the reader can see completed work.",
+      "lines": "225-238"
+    },
+    {
+      "fails_if": "Publishing again before the refresh floor rewrites the stored row or export despite no change.",
+      "lines": "284-285"
+    },
+    {
+      "fails_if": "No added assertion fails when a retained stale answer is presented by the production hook as current; no reader-time stale-age advance is asserted.",
+      "lines": "missing"
+    }
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/station.py:Station.tick:1364",
+    "reckon/crew/station.py:DutyBeat._run:695",
+    "reckon/crew/station_obligations.py:record_sweep_report:112",
+    "reckon/crew/station_obligations.py:prune_sweep_failures:185",
+    "reckon/crew/obligation_snapshot.py:read_station_answer:673",
+    "reckon/hooks/coordinator_obligations.py:before_turn:1492",
+    "reckon/hooks/coordinator_obligations.py:format_checklist:895",
+    "reckon/hooks/coordinator_obligations.py:1885"
+  ],
+  "completed_at": "2026-11-17T00:57:30Z",
+  "dispatched_at": "2026-11-17T00:51:40Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/project-refresh-resume-ybw4kcs5/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/project-refresh-resume-ybw4kcs5/tree/tests/test_project_refresh_returns_within_its_budget.py /tmp/project-refresh-resume-ybw4kcs5/tree/tests/test_staged_write_inventory.py /tmp/project-refresh-resume-ybw4kcs5/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/final-head.log",
+      "measurement_cwd": "/tmp/project-refresh-resume-ybw4kcs5/tree",
+      "measurement_module": "/tmp/project-refresh-resume-ybw4kcs5/tree/reckon/crew/station_obligations.py",
+      "revision": "e5e928379223b13acafb80aceab14bb8cf350d1e"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/project-refresh-resume-7fnqzm2f/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/project-refresh-resume-7fnqzm2f/tree/tests/test_staged_write_inventory.py /tmp/project-refresh-resume-7fnqzm2f/tree/tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/baseline-exact.log",
+      "measurement_cwd": "/tmp/project-refresh-resume-7fnqzm2f/tree",
+      "measurement_module": "/tmp/project-refresh-resume-7fnqzm2f/tree/reckon/crew/station_obligations.py",
+      "revision": "3c3aefe8aa6d3231b99011f7b14baa23eda9b14f"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-slow-project-does-not-hold-the-refresh-e5e928379223",
+      "recorded_at": "2026-11-17T01:47:11.497844+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/station_obligations.py",
+      "line": "637",
+      "severity": "blocking",
+      "text": "blocking: the retained answer is marked only inside its payload, whereas obligation_snapshot.py:708-719 derives the reader's stale flag solely from heartbeat age and coordinator_obligations.py:1492-1550 renders a fresh-heartbeat answer with no retained-answer warning; format_checklist at line 895 ignores the payload stale marker, so a project still reading is presented as current rather than stale with its age as the goal requires."
+    },
+    {
+      "file": "tests/test_project_refresh_returns_within_its_budget.py",
+      "line": "220",
+      "severity": "non-blocking",
+      "text": "non-blocking: the stale key is compared with stored_identity of the current output row rather than the captured previous_row, so rewriting both identity and stale key together preserves this assertion despite losing the last answer's key; compare against the pre-refresh identity in the source node's repair."
+    }
+  ],
+  "importer_added_failure_ids": [],
+  "importer_failure_counts": {
+    "base": 17,
+    "head": 17
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read f42d3f9aba94307b80e49b1f8634db8c21413d0d, 10b77bdcee0b7228f6b9615156b7e87685ade513 and e5e928379223b13acafb80aceab14bb8cf350d1e against base 3c3aefe8aa6d3231b99011f7b14baa23eda9b14f; the two-file change repairs report locking and adds stale publication plus three regression cases.",
+    "done_when": "docs/plans/dispatch-admission-and-landing-take-seconds.html section s4 requires publication inside 10 seconds and cold parity; final-head.log records 0.055 seconds and parity, but the tests inspect stored staleness rather than its production presentation.",
+    "goal": "prompt.txt names bounded refresh with stale dated retained answers; station_obligations.py:112 isolates project publication, but its new stale marking at line 637 is not interpreted by the coordinator reader.",
+    "manifest": "manifest.md names three actual commits and readable baseline-exact.log, final-head.log and negative-final.log receipts, with zero additional failure ids against the baseline.",
+    "write_paths": "prompt.txt declares station.py, station_obligations.py and the new test plus optional evidence paths; the exact base-to-head diff changes only station_obligations.py and tests/test_project_refresh_returns_within_its_budget.py."
+  },
+  "justifications": {
+    "durability": "restoring the global lock fails tests/test_project_refresh_returns_within_its_budget.py:144 and removing pending marking fails line 219, but no assertion exercises a retained answer through read_station_answer and the production hook, and line 220 checks the key against the current output row.",
+    "evidence": "final-head.log records 61 passed and the independent cold comparison at tests/test_project_refresh_returns_within_its_budget.py:154, while negative-final.log demonstrates the base exceeding the 10-second publication bound and lacking the retained stale marker.",
+    "fit": "station_obligations.py:82 follows the existing module-owned lock and memo idiom, and line 637 calls the existing roadmap stale-marking owner without introducing prohibited names.",
+    "goal_fidelity": "station_obligations.py:112 removes the cross-project lock coupling, but the stale payload written at line 637 still reaches coordinator_obligations.py:1541 without a stale-age note when the station heartbeat is fresh.",
+    "reuse": "station_obligations.py:82 extends the existing sweep-report owner and line 637 reuses roadmap_snapshot.py:604; capability searches of station, station_store, roadmap_snapshot and tests/helpers found no existing keyed sweep-report lock or reusable held-project fixture/poll helper displaced by these additions.",
+    "scope_discipline": "the diff from 3c3aefe8aa6d3231b99011f7b14baa23eda9b14f to e5e928379223b13acafb80aceab14bb8cf350d1e contains only the declared station_obligations.py and tests/test_project_refresh_returns_within_its_budget.py paths."
+  },
+  "negative_control": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh/negative-final.log",
+    "reproduction": "AssertionError: held input kept the finished project unreported past 10 s; retained case KeyError: stale",
+    "result": "2 failed, 1 passed in 11.26s; EXIT=1"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt names bounded refresh with stale dated retained answers; station_obligations.py:112 isolates project publication, but its new stale marking at line 637 is not interpreted by the coordinator reader.\nVERDICT done_when: docs/plans/dispatch-admission-and-landing-take-seconds.html section s4 requires publication inside 10 seconds and cold parity; final-head.log records 0.055 seconds and parity, but the tests inspect stored staleness rather than its production presentation.\nVERDICT write_paths: prompt.txt declares station.py, station_obligations.py and the new test plus optional evidence paths; the exact base-to-head diff changes only station_obligations.py and tests/test_project_refresh_returns_within_its_budget.py.\nVERDICT manifest: manifest.md names three actual commits and readable baseline-exact.log, final-head.log and negative-final.log receipts, with zero additional failure ids against the baseline.\nVERDICT diff: read f42d3f9aba94307b80e49b1f8634db8c21413d0d, 10b77bdcee0b7228f6b9615156b7e87685ade513 and e5e928379223b13acafb80aceab14bb8cf350d1e against base 3c3aefe8aa6d3231b99011f7b14baa23eda9b14f; the two-file change repairs report locking and adds stale publication plus three regression cases.\nCALL_SITES: reckon/crew/station.py:Station.tick:1364, reckon/crew/station.py:DutyBeat._run:695, reckon/crew/station_obligations.py:record_sweep_report:112, reckon/crew/station_obligations.py:prune_sweep_failures:185, reckon/crew/obligation_snapshot.py:read_station_answer:673, reckon/hooks/coordinator_obligations.py:before_turn:1492, reckon/hooks/coordinator_obligations.py:format_checklist:895, reckon/hooks/coordinator_obligations.py:1885\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: station_obligations.py:112 removes the cross-project lock coupling, but the stale payload written at line 637 still reaches coordinator_obligations.py:1541 without a stale-age note when the station heartbeat is fresh.\nSCORE evidence: 17\nJUSTIFICATION evidence: final-head.log records 61 passed and the independent cold comparison at tests/test_project_refresh_returns_within_its_budget.py:154, while negative-final.log demonstrates the base exceeding the 10-second publication bound and lacking the retained stale marker.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from 3c3aefe8aa6d3231b99011f7b14baa23eda9b14f to e5e928379223b13acafb80aceab14bb8cf350d1e contains only the declared station_obligations.py and tests/test_project_refresh_returns_within_its_budget.py paths.\nSCORE durability: 16\nJUSTIFICATION durability: restoring the global lock fails tests/test_project_refresh_returns_within_its_budget.py:144 and removing pending marking fails line 219, but no assertion exercises a retained answer through read_station_answer and the production hook, and line 220 checks the key against the current output row.\nSCORE fit: 19\nJUSTIFICATION fit: station_obligations.py:82 follows the existing module-owned lock and memo idiom, and line 637 calls the existing roadmap stale-marking owner without introducing prohibited names.\nSCORE reuse: 20\nJUSTIFICATION reuse: station_obligations.py:82 extends the existing sweep-report owner and line 637 reuses roadmap_snapshot.py:604; capability searches of station, station_store, roadmap_snapshot and tests/helpers found no existing keyed sweep-report lock or reusable held-project fixture/poll helper displaced by these additions.\nFINDING reckon/crew/station_obligations.py:637 blocking: the retained answer is marked only inside its payload, whereas obligation_snapshot.py:708-719 derives the reader's stale flag solely from heartbeat age and coordinator_obligations.py:1492-1550 renders a fresh-heartbeat answer with no retained-answer warning; format_checklist at line 895 ignores the payload stale marker, so a project still reading is presented as current rather than stale with its age as the goal requires.\nFINDING tests/test_project_refresh_returns_within_its_budget.py:220 non-blocking: the stale key is compared with stored_identity of the current output row rather than the captured previous_row, so rewriting both identity and stale key together preserves this assertion despite losing the last answer's key; compare against the pre-refresh identity in the source node's repair.\n",
+  "recommended_dispositions": [
+    {
+      "disposition": "folded",
+      "finding": "tests/test_project_refresh_returns_within_its_budget.py:220",
+      "node": "a-slow-project-does-not-hold-the-refresh",
+      "reason": "Strengthen the retained-key assertion alongside the blocking reader-path repair; coordinator records the actual disposition."
+    }
+  ],
+  "review_run_id": "r-20261117T005028812634-review-of-a-slow-project-does-not-hold-the-refresh-e5e928379223",
+  "reviewed_base_sha": "3c3aefe8aa6d3231b99011f7b14baa23eda9b14f",
+  "reviewed_head_sha": "e5e928379223b13acafb80aceab14bb8cf350d1e",
+  "reviewed_run_id": "r-20261116T235339468072-a-slow-project-does-not-hold-the-refresh",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:23:24.114752+00:00",
+  "total": 106
+}

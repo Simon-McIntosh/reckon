@@ -1947,10 +1947,17 @@ def _resolve_promotion_outcome(
     if verdict == "passed" or supplied:
         return supplied
     from reckon.crew import recovery
-    from reckon.crew.recovery_review_delivery import review_delivery_refusal
+    from reckon.crew.recovery_review_delivery import (
+        _report_review_delivery,
+        review_delivery_refusal,
+    )
 
     project = str(record.get("project") or "")
     node_id = str((record.get("node") or {}).get("id") or "")
+    if recovery._is_review_run(record):
+        report = _report_review_delivery(record)
+        if report is not None:
+            return report["outcome"]
     prefix = recovery.PLAN_REVIEW_NODE_PREFIX
     plan_slug = _plan_review_plan_slug(node_id, prefix)
     if plan_slug:
@@ -2265,13 +2272,17 @@ def _require_impl_moved(
         return check
     remaining = _plan_remaining_sections(plan_state)
     listed = ", ".join(remaining) if remaining else "(none declared)"
+    from .recovery_classification import _promotion_command
+
+    remedy = _promotion_command(run_id, record, ())
+    if "crew complete" in remedy:
+        remedy += " --no-impl-change REASON"
     raise CrewError(
         f"run {run_id!r} promotes a passing {role} run, but plan {plan!r} impl "
         f"did not move: {recorded_value:g} at dispatch and {current:g} at "
         f"completion. Sections still to land: {listed}. Advance the plan's impl "
-        f"as the work lands, or record why it did not move with "
-        f"`reckon crew complete --run {run_id} --gate passed "
-        f"--no-impl-change REASON` (the reason lands on the ledger row); if the "
+        f"as the work lands. Inspect or complete the run with `{remedy}`; "
+        f"--no-impl-change REASON records why it did not move on the ledger; if the "
         f"plan's impl is not this run's to move, state that reason"
     )
 
@@ -3002,6 +3013,18 @@ def _staging_review_record_by_run(
     stored here and returns no payload: a code review names neither a plan nor a
     reviewed run, so it is not committed to the staging-to-committed tree.
     """
+    if record is not None and _code_review_key_for_promoting_run(record):
+        _store_code_review_for_promoting_run(project, record)
+        return None
+    node_id = str(((record or {}).get("node") or {}).get("id") or "")
+    if node_id.startswith(plan_review.PORTFOLIO_NODE_PREFIX):
+        key = node_id.removeprefix(plan_review.PORTFOLIO_NODE_PREFIX)
+        for sidecar in plan_review.delivered_portfolio_reviews(project):
+            if sidecar.get("scope_key") == key:
+                if not sidecar.get("stored"):
+                    plan_review._store_deliveries([sidecar])
+                break
+        return None
     found = review_module.record_for_review_run(project, run_id)
     if found is not None:
         return found[1]

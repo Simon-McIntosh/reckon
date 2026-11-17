@@ -1,0 +1,23 @@
+<section id="qwnw-red-file-orchestrator-lane-fence-landing">
+  <h2>The orchestrator lane fence passes in full</h2>
+
+  <p><strong>What changed.</strong> One helper in
+  <code>tests/test_dispatch_names_its_backend.py</code>:
+  <code>_payload</code> parses <code>result.stdout</code> instead of
+  <code>result.output</code>. Dispatch writes its created-run notice to stderr
+  and keeps stdout as a single JSON document; Click 8.2 made
+  <code>Result.output</code> interleave the two streams in write order, so the
+  notice became line 0 and three cases in
+  <code>tests/test_orchestrator_lane_fence.py</code> errored inside the reader
+  before reaching a fence assertion. The verdict is test wrong: the product
+  rule (one JSON document on stdout, notices on stderr) holds, and the
+  <code>red-file-orchestrator-lane-fence.html</code> fragment beside this one
+  carries the cause, the arms and the base failing ids.</p>
+
+  <p><strong>Measure.</strong> The gate at head is a batch job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset:
+  <code>tests/test_orchestrator_lane_fence.py</code> reports 7 passed,
+  <code>EXIT=0</code>, against a base arm of 3 failed, 4 passed,
+  <code>EXIT=1</code> at <code>cd6f85d1db</code>. The file that owns the
+  helper reports 11 passed. The suite arms are 58 passed at both revisions.</p>
+</section>

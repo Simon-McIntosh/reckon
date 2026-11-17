@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:1479 _apply_append_evidence -> _landed_record_shell(created_by_append=True) -> reckon/_store.py:1323 evidence._render_document",
+    "reckon/evidence.py:1747 synthesize_landed_record -> reckon/evidence.py:1794 _render_document",
+    "reckon/project_maintenance_commands.py:1483 calls synthesize_landed_record for the closing-record CLI path"
+  ],
+  "completed_at": "2026-11-16T15:32:04.406Z",
+  "dispatched_at": "2026-11-16T15:31:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-appended-record-claims-no-counts.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment and logs/head-gate.log record the gate as an in-place shell run at 87af6eb40e (`env -u SLURM_JOB_ID ... pytest` in the run worktree), not as a job on all_debug that the done_when names, so the job-wrapper clause of the measure rests on the worker's account rather than on a job record; the test outcome itself is logged at the reviewed revision and the 2.29s single-file run makes a queue-side difference implausible."
+    }
+  ],
+  "head_log_revision": "87af6eb40e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the two production paths that reach _render_document: reckon/_store.py:1479 _apply_append_evidence through _landed_record_shell with created_by_append=True, and reckon/project_maintenance_commands.py:1483 synthesize_landed_record with the flag defaulting to False.",
+    "diff": "read both commits against 655a2bef commit by commit: e0ac4a29ef replaces the unconditional summary_source with a created_by_append branch at reckon/evidence.py:1451-1457 and repairs the test's _body_summary reader plus two header assertions at tests/test_an_appended_record_claims_no_counts.py:168-170; 87af6eb40e adds only the 39-line evidence fragment.",
+    "done_when": "read the quantitative measure in dispatch-detail.json: the file passes in full at head with SLURM_JOB_ID unset, each cause is judged product-wrong or test-wrong, an imports arm adds no failure, a base negative control is logged beside the head run, and ruff reports nothing new; the manifest and logs satisfy each clause and the imports arm reads 5 failed/184 passed at base against 2 failed/187 passed at head, the two survivors being the same pre-existing ids.",
+    "goal": "the node's goal is that tests/test_an_appended_record_claims_no_counts.py passes in full; reckon/evidence.py:1451-1457 stops the append-created frame publishing a ledger source it never read, and logs/head-gate.log records 6 passed at head 87af6eb40e.",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits e0ac4a29ef and 87af6eb40e, tests naming the single-file pytest gate, test_logs naming the head gate, both negative controls and both suite arms, baseline_suite 655a2bef, 0 failures, after_suite 87af6eb40e, 0 failures.",
+    "write_paths": "read the node's parsed write_paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround); git diff 655a2bef..87af6eb40e touches reckon/evidence.py, tests/test_an_appended_record_claims_no_counts.py and the fragment under that directory, all inside the fence."
+  },
+  "justifications": {
+    "durability": "restoring the unconditional summary_source at reckon/evidence.py:1451-1456 reddens tests/test_an_appended_record_claims_no_counts.py:169 and :170, which is what logs/negative-control-base.log shows, though the rewritten _body_summary at :132-147 strips the chip so the append case's count loop no longer observes that text directly.",
+    "evidence": "logs/negative-control-base-original.log reads 3 failed, 3 passed EXIT=1 at 655a2bef, logs/head-gate.log reads 6 passed EXIT=0 at 87af6eb40e and logs/negative-control-base.log reads 1 failed, 5 passed EXIT=1, so the measure is executed and recorded, leaving only the done_when's all_debug job wrapper unverified.",
+    "fit": "the change reuses the renderer's existing created_by_append branch at reckon/evidence.py:1441 and its comment names the mechanism without a plan, sprint or ticket identifier or an AI attribution.",
+    "goal_fidelity": "reckon/evidence.py:1451-1457 keeps the summary sentence and its ledger chip in one statement, emitted only when created_by_append is false, and the gate logs/head-gate.log reads 6 passed at 87af6eb40e, so the gate file the goal names passes in full.",
+    "reuse": "the summary chip is still built by reckon/evidence.py:_source with evidence.SOURCE_CLASS, the owner of provenance chips with a count label, so no second chip builder or second record renderer is introduced.",
+    "scope_discipline": "git diff --stat 655a2bef..87af6eb40e lists only reckon/evidence.py, tests/test_an_appended_record_claims_no_counts.py and the node's evidence fragment, all inside the node's declared write paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_an_appended_record_claims_no_counts.py passes in full; reckon/evidence.py:1451-1457 stops the append-created frame publishing a ledger source it never read, and logs/head-gate.log records 6 passed at head 87af6eb40e.\nVERDICT done_when: read the quantitative measure in dispatch-detail.json: the file passes in full at head with SLURM_JOB_ID unset, each cause is judged product-wrong or test-wrong, an imports arm adds no failure, a base negative control is logged beside the head run, and ruff reports nothing new; the manifest and logs satisfy each clause and the imports arm reads 5 failed/184 passed at base against 2 failed/187 passed at head, the two survivors being the same pre-existing ids.\nVERDICT write_paths: read the node's parsed write_paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround); git diff 655a2bef..87af6eb40e touches reckon/evidence.py, tests/test_an_appended_record_claims_no_counts.py and the fragment under that directory, all inside the fence.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits e0ac4a29ef and 87af6eb40e, tests naming the single-file pytest gate, test_logs naming the head gate, both negative controls and both suite arms, baseline_suite 655a2bef, 0 failures, after_suite 87af6eb40e, 0 failures.\nVERDICT diff: read both commits against 655a2bef commit by commit: e0ac4a29ef replaces the unconditional summary_source with a created_by_append branch at reckon/evidence.py:1451-1457 and repairs the test's _body_summary reader plus two header assertions at tests/test_an_appended_record_claims_no_counts.py:168-170; 87af6eb40e adds only the 39-line evidence fragment.\nCALL_SITES: reckon/_store.py:_apply_append_evidence, reckon/evidence.py:synthesize_landed_record, reckon/project_maintenance_commands.py:1483\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/evidence.py:1451-1457 keeps the summary chip behind created_by_append and logs/head-gate.log reads 6 passed at 87af6eb40e, the file the goal names passing in full.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate.log reads 6 passed EXIT=0 at 87af6eb40e and logs/negative-control-base.log reads 1 failed, 5 passed EXIT=1, but the done_when's all_debug job wrapper is not recorded anywhere.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 655a2bef..87af6eb40e lists only reckon/evidence.py, tests/test_an_appended_record_claims_no_counts.py and the node's fragment, every one inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the unconditional chip at reckon/evidence.py:1451-1456 reddens tests/test_an_appended_record_claims_no_counts.py:169-170 as logs/negative-control-base.log shows, though _body_summary now strips the chip so that case's count loop no longer sees it directly.\nSCORE fit: 20\nJUSTIFICATION fit: the change extends the renderer's existing created_by_append branch at reckon/evidence.py:1441 and its comment names the mechanism with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the chip is still built by evidence._source and evidence.SOURCE_CLASS in reckon/evidence.py:1456, the existing owner of a labelled provenance chip, so no second chip builder is introduced.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-appended-record-claims-no-counts.html:23 non-blocking: the gate is recorded as an in-place shell run rather than the all_debug job the done_when names.",
+  "review_run_id": "r-20261116T143556792218-review-of-qwnw-red-file-an-appended-record-claims-no-counts-87af6eb40ef3",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "87af6eb40ef3671fa7d83e34bfed22b953540e1b",
+  "reviewed_run_id": "r-20261116T105020847567-qwnw-red-file-an-appended-record-claims-no-counts",
+  "reviewer_run_id": "r-20261116T143556792218-review-of-qwnw-red-file-an-appended-record-claims-no-counts-87af6eb40ef3",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:12:16.764137+00:00",
+  "total": 114
+}

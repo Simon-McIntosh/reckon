@@ -1,0 +1,126 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from baseline_suite baseline.log: 58 passed, EXIT=0, and after_suite after.log: 61 passed, EXIT=0; both complete with no FAILED IDs. Separate importer arms each record 16 failed and 278 passed with identical failure IDs.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T214318584109-station-beat-survives-a-long-tick-s28/after.log",
+  "assertion_independence": "No input/echo assertion found. Age zero requires the asynchronous beat to follow an independently advanced clock; byte comparisons use pre-operation captures; watcher_ensure_line is the existing remedy owner, not an input supplied to poll.",
+  "assertion_review": [
+    {
+      "assertion": "published.wait and initial age zero",
+      "fails_if": "Publisher never runs or the initial positive-control heartbeat cannot be read."
+    },
+    {
+      "assertion": "attempted.wait after acquiring home_lock",
+      "fails_if": "The publication wrapper never enters while contention is held."
+    },
+    {
+      "assertion": "_until(advanced) in three stale windows",
+      "fails_if": "Restoring SQLite heartbeat writes blocks the store cases; restoring synchronous publication blocks home cases. The negative-control receipt shows all three failing at window zero."
+    },
+    {
+      "assertion": "read_station_tick state is slow",
+      "fails_if": "A fresh beat beside an old running tick is incorrectly classified as live or stopped."
+    },
+    {
+      "assertion": "No producer-lost rows and no remedy",
+      "fails_if": "The pane emits loss or re-arm instructions despite a fresh local beat."
+    },
+    {
+      "assertion": "remote_advanced during store contention and after release",
+      "fails_if": "Database contention blocks off-node publication, or shared publication fails to catch up after release."
+    },
+    {
+      "assertion": "beat._thread is None and no named threads enumerate",
+      "fails_if": "Stop leaves the thread reference or a running beat/publisher after contention has been released; the reference assertion alone does not prove termination."
+    },
+    {
+      "assertion": "export bytes equal original",
+      "fails_if": "A heartbeat operation rewrites the independently captured obligation export."
+    },
+    {
+      "assertion": "Damaged heartbeat records read stopped",
+      "fails_if": "Foreign identity, malformed/older timestamp, non-mapping record or invalid JSON overrides the stale stored heartbeat."
+    },
+    {
+      "assertion": "pytest.raises StationLeaseLostError matching successor",
+      "fails_if": "An already-lost guard is ignored by the local heartbeat write."
+    },
+    {
+      "assertion": "Fenced heartbeat bytes unchanged",
+      "fails_if": "The fenced operation alters the heartbeat bytes captured independently before the operation."
+    },
+    {
+      "assertion": "Stopped state, producer-lost event and watcher remedy",
+      "fails_if": "Stopping renewal fails to age into stopped, suppresses the loss row or emits a remedy differing from the existing watcher command owner."
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T214318584109-station-beat-survives-a-long-tick-s28/baseline.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station.py:1528 run_station creates StationBeat with the store guard",
+    "reckon/crew/station.py:1578 run_station stops StationBeat",
+    "reckon/crew/watch_unit.py:1083 ProducerSnapshotNotices.poll reads station health",
+    "reckon/crew/watch_unit.py:1086 ProducerSnapshotNotices.poll reads the local tick",
+    "reckon/crew/obligations.py:1138 reads the station answer"
+  ],
+  "completed_at": "2026-11-16T22:21:46Z",
+  "dispatched_at": "2026-11-16T22:16:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a shutdown edge: stop() can return with the publisher daemon still finishing a blocked publication; it affects only station shutdown, not the beat during a tick, and the review found no behaviour defect in the fix itself",
+      "recorded_at": "2026-11-16T23:14:08.967162+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": "223",
+      "severity": "non-blocking",
+      "text": "non-blocking: stop() discards the publisher reference after a timed join without checking whether blocked shared publication has finished, so it can return with that daemon still alive and able to complete publication after stop; the new contention test releases publication before checking shutdown, leaving this condition unguarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read the single commit against adde3bdc2df67f40b2f3f7a551d6f754774c65f5; its four-file diff introduces a store-bound local heartbeat, coalesced publication, reader integration and three contention cases, with one bounded-shutdown caveat.",
+    "done_when": "Live plan s28 and prompt.txt:274 require contention, stopped-station behavior and no added importer failures; reproduction.log records 3 stale-beat failures, after.log records 61 passes, negative-control.log records 3 stale-beat failures and the importer logs record identical 16 failure IDs.",
+    "goal": "prompt.txt:38 asks to keep the station heartbeat moving through a long tick; station.py:131-192 separates local beats from database writes and shared publication.",
+    "manifest": "manifest.md names the reviewed commit and readable baseline, head, reproduction and control logs that corroborate its results, including the unchanged importer failures.",
+    "write_paths": "All four changed files in commit 460c9c3faa0a39593dde24b73e1ff5541d38fd83 are among the six paths declared in prompt.txt:338; no unrelated files changed."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_beat_survives_a_long_tick.py:89-100 fails when SQLite heartbeat writes and synchronous publication are restored, as negative-control.log demonstrates, while its shutdown check only covers publication released before stop.",
+    "evidence": "tests/test_the_station_beat_survives_a_long_tick.py:89-110 crosses three stale windows per contention mode, and reproduction.log, after.log, negative-control.log and the paired importer logs record the required red/green results.",
+    "fit": "reckon/crew/station.py:133 reuses the atomic JSON writer and obligation_snapshot.py:519 extends the existing health reader with mechanism-based names and surrounding thread/event idioms.",
+    "goal_fidelity": "reckon/crew/station.py:131-192 keeps local liveness independent of SQLite writer contention and shared publication, while obligation_snapshot.py:519-550 supplies the fresh beat to existing readers.",
+    "reuse": "Capability searches for heartbeat, publication and coalescing found obligation_snapshot.py:388/519 and reckon/_store.py:616 as owners that this change extends or calls; host_heartbeat.py:112 renews host file mtimes rather than store-bound station health and owns no coalescing publisher to reuse.",
+    "scope_discipline": "The diff changes only reckon/crew/station.py, station_store.py, obligation_snapshot.py and the newly declared contention test."
+  },
+  "limitations": [
+    "Virtual time spans three stale windows; a held SQLite transaction and blocked publisher wrapper model contention, not a deployed GPFS stall.",
+    "Independent review read the recorded tests without rerunning the suite.",
+    "Non-blocking shutdown finding awaits coordinator disposition; source repair is outside this review scope."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks to keep the station heartbeat moving through a long tick; station.py:131-192 separates local beats from database writes and shared publication.\nVERDICT done_when: Live plan s28 and prompt.txt:274 require contention, stopped-station behavior and no added importer failures; reproduction.log records 3 stale-beat failures, after.log records 61 passes, negative-control.log records 3 stale-beat failures and the importer logs record identical 16 failure IDs.\nVERDICT write_paths: All four changed files in commit 460c9c3faa0a39593dde24b73e1ff5541d38fd83 are among the six paths declared in prompt.txt:338; no unrelated files changed.\nVERDICT manifest: manifest.md names the reviewed commit and readable baseline, head, reproduction and control logs that corroborate its results, including the unchanged importer failures.\nVERDICT diff: Read the single commit against adde3bdc2df67f40b2f3f7a551d6f754774c65f5; its four-file diff introduces a store-bound local heartbeat, coalesced publication, reader integration and three contention cases, with one bounded-shutdown caveat.\nCALL_SITES: reckon/crew/station.py:1528 run_station creates StationBeat with the store guard, reckon/crew/station.py:1578 run_station stops StationBeat, reckon/crew/watch_unit.py:1083 ProducerSnapshotNotices.poll reads station health, reckon/crew/watch_unit.py:1086 ProducerSnapshotNotices.poll reads the local tick, reckon/crew/obligations.py:1138 reads the station answer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:131-192 keeps local liveness independent of SQLite writer contention and shared publication, while obligation_snapshot.py:519-550 supplies the fresh beat to existing readers.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_station_beat_survives_a_long_tick.py:89-110 crosses three stale windows per contention mode, and reproduction.log, after.log, negative-control.log and the paired importer logs record the required red/green results.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff changes only reckon/crew/station.py, station_store.py, obligation_snapshot.py and the newly declared contention test.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_station_beat_survives_a_long_tick.py:89-100 fails when SQLite heartbeat writes and synchronous publication are restored, as negative-control.log demonstrates, while its shutdown check only covers publication released before stop.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/station.py:133 reuses the atomic JSON writer and obligation_snapshot.py:519 extends the existing health reader with mechanism-based names and surrounding thread/event idioms.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for heartbeat, publication and coalescing found obligation_snapshot.py:388/519 and reckon/_store.py:616 as owners that this change extends or calls; host_heartbeat.py:112 renews host file mtimes rather than store-bound station health and owns no coalescing publisher to reuse.\nFINDING reckon/crew/station.py:223 non-blocking: stop() discards the publisher reference after a timed join without checking whether blocked shared publication has finished, so it can return with that daemon still alive and able to complete publication after stop; the new contention test releases publication before checking shutdown, leaving this condition unguarded.\n",
+  "reproduction_quote": "reproduction.log: E Failed: heartbeat went stale behind store in window 0; matching home and store-and-home failures; 3 failed in 10.14s; EXIT=1. negative-control.log repeats all three stale-heartbeat failures; 3 failed in 10.75s; EXIT=1.",
+  "review_run_id": "r-20261116T221457986811-review-of-station-beat-survives-a-long-tick-s28-460c9c3faa0a",
+  "reviewed_base_sha": "adde3bdc2df67f40b2f3f7a551d6f754774c65f5",
+  "reviewed_head_sha": "460c9c3faa0a39593dde24b73e1ff5541d38fd83",
+  "reviewed_run_id": "r-20261116T214318584109-station-beat-survives-a-long-tick-s28",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:12:30.407503+00:00",
+  "total": 115
+}

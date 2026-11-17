@@ -159,12 +159,12 @@ def _changed_paths_inside_repository(
     commit that contains it. Asking the narrower question is what lets a
     finished run that has no commit to give be reconciled.
 
-    A relative path is repository-relative by the manifest's own convention, so
-    a relative path resolves against the repository root; an absolute path
-    resolves as written. A path anywhere else — a store directory, a scratch
-    path under the crew home — is outside and requires no commit here. When the
-    run records no repository to resolve against, every named path is returned,
-    which is the guard's prior behaviour.
+    An absolute path resolves as written. A relative path belongs to the
+    repository unless a commitless run has that file inside its own durable run
+    directory and neither repository nor worktree has a competing path. This
+    reads run-local log names the same way as manifest log citations, without
+    letting a missing file, an escaping symlink or a repository file stand in
+    for an external deliverable. Without a repository root every item is kept.
     """
     items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
     root = str(record.get("repo") or record.get("worktree") or "").strip()
@@ -174,6 +174,15 @@ def _changed_paths_inside_repository(
         base = Path(root).expanduser().resolve()
     except (OSError, RuntimeError):
         return tuple(items)
+    from reckon.crew.recovery import _pointer_role
+
+    run_id = str(record.get("run_id") or "").strip()
+    directory = (
+        run_dir(run_id).resolve()
+        if run_id and _pointer_role(record) in _COMMITLESS_ROLES
+        else None
+    )
+    worktree = Path(str(record.get("worktree") or base)).expanduser()
     inside: list[str] = []
     for item in items:
         raw = Path(item).expanduser()
@@ -190,6 +199,18 @@ def _changed_paths_inside_repository(
         elif ".." in raw.parts:
             continue
         else:
+            if directory is not None:
+                try:
+                    artifact = (directory / raw).resolve()
+                    if (
+                        artifact.is_relative_to(directory)
+                        and artifact.is_file()
+                        and not (base / raw).exists()
+                        and not (worktree / raw).exists()
+                    ):
+                        continue
+                except (OSError, RuntimeError):
+                    pass
             inside.append(item)
     return tuple(inside)
 
@@ -921,13 +942,13 @@ def _repository_tree_boundary_violations(
         # An uncommitted edit on a declared path the project publishes as
         # shareable admits a concurrent editor, so it says nothing about this
         # run's boundary; only a declared path off that list can violate it.
-        # The membership test is the project's own declaration: whether two
-        # claims on a path would share says nothing here, because every source
-        # and test path shares and a scan that asked that question would report
-        # no source edit at all.
-        # A path a live peer holds under its own declaration is the peer's work,
-        # not this run's, so it is exempt too; a path the peer does not declare
-        # stays charged here.
+        # The membership test is the declaration's own: a claim on a source path
+        # shares by default, and reading that default here would exempt every
+        # path a merge can reconcile and leave this guard with nothing to
+        # refuse — which is how a stray source edit went unreported, since every
+        # source and test path shares. A path a live peer holds under its own
+        # declaration is the peer's work, not this run's, so it is exempt too; a
+        # path the peer does not declare stays charged here.
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
@@ -1346,8 +1367,14 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     The declaration parser is the one authority on whether the field declares
     an absence, and it is asked here, so one reader decides what the line says
     for the landing record, the figure twin check and the boundary check alike.
-    A role that commits keeps the entry-by-entry reading, so a citation-shaped
-    value that names nothing is still returned and still refused by value.
+    A role that commits keeps the entry-by-entry reading, which is why the
+    per-entry declaration is asked as well: ``commits: none (repository worktree
+    remained clean)`` is the record stating it has no commit, and it reached the
+    figure twin check as a citation naming no object — refused by its own
+    declaration, which is the one value in this field no store can be asked
+    about. An entry that opens with an absence word and continues with a
+    revision (``none 7892cb69``) is not that declaration, so it stays here and
+    is still refused by value.
     """
     manifest_path = str(record.get("manifest_path") or "")
     if not manifest_path:
@@ -1360,7 +1387,9 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     if _commits_field_declares_absence(text, record):
         return []
     return [
-        str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
+        str(sha).strip()
+        for sha in (declared.get("commits") or [])
+        if str(sha).strip() and not _declares_absent_commits(str(sha))
     ]
 
 
@@ -1517,14 +1546,49 @@ def _record_landing_comment(
                 # and a later call's narrative that differs from it is reported
                 # beside the receipt rather than raised as a refusal, which
                 # would leave the live pointer and the worktree for a reader to
-                # clear by hand. Before the row exists there is no promotion to
-                # defer to, so a differing narrative stays a refusal.
+                # clear by hand.
+                #
+                # No row means no promotion recorded that text: the attempt
+                # that wrote it wrote the comment before the row, and its row
+                # write was rolled back, so the comment is the only trace of a
+                # landing that never committed. Nothing recorded that narrative
+                # and nothing pins it, so recording it now would defend a
+                # promotion that does not exist. Replace it with the narrative
+                # being promoted, keeping the comment's id so a retry lands
+                # rather than repeating wording its author cannot reconstruct.
                 if not _ledger_holds_row(project, root, run_id, unreadable=False):
-                    raise CrewError(
-                        f"landing comment {comment_id!r} for plan {plan!r} already "
-                        "contains a different narrative; refusing to report the "
-                        "corrected outcome as recorded"
-                    )
+                    superseded = _strip_tags(str(existing.get("body") or ""))
+                    for position, item in enumerate(items):
+                        if item is existing:
+                            items[position] = {
+                                **existing,
+                                "who": author,
+                                "when": when,
+                                "body": desired_body,
+                            }
+                            break
+                    payload = {**state, "comments": comments}
+                    if started:
+                        payload["status"] = "in-progress"
+                    try:
+                        _store.write_plan(
+                            project,
+                            plan,
+                            payload,
+                            version,
+                            root,
+                            artifact_type="plan",
+                        )
+                    except _store.VersionConflict:
+                        continue
+                    return {
+                        "recorded": True,
+                        "comment_id": comment_id,
+                        "section": anchor,
+                        "already_recorded": False,
+                        "superseded_narrative": superseded,
+                        **({"status": "in-progress"} if started else {}),
+                    }
                 # Both sides go to the stripper as they were written: it
                 # unescapes once, so a narrative that names an entity in its
                 # own text keeps it. Feeding it the already-unescaped forms
@@ -1920,7 +1984,12 @@ def _plan_comment_store_path(
     return [plan_file]
 
 
-def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, bool]:
+def _restore_landing_writes(
+    checkout: Path,
+    paths: Sequence[Path],
+    *,
+    on_stale_removed: Callable[[Path, float], None] | None = None,
+) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
     Each path promotion wrote returns to its committed state: tracked paths
@@ -1953,6 +2022,12 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
     for one whose write survives. A caller reporting a store it wrote reads
     this to tell a row that survived the rollback from one the rollback
     reverted.
+
+    A rollback that cleared a lock proven stale names it, and the age it stood
+    for, through ``on_stale_removed``: the index is shared, so a caller is left
+    no trace of why a lock disappeared unless the clearing is recorded here.
+    The default states it on stderr, which is where a caller with no run record
+    of its own can still read it.
     """
     tracked: list[Path] = []
     created: list[Path] = []
@@ -2016,6 +2091,7 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
         revert_every_write,
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        on_stale_removed=on_stale_removed or note_stale_index_lock_removal,
     )
     report = dict(unsettled)
     if reverted.returncode == 0:
@@ -2205,6 +2281,32 @@ def _append_landing_record(run_id: str, entry: Mapping[str, Any]) -> str | None:
     except OSError:
         return None
     return str(path)
+
+
+def _landing_record_stale_removal(run_id: str) -> Callable[[Path, float], None]:
+    """A callback naming a cleared index lock, and its age, in the run's record.
+
+    Every wait on the shared index in this module goes through one helper, and
+    the helper clears a lock it has proven stale. The lock sits in a checkout
+    other sessions commit to, so a clearing that leaves no trace is a write
+    nobody can account for; each caller passes this, and the line it appends
+    survives the rollback the clearing may precede, because the record is
+    written outside the checkout the rollback restores.
+    """
+
+    def record(lock: Path, age: float) -> None:
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "stale_index_lock_removed",
+                "lock": str(lock),
+                "age_seconds": round(age, 1),
+                "message": stale_index_lock_removal_line(lock, age),
+            },
+        )
+
+    return record
 
 
 def _record_landing_refusal(
@@ -2578,7 +2680,9 @@ def _stage_landing_writes(
     :func:`reckon.crew.merge._run_waiting_out_a_held_index_lock`: the add is
     retried while the checkout holds its ``index.lock``, for a bounded number of
     attempts, and every retry is appended to the run's landing record so a
-    landing that waited says how often. A failure that left no lock behind, and
+    landing that waited says how often. A lock the wait proves stale is cleared
+    by the same helper, and the clearing is appended to that record too, naming
+    the lock and the age it stood for. A failure that left no lock behind, and
     a lock that outlasts the attempts, return the failing result unchanged for
     the caller to refuse on.
     """
@@ -2602,6 +2706,7 @@ def _stage_landing_writes(
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         on_retry=record_retry,
+        on_stale_removed=_landing_record_stale_removal(run_id),
     )
     return staged
 
@@ -2767,7 +2872,9 @@ def _commit_preserving_plan_text(
                 _git(checkout, "update-ref", "HEAD", revision, head)
         except Exception as exc:
             rollback = _restore_landing_writes(
-                checkout, [path for path in targets if path not in text_edits]
+                checkout,
+                [path for path in targets if path not in text_edits],
+                on_stale_removed=_landing_record_stale_removal(run_id),
             )
             for path, before in text_edits.items():
                 _remove_text_landing_comment(path, before, run_id)
@@ -2795,6 +2902,7 @@ def _commit_preserving_plan_text(
             ),
             attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
             retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+            on_stale_removed=_landing_record_stale_removal(run_id),
         )
         mismatched = [
             row
@@ -2910,7 +3018,11 @@ def _commit_landing_writes(
             retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         )
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets)
+        rollback = _restore_landing_writes(
+            checkout,
+            targets,
+            on_stale_removed=_landing_record_stale_removal(run_id),
+        )
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(
@@ -2983,6 +3095,7 @@ def _commit_landing_writes(
         attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
         retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         on_retry=record_commit_retry,
+        on_stale_removed=_landing_record_stale_removal(run_id),
     )
     if committed.returncode != 0:
         lock_note = _index_lock_outlasted_bound_note(
@@ -2991,7 +3104,11 @@ def _commit_landing_writes(
             retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
         )
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets)
+        rollback = _restore_landing_writes(
+            checkout,
+            targets,
+            on_stale_removed=_landing_record_stale_removal(run_id),
+        )
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(
@@ -3073,6 +3190,8 @@ from reckon.crew.merge import (
     _run_waiting_out_a_held_index_lock,
     clear_stale_landed_copies,
     landed_paths,
+    note_stale_index_lock_removal,
+    stale_index_lock_removal_line,
 )
 from reckon.crew.promotion_evidence import (
     _COMMITLESS_ROLES,

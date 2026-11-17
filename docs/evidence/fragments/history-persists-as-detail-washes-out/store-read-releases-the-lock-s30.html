@@ -1,0 +1,33 @@
+<section id="store-read-releases-the-lock-s30">
+  <h2>Record consumption releases the store for writers</h2>
+  <p>The shared record join fetches each selected query and closes its cursor
+  before yielding rows. Python decoding and row consumption therefore do not
+  extend that query's rollback-journal read lock. SQL projection and selection
+  remain in place; encoded results are buffered per query rather than streamed
+  from a live cursor.</p>
+  <p>At base <code>2f5dffd47271265c2a67ae2df52e4a84d3d30245</code>, all three
+  contention cases fail with <code>sqlite3.OperationalError: database is locked</code>:
+  stored, projected and indexed reads hold off a separate process's record append.
+  With the cursor change, all three pass. Commit receipts arrive in 0.313–0.434 s
+  while consumption remains paused for at least 3 s. Each reader returns the same
+  10 hot and retired rows as its uncontended read.</p>
+  <p>The tests assert rollback-journal mode and the unchanged 120 s default record
+  writer timeout. Their separate writer uses an explicit 1 s timeout to expose
+  the blocked commit within the consumer's 3 s pause. The base-reader negative
+  control records 3 failed in 9.37 s, exit 1; the focused repaired run records
+  3 passed in 12.31 s, exit 0. Both ran on <code>all_debug</code>.</p>
+  <section id="store-read-releases-the-lock-s30-receipt-order">
+    <h3>Receipt replay preserves observation order</h3>
+    <p>The expanded gate reproduces the pace replay failure: 66 passed at base,
+    then 1 failed and 68 passed at the reader head. A controlled probe places
+    the next fixture receipt one microsecond after the promotion receipt.
+    The fixture's whole-second formatter turns that later observation into a
+    tie, leaving the stored, unmeasured receipt selected. The replay fails
+    at both revisions under this control; both readers answer identical
+    row order, fields and membership over the same promoted history.</p>
+    <p>The repair belongs to the test fixture: its timestamp formatter retains
+    microseconds. The controlled replay then reports 1 passed in 6.87 s,
+    exit 0, with reader equality checked after both promotions. The product
+    reader needs no further change. All probe arms ran on <code>all_debug</code>.</p>
+  </section>
+</section>

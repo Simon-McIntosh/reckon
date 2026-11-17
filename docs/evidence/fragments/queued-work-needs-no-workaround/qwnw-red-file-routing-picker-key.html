@@ -1,0 +1,50 @@
+<section id="qwnw-red-file-routing-picker-key-base-run">
+<h2>Routing and picker key: the base run, red with five failing tests</h2>
+<p><code>tests/test_routing_picker_key.py</code> ran at the base revision <code>ee93819a0dfd283816a577795513c00bca2b8e19</code> over a tree extracted from that revision, before the node's edit, and exited 1 with five failures. Every one of them is the same parse above a second cause the parse hid.</p>
+<pre># revision: ee93819a0dfd283816a577795513c00bca2b8e19
+# tree: /tmp/reckon-crew-scratch/r-20261116T031823540481-qwnw-red-file-routing-picker-key/rc-base-tree (git archive of reckon, tests, pyproject.toml, skills at that revision)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_routing_picker_key.py
+# module.__file__: /tmp/reckon-crew-scratch/r-20261116T031823540481-qwnw-red-file-routing-picker-key/rc-base-tree/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261116T031823540481-qwnw-red-file-routing-picker-key/rc-base-tree
+F.F.F.F.....F.....                                                       [100%]
+FAILED tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[shadow-None-alpha-shadow-False]
+FAILED tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[route-None-beta-picker-False]
+FAILED tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[route-deterministic-alpha-deterministic-False]
+FAILED tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[shadow-picker-beta-picker-False]
+FAILED tests/test_routing_picker_key.py::test_project_routing_layer_drives_dispatch
+5 failed, 13 passed in 6.71s
+EXIT=1</pre>
+<p>The failure the base run printed for each id is <code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</code> at <code>tests/test_routing_picker_key.py:60</code>, where the helper parsed <code>result.output.splitlines()[0]</code>.</p>
+</section>
+
+<section id="qwnw-red-file-routing-picker-key-causes">
+<h2>Two causes, both in the test</h2>
+<table>
+<thead><tr><th>Cause</th><th>Verdict</th><th>What the code keeps, and what the test now asserts</th></tr></thead>
+<tbody>
+<tr>
+<td>A dispatch writes <code>reckon: created run &lt;id&gt;</code> to stderr before the JSON document on stdout. Click 8.2 changed <code>Result.output</code> from stdout-then-stderr to the interleaved terminal stream, so <code>result.output.splitlines()[0]</code> read the notice as the document.</td>
+<td>test wrong</td>
+<td>The product states the contract in <code>reckon/crew/dispatching/preparation.py</code>: "Stdout remains the command's final JSON document, so notices use stderr". The helper decodes <code>result.stdout</code>, the stream a caller pipes.</td>
+</tr>
+<tr>
+<td>A deterministic route records its deferred shadow pick off the live pointer, in the run's own <code>dispatch-detail.json</code> (<code>reckon/crew/runs.py</code>, <code>DISPATCH_DETAIL_FIELDS</code>), so <code>record["picker_selection"]</code> raised <code>KeyError</code> at the first read.</td>
+<td>test wrong</td>
+<td>The detail moves into the run's file at write time; <code>runs.dispatch_field(record, "picker_selection")</code> is the accessor that answers for either pointer shape. The wait for the shadow answer is kept, read through that accessor.</td>
+</tr>
+</tbody>
+</table>
+<p>No assertion is deleted or weakened: the five failing ids keep their exit code, backend, route, route-override and pointer checks, and the deterministic case still waits for a non-null shadow answer within <code>PICKER_DISPATCH_TIMEOUT_SECONDS + 5</code>.</p>
+</section>
+
+<section id="qwnw-red-file-routing-picker-key-head-run">
+<h2>Routing and picker key: the head run, eighteen passed</h2>
+<p>The same file at the run's head, same command, exited 0.</p>
+<pre># revision: 228f17c182 (test repair committed)
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-routing-picker-key
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_routing_picker_key.py
+..................                                                       [100%]
+18 passed in 8.12s
+EXIT=0</pre>
+<p><code>ruff check</code> reports nothing on the changed path, and <code>ruff format --diff</code> yields the same four pre-existing hunks as the base revision — the lines this node added appear in none of them.</p>
+</section>

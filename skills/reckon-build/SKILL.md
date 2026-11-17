@@ -333,12 +333,19 @@ deliverables first.
 Immediately after EACH `reckon crew complete`, review the worker's authored
 record and merge it: the landing is a review of an authored record, not a
 transcription of a manifest — read it, and may edit or append to it. Workers
-author their own landing record in the same beat: Write your landing record to
-your own fragment path and never to the plan: your evidence anchor to your
-scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and
+author their own landing record in the same beat. A per-node evidence fragment
+is optional: write one only when you have a negative result or a mechanism that
+does not fit a landing line, and a routine landing writes none, so the landing
+line is the whole prose account of the node. When you write one, place it as
+follows. Write your landing record to your own fragment path and never to the
+plan: your evidence anchor to your scope's fragment under
+docs/evidence/fragments/<plan>/<node-id>.html, and
 exactly one `landing:` line in your manifest in place of a plan edit. The
 fragment goes into your final commit; promotion lands the `landing:` line on
-your plan section. Never mutate the shared project index, sprint state, or a
+your plan section. Nothing splices a fragment into the plan's landed record:
+that record is synthesized once at closure and links the fragment from your
+node's row without reproducing its text. Never mutate the shared project
+index, sprint state, or a
 plan other than the one you are landing against. Do not edit the plan-version or
 plan-modified meta lines: every worker touching them makes every merge conflict
 there. Dispatching an unrelated ready node is outside this freeze.

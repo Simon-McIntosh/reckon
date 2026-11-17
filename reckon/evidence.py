@@ -851,7 +851,31 @@ def _section_paragraph(landing: SectionLanding, plan_slug: str) -> str:
     )
 
 
-def _node_rows(landings: Sequence[SectionLanding]) -> list[str]:
+def _fragment_href(node: str, plan_slug: str, project: str, root: Path | None) -> str:
+    """The served address of a landed node's own fragment, or ``""`` for none.
+
+    A node's fragment is optional, so the overview links one only where it was
+    written: the file's presence under the plan's fragment directory is the
+    whole test. Nothing of the fragment's text is read — the overview states
+    what its own sources hold and the link lets a reader open the record the
+    node authored. The href is project-absolute, the same shape a fragment link
+    in a plan section's comment takes: ``/<project>/evidence/fragments/...``.
+    """
+    if root is None or not node or not plan_slug:
+        return ""
+    relative = f"docs/evidence/fragments/{plan_slug}/{node}.html"
+    if not (root / relative).is_file():
+        return ""
+    return f"/{project}/evidence/fragments/{plan_slug}/{node}.html"
+
+
+def _node_rows(
+    landings: Sequence[SectionLanding],
+    *,
+    plan_slug: str = "",
+    project: str = "",
+    root: Path | None = None,
+) -> list[str]:
     """One row per landed node, stating how many attempts that node took."""
     rows: list[str] = []
     for landing in landings_that_landed(landings):
@@ -867,6 +891,7 @@ def _node_rows(landings: Sequence[SectionLanding]) -> list[str]:
                 if str(commit).strip()
             )
             run_id = str(latest.get("run_id") or "")
+            fragment = _fragment_href(node, plan_slug, project, root)
             rows.append(
                 "      <tr>"
                 f"<td>{_escape(node)}</td>"
@@ -876,9 +901,17 @@ def _node_rows(landings: Sequence[SectionLanding]) -> list[str]:
                 f"<td>{commits or '—'}</td>"
                 f"<td>{_format_seconds(latest.get('worker_seconds'))}</td>"
                 f"<td>{_source('run', run_id, run_id)}</td>"
+                f"<td>{_fragment_link(fragment)}</td>"
                 "</tr>"
             )
     return rows
+
+
+def _fragment_link(href: str) -> str:
+    """The row cell linking a node's own fragment, or an em dash for none."""
+    if not href:
+        return "—"
+    return f'<a class="node-fragment" href="{_escape(href)}">fragment</a>'
 
 
 def landings_that_landed(
@@ -1047,12 +1080,13 @@ def _overview_block(
     """The sourced overview: a paragraph per section, one row per landed node."""
     plan_slug = str(plan.get("slug") or "").strip()
     paragraphs = [_section_paragraph(landing, plan_slug) for landing in landings]
-    rows = _node_rows(landings)
+    rows = _node_rows(landings, plan_slug=plan_slug, project=project, root=root)
     figures = _figure_blocks(landings)
     origin = f'{APPEND_ORIGIN_ATTRIBUTE}="{OVERVIEW_ORIGIN_VALUE}"'
     header = (
         "      <thead><tr><th>Node</th><th>Section</th><th>Attempts</th>"
         "<th>Gate</th><th>Commits</th><th>Worker time</th><th>Source</th>"
+        "<th>Fragment</th>"
         "</tr></thead>"
     )
     table = (
@@ -1445,11 +1479,16 @@ def _render_document(
             f"Closure synthesis for {plan_title}: {len(records)} committed run(s), "
             f"{comment_count} section-anchored comment(s), and {len(commits)} landed commit(s)."
         )
-    summary_source = _source(
-        "ledger",
-        project or plan_slug,
-        f"{len(records)} run(s)",
-    )
+    # The count sentence and the chip naming the ledger it was read from are one
+    # statement, so a synthesis states both. A frame an append creates read no
+    # ledger at all: it publishes neither the run count nor a source for it.
+    if created_by_append:
+        summary_paragraph = f"  <p>{_escape(summary)}</p>\n"
+    else:
+        summary_paragraph = (
+            f"  <p>{_escape(summary)} "
+            f"{_source('ledger', project or plan_slug, f'{len(records)} run(s)')}</p>\n"
+        )
     overview = (
         ""
         if created_by_append
@@ -1497,7 +1536,7 @@ def _render_document(
         "<body>\n"
         ' <main class="plan-doc">\n'
         f"  <h1>{_escape(plan_title)} — landed record</h1>\n"
-        f"  <p>{_escape(summary)} {summary_source}</p>\n"
+        f"{summary_paragraph}"
         "\n" + overview + "\n\n".join(sections) + "\n </main>\n"
         "</body>\n"
         "</html>\n"

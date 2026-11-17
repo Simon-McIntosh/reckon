@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:2489 refuse_widen_scope_conflicts",
+    "reckon/crew/claims.py:153 refuse_widen_scope_conflicts caller",
+    "reckon/crew/dispatch_plan.py:1119 _repository_scope_claims",
+    "reckon/crew/admission/release.py:630 queue_requests",
+    "reckon/crew/runs.py:1826 DEFAULT_EXCLUSIVE_PATHS"
+  ],
+  "completed_at": "2026-11-16T08:22:12.224Z",
+  "dispatched_at": "2026-11-16T08:21:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032221278320-qwnw-red-file-waiting-claims-never-block-a-launch/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite (line 18) both name revision 41c438b13c, which is neither the declared base 1edf1b0dba nor the delivered head 3d395cbbcc, and logs/gate-base.log:1 repeats that revision, so no arm names the revision it claims to measure even though the gate files and reckon/ are byte-identical at 1edf1b0dba and 41c438b13c."
+    },
+    {
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "line": "146",
+      "severity": "non-blocking",
+      "text": "non-blocking: queue_cases.EXCLUSIVE is planted as both the queued request's and the holder's write path, so the detail assertion passes on an implementation that names either one and cannot fail when the admission pass names the wrong path; the case's path-naming guard is weaker than the fragment claims."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-claims-never-block-a-launch.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record says four of the file's cases exercised the rule on a source file and that the four cases move, while 41c438b13c retargets 11 sites across five test functions, so a reader comparing the record with the diff finds a miscount."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032221278320-qwnw-red-file-waiting-claims-never-block-a-launch/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's all_debug clause is unevidenced, since no submission is recorded and the runs were made in place under env -u SLURM_JOB_ID in logs/run-after-arms.sh:41, and this tests line names the two-file suite gate rather than the named file whose passing run is the measure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit from 1edf1b0dba: 41c438b13c replaces queue_cases.SHARED with queue_cases.EXCLUSIVE at 11 sites across five test functions of tests/test_waiting_claims_never_block_a_launch.py, and 3d395cbbcc adds the 98-line evidence fragment; no product module is touched.",
+    "done_when": "The done-when asks that the named file pass in full at head as a job with SLURM_JOB_ID unset, that each cause carry a product-or-test verdict, that no assertion be deleted or weakened, and that an arm over the importing files add no failure; the manifest's tests line (manifest.md:13) names the two-file suite gate instead of the named file, and the named-file result is recorded in logs/head-named-file.log (8 passed in 2.27s, EXIT=0) against the base control in logs/base-named-file.log (2 failed, 6 passed in 3.35s, EXIT=1), with the run made in place under env -u SLURM_JOB_ID (logs/run-after-arms.sh:41) rather than as a submitted all_debug job.",
+    "goal": "The node goal is that tests/test_waiting_claims_never_block_a_launch.py passes in full on the primary branch; the diff retargets five cases in tests/test_waiting_claims_never_block_a_launch.py from the mergeable reckon/crew/shared_path.py onto the fixture's fenced class pyproject.toml (tests/test_overlapping_queued_requests_launch_in_turn.py:43), and the file reads 8 passed in logs/head-named-file.log at head 3d395cbbcc, with the primary-branch half resting on landing because 3d395cbbcc is not an ancestor of origin/main and origin/main's copy of the file is unchanged since the base.",
+    "manifest": "Read at status complete; it records commits 41c438b13c and 3d395cbbcc, 8 passed at head, 58 passed on both gate arms, and a neighbour arm reading 5 failed / 63 passed at head against 7 failed / 61 passed at base with the five head failures all present at base, but both baseline_suite and after_suite (manifest.md:17-18) name revision 41c438b13c rather than the base 1edf1b0dba or the delivered head.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-waiting-claims-never-block-a-launch.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-waiting-claims-never-block-a-launch; the diff's two paths, tests/test_waiting_claims_never_block_a_launch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-claims-never-block-a-launch.html, are both inside them."
+  },
+  "justifications": {
+    "durability": "reverting the retarget to queue_cases.SHARED reddens test_working_claims_still_refuses_a_dispatch and test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path per logs/base-named-file.log, and a product change that drops pyproject.toml from reckon/crew/runs.py:1826 reddens the exit-code-7 assertion, though the detail assertion at tests/test_waiting_claims_never_block_a_launch.py:146 cannot distinguish the holder path from the candidate path.",
+    "evidence": "logs/base-named-file.log carries the two base failing ids at EXIT=1 and logs/head-named-file.log the passing head run at EXIT=0, while manifest.md:13 names the gate rather than the named file and both arm records name revision 41c438b13c.",
+    "fit": "the file keeps its fixture-module imports and its per-case constants and reads as the surrounding cases do, and .venv/bin/python -m ruff format --check reports it already formatted.",
+    "goal_fidelity": "tests/test_waiting_claims_never_block_a_launch.py reads 8 passed at head 3d395cbbcc in logs/head-named-file.log, with only the primary-branch half unverified prior to landing.",
+    "reuse": "the diff adds no definition, reusing the fenced-class constant at tests/test_overlapping_queued_requests_launch_in_turn.py:43 and the nonmergeable class rule at reckon/crew/runs.py:1826 rather than restating either.",
+    "scope_discipline": "both changed paths, tests/test_waiting_claims_never_block_a_launch.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, lie inside the declared write paths and no product source is edited."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base: 1edf1b0dba79409ef5ac2b8db39965725b53c63c\nreviewed_head: 3d395cbbcceb6fc58b6077f60e416f9c300a1426\nVERDICT goal: The node goal is that tests/test_waiting_claims_never_block_a_launch.py passes in full on the primary branch; the diff retargets five cases in tests/test_waiting_claims_never_block_a_launch.py from the mergeable reckon/crew/shared_path.py onto the fixture's fenced class pyproject.toml (tests/test_overlapping_queued_requests_launch_in_turn.py:43), and the file reads 8 passed in logs/head-named-file.log at head 3d395cbbcc, with the primary-branch half resting on landing because 3d395cbbcc is not an ancestor of origin/main and origin/main's copy of the file is unchanged since the base.\nVERDICT done_when: The done-when asks that the named file pass in full at head as a job with SLURM_JOB_ID unset, that each cause carry a product-or-test verdict, that no assertion be deleted or weakened, and that an arm over the importing files add no failure; the manifest's tests line (manifest.md:13) names the two-file suite gate instead of the named file, and the named-file result is recorded in logs/head-named-file.log (8 passed in 2.27s, EXIT=0) against the base control in logs/base-named-file.log (2 failed, 6 passed in 3.35s, EXIT=1), with the run made in place under env -u SLURM_JOB_ID (logs/run-after-arms.sh:41) rather than as a submitted all_debug job.\nVERDICT write_paths: The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-waiting-claims-never-block-a-launch.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-waiting-claims-never-block-a-launch; the diff's two paths, tests/test_waiting_claims_never_block_a_launch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-claims-never-block-a-launch.html, are both inside them.\nVERDICT manifest: Read at status complete; it records commits 41c438b13c and 3d395cbbcc, 8 passed at head, 58 passed on both gate arms, and a neighbour arm reading 5 failed / 63 passed at head against 7 failed / 61 passed at base with the five head failures all present at base, but both baseline_suite and after_suite (manifest.md:17-18) name revision 41c438b13c rather than the base 1edf1b0dba or the delivered head.\nVERDICT diff: Read commit by commit from 1edf1b0dba: 41c438b13c replaces queue_cases.SHARED with queue_cases.EXCLUSIVE at 11 sites across five test functions of tests/test_waiting_claims_never_block_a_launch.py, and 3d395cbbcc adds the 98-line evidence fragment; no product module is touched.\nCALL_SITES: reckon/crew/dispatch_claims.py:2489 refuse_widen_scope_conflicts, reckon/crew/claims.py:153 refuse_widen_scope_conflicts caller, reckon/crew/dispatch_plan.py:1119 _repository_scope_claims, reckon/crew/admission/release.py:630 queue_requests, reckon/crew/runs.py:1826 DEFAULT_EXCLUSIVE_PATHS\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_waiting_claims_never_block_a_launch.py reads 8 passed at head 3d395cbbcc in logs/head-named-file.log, with only the primary-branch half unverified prior to landing.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/base-named-file.log carries the two base failing ids at EXIT=1 and logs/head-named-file.log the passing head run at EXIT=0, while manifest.md:13 names the gate rather than the named file and both arm records name revision 41c438b13c.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both changed paths, tests/test_waiting_claims_never_block_a_launch.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, lie inside the declared write paths and no product source is edited.\nSCORE durability: 17\nJUSTIFICATION durability: reverting the retarget to queue_cases.SHARED reddens test_working_claims_still_refuses_a_dispatch and test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path per logs/base-named-file.log, and a product change that drops pyproject.toml from reckon/crew/runs.py:1826 reddens the exit-code-7 assertion, though the detail assertion at tests/test_waiting_claims_never_block_a_launch.py:146 cannot distinguish the holder path from the candidate path.\nSCORE fit: 18\nJUSTIFICATION fit: the file keeps its fixture-module imports and its per-case constants and reads as the surrounding cases do, and .venv/bin/python -m ruff format --check reports it already formatted.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, reusing the fenced-class constant at tests/test_overlapping_queued_requests_launch_in_turn.py:43 and the nonmergeable class rule at reckon/crew/runs.py:1826 rather than restating either.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032221278320-qwnw-red-file-waiting-claims-never-block-a-launch/manifest.md:17 non-blocking: baseline_suite and after_suite (line 18) both name revision 41c438b13c, which is neither the declared base 1edf1b0dba nor the delivered head 3d395cbbcc, and logs/gate-base.log:1 repeats that revision, so no arm names the revision it claims to measure even though the gate files and reckon/ are byte-identical at 1edf1b0dba and 41c438b13c.\nFINDING tests/test_waiting_claims_never_block_a_launch.py:146 non-blocking: queue_cases.EXCLUSIVE is planted as both the queued request's and the holder's write path, so the detail assertion passes on an implementation that names either one and cannot fail when the admission pass names the wrong path; the case's path-naming guard is weaker than the fragment claims.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-claims-never-block-a-launch.html:5 non-blocking: the record says four of the file's cases exercised the rule on a source file and that the four cases move, while 41c438b13c retargets 11 sites across five test functions, so a reader comparing the record with the diff finds a miscount.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032221278320-qwnw-red-file-waiting-claims-never-block-a-launch/manifest.md:13 non-blocking: the done-when's all_debug clause is unevidenced, since no submission is recorded and the runs were made in place under env -u SLURM_JOB_ID in logs/run-after-arms.sh:41, and this tests line names the two-file suite gate rather than the named file whose passing run is the measure.\n",
+  "review_run_id": "r-20261116T075635916954-review-of-qwnw-red-file-waiting-claims-never-block-a-launch-3d395cbbcceb",
+  "reviewed_base_sha": "1edf1b0dba79409ef5ac2b8db39965725b53c63c",
+  "reviewed_head_sha": "3d395cbbcceb6fc58b6077f60e416f9c300a1426",
+  "reviewed_run_id": "r-20261116T032221278320-qwnw-red-file-waiting-claims-never-block-a-launch",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:09:31.892779+00:00",
+  "total": 107
+}

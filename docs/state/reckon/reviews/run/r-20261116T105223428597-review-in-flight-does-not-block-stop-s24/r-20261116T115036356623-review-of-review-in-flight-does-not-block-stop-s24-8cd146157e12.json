@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:822 _row_is_actionable",
+    "reckon/hooks/coordinator_obligations.py:1848 _blocking_items",
+    "reckon/hooks/coordinator_obligations.py:1943 _stop",
+    "reckon/crew/obligations.py:4391 build",
+    "reckon/crew/obligation_snapshot.py:1983 live read",
+    "reckon/crew/station_subscriber.py:163 live read"
+  ],
+  "completed_at": "2026-11-16T12:09:41.072Z",
+  "dispatched_at": "2026-11-16T12:09:24Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "an evidence citation gap only: the base failure of the new test is asserted in the manifest but its log arm did not run that file; the review scored durability 18 and found no behaviour defect",
+      "recorded_at": "2026-11-16T12:34:22.138638+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_review_in_flight_does_not_block_a_stop.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The base-revision failure of the new file is claimed in the manifest's artifacts but cited in no log: the base arm command runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Six production call sites reach the kind: the hook's _row_is_actionable at reckon/hooks/coordinator_obligations.py:822 decides the stop, _blocking_items at :1848 and _stop at :1943 carry it, and the derivation's build at reckon/crew/obligations.py:4391 plus the reads at reckon/crew/obligation_snapshot.py:1983 and reckon/crew/station_subscriber.py:163 serve the prompt and pane.",
+    "diff": "Commits 396acca93f and 8cd14615 read against c2fdfd6e: the derivation constant and its membership at reckon/crew/obligations.py:264 and :403, the builder routed through it at :2788, the hook set member and comment at reckon/hooks/coordinator_obligations.py:251-262, the 226-line test file and the 79-line landing fragment.",
+    "done_when": "docs/plans/the-monitor-tells-the-truth-under-load.html:202 names the base-failing tests, the counted non-blocking row, the still-blocking actionable row and a clean format check; the head arm log logs/after-arm-review-in-flight-s24.log reports 62 passed EXIT=0 including the new file, and the base arm log logs/base-arm-c2fdfd6-review-in-flight-s24.log runs only the two pre-existing files.",
+    "goal": "Plan section s24 at docs/plans/the-monitor-tells-the-truth-under-load.html:200 asks a lone review-in-flight row to stop holding a stop; the head change makes the kind non-actionable at reckon/hooks/coordinator_obligations.py:822, so the stop is allowed.",
+    "manifest": "Read in full; status complete, both arms recorded with logs ending in a bare EXIT=0, negative_control_log a bare path whose log ends in EXIT=1 after 3 failed, and every rubric line filled.",
+    "write_paths": "The node's orientation_write_paths cover the two modules, the new test and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-in-flight-does-not-block-stop-s24.html; git diff --stat c2fdfd6e 8cd14615 touches exactly those four and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section s24 at docs/plans/the-monitor-tells-the-truth-under-load.html:200 asks a lone review-in-flight row to stop holding a stop; reckon/hooks/coordinator_obligations.py:822 answers non-actionable for the kind, so the stop is allowed.\nVERDICT done_when: docs/plans/the-monitor-tells-the-truth-under-load.html:202; the head arm log logs/after-arm-review-in-flight-s24.log reports 62 passed EXIT=0 over the new file, the base arm log logs/base-arm-c2fdfd6-review-in-flight-s24.log runs only the two pre-existing files.\nVERDICT write_paths: all four touched files are inside the node's orientation_write_paths: reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, tests/test_a_review_in_flight_does_not_block_a_stop.py, docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-in-flight-does-not-block-stop-s24.html.\nVERDICT manifest: status complete, both arms recorded with logs ending in a bare EXIT=0, negative_control_log a bare path whose log ends in EXIT=1, every rubric line filled.\nVERDICT diff: 396acca93f and 8cd14615 read against c2fdfd6e; the only hunk the goal does not imply is the formatting collapse at reckon/hooks/coordinator_obligations.py:1114, which ruff format --check on the base file shows was that file's sole format finding.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:822 _row_is_actionable, reckon/hooks/coordinator_obligations.py:1848 _blocking_items, reckon/hooks/coordinator_obligations.py:1943 _stop, reckon/crew/obligations.py:4391 build, reckon/crew/obligation_snapshot.py:1983 live read, reckon/crew/station_subscriber.py:163 live read\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:251 lists the kind among those no action shortens and :822 returns non-actionable, so the stop at :1943 no longer refuses on the lone row.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/after-arm-review-in-flight-s24.log measures the green half over the new file, while logs/base-arm-c2fdfd6-review-in-flight-s24.log measures only the two pre-existing files, so the base-failure clause has no recorded run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is one of the node's declared write paths, and the single unrelated hunk at reckon/hooks/coordinator_obligations.py:1114 is the format fix the done-when demands.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-review-in-flight-s24.log removes the kind from reckon/hooks/coordinator_obligations.py:251 and reddens tests/test_a_review_in_flight_does_not_block_a_stop.py:187 and :190, while :207 and :226 keep an actionable row blocking.\nSCORE fit: 19\nJUSTIFICATION fit: REVIEW_IN_FLIGHT_DUTY_KIND at reckon/crew/obligations.py:264 sits beside REVIEW_QUEUED_DUTY_KIND, and the hook string member at reckon/hooks/coordinator_obligations.py:252 matches its neighbours.\nSCORE reuse: 20\nJUSTIFICATION reuse: both edits extend the owners already holding the rule, NON_BLOCKING_DUTY_KINDS at reckon/crew/obligations.py:403 and the hook mirror at reckon/hooks/coordinator_obligations.py:251.\nFINDING tests/test_a_review_in_flight_does_not_block_a_stop.py:1 non-blocking: the base-revision failure is claimed in the manifest's artifacts and carried by no cited log.\n",
+  "review_run_id": "r-20261116T115036356623-review-of-review-in-flight-does-not-block-stop-s24-8cd146157e12",
+  "reviewed_base_sha": "c2fdfd6e4dd16628ab494ec1322e524ad75a18ae",
+  "reviewed_head_sha": "8cd146157e123c5267424bca3ee85f9e531c709d",
+  "reviewed_run_id": "r-20261116T105223428597-review-in-flight-does-not-block-stop-s24",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:58:00Z",
+  "total": 109
+}

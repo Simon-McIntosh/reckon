@@ -1,0 +1,92 @@
+<section id="qwnw-red-file-a-png-twin-of-an-svg-is-refused-landing">
+  <h2>A PNG twin of an SVG is refused</h2>
+
+  <p><strong>What changed.</strong> One line, in the test fixture. The cases in
+  <code>tests/test_a_png_twin_of_an_svg_is_refused.py</code> each write a run
+  manifest and then ask <code>crew check --manifest</code> and
+  <code>crew complete</code> about it. That fixture's manifest template predated
+  the no-messages statement: the audit in
+  <code>reckon/hooks/worker_inbox.py</code>
+  (<code>manifest_message_finding</code>, key
+  <code>MANIFEST_MESSAGES_KEY</code>) requires a run with no delivery receipt to
+  say <code>messages_received: none</code> in its manifest, so every case that
+  expected a clean audit failed on that statement rather than on anything about
+  figures. The fixture now writes <code>messages_received: none</code> beside its
+  other <code>none</code> fields.</p>
+
+  <p><strong>Verdict: the test was wrong, not the product.</strong> The
+  <code>messages_received</code> rule is current and deliberate — it has its own
+  cases in <code>tests/test_worker_inbox.py</code> and its own wording in
+  <code>reckon/hooks/worker_inbox.py:356-360</code> — and the PNG rule the file
+  is about was already implemented in
+  <code>reckon/crew/promotion_checks.py</code> and
+  <code>reckon/crew/reports.py</code>. Nothing in the product was repaired. No
+  assertion was deleted, weakened or renamed: the file's five tests are
+  untouched, and the added line is a manifest field, not an expectation.</p>
+
+  <h3 id="qwnw-red-file-a-png-twin-of-an-svg-is-refused-reproduced">Reproduced before repair</h3>
+
+  <p>At the base revision <code>8fdf39585f</code> the file reported four failing
+  cases; each failed on the same unrelated statement. The failing ids and the
+  finding, as the base log carries them:</p>
+
+  <pre id="qwnw-red-file-a-png-twin-of-an-svg-is-refused-red">FAILED tests/test_a_png_twin_of_an_svg_is_refused.py::test_a_png_with_no_svg_beside_it_passes_both
+FAILED tests/test_a_png_twin_of_an_svg_is_refused.py::test_an_svg_alone_passes_both
+FAILED tests/test_a_png_twin_of_an_svg_is_refused.py::test_a_png_present_at_base_is_not_the_run_s_twin
+FAILED tests/test_a_png_twin_of_an_svg_is_refused.py::test_an_untracked_png_is_not_a_finding
+4 failed, 1 passed in 1.77s
+EXIT=1
+{"findings": ["messages_received: no delivery receipt was recorded, so the manifest must say `messages_received: none`"], "ok": false}</pre>
+
+  <p>The fifth case, <code>test_a_png_beside_its_svg_is_reported_and_refused</code>,
+  passed at the base revision and still passes: it is the arm that makes the
+  guarded thing happen. It asserts the audit returns exactly one finding naming
+  both <code>docs/figures/plan-a/figure-node/a.png</code> and
+  <code>docs/figures/plan-a/figure-node/a.svg</code>, and that
+  <code>crew.complete</code> raises <code>CrewError</code> quoting both paths, so
+  the refusal is shown firing rather than inferred from a green suite.</p>
+
+  <table id="qwnw-red-file-a-png-twin-of-an-svg-is-refused-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node file, base (negative control)</td>
+        <td><code>8fdf39585f</code> working tree before the fix</td>
+        <td>4 failed, 1 passed, <code>EXIT=1</code> &mdash; all four on the
+        missing <code>messages_received: none</code></td></tr>
+      <tr><td>node file, after</td>
+        <td>head of the change</td>
+        <td><strong>5 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>neighbouring files, after</td>
+        <td>head; <code>test_worker_inbox.py</code>,
+        <code>test_a_suite_arm_is_refused_at_delivery.py</code> and
+        <code>test_promotion_checks_read_only_what_moved.py</code> beside the node
+        file</td>
+        <td><strong>36 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>suite gate, base and after</td>
+        <td><code>test_staged_write_inventory.py</code> and
+        <code>test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td><strong>58 passed</strong>, <code>EXIT=0</code> on both arms</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The rule shown firing on this node's own record.</strong> The
+  delivery audit was run against this node's own manifest while the manifest
+  lacked the statement, and it refused with the identical finding the four base
+  cases hit:</p>
+
+  <pre id="qwnw-red-file-a-png-twin-of-an-svg-is-refused-self-audit">{"findings": ["messages_received: no delivery receipt was recorded, so the manifest must say `messages_received: none`"], "ok": false}</pre>
+
+  <p>With the statement added the same command returned
+  <code>{"findings": [], "ok": true}</code> and <code>EXIT=0</code>, so the
+  finding is a live check and not a line the fixture was bent to satisfy. (That
+  first invocation also showed the rule is reachable from a worker's own
+  command line, and a silent <code>EXIT=0</code> from the wrong entry point —
+  <code>python -m reckon.cli</code>, which runs nothing — was rejected as a
+  measurement and re-taken through the console script.)</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> on the changed path both report nothing:
+  <code>All checks passed!</code> and <code>1 file already formatted</code>.</p>
+</section>

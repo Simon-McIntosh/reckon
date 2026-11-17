@@ -1,0 +1,80 @@
+<section id="qwnw-red-file-route-before-queue-landing">
+  <h3>A queued request keeps the route it was picked on</h3>
+  <p><code>tests/test_route_before_queue.py</code> read <code>4 failed, 8 passed</code>
+  at <code>cb557f9711670ca8a00dd1d6dd22a17b42d3a51e</code> and reads
+  <code>12 passed</code> at this node's head. Three causes, three verdicts.</p>
+  <table id="qwnw-red-file-route-before-queue-landing-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>The rule now kept</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>A held picker-routed dispatch stored a request with
+        <code>backend: "beta"</code> and <code>dispatch_options: {"route": "picker"}</code>
+        and no pick anywhere on the request or in its run directory, so admission
+        launched it with no answer to continue and the fourth case launched off the
+        picked lane with no recorded fallback
+        (<code>test_metered_wait_…</code>, <code>test_queued_pick_…</code>,
+        <code>test_a_move_…</code>, <code>test_pace_hold_…</code>)</td>
+        <td>product wrong</td>
+        <td>A request held at dispatch carries the pick it was made on, so the lane
+        it was chosen for is the lane it replays or falls back from</td>
+      </tr>
+      <tr>
+        <td><code>KeyError: 'picker_selection'</code> on a pointer returned by
+        <code>runs.read_pointer</code></td>
+        <td>test wrong</td>
+        <td>A live pointer names <code>dispatch_detail</code>; the pick, the admit
+        request and four other dispatch-time fields are read through
+        <code>runs.dispatch_field</code></td>
+      </tr>
+      <tr>
+        <td>The fixture's routed answer carried no <code>picked_at</code>, so the
+        launch re-picked by rule instead of replaying the stored route</td>
+        <td>test wrong</td>
+        <td>A launch replays a stored route only while the instant the code named
+        by <code>picked_at</code> is inside the queue's re-pick bound; the router
+        stamps that instant on every routed answer</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>The repair.</strong> <code>b8217ec486</code> moved dispatch-time detail
+  into each run's own <code>dispatch-detail.json</code> and, with it, removed the
+  write that put the checked pick on a dispatch's options — correct for a record
+  that is about to launch, wrong for a request that is only queued, because a
+  queued request has no attempted record to hold the detail. The pick is written
+  again for a non-admission dispatch, from the selection the dispatch itself
+  checked, and only after any caller-supplied copy is dropped, so a launch is
+  never steered by the options it was handed. With the write restored, the queued
+  pointer names <code>run_dir/&lt;id&gt;/dispatch-detail.json</code> and
+  <code>runs.dispatch_field(pointer, "picker_selection")</code> answers with
+  <code>beta</code>; admission then replays the pick, finds the metered lane at
+  its hard ceiling, rebinds to the open local lane and records the fallback with
+  the reason it moved.</p>
+  <p><strong>The test changes</strong> keep every assertion and its value; see the
+  cause table. The fourth case's fallback assertion now reads
+  <code>admit_request</code> through the accessor, so it compares the same two
+  values it always compared.</p>
+  <p id="qwnw-red-file-route-before-queue-landing-falsification">Falsification of
+  the repair: with the three test changes in place and the six added lines of the
+  write in <code>reckon/crew/dispatching/preparation.py</code> removed, the
+  population the change is proved against reads <code>66 failed, 361 passed</code>
+  instead of <code>62 failed, 365 passed</code>, and the four ids that appear are
+  exactly the four this file's routes through
+  <code>test_route_before_queue.py</code> — <code>test_metered_wait_…</code>,
+  <code>test_queued_pick_…</code>, <code>test_a_move_…</code>,
+  <code>test_pace_hold_…</code>. Restoring the file returns the same command to
+  <code>62 failed, 365 passed</code>, so the guard this node adds is shown to fire
+  rather than merely to pass.</p>
+  <p>Arms, with <code>SLURM_JOB_ID</code> unset: at base the file reads
+  <code>4 failed, 8 passed</code> and at head <code>12 passed</code>; the ids and
+  the log paths are in the red-file record beside this one. The wider population
+  this change is proved against — every test file that names
+  <code>picker_selection</code>, 47 files and 427 ids — reads
+  <code>75 failed, 344 passed, 8 errors</code> at the base revision and
+  <code>62 failed, 365 passed</code> here, with no id failing here that passes
+  there.
+  <code>ruff check</code> and <code>ruff format --check</code> report one
+  pre-existing finding in <code>reckon/crew/dispatching/preparation.py</code>
+  (RUF100 at line 141, present at the base revision too) and nothing new on either
+  changed path.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-route-before-queue.html">Red-file record: base arm and head arm</a></p>
+</section>

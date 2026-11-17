@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T14:49:19.078Z",
+  "dispatched_at": "2026-11-16T14:49:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104704616442-qwnw-red-file-a-hand-written-review-record-is-refused/manifest.md",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "the manifest's tests line records the bare pytest invocation while the done_when requires the head run as an all_debug job with SLURM_JOB_ID unset, so the receipt promotion fills from this line cannot be re-run as the measure states; the job identity survives only in logs/head-red-file.log's '# job: qwnw-redfile-head2 on all_debug node 98dci4-clu-3143' header"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104704616442-qwnw-red-file-a-hand-written-review-record-is-refused/manifest.md",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "the artifacts line asserts 'ruff check and ruff format --check clean' on the changed file with no log under logs/, so the done_when's ruff clause is claimed rather than recorded; the claim is true \u2014 both commands were re-run against the head version of tests/test_a_hand_written_review_record_is_refused.py and reported 'All checks passed!' and '1 file already formatted' \u2014 but no artifact on disk carries that result"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261116T135358890949-review-of-qwnw-red-file-a-hand-written-review-record-is-refused-0b4ea68f8f45",
+  "reviewed_base_sha": "125628f608ef00b5f4a4a9ce845c5e8a04b12f58",
+  "reviewed_head_sha": "0b4ea68f8f453cc2592a1f8880639e79f5485f07",
+  "reviewed_run_id": "r-20261116T104704616442-qwnw-red-file-a-hand-written-review-record-is-refused",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:56:27.310557+00:00",
+  "total": 112
+}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tests/test_build.py: the red base run beside the head run</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/_shared/foundation.css">
+<style>
+  .qwnw-red-file-build-run { white-space: pre-wrap; font-family: var(--mono); font-size: 12px;
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 10px 12px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1 id="qwnw-red-file-build-control-title">The negative control: the base run's failing ids</h1>
+<p id="qwnw-red-file-build-control-note">
+  Both runs are jobs on all_debug with <code>SLURM_JOB_ID</code> unset for the
+  test process. The base run reads an extraction of the base revision's own
+  tree; the head run reads the worktree's head.
+</p>
+
+<h2 id="qwnw-red-file-build-control-base">Base run, revision d0d77f07e2</h2>
+<pre id="qwnw-red-file-build-control-base-log" class="qwnw-red-file-build-run">FAILED tests/test_build.py::test_served_and_static_pages_request_only_their_own_origin
+FAILED tests/test_build.py::test_served_component_edit_is_visible_on_the_next_load
+FAILED tests/test_build.py::test_build_carries_directions_into_the_project_surfaces
+FAILED tests/test_build.py::test_build_without_directions_preserves_the_unlabelled_shape
+FAILED tests/test_build.py::test_wheel_version_ignores_non_release_tag
+FAILED tests/test_build.py::test_release_tag_match_reports_when_no_release_tags_exist
+6 failed, 19 passed in 221.84s
+EXIT=1</pre>
+
+<h2 id="qwnw-red-file-build-control-head">Head run, revision 78d96a3ec6</h2>
+<pre id="qwnw-red-file-build-control-head-log" class="qwnw-red-file-build-run">.........................                                                [100%]
+25 passed in 39.83s
+EXIT=0</pre>
+
+<p id="qwnw-red-file-build-control-paths">
+  Logs on disk:
+  <code>~/.config/reckon/crew/runs/r-20261115T224739427254-qwnw-red-file-build/logs/test_build_base.log</code>
+  and <code>.../logs/test_build_head_gate.log</code>.
+</p>
+</body>
+</html>

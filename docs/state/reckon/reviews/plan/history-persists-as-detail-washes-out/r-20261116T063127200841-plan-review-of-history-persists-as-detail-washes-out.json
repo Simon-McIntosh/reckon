@@ -1,0 +1,108 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-16T06:33:41.331Z",
+  "dispatched_at": "2026-11-16T06:33:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T063127200841-plan-review-of-history-persists-as-detail-washes-out/plan.html:412",
+      "id": "done_when-1",
+      "reason": "a base arm that dies on a symbol the fix introduces proves nothing about the lock, so the node would land a hook, a green head arm and a vacuous red arm and call the defect measured.",
+      "text": "the arm requires that the read is slowed \"by a test hook\", and that hook is added by this node in `reckon/run_store.py`, so at the base revision the test cannot reach the defect: it fails on the absent hook, and an arm that fails for a missing symbol is satisfied whether or not the write actually blocks.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/history-persists-as-detail-washes-out/r-20261116T063127200841-plan-review-of-history-persists-as-detail-washes-out/plan.html:412",
+      "id": "reasoning-1",
+      "reason": "the endpoint this section can actually state \u2014 a write completes before a multi-second read finishes, and the reader answers the same rows \u2014 is reachable from a populated store or a caller-held cursor, so removing the hook frees the node to prove the behaviour without adding test-only code to the writer module.",
+      "text": "the done-when prescribes the implementation of the endpoint: a \"test hook\" slowing \"the per-row work of every store read in `reckon/run_store.py`\" fixes a code shape (an injectable delay inside the reader) and a module to put it in, which is the mechanism a node brief should choose, not the plan, and it also silently fixes where per-row work may sit relative to the open read.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b7d44a9764326520cd6202434dd4d58d41bb9c62",
+  "plan_fingerprint": "6f3024f1f1a0ae4e33b181199cd4bff16072df5c1095c8642e75467e3488d52e",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 75,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b7d44a9764326520cd6202434dd4d58d41bb9c62",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s30's done-when now requires the base arm to fail by the write waiting on the open read, not on any symbol the node introduces; the hook wording is gone",
+      "reason": "",
+      "when": "2026-11-16T06:44:53.306208+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b7d44a9764326520cd6202434dd4d58d41bb9c62",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the done-when states only the endpoint: a write from another process completes while a reader is still consuming rows; how the reader is slowed and where its per-row work sits is the worker's",
+      "reason": "",
+      "when": "2026-11-16T06:44:58.697640+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b7d44a9764326520cd6202434dd4d58d41bb9c62",
+      "commit_basis": "edit",
+      "note": "s30's done-when now requires the base arm to fail by the write waiting on the open read, not on any symbol the node introduces; the hook wording is gone",
+      "reason": "",
+      "when": "2026-11-16T06:44:53.306208+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b7d44a9764326520cd6202434dd4d58d41bb9c62",
+      "commit_basis": "edit",
+      "note": "the done-when states only the endpoint: a write from another process completes while a reader is still consuming rows; how the reader is slowed and where its per-row work sits is the worker's",
+      "reason": "",
+      "when": "2026-11-16T06:44:58.697640+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-history-persists-as-detail-washes-out.v75.json",
+  "review_run_id": "r-20261116T063127200841-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "108404510b0fbffec8cba71c53c540320aafab55",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `c91ba12023` resolves in /home/ITER/mcintos/Code/reckon (\"Merge the run-store lock wait\", reckon/run_store.py +15 and a new test), `RECORD_BUSY_TIMEOUT_SECONDS` resolves at reckon/run_store.py:193 as 120.0, \u00a722 resolves and its reader `stored_run_rows` exists at reckon/run_store.py:536, and no journal mode is set anywhere on this store (only reckon/crew/station_store.py:461 sets one), so the Why's \"sets no journal mode\" claim resolves.",
+    "done_when": "a finding \u2014 s30's done-when (plan.html:412) makes its failing-first arm depend on a test hook the node itself introduces, so the arm fails at base on a missing symbol rather than on the blocked write it is meant to prove.",
+    "evidence_paths": "pass \u2014 s30 names no scratch path; its gate is the named all_debug delta run, whose logs land under the run's own record, and it declares write paths only for source and a new test.",
+    "naming": "pass \u2014 the section carries no plan, ticket or version label into code, and the only symbol it names already exists with the spelling it cites.",
+    "reasoning": "a finding \u2014 s30's root cause is confirmed against the system (rollback journal, a `mode=ro` cursor mid-iteration blocks another process's commit for the full 2.03 s of per-row work), but the done-when prescribes a test hook inside `reckon/run_store.py`, which fixes a mechanism rather than an endpoint.",
+    "single_goal": "pass \u2014 s30 carries one deliverable (a store read that does not hold the store across its per-row work), and its Why's closing sentence names that as the endpoint while the landed busy timeout appears only as a keep-green assertion.",
+    "wiring": "pass \u2014 s30 consumes only already-landed output (\u00a722's store read is declared done), so it needs no section wait, and it was answered that s30 is dispatched as its own implement node rather than through a followup edge; the plan's `plan-section-depends-on`/followup picture is unchanged from the round that answered that finding."
+  },
+  "section_digests": {
+    "_document": "cff0d28ffa80dabc7578edbcf532be8ef74eb929e59680d927b12fd4b64f63c9",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "2caaabfbf5a3a61e4fa778849fc05fd4da51db850fabdddfdeec6c84b7a04fbc",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T06:44:51.269270+00:00",
+  "total": null
+}
