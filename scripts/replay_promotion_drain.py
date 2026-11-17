@@ -125,12 +125,12 @@ def validate_dataset(data: dict) -> list[dict]:
     return rows
 
 
-def git(repository: Path, *arguments: str) -> str:
+def git(repository: Path, *arguments: str, timeout: float = 120) -> str:
     result = subprocess.run(
         ["git", "-C", str(repository), *arguments],
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=timeout,
         check=False,
     )
     if result.returncode:
@@ -224,7 +224,7 @@ def _repository(root: Path, source: dict) -> None:
     git(root, "config", "filter.lfs.smudge", "cat")
     git(root, "config", "filter.lfs.required", "false")
     git(root, "read-tree", source["revision"])
-    git(root, "checkout-index", "--all")
+    git(root, "checkout-index", "--all", timeout=600)
     git(root, "update-ref", "refs/heads/main", source["revision"])
     origin = root.parent / (root.name + "-origin.git")
     origin.mkdir()
@@ -232,6 +232,7 @@ def _repository(root: Path, source: dict) -> None:
     (origin / "objects/info/alternates").write_text(source["objects"] + "\n")
     git(origin, "update-ref", "refs/heads/main", source["revision"])
     git(root, "remote", "add", "origin", str(origin))
+    git(root, "config", "extensions.worktreeConfig", "true")
     environment = Path(source["root"]) / ".venv"
     if environment.exists():
         (root / ".venv").symlink_to(environment)
@@ -452,9 +453,18 @@ def replay(
                     "worktree",
                     "add",
                     "--detach",
+                    "--no-checkout",
                     str(worker),
                     revision,
                 )
+                git(worker, "config", "--worktree", "core.sparseCheckout", "true")
+                git(worker, "config", "--worktree", "core.sparseCheckoutCone", "false")
+                sparse = Path(git(worker, "rev-parse", "--git-path", "info/sparse-checkout"))
+                if not sparse.is_absolute():
+                    sparse = worker / sparse
+                sparse.parent.mkdir(parents=True, exist_ok=True)
+                sparse.write_text("/*\n!/docs/state/\n")
+                git(worker, "read-tree", "-mu", "HEAD", timeout=600)
                 environment = Path(sources["projects"][project]["root"]) / ".venv"
                 if environment.exists():
                     (worker / ".venv").symlink_to(environment)
@@ -524,6 +534,7 @@ def replay(
             **data["header"],
             "repository_sources_sha256": sources["sha256"],
             "relocation": "repositories and crew paths relocated; process and scheduler handles cleared; request options and promotion guards retained",
+            "worker_materialization": "sparse checkout omits duplicate docs/state; canonical repositories keep the full state and Git objects",
         }
         return result
 
