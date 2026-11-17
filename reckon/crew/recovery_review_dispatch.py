@@ -4628,50 +4628,6 @@ def _stage_percentile(values: Sequence[float], quantile: float) -> float | None:
     return run_time_profile._percentile(values, quantile)
 
 
-def _stage_percentile(values: Sequence[float], quantile: float) -> float | None:
-    """A quantile of the stage sample, read by the profile's own rule.
-
-    The percentile the census quotes is the run-time profile's — the module that
-    already owns how this repository reads a distribution over stage samples —
-    so a change there reaches the census instead of leaving a second convention
-    to drift beside it. Imported here rather than at module scope because the
-    profile reaches the dispatcher, which imports this module while it loads.
-    """
-    from reckon.crew import run_time_profile
-
-    return run_time_profile._percentile(values, quantile)
-
-
-def _inherit_review_priority(
-    record: Mapping[str, Any], review_run_id: str
-) -> str | None:
-    """Give the review request the priority of the run it reviews.
-
-    A review of a run the coordinator ranked one way is the same piece of work
-    as that run's next step, so the queue this request lands in must not order
-    it by a default the reviewed run never chose. Only a priority the reviewed
-    run actually carries is copied: a run with none leaves the review with none.
-    """
-    priority = record.get("priority_override")
-    if not isinstance(priority, int) or isinstance(priority, bool):
-        return None
-    if not review_run_id:
-        return None
-    def inherit(pointer: dict[str, Any]) -> dict[str, Any]:
-        pointer["priority_override"] = priority
-        pointer["priority_override_set_at"] = _utc_now()
-        pointer["priority_override_reason"] = (
-            f"inherited from the reviewed run {record.get('run_id')}"
-        )
-        return pointer
-
-    try:
-        runs._mutate_pointer(review_run_id, inherit)
-    except (CrewError, OSError, ValueError):
-        return None
-    return f"the review inherits priority {priority} from the run it reviews"
-
-
 def review_stage_instants(run_id: str) -> dict[str, str | None]:
     """The first instant of each handoff the receipts hold for one run.
 

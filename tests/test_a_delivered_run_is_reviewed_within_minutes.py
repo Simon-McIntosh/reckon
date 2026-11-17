@@ -175,9 +175,29 @@ def test_a_delivered_run_is_requested_inside_the_window_while_a_tick_is_held(
         assert row["request_lag_seconds"] == _receipt_gap(
             run_id, "delivery_recorded", "review_requested"
         )
-        # The launch is a separate interval: a slow launch is not a late request.
-        assert row["launch_lag_seconds"] != row["request_lag_seconds"]
-        assert census["request_lag_seconds"]["max"] == row["request_lag_seconds"]
+        # The launch is a separate interval, read from its own receipt: the
+        # admission is recorded on the reviewed run the way `note_review` writes
+        # it, and the interval is asserted against the journal rather than
+        # against the census's own arithmetic: a stage the census stops mapping
+        # leaves `launched_at` unset and this interval unknown.
+        assert row["launched_at"] is None, "the fixture admitted a review on its own"
+        admitted_at = (
+            datetime.fromisoformat(instants["requested_at"]) + timedelta(seconds=30)
+        ).isoformat()
+        started_at = (
+            datetime.fromisoformat(instants["requested_at"]) + timedelta(seconds=45)
+        ).isoformat()
+        stage_receipts.record_stage(run_id, "review_admitted", at=admitted_at)
+        stage_receipts.record_stage(run_id, "review_started", at=started_at)
+        read_back = recovery_review_dispatch.review_request_census(
+            [run_id], pointers=[runs.read_pointer(run_id)]
+        )["rows"][0]
+        assert read_back["launched_at"] == admitted_at, read_back
+        assert read_back["started_at"] == started_at, read_back
+        assert read_back["launch_lag_seconds"] == _receipt_gap(
+            run_id, "review_requested", "review_admitted"
+        )
+        assert read_back["launch_lag_seconds"] == 30.0, read_back
         assert census["counts"]["requested"] == 1
         assert census["obligations"] == []
     finally:
