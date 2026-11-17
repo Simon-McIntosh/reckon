@@ -25,7 +25,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="96">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -265,6 +265,12 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261114T174337281611-raced-promotion-lands-s11" data-who="reckon-build" data-when="2026-11-15T04:37:11Z">
     <div class="r-comment-body"><p>a promotion that meets another writer's ledger row now treats that row as its own success and lands the reviewed head itself through the caller's merge, retiring the live pointer only while its identity fields still name the attempt this promotion read, and leaving a pointer a newer attempt owns exactly as it is.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T234114614573-review-of-stale-lock-reuses-owners-s12-8c1ac9168e9a" data-who="reckon-build" data-when="2026-11-17T00:01:31.108Z">
+    <div class="r-comment-body"><p>reviewed r-20261115T123706643397-stale-lock-reuses-owners-s12 at base 622ef4617d73a4af8ecf7dc5926996910a4ca29f and head 8c1ac9168e9a49715726ecf7ddaf0ea2ad0efc4e; parsed record scores 109/120 (goal_fidelity 19, evidence 16, scope_discipline 20, durability 17, fit 17, reuse 20), 0 added failures, four non-blocking findings (fragment added-id figure, fragment gate-after revision, two undriven refusal-path recorders, held_by now nullable).</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261115T123706643397-stale-lock-reuses-owners-s12" data-who="reckon-build" data-when="2026-11-15T14:23:08Z">
+    <div class="r-comment-body"><p>the stale-lock check calls the one holder scan (reckon.crew.gc._processes_holding, extended to answer None for an unreadable /proc) and the one lock-age function, and every caller of the shared wait now passes a removal recorder, so each proven-stale clearing is named with the lock and its age; one definition of each remains at head and the gate arm moved from 58 passed at 622ef46 to 66 passed at eb5b795</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261115T045402525342-review-of-a-landing-commit-retries-a-released-lock-efeb0d0d4339" data-who="reckon-build" data-when="2026-11-15T05:21:02.986Z">
     <div class="r-comment-body"><p>reviewed r-20261115T031844233655-a-landing-commit-retries-a-released-lock from base 251cb1cd058784974614ba8cc292d665b7ca7dc1 to head efeb0d0d4339cb0ed0700c01957f488ae99aef12: scores goal_fidelity 18, evidence 18, scope_discipline 16, durability 14, fit 15, reuse 18; added_failure_count 0 over an added_failure_ids of []; one blocking finding at reckon/crew/merge.py:867, where the retry loop dropped its result.returncode != 0 guard and so retries a successful step whenever the checkout's index.lock exists at the check.</p></div>

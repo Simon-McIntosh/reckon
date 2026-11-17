@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-17T01:55:04.268Z",
+  "dispatched_at": "2026-11-17T01:54:17Z",
+  "findings": [
+    {
+      "file": "tests/test_oversized_route_replay.py",
+      "line": "162",
+      "severity": "blocking",
+      "text": "`assert FALLBACK_REFUSAL in block` (the constant at :80) asserts a refusal reason the replay composes itself at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py:751-758 with decision_source 'no-router', while production sets decision_source='refused' and appends '; default-backend-ineligible' to the router's own reason (reckon/crew/picker/__init__.py:597-607), so no product change can redden this assertion and the replay's docstring (:15-16) and the evidence page's 'answer' paragraph present the replay's own words as the picker's answer"
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py",
+      "line": "1020",
+      "severity": "non-blocking",
+      "text": "`result.get(\"fallback_reason\") == REPLAY_ANSWER[\"fallback_reason\"]` compares against the constant the same dict was populated from at :944 when placed is None, so the term is true by construction and adds nothing to `reproduced`, which then rests only on `matched` and the action comparison"
+    },
+    {
+      "file": "tests/test_oversized_route_replay.py",
+      "line": "155",
+      "severity": "non-blocking",
+      "text": "the done_when forbids deleting or weakening an assertion, yet `assert \"exclusion set: reproduced exactly, in the picker's order\"` (base :129) and `assert \"offered \" not in out` (base :142) are gone and the manifest names the rules behind the re-pin but not these two deletions, so the record does not own the deviation its own done_when states"
+    },
+    {
+      "file": "logs/suite-head.log",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the done_when requires the passing run 'as a job on all_debug with SLURM_JOB_ID unset', and the head arm's header unset only RECKON_HOME, XDG_CONFIG_HOME and FLEET_SESSION_TMP_ROOT in the in-place worktree (:2), so the record shows neither the venue nor the variable the measure names"
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_oversized_route_replay.py:163 compares the replayed rows against KEPT, and those rows are printed from the real snapshot.candidates scan at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py:930-934, so restoring the base reservation rules reddens it; the answer-side assertion at :162 and the script's own outcome term at :1020 are not independent of the value under test.",
+    "evidence": "Both arms are committed logs with a revision header and a bare EXIT line (logs/suite-base.log:1-7, logs/suite-head.log:1-9) and the manifest records them with failure ids, but the head arm was not run as the all_debug job the done_when names (logs/suite-head.log:5 unset four other variables and :2 names the in-place worktree) and the answer-side assertion rests on script-authored constants rather than the picker's own answer.",
+    "fit": "The script and test follow the existing replay-fragment idiom and reuse the picker's helpers, but the report introduces a decision_source value 'no-router' (replay_oversized_route.py:941) that no other reader of a pick-timing row uses, where production writes 'refused' (reckon/crew/picker/__init__.py:604-607).",
+    "goal_fidelity": "The gate file passes in full at the reviewed head (logs/suite-head.log:9 '6 passed', EXIT=0) where the base arm at f361d2bc is 3 failed, so the goal's literal measure is met; the refusal it now reproduces is narrower than the record it is named after, which the evidence page states at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/oversized-route-replay.html (the 'answer' paragraph).",
+    "reuse": "Every moved mechanism routes through its owner - snapshot.candidates for the scan, picker._fallback_choice for placement (replay_oversized_route.py:929) and dispatch_picker._config_within_lane for the lane narrowing (replay_oversized_route.py:579 via _narrowed_config) - though the refusal's wording is paraphrased in REPLAY_ANSWER (:751-758) instead of taken from reckon/crew/picker/__init__.py:601-607, which is the one place it is owned.",
+    "scope_discipline": "The node's own three commits touch only docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py, oversized-route-replay.html, tests/test_oversized_route_replay.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-oversized-route-replay.html, all inside the declared paths plus the resumption grant the manifest checkpoint names; the promote/land rows elsewhere in f361d2bc..8cc4fe68 belong to other runs' merges."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_oversized_route_replay.py pass in full; logs/suite-head.log:9 reads '6 passed' with EXIT=0 at 8cc4fe6860 against logs/suite-base.log's '3 failed, 2 passed' at f361d2bc, and the re-pin at b7a3e161e4 is what moved it.\nVERDICT done_when: the done_when names the same file plus 'No assertion is deleted or weakened' and an all_debug job with SLURM_JOB_ID unset; the manifest's gate command measures the file's pass and names the two rules re-pinned to, but tests/test_oversized_route_replay.py deletes the assertions at base :129 and :142 and logs/suite-head.log:2,5 shows the in-place worktree rather than an all_debug job.\nVERDICT write_paths: declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; all four files in the node's own commits 07a36ff986, b7a3e161e4 and 8cc4fe6860 sit inside them, with docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop granted on resumption as the manifest checkpoint records.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104840672569-qwnw-red-file-oversized-route-replay/manifest.md; it reports status complete, both arms with revision, command, exit status, failure count and log paths, the gate command verbatim, and the two landed picker rules behind the re-pin.\nVERDICT diff: read commit by commit against f361d2bcfced; the node's three commits touch replay_oversized_route.py, oversized-route-replay.html, tests/test_oversized_route_replay.py and the node's own fragment, while the rest of the f361d2bc..8cc4fe68 range is other runs' promote and land rows merged in from main.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gate file passes in full at 8cc4fe6860 (logs/suite-head.log:9, EXIT=0) where the base arm is 3 failed, so the goal's measure is met though the reproduced refusal is narrower than the record it is named after.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/suite-base.log:1-7 and logs/suite-head.log:1-9 carry revision headers and bare EXIT lines but the head arm was not the all_debug job the done_when names, and tests/test_oversized_route_replay.py:162 asserts a reason string the replay authored.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the node's own commits (07a36ff986, b7a3e161e4, 8cc4fe6860) is inside the declared paths plus the resumption grant, and no reckon/ module, plan or index was touched.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_oversized_route_replay.py:163 reddens if the reservation rules revert because the rows come from the real scan at replay_oversized_route.py:930-934, while its :162 answer assertion and the script's :1020 term cannot fail on product behaviour.\nSCORE fit: 15\nJUSTIFICATION fit: the fragment follows the existing replay idiom and reuses the picker's helpers, but replay_oversized_route.py:941 invents decision_source 'no-router' where production writes 'refused' at reckon/crew/picker/__init__.py:604-607.\nSCORE reuse: 16\nJUSTIFICATION reuse: the scan, placement and lane narrowing all call their owners (replay_oversized_route.py:929 picker._fallback_choice, :579 dispatch_picker._config_within_lane), but REPLAY_ANSWER at :751-758 paraphrases the refusal wording reckon/crew/picker/__init__.py:601-607 owns.\nFINDING tests/test_oversized_route_replay.py:162 blocking: the answer assertion checks a refusal reason composed by the replay at replay_oversized_route.py:751-758 with decision_source 'no-router', which production never emits (reckon/crew/picker/__init__.py:597-607 writes 'refused' and prefixes the router's own reason), so it cannot redden on any product change and presents the replay's words as the picker's.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py:1020 non-blocking: the outcome term compares result's fallback_reason against the same constant that populated it at :944, so it is true by construction and the refusal's reproduction rests only on the row match and the action.\nFINDING tests/test_oversized_route_replay.py:155 non-blocking: two assertions are deleted (base :129 'exclusion set: reproduced exactly, in the picker's order' and base :142 'offered ' not in out) while the done_when forbids deleting or weakening any assertion and the manifest names only the rules.\nFINDING logs/suite-head.log:5 non-blocking: the head arm was run in the in-place worktree with three unrelated variables unset rather than as the all_debug job with SLURM_JOB_ID unset that the done_when names, so the record does not show the venue the measure states.\n",
+  "review_run_id": "r-20261116T233953933517-review-of-qwnw-red-file-oversized-route-replay-8cc4fe6860f5",
+  "reviewed_base_sha": "f361d2bcfcedaa2068686dd3588b2907527613f2",
+  "reviewed_commits": [
+    "07a36ff986178daecff4882b13affb8f75a48b7a",
+    "b7a3e161e4bb33fd4ccc8c01c8732ea8283662e2",
+    "8cc4fe6860f54299b597c0a1058ecedeadb42bce"
+  ],
+  "reviewed_head_sha": "8cc4fe6860f54299b597c0a1058ecedeadb42bce",
+  "reviewed_run_id": "r-20261116T104840672569-qwnw-red-file-oversized-route-replay",
+  "rubric": "review",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:14:00+00:00",
+  "total": 92
+}

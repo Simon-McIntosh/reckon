@@ -67,12 +67,22 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _seed_git_repository(root: Path) -> None:
-    """Make the fixture a git worktree with one commit."""
+    """Make the fixture a git worktree whose head sits past its base.
+
+    The base commit carries the node's own test files, and a second commit
+    changes one of them, so the run has a commit beyond its base to present and
+    the scoped command resolves to the same files in both trees. A run whose
+    head sits on its base is ``unchanged`` and owes no suite pair, which is not
+    the case these tests measure.
+    """
+    (root / "tests").mkdir()
+    (root / "tests" / "test_one.py").write_text("")
+    (root / "tests" / "test_two.py").write_text("")
     for arguments in (
         ("init", "-q", "-b", "main"),
         ("config", "user.email", "worker@example.invalid"),
         ("config", "user.name", "Worker"),
-        ("add", "docs"),
+        ("add", "docs", "tests"),
     ):
         subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
     staged = subprocess.run(
@@ -88,6 +98,25 @@ def _seed_git_repository(root: Path) -> None:
             check=True,
             capture_output=True,
         )
+    (root / "tests" / "test_one.py").write_text("# the node's change\n")
+    subprocess.run(["git", "add", "tests"], cwd=root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "change the node's tests"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+
+
+def _revision(repository: Path, revision: str) -> str:
+    """One revision of the fixture repository, resolved."""
+    return subprocess.run(
+        ["git", "rev-parse", revision],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
 
 
 def _write_pointer(
@@ -98,6 +127,7 @@ def _write_pointer(
     manifest_path: str,
     write_paths: list[str] | None = None,
 ) -> None:
+    base = _revision(repository, "HEAD^")
     _write_json(
         pointer_path(run_id),
         {
@@ -110,7 +140,7 @@ def _write_pointer(
             "backend": "native",
             "created_at": "2026-08-26T09:00:00Z",
             "manifest_path": manifest_path,
-            "base_sha": "base-abc",
+            "base_sha": base,
             "suite_command": suite_command,
             "worktree": str(repository),
             "node": {
@@ -136,8 +166,17 @@ def _suite_observation(command: str, revision: str) -> dict[str, object]:
     }
 
 
-def _write_manifest(path: Path, arms: tuple[dict[str, object], ...] = ()) -> None:
-    lines = ["node: node-a", "status: complete", "commits: abc123", "tests: done"]
+def _write_manifest(
+    path: Path,
+    head: str,
+    arms: tuple[dict[str, object], ...] = (),
+) -> None:
+    lines = [
+        "node: node-a",
+        "status: complete",
+        f"commits: {head}",
+        "tests: done",
+    ]
     if len(arms) == 2:
         lines.append("baseline_suite: " + json.dumps(arms[0]))
         lines.append("after_suite: " + json.dumps(arms[1]))
@@ -178,8 +217,6 @@ def _complete(run_id: str, repository: Path):
             "0",
             "--gate-log-path",
             "/durable/gate.log",
-            "--no-commit",
-            "report-only fixture",
         ],
     )
 
@@ -236,9 +273,10 @@ def test_the_declared_command_measures_the_nodes_fenced_test_files(
     manifest = tmp_path / "declared.md"
     _write_manifest(
         manifest,
+        _revision(repository, "HEAD"),
         arms=(
-            _suite_observation(resolved, "base-abc"),
-            _suite_observation(resolved, "after-abc"),
+            _suite_observation(resolved, _revision(repository, "HEAD^")),
+            _suite_observation(resolved, _revision(repository, "HEAD")),
         ),
     )
     _write_pointer(
@@ -348,9 +386,10 @@ def test_a_scoped_pair_over_the_nodes_test_files_promotes(
     manifest = tmp_path / "scoped.md"
     _write_manifest(
         manifest,
+        _revision(repository, "HEAD"),
         arms=(
-            _suite_observation(RESOLVED, "base-abc"),
-            _suite_observation(RESOLVED, "after-abc"),
+            _suite_observation(RESOLVED, _revision(repository, "HEAD^")),
+            _suite_observation(RESOLVED, _revision(repository, "HEAD")),
         ),
     )
     _write_pointer(
@@ -378,9 +417,10 @@ def test_a_scoped_pair_over_the_whole_suite_is_refused(
     whole = "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/"
     _write_manifest(
         manifest,
+        _revision(repository, "HEAD"),
         arms=(
-            _suite_observation(whole, "base-abc"),
-            _suite_observation(whole, "after-abc"),
+            _suite_observation(whole, _revision(repository, "HEAD^")),
+            _suite_observation(whole, _revision(repository, "HEAD")),
         ),
     )
     _write_pointer(
@@ -406,9 +446,10 @@ def test_a_scoped_pair_over_another_nodes_files_is_refused(
     other = RESOLVED.replace("tests/test_two.py", "tests/test_other.py")
     _write_manifest(
         manifest,
+        _revision(repository, "HEAD"),
         arms=(
-            _suite_observation(other, "base-abc"),
-            _suite_observation(other, "after-abc"),
+            _suite_observation(other, _revision(repository, "HEAD^")),
+            _suite_observation(other, _revision(repository, "HEAD")),
         ),
     )
     _write_pointer(
@@ -430,7 +471,7 @@ def test_a_project_with_no_declaration_records_no_suite_observation(
     """With the declaration removed the run is unarmed and no pair is recorded."""
     run_id = "r-20261027T010300000000-node-a"
     manifest = tmp_path / "unarmed.md"
-    _write_manifest(manifest)
+    _write_manifest(manifest, _revision(repository, "HEAD"))
     _write_pointer(run_id, repository, suite_command=None, manifest_path=str(manifest))
     _stored_review(run_id)
 

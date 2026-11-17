@@ -8,6 +8,7 @@ existing guards, lease and idempotent ledger/release path.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -247,7 +248,13 @@ def _read(path: Path) -> dict[str, Any]:
 
 def read_promotion(run_id: str) -> dict[str, Any]:
     """Read a pending request or its durable terminal outcome."""
-    return _read(_request_path(run_id)) or _read(_receipt_path(run_id))
+    record = _read(_request_path(run_id)) or _read(_receipt_path(run_id))
+    if not record and runs.pointer_path(run_id).exists():
+        pointer = runs.read_pointer(run_id)
+        leader = str(pointer.get("landing_group") or "")
+        if leader and leader != run_id:
+            return _read(_request_path(leader)) or _read(_receipt_path(leader))
+    return record
 
 
 def _mark_pointer(
@@ -262,7 +269,9 @@ def _mark_pointer(
                 return
             pointer = runs.read_pointer(run_id)
             pointer["promotion_status"] = phase
-            pointer["promotion_request"] = str(_request_path(run_id))
+            pointer["promotion_request"] = str(
+                _request_path(str(request.get("group_run_id") or run_id))
+            )
             pointer["phase"] = (
                 phase
                 if phase in {REQUESTED, PROMOTED}
@@ -288,7 +297,13 @@ def request_promotion(
     one arriving through a different caller. Retrying a terminal refusal is an
     explicit coordinator action; automatic sweeps leave its obligation visible.
     """
-    if kind not in {"command", "complete", "acceptance", "review-self"}:
+    if kind not in {
+        "command",
+        "complete",
+        "acceptance",
+        "review-self",
+        "landing-group",
+    }:
         raise CrewError(f"unknown promotion request kind {kind!r}")
     path = _request_path(run_id)
     with runs._pointer_lock(f"promotion-request-{run_id}"):
@@ -325,6 +340,15 @@ def request_promotion(
             "requested_at": _now(),
             "options": json.loads(json.dumps(dict(options or {}), default=str)),
         }
+        if kind == "landing-group":
+            priorities = [
+                _override(member["pointer"])
+                for member in request["options"].get("members") or ()
+            ]
+            request["priority_override"] = max(
+                (priority for priority in priorities if priority is not None),
+                default=request["priority_override"],
+            )
         runs._write_json(path, request)
         _mark_pointer(request, REQUESTED)
         return request
@@ -416,6 +440,10 @@ def _execute_command(options: Mapping[str, Any]) -> dict[str, Any]:
 def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
     run_id = str(request["run_id"])
     options = request.get("options") or {}
+    if request["kind"] == "landing-group":
+        from reckon.crew_run_commands import _complete_landing_group
+
+        return _complete_landing_group(request)
     if request["kind"] == "command":
         return _execute_command(options)
     if request["kind"] == "complete":
@@ -470,6 +498,21 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
         else:
             path.unlink(missing_ok=True)
     _record_drained(receipt)
+    for member in (request.get("options") or {}).get("members") or ():
+        member_id = str(member["pointer"]["run_id"])
+        if member_id != run_id:
+            member_receipt = {
+                **receipt,
+                "run_id": member_id,
+                "group_run_id": run_id,
+                "session": str(member["pointer"].get("session") or ""),
+                "priority_override": _override(member["pointer"]),
+                "node": (member["pointer"].get("node") or {}).get("id", ""),
+                "plan": str(member["pointer"].get("plan") or ""),
+            }
+            runs._write_json(_receipt_path(member_id), member_receipt)
+            _mark_pointer(member_receipt, phase)
+            _record_drained(member_receipt)
     return receipt
 
 
@@ -896,9 +939,26 @@ class PromotionService:
             if owner is None:
                 self._release(slot)
                 continue
+            branch = None
+            members = (request.get("options") or {}).get("members") or ()
+            repository = ""
+            if request.get("kind") == "landing-group" and members:
+                repository = str(members[0]["pointer"]["repo"])
+            elif (request.get("options") or {}).get("land"):
+                with suppress(CrewError):
+                    repository = str(
+                        runs.read_pointer(str(request["run_id"])).get("repo") or ""
+                    )
+            if repository:
+                identity = hashlib.sha256(repository.encode()).hexdigest()
+                branch = self._claim(f"promotion-branch-{identity}")
+                if branch is None:
+                    self._release(owner)
+                    self._release(slot)
+                    continue
             thread = threading.Thread(
                 target=self._run,
-                args=(request, owner, slot),
+                args=(request, owner, slot, *([branch] if branch else [])),
                 name=f"promotion-request-{request['run_id']}",
                 daemon=True,
             )

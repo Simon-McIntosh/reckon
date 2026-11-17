@@ -728,6 +728,7 @@ HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
 
 _CELLS = ("working", "in review", "help", "delivered")
 _WAIT_CELL = "waiting"
+_HELP_CELL = "help"
 # The stuck count is a figure beside the buckets rather than one of them: a
 # stuck request keeps the cell its phase belongs to, so this cell recounts
 # rows the others already hold. It renders on every row so the block keeps
@@ -965,17 +966,25 @@ def _stream_age(seconds: Any) -> str:
     return _elapsed(float(whole))
 
 
-def _bucket_of(state: Any, classification: Any) -> str | None:
+def _bucket_of(state: Any, *older: Any) -> str | None:
     """Which counter bucket a run's state belongs to, or None off the fleet.
 
     Membership is read from the fleet partition rather than restated, so the
     letter a counter prints always names the population it counts. The import
     happens here rather than at module scope because the partition imports this
     module: taking the names at import time would freeze them before the
-    partition has finished defining them. A held run counts as waiting, which
-    is the partition's own reading of a refusal that has been accepted rather
-    than acted on.
+    partition has finished defining them.
+
+    The bucket follows the state word the pane draws, never the classification
+    beside it: the two say different things about a held run — the word says
+    whose move lifts the hold, the classification names the hold — so reading
+    the classification here is how a request the queue parked, drawn waiting,
+    came to be counted somewhere else. Any further argument is accepted and
+    ignored, for callers written when this read took the classification beside
+    the word; the fleet partition's counter asks for the bucket from the word
+    alone, and so does this.
     """
+    del older
     from reckon.crew.recovery import (
         FLEET_BLOCKED_STATES,
         FLEET_UNPROMOTED_STATES,
@@ -983,13 +992,11 @@ def _bucket_of(state: Any, classification: Any) -> str | None:
         FLEET_WORKING_STATES,
     )
 
-    if str(classification or "") == "held":
-        return _WAIT_CELL
     word = str(state or "")
     if word in FLEET_UNPROMOTED_STATES:
         return "delivered"
     if word in FLEET_BLOCKED_STATES:
-        return "help"
+        return _HELP_CELL
     if word in FLEET_WAITING_STATES:
         return _WAIT_CELL
     if word in FLEET_WORKING_STATES:
