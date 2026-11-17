@@ -1,0 +1,205 @@
+<section id="red-file-an-admission-pass-reads-the-roadmap-once-negative-control">
+  <h2>Base run of the admission-pass readiness measurement</h2>
+
+  <p>The base revision's run of
+  <code>tests/test_an_admission_pass_reads_the_roadmap_once.py</code>, logged
+  beside the head run that repairs it. Both runs were submitted as jobs on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset. The base run
+  fails three tests and passes one; the head run passes all four.</p>
+
+  <h3 id="red-file-an-admission-pass-reads-the-roadmap-once-base">Base run, failing</h3>
+  <pre id="red-file-an-admission-pass-reads-the-roadmap-once-base-log"># revision: 52e0ad9363101e661bb0f505fff0e733bec01d24
+# tree: /tmp/qwnw-base-1319848
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_pass_reads_the_roadmap_once.py
+# cwd: /tmp/qwnw-base-1319848
+# module: /tmp/qwnw-base-1319848/reckon/crew/queue_admission.py
+# tests-package: /tmp/qwnw-base-1319848/tests/__init__.py
+FF.F                                                                     [100%]
+=================================== FAILURES ===================================
+________ test_a_pass_launching_three_requests_builds_the_readiness_once ________
+
+pass_repo = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261116T104542062410-qwnw-red-file-an-admission-pass-reads-the-roadmap-once/pytest-of-mcintos/pytest-0/test_a_pass_launching_three_re0/checkout&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f7ab05ea9e0&gt;
+
+    def test_a_pass_launching_three_requests_builds_the_readiness_once(
+        pass_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;Three launches on one plan share its bounded verdict.&quot;&quot;&quot;
+        stored = _queue(pass_repo)
+        assert [stored[f&quot;r-{section}&quot;][&quot;phase&quot;] for section in SECTIONS] == [
+            queue_admission.QUEUED_PHASE
+        ] * len(SECTIONS)
+        builds = _builds(monkeypatch)
+    
+        result, launched = _admit()
+    
+&gt;       assert sorted(result[&quot;launched&quot;]) == [&quot;r-s1&quot;, &quot;r-s2&quot;, &quot;r-s3&quot;], result
+E       AssertionError: {&#x27;gate&#x27;: &#x27;open&#x27;, &#x27;launched&#x27;: [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;], &#x27;held&#x27;: [], &#x27;failed&#x27;: [&#x27;r-s1&#x27;], ...}
+E       assert [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;] == [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;]
+E         
+E         At index 0 diff: &#x27;r-s2&#x27; != &#x27;r-s1&#x27;
+E         Right contains one more item: &#x27;r-s3&#x27;
+E         
+E         Full diff:
+E           [
+E         -     &#x27;r-s1&#x27;,
+E               &#x27;r-s2&#x27;,
+E               &#x27;r-s3&#x27;,
+E           ]
+
+tests/test_an_admission_pass_reads_the_roadmap_once.py:146: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-s2
+reckon: created run r-s3
+__________ test_a_plan_touched_between_two_launches_forces_a_rebuild ___________
+
+pass_repo = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261116T104542062410-qwnw-red-file-an-admission-pass-reads-the-roadmap-once/pytest-of-mcintos/pytest-0/test_a_plan_touched_between_tw0/checkout&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f7ab05eab10&gt;
+
+    def test_a_plan_touched_between_two_launches_forces_a_rebuild(
+        pass_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;An edit landing mid-pass is read, not answered from the pass&#x27;s cache.&quot;&quot;&quot;
+        _queue(pass_repo)
+        builds = _builds(monkeypatch)
+        plan = pass_repo / &quot;docs&quot; / &quot;plans&quot; / f&quot;{PLAN}.html&quot;
+        recorded: list[str] = []
+        plain = fixtures._launcher(recorded)
+        edited = threading.Event()
+        original_launch = queue_admission._launch_queued
+    
+        def ordered_launch(pointer: Any, **kwargs: Any) -&gt; Any:
+            # Independent requests launch concurrently. Make the edit precede the
+            # later requests&#x27; readiness reads, so this measures invalidation rather
+            # than how the scheduler happens to interleave the launch threads.
+            if pointer[&quot;run_id&quot;] != &quot;r-s1&quot;:
+                assert edited.wait(10), &quot;the first launch never edited the plan&quot;
+            return original_launch(pointer, **kwargs)
+    
+        monkeypatch.setattr(queue_admission, &quot;_launch_queued&quot;, ordered_launch)
+    
+        def launch(
+            document: Any, *, log_path: Any, stderr_path: Any, prompt_path: Any
+        ) -&gt; int:
+            if not recorded:
+                _advance_mtime(plan)
+                edited.set()
+            return plain(
+                document,
+                log_path=log_path,
+                stderr_path=stderr_path,
+                prompt_path=prompt_path,
+            )
+    
+        result, _launched = _admit(launch)
+    
+&gt;       assert sorted(result[&quot;launched&quot;]) == [&quot;r-s1&quot;, &quot;r-s2&quot;, &quot;r-s3&quot;], result
+E       AssertionError: {&#x27;gate&#x27;: &#x27;open&#x27;, &#x27;launched&#x27;: [], &#x27;held&#x27;: [], &#x27;failed&#x27;: [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;], ...}
+E       assert [] == [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;]
+E         
+E         Right contains 3 more items, first extra item: &#x27;r-s1&#x27;
+E         
+E         Full diff:
+E         + []
+E         - [
+E         -     &#x27;r-s1&#x27;,
+E         -     &#x27;r-s2&#x27;,
+E         -     &#x27;r-s3&#x27;,
+E         - ]
+
+tests/test_an_admission_pass_reads_the_roadmap_once.py:188: AssertionError
+________ test_the_launches_read_the_waits_an_uncached_computation_gives ________
+
+tmp_path = PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261116T104542062410-qwnw-red-file-an-admission-pass-reads-the-roadmap-once/pytest-of-mcintos/pytest-0/test_the_launches_read_the_wai0&#x27;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f7aad55a580&gt;
+
+    def test_the_launches_read_the_waits_an_uncached_computation_gives(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -&gt; None:
+        &quot;&quot;&quot;Caching the readiness changes how often it is built, not what it says.&quot;&quot;&quot;
+        repository = _seed(
+            tmp_path, monkeypatch, {&quot;s2&quot;: [f&quot;{PLAN}#s1&quot;], &quot;s3&quot;: [f&quot;{PLAN}#s1&quot;]}
+        )
+        _queue(repository)
+        original = queue_admission.dispatch_waits
+        seen: list[tuple[list[str], dict[str, str], list[str]]] = []
+    
+        def recording(*args: Any, **kwargs: Any) -&gt; Any:
+            answer = original(*args, **kwargs)
+            seen.append(answer)
+            return answer
+    
+        monkeypatch.setattr(queue_admission, &quot;dispatch_waits&quot;, recording)
+    
+        result, launched = _admit()
+    
+&gt;       assert sorted(result[&quot;launched&quot;]) == [&quot;r-s1&quot;, &quot;r-s2&quot;, &quot;r-s3&quot;], result
+E       AssertionError: {&#x27;gate&#x27;: &#x27;open&#x27;, &#x27;launched&#x27;: [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;], &#x27;held&#x27;: [], &#x27;failed&#x27;: [&#x27;r-s1&#x27;], ...}
+E       assert [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;] == [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;]
+E         
+E         At index 0 diff: &#x27;r-s2&#x27; != &#x27;r-s1&#x27;
+E         Right contains one more item: &#x27;r-s3&#x27;
+E         
+E         Full diff:
+E           [
+E         -     &#x27;r-s1&#x27;,
+E               &#x27;r-s2&#x27;,
+E               &#x27;r-s3&#x27;,
+E           ]
+
+tests/test_an_admission_pass_reads_the_roadmap_once.py:246: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-s2
+reckon: created run r-s3
+=========================== short test summary info ============================
+FAILED tests/test_an_admission_pass_reads_the_roadmap_once.py::test_a_pass_launching_three_requests_builds_the_readiness_once - AssertionError: {&#x27;gate&#x27;: &#x27;open&#x27;, &#x27;launched&#x27;: [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;], &#x27;held&#x27;: [], &#x27;failed&#x27;: [&#x27;r-s1&#x27;], ...}
+assert [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;] == [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;]
+  
+  At index 0 diff: &#x27;r-s2&#x27; != &#x27;r-s1&#x27;
+  Right contains one more item: &#x27;r-s3&#x27;
+  
+  Full diff:
+    [
+  -     &#x27;r-s1&#x27;,
+        &#x27;r-s2&#x27;,
+        &#x27;r-s3&#x27;,
+    ]
+FAILED tests/test_an_admission_pass_reads_the_roadmap_once.py::test_a_plan_touched_between_two_launches_forces_a_rebuild - AssertionError: {&#x27;gate&#x27;: &#x27;open&#x27;, &#x27;launched&#x27;: [], &#x27;held&#x27;: [], &#x27;failed&#x27;: [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;], ...}
+assert [] == [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;]
+  
+  Right contains 3 more items, first extra item: &#x27;r-s1&#x27;
+  
+  Full diff:
+  + []
+  - [
+  -     &#x27;r-s1&#x27;,
+  -     &#x27;r-s2&#x27;,
+  -     &#x27;r-s3&#x27;,
+  - ]
+FAILED tests/test_an_admission_pass_reads_the_roadmap_once.py::test_the_launches_read_the_waits_an_uncached_computation_gives - AssertionError: {&#x27;gate&#x27;: &#x27;open&#x27;, &#x27;launched&#x27;: [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;], &#x27;held&#x27;: [], &#x27;failed&#x27;: [&#x27;r-s1&#x27;], ...}
+assert [&#x27;r-s2&#x27;, &#x27;r-s3&#x27;] == [&#x27;r-s1&#x27;, &#x27;r-s2&#x27;, &#x27;r-s3&#x27;]
+  
+  At index 0 diff: &#x27;r-s2&#x27; != &#x27;r-s1&#x27;
+  Right contains one more item: &#x27;r-s3&#x27;
+  
+  Full diff:
+    [
+  -     &#x27;r-s1&#x27;,
+        &#x27;r-s2&#x27;,
+        &#x27;r-s3&#x27;,
+    ]
+3 failed, 1 passed in 19.54s
+EXIT=1
+</pre>
+
+  <h3 id="red-file-an-admission-pass-reads-the-roadmap-once-head">Head run, passing</h3>
+  <pre id="red-file-an-admission-pass-reads-the-roadmap-once-head-log"># revision: b7bf220340eb80d8ae1b9eca71b443bc4985883c
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-an-admission-pass-reads-the-roadmap-once
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_pass_reads_the_roadmap_once.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-an-admission-pass-reads-the-roadmap-once
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-an-admission-pass-reads-the-roadmap-once/reckon/crew/queue_admission.py
+....                                                                     [100%]
+4 passed in 11.12s
+EXIT=0
+</pre>
+</section>
