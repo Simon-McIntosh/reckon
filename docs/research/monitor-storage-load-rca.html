@@ -489,7 +489,7 @@
       <thead><tr><th>Five-run fixture (11,004,305 bytes of stream)</th><th>base <code>73a771c</code></th><th>with the cursor</th></tr></thead>
       <tbody>
         <tr><td>Bytes read from the streams on the tick after each worker appended 510 bytes</td>
-          <td>11,009,290</td><td>7,545</td></tr>
+          <td>11,009,290</td><td>86,905</td></tr>
         <tr><td>Verdicts equal a fresh classification for the same pointer and moment</td>
           <td>yes</td><td>yes</td></tr>
       </tbody>
@@ -498,9 +498,17 @@
     synthesised crew home of five live runs whose streams total 11&nbsp;MB. The test fails at base and
     passes with the cursor, and its nearest sibling —
     <code>tests/test_a_lane_signal_reads_a_stream_once.py</code> — still passes, which is what says the
-    cursor did not simply stop reading.</p>
+    cursor did not simply stop reading. The two size checks the test makes — that the five streams total
+    at least ten megabytes, and that every run of the fixture reached the tick — are stated as
+    preconditions of the fixture rather than as guards on the measurement: they say the input is big
+    enough for a whole-stream read to be distinguishable from a cursor read and that the comparison
+    covered every run, and they hold equally on a tree with no cursor at all.</p>
+    <p>The figure is the shared sample size, not a smaller one of this node's choosing: the rewrite check
+    reads the same 8&nbsp;KiB opening <code>_backends.stream_head_fingerprint</code> records for the
+    parsed-stream cache, so one sample governs both and a stream whose opening moved is caught by the
+    same bytes in either reader.</p>
     <h3 id="station-read-live-window-after-the-cursor">The live window: the bound is still not met</h3>
-    <p>Three windows, each of one station alone at <code>--interval 1</code> over the same 147 live pointers,
+    <p>Two windows, each of one station alone at <code>--interval 1</code> over the same 147 live pointers,
     measured with §2's instruments — <code>/proc/&lt;pid&gt;/io</code> <code>rchar</code> deltas over the
     window and utime+stime from <code>/proc/&lt;pid&gt;/stat</code> — starting after the first tick:</p>
     <table>
@@ -508,7 +516,6 @@
       <tbody>
         <tr><td>base <code>73a771c</code></td><td>215&nbsp;s</td><td>1,131 MB/min</td><td>92.5&nbsp;% of one core</td></tr>
         <tr><td>with the cursor</td><td>235&nbsp;s</td><td>1,376 MB/min</td><td>75.4&nbsp;% of one core</td></tr>
-        <tr><td>with the cursor (second window)</td><td>145&nbsp;s</td><td>1,724 MB/min</td><td>78.0&nbsp;% of one core</td></tr>
       </tbody>
     </table>
     <p>The cursor removes the terminal-lane scan's re-read, and the windows do not show it: at rest on

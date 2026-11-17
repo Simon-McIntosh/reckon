@@ -49,6 +49,7 @@ from tests.helpers.git import git as _git
 
 ledger_module = importlib.import_module("reckon.ledger")
 obligations_module = importlib.import_module("reckon.crew.obligations")
+recovery_memo_module = importlib.import_module("reckon.crew.recovery_memo")
 recovery_module = importlib.import_module("reckon.crew.recovery")
 promotion_checks_module = importlib.import_module("reckon.crew.promotion_checks")
 promotion_module = importlib.import_module("reckon.crew.promotion")
@@ -966,6 +967,11 @@ def test_a_moved_stream_is_read_only_where_it_changed(
     """A tick after workers appended reads the appended bytes, not the streams."""
     streams = stream_fleet["streams"]
     total = sum(stream.stat().st_size for stream in streams)
+    # A precondition of the fixture rather than a guard on the behaviour: the
+    # input has to be big enough that reading all of it and reading only its
+    # appended part are distinguishable at all. Five streams of two megabytes
+    # each is what the fixture promises; this states that promise beside the
+    # measurement instead of trusting the fixture's own declaration.
     assert total >= 10_000_000, f"the dominant input totals only {total} bytes"
     with station_store.StationStore(stream_fleet["runtime"]) as store:
         for stream in streams:
@@ -990,6 +996,12 @@ def test_a_moved_stream_is_read_only_where_it_changed(
             verdicts = store.classify_tick(now_seconds=STREAM_MOMENT)
         over = reads.total_for(streams)
         records = [json.loads(row["fields"]) for row in store.pointer_rows()]
+        # The reference classification is computed with the cursor store
+        # cleared, so it answers from the streams themselves rather than from
+        # the cursor the tick under test just advanced. Comparing against a
+        # classification that shared the cursor would agree with it by
+        # construction and prove nothing about the records read.
+        recovery_memo_module._NEWEST_RESULTS.clear()
         fresh = {
             record["run_id"]: recovery_watch._watch_snapshot(
                 record,
@@ -1003,6 +1015,8 @@ def test_a_moved_stream_is_read_only_where_it_changed(
         assert verdicts == fresh, (
             "the tick's verdicts diverge from a fresh classification"
         )
+    # Another precondition: every run of the fixture reached the tick, so the
+    # comparison above covered all of them rather than the ones that survived.
     assert len(records) >= STREAM_RUNS, f"only {len(records)} runs were classified"
     print(
         f"moved_input_bytes={total} appended_bytes={appended} "

@@ -712,55 +712,16 @@ def _lane_cause_signature_text(lowered: str) -> str:
 #
 # The cursor carries the identity of the file it was reached in (device, inode,
 # size, mtime), the offset after the last complete record, and the opening's
-# fingerprint at that offset. A file whose identity is unchanged is answered
-# without opening it; one that grew at the same inode and still opens with the
-# recorded bytes resumes at the cursor; one that was replaced or rewritten is
-# read from its first record, because an offset into a predecessor's bytes
-# means nothing in a file that never held them.
+# fingerprint at that offset -- the same sample `_backends` records and re-reads
+# for its parsed-stream cache, so one sample size governs every rewrite check.
+# A file whose identity is unchanged is answered without opening it; one that
+# grew at the same inode and still opens with the recorded bytes resumes at the
+# cursor; one that was replaced or rewritten is read from its first record,
+# because an offset into a predecessor's bytes means nothing in a file that never
+# held them. The store is bounded per process and evicts its oldest cursor, so a
+# long-lived station does not carry every stream it has ever read.
 _NEWEST_RESULTS: OrderedDict[str, dict[str, Any]] = OrderedDict()
 _NEWEST_RESULTS_LIMIT = 4096
-
-# Bytes of a stream's opening a cursor records, and re-reads to prove the bytes
-# it already consumed are the ones it consumed. Small on purpose: this cursor is
-# consulted once per run per producer pass, so what it costs per pass is what the
-# fleet pays, and a rewrite of a stream's opening is caught by the first few
-# records as surely as by a page of them. The observe fold keeps its own cursor
-# over a page of the opening, because it resumes a parse that needs the whole
-# prefix to be recognisable; this one only needs to know the stream's head did
-# not move under the offset.
-_RESULT_HEAD_BYTES = 256
-
-
-def _result_stream_head(path: Path, offset: int) -> dict[str, Any]:
-    """The digest of a stream's opening bytes the cursor at ``offset`` saw."""
-    limit = max(0, min(int(offset), _RESULT_HEAD_BYTES))
-    try:
-        with path.open("rb") as handle:
-            head = handle.read(limit) if limit else b""
-    except OSError:
-        return {"bytes": 0, "digest": ""}
-    return {"bytes": len(head), "digest": hashlib.sha256(head).hexdigest()}
-
-
-def _result_stream_head_intact(path: Path, recorded: object) -> bool:
-    """Whether the stream still opens with the bytes a cursor recorded."""
-    if not isinstance(recorded, Mapping):
-        return False
-    try:
-        count = int(recorded.get("bytes") or 0)
-    except (TypeError, ValueError):
-        return False
-    digest = str(recorded.get("digest") or "")
-    if count <= 0 or not digest:
-        return False
-    try:
-        with path.open("rb") as handle:
-            head = handle.read(count)
-    except OSError:
-        return False
-    if len(head) != count:
-        return False
-    return hashlib.sha256(head).hexdigest() == digest
 
 
 def _fold_result_lines(
@@ -775,32 +736,6 @@ def _fold_result_lines(
         if isinstance(event, Mapping) and event.get("type") == "result":
             result = event
     return result
-
-
-def _touch_newest_result(key: str) -> None:
-    """Mark one cursor as the most recently used, where the store orders.
-
-    The store is an ordered mapping so its bound evicts the least recently
-    asked-for stream rather than the whole set; a caller that swaps in a plain
-    mapping -- a test holding its own empty store -- is still served, in
-    insertion order.
-    """
-    move = getattr(_NEWEST_RESULTS, "move_to_end", None)
-    if move is not None:
-        move(key)
-
-
-def _evict_newest_results() -> None:
-    """Drop the oldest cursors until the store is inside its bound."""
-    if len(_NEWEST_RESULTS) <= _NEWEST_RESULTS_LIMIT:
-        return
-    pop = getattr(_NEWEST_RESULTS, "popitem", None)
-    if pop is not None and isinstance(_NEWEST_RESULTS, OrderedDict):
-        while len(_NEWEST_RESULTS) > _NEWEST_RESULTS_LIMIT:
-            pop(last=False)
-        return
-    for key in list(_NEWEST_RESULTS)[: len(_NEWEST_RESULTS) - _NEWEST_RESULTS_LIMIT]:
-        _NEWEST_RESULTS.pop(key, None)
 
 
 def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
@@ -822,7 +757,7 @@ def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
     identity = (info.st_ino, info.st_size, info.st_mtime_ns)
     cursor = _NEWEST_RESULTS.get(key)
     if cursor is not None and cursor["identity"] == identity:
-        _touch_newest_result(key)
+        _NEWEST_RESULTS.move_to_end(key)
         return cursor["result"]
     result: Mapping[str, Any] | None = None
     offset = 0
@@ -830,7 +765,7 @@ def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
         cursor is not None
         and cursor["inode"] == info.st_ino
         and info.st_size >= int(cursor["offset"])
-        and _result_stream_head_intact(path, cursor["head"])
+        and _backends._stream_head_intact(path, cursor["head"])
     )
     if resumable:
         result = cursor["result"]
@@ -841,12 +776,13 @@ def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
         "identity": identity,
         "inode": info.st_ino,
         "offset": reached,
-        "head": _result_stream_head(path, reached),
+        "head": _backends.stream_head_fingerprint(path, offset=reached),
         "result": result,
     }
     _NEWEST_RESULTS[key] = entry
-    _touch_newest_result(key)
-    _evict_newest_results()
+    _NEWEST_RESULTS.move_to_end(key)
+    while len(_NEWEST_RESULTS) > _NEWEST_RESULTS_LIMIT:
+        _NEWEST_RESULTS.popitem(last=False)
     return result
 
 
