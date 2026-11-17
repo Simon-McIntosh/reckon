@@ -273,6 +273,10 @@ def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
     if role == "implement":
         from reckon.crew import routing
 
+        origin = tmp_path / "origin.git"
+        git(tmp_path, "init", "--bare", "-q", str(origin))
+        git(repository, "remote", "add", "origin", str(origin))
+        git(repository, "push", "-qu", "origin", "main")
         worktree = routing._workspace_roots(repository)[0] / "delivery" / role
         worktree.parent.mkdir(parents=True, exist_ok=True)
         git(repository, "worktree", "add", "--detach", str(worktree), "HEAD")
@@ -306,6 +310,9 @@ def test_the_owed_command_promotes_the_run_verbatim(repository, tmp_path, role):
         row["run_id"] == pointer["run_id"]
         for row in ledger.runs(PROJECT, root=repository)
     )
+    if role == "implement":
+        assert git(origin, "rev-parse", "main") == git(repository, "rev-parse", "main")
+        assert git(origin, "show", "main:candidate.py") == "answer = 42"
 
 
 @pytest.mark.parametrize(
