@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="308">
+<meta name="plan-version" content="309">
 <meta name="plan-modified" content="2026-11-17">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1015,7 +1015,10 @@
     <div class="r-comment-body"><p>tests/test_a_plain_complete_refuses_an_unmerged_head.py passes 10/10 at head 47550115 on all_debug (EXIT=0) against 7 failed / 3 passed at base 0e0f25b (EXIT=1); two causes - completion is a durable request by default so a plain complete must pass --wait (test wrong: the flag is added, no assertion changed), and the commitless guard measured the review run's worktree against the review's own base though a reviewer's tree sits at the reviewed head (product wrong: _require_worktree_at_its_base now exempts a review run, as the plain-complete head guard already does).</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261116T104355176177-qwnw-red-file-review-record-contract" data-who="reckon-build" data-when="2026-11-16T11:37:08.444Z">
-    <div class="r-comment-body"><p>tests/test_review_record_contract.py now passes 11/11 at the run&#x27;s head, from 4 failed / 7 passed at 24bc79d8. The product repaired is the review-record refusal: it is judged before the queued promotion request, so `crew complete` exits 1 with {&quot;ok&quot;: false, &quot;review_filed&quot;: false, &quot;refused&quot;: [reason naming status &#x27;complete&#x27;]} where the base revision answered exit 0 with a request receipt. The test-side repair is the obligation case&#x27;s review-in-flight double, which now takes the snapshot keyword; no assertion was removed or weakened. Importers arm: 28 files, base 30 failed / 485 passed, head 30 failed / 485 passed, 0 added and 0 removed failing ids.</p></div>
+    <div class="r-comment-body"><p>tests/test_review_record_contract.py now passes 11/11 at the run's head, from 4 failed / 7 passed at 24bc79d8. The product repaired is the review-record refusal: it is judged before the queued promotion request, so `crew complete` exits 1 with {"ok": false, "review_filed": false, "refused": [reason naming status 'complete']} where the base revision answered exit 0 with a request receipt. The test-side repair is the obligation case's review-in-flight double, which now takes the snapshot keyword; no assertion was removed or weakened. Importers arm: 28 files, base 30 failed / 485 passed, head 30 failed / 485 passed, 0 added and 0 removed failing ids.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261116T064833984990-qwnw-red-file-only-unmergeable-paths-are-claimed-second-launch" data-who="reckon-build" data-when="2026-11-16T09:41:27.200Z">
+    <div class="r-comment-body"><p>tests/test_only_unmergeable_paths_are_claimed.py needed no repair: 25 passed at base 0e0f25b0f941 and 25 passed at head 6a7ffbd9d4 as its own all_debug job with SLURM_JOB_ID unset; the 25 failures recorded at 8d50b0333f do not reproduce at that revision (25 passed), and a negative control that declares reckon/ nonmergeable makes 14 of the 25 cases fail; both suite arms read 58 passed, and no assertion was deleted or weakened.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
