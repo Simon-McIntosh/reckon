@@ -47,34 +47,36 @@ FAILED tests/test_a_review_never_runs_in_harness.py::test_a_spawnable_lane_is_st
   census tests. Base arm <code>69fab1372f</code>: 58 passed, <code>EXIT=0</code>. Head arm:
   58 passed, <code>EXIT=0</code>.</p>
 
-  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-merge">Merge round</h3>
-  <p>The landing conflicted with the primary branch at <code>50b1f03078</code> in
-  <code>reckon/crew/recovery_classification.py</code>: both sides had fixed the same pre-spawn
-  gate. Main reads the launcher's label against the launch's own spawn evidence
-  (<code>_spawn_evidence</code>: a pid, a worker record, a stream, a launch log, a folded
-  budget). This branch reads it against the delivered manifest. Both intents stand, so the gate
-  now requires neither: a pointer is a request waiting to start only while its manifest carries
-  no terminal verdict, <em>and</em> the launch left no spawn evidence, <em>and</em> it is not
-  stranded.</p>
-  <p>The manifest clause is kept beside <code>_spawn_evidence</code> rather than folded into it
-  because that helper counts no manifest, and the records these tests build carry nothing but the
-  verdict they were delivered on. The merge commit is <code>efdc002727</code>; at it the gate file
-  reads 4 passed and the armed census arm 58 passed, both <code>EXIT=0</code>, and the arms are
-  re-recorded at the delivered head in the manifest.</p>
-  <p>Two ids in the importing arm fail at the merged head that pass at the base
-  <code>69fab1372f</code>: <code>test_a_classification_read_creates_no_run_directory.py</code>'s
-  two tests. They fail identically in a scratch tree holding only <code>50b1f03078</code>, so the
-  primary branch introduced them and this change does not: main's liveness path writes
-  <code>launcher-host-observation.json</code> and <code>classification.json</code> into a run
-  directory during a classification read
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-merge">Merge rounds</h3>
+  <p>Two rounds, both in <code>reckon/crew/recovery_classification.py</code>, both over the same
+  pre-spawn gate. First against <code>50b1f03078</code> (merge commit
+  <code>efdc002727</code>), then against <code>1f07f8e7</code> (merge commit
+  <code>3580a09ef0</code>).</p>
+  <p>The primary branch now reads the launcher's label against three witnesses of its own: the
+  launch's spawn evidence (<code>_spawn_evidence</code>: a pid, a worker record, a stream, a
+  launch log, a folded budget), a process already recorded dead, and — below the gate — a manifest
+  carrying a verdict word (<code>pre_spawn_reads_as_claim</code>). This branch's work is that last
+  witness. The resolved gate keeps all of them: a pointer waits to start only while the process is
+  not recorded dead, the launch left no spawn evidence, and it is not stranded; the claim then
+  stands only while the manifest carries no verdict word.</p>
+  <p>No rule is duplicated. The delivered-manifest rule lives where main puts it, and the
+  paragraph that explains it stays beside the gate because <code>_spawn_evidence</code> counts no
+  manifest, so a run whose only remaining record is the verdict it was delivered on would
+  otherwise still read as a request that never started — the shape three tests in
+  <code>tests/test_a_review_never_runs_in_harness.py</code> build.</p>
+  <p>Two ids fail at the merged heads that pass at the base <code>69fab1372f</code>:
+  <code>test_a_classification_read_creates_no_run_directory.py</code>'s two tests. They fail
+  identically in scratch trees holding only <code>50b1f03078</code> and only
+  <code>1f07f8e7</code>, so the primary branch carries them and this change does not: main's
+  liveness path writes <code>launcher-host-observation.json</code> and
+  <code>classification.json</code> into a run directory during a classification read
   (<code>reckon/crew/recovery_liveness.py:1499</code>), which the test's "a read leaves the home
   unchanged" assertion refuses. Reported as outside this node's change.</p>
 
   <h3 id="qwnw-red-file-a-review-never-runs-in-harness-lint">Lint</h3>
   <p><code>ruff format --check</code> reports the changed file already formatted.
-  <code>ruff check</code> reports one <code>SIM102</code> at
-  <code>reckon/crew/recovery_classification.py:3249</code>, which the same file carries at
-  <code>69fab1372f</code>; the change adds none.</p>
+  <code>ruff check</code> reports one <code>SIM102</code>, which the same file carries at both
+  <code>69fab1372f</code> and <code>1f07f8e7</code>; the change adds none.</p>
 </section>
 </body>
 </html>
