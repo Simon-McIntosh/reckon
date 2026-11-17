@@ -1,9 +1,11 @@
 """A replay fixes its cohort before comparing the promotion drain."""
 
 import json
+import threading
 
 import pytest
 
+from reckon.crew import promotion_requests, runs
 from scripts.replay_promotion_drain import collect, replay, validate_dataset
 
 START = "2026-11-16T21:00:00Z"
@@ -148,3 +150,97 @@ def test_trace_without_service_receipts_cannot_report_a_rate(tmp_path):
     _write(crew / "promotion-requests" / "run.json", _request("run", START))
     with pytest.raises(ValueError, match="no rate"):
         replay(collect(crew, START, END))
+
+
+def _queue_for_repository(run_id, repository, *, role="implement"):
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "repo": str(repository),
+            "role": role,
+            "project": "burst-fixture",
+            "session": "burst-session",
+            "node": {"id": run_id, "role": role},
+            "phase": "complete",
+        },
+    )
+    return promotion_requests.request_promotion(run_id)
+
+
+def test_a_commitless_promotion_finishes_beside_a_landing(tmp_path):
+    first, report = "r-held-landing", "r-report"
+    _queue_for_repository(first, tmp_path / "repo")
+    _queue_for_repository(report, tmp_path / "repo", role="review")
+    landed, release, reported = threading.Event(), threading.Event(), threading.Event()
+
+    def execute(request):
+        if request["run_id"] == first:
+            landed.set()
+            assert release.wait(5), "the fixture did not release its landing"
+        else:
+            reported.set()
+        return {"ok": True, "record": {"commits": []}}
+
+    service = promotion_requests.PromotionService(width=1, execute=execute)
+    try:
+        service.tick()
+        assert landed.wait(2)
+        assert reported.wait(0.5), "commit-less promotion waited behind a landing"
+        assert not release.is_set()
+    finally:
+        release.set()
+        service.begin_drain()
+        assert service.wait_for_in_flight(10) == []
+
+
+def test_two_landings_on_one_branch_never_overlap(tmp_path):
+    first, second = "r-first-landing", "r-second-landing"
+    _queue_for_repository(first, tmp_path / "repo")
+    _queue_for_repository(second, tmp_path / "repo")
+    began, release, overlapped = threading.Event(), threading.Event(), threading.Event()
+
+    def execute(request):
+        if request["run_id"] == first:
+            began.set()
+            assert release.wait(5), "the fixture did not release its landing"
+        elif not release.is_set():
+            overlapped.set()
+        return {"ok": True, "record": {"commits": []}}
+
+    service = promotion_requests.PromotionService(width=2, execute=execute)
+    try:
+        service.tick()
+        assert began.wait(2)
+        assert not overlapped.wait(0.5), (
+            "two landing executors overlapped on one branch"
+        )
+    finally:
+        release.set()
+        service.begin_drain()
+        assert service.wait_for_in_flight(10) == []
+
+
+def test_landings_for_different_repositories_do_not_wait(tmp_path):
+    first, second = "r-first-repository", "r-other-repository"
+    _queue_for_repository(first, tmp_path / "one")
+    _queue_for_repository(second, tmp_path / "two")
+    began, release, concurrent = threading.Event(), threading.Event(), threading.Event()
+
+    def execute(request):
+        if request["run_id"] == first:
+            began.set()
+            assert release.wait(5), "the fixture did not release its landing"
+        else:
+            concurrent.set()
+        return {"ok": True, "record": {"commits": []}}
+
+    service = promotion_requests.PromotionService(width=1, execute=execute)
+    try:
+        service.tick()
+        assert began.wait(2)
+        assert concurrent.wait(0.5), "another repository waited behind a landing"
+    finally:
+        release.set()
+        service.begin_drain()
+        assert service.wait_for_in_flight(10) == []
