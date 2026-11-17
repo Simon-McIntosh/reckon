@@ -175,6 +175,7 @@ def test_scheduler_starts_with_absent_local_grant_and_refuses_redirect(rehearsal
         for name, value in os.environ.items()
         if not name.startswith("SLURM_")
     }
+    environment["PATH"] = "/usr/bin:/bin"
     environment["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
     environment["RECKON_SHIM_PYTHON"] = os.sys.executable
     result = subprocess.run(
