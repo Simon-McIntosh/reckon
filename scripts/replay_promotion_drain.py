@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -385,6 +386,185 @@ def _seed_store(repositories: dict, replacements: dict) -> dict:
     return counts
 
 
+def _fence_batch_script(script: str, logs: str) -> str:
+    from reckon.crew.landing_measure import NODE_LOCAL_TEMP_ROOT
+
+    fence = [
+        "bwrap",
+        "--die-with-parent",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        NODE_LOCAL_TEMP_ROOT,
+        NODE_LOCAL_TEMP_ROOT,
+        "--bind",
+        logs,
+        logs,
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--",
+    ]
+    arguments = shlex.split(script)
+    if arguments and arguments[0] == "srun":
+        shell = arguments.index("bash")
+        redirect = arguments.index(">")
+        return (
+            shlex.join([*arguments[:shell], *fence, *arguments[shell:redirect]])
+            + " > "
+            + shlex.quote(arguments[redirect + 1])
+            + " 2>&1"
+        )
+    return shlex.join([*fence, "bash", "-c", script])
+
+
+def batch_relay(arguments: list[str], config: dict) -> int:
+    """Relay real batch jobs' Git inputs and logs across node-local filesystems."""
+    replacements = {}
+    for entry in config["repositories"]:
+        private, shared = Path(entry["private"]), Path(entry["shared"])
+        replacements[str(private)] = str(shared)
+        replacements[str(private.parent)] = str(shared.parent)
+        # Historical objects are read through the frozen source binding. Only
+        # objects created by this replay need copying into the shared relay.
+        for directory in (private / "objects").glob("[0-9a-f][0-9a-f]"):
+            for path in directory.iterdir():
+                relative = path.relative_to(private / "objects")
+                if (Path(entry["original_objects"]) / relative).exists():
+                    continue
+                target = shared / "objects" / relative
+                if not target.exists():
+                    target.parent.mkdir(exist_ok=True)
+                    shutil.copyfile(path, target)
+    logs = {}
+    for argument in arguments:
+        if argument.startswith(("--output=", "--error=")):
+            path = argument.split("=", 1)[1].removesuffix(".scheduler")
+            logs[path] = str(Path(config["logs"]) / digest(path))
+    replacements.update(logs)
+    ordered = sorted(replacements, key=len, reverse=True)
+
+    def relocate(argument):
+        for source in ordered:
+            argument = argument.replace(source, replacements[source])
+        return argument
+
+    relocated = list(map(relocate, arguments))
+    if "--wrap" in relocated:
+        position = relocated.index("--wrap") + 1
+        relocated[position] = _fence_batch_script(relocated[position], config["logs"])
+    try:
+        return subprocess.run([config["command"], *relocated], check=False).returncode
+    finally:
+        for original, shared in logs.items():
+            for suffix in ("", ".scheduler"):
+                source, target = Path(shared + suffix), Path(original + suffix)
+                if source.exists():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(source, target)
+
+
+def _batch_transport(root: Path, repositories: dict, sources: dict, shared: Path):
+    """Keep real partitioned gates usable from a private node-local replay."""
+    shared.mkdir(parents=True, exist_ok=True)
+    logs = shared / "logs"
+    logs.mkdir(exist_ok=True)
+    entries = []
+    for project, repository in repositories.items():
+        bare = shared / project / "repository.git"
+        bare.mkdir(parents=True)
+        git(bare, "init", "-q", "--bare")
+        objects = sources["projects"][project]["objects"]
+        (bare / "objects/info/alternates").write_text(objects + "\n")
+        entries.append(
+            {
+                "private": str(repository / ".git"),
+                "shared": str(bare),
+                "original_objects": objects,
+            }
+        )
+    configuration = root / "batch-relay.json"
+    configuration.write_text(
+        json.dumps(
+            {
+                "command": shutil.which("sbatch"),
+                "repositories": entries,
+                "logs": str(logs),
+            }
+        )
+    )
+    binary = root / "batch-bin"
+    binary.mkdir()
+    executable = binary / "sbatch"
+    executable.write_text(
+        f"#!{sys.executable}\nimport json,runpy,sys\n"
+        f"module=runpy.run_path({str(Path(__file__).resolve())!r})\n"
+        f"config=json.load(open({str(configuration)!r}))\n"
+        "raise SystemExit(module['batch_relay'](sys.argv[1:],config))\n"
+    )
+    executable.chmod(0o700)
+    return str(binary) + os.pathsep + os.environ["PATH"]
+
+
+def _batch_probe(root: Path, repositories: dict, sources: dict) -> dict:
+    """Require a real remote job to read a known object and return its receipt."""
+    project = next(iter(repositories))
+    repository = repositories[project]
+    revision = sources["projects"][project]["revision"]
+    log = root / "batch-gate-control.log"
+    script = (
+        "set -e; "
+        + shlex.join(
+            ["git", "--git-dir", str(repository / ".git"), "cat-file", "-t", revision]
+        )
+        + " > "
+        + shlex.quote(str(log))
+        + "; "
+        + "printf 'EXIT=0\\n' >> "
+        + shlex.quote(str(log))
+    )
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("SLURM_", "SBATCH_"))
+    }
+    environment["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+    completed = subprocess.run(
+        [
+            "sbatch",
+            "--wait",
+            "--parsable",
+            "--partition=all_debug",
+            "--ntasks=1",
+            "--cpus-per-task=1",
+            "--mem=2G",
+            "--time=00:02:00",
+            f"--chdir={repository}",
+            f"--output={log}.scheduler",
+            "--wrap",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=240,
+        env=environment,
+    )
+    receipt = log.read_text() if log.exists() else ""
+    if completed.returncode or receipt != "commit\nEXIT=0\n":
+        raise RuntimeError(
+            f"remote gate instrument failed: {completed.returncode}; "
+            f"receipt={receipt!r}; stderr={completed.stderr!r}"
+        )
+    return {
+        "phase": "passed",
+        "receipt": receipt,
+        "scheduler_receipt": completed.stdout.strip(),
+    }
+
+
 def _drain(rows: list[dict], requests, runs, *, timeout: float) -> dict:
     observed, reasons = {}, {}
     pending = list(rows)
@@ -455,6 +635,7 @@ def replay(
     assets: Path,
     scratch_root: Path | None = None,
     timeout: float = 1800,
+    batch_home: Path | None = None,
 ) -> dict:
     """Run the original requests with relocated files and no substituted executor."""
     from reckon.crew import promotion_requests as requests
@@ -585,6 +766,10 @@ def replay(
             "GIT_ALLOW_PROTOCOL": "file",
             "GIT_TERMINAL_PROMPT": "0",
         }
+        if batch_home is not None:
+            environment["PATH"] = _batch_transport(
+                root, repositories, sources, batch_home
+            )
         with patch.dict(os.environ, environment):
             stored_counts = _seed_store(repositories, replacements)
             with patch.dict(
@@ -596,8 +781,14 @@ def replay(
                 },
             ):
                 control = _positive_control(root, requests, runs)
+            batch_control = (
+                _batch_probe(root, repositories, sources)
+                if batch_home is not None and repositories
+                else None
+            )
             result = _drain(relocated, requests, runs, timeout=timeout)
         result["positive_control"] = control
+        result["batch_control"] = batch_control
         result["copied_store_rows"] = stored_counts
         result["header"] = {
             **data["header"],
@@ -605,6 +796,9 @@ def replay(
             "relocation": "repositories and crew paths relocated; process and scheduler handles cleared; request options and promotion guards retained",
             "worker_materialization": "sparse checkout retains source and declared deliverables, omitting duplicate docs/state, docs/figures and docs/evidence except declared paths; canonical repositories and Git objects remain complete",
             "object_materialization": "private copies of packed indexes and loose objects; read-only original alternates retain historical lookup compatibility",
+            "batch_transport": "real sbatch execution; immutable Git objects and arm logs relayed through run-owned shared paths"
+            if batch_home is not None
+            else "not requested",
         }
         return result
 
@@ -615,7 +809,7 @@ def protect_sources(data: dict, sources: dict, output: Path):
         Path(data["header"]["source_crew"]).resolve(),
         *(Path(source["root"]).resolve() for source in sources["projects"].values()),
     ]
-    allowed = output.resolve()
+    allowed = (output.resolve(), output.with_suffix(".batch").resolve())
     state = {"active": True, "refusals": 0}
 
     def audit(event, arguments):
@@ -644,9 +838,9 @@ def protect_sources(data: dict, sources: dict, output: Path):
             if not isinstance(raw, (str, bytes, os.PathLike)):
                 continue
             path = Path(os.fsdecode(raw)).absolute()
-            if path != allowed and any(
-                path == root or root in path.parents for root in roots
-            ):
+            if not any(
+                path == target or target in path.parents for target in allowed
+            ) and any(path == root or root in path.parents for root in roots):
                 state["refusals"] += 1
                 raise PermissionError(
                     f"replay refuses a write to original source {path}"
@@ -691,7 +885,11 @@ def main() -> int:
         protection = protect_sources(data, sources, args.output)
         try:
             result = replay(
-                data, sources=sources, assets=args.assets, timeout=args.timeout
+                data,
+                sources=sources,
+                assets=args.assets,
+                timeout=args.timeout,
+                batch_home=args.output.with_suffix(".batch"),
             )
         finally:
             protection["active"] = False

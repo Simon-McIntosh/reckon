@@ -518,3 +518,72 @@ def test_a_measurement_wait_holds_no_preparation_slot(tmp_path, monkeypatch):
         service.stop_refill()
         service.begin_drain()
         assert service.wait_for_in_flight(10) == []
+
+
+def test_batch_relay_reads_immutable_objects_and_returns_remote_logs(tmp_path, monkeypatch):
+    import os
+    import subprocess
+    import sys
+
+    from scripts.replay_promotion_drain import _batch_transport, _repository, git
+
+    source = tmp_path / "source"
+    source.mkdir()
+    git(source, "init", "-q", "-b", "main")
+    git(source, "config", "user.name", "Fixture")
+    git(source, "config", "user.email", "fixture@example.invalid")
+    (source / "known.txt").write_text("known object\n")
+    git(source, "add", "known.txt")
+    git(source, "-c", "commit.gpgsign=false", "commit", "-qm", "Seed relay fixture")
+    revision = git(source, "rev-parse", "HEAD")
+    private = tmp_path / "private"
+    binding = {
+        "root": str(source),
+        "objects": str(source / ".git/objects"),
+        "revision": revision,
+    }
+    _repository(private, binding)
+    binary = tmp_path / "scheduler"
+    binary.mkdir()
+    command = binary / "sbatch"
+    command.write_text(
+        f"#!{sys.executable}\nimport pathlib,subprocess,sys\n"
+        f"private=pathlib.Path({str(private / '.git')!r})\n"
+        "hidden=private.with_name('unavailable-git');private.rename(hidden)\n"
+        "try:\n"
+        " args=sys.argv[1:]\n"
+        " cwd=next(a.split('=',1)[1] for a in args if a.startswith('--chdir='))\n"
+        " result=subprocess.run(['bash','-c',args[args.index('--wrap')+1]],cwd=cwd)\n"
+        "finally: hidden.rename(private)\n"
+        "raise SystemExit(result.returncode)\n"
+    )
+    command.chmod(0o700)
+    monkeypatch.setenv("PATH", str(binary) + os.pathsep + os.environ["PATH"])
+    environment = os.environ.copy()
+    environment["PATH"] = _batch_transport(
+        tmp_path,
+        {"fixture": private},
+        {"projects": {"fixture": binding}},
+        tmp_path / "shared",
+    )
+    log = tmp_path / "local" / "gate.log"
+    result = subprocess.run(
+        [
+            "sbatch",
+            f"--chdir={private}",
+            f"--output={log}.scheduler",
+            "--wrap",
+            (
+                f"git --git-dir {private / '.git'} show {revision}:known.txt > {log}; "
+                f"echo EXIT=0 >> {log}"
+            ),
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert log.read_text() == "known object\nEXIT=0\n"
+    assert (source / "known.txt").read_text() == "known object\n"
