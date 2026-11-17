@@ -50,6 +50,7 @@ from reckon.crew import (
     repair as repair_module,
 )
 from reckon.crew import review as review_module
+from reckon.crew.admission import verdicts as _verdicts
 from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
     CrewError,
@@ -688,6 +689,22 @@ def _seconds_since(value: Any, *, now: datetime) -> int:
     if stamp is None:
         return 0
     return max(0, int((now - stamp).total_seconds()))
+
+
+def _queued_hold(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The hold a queued request is under, composed by the admission package.
+
+    A request whose last attempt failed on a refusal that names its remedy is
+    held by that refusal, whatever hold the last pass wrote: the pass asks the
+    lane before it reads the request's back-off, and a lane with no slot answers
+    first. The composition lives with the admission records so this view, the
+    pass's own verdict row and the request's stored hold cannot disagree about
+    what holds one request.
+    """
+    named = _verdicts.failure_hold(pointer)
+    if named is not None:
+        return named
+    return queue_admission.recorded_pass_hold(pointer)
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
@@ -2023,12 +2040,16 @@ def _live_item(
     if kind in CLASSIFIER_DETAIL_DUTY_KINDS:
         item["reason"] = str(row.get("detail") or "")
     if kind == QUEUED_RUN_DUTY_KIND and pointer is not None:
-        hold = queue_admission.recorded_pass_hold(pointer)
+        hold = _queued_hold(pointer)
         verdict = str(hold.get("verdict") or "")
         if verdict:
-            reason = str(hold.get("reason") or "")
+            reason = _verdicts.hold_reason(hold)
             item["reason"] = f"{verdict}: {reason}" if reason else verdict
-            item["next_command"] = f"wait: {item['reason']}"
+            stamped = str(hold.get("recorded_at") or "").strip()
+            if stamped:
+                item["age_seconds"] = _seconds_since(stamped, now=now)
+            remedy = str(hold.get("remedy") or "")
+            item["next_command"] = remedy or f"wait: {item['reason']}"
     return item
 
 
@@ -2445,7 +2466,23 @@ def _queued_row_item(
         refusal = row.get("session_refusal")
         if isinstance(refusal, Mapping) and str(refusal.get("holder_run_id") or ""):
             return _scope_held_item(row, refusal=refusal, now=now)
-        return _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+        item = _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+        if isinstance(refusal, Mapping):
+            # The classification detail is replaced by a stuck sentence whenever
+            # the pass's last recorded verdict is old enough to read as stuck,
+            # and that sentence is about the phase rather than about the refusal
+            # that stops the launch. The refusal is the later answer to the same
+            # question — the session's own condition, with the command that
+            # clears it — so it is what the row says, with its age measured from
+            # the instant that refusal was recorded.
+            detail = str(refusal.get("detail") or "")
+            if detail:
+                item["reason"] = detail
+                item["next_command"] = str(refusal.get("next_command") or "")
+                stamped = str(refusal.get("recorded_at") or "").strip()
+                if stamped:
+                    item["age_seconds"] = _seconds_since(stamped, now=now)
+        return item
     ordered = placements() if callable(placements) else placements
     return _queued_item(
         row, placements=ordered, now=now, verdicts=verdicts, pointer=pointer
