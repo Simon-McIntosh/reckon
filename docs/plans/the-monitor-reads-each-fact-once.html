@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="418">
+<meta name="plan-version" content="419">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1637,6 +1637,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s81" data-id="c-run-r-20261116T204443479737-fleet-state-reads-the-live-pointers-once" data-who="reckon-build" data-when="2026-11-16T21:49:19Z">
+    <div class="r-comment-body"><p>obligations.live_pointer_snapshot is the one entry point that publishes a live-pointer population — listing the directory itself or taking the population a pass already holds, published under obligations._VIEW_LIVE_POINTERS grouped by the project each pointer names, with the in-flight review memo keyed on that snapshot dropped and cleared with it; obligations.obligations, station_subscriber.live_work_populations and obligation_snapshot._derive_fleet_state use it instead of hand-rolling set/reset, runs.drain_unreconciled_by_session gained pointers, and _classified_rows passes the snapshot to recovery.classify_pointer, so one derivation over 300 pointers across three sessions lists the directory 1 time and decodes 300 pointers where the base revision lists it 427 times and decodes 128,100</p></div>
 </div>
 </section>
 </main>
