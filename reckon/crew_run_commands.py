@@ -2,6 +2,7 @@ import inspect
 import os
 import time
 from collections.abc import Mapping
+from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -29,11 +30,15 @@ from reckon.crew_dispatch_commands import (
     _emit_crew_result as _publish_crew_result,
 )
 
+_COMPLETION_REPLIES = ContextVar("completion_replies", default=None)
+
 
 def _emit(payload, pretty: bool) -> None:
     from reckon.crew.promotion_requests import COMMAND_REPLY
 
     reply = COMMAND_REPLY.get()
+    if reply is None:
+        reply = _COMPLETION_REPLIES.get()
     if reply is not None:
         reply.append(dict(payload))
         return
@@ -44,7 +49,7 @@ def _emit_crew_result(result, pretty: bool, **kwargs) -> None:
     from reckon.crew.promotion_requests import COMMAND_REPLY
     from reckon.crew_dispatch_commands import _crew_result_ok
 
-    if COMMAND_REPLY.get() is None:
+    if COMMAND_REPLY.get() is None and _COMPLETION_REPLIES.get() is None:
         _publish_crew_result(result, pretty, **kwargs)
         return
     payload = dict(result)
@@ -3325,8 +3330,99 @@ def _refuse_a_flag_as_a_reason(
     return value
 
 
+def _complete_many(run_ids, parameters):
+    """Apply the same confirmation to each run and retain every full outcome."""
+    import json
+
+    from reckon.crew import runs
+
+    run_ids = tuple(dict.fromkeys(run_ids))
+    if len(run_ids) > 1 and any(
+        parameters.get(name)
+        for name in (
+            "commits",
+            "candidate",
+            "gate_command",
+            "gate_log_path",
+            "gate_log_digest",
+            "accepted_paths",
+        )
+    ):
+        raise click.UsageError(
+            "per-run commits, candidates, gate evidence and accepted paths require "
+            "one --run; omit them to use each run's recorded evidence"
+        )
+    for run_id in run_ids:
+        _accept_a_matching_project(run_id, parameters.get("project"))
+    reports = []
+    for run_id in run_ids:
+        captured = []
+        token = _COMPLETION_REPLIES.set(captured)
+        code = 0
+        try:
+            crew_complete.callback(run_id=run_id, **parameters)
+        except click.ClickException as exc:
+            code = exc.exit_code
+            captured.append({"ok": False, "detail": exc.format_message()})
+        except click.exceptions.Exit as exc:
+            code = exc.exit_code
+        finally:
+            _COMPLETION_REPLIES.reset(token)
+        result = captured[-1] if captured else {"ok": False, "detail": "no receipt"}
+        result = {**result, "run_id": run_id, "ok": not code and result.get("ok", True)}
+        if parameters.get("dry_run"):
+            reports.append(result)
+            continue
+        path = runs.run_dir(run_id) / f"completion-{time.time_ns()}.json"
+        runs._write_json(path, result)
+        report = {
+            key: result[key]
+            for key in ("ok", "run_id", "phase", "pointer_removed", "ledger_path")
+            if key in result
+        }
+        report["record_path"] = str(path)
+        for key in ("error", "detail", "reason"):
+            if result.get(key):
+                report[key] = str(result[key])[:240]
+                break
+        reports.append(report)
+    reply = (
+        reports[0]
+        if len(reports) == 1
+        else {
+            "ok": all(row["ok"] for row in reports),
+            "runs": reports,
+        }
+    )
+    if (
+        not parameters.get("dry_run")
+        and len(
+            json.dumps(
+                reply,
+                indent=2 if parameters.get("pretty") else None,
+            ).encode()
+        )
+        >= 1900
+    ):
+        path = runs.run_dir(run_ids[0]) / f"completion-batch-{time.time_ns()}.json"
+        runs._write_json(path, reply)
+        reply = {
+            "ok": all(row["ok"] for row in reports),
+            "count": len(reports),
+            "failed": sum(not row["ok"] for row in reports),
+            "record_path": str(path),
+        }
+    _emit_crew_result(reply, parameters.get("pretty", False))
+
+
 @crew.command(name="complete")
-@click.option("--run", "run_id", required=True, help="Run id to promote.")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    multiple=True,
+    help="Run id to promote; repeat to confirm several runs with their recorded evidence.",
+)
 @click.option(
     "--project", default=None, help="Project owning the run; cross-checks the run."
 )
@@ -3622,7 +3718,14 @@ def crew_complete(
     --wait carries out promotion in this call and returns its outcome.
     --dry-run reports the current guards without recording a request. Internal
     callback callers retain synchronous execution unless they request otherwise.
+    Repeat --run to confirm several deliveries; each retains its own gate and
+    review checks. Replies link the full record and stay below 2 kB.
     """
+    if isinstance(run_id, (tuple, list)):
+        parameters = dict(locals())
+        parameters.pop("run_id")
+        _complete_many(run_id, parameters)
+        return
     from reckon.crew.promotion_requests import (
         COMMAND_REPLY,
         REQUESTED,
