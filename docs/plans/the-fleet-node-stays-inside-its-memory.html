@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -125,21 +125,6 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-17T16:22:00Z">
-    <div class="r-comment-body"><p>§3 landed by direct merge (head <code>0adaa3c630</code>), on the lead's instruction. Each health sample counts the test-runner process trees inside the fleet allocation and their resident memory, attributed to the run that started them, apart from a focused run within the light bound; a count above zero is an obligation for the owning run&#x27;s coordinator. Health rows are read by column name. Merged candidate gate: 41 passed in 26.64s.</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-s3-not-landed-1621" data-who="reckon-build" data-when="2026-11-17T16:21:00Z">
-    <div class="r-comment-body"><p>§3 is delivered and not landed: head <code>0adaa3c630</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T114158604983-review-of-fleet-test-processes-are-counted-3bc970691ad5" data-who="reckon-build" data-when="2026-11-17T11:49:15Z">
-    <div class="r-comment-body"><p>Independent review stored for base 421f01042a982737973e1d9d65121120ddaf7bd5 and head 3bc970691ad589154df018c51494ece4a16bd1aa; all six dimensions scored, one blocking header-contract finding, armed suite added failures 0, broader importer added failures 1.</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T140901466477-review-of-fleet-test-processes-are-counted-3932d3049f1c" data-who="reckon-build" data-when="2026-11-17T14:16:55Z">
-    <div class="r-comment-body"><p>Independent incremental review stored as parsed; two blocking importer regressions remain; canonical gate delta 0, broader importer delta 2 added IDs and 1 removed.</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T155827410715-review-of-fleet-test-processes-are-counted-0adaa3c63070" data-who="reckon-build" data-when="2026-11-17T16:06:47Z">
-    <div class="r-comment-body"><p>Independent review of 3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f..0adaa3c6307068372079c0661c14c7e12fc0014b stored parsed; scores 20/19/20/19/20/20; zero findings and zero added failing IDs; both previous blocking importer IDs repaired.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
@@ -160,6 +145,24 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261117T081806617499-a-memory-kill-is-dated" data-who="reckon-build" data-when="2026-11-17T08:37:00Z">
     <div class="r-comment-body"><p>Each health row now records job memory use, limit and cumulative oom_kill; rises bypass snapshot throttling and retain a dated RSS-sorted table and alert naming the largest processes. The 3 -&gt; 5 fixture raises one event and unchanged counts none; the absent-count mutation fails. A real 2 GiB all_debug OOM raised 0 -&gt; 1 with an event/table in 60.75 seconds at the production sixty-second cadence. Final gate: 73 passed versus base 68 passed, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-17T16:22:00Z">
+    <div class="r-comment-body"><p>§3 landed by direct merge (head <code>0adaa3c630</code>), on the lead's instruction. Each health sample counts the test-runner process trees inside the fleet allocation and their resident memory, attributed to the run that started them, apart from a focused run within the light bound; a count above zero is an obligation for the owning run's coordinator. Health rows are read by column name. Merged candidate gate: 41 passed in 26.64s.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-not-landed-1621" data-who="reckon-build" data-when="2026-11-17T16:21:00Z">
+    <div class="r-comment-body"><p>§3 is delivered and not landed: head <code>0adaa3c630</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T114158604983-review-of-fleet-test-processes-are-counted-3bc970691ad5" data-who="reckon-build" data-when="2026-11-17T11:49:15Z">
+    <div class="r-comment-body"><p>Independent review stored for base 421f01042a982737973e1d9d65121120ddaf7bd5 and head 3bc970691ad589154df018c51494ece4a16bd1aa; all six dimensions scored, one blocking header-contract finding, armed suite added failures 0, broader importer added failures 1.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T140901466477-review-of-fleet-test-processes-are-counted-3932d3049f1c" data-who="reckon-build" data-when="2026-11-17T14:16:55Z">
+    <div class="r-comment-body"><p>Independent incremental review stored as parsed; two blocking importer regressions remain; canonical gate delta 0, broader importer delta 2 added IDs and 1 removed.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T155827410715-review-of-fleet-test-processes-are-counted-0adaa3c63070" data-who="reckon-build" data-when="2026-11-17T16:06:47Z">
+    <div class="r-comment-body"><p>Independent review of 3932d3049f1c5b6d7a4b1ac523ab5f6ff6f3122f..0adaa3c6307068372079c0661c14c7e12fc0014b stored parsed; scores 20/19/20/19/20/20; zero findings and zero added failing IDs; both previous blocking importer IDs repaired.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261117T110227318035-fleet-test-processes-are-counted" data-who="reckon-build" data-when="2026-11-17T15:49:18Z">
+    <div class="r-comment-body"><p>Merged primary preserving its 26 health columns and appending test_trees, test_rss_bytes and test_runs last (29 columns); rows read fields by name. Fixture counts 2 trees / 5 processes / 18432 bytes. Removed the controlled-clock experiment and retained inherited child fleet state, verified by its receipt. all_debug: scoped 63 passed; original-base suite 80 passed; head suite 121 passed; matcher mutation 12 failed / 14 passed. Identical no-xdist serial importer arms across 171 files: primary 47 failed / 1252 passed / 7 skipped, head 44 failed / 1255 passed / 7 skipped, zero added failing ids and three removed, including both blocking review ids. Four historical parallel-only ids are recorded as unstable with paired unchanged-revision logs.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-11-17T14:01:00Z">
     <div class="r-comment-body"><p>§4 landed by direct merge (head <code>9f6b2f3a0e</code>), on the lead's instruction. Each session's scratch is placed on the node's local disk, its use is sampled into the shared health schema, and a session over the configured bound is an obligation naming its largest directory; the filesystem check reuses the dispatch admission mount-table owner. Merged candidate gate: 12 passed in 5.67s.</p></div>
