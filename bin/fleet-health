@@ -1,8 +1,8 @@
 #!/bin/bash
 # fleet-health — sample the fleet node once a minute, onto shared storage.
 #
-# Started by fleet-supervisor inside the allocation's batch step, so it lives
-# exactly as long as the allocation and never outlives it. The samples go to
+# Started by fleet-supervisor inside the allocation's batch step. A separate
+# --scheduler reader appends scheduler rows after that allocation ends. Samples go to
 # GPFS, not the node: when the node is declared failed the node-local state is
 # gone and SSH to it is refused, so the minutes before a failure survive only
 # if they were written somewhere else as they happened.
@@ -30,6 +30,15 @@
 #
 # One file per job and node; a second copy for the same job and node exits.
 set -uo pipefail
+
+self_dir=$(dirname -- "$(readlink -f -- "$0")")
+repo_root=$(dirname -- "$self_dir")
+export PYTHONPATH="$repo_root${PYTHONPATH:+:$PYTHONPATH}"
+health_python="$repo_root/.venv/bin/python"
+
+if [ "${1:-}" = --scheduler ]; then
+    exec "$health_python" -m reckon.crew.fleet_node "$@"
+fi
 
 once=0
 passes=0
@@ -75,11 +84,8 @@ fi
 ms_since() { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
 over_load() { awk -v l="$1" -v t="$2" 'BEGIN { exit !(l > t) }'; }
 
-header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent\twritable_interpreters\tjob_oom_kill'
-if [ -s "$out" ] && [ "$(head -1 "$out")" != "$header" ]; then
-    mv -f "$out" "${out%.tsv}.$(date -u +%Y%m%dT%H%M%SZ).tsv"
-fi
-[ -s "$out" ] || printf '%s\n' "$header" > "$out"
+# Both writers take the file server's record lock, which holds across nodes.
+"$health_python" -m reckon.crew.fleet_node --initialise-series "$out" || exit 1
 
 # Resume the last readable count so restarting the sampler does not hide a kill.
 last_kills=$(awk -F '\t' 'NR > 1 && $18 ~ /^[0-9]+$/ {n=$18} END {print n}' "$out")
@@ -113,9 +119,10 @@ while :; do
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
     now=$(date -u +%FT%TZ)
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
-        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" >> "$out"
+        "$jobmem" "$jobmax" "$home" "$slurmd" "${ping:-none}" "$tasks" "$python" "$top" "$writable_interpreters" "$kills" "$SLURM_JOB_ID" "$node" \
+        | "$health_python" -m reckon.crew.fleet_node --append-node-row "$out" || exit 1
 
     reason=""
     [ "$tasks" -gt "$TASKS_ALERT" ] && reason="$tasks tasks"
