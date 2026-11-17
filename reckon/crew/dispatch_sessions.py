@@ -1194,7 +1194,7 @@ def _latest_attempt_capacity_refusal(record: Mapping[str, Any]) -> str | None:
     log_path = str(record.get("log_path") or "").strip()
     if not log_path or not Path(log_path).exists():
         return None
-    events, _malformed = _backends.cached_stream_events(log_path)
+    events, _malformed = _backends.cached_stream_events(log_path, whole=True)
     for event in reversed(events):
         kind = str(event.get("type") or "")
         if kind not in _TERMINAL_STREAM_KINDS:

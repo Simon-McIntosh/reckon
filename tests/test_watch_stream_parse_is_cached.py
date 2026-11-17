@@ -210,7 +210,7 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                     stream, promotion._zone_aware_stream_timestamp
                 )
                 lines = stream.read_text(encoding="utf-8").splitlines()
-                whole, whole_malformed = _backends.parse_events(lines)
+                whole, _whole_malformed = _backends.parse_events(lines)
                 stamps = [
                     (parsed, event["timestamp"])
                     for event in whole
@@ -225,7 +225,19 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                     min(stamps, default=None),
                     max(stamps, default=None),
                 )
-                assert (events, malformed) == (whole, whole_malformed)
+                # A stream the cache still holds answers for all of it; one
+                # whose contents it dropped for size answers for the records
+                # read since the cursor it dropped them at, which is a tail of
+                # the stream and never a record the stream does not hold. The
+                # answer is therefore the whole stream or a suffix of it, and
+                # the malformed count is the count among the records answered.
+                assert events == whole[len(whole) - len(events) :], (
+                    "the cache answered with records the stream does not hold",
+                    stream.name,
+                    len(events),
+                    len(whole),
+                )
+                assert malformed == 0, (malformed, stream.name)
                 assert bounds == expected_bounds
                 observed = _backends.observe_log(
                     backend_name="cache", backend={"command": "claude"}, log_path=stream
