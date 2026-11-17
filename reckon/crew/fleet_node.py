@@ -25,7 +25,6 @@ import os
 import shlex
 import subprocess
 import sys
-import tempfile
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -34,6 +33,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
+from reckon._store import write_atomically
 from reckon.crew.fleet_supervisor import (
     CATCH_ALL_FLEET,
     FLEET_NAME_ENV,
@@ -953,20 +953,9 @@ def _widen_health_series(path: Path, header: list[str]) -> None:
         or not set(header) <= set(_HEALTH_COLUMNS)
     ):
         raise FleetNodeError(f"health series has unrecognised columns: {path}")
-    temporary = None
-    try:
-        with (
-            path.open(encoding="utf-8", newline="") as source,
-            tempfile.NamedTemporaryFile(
-                mode="w",
-                encoding="utf-8",
-                newline="",
-                dir=path.parent,
-                prefix=f".{path.name}.",
-                delete=False,
-            ) as target,
-        ):
-            temporary = Path(target.name)
+
+    def render(target):
+        with path.open(encoding="utf-8", newline="") as source:
             reader = csv.DictReader(source, delimiter="\t")
             writer = csv.writer(target, delimiter="\t", lineterminator="\n")
             writer.writerow(_HEALTH_COLUMNS)
@@ -974,12 +963,8 @@ def _widen_health_series(path: Path, header: list[str]) -> None:
                 if None in row or any(value is None for value in row.values()):
                     raise FleetNodeError(f"health series has a malformed row: {path}")
                 writer.writerow(row.get(column, "-") for column in _HEALTH_COLUMNS)
-            target.flush()
-            os.fsync(target.fileno())
-        os.replace(temporary, path)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+
+    write_atomically(path, render, fsync_directory=True)
 
 
 if __name__ == "__main__":

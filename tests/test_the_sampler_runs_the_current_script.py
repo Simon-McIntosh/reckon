@@ -6,6 +6,7 @@ import json
 import os
 import shlex
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -15,6 +16,7 @@ import pytest
 
 from reckon.crew import fleet_node
 from reckon.crew import fleet_supervisor as supervisor
+from reckon.crew.admission import service
 
 
 def _wait(read, *, timeout=10):
@@ -151,6 +153,10 @@ def test_missing_disk_sample_names_sampler_without_claiming_a_hold(
     (tmp_path / supervisor.RECORD_NAME).write_text(
         json.dumps({"node": "fixture-node", "job_id": "123"})
     )
+    monkeypatch.setattr(socket, "gethostname", lambda: "fixture-node")
+    monkeypatch.setattr(supervisor, "node_disk_reserve_bytes", lambda: 0)
+    monkeypatch.setenv(supervisor.NODE_DISK_ROOT_ENV, str(tmp_path))
+    assert service.node_disk_admission_hold() is None
     row = supervisor.node_disk_obligation("fixture")
     assert row["kind"] == "node-disk-missing"
     assert row["service"] == "fleet-health"

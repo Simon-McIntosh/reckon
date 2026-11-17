@@ -95,6 +95,7 @@ from reckon._store import write_json_atomically
 from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
+from reckon.node_exclusive_lock import exclusive_lock
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -1484,8 +1485,7 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
         return None
     runtime = Path(environ.get("XDG_RUNTIME_DIR") or runtime_directory(environ))
     runtime.mkdir(parents=True, exist_ok=True)
-    with (runtime / "fleet-health.handover.lock").open("a+b") as handover:
-        fcntl.flock(handover, fcntl.LOCK_EX)
+    with exclusive_lock(runtime / "fleet-health.handover.lock"):
         if not _stop_health_sampler(runtime, sampler):
             return None
         sampler_environment = {
