@@ -29,17 +29,22 @@ job whatever partition it names, so the opt-in is never mistaken for the way
 to reach a separate partition.
 
 Outside the allocation, and for every argv that is not refused, the shim
-forwards to the real binary with the argv unchanged. The real binary is the
-first one on ``PATH`` that is not a reckon shim (:mod:`reckon.shim_lookup`), so
+forwards to the real binary. A fenced worker carries its mount recipe in the
+process environment; sbatch and srun wrap the task with that recipe before
+forwarding, because the scheduler starts outside the submitting namespace. The
+real binary is the first one on ``PATH`` that is not a reckon shim (:mod:`reckon.shim_lookup`), so
 the shim never execs itself or the shim of another checkout on the same
-``PATH``. Nothing here runs a scheduler command, guesses a corrected command
-line, or launches anything itself.
+``PATH``. The nested-launch decision never changes the resource request.
 """
 
 from __future__ import annotations
 
+import base64
+import json
 import os
+import shlex
 import sys
+import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -283,37 +288,15 @@ def _explicit_partition_submission(tool: str, argv: Sequence[str]) -> bool:
     """
     if tool != "sbatch":
         return False
-    arguments = iter(argv)
-    partition = ""
-    for argument in arguments:
-        if argument in ("--", "-") or not argument.startswith("-"):
-            break
-        if argument.startswith("--"):
-            name, attached, value = argument[2:].partition("=")
-            if name in _SBATCH_LONG_REQUIRED:
-                if not attached:
-                    value = next(arguments, "")
-            elif name in _SBATCH_LONG_FLAGS:
-                if attached:
-                    return False
-            elif name not in _SBATCH_LONG_OPTIONAL:
-                return False
-            if name == "partition":
-                partition = value
-        else:
-            for index, name in enumerate(argument[1:], 2):
-                if name in _SBATCH_SHORT_REQUIRED:
-                    value = argument[index:] or next(arguments, "")
-                elif name in _SBATCH_SHORT_OPTIONAL:
-                    value = argument[index:]
-                elif name in _SBATCH_SHORT_FLAGS:
-                    continue
-                else:
-                    return False
-                if name == "p":
-                    partition = value
-                break
-    return bool(partition.strip()) and not partition.startswith("-")
+    try:
+        options, _operands = _scheduler_options(tool, argv)
+    except ValueError:
+        return False
+    partitions = [
+        value for name, value, _tokens in options if name in {"p", "partition"}
+    ]
+    partition = partitions[-1] if partitions else ""
+    return bool(partition and partition.strip()) and not partition.startswith("-")
 
 
 def refuses_implicit_launch(
@@ -390,6 +373,239 @@ def shim_directory() -> Path:
     return Path(__file__).resolve().parent / "host_shims"
 
 
+# The task bootstrap uses only the standard library, and carries its recipe in
+# argv so sbatch --export=NONE cannot discard the fence. The child gets the
+# caller's stdin unchanged, including srun's redirected input.
+_TASK_REENTRY = """import base64, json, os, pathlib, subprocess, sys, tempfile
+spec = json.loads(base64.urlsafe_b64decode(sys.argv[1]))
+recipe = spec["fence"]
+for directory in recipe["directories"]:
+    pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
+command = spec["command"]
+script = None
+try:
+    if "script" in spec:
+        fd, script = tempfile.mkstemp(prefix="reckon-task-", dir=recipe["scratch"])
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(base64.b64decode(spec["script"]))
+        os.chmod(script, 0o700)
+        command = [script, *command]
+    prefix = recipe["argv"]
+    encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
+    prefix += ["--setenv", "RECKON_WORKER_FENCE", encoded]
+    result = subprocess.run([*prefix, "--", *command], check=False)
+finally:
+    if script is not None:
+        os.unlink(script)
+raise SystemExit(result.returncode if result.returncode >= 0 else 128-result.returncode)
+"""
+
+
+def _task_command(
+    recipe: Mapping, command: Sequence[str], *, script: bytes | None = None
+) -> list[str]:
+    """Carry a fence to the scheduler task without depending on exported env."""
+    spec = {"fence": recipe, "command": list(command)}
+    if script is not None:
+        spec["script"] = base64.b64encode(script).decode()
+    encoded = base64.urlsafe_b64encode(json.dumps(spec).encode()).decode()
+    return [sys.executable, "-I", "-c", _TASK_REENTRY, encoded]
+
+
+# Task-boundary parsing is deliberately strict: an unknown option may consume
+# a command-looking value, so forwarding it could wrap the wrong executable.
+_SRUN_REQUIRED = _SBATCH_LONG_REQUIRED | frozenset(
+    {
+        "bcast",
+        "bcast-exclude",
+        "broadcast",
+        "compress",
+        "cpu-bind",
+        "epilog",
+        "export-file",
+        "het-group",
+        "jobid",
+        "kill-on-bad-exit",
+        "label",
+        "max-threads",
+        "mpi",
+        "msg-timeout",
+        "prolog",
+        "pty",
+        "relative",
+        "resv-ports",
+        "slurmd-debug",
+        "task-epilog",
+        "task-prolog",
+        "unbuffered",
+        "wait",
+        "threads",
+    }
+) - {"wrap", "label", "pty", "unbuffered", "compress", "resv-ports", "kill-on-bad-exit"}
+_SRUN_FLAGS = _SBATCH_LONG_FLAGS | frozenset(
+    {
+        "disable-status",
+        "enable-status",
+        "exact",
+        "label",
+        "launch-cmd",
+        "no-allocate",
+        "overlap",
+        "preserve-env",
+        "quit-on-interrupt",
+        "unbuffered",
+    }
+) - {"wait"}
+_SRUN_OPTIONAL = _SBATCH_LONG_OPTIONAL | frozenset(
+    {"compress", "immediate", "kill-on-bad-exit", "pty", "resv-ports", "send-libs"}
+)
+_SRUN_SHORT_REQUIRED = frozenset("ABCDFGJLMNRSTWbcdeimnopqrtwx")
+_SRUN_SHORT_FLAGS = frozenset("EHOQVZXhlsuv")
+
+
+def _scheduler_options(
+    tool: str, argv: Sequence[str]
+) -> tuple[list[tuple[str, str | None, list[str]]], list[str]]:
+    """Read option roles once for nesting admission and task-boundary wrapping."""
+    required = _SBATCH_LONG_REQUIRED if tool == "sbatch" else _SRUN_REQUIRED
+    flags = _SBATCH_LONG_FLAGS if tool == "sbatch" else _SRUN_FLAGS
+    optional = _SBATCH_LONG_OPTIONAL if tool == "sbatch" else _SRUN_OPTIONAL
+    short_required = (
+        _SBATCH_SHORT_REQUIRED if tool == "sbatch" else _SRUN_SHORT_REQUIRED
+    )
+    short_flags = _SBATCH_SHORT_FLAGS if tool == "sbatch" else _SRUN_SHORT_FLAGS
+    options = []
+    index = 0
+    while index < len(argv):
+        argument = argv[index]
+        if argument == "--":
+            return options, list(argv[index + 1 :])
+        if argument == "-" or not argument.startswith("-"):
+            return options, list(argv[index:])
+        start = index
+        value = None
+        if argument.startswith("--"):
+            name, attached, value = argument[2:].partition("=")
+            if name in required:
+                if not attached:
+                    index += 1
+                    if index >= len(argv):
+                        raise ValueError(f"{tool} --{name} needs a value")
+                    value = argv[index]
+            elif name in flags:
+                if attached:
+                    raise ValueError(f"{tool} --{name} does not take a value")
+            elif name not in optional:
+                raise ValueError(f"unknown {tool} option --{name}")
+        else:
+            name = ""
+            for offset, name in enumerate(argument[1:], 2):
+                if name in short_required:
+                    value = argument[offset:]
+                    if not value:
+                        index += 1
+                        if index >= len(argv):
+                            raise ValueError(f"{tool} -{name} needs a value")
+                        value = argv[index]
+                    break
+                if name in _SBATCH_SHORT_OPTIONAL or (
+                    tool == "srun" and name in {"I", "K"}
+                ):
+                    value = argument[offset:]
+                    break
+                if name not in short_flags:
+                    raise ValueError(f"unknown {tool} option -{name}")
+        options.append((name, value, list(argv[start : index + 1])))
+        index += 1
+    return options, []
+
+
+def _batch_directives(script: bytes) -> list[str]:
+    """Keep Slurm directives only where sbatch itself reads them."""
+    directives = []
+    for line in script.decode().splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#"):
+            break
+        if stripped.startswith("#SBATCH"):
+            directives.append(line)
+    return directives
+
+
+def fenced_scheduler_task(
+    tool: str, argv: Sequence[str], environ: Mapping[str, str]
+) -> list[str]:
+    """Re-enter the submitting fence at the task boundary, before user code.
+
+    A direct absolute scheduler call bypasses this PATH shim. Interpreter file
+    permissions remain the independent guard on that route.
+    """
+    encoded = environ.get("RECKON_WORKER_FENCE")
+    if not encoded or tool not in {"sbatch", "srun"}:
+        return list(argv)
+    recipe = json.loads(base64.urlsafe_b64decode(encoded))
+    parsed, operands = _scheduler_options(tool, argv)
+    if ":" in operands:
+        raise ValueError(
+            "heterogeneous scheduler launches cannot carry one fenced task"
+        )
+    if any(
+        name in {"help", "usage", "version", "h", "V"}
+        for name, _value, _tokens in parsed
+    ):
+        return list(argv)
+    unsupported = {
+        "multi-prog",
+        "het-group",
+        "launch-cmd",
+        "task-prolog",
+        "task-epilog",
+        "prolog",
+        "epilog",
+    }
+    if any(name in unsupported for name, _value, _tokens in parsed):
+        raise ValueError(
+            f"{tool} task hooks and multiple-program launches cannot carry a fenced task"
+        )
+    options = [
+        token for name, _value, tokens in parsed if name != "wrap" for token in tokens
+    ]
+    wraps = [value for name, value, _tokens in parsed if name == "wrap"]
+    wrap = wraps[-1] if wraps else None
+    print(
+        f"{tool}: task re-enters the worker fence; absolute scheduler paths bypass this guard.",
+        file=sys.stderr,
+    )
+    if tool == "srun":
+        if not operands:
+            raise ValueError("fenced srun requires an executable")
+        return [*options, *_task_command(recipe, operands)]
+    if wrap is not None:
+        if operands:
+            raise ValueError("sbatch --wrap cannot take a script or script arguments")
+        return [
+            *options,
+            "--wrap=" + shlex.join(_task_command(recipe, ["/bin/sh", "-c", wrap])),
+        ]
+    if operands and operands[0] != "-":
+        script = Path(operands[0]).read_bytes()
+    else:
+        script = sys.stdin.buffer.read()
+    if not script.startswith(b"#!"):
+        raise ValueError("fenced sbatch script must start with an interpreter shebang")
+    command = _task_command(recipe, operands[1:], script=script)
+    wrapper = "\n".join(
+        ["#!/bin/sh", *_batch_directives(script), "exec " + shlex.join(command), ""]
+    )
+    # The scheduler spools this stdin script before exec returns. An anonymous
+    # file keeps it alive through exec without leaving a wrapper on disk.
+    with tempfile.TemporaryFile() as stream:
+        stream.write(wrapper.encode())
+        stream.seek(0)
+        os.dup2(stream.fileno(), sys.stdin.fileno())
+    return options
+
+
 def main(
     tool: str, argv: Sequence[str], *, environ: Mapping[str, str] | None = None
 ) -> int:
@@ -418,5 +634,10 @@ def main(
     # The argv is already split and the binary is resolved by absolute path;
     # there is no shell to route through, and exec is what forwards signals and
     # the exit status unchanged. The nesting count goes one higher with it.
-    os.execve(found, [tool, *argv], deeper(env))  # noqa: S606
+    try:
+        task_argv = fenced_scheduler_task(tool, argv, env)
+    except (ValueError, OSError) as exc:
+        print(f"{tool}: refusing an unfenced scheduler task: {exc}", file=sys.stderr)
+        return REFUSAL_STATUS
+    os.execve(found, [tool, *task_argv], deeper(env))  # noqa: S606
     raise AssertionError("os.execve returned; a forwarded launch cannot continue.")

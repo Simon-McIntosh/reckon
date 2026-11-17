@@ -251,24 +251,62 @@ def _pass_claims(
     return resolved
 
 
+def _exclusive_shared_paths(
+    pointer: Mapping[str, Any],
+    cache: dict[tuple[str, str], frozenset[str]],
+) -> frozenset[str]:
+    """The judged request's exclusive-path policy, resolved at most once per pass.
+
+    The policy is the one the live-claim hold judges a pair with, read from the
+    repository that declares it. An unreadable or absent declaration answers an
+    empty policy, which the sharing rule reads as "this path is unmergeable" —
+    the same hold the overlap check made before it consulted the policy at all.
+    """
+    key = (str(pointer.get("project") or ""), str(pointer.get("repo") or ""))
+    if key not in cache:
+        cache[key] = (
+            runs._shared_write_paths(key[0], Path(key[1])) if all(key) else frozenset()
+        )
+    return cache[key]
+
+
 def _queued_requests_overlap(
     first: Mapping[str, Any],
     second: Mapping[str, Any],
     *,
     claims: dict[str, list[tuple[Path | None, Path]]],
+    shared: frozenset[str] | None = None,
+    policies: dict[tuple[str, str], frozenset[str]] | None = None,
 ) -> bool:
-    """Whether two queued requests name a write path in one repository.
+    """Whether two queued requests name a path a merge cannot reconcile.
 
     The comparison is the dispatch scope check's own: same repository, and paths
     that overlap by component containment. A pair in different repositories never
     overlaps, however their relative spellings read.
+
+    Only the class git cannot reconcile, the set promotion and the write-time
+    audit refuse, holds one queued request behind another. Where the two paths
+    meet is judged by the claim check's own sharing rule, so two requests that
+    share source files — including a repository-wide directory such as
+    ``reckon`` — fence nothing while both wait, and a plan document, generated
+    state, a cumulative evidence record, a figure topic directory or a
+    dependency lock still does. ``shared`` is the pass's own policy for
+    ``second``; without one it is resolved here and cached in ``policies``.
     """
     first_claims = _pass_claims(first, claims)
     if not first_claims:
         return False
+    policy = (
+        shared
+        if shared is not None
+        else _exclusive_shared_paths(second, policies if policies is not None else {})
+    )
     return any(
         repository == other_repository
         and runs._scopes_overlap(absolute.as_posix(), other_absolute.as_posix())
+        and not runs._claim_paths_share(
+            policy, absolute.as_posix(), other_absolute.as_posix()
+        )
         for repository, absolute in first_claims
         for other_repository, other_absolute in _pass_claims(second, claims)
     )
@@ -290,6 +328,7 @@ def _earlier_overlapping_request(
     moment: datetime,
     claims: dict[str, list[tuple[Path | None, Path]]],
     fenced: Collection[str] = (),
+    shared: frozenset[str] | None = None,
 ) -> Mapping[str, Any] | None:
     """An earlier-ranked queued request whose write paths overlap this one.
 
@@ -300,6 +339,9 @@ def _earlier_overlapping_request(
     whose own session is never granted a slot. ``claims`` is the pass's resolved
     claims, so each comparison reads a request's paths rather than resolving
     them again.
+
+    An overlap holds only over a path a merge cannot reconcile, so a pair that
+    shares source files waits for seats rather than for each other.
 
     An earlier request holds a later one only while it could launch: one the
     same pass has already held on a claim, a gate, a back-off or a plan review
@@ -312,10 +354,14 @@ def _earlier_overlapping_request(
     ):
         return None
     skipping = set(fenced)
+    policies: dict[tuple[str, str], frozenset[str]] = {}
+    policy = (
+        shared if shared is not None else _exclusive_shared_paths(pointer, policies)
+    )
     for candidate in earlier:
         if str(candidate.get("run_id") or "") in skipping:
             continue
-        if _queued_requests_overlap(pointer, candidate, claims=claims):
+        if _queued_requests_overlap(pointer, candidate, claims=claims, shared=policy):
             return candidate
     return None
 

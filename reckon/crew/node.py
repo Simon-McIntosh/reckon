@@ -245,7 +245,12 @@ _SUBJECTIVE_PREDICATE = re.compile(
     re.IGNORECASE,
 )
 
-_DURATION = re.compile(r"^(\d+)([smh])$")
+#: A duration is one or more integer-plus-unit runs written together, so a
+#: budget that reads naturally as hours and minutes (``1h30m``) is accepted
+#: wherever a single run (``25m``) is. Each run's unit is a second, a minute or
+#: an hour, summed.
+_DURATION = re.compile(r"^(?:\d+[smh])+$")
+_DURATION_TERM = re.compile(r"(\d+)([smh])")
 _DURATION_SECONDS = {"s": 1, "m": 60, "h": 3600}
 STALL_BUDGET_MULTIPLE = 2
 
@@ -873,11 +878,21 @@ class NodeValidation:
 
 
 def parse_duration(value: str) -> int:
-    """Return a duration in seconds, or raise naming the accepted form."""
-    match = _DURATION.match(str(value).strip())
-    if not match:
-        raise CrewError(f"duration {value!r} must be an integer followed by s, m or h")
-    return int(match.group(1)) * _DURATION_SECONDS[match.group(2)]
+    """Return a duration in seconds, or raise naming the accepted form.
+
+    One or more integer-plus-unit runs may be written together and are summed,
+    so ``1h30m`` is the same ninety minutes as ``90m``.
+    """
+    text = str(value).strip()
+    if not _DURATION.match(text):
+        raise CrewError(
+            f"duration {value!r} must be one or more integers each followed by "
+            "s, m or h, such as 25m or 1h30m"
+        )
+    return sum(
+        int(count) * _DURATION_SECONDS[unit]
+        for count, unit in _DURATION_TERM.findall(text)
+    )
 
 
 # A role that may not write repository source is refused the moment it declares

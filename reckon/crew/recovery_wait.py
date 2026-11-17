@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -92,6 +93,7 @@ class _StreamScan:
     """
 
     __slots__ = (
+        "append_offset",
         "assistant_offset",
         "assistant_seen",
         "inode",
@@ -105,6 +107,7 @@ class _StreamScan:
 
     def __init__(self, inode: int) -> None:
         self.inode = inode
+        self.append_offset = 0
         self.assistant_offset = 0
         self.assistant_seen = False
         self.tool_offset = 0
@@ -116,7 +119,12 @@ class _StreamScan:
 
     def covered(self) -> int:
         """The end of the stream this scan has read through."""
-        return max(self.assistant_offset, self.tool_offset, self.record_offset)
+        return max(
+            self.append_offset,
+            self.assistant_offset,
+            self.tool_offset,
+            self.record_offset,
+        )
 
 
 # What each scanned stream taught the readers of its own bytes, keyed by the
@@ -126,6 +134,10 @@ class _StreamScan:
 # whole at its bound, as the stream listing beside it is.
 _STREAM_SCANS: dict[str, _StreamScan] = {}
 _STREAM_SCANS_LIMIT = 4096
+# A scan record's offsets are advanced by whichever reader last read its path,
+# and a sweep and a classification can do that at once; the record store is
+# small enough that one lock for both is the whole of the synchronization.
+_STREAM_SCANS_LOCK = threading.Lock()
 
 
 def _stream_scan(path: Path) -> _StreamScan | None:
@@ -140,18 +152,43 @@ def _stream_scan(path: Path) -> _StreamScan | None:
     except OSError:
         return None
     key = str(path)
-    scan = _STREAM_SCANS.get(key)
-    if (
-        scan is not None
-        and scan.inode == info.st_ino
-        and info.st_size >= scan.covered()
-    ):
+    with _STREAM_SCANS_LOCK:
+        scan = _STREAM_SCANS.get(key)
+        if (
+            scan is not None
+            and scan.inode == info.st_ino
+            and info.st_size >= scan.covered()
+        ):
+            return scan
+        scan = _StreamScan(int(info.st_ino))
+        if len(_STREAM_SCANS) >= _STREAM_SCANS_LIMIT:
+            _STREAM_SCANS.clear()
+        _STREAM_SCANS[key] = scan
         return scan
-    scan = _StreamScan(int(info.st_ino))
-    if len(_STREAM_SCANS) >= _STREAM_SCANS_LIMIT:
-        _STREAM_SCANS.clear()
-    _STREAM_SCANS[key] = scan
-    return scan
+
+
+def appended_lines(path: Path) -> tuple[list[bytes], int, int]:
+    """The complete lines ``path`` appended since it was last read, and offsets.
+
+    Both an agent stream and a project's recovery record are append-only files
+    whose readers ask the same three things: what landed since their last read,
+    the offset those lines end at, and the offset this read began at. The last
+    of the three is what a caller compares with the offset it recorded to learn
+    that the file was replaced or shortened under it and its own accumulated
+    answer no longer stands.
+
+    A writer's unterminated last line is not consumed, so it is decoded once,
+    by the read that follows the bytes completing it.
+    """
+    scan = _stream_scan(path)
+    if scan is None:
+        return [], 0, 0
+    with _STREAM_SCANS_LOCK:
+        start = scan.append_offset
+    lines, offset = _appended_lines(path, start)
+    with _STREAM_SCANS_LOCK:
+        scan.append_offset = offset
+    return lines, offset, start
 
 
 def _appended_lines(path: Path, offset: int) -> tuple[list[bytes], int]:

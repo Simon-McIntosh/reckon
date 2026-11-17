@@ -1,0 +1,137 @@
+<section id="unreadable-store-is-an-error-s29-record">
+  <h2>An unreadable store is an error, not an empty project</h2>
+
+  <p><strong>What this is.</strong> The run store is the ledger's only store, so
+  a read that cannot reach it must not be confusable with a project that holds
+  no runs. Three shapes were measured doing exactly that through
+  <code>stored_run_rows</code>, the read-only reader the ledger calls on every
+  load: a file that is not a database, an archive that will not attach, and a
+  runs table predating the <code>payload</code> column. Each answered an empty
+  population while the id columns still listed every id, so nothing failed and a
+  whole history read as absent. A fourth sits behind the same swallow with the
+  guards passed: a store whose hot half is complete and whose
+  <code>run_details</code> is gone fails inside the record query, and the
+  swallowed query error answered an empty population there too.</p>
+
+  <table id="unreadable-store-is-an-error-s29-shapes">
+    <caption>The three base-revision shapes, what they answered there, and
+    what a read now does — with a fourth, measured by the mutation that
+    restores the swallow rather than by a base probe.</caption>
+    <thead><tr><th>shape</th><th>base answer</th><th>now</th></tr></thead>
+    <tbody>
+      <tr><td>the store file is not a database</td>
+        <td><code>stored_run_rows</code> returned <code>[]</code></td>
+        <td>raises naming the store and <code>DatabaseError: file is not a
+        database</code></td></tr>
+      <tr><td>the archive cannot be attached</td>
+        <td>returned the main database's rows only: the retired run
+        <code>r-1</code> vanished, while <code>indexed_run_ids</code> listed
+        <code>r-1</code> and <code>r-2</code></td>
+        <td>raises naming the store and the archive, and why the attach
+        failed</td></tr>
+      <tr><td>the runs table has no <code>payload</code> column</td>
+        <td>returned <code>[]</code> while <code>indexed_run_ids</code> listed
+        <code>r-old</code></td>
+        <td>raises naming the store and the migration it owes, including the
+        missing column</td></tr>
+      <tr><td><code>run_details</code> is gone, hot half complete</td>
+        <td>with the swallow restored at the head, the read answered no record
+        where the store holds the row</td>
+        <td>raises naming the store and <code>no such table:
+        run_details</code></td></tr>
+      <tr><td>no store at all</td>
+        <td><code>None</code>, and an empty roster</td>
+        <td>unchanged</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The rule.</strong> A store that is present but cannot be read
+  raises <code>run_store.UnreadableRunStoreError</code>, and the message carries
+  the store's path and the cause. The two read-only readers cannot migrate: the
+  backfill is a write, and <code>RunStore</code> is what performs it. So a store
+  whose <code>runs</code> table lacks a column a read selects is
+  <em>refused</em>, naming the missing column and the migration that supplies
+  it. The schema record is not the test: a store carrying every column answers
+  whatever <code>store_meta</code> says, because that is the state a migration
+  leaves when it commits its backfill and is interrupted before writing the
+  record. Absence stays distinct from failure: an absent store still answers
+  <code>None</code>.</p>
+
+  <p><strong>The guard was first too wide.</strong> Keying the refusal on the
+  recorded declaration refused a readable store — measured against the base, a
+  test that deletes <code>store_meta</code> and requires the load to answer a
+  store the caller cannot write passed at base and failed at head. The
+  criterion moved to the table's shape, and that test passes again. Its lesson
+  is the one the measure asks for: a guard is shown firing, and it also has to
+  be shown not firing where reading is sound.</p>
+
+<p><strong>One record join.</strong> The record is split across
+  <code>runs</code> and <code>run_details</code>, with retired rows in an
+  attached archive carrying both tables. The join was written twice — once in
+  <code>RunStore._indexed_records</code> and once in the read-only reader — so
+  the module held two descriptions of what a record is.
+  <code>run_store._record_rows</code> owns it, and both readers call it. The
+  main branch carried that consolidation by the time this node merged; the
+  refusal is applied on it rather than beside it, so the read-only reader and
+  the indexed reader meet the same query and the same failure. A test holds
+  the two readers equal over a store carrying a retired row, so a drift
+  between them fails rather than passing quietly.</p>
+
+  <p><strong>Evidence.</strong> <code>tests/test_an_unreadable_store_is_an_error.py</code>
+  holds eight tests. The four error arms are asserted through
+  <code>ledger.load</code>, which is where a reader meets the store, and each
+  also asserts the reader itself raises rather than answering empty: a damaged
+  file, an archive that will not attach, a runs table without the
+  <code>payload</code> column, and a store whose hot half is complete while
+  <code>run_details</code> is gone — the failure that lands inside the record
+  query rather than at a guard. One test
+  asserts the refusal is bounded — the same store, migrated through
+  <code>RunStore</code>, then answers its row to both readers. One asserts a
+  store with every column but no schema record still answers, which is the
+  interrupted-migration shape and the over-fire this node measured and fixed.
+  One asserts the absent store still answers empty, so the guard is shown to
+  see a failure rather than to be loud. The last holds the ledger reader and the
+  indexed reader equal over a store with a retired row, over a population of
+  two runs, one of them archived.</p>
+
+  <p><strong>Arms.</strong> Base <code>8e542a224c</code>: the declared suite
+  without the new test file, <strong>58 passed</strong>. Head
+  <code>2abf394180</code> with it: <strong>66 passed</strong>. Both arms exited
+  zero and ran to their summary line on one <code>all_debug</code> allocation;
+  each log's first line names the revision, tree, module file, working
+  directory and literal command, its last a bare <code>EXIT=</code>. Three of
+  the seven tests the file then held fail at base
+  (<code>AttributeError: module 'reckon.run_store' has no attribute
+  'UnreadableRunStoreError'</code>) and the other four pass, so the file is not
+  uniformly red against a tree that merely lacks the name. The base column of
+  the table above is a probe run against the base tree rather than something a
+  passing suite would show, because at base these shapes raise nothing.</p>
+
+  <p><strong>Each guard is load-bearing.</strong> Three mutations were applied
+  one at a time at the head, and each turned exactly its own arm red, with
+  <code>reckon/run_store.py</code> restored byte-identical after each pass
+  (<code>logs/negative-control-a.log</code>, <code>-b</code>, <code>-c</code>):
+
+  </p><ul>
+    <li>swallowing the query error inside <code>stored_run_rows</code> reddens
+      <code>test_a_store_whose_detail_half_is_unreadable_raises_rather_than_losing_the_record</code>
+      (<code>Failed: DID NOT RAISE UnreadableRunStoreError</code>, exit 1);</li>
+    <li>letting <code>_refuse_owed_migration</code> return instead of refusing
+      reddens <code>test_a_runs_table_without_a_payload_column_is_refused_naming_the_migration</code>,
+      and shows what the guard adds beyond the raw driver error: without it the
+      base-style store still raises, but the message the reader sees is
+      <code>no such column: r.payload</code> with no statement that the store
+      owes its migration;</li>
+    <li>passing a failed attach over — continuing against the main database
+      alone — reddens
+      <code>test_an_archive_that_will_not_attach_raises_rather_than_losing_retired_rows</code>,
+      which is the retired row that used to disappear.</li>
+  </ul>
+
+  <p><strong>Cost.</strong> The live store's runs table carries the current
+  declaration, so the migration refusal does not fire on it: a whole-project
+  read returns its rows in one call, and the two readers agree on the
+  population — 11,382 rows read in one call against 11,382 ids listed at this
+  pass. The figure moves with every run; the equality between the two readers
+  is the property, not the number.</p>
+</section>

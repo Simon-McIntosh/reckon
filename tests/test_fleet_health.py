@@ -222,7 +222,9 @@ def test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns(
     line = box.samples()[0].read_text().splitlines()
     assert line[0] == (
         _SAMPLE_HEADER
-        + "\twritable_interpreters\tjob_oom_kill\ttest_trees\ttest_rss_bytes\ttest_runs"
+        + "\twritable_interpreters\tjob_oom_kill\tjob_id\tnode\tscheduler_state"
+        + "\tscheduler_reason\tscheduler_running\tscheduler_event\tsource"
+        + "\ttest_trees\ttest_rss_bytes\ttest_runs"
     )
     assert line[-1].split("\t")[5] == "60"
 

@@ -504,10 +504,18 @@ def test_a_json_manifest_upstream_releases_the_wait(chain_repo: Path) -> None:
 
 
 def test_a_malformed_node_is_refused_at_queue_time(chain_repo: Path) -> None:
-    malformed = _node("n2", "s2", inputs=["a-file-the-repository-does-not-hold.csv"])
+    """A node that waits on nothing is judged on its inputs as it queues.
+
+    A request whose section declares upstream waits has an absent input
+    deferred to its release, where it is judged against the section's declared
+    outputs and the tree the launch reads. A request that waits on nothing has
+    no later judgement, so the same absent input is refused while it is still a
+    request, and nothing is stored for it.
+    """
+    malformed = _node("n1", "s1", inputs=["a-file-the-repository-does-not-hold.csv"])
     with pytest.raises(CrewError) as refusal:
         queue_admission.queue_requests(
-            [_node("n1", "s1"), malformed],
+            [_node("n2", "s2"), malformed],
             project=PROJECT,
             session=SESSION,
             repo_root=chain_repo,
@@ -518,7 +526,29 @@ def test_a_malformed_node_is_refused_at_queue_time(chain_repo: Path) -> None:
         str(dict(pointer.get("node") or {}).get("section"))
         for pointer in runs.list_live(project=PROJECT)
     }
-    assert "s2" not in sections, "the malformed node wrote no request"
+    assert "s1" not in sections, "the malformed node wrote no request"
+
+
+def test_a_waiting_node_defers_an_absent_input_to_its_release(
+    chain_repo: Path,
+) -> None:
+    """The same malformed node is not refused while it waits on an upstream.
+
+    Its inputs are deferred rather than refused: a waiting request may name a
+    path its upstream creates, so queueing it stores the request and the
+    release judges the inputs against the tree the launch reads.
+    """
+    deferred = _node("n2", "s2", inputs=["a-file-the-repository-does-not-hold.csv"])
+    stored = queue_admission.queue_requests(
+        [_node("n1", "s1"), deferred],
+        project=PROJECT,
+        session=SESSION,
+        repo_root=chain_repo,
+        config=CONFIG,
+        run_ids={"n1": "r-n1", "n2": "r-n2"},
+    )
+    assert stored["r-n2"]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+    assert _phase_of(chain_repo, "s2") == queue_admission.AWAITING_UPSTREAM_PHASE
 
 
 # ── the production entry point ───────────────────────────────────────────────

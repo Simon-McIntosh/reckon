@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-17T12:00:20.356Z",
+  "dispatched_at": "2026-11-17T12:00:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:431",
+      "id": "done_when-1",
+      "reason": "without the split, the node's record of which arms are red at base is wrong for two of its three arms, and its gate cannot tell a preserved behaviour arm from a failing-first one.",
+      "text": "s34 requires every new test to fail at the base revision, then states two arms that pass at base by construction: \"A tracked crew.json deleted from the working tree without a commit is still refused, naming the file, as it is at the base revision\" and \"Promoting a run the store already holds is still refused as a duplicate in both states\"; the base revision already refuses both (reckon/ledger.py:3778 refuses the uncommitted deletion naming the path, and the duplicate refusal precedes it), so a worker reading the sentence literally must either manufacture a red arm for an arm the section says holds, or record an arm as failing that cannot \u2014 the same defect earlier reviews had moved out of s32's and s31's failing-at-base sentences",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/history-persists-as-detail-washes-out.html:504",
+      "id": "wiring-1",
+      "reason": "the declared depends-on edge gates \u00a726 until s34 is declared done and f-hpdw-013 introduces no batch dispatch, so the stale sentence costs a reader a moment of confusion, not a wrong dispatch.",
+      "text": "the still-open followup f-hpdw-013 states \"\u00a726 waits on \u00a721 to \u00a725, \u00a728 and \u00a729\" and names \u00a722 as its next build, but every one of those is declared done (plan.html:28) and \u00a726 now also waits on s34 (plan.html:29); a coordinator reading that body would dispatch \u00a726 without \u00a734",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "4a5cc4214e588e3027543574dbf3d8b08cc4ffc6",
+  "plan_fingerprint": "810174fb8f804e4d23a350bef34a1c637435bb5986948b394b42033b783ce9f1",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 108,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "4a5cc4214e588e3027543574dbf3d8b08cc4ffc6",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s34's done-when now splits its arms: the committed-removal promotion is the one test required to fail at base; the uncommitted-deletion refusal and the duplicate refusal are named as preserved behaviour that holds at base and head",
+      "reason": "",
+      "when": "2026-11-17T12:18:36.508239+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "4a5cc4214e588e3027543574dbf3d8b08cc4ffc6",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-hpdw-013 is resolved: every section it queued is done, and f-hpdw-015 now carries s34 then s26",
+      "reason": "",
+      "when": "2026-11-17T12:18:42.221314+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "4a5cc4214e588e3027543574dbf3d8b08cc4ffc6",
+      "commit_basis": "edit",
+      "note": "s34's done-when now splits its arms: the committed-removal promotion is the one test required to fail at base; the uncommitted-deletion refusal and the duplicate refusal are named as preserved behaviour that holds at base and head",
+      "reason": "",
+      "when": "2026-11-17T12:18:36.508239+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "commit": "4a5cc4214e588e3027543574dbf3d8b08cc4ffc6",
+      "commit_basis": "edit",
+      "note": "f-hpdw-013 is resolved: every section it queued is done, and f-hpdw-015 now carries s34 then s26",
+      "reason": "",
+      "when": "2026-11-17T12:18:42.221314+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/history-persists-as-detail-washes-out/r-20261117T115824807873-plan-review-of-history-persists-as-detail-washes-out.json",
+  "review_run_id": "r-20261117T115824807873-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "a851fa46fd424651890fcd4827bc86048f313faa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 docs/state/reckon/crew.json and docs/state/reckon/runs resolve and are tracked at the base revision; the mechanism s34's Why blames exists at reckon/ledger.py:3692 (\"its absence is a deletion to recover\") and the refusal it produces at reckon/ledger.py:3778; the cited run and its all_debug job 1322899 resolve in that run's manifest.",
+    "done_when": "a finding \u2014 s34's \"New tests, each failing at the base revision\" (plan.html:431) covers three arms, two of which the same sentence fixes as still holding at base.",
+    "evidence_paths": "pass \u2014 the gate logs s34 names go under a crew run directory, and the run it cites for its evidence resolves at ~/.config/reckon/crew/runs/r-20261115T211459261234-untracking-migration-s26/ with post-untracking-promotion.log and reproduce_untracking.sh already there.",
+    "naming": "pass \u2014 s34 names no plan label, stage name or ticket number; its prose describes the mechanism (an absent ledger that git history still records) rather than pointing at a tracker entry.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the reproduction log prints POST_UNTRACKING_PROMOTION_REFUSED with rows_before and rows_after both 2 and canonical_rows_preserved true, and ledger.py's `_ledger_ever_tracked` asks git log --all, which still finds the path after a committed git rm), and the failing arm it names is obtainable and can fail, the two preserved-behaviour arms being the ones the done_when finding covers.",
+    "single_goal": "pass \u2014 s34 delivers one endpoint, a promotion landing after a committed removal of the ledger while an uncommitted deletion still refuses; the preserved-behaviour arms are controls on that one endpoint, not a second deliverable.",
+    "wiring": "pass \u2014 plan-section-depends-on (plan.html:29) now carries s34 as an upstream of s26, and the open followup f-hpdw-015 (plan.html:515) queues \u00a734 before \u00a726 resumes; s34 needs no upstream of its own because its done-when runs over a temporary repository and store, not over the real migration."
+  },
+  "section_digests": {
+    "_document": "0ab352a59148d229f6368b6f036fae2c3f33869af3d712908bcea7b3c9d6aa72",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s20": "469126d7a8d70994107c002b967dbf9da3c5237e4a3d05823281a9885c92731d",
+    "s21": "b2ec3716b6dd37a6a203c9b9d7c0be1209c9fa8d48d83ddcdf537eb47428cd4c",
+    "s22": "5b80738fa65b0a373485bf67bf0f2f191c8cf69ad935ef9ae258accc3a43cfc1",
+    "s23": "5f979f2ac2c694c8465c9b3b76743b70a3df967a1496488ebe45e96a41451c59",
+    "s24": "ff4464a256205179d7e9af583afcd456372bf9b4a393a90fe8b93955826be5f8",
+    "s25": "6e50b703cae5c188d1fb24250a943eb5f654fc5c26334335a3a7288120690168",
+    "s26": "37c27b0d54e7bf1a99e322e08776a72ffa748c2b88388aaa51f267a1db5c358a",
+    "s27": "9d55fe84f9ee617248a7eec57379797bd44bc1cb050fc378d20ac1b3da8152b2",
+    "s28": "1b395017f55a124f94b5b856f557b80c1246dd6aa0b94d4c21a412922010b47f",
+    "s29": "08680da58b87d39a60d022d76781f1c03ec98c2eec17478fcee45582b9ef204e",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s30": "73d5c5ce099e375a2b18ae59f31aec4205212d2104108d1b97ce543d20c55270",
+    "s31": "5e320fec30580df18f57b6d28c58a517e834ccc7f4632502d8abefcc9dc8a743",
+    "s32": "be917fc2f31d989ce173566c1819ca4f00641eda62fa8b26f1e5a2da43c522a9",
+    "s33": "013d38ead3ef1d626c6065009c19f475efba97993154035da7d5008a84bbe939",
+    "s34": "3af4b2678cdd80b9c1960fddda046e0c302a8ebd98e96d0bdfaaca29804cd035",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6173f16d89316af11f74c75b5bec44f90742582abf47efd7e72af7af3bb31b50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:14:16.487328+00:00",
+  "total": null
+}
