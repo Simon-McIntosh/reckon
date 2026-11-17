@@ -3709,12 +3709,6 @@ def _ledger_git_state(path: Path) -> str | None:
     except ValueError:
         return None
     relative = relative_path.as_posix()
-    head = _git_stdout(checkout, "ls-tree", "--name-only", "HEAD", "--", relative)
-    index = _git_stdout(checkout, "ls-files", "--", relative)
-    if head is None or index is None:
-        return None
-    if head.strip() or index.strip():
-        return "tracked"
     if _history_is_truncated(checkout):
         return None
     logged = subprocess.run(
@@ -3737,6 +3731,14 @@ def _ledger_git_state(path: Path) -> str | None:
         return None
     if not logged.stdout.strip():
         return "new"
+    # A repository with no commits has no HEAD to query. Its complete empty
+    # history already proves this path was never committed.
+    head = _git_stdout(checkout, "ls-tree", "--name-only", "HEAD", "--", relative)
+    index = _git_stdout(checkout, "ls-files", "--", relative)
+    if head is None or index is None:
+        return None
+    if head.strip() or index.strip():
+        return "tracked"
     removed = _git_stdout(
         checkout, "log", "-1", "--diff-filter=D", "--format=%H", "HEAD", "--", relative
     )

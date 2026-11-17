@@ -92,6 +92,22 @@ def _assert_no_ledger_files(root: Path) -> None:
     assert not git(root, "ls-files", f"docs/state/{PROJECT}")
 
 
+def test_a_repository_without_commits_accepts_its_first_run(tmp_path: Path) -> None:
+    root = tmp_path / "repository"
+    (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    git(root, "init", "-q", "-b", "main")
+    assert git(root, "log", "--all", "--format=%H") == ""
+    assert _rows() == {}
+
+    result = ledger.append_run(PROJECT, {"run_id": "r-first"}, root=root)
+
+    assert result["store"] == {"status": "written"}
+    assert _rows() == {"r-first": {"run_id": "r-first", "project": PROJECT}}
+    assert Path(result["path"]) == ledger.run_path(PROJECT, "r-first", root)
+    assert Path(result["path"]).is_file()
+    assert not ledger.ledger_path(PROJECT, root).exists()
+
+
 def test_an_append_after_committed_removal_writes_only_the_store(
     repository: Path,
 ) -> None:
