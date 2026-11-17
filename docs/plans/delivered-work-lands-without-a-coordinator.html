@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s6&quot;,&quot;delivered-work-lands-without-a-coordinator#s7&quot;],&quot;s10&quot;:[&quot;delivered-work-lands-without-a-coordinator#s4&quot;,&quot;delivered-work-lands-without-a-coordinator#s5&quot;,&quot;delivered-work-lands-without-a-coordinator#s6&quot;,&quot;delivered-work-lands-without-a-coordinator#s7&quot;,&quot;delivered-work-lands-without-a-coordinator#s8&quot;,&quot;delivered-work-lands-without-a-coordinator#s9&quot;,&quot;delivered-work-lands-without-a-coordinator#s11&quot;,&quot;delivered-work-lands-without-a-coordinator#s12&quot;,&quot;delivered-work-lands-without-a-coordinator#s13&quot;,&quot;delivered-work-lands-without-a-coordinator#s14&quot;,&quot;delivered-work-lands-without-a-coordinator#s15&quot;,&quot;delivered-work-lands-without-a-coordinator#s16&quot;,&quot;delivered-work-lands-without-a-coordinator#s17&quot;,&quot;delivered-work-lands-without-a-coordinator#s18&quot;,&quot;delivered-work-lands-without-a-coordinator#s19&quot;,&quot;delivered-work-lands-without-a-coordinator#s20&quot;]}">
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -182,8 +182,23 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s19" data-id="c-close-s19" data-who="reckon-build" data-when="2026-11-17T21:35:00Z">
-    <div class="r-comment-body"><p>§19 landed by direct merge (head <code>87dfe84ddc</code>), on the lead's instruction. The measurement of a merged primary revision completes when the run&#x27;s gate command names test files that exist only at the run&#x27;s head: those files are left out and named as absent there, every other file is measured, and a stated suite-delta waiver is honoured when the measurement cannot be made. Reviewed 120 of 120 with no finding. Merged candidate gate: 11 passed in 10.49s.</p></div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
+    <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261116T234350421817-review-of-a-window-of-landings-is-one-reload-a923f2f79d9a" data-who="reckon-build" data-when="2026-11-16T23:56:12Z">
+    <div class="r-comment-body"><p>Reviewed f571435dd42e718863a5837544e620803a9ef15d..a923f2f79d9af655136fb9f271874d24138c3eab; six dimensions 20/20/20/18/20/20, zero added failures, one non-blocking admission-export assertion finding; both parsed records stored outside the worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261116T222920323558-a-window-of-landings-is-one-reload" data-who="reckon-build" data-when="2026-11-16T23:42:46Z">
+    <div class="r-comment-body"><p>One shared 30-minute window coalesces twelve code changes into two reloads per service, or three with a requester-and-reason immediate command; each reload requires an exported tick. Status reports running code, newest seen and next reload time; supervisor and immutable-image replacement honour the same rule. Final expanded gate 123 passed; importer delta 0 added failures; base control 12 reloads and 0 exported ticks.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-11-17T00:16:00Z">
+    <div class="r-comment-body"><p>§12 landed by direct merge (head <code>be128087c1</code>), on the lead's instruction. Every parked promotion is rechecked before slot admission on each drain wake: both repaired reviews are reconsidered while both slots are held, where the base reconsidered neither, and 100 parked requests recheck in 0.3 s. Review 120 of 120, no findings. A merged candidate passed 17 of 18 focused tests; the one failure, in <code>test_review_promoted_before_its_run.py</code>, fails on main.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T234905696475-review-of-a-parked-request-is-reconsidered-while-slots-are-full-be128087c15f" data-who="reckon-build" data-when="2026-11-16T23:56:14Z">
+    <div class="r-comment-body"><p>Independent review of 5345b861002afdfccdcf9e8a07ff74a87deccf1d..be128087c15fa9b69c61b3ae793440cabac68d9a stored as parsed; all six dimensions 20/20, no findings, zero added failures; canonical and revision records pass crew check.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full" data-who="reckon-build" data-when="2026-11-16T23:45:35Z">
+    <div class="r-comment-body"><p>Every parked promotion is rechecked before slot admission and newly ready requests rejoin fair ordering without using a slot; 2/2 repaired reviews refresh under full slots and promote in order, incomplete reviews keep their reason, and 100/100 incomplete and complete reviews recheck in 0.302077 s and 0.300292 s respectively; 62 scoped checks pass and 115 importer cases add zero failures (110 pass, the same 5 fail in both arms).</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-11-17T16:44:00Z">
     <div class="r-comment-body"><p>§13 landed by direct merge (head <code>cc838716b5</code>), on the lead's instruction. Each stage a delivered run passes through, from delivery to landing, leaves an additive receipt with its time, so a late review request, a slow launch and a slow landing are told apart; only a completed review record counts as the review stage. Final head reviewed 119 of 120 with no blocking finding. Merged candidate gate: 31 passed in 4.08s.</p></div>
@@ -205,24 +220,6 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261117T162903604894-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-cc838716b51e" data-who="reckon-build" data-when="2026-11-17T16:35:52Z">
     <div class="r-comment-body"><p>Independent review of 014575b8dbc4d742c7021d7980ee045f09c61840..cc838716b51e585b08f20b5de63497356d13f8b8 scores 20/19/20/20/20/20, no findings; parsed record delivered outside the worktree.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
-    <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261116T234350421817-review-of-a-window-of-landings-is-one-reload-a923f2f79d9a" data-who="reckon-build" data-when="2026-11-16T23:56:12Z">
-    <div class="r-comment-body"><p>Reviewed f571435dd42e718863a5837544e620803a9ef15d..a923f2f79d9af655136fb9f271874d24138c3eab; six dimensions 20/20/20/18/20/20, zero added failures, one non-blocking admission-export assertion finding; both parsed records stored outside the worktree.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261116T222920323558-a-window-of-landings-is-one-reload" data-who="reckon-build" data-when="2026-11-16T23:42:46Z">
-    <div class="r-comment-body"><p>One shared 30-minute window coalesces twelve code changes into two reloads per service, or three with a requester-and-reason immediate command; each reload requires an exported tick. Status reports running code, newest seen and next reload time; supervisor and immutable-image replacement honour the same rule. Final expanded gate 123 passed; importer delta 0 added failures; base control 12 reloads and 0 exported ticks.</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-11-17T00:16:00Z">
-    <div class="r-comment-body"><p>§12 landed by direct merge (head <code>be128087c1</code>), on the lead's instruction. Every parked promotion is rechecked before slot admission on each drain wake: both repaired reviews are reconsidered while both slots are held, where the base reconsidered neither, and 100 parked requests recheck in 0.3 s. Review 120 of 120, no findings. A merged candidate passed 17 of 18 focused tests; the one failure, in <code>test_review_promoted_before_its_run.py</code>, fails on main.</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T234905696475-review-of-a-parked-request-is-reconsidered-while-slots-are-full-be128087c15f" data-who="reckon-build" data-when="2026-11-16T23:56:14Z">
-    <div class="r-comment-body"><p>Independent review of 5345b861002afdfccdcf9e8a07ff74a87deccf1d..be128087c15fa9b69c61b3ae793440cabac68d9a stored as parsed; all six dimensions 20/20, no findings, zero added failures; canonical and revision records pass crew check.</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261116T232538118202-a-parked-request-is-reconsidered-while-slots-are-full" data-who="reckon-build" data-when="2026-11-16T23:45:35Z">
-    <div class="r-comment-body"><p>Every parked promotion is rechecked before slot admission and newly ready requests rejoin fair ordering without using a slot; 2/2 repaired reviews refresh under full slots and promote in order, incomplete reviews keep their reason, and 100/100 incomplete and complete reviews recheck in 0.302077 s and 0.300292 s respectively; 62 scoped checks pass and 115 importer cases add zero failures (110 pass, the same 5 fail in both arms).</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-11-17T12:28:00Z">
     <div class="r-comment-body"><p>§14 landed through the crew's own promotion after its review (landing commit <code>2410997514</code>). The promotion queue and the admission queue call one definition of their precedence rule; reviewed 120 of 120 with no finding.</p></div>
@@ -280,6 +277,15 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261117T124627257289-a-merged-promoted-run-is-released" data-who="reckon-build" data-when="2026-11-17T13:31:04Z">
     <div class="r-comment-body"><p>Promoted merged runs without an existing landing owner now record their workspace outcome, retire the clean pointer/worktree and release section waiters; unsafe manifests and dirty worktrees remain as one named obligation. Existing journals, promotion requests and newer repair attempts retain ownership. On all_debug the scoped/head arms pass 65 cases (base 58); 74 importer files add zero failure ids (13 failures and 6 errors in both arms); the base negative control fails 1 case and retains pointer and worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-close-s19" data-who="reckon-build" data-when="2026-11-17T21:35:00Z">
+    <div class="r-comment-body"><p>§19 landed by direct merge (head <code>87dfe84ddc</code>), on the lead's instruction. The measurement of a merged primary revision completes when the run's gate command names test files that exist only at the run's head: those files are left out and named as absent there, every other file is measured, and a stated suite-delta waiver is honoured when the measurement cannot be made. Reviewed 120 of 120 with no finding. Merged candidate gate: 11 passed in 10.49s.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261117T212222566469-review-of-a-merged-primary-is-measured-without-the-runs-new-tests-87dfe84ddcda" data-who="reckon-build" data-when="2026-11-17T21:29:56Z">
+    <div class="r-comment-body"><p>Independent review of 0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388..87dfe84ddcda1eb1f561380d99241ce8aea97f1f scored each of six dimensions 20/20 with no findings; both parsed records pass crew check and recorded suites add 0 failures.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261117T210245144353-a-merged-primary-is-measured-without-the-runs-new-tests" data-who="reckon-build" data-when="2026-11-17T21:19:53Z">
+    <div class="r-comment-body"><p>Primary replay omits head-only test files from its command and runner scope, records absent_test_files on measured receipts, attributes inherited IDs to the merged revision, and records explicit waivers for unavailable primary measurements; 11 regression cases and the two census files pass (69 passed in 45.63s), the declared base control fails (1 failed in 1.50s), and 23 importer files add 0 failures (same 16 failing IDs at base and head).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§2 landed by direct merge at <code>112bbec4b6</code> (head <code>18f4fdaf71</code>), on the lead's instruction, because its own promotion request waited in the queue it replaces. The first review gave 109 of 120 with two blocking findings: a running or parked request took a simulated turn, and the report's window option ordered differently from the drain. Both were repaired with a test each, and the re-review of the repaired head gave 120 of 120 with no findings. In the 70-request case the later sessions' requests move from positions 68 and 69 to 3 and 4. A merged candidate with §3 passed 34 of 36 focused tests; the two failures are in the base's own failure list.</p></div>
@@ -376,9 +382,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261116T233752526352-delivered-rows-say-what-is-owed" data-who="reckon-build" data-when="2026-11-17T01:05:40Z">
     <div class="r-comment-body"><p>Shared live classification separates 1 delivered run, 2 promotion requests and 1 landed leftover across pane and obligations/MCP reads; refusal rows now keep their complete remedy beside the new counters. The committed gate passes 74 tests versus 70 at the repair base and 58 at the original base; all 9 affected importer tests pass unchanged, and reversing the answering commit makes the review-named assertion fail (1 failed). Earlier importer observations remain outside scope.</p></div>
-</div>
-<div class="r-comment" data-section="s19" data-id="c-run-r-20261117T212222566469-review-of-a-merged-primary-is-measured-without-the-runs-new-tests-87dfe84ddcda" data-who="reckon-build" data-when="2026-11-17T21:29:56Z">
-    <div class="r-comment-body"><p>Independent review of 0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388..87dfe84ddcda1eb1f561380d99241ce8aea97f1f scored each of six dimensions 20/20 with no findings; both parsed records pass crew check and recorded suites add 0 failures.</p></div>
 </div>
 </section>
   </main>
