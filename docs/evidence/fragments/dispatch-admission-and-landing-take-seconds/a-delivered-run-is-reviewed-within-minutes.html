@@ -72,20 +72,24 @@
   row the obligation reaches are each a case of their own.</p>
 
 <p id="a-delivered-run-is-reviewed-within-minutes-gate"><strong>Gate.</strong>
-  The node's ten tests pass at the head
-  (the head arm's log reads <strong>68 passed</strong> in 47.3 s at
-  <code>f4a8ef887b</code>, its command named on the manifest's
-  <code>after_suite</code> line). The armed suite arms — the node's test
-  file beside the two importer files at the head, and the two importer files
-  alone at the base revision — are recorded in the manifest's
-  <code>after_suite</code> and <code>baseline_suite</code> fields with their own
-  commands, revisions and logs; both report <strong>0 failures</strong>.</p>
+  The armed suite arms are the receipt for every figure here, and each figure
+  below is that log's own summary line. The head arm — this node's test file
+  beside the two importer files — reads <strong>68 passed in 52.82s</strong> at
+  revision <code>8bf50b476f</code> (<code>after_suite-head.log</code>, last line
+  <code>EXIT=0</code>). The base arm reads <strong>58 passed in 42.35s</strong>
+  at revision <code>0c9f4fc8cd</code> over the two importer files alone
+  (<code>baseline_suite-head.log</code>, <code>EXIT=0</code>): the node's test
+  file does not exist at the base revision, which is why the two commands
+  differ. Both report <strong>0 failures</strong>, and both are recorded in the
+  manifest's <code>after_suite</code> and <code>baseline_suite</code> fields
+  with their own commands, revisions and log paths.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-negative-control"><strong>Negative control.</strong>
   With the sweep's review pass made to wait for the tick — the pass gated on a
   marker the held tick never writes — the in-window case fails
   (<code>FAILED tests/test_a_delivered_run_is_reviewed_within_minutes.py::test_a_delivered_run_is_requested_inside_the_window_while_a_tick_is_held</code>,
-  <strong>3 failed, 7 passed</strong>, <code>EXIT=1</code>), beside the case that
+  <strong>3 failed, 7 passed in 2.45s</strong> at revision
+  <code>8bf50b476f</code>, <code>EXIT=1</code>), beside the case that
   reads the inherited priority and the case that follows the obligation to the
   duty row, both of which depend on the same pass. So the cases measure the
   request's independence rather than restating it. The log is named on the
