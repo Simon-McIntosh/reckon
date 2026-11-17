@@ -15,6 +15,7 @@ intervals are half-open and disjoint; their sum is the observed run duration.
 
 from __future__ import annotations
 
+import hashlib
 import itertools
 import json
 import os
@@ -75,6 +76,14 @@ def _bounded(value: Any, limit: int) -> str:
     return encoded[: limit - 3].decode("utf-8", errors="ignore") + "…"
 
 
+def _attempt_key(value: str) -> str:
+    """Keep long review identities distinct when their head suffixes differ."""
+    encoded = value.encode("utf-8")
+    return (
+        value if len(encoded) <= 96 else "sha256:" + hashlib.sha256(encoded).hexdigest()
+    )
+
+
 def _encode(row: list[Any]) -> bytes:
     while row and row[-1] == "":
         row.pop()
@@ -104,7 +113,7 @@ def record_stage(
     row = [
         stamp,
         code,
-        _bounded(attempt, 96),
+        _attempt_key(attempt),
         _bounded(outcome, 48),
         _bounded(reason, 96),
     ]

@@ -362,3 +362,35 @@ def test_worker_start_is_recorded_at_the_actual_spawn(clock, tmp_path, monkeypat
         "review_admitted",
         "review_started",
     ]
+
+
+def test_long_review_ids_remain_distinct_at_their_head_suffix(clock):
+    prefix = "r-" + "review-source-" * 12
+    receipts.record_stage("r-long-review", "review_started", attempt=prefix + "a" * 40)
+    receipts.record_stage("r-long-review", "review_started", attempt=prefix + "b" * 40)
+    rows = receipts.read_receipts("r-long-review")
+    assert len(rows) == 2
+    assert rows[0]["attempt"] != rows[1]["attempt"]
+
+
+def test_supervisor_records_delivery_without_waiting_for_the_monitor(
+    clock, tmp_path, monkeypatch
+):
+    from reckon.crew import recovery_review_subject
+
+    run_id = "r-supervisor-delivery"
+    pointer = _pointer(run_id)
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text("status: complete\n")
+    pointer["manifest_path"] = str(manifest)
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    monkeypatch.setattr(
+        recovery_review_subject, "write_delivered_run_review_brief", lambda _: None
+    )
+    dispatch_launch._publish_stored_phase({"run_id": run_id}, ended=True)
+    assert [row["stage"] for row in receipts.read_receipts(run_id)] == [
+        "delivery_recorded"
+    ]
+    before = receipts.receipt_path(run_id).read_bytes()
+    _delivery(run_id)
+    assert receipts.receipt_path(run_id).read_bytes() == before
