@@ -136,7 +136,11 @@ def sandbox(
     (root / "snap").write_text(_SNAP_FIXTURE)
     (root / "dstate").write_text(_DSTATE_FIXTURE)
 
-    for name, body in (("ps", STUB_PS), ("scontrol", STUB_SCONTROL)):
+    for name, body in (
+        ("ps", STUB_PS),
+        ("scontrol", STUB_SCONTROL),
+        ("permission-check", "#!/bin/bash\necho 0\n"),
+    ):
         exe = stub / name
         exe.write_text(body)
         exe.chmod(0o755)
@@ -145,6 +149,7 @@ def sandbox(
         **os.environ,
         "SLURM_JOB_ID": "100",
         "FLEET_STATE_DIR": str(state),
+        "RECKON_SHIM_PYTHON": str(stub / "permission-check"),
         "FLEET_PROC_DIR": str(proc),
         "FLEET_CGROUP_DIR": str(cg),
         "HOME": str(home),
@@ -326,9 +331,6 @@ def test_memory_kill_rise_is_dated_and_keeps_the_process_table(tmp_path: Path) -
     second = run_pass(box.env)
     assert second.returncode == 0, second.stderr
     rows = sample_rows(box)
-    assert [row["job_oom_kill"] for row in rows] == ["3", "5"]
-    assert rows[-1]["job_mem_mb"] == "3"
-    assert rows[-1]["job_mem_max_mb"] == "10"
     assert len(box.snapshots()) == 1
     assert "systemd" in box.snapshots()[0].read_text()
     alert = box.alerts()
@@ -337,6 +339,9 @@ def test_memory_kill_rise_is_dated_and_keeps_the_process_table(tmp_path: Path) -
     assert "10240 KiB systemd (pid 1)" in alert
     assert str(box.snapshots()[0]) in alert
     assert (box.state / "notice").read_text() == alert
+    assert [row["job_oom_kill"] for row in rows] == ["3", "5"]
+    assert rows[-1]["job_mem_mb"] == "3"
+    assert rows[-1]["job_mem_max_mb"] == "10"
     third = run_pass(box.env)
     assert third.returncode == 0, third.stderr
     assert len(box.alerts().splitlines()) == 1, "an unchanged count raises nothing"
