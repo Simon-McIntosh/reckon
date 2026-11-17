@@ -156,10 +156,12 @@ def _owed_review_tiers(pointer: Mapping[str, Any]) -> list[str]:
     The tier rule is the review reflex's own — the one it dispatches by — so the
     lander and the reflex cannot disagree about which reviews a run owes. A
     delivered run always owes its code review, and owes a figure review exactly
-    when its commits add or change a figure image. A changed-path list git
-    cannot produce reads as no figure review owed, which is the reflex's own
-    reading of it: a lander waiting on a review the reflex would never dispatch
-    would hold the run forever, so the two must answer alike.
+    when its commits add or change a figure image. The change list is that one
+    helper's answer, so both sides read the same list: an own-commit range git
+    cannot produce is read from the base-to-head pair instead, and only a run
+    whose history can be compared neither way answers no figure review owed. A
+    lander waiting on a review the reflex would never dispatch would hold the
+    run forever, so the two must answer alike.
     """
     from reckon.crew.recovery_review_dispatch import _changed_figure_paths
 
