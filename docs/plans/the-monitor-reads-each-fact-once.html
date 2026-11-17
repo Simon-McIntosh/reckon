@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="454">
+<meta name="plan-version" content="455">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1734,6 +1734,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s88" data-id="c-run-r-20261117T204600753463-review-of-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for-faef3e5499c5" data-who="reckon-build" data-when="2026-11-17T20:49:04.119Z">
+    <div class="r-comment-body"><p>Review of b3a277e1a63c181bf0deb2a7127b43e37bbc3718..faef3e5499c58173edb83dc66a5923be798430a5 recorded parsed with goal_fidelity 16, evidence 12, scope_discipline 14, durability 16, fit 18, reuse 18, zero added failures, and five non-blocking findings (whole=True returns a partial cache entry, unused _StreamCursor.covers, a dropped offset&lt;=size guard shielded by the summary path, live figures taken on a path no production caller takes, and a loosened sibling assertion).</p></div>
 </div>
 </section>
 </main>
