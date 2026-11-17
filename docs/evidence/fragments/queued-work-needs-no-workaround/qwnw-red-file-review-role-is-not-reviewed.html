@@ -49,6 +49,27 @@ EXIT=0
 58 passed in 52.05s
 EXIT=0
 </pre>
+<h4 id="qwnw-red-file-review-role-is-not-reviewed-repaired-head">Repaired head: the primary branch merged in</h4>
+<p>Primary advanced the same function and met this repair at a content conflict in <code>reckon/crew/recovery_classification.py</code>. The resolution keeps primary's version, which is a superset of this node's rule: <code>pre_spawn_waiting</code> now also yields to any spawn evidence, and the claim arm is gated on a non-terminal manifest status through <code>pre_spawn_reads_as_claim</code>, the variable every downstream reader consults. Nothing from either side was dropped: the terminal-status precedence this node added is exactly that gate, and the phase-label precedence it replaced is gone on both sides. The gate and the census arm were re-run at the merge head, and both are green.</p>
+<pre># revision: a9639df36e0575746d2709a7b6a2c7acd655cfd4
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_role_is_not_reviewed.py
+# module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed/reckon/crew/recovery_classification.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+# slurm_job_id: unset
+.......                                                                  [100%]
+7 passed in 37.00s
+EXIT=0
+</pre>
+<pre># revision: a9639df36e0575746d2709a7b6a2c7acd655cfd4
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed/reckon/crew/recovery_classification.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-role-is-not-reviewed
+..........................................................               [100%]
+58 passed in 52.95s
+EXIT=0
+</pre>
 <h4 id="qwnw-red-file-review-role-is-not-reviewed-importer-arm">Wider arm over the module's importers: not measured</h4>
 <p>The arm over the 106 test files that name <code>reckon.crew.recovery_classification</code> did not complete. At the assigned base it aborted with a segmentation fault (exit 139) at 26% of collection progress, before pytest wrote a summary line or any <code>FAILED</code> id, so it names no base failure set to compare a head run against. The abort is the instrument, not the module: the run stopped before the ids of the failures it passed were written, so what it failed on is unrecorded rather than attributed either way. The measured arms are the target file (7 failed at base, 7 passed at head) and the census pair (58 passed on both), and both are recorded above. The importer arm's own log is at <code>logs/importer-arm-base.log</code> in the run directory.</p>
 <pre># revision: e35fd9f935225b7005482a75032eb28abeb46c63
