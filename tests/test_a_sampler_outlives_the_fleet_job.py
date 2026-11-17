@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import fcntl
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -179,11 +180,64 @@ def test_hold_launches_reader_in_a_separate_job_on_another_node():
 
 
 def test_shell_and_reader_share_one_schema(tmp_path):
-    script = Path(__file__).resolve().parents[1] / "bin" / "fleet-health"
-    text = script.read_text()
-    header = next(line for line in text.splitlines() if line.startswith("header=$'"))
-    columns = header.removeprefix("header=$'").removesuffix("'").split(r"\t")
-    assert columns == fleet_node._HEALTH_COLUMNS
+    path = tmp_path / "health.tsv"
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "reckon.crew.fleet_node",
+            "--initialise-series",
+            str(path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert path.read_text().strip().split("\t") == fleet_node._HEALTH_COLUMNS
+    row = ["-" for _ in fleet_node._HEALTH_COLUMNS]
+    row[0] = "2000-01-01T00:00:00Z"
+    row[-1] = "node"
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "reckon.crew.fleet_node",
+            "--append-node-row",
+            str(path),
+        ],
+        input="\t".join(row) + "\n",
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    with path.open() as stream:
+        result = list(csv.DictReader(stream, delimiter="\t"))
+    assert len(result) == 1 and result[0]["source"] == "node"
+
+
+def test_both_writers_take_the_shared_home_lock(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+
+    acquired = []
+    actual = fleet_node.exclusive_lock
+
+    @contextmanager
+    def observe(path, **kwargs):
+        acquired.append(path)
+        with actual(path, **kwargs):
+            yield
+
+    monkeypatch.setattr(fleet_node, "exclusive_lock", observe)
+    path = tmp_path / f"{JOB}-{NODE}.tsv"
+    fleet_node.append_node_reading(path)
+    fleet_node.watch_scheduler(
+        JOB,
+        NODE,
+        directory=tmp_path,
+        runner=scheduler((0, f"{JOB}|{NODE}|CANCELLED|None\n", ""))[0],
+    )
+    assert acquired.count(Path(f"{path}.lock")) == 2
+    assert tmp_path / f"{JOB}-scheduler.lock" in acquired
 
 
 def test_stopping_outside_reader_leaves_no_row_after_node_sampler(tmp_path):

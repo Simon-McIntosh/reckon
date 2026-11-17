@@ -19,12 +19,12 @@ scheduler reader through ``fleet-health --scheduler``.
 from __future__ import annotations
 
 import csv
-import fcntl
 import getpass
 import json
 import os
 import shlex
 import subprocess
+import sys
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -41,6 +41,7 @@ from reckon.crew.fleet_supervisor import (
     fleet_state_directory,
     state_directory,
 )
+from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
 # The size of the allocation, overridable per environment variable. A rigel
 # node has 28 cores and 128,259 MB, the site reserves nothing for the system,
@@ -263,40 +264,41 @@ def append_scheduler_reading(directory: Path, row: Mapping[str, str]) -> bool:
     """Append to the node's TSV, serialising with its sampler and deduplicating end."""
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{row['job_id']}-{row['node']}.tsv"
-    with Path(f"{path}.lock").open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        with path.open("a+", encoding="utf-8", newline="") as stream:
-            stream.seek(0)
-            header = next(csv.reader(stream, delimiter="\t"), [])
-            if not header:
-                header = _HEALTH_COLUMNS
-                csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(header)
-            if not set(_HEALTH_COLUMNS[-7:]).issubset(header):
-                raise FleetNodeError(f"health series lacks scheduler columns: {path}")
-            # Only the tail is read, keeping each tick independent of series age.
-            stream.flush()
-            with path.open("rb") as reader:
-                reader.seek(0, os.SEEK_END)
-                reader.seek(max(0, reader.tell() - 65536))
-                tail = reader.read().decode("utf-8", errors="replace").splitlines()
-            for line in reversed(tail):
-                values = line.split("\t")
-                if len(values) == len(header):
-                    prior = dict(zip(header, values, strict=True))
-                    if prior.get("source") == "scheduler":
-                        if prior.get("scheduler_event") == "end":
-                            return False
-                        break
-            stream.seek(0, os.SEEK_END)
-            csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(
-                row.get(column, "-")
-                .replace("\t", " ")
-                .replace("\r", " ")
-                .replace("\n", " ")
-                for column in header
-            )
-            stream.flush()
-            os.fsync(stream.fileno())
+    with (
+        exclusive_lock(Path(f"{path}.lock")),
+        path.open("a+", encoding="utf-8", newline="") as stream,
+    ):
+        stream.seek(0)
+        header = next(csv.reader(stream, delimiter="\t"), [])
+        if not header:
+            header = _HEALTH_COLUMNS
+            csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(header)
+        if not set(_HEALTH_COLUMNS[-7:]).issubset(header):
+            raise FleetNodeError(f"health series lacks scheduler columns: {path}")
+        # Only the tail is read, keeping each tick independent of series age.
+        stream.flush()
+        with path.open("rb") as reader:
+            reader.seek(0, os.SEEK_END)
+            reader.seek(max(0, reader.tell() - 65536))
+            tail = reader.read().decode("utf-8", errors="replace").splitlines()
+        for line in reversed(tail):
+            values = line.split("\t")
+            if len(values) == len(header):
+                prior = dict(zip(header, values, strict=True))
+                if prior.get("source") == "scheduler":
+                    if prior.get("scheduler_event") == "end":
+                        return False
+                    break
+        stream.seek(0, os.SEEK_END)
+        csv.writer(stream, delimiter="\t", lineterminator="\n").writerow(
+            row.get(column, "-")
+            .replace("\t", " ")
+            .replace("\r", " ")
+            .replace("\n", " ")
+            for column in header
+        )
+        stream.flush()
+        os.fsync(stream.fileno())
     return True
 
 
@@ -323,22 +325,21 @@ def watch_scheduler(
     ):
         raise FleetNodeError("scheduler reader needs a numeric job id and a node name")
     directory.mkdir(parents=True, exist_ok=True)
-    with (directory / f"{job_id}-scheduler.lock").open("a") as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return
-        count = 0
-        while True:
-            started = time.monotonic()
-            row = scheduler_reading(job_id, node, runner=runner)
-            row["utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-            if not append_scheduler_reading(directory, row):
-                return
-            count += 1
-            if row["scheduler_event"] == "end" or (passes and count >= passes):
-                return
-            sleep(max(0, interval - (time.monotonic() - started)))
+    try:
+        with exclusive_lock(directory / f"{job_id}-scheduler.lock", blocking=False):
+            count = 0
+            while True:
+                started = time.monotonic()
+                row = scheduler_reading(job_id, node, runner=runner)
+                row["utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+                if not append_scheduler_reading(directory, row):
+                    return
+                count += 1
+                if row["scheduler_event"] == "end" or (passes and count >= passes):
+                    return
+                sleep(max(0, interval - (time.monotonic() - started)))
+    except LockHeld:
+        return
 
 
 def _scheduler_reader_launch(account: str) -> str:
@@ -910,22 +911,57 @@ def describe_allocation(
     return lines
 
 
+def append_node_reading(path: Path, values: str = "") -> None:
+    """Share the file-server lock and schema with the outside scheduler reader."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with exclusive_lock(Path(f"{path}.lock")):
+        if path.exists():
+            with path.open() as stream:
+                header = stream.readline().rstrip("\r\n").split("\t")
+            if header != _HEALTH_COLUMNS:
+                archived = path.with_suffix(
+                    "." + datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ") + ".tsv"
+                )
+                path.rename(archived)
+        with path.open("a", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
+            if not stream.tell():
+                writer.writerow(_HEALTH_COLUMNS)
+            if values:
+                row = values.rstrip("\n").split("\t")
+                if len(row) != len(_HEALTH_COLUMNS):
+                    raise FleetNodeError("node health row does not match its schema")
+                writer.writerow(row)
+            stream.flush()
+            os.fsync(stream.fileno())
+
+
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Record a fleet job's scheduler state")
-    parser.add_argument("--scheduler", required=True, metavar="JOB")
-    parser.add_argument("node")
+    parser = argparse.ArgumentParser(description="Record fleet job health")
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--scheduler", metavar="JOB")
+    modes.add_argument("--append-node-row", type=Path, metavar="TSV")
+    modes.add_argument("--initialise-series", type=Path, metavar="TSV")
+    parser.add_argument("node", nargs="?")
     parser.add_argument("--passes", type=int, default=0)
     parser.add_argument("--interval", type=float, default=60)
     args = parser.parse_args()
     try:
-        watch_scheduler(
-            args.scheduler,
-            args.node,
-            directory=state_directory() / "health",
-            interval=args.interval,
-            passes=args.passes,
-        )
+        if args.append_node_row:
+            append_node_reading(args.append_node_row, sys.stdin.read())
+        elif args.initialise_series:
+            append_node_reading(args.initialise_series)
+        elif args.node:
+            watch_scheduler(
+                args.scheduler,
+                args.node,
+                directory=state_directory() / "health",
+                interval=args.interval,
+                passes=args.passes,
+            )
+        else:
+            parser.error("--scheduler requires a node name")
     except FleetNodeError as exc:
         parser.exit(1, f"{exc}\n")
