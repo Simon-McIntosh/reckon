@@ -729,6 +729,21 @@ def dispatch(
             )
         )
 
+    # The plan's own declaration is read here, before any claim, run directory
+    # or worktree exists, so a refused dispatch leaves nothing behind and the
+    # coordinator's next call is the same call with the flag on it. A measured
+    # replay is the only dispatch an already-landed section permits.
+    measurement_refusal = _measurement_flag_refusal(
+        project,
+        str(node.plan or ""),
+        str(node.section or ""),
+        repo=repo_root,
+        measure_only=measure_only,
+        role=str(node.role or ""),
+    )
+    if measurement_refusal:
+        raise CrewError(measurement_refusal)
+
     if resolution.plan_review_hold is not None:
         options = {
             **(dispatch_options or {}),
@@ -823,20 +838,6 @@ def dispatch(
         }
 
     _workspace_roots(repo_root)
-    # The plan's own declaration is read here, before any claim, run directory
-    # or worktree exists, so a refused dispatch leaves nothing behind and the
-    # coordinator's next call is the same call with the flag on it. A measured
-    # replay is the only dispatch an already-landed section permits.
-    measurement_refusal = _measurement_flag_refusal(
-        project,
-        str(node.plan or ""),
-        str(node.section or ""),
-        repo=repo_root,
-        measure_only=measure_only,
-        role=str(node.role or ""),
-    )
-    if measurement_refusal:
-        raise CrewError(measurement_refusal)
     candidate_scope = (
         ()
         if shadow_lineage

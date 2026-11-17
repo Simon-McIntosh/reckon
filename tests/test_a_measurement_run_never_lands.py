@@ -687,3 +687,20 @@ def test_the_reflex_composes_a_review_once_its_skip_is_removed(
 
     assert report.get("dispatched") is True, report.get("reason")
     assert report.get("refused") is not True, report
+
+
+def test_review_debt_does_not_queue_a_landed_section_without_measurement_flag(
+    measurement_repo: Path, tmp_path: Path
+) -> None:
+    """A review hold cannot store a replay the section declaration refuses."""
+    with pytest.raises(crew.CrewError, match="--measure-only"):
+        crew.dispatch(
+            node=_node(LANDED_SECTION, manifest=tmp_path / "manifest.md"),
+            project=PROJECT,
+            repo=measurement_repo,
+            config={**CONFIG, "plan_review_gate": "enforce"},
+            session=SESSION,
+            route="deterministic",
+            check_budget=False,
+        )
+    assert runs.list_live(project=PROJECT) == []
