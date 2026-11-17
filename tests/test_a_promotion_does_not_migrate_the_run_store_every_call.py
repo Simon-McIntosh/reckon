@@ -190,10 +190,14 @@ def test_a_store_from_the_legacy_shape_migrates_once_and_then_not(
         assert store.get_run("r-second")["run_id"] == "r-second"
 
 
-def test_a_changed_declaration_version_is_not_taken_as_current(home: Path) -> None:
-    # The record names the declaration the store was migrated to, so a record
-    # left by different code is not accepted: opening the store again after
-    # the recorded value moves must migrate rather than skip.
+def test_a_complete_store_with_an_unknown_record_is_opened_without_migrating(
+    home: Path, migration_passes: dict[str, int]
+) -> None:
+    # The record says which declaration the store was migrated to, not what
+    # the store holds. A record this code does not know says nothing about
+    # coverage: a store already carrying every declared column is opened as it
+    # is, and its record is left alone rather than restamped with the opener's
+    # own declaration.
     _promote(home, "r-first")
     store_path = _store_path()
     with sqlite3.connect(str(store_path)) as connection:
@@ -203,18 +207,55 @@ def test_a_changed_declaration_version_is_not_taken_as_current(home: Path) -> No
         )
         connection.commit()
 
-    passes = {"n": 0}
-    original = run_store.RunStore._migrate_runs
+    migration_passes["passes"] = 0
+    with run_store.RunStore() as store:
+        assert store.get_run("r-first")["run_id"] == "r-first"
 
-    def counting(self: run_store.RunStore) -> None:
-        passes["n"] += 1
-        original(self)
+    assert migration_passes["passes"] == 0
+    assert _recorded_version(store_path) == "an-earlier-declaration"
 
-    run_store.RunStore._migrate_runs = counting  # type: ignore[assignment]
-    try:
-        run_store.RunStore().close()
-    finally:
-        run_store.RunStore._migrate_runs = original  # type: ignore[assignment]
 
-    assert passes["n"] == 1
+def test_a_store_missing_a_declared_column_is_migrated_whatever_its_record(
+    home: Path, migration_passes: dict[str, int]
+) -> None:
+    # The other half of the same question: coverage decides, so a store that
+    # really lacks a declared column is migrated even under an unknown record,
+    # and that pass records the declaration it reached.
+    _promote(home, "r-first")
+    store_path = _store_path()
+    with sqlite3.connect(str(store_path)) as connection:
+        indexed = [
+            str(row[0])
+            for row in connection.execute(
+                'SELECT "name" FROM sqlite_master WHERE "type" = ? AND "sql" LIKE ?',
+                ("index", "%activity_seconds%"),
+            )
+        ]
+        for name in indexed:
+            connection.execute(f'DROP INDEX "{name}"')
+        connection.execute('ALTER TABLE "runs" DROP COLUMN "activity_seconds"')
+        connection.execute(
+            'UPDATE "store_meta" SET "value" = ? WHERE "key" = ?',
+            ("an-earlier-declaration", run_store._SCHEMA_RECORD_KEY),
+        )
+        connection.commit()
+    with sqlite3.connect(str(store_path)) as connection:
+        dropped = {
+            str(row[1]) for row in connection.execute('PRAGMA table_info("runs")')
+        }
+    assert "activity_seconds" not in dropped
+
+    migration_passes["passes"] = 0
+    run_store.RunStore().close()
+
+    assert migration_passes["passes"] == 1
+    with sqlite3.connect(str(store_path)) as connection:
+        columns = {
+            str(row[1]) for row in connection.execute('PRAGMA table_info("runs")')
+        }
+        activity = connection.execute(
+            'SELECT "activity_seconds" FROM "runs" WHERE "run_id" = ?', ("r-first",)
+        ).fetchone()[0]
+    assert "activity_seconds" in columns
+    assert activity is not None
     assert _recorded_version(store_path) == run_store._STORE_SCHEMA_VERSION
