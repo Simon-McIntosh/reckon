@@ -136,6 +136,21 @@ def test_relocation_uses_the_longest_path_and_clears_process_handles():
         "pid": None,
         "note": "unchanged",
     }
+    copied = _relocate(
+        {
+            "launcher_host": "historical-compute",
+            "launcher_job_id": "123",
+            "nested": {"launcher_job_id": "456"},
+        },
+        {},
+    )
+    from reckon.crew.recovery_liveness import _record_is_known_foreign
+
+    assert not _record_is_known_foreign(copied), (
+        "replay retained a live scheduler handle"
+    )
+    assert copied["launcher_job_id"] is None
+    assert copied["nested"]["launcher_job_id"] is None
 
 
 def test_private_repository_copies_packs_without_changing_the_source(tmp_path):
@@ -540,10 +555,12 @@ def test_release_record_is_written_under_the_branch_lease(tmp_path, monkeypatch)
     monkeypatch.setattr(promotion_release, "_update_run_record", observed)
     with promotion_scope._branch_write_scope():
         promotion._record_release_on_ledger(
-            project="fixture", root=repo, run_id="run",
-            release={"worktree_released": True}, checkout=repo,
+            project="fixture",
+            root=repo,
+            run_id="run",
+            release={"worktree_released": True},
+            checkout=repo,
         )
-
 
 
 def test_a_release_record_holds_the_branch_before_another_ledger_write(
@@ -616,7 +633,9 @@ def test_a_release_record_holds_the_branch_before_another_ledger_write(
         first.start()
         assert releasing.wait(5), "first promotion never reached its release"
         second.start()
-        assert attempted.wait(5), "second promotion reached neither its lease nor its write"
+        assert attempted.wait(5), (
+            "second promotion reached neither its lease nor its write"
+        )
         assert not second_write.wait(0.25), (
             "second promotion wrote the shared ledger before the first release finished"
         )
@@ -690,7 +709,9 @@ def test_a_measurement_wait_holds_no_preparation_slot(tmp_path, monkeypatch):
         assert service.wait_for_in_flight(10) == []
 
 
-def test_batch_relay_reads_immutable_objects_and_returns_remote_logs(tmp_path, monkeypatch):
+def test_batch_relay_reads_immutable_objects_and_returns_remote_logs(
+    tmp_path, monkeypatch
+):
     import os
     import subprocess
     import sys

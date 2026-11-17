@@ -357,6 +357,8 @@ def _relocate(value, replacements: dict):
                     "pid",
                     "worker_pid",
                     "launcher_pid",
+                    "launcher_host",
+                    "launcher_job_id",
                     "process_id",
                     "job_id",
                     "slurm_job_id",
@@ -836,7 +838,9 @@ def replay(
                 revision = sources["projects"][project]["revision"]
                 with base_checkout(repositories[project], revision) as checked:
                     if not checked.is_relative_to(root):
-                        raise RuntimeError("base checkout escaped the replay scratch root")
+                        raise RuntimeError(
+                            "base checkout escaped the replay scratch root"
+                        )
                     if git(checked, "rev-parse", "HEAD") != revision:
                         raise RuntimeError("base checkout read a different revision")
                     checkout_control = {"phase": "passed", "revision": revision}
