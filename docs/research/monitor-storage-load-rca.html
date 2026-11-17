@@ -441,6 +441,89 @@
     The coordinator owns that subsequent 60 s live window and the overall 20 MB/min and
     5% CPU verdict. No after-window result is claimed here.</p>
     <p>The importer comparison for the ledger-window repair recorded an unmet broad verification gate. Its receipts and limitations are recorded in the <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#station-tick-reads-only-what-changed-ledger-window">landing evidence</a>; the live after-window remains coordinator-owned.</p>
+    <h2 id="station-read-census-per-path">The per-path census: the run streams are the volume</h2>
+    <p>A census of one station, taken on 98dci4-clu-3026 at 05:48Z on 2026-11-17, counted the bytes
+    every path handed back to the process. The instrument wraps <code>io.open</code> and counts what the
+    returned file's <code>read</code>, <code>readline</code>, <code>readlines</code> and iteration hand
+    back, keyed by the resolved path and by the calling frames, so each path is named with the function
+    reading it. It was cross-checked against a <code>strace -f -y -e trace=read,pread64,openat</code>
+    census of the same process over a 60&nbsp;s window: the two agreed on the total within the window's
+    own drift (814&nbsp;MB by syscall, 856&nbsp;MB by the wrapper over a longer window), so the wrapper
+    was seeing the reads the kernel saw and not a subset. The population was the fleet node's live crew
+    home copied beside it — 147 live pointers, 152 run streams — with the copy's <code>srun</code> and
+    <code>sbatch</code> replaced by refusals so no pass could launch anything. The station ran alone at
+    <code>--interval 1</code> with its own node-local root.</p>
+    <p>The window read 832,032,759 bytes in 40&nbsp;s. Ranked by the function that read them:</p>
+    <table>
+      <thead><tr><th>share</th><th>bytes</th><th>reading function</th></tr></thead>
+      <tbody>
+        <tr><td>42.7&nbsp;%</td><td>355,393,471</td><td><code>_backends._cached_stream_entry</code>, through <code>cached_stream_events</code> from <code>_observe_run_stream</code></td></tr>
+        <tr><td>19.5&nbsp;%</td><td>162,494,384</td><td><code>recovery_memo._newest_result_event</code>, from <code>_terminal_lane_signal</code></td></tr>
+        <tr><td>12.4&nbsp;%</td><td>102,760,170</td><td><code>file_memo.content_digest</code> reading plan and evidence documents</td></tr>
+        <tr><td>5.9&nbsp;%</td><td>49,169,358</td><td><code>_read_record</code> reading the review store</td></tr>
+        <tr><td>4.1&nbsp;%</td><td>33,938,243</td><td><code>recovery_wait._appended_lines</code>, from <code>_stream_holds_assistant_record</code></td></tr>
+        <tr><td>4.1&nbsp;%</td><td>33,682,379</td><td><code>runs._pointer_text</code>, from <code>_list_live_records</code></td></tr>
+        <tr><td>2.3&nbsp;%</td><td>19,341,878</td><td><code>recovery_watch._recorded_pointer_word</code></td></tr>
+        <tr><td>2.3&nbsp;%</td><td>19,341,878</td><td><code>recovery_classification._delivered_head</code></td></tr>
+        <tr><td>2.2&nbsp;%</td><td>18,483,444</td><td><code>runs._read_dispatch_detail_file</code></td></tr>
+      </tbody>
+    </table>
+    <p>The paths are not dispersed: 95&nbsp;% of the bytes land in run streams
+    (<code>crew/runs/&lt;run&gt;/stream.jsonl</code> and its <code>resume-N.jsonl</code> siblings), in the
+    projects' run documents under <code>docs/state/&lt;project&gt;/runs/</code>, and in plan and evidence
+    documents. Every one of them is a whole-file read of a file that had not changed between the two
+    passes that paid for it, and the copies are per path in the census log: a run's stream of 14&nbsp;MB
+    was read 14&nbsp;MB at a time, one read per open, on each pass. The full per-path log is in the run
+    directory of <code>r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read</code>
+    (<code>logs/station-read-census-40s.txt</code>).</p>
+    <h3 id="station-read-terminal-lane-cursor">The terminal-lane scan read a whole stream per pass</h3>
+    <p><code>_newest_result_event</code> answered "which terminal result did this stream record" by
+    parsing the stream from its first record whenever the file's identity had moved. A live worker
+    appends to its stream continuously, so the identity moves on every pass and the whole stream was
+    re-read per run per pass — 19.5&nbsp;% of the census, and unbounded in the stream's size. It now
+    holds a per-stream cursor: the identity it was reached at, the offset after the last complete record,
+    and a digest of the stream's opening. A stream whose identity is unchanged is answered from the held
+    cursor without opening it, a grown one is read from its cursor, and one that was replaced or rewritten
+    is still read from its first record.</p>
+    <table>
+      <thead><tr><th>Five-run fixture (11,004,305 bytes of stream)</th><th>base <code>73a771c</code></th><th>with the cursor</th></tr></thead>
+      <tbody>
+        <tr><td>Bytes read from the streams on the tick after each worker appended 510 bytes</td>
+          <td>11,009,290</td><td>7,545</td></tr>
+        <tr><td>Verdicts equal a fresh classification for the same pointer and moment</td>
+          <td>yes</td><td>yes</td></tr>
+      </tbody>
+    </table>
+    <p>The fixture counts reads through the same <code>io.open</code> wrapper as the census, over a
+    synthesised crew home of five live runs whose streams total 11&nbsp;MB. The test fails at base and
+    passes with the cursor, and its nearest sibling —
+    <code>tests/test_a_lane_signal_reads_a_stream_once.py</code> — still passes, which is what says the
+    cursor did not simply stop reading.</p>
+    <h3 id="station-read-live-window-after-the-cursor">The live window: the bound is still not met</h3>
+    <p>Two windows, each of one station alone at <code>--interval 1</code> over the same 147 live pointers,
+    measured with §2's instruments — <code>/proc/&lt;pid&gt;/io</code> <code>rchar</code> deltas over the
+    window and utime+stime from <code>/proc/&lt;pid&gt;/stat</code> — starting after the first tick:</p>
+    <table>
+      <thead><tr><th>Tree</th><th>Window</th><th>Reads</th><th>CPU</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>73a771c</code></td><td>215&nbsp;s</td><td>1,131 MB/min</td><td>92.5&nbsp;% of one core</td></tr>
+        <tr><td>with the cursor</td><td>235&nbsp;s</td><td>1,376 MB/min</td><td>75.4&nbsp;% of one core</td></tr>
+      </tbody>
+    </table>
+    <p>The cursor removes the terminal-lane scan's re-read, and the windows do not show it: at rest on
+    this fleet the scan's streams are unchanged between passes, so the 19.5&nbsp;% the census attributes to
+    it is the cold pass, and what repeats is the rest of the table. The largest share of that repeat is
+    <code>_cached_stream_entry</code>: its parsed-stream cache is bounded at 32&nbsp;MB while the fleet's
+    streams are several hundred, so a pass that touches every stream evicts the entry of the next stream
+    it will ask for and the following pass re-parses the whole population. Nothing in the census is
+    addressed by the terminal-lane cursor beyond its own row.</p>
+    <p>So the §12 bound of 20 MB/min and 5&nbsp;% of one core is <strong>not met</strong> at 147 live
+    pointers, in either arm, and the window that would show the cursor's effect is a fleet whose streams
+    are being written while the station watches it. Both windows are recorded here as measured rather
+    than as a claim about the repair: the repair's own figure is the fixture's, and the remaining cost is
+    the evicted parsed-stream cache, the per-document digests and the per-run document reads, each of
+    which is a whole-file re-read of an unchanged file.
+</p>
   </main>
 </body>
 </html>
