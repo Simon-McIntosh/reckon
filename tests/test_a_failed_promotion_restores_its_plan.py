@@ -217,3 +217,164 @@ def test_cleanup_failure_preserves_the_committed_comment(
         _promote(repository)
     assert "Delivered the change" in git(repository, "show", f"HEAD:{PLAN_PATH}")
     assert git(repository, "status", "--porcelain", "--", PLAN_PATH) == ""
+
+
+@pytest.mark.parametrize("edit", ["state", "text", "comment", "staged", "index_only"])
+@pytest.mark.parametrize("boundary", ["profile", "store", "commit"])
+def test_a_refusal_preserves_an_interleaved_same_plan_edit(
+    repository: Path, monkeypatch: pytest.MonkeyPatch, edit: str, boundary: str
+) -> None:
+    path = repository / PLAN_PATH
+    before = _plan_snapshot(repository)
+    peer_snapshot = []
+
+    def edit_then_refuse(*args, **kwargs):
+        assert "Delivered the change" in path.read_text()
+        if edit in {"state", "staged"}:
+            state, version = _store.read_plan(
+                PROJECT, PLAN, repository, artifact_type="plan"
+            )
+            _store.write_plan(
+                PROJECT,
+                PLAN,
+                {**state, "summary": "Peer edit remains"},
+                version,
+                repository,
+                artifact_type="plan",
+            )
+        elif edit == "text":
+            with _store._serialized_path_lock(path, "plans"):
+                path.write_text(
+                    path.read_text().replace(
+                        '<h2 id="delivery">Delivery</h2>',
+                        '<h2 id="delivery">Peer delivery</h2>',
+                    )
+                )
+        elif edit == "comment":
+            with _store._serialized_path_lock(path, "plans"):
+                path.write_text(
+                    path.read_text().replace("Delivered the change", "Peer correction")
+                )
+        else:
+            working = path.read_bytes()
+            with _store._serialized_path_lock(path, "plans"):
+                path.write_bytes(
+                    working.replace(b"Delivery</h2>", b"Peer delivery</h2>")
+                )
+                git(repository, "add", "--", PLAN_PATH)
+                path.write_bytes(working)
+        if edit == "staged":
+            git(repository, "add", "--", PLAN_PATH)
+        peer_snapshot.append(_plan_snapshot(repository))
+        assert peer_snapshot[-1] != before
+        if boundary == "store":
+            raise ledger.LedgerError("injected refusal after peer edit")
+        raise CrewError("injected refusal after peer edit")
+
+    if boundary == "store":
+        monkeypatch.setattr(ledger, "append_run", edit_then_refuse)
+    elif boundary == "commit":
+
+        def before_commit(stage):
+            if stage == "the promotion commit":
+                edit_then_refuse()
+
+        monkeypatch.setattr(promotion, "_stop_at_stage_boundary", before_commit)
+    else:
+        monkeypatch.setattr(promotion, "_profile_fold_anchor", edit_then_refuse)
+    with pytest.raises((CrewError, ledger.LedgerError)) as error:
+        _promote(repository)
+    assert peer_snapshot
+    assert _plan_snapshot(repository) == peer_snapshot[-1]
+    assert "preserv" in str(error.value).lower()
+    assert "restored plan document" not in str(error.value)
+
+
+def test_a_refusal_preserves_an_edit_that_precedes_the_comment(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write_comment = promotion._record_landing_comment
+    peer_snapshot = []
+
+    def edit_then_comment(*args, **kwargs):
+        state, version = _store.read_plan(
+            PROJECT, PLAN, repository, artifact_type="plan"
+        )
+        _store.write_plan(
+            PROJECT,
+            PLAN,
+            {**state, "summary": "Peer edit remains"},
+            version,
+            repository,
+            artifact_type="plan",
+        )
+        return write_comment(*args, **kwargs)
+
+    def refuse(*args, **kwargs):
+        peer_snapshot.append(_plan_snapshot(repository))
+        raise CrewError("injected refusal after interleaved edit and comment")
+
+    monkeypatch.setattr(promotion, "_record_landing_comment", edit_then_comment)
+    monkeypatch.setattr(promotion, "_profile_fold_anchor", refuse)
+    with pytest.raises(CrewError):
+        _promote(repository)
+    assert _plan_snapshot(repository) == peer_snapshot[0]
+
+
+def test_an_editor_waiting_on_the_commit_keeps_its_plan_and_staging(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+    import threading
+
+    from reckon.crew import promotion_scope
+
+    path = repository / PLAN_PATH
+    start = threading.Event()
+    attempted = threading.Event()
+    finished = threading.Event()
+    errors = []
+
+    def editor():
+        try:
+            assert start.wait(5)
+            attempted.set()
+            with _store._serialized_path_lock(path, "plans"):
+                path.write_text(
+                    path.read_text().replace(
+                        '<h2 id="delivery">Delivery</h2>',
+                        '<h2 id="delivery">Peer delivery</h2>',
+                    )
+                )
+                git(repository, "add", "--", PLAN_PATH)
+        except (
+            AssertionError,
+            CrewError,
+            OSError,
+            subprocess.CalledProcessError,
+        ) as error:
+            errors.append(error)
+        finally:
+            finished.set()
+
+    def refuse_staging(*args, **kwargs):
+        start.set()
+        assert attempted.wait(5)
+        finished.wait(0.2)
+        return subprocess.CompletedProcess(
+            ["git", "add"], 128, "", "injected staging refusal"
+        )
+
+    monkeypatch.setattr(promotion_scope, "_stage_landing_writes", refuse_staging)
+    worker = threading.Thread(target=editor)
+    worker.start()
+    try:
+        with pytest.raises(CrewError, match="injected staging refusal"):
+            _promote(repository)
+    finally:
+        start.set()
+        worker.join(5)
+    assert not worker.is_alive()
+    assert not errors
+    assert "Peer delivery" in path.read_text()
+    assert "Peer delivery" in git(repository, "show", f":{PLAN_PATH}")
