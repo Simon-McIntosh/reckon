@@ -314,3 +314,58 @@ def test_a_scoped_test_absent_on_primary_is_not_transplanted_for_attribution(sce
     )
     assert result is None
     assert scenario["measures"] == []
+
+
+@pytest.mark.parametrize("omit_failure", [False, True])
+def test_a_composite_ctest_primary_receipt_covers_every_label(
+    scenario, monkeypatch, omit_failure
+):
+    command = "ctest -L inherited; ctest -L clean"
+    log = scenario["worker"].parent / "primary-labels.log"
+    log.write_text(
+        "Test project /build\n"
+        "0% tests passed, 1 tests failed out of 1\n"
+        "The following tests FAILED:\n"
+        "    1 - inherited (Failed)\n"
+        "EXIT=8\n"
+        "Test project /build\n"
+        "100% tests passed, 0 tests failed out of 1\n"
+        "EXIT=0\n"
+    )
+    arm = {
+        **scenario["primary_arm"],
+        "command": command,
+        "exit_status": 0,
+        "failure_count": 0 if omit_failure else 1,
+        "failure_ids": [] if omit_failure else ["inherited"],
+        "log_path": str(log),
+    }
+    scenario["baseline"]["command"] = command
+    scenario["after"] = {
+        **scenario["after"],
+        "command": command,
+        "exit_status": 0,
+        "failure_count": 1,
+        "failure_ids": ["inherited"],
+        "log_path": str(log),
+    }
+    scenario["record"]["suite_command"] = command
+    scenario["write"]()
+
+    calls = []
+
+    def measure(*args, **kwargs):
+        calls.append(scenario["primary"])
+        return {"baseline_suite": arm, "after_suite": scenario["after"]}
+
+    monkeypatch.setattr(promotion_records, "_measure_missing_arms", measure)
+    if omit_failure:
+        with pytest.raises(ledger.SuiteDeltaError, match="primary suite evidence"):
+            evaluate(scenario)
+    else:
+        for _ in range(2):
+            row = evaluate(scenario)
+            assert row["status"] == "clean"
+            assert row["added_failure_ids"] == []
+            assert row["inherited_failure_ids"] == {"inherited": scenario["primary"]}
+        assert calls == [scenario["primary"]]

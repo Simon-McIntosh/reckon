@@ -1259,7 +1259,6 @@ def _merged_primary_baseline(
     import hashlib
 
     from reckon.crew import promotion_evidence
-    from reckon.crew import review as review_module
 
     primary = promotion_evidence._merged_primary_revision(record, head)
     if not primary:
@@ -1280,12 +1279,12 @@ def _merged_primary_baseline(
             text = Path(str(arm.get("log_path") or "")).read_text(encoding="utf-8")
         except OSError:
             return False
-        text = review_module.last_run_text(text)
-        ids = review_module.gate_log_failure_ids(text)
+        described = promotion_evidence._text_the_receipt_describes(text)
         return (
-            ids is not None
-            and ids == set(arm["failure_ids"])
-            and promotion_evidence._log_failure_count(text) == arm["failure_count"]
+            promotion_evidence._log_failure_count(described) is not None
+            and not promotion_evidence._receipt_mismatches(
+                arm, str(arm["log_path"]), text
+            )
             and _recorded_exit_status(text) == arm["exit_status"]
         )
 
