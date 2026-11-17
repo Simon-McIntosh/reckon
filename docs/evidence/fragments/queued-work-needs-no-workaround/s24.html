@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<title>Section 24 negative control — scope presented as a boundary</title>
+</head>
+<body>
+<article>
+<h2 id="s24-negative-control">Section 24 negative control</h2>
+<p>Both base-revision observations below were taken at
+<code>4dc26dde5ce40643f7135a6c01dfad19a952d240</code> by running the section's
+own tests against an extraction of that revision with the new test file copied
+in. The run reported <code>3 failed, 2 passed</code> and exited 1; the full log
+is <code>negative-control.log</code> in the dispatch's run directory.</p>
+
+<table>
+<thead><tr><th>Observation</th><th>Base behaviour</th><th>Head behaviour</th></tr></thead>
+<tbody>
+<tr>
+<td>A node dispatched with only its evidence fragment declared</td>
+<td>The brief reads <code>FENCE — SCOPE (declared write paths; nothing outside
+them)</code> and lists the fragment alone, presenting it as the node's whole
+scope.</td>
+<td>The brief states the whole worktree writable, names the fragment under
+<code>Expected</code>, and names only the classes git cannot reconcile as
+writable when declared.</td>
+</tr>
+<tr>
+<td>A dispatch declaring no write path</td>
+<td>The brief reads <code>none</code> under the same heading and names no
+writable scope at all.</td>
+<td>The brief states <code>Expected: the repository itself</code> and names its
+writable scope and the declared exclusive classes.</td>
+</tr>
+</tbody>
+</table>
+
+<p>The review brief for a delivered run carries no declared paths and no diff at
+the base revision; at head it names the node's declared paths, the diff over the
+reviewed range, and every changed path that lies outside the declaration.</p>
+
+<p>Two of the section's four tests pass at the base revision and are recorded
+that way: promotion already refuses only a path a merge cannot reconcile, so the
+fragment-scope landing and the undeclared-plan refusal were correct before this
+change and are now pinned by a test.</p>
+</article>
+</body>
+</html>
