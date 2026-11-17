@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -215,6 +216,10 @@ def _repository(root: Path, source: dict) -> None:
     root.mkdir(parents=True)
     git(root, "init", "-q", "-b", "main")
     (root / ".git/objects/info/alternates").write_text(source["objects"] + "\n")
+    packed = root / ".git/objects/pack"
+    for original in sorted((Path(source["objects"]) / "pack").glob("*")):
+        if original.suffix in {".pack", ".idx"}:
+            shutil.copyfile(original, packed / original.name)
     git(root, "config", "user.name", "Replay fixture")
     git(root, "config", "user.email", "replay@example.invalid")
     git(root, "config", "commit.gpgsign", "false")
@@ -553,6 +558,7 @@ def replay(
             "repository_sources_sha256": sources["sha256"],
             "relocation": "repositories and crew paths relocated; process and scheduler handles cleared; request options and promotion guards retained",
             "worker_materialization": "sparse checkout retains source and declared deliverables, omitting duplicate docs/state, docs/figures and docs/evidence except declared paths; canonical repositories and Git objects remain complete",
+            "object_materialization": "private copies of packed objects and indexes; read-only original alternates supply any loose historical objects",
         }
         return result
 
