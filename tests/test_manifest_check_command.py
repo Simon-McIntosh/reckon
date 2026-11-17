@@ -34,13 +34,26 @@ from reckon.crew.runs import _write_json, crew_home, pointer_path
 RUN_ID = "r-20260921T000000000000-manifest-check"
 ABSOLUTE_SCOPE_RUN_ID = "r-20260921T000000000000-manifest-absolute-scope"
 
+# The capture a manifest cites: a log is judged for the command in its head and
+# the status on its last line, and for living under the run directory, so the
+# fixtures cite a real capture beside their manifest rather than a path in the
+# node's scratch that no reader could open.
+CAPTURE_LOG_NAME = "check.log"
+
+CAPTURE_LOG = """\
+# command: pytest -q tests/test_manifest_check_command.py
+3 passed
+EXIT=0
+"""
+
 IN_FENCE_MANIFEST = """\
 node: manifest-check
 status: complete
 commits: 1a2b3c4
 changed_paths: reckon/cli.py
 tests: uv run pytest tests/test_manifest_check_command.py -q -> 3 passed
-test_logs: /tmp/manifest-check.log
+test_logs: check.log
+messages_received: none
 artifacts: none
 evidence_inputs: none
 follow_ons: none
@@ -53,7 +66,8 @@ status: complete
 commits: 1a2b3c4
 changed_paths: src/module.py, lib/helper.py
 tests: uv run pytest tests/test_manifest_check_command.py -q -> 3 passed
-test_logs: /tmp/manifest-check.log
+test_logs: check.log
+messages_received: none
 artifacts: none
 evidence_inputs: none
 follow_ons: none
@@ -142,6 +156,7 @@ def manifest(
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     path = tmp_path / "manifest.md"
     path.write_text(IN_FENCE_MANIFEST, encoding="utf-8")
+    (tmp_path / CAPTURE_LOG_NAME).write_text(CAPTURE_LOG, encoding="utf-8")
     _write_json(
         pointer_path(RUN_ID),
         {
@@ -195,6 +210,7 @@ def absolute_scope_run(
     (repository / "lib").mkdir(parents=True)
     manifest_path = tmp_path / "manifest.md"
     manifest_path.write_text(ABSOLUTE_SCOPE_MANIFEST, encoding="utf-8")
+    (tmp_path / CAPTURE_LOG_NAME).write_text(CAPTURE_LOG, encoding="utf-8")
     _write_json(
         pointer_path(ABSOLUTE_SCOPE_RUN_ID),
         {
@@ -255,10 +271,17 @@ def test_the_command_names_the_run_it_read(
 def test_a_path_outside_the_node_fence_is_reported_by_name(
     manifest: Path, crew_home_watch: CrewHomeWatch
 ) -> None:
+    """An unmergeable path outside the declaration is refused, and named.
+
+    A declared write path is a hint: a file beside it is delivered because the
+    worktree isolates the edit and the merge reconciles it. The class git
+    cannot reconcile is the one the audit refuses, so the stray named here is a
+    dependency manifest while the merge-safe neighbour is delivered.
+    """
     manifest.write_text(
         IN_FENCE_MANIFEST.replace(
             "changed_paths: reckon/cli.py",
-            "changed_paths: reckon/cli.py, reckon/other_module.py",
+            "changed_paths: reckon/cli.py, reckon/other_module.py, pyproject.toml",
         ),
         encoding="utf-8",
     )
@@ -267,7 +290,8 @@ def test_a_path_outside_the_node_fence_is_reported_by_name(
 
     assert result.exit_code != 0, result.output
     findings = json.loads(result.output)["findings"]
-    assert "reckon/other_module.py" in " ".join(findings)
+    assert "pyproject.toml" in " ".join(findings)
+    assert "reckon/other_module.py" not in " ".join(findings)
     crew_home_watch.assert_untouched()
 
 
@@ -310,12 +334,14 @@ def test_a_path_under_no_declaration_is_reported_from_outside(
     The finding names exactly the undeclared path and none of the declared
     ones: the scope resolves from the pointer yet the guard it feeds still
     fires, so the earlier case is a mapping that works rather than a check that
-    stopped judging.
+    stopped judging. The undeclared path is a generated-state file, because
+    only the class a merge cannot reconcile is refused — a merge-safe stray is
+    a hint the worktree already isolates.
     """
     absolute_scope_run["manifest"].write_text(
         ABSOLUTE_SCOPE_MANIFEST.replace(
             "changed_paths: src/module.py, lib/helper.py",
-            "changed_paths: src/module.py, docs/plan.html",
+            "changed_paths: src/module.py, lib/helper.py, docs/state/plan.html",
         ),
         encoding="utf-8",
     )
@@ -324,7 +350,7 @@ def test_a_path_under_no_declaration_is_reported_from_outside(
 
     assert result.exit_code != 0, result.output
     findings = json.loads(result.output)["findings"]
-    assert findings == ['changed paths outside the write scope: "docs/plan.html"']
+    assert findings == ['changed paths outside the write scope: "docs/state/plan.html"']
     crew_home_watch.assert_untouched()
 
 

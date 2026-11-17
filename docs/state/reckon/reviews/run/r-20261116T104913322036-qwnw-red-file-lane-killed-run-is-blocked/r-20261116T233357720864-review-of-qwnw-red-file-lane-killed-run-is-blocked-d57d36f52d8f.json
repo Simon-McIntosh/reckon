@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/query.py:597",
+    "reckon/crew/query.py:1075",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/crew/recovery_watch.py:1640",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/crew/resumption.py:2675",
+    "reckon/crew/obligations.py:1663",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-17T00:12:31.195Z",
+  "dispatched_at": "2026-11-17T00:12:04Z",
+  "findings": [
+    {
+      "file": "tests/test_lane_killed_run_is_blocked.py",
+      "line": "85",
+      "severity": "non-blocking",
+      "text": "non-blocking: every fixture the gate runs writes a stream (tests/test_lane_killed_run_is_blocked.py:61-66) and names it in the pointer's `log_path` while setting `process_alive: False` (:85-101), and `_spawn_evidence` (reckon/crew/recovery_liveness.py:727-751) answers true for `log_path`; so at the merged head each conjunct of reckon/crew/recovery_classification.py:1843-1846 masks the fixture test of the other, and deleting either one alone leaves all ten cases green, which means the file the done_when names cannot redden if half of the merged arm of the previous head were lost. The stream is also what the retry reading needs, so the fix is a case whose pointer carries no stream, no pid and no budget, or a case whose pointer carries a pid and expects the liveness arms, not a change to the arm."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html",
+      "line": "86",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two findings the previous review recorded on this file are unfixed in the delivered copy. Row :86 labels the delivered-head gate `64b94b1ba7` while its log, logs/gate-head.log, heads `# revision: 66c0b315904da98ae0e408dfac6479d44b19b021`; row :102 claims `0 added, 5 fixed` for batch 02a where the base arm list holds 17 ids and the after arm 13 (logs/arm-rerun-head-02a.log), which is 5 fixed and 1 added. The rows the merge added at :110-124 reconcile with their own logs, so the table now mixes receipts a reader can match with two they cannot."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 66c0b315904d: fbeb09e7fb is a merge of primary at 9ad5e64e87 whose resolution of reckon/crew/recovery_classification.py adds `and not _spawn_evidence(record)` beside the existing `alive is not False` plus the import, and d57d36f52d is 31 added lines in the evidence fragment; no test file and no other product file changed.",
+    "done_when": "the done_when asks for the named file passing at head with SLURM_JOB_ID unset, each cause verdicted, no assertion deleted or weakened, and an arm over the affected files adding no failure; logs/gate-final.log records the run at d57d36f with `10 passed` / `EXIT=0`, logs/negative-control-base.log records `3 failed, 7 passed` / `EXIT=1` at ba3443a9ae, the gained diff touches no test file, and the merge-head arms add no id (02b fails 9 ids all present in the base's 31; 02a fails 12 of the after arm's 13), though the gate ran in the worker's worktree inside its allocation rather than as a submitted all_debug job.",
+    "goal": "the goal is tests/test_lane_killed_run_is_blocked.py passing in full on the primary branch; the commits gained since the reviewed head 66c0b315 are a merge of primary at 9ad5e64e87 and an evidence record, and reckon/crew/recovery_classification.py:1841-1846 keeps both guards, so the goal still holds at d57d36f.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104913322036-qwnw-red-file-lane-killed-run-is-blocked/manifest.md; it records the merge conflict and both conjuncts kept, tests `env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_killed_run_is_blocked.py`, baseline_suite and after_suite both 58 passed with failure_ids [], and one outside_scope id in test_a_worker_never_outlives_its_supervisor.py.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked; the gained diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html (31 added, 4 removed) and reckon/crew/recovery_classification.py (the arm and its import), all inside them."
+  },
+  "justifications": {
+    "durability": "every fixture in tests/test_lane_killed_run_is_blocked.py:61-101 writes a stream and names it in the pointer's `log_path` while setting `process_alive: False`, and `_spawn_evidence` (reckon/crew/recovery_liveness.py:727-751) counts `log_path` as its evidence, so each of the two conjuncts at reckon/crew/recovery_classification.py:1843-1846 is masked by the other and neither half reddens the ten-case gate when reinstated.",
+    "evidence": "the four rows added at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html:110-124 cite fbeb09e7fb and reconcile with the `# revision: fbeb09e7fb941bfe12e16423542b28a19b6689dd` headers of logs/gate-merge.log, logs/after-merge-arm.log, logs/arm-merge-02b.log and logs/arm-merge-02a.log, whose last lines read `EXIT=0`, `EXIT=0`, `9 failed, 381 passed` / `EXIT=1` and `12 failed, 382 passed` / `EXIT=1`; the manifest's baseline_suite and after_suite both read `58 passed` / `EXIT=0` (logs/base-merge-arm.log, logs/after-final-arm.log), so added_failure_count is 0 over the pair, but the same table's older rows at :86 and :102 still name a revision and a count their cited logs contradict.",
+    "fit": "the merge adds `_spawn_evidence` to the existing alphabetised from-import block at reckon/crew/recovery_classification.py:3307, between `_run_stream_quiet_seconds` and `_stranded_launch`, and the paragraph above the arm at :1951-1962 is in the surrounding comment style.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1841-1846 at d57d36f carries both guards, and logs/gate-final.log heads `# revision: d57d36f52d8f993ebf013a2075f1f99cf5c8b4b1` and ends `10 passed in 0.96s` / `EXIT=0`, so the goal the node was dispatched for still holds after the conflict at that arm.",
+    "reuse": "the merge imports the existing owner `_spawn_evidence` at reckon/crew/recovery_liveness.py:727 rather than restating its five evidence tests; a capability search over reckon/crew for another reader of the same evidence found only `_stranded_launch`, which calls that same owner at recovery_liveness.py:776.",
+    "scope_discipline": "the gained diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html and reckon/crew/recovery_classification.py only, and both sit inside the paths the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is tests/test_lane_killed_run_is_blocked.py passing in full on the primary branch; the commits gained since the reviewed head 66c0b315 are a merge of primary at 9ad5e64e87 and an evidence record, and reckon/crew/recovery_classification.py:1841-1846 keeps both guards, so the goal still holds at d57d36f.\nVERDICT done_when: the done_when asks for the named file passing at head with SLURM_JOB_ID unset, each cause verdicted, no assertion deleted or weakened, and an arm over the affected files adding no failure; logs/gate-final.log records the run at d57d36f with 10 passed / EXIT=0, logs/negative-control-base.log records 3 failed, 7 passed / EXIT=1 at ba3443a9ae, the gained diff touches no test file, and the merge-head arms add no id (02b fails 9 ids all present in the diff's base list of 31; 02a fails 12 of the after arm's 13), though the gate ran in the worker's worktree inside its allocation rather than as a submitted all_debug job.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked; the gained diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html (31 added, 4 removed) and reckon/crew/recovery_classification.py (the arm at :1841-1846 and its import at :3307), all inside them.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104913322036-qwnw-red-file-lane-killed-run-is-blocked/manifest.md; it records the merge conflict and both conjuncts kept, the gate command, baseline_suite and after_suite both 58 passed with failure_ids [], and one outside_scope id in test_a_worker_never_outlives_its_supervisor.py.\nVERDICT diff: read commit by commit against 66c0b315904d: fbeb09e7fb is a merge of primary at 9ad5e64e87 whose resolution of reckon/crew/recovery_classification.py adds `and not _spawn_evidence(record)` beside the existing `alive is not False` plus the import, and d57d36f52d is 31 added lines in the evidence fragment; no test file and no other product file changed.\nCALL_SITES: reckon/crew/query.py:597, reckon/crew/query.py:1075, reckon/crew/recovery_watch.py:750, reckon/crew/recovery_watch.py:1640, reckon/crew/directory.py:342, reckon/crew/queue_landing.py:1704, reckon/crew/resumption.py:2675, reckon/crew/obligations.py:1663, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1841-1846 at d57d36f carries both guards, and logs/gate-final.log heads with revision d57d36f52d8f and ends 10 passed / EXIT=0.\nSCORE evidence: 16\nJUSTIFICATION evidence: the rows added at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html:110-124 reconcile with the revision headers of logs/gate-merge.log, after-merge-arm.log, arm-merge-02b.log and arm-merge-02a.log, while :86 and :102 still name a revision and a count their logs contradict.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html and reckon/crew/recovery_classification.py only, both inside the manifest's declared paths.\nSCORE durability: 12\nJUSTIFICATION durability: every fixture in tests/test_lane_killed_run_is_blocked.py:61-101 writes a stream into the pointer's log_path and sets process_alive False, and _spawn_evidence at reckon/crew/recovery_liveness.py:727-751 counts log_path, so each conjunct at reckon/crew/recovery_classification.py:1843-1846 masks the other and neither half reddens the gate when reinstated.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1841-1846 follows the twice-repaired comment paragraph above it at :1951-1962 and imports the owner through the alphabetised block at :3307.\nSCORE reuse: 20\nJUSTIFICATION reuse: the merge imports _spawn_evidence from its owner reckon/crew/recovery_liveness.py:727 rather than restating the five evidence tests, and the capability search found only _stranded_launch, which calls the same owner at recovery_liveness.py:776.\nFINDING tests/test_lane_killed_run_is_blocked.py:85 non-blocking: every fixture writes a stream at the pointer's log_path and sets process_alive False, so _spawn_evidence is true for all ten and deleting either conjunct of the merged arm alone leaves the gate green.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-lane-killed-run-is-blocked.html:86 non-blocking: the previous review's two findings are unfixed; row :86 names 64b94b1ba7 where logs/gate-head.log heads 66c0b315904d and row :102 claims 0 added for batch 02a.\n",
+  "review_run_id": "r-20261116T233357720864-review-of-qwnw-red-file-lane-killed-run-is-blocked-d57d36f52d8f",
+  "reviewed_base_sha": "66c0b315904da98ae0e408dfac6479d44b19b021",
+  "reviewed_head_sha": "d57d36f52d8f993ebf013a2075f1f99cf5c8b4b1",
+  "reviewed_run_id": "r-20261116T104913322036-qwnw-red-file-lane-killed-run-is-blocked",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T233357720864-review-of-qwnw-red-file-lane-killed-run-is-blocked-d57d36f52d8f"
+  },
+  "reviewer_run_id": "r-20261116T233357720864-review-of-qwnw-red-file-lane-killed-run-is-blocked-d57d36f52d8f",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:42:06.400521+00:00",
+  "total": 105
+}

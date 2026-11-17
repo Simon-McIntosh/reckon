@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T16:22:45.634Z",
+  "dispatched_at": "2026-11-16T16:21:42Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner.html",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate row names revision b7485cce8d, while the head-arm log committed beside it opens with '# revision: d90637e4791d5802ab640d93e82e47608b1e2630' and the reviewed head is 79d92d815e, so the record presents three different revisions for one passing run and a reader cannot tell which run the tabulated figure came from."
+    },
+    {
+      "file": "tests/test_a_racing_loser_outlives_a_withdrawn_winner.py",
+      "line": "179",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the refusal text against derived_wait taken from dispatch_claims_module.recent_claim_grace_seconds() at :172, the same product function the refusal message is composed from, so both sides move together and a change to the bound itself keeps it green; only the clock.now >= derived_wait assertion at :181 is independent of the value under test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "The landed change is a test file and three evidence files; no production module imports or invokes them, so there is no runtime call site to examine and the CALL_SITES line records none.",
+    "diff": "Read all six commits against 69fab1372f: 5c98bfd4aa changes CLAIMED_PATH and its comment in tests/test_a_racing_loser_outlives_a_withdrawn_winner.py, the other five add and then re-record docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner.html and its two arm logs, and no product line changed.",
+    "done_when": "The done_when asks for the named file green as an all_debug job with each cause verdicted, the base red log stored beside the head run and no added failure; logs/base-arm.log and logs/head-arm.log are the two sbatch -p all_debug arms (jobs 1320269 and 1320270) with EXIT=1 and EXIT=0, the manifest names the single cause test-wrong, and I recomputed added failures as 0 from those logs, but the fragment's head row at line 55 names b7485cce8d rather than the revision its log records.",
+    "goal": "The node's goal is that tests/test_a_racing_loser_outlives_a_withdrawn_winner.py passes in full on the primary branch; commit 5c98bfd4aa retargets the fixture's claimed path at tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:41 and the file reads 5 passed EXIT=0 at head, which my own re-run of the same command reproduced.",
+    "manifest": "Read; status complete, six commits 5c98bfd4aa through 79d92d815e, changed_paths the four landed files, tests the pytest command for the named file, baseline_suite at 69fab1372f with 3 failure ids and after_suite at d90637e479 with 0, and rubric lines for all six dimensions.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment, plus docs/figures/queued-work-needs-no-workaround/<node>; every path in git diff --stat 69fab1372f..79d92d815e lies inside them and nothing under reckon/ or docs/figures/ changed."
+  },
+  "justifications": {
+    "durability": "Reinstating src/claimed.py is exactly the recorded base arm, which reads 3 failed and 2 passed EXIT=1 at 69fab1372f and names the three ids, so the retarget is guarded by a red run rather than by a green one.",
+    "evidence": "logs/head-arm.log names its revision, tree, command and all_debug job 1320270 and ends EXIT=0, but the fragment table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner.html:55 names b7485cce8d, a revision the log stored beside it does not support.",
+    "fit": "The retarget keeps the file's module-constant idiom and states its reason in a comment at tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:38-41, matching the surrounding PEER_REGISTERED_AT and OWN_REGISTERED_AT comments.",
+    "goal_fidelity": "The goal is tests/test_a_racing_loser_outlives_a_withdrawn_winner.py passing in full on the primary branch, and tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:41 is the only behavioural line changed while my own re-run of that file at 79d92d815e reads 5 passed EXIT=0.",
+    "reuse": "The change adds no definition and retargets onto an entry of reckon/crew/runs.py:1821 DEFAULT_EXCLUSIVE_PATHS, though it writes the entry as a literal where tests/test_an_undeclared_project_shares_its_source_files.py:201 reads that list from its owner.",
+    "scope_discipline": "git diff --stat 69fab1372f..79d92d815e touches only tests/test_a_racing_loser_outlives_a_withdrawn_winner.py and the three docs/evidence/fragments/queued-work-needs-no-workaround files, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_racing_loser_outlives_a_withdrawn_winner.py passes in full on the primary branch; commit 5c98bfd4aa retargets the fixture's claimed path at tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:41 and the file reads 5 passed EXIT=0 at head, which my own re-run of the same command reproduced.\nVERDICT done_when: the done_when asks for the named file green as an all_debug job with each cause verdicted, the base red log stored beside the head run and no added failure; logs/base-arm.log and logs/head-arm.log are the two sbatch -p all_debug arms (jobs 1320269 and 1320270) with EXIT=1 and EXIT=0, the manifest names the single cause test-wrong, and I recomputed added failures as 0 from those logs, but the fragment's head row at line 55 names b7485cce8d rather than the revision its log records.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment, plus docs/figures/queued-work-needs-no-workaround/<node>; every path in git diff --stat 69fab1372f..79d92d815e lies inside them and nothing under reckon/ or docs/figures/ changed.\nVERDICT manifest: read; status complete, six commits 5c98bfd4aa through 79d92d815e, changed_paths the four landed files, tests the pytest command for the named file, baseline_suite at 69fab1372f with 3 failure ids and after_suite at d90637e479 with 0, and rubric lines for all six dimensions.\nVERDICT diff: read all six commits against 69fab1372f: 5c98bfd4aa changes CLAIMED_PATH and its comment in tests/test_a_racing_loser_outlives_a_withdrawn_winner.py, the other five add and then re-record docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner.html and its two arm logs, and no product line changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is tests/test_a_racing_loser_outlives_a_withdrawn_winner.py passing in full, and :41 is the only behavioural line changed while my own re-run of that file at 79d92d815e reads 5 passed EXIT=0.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-arm.log names its revision, tree, command and all_debug job 1320270 and ends EXIT=0, but the fragment table entry at qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner.html:55 names b7485cce8d, which the log stored beside it does not support.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 69fab1372f..79d92d815e touches only tests/test_a_racing_loser_outlives_a_withdrawn_winner.py and three docs/evidence/fragments/queued-work-needs-no-workaround files, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating src/claimed.py is exactly the recorded base arm, which reads 3 failed and 2 passed EXIT=1 at 69fab1372f and names the three ids, so the retarget is guarded by a red run rather than a green one.\nSCORE fit: 19\nJUSTIFICATION fit: the retarget keeps the module-constant idiom and states its reason at tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:38-41, matching the PEER_REGISTERED_AT and OWN_REGISTERED_AT comments beside it.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change adds no definition and retargets onto an entry of reckon/crew/runs.py:1821 DEFAULT_EXCLUSIVE_PATHS, though it writes that entry as a literal where tests/test_an_undeclared_project_shares_its_source_files.py:201 reads the list from its owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner.html:55 non-blocking: the head gate row names revision b7485cce8d, while the head-arm log committed beside it opens with '# revision: d90637e4791d5802ab640d93e82e47608b1e2630' and the reviewed head is 79d92d815e, so the record presents three revisions for one passing run.\nFINDING tests/test_a_racing_loser_outlives_a_withdrawn_winner.py:179 non-blocking: the assertion compares the refusal text against derived_wait taken from dispatch_claims_module.recent_claim_grace_seconds() at :172, the same function the message is composed from, so both sides move together and only the clock.now >= derived_wait assertion at :181 is independent of the value under test.",
+  "review_run_id": "r-20261116T161943725242-review-of-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-79d92d815eec",
+  "reviewed_base_sha": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "reviewed_head_sha": "79d92d815eec3ac9330de43a75b7ed583c7686ba",
+  "reviewed_run_id": "r-20261116T105143397850-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner",
+  "reviewer_run_id": "r-20261116T161943725242-review-of-qwnw-red-file-a-racing-loser-outlives-a-withdrawn-winner-79d92d815eec",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T16:27:07+00:00",
+  "total": 111
+}

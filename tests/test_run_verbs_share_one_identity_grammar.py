@@ -67,9 +67,11 @@ VERBS = _single_run_verbs()
 # required-option validation does not fire before the identity check.
 MINIMAL_OPTIONS: dict[str, list[str]] = {
     "ack": ["--reason", "deferred for the sweep", "--until", "2999-01-01T00:00:00Z"],
+    "admit": [],
     "attach": ["--task", "sweep-task"],
     "check": ["--manifest"],
-    "complete": ["--gate", "passed"],
+    "complete": ["--gate", "passed", "--wait"],
+    "declare-gate": ["--command", "pytest -q"],
     "directory": [],
     "discard": [],
     "dispose": [
@@ -81,6 +83,8 @@ MINIMAL_OPTIONS: dict[str, list[str]] = {
         "reuse_search",
     ],
     "gc": [],
+    "hold": ["--reason", "sweep fixture"],
+    "merge": ["--head", "0" * 40],
     "observe": [],
     "path": ["--kind", "runs"],
     "queue drop": [],
@@ -88,11 +92,14 @@ MINIMAL_OPTIONS: dict[str, list[str]] = {
     "queue hold": [],
     "queue release": [],
     "queue reprioritise": ["--priority", "1"],
+    "record-merge": ["--merge", "0" * 40, "--reason", "sweep fixture"],
+    "release": ["--reason", "sweep fixture"],
     "repair": ["--status", "complete", "--reason", "sweep fixture"],
     "resume": ["--advice", "sweep fixture"],
     "shadow": ["--session", "sweep-session", "--backend", "local-worker"],
     "stop": [],
     "supersede-review": ["--reason", "sweep fixture"],
+    "tell": ["sweep message"],
     "verify-gate": ["--checkout-path", "."],
     "view": [],
     "widen": ["--write-path", "reckon/sweep_fixture.py"],
@@ -105,13 +112,17 @@ MINIMAL_OPTIONS: dict[str, list[str]] = {
 # verb that completes on that fixture.
 ACCEPTED: dict[str, tuple[int, str]] = {
     "ack": (0, ""),
+    "admit": (1, "named admission requires a queued request"),
     "attach": (1, "is a None launch"),
     "check": (1, "records no node definition"),
     "complete": (1, "cannot be promoted"),
+    "declare-gate": (0, ""),
     "directory": (0, ""),
     "discard": (0, ""),
     "dispose": (1, "no stored review for run"),
     "gc": (1, "no record names a worktree"),
+    "hold": (0, ""),
+    "merge": (1, "no registered mount to land a head in"),
     "observe": (0, ""),
     "path": (0, ""),
     "queue drop": (1, "not one of"),
@@ -119,11 +130,14 @@ ACCEPTED: dict[str, tuple[int, str]] = {
     "queue hold": (1, "crew stop"),
     "queue release": (1, "not held"),
     "queue reprioritise": (1, "not one of"),
+    "record-merge": (1, "names no repository to resolve the merge in"),
+    "release": (1, "carries no hold to release"),
     "repair": (1, "has no manifest to repair"),
     "resume": (1, "is not a spawned run"),
     "shadow": (1, "is not a committed ledger record"),
     "stop": (1, "has no process to stop"),
     "supersede-review": (1, "names no committed row"),
+    "tell": (1, "records no manifest path"),
     "verify-gate": (1, "has no row in the"),
     "view": (0, ""),
     "widen": (1, "records no node holding a write scope"),
@@ -263,48 +277,112 @@ def _store_review(
     fingerprint: str,
     run_id: str,
     finding: str,
-) -> None:
-    plan_review.store_plan_review(
+    timestamp: str = "",
+) -> Path:
+    return plan_review.store_plan_review(
         {
             "project": "sample",
             "plan_slug": "fixture",
             "plan_version": version,
             "rubric": rubric,
+            "review_run_id": run_id,
             "reviewed_blob_sha": run_id[-1] * 40,
             "plan_fingerprint": fingerprint,
             "findings": [{"id": finding, "type": "reuse", "text": "duplicate"}],
             "responses": {},
-            "review_run_id": run_id,
+            **({"timestamp": timestamp} if timestamp else {}),
         },
         base_dir=config_home / "crew" / "reviews",
     )
 
 
-def _two_covering_reviews(config_home: Path, plan_path: Path, finding: str) -> None:
-    _store_review(
+def _two_covering_reviews(
+    config_home: Path, plan_path: Path, finding: str
+) -> tuple[Path, Path]:
+    """Store a design and a content review that both raise the same finding.
+
+    The pair's order is written down rather than left to the second the store
+    happened to write in: the content review read the plan's current content,
+    which is the later reading, and the timestamps say so.
+    """
+    design = _store_review(
         config_home,
         rubric="design",
         version=0,
         fingerprint="an-earlier-version",
         run_id="r-design-0",
         finding=finding,
+        timestamp="2026-01-01T00:00:00+00:00",
     )
-    _store_review(
+    content = _store_review(
         config_home,
         rubric="content",
         version=1,
         fingerprint=plan_review.plan_fingerprint(plan_path),
         run_id="r-content-1",
         finding=finding,
+        timestamp="2026-01-02T00:00:00+00:00",
     )
+    return design, content
 
 
-def test_a_finding_carried_by_two_covering_reviews_is_refused_naming_both(
+def _strip_the_order(*paths: Path) -> None:
+    """Leave both records with neither key an answer could place them by."""
+    for path in paths:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record.pop("timestamp", None)
+        record.pop("plan_commit", None)
+        path.write_text(json.dumps(record), encoding="utf-8")
+
+
+def test_a_finding_carried_by_two_covering_reviews_lands_on_the_newest(
     reviewed_project: tuple[Path, Path, Path],
 ) -> None:
     config_home, _repo, plan_path = reviewed_project
     finding = "dup-1"
     _two_covering_reviews(config_home, plan_path, finding)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "review",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--answer",
+            finding,
+            "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
+        ],
+    )
+    # Finding ids are reused between rounds, so an answer naming only the id
+    # belongs to the newest covering review — the one a reader sees.
+    assert result.exit_code == 0, result.output
+    assert finding not in json.loads(result.stdout)["unanswered"], result.stdout
+    stored = {
+        plan_review._record_run_id(record): record
+        for record in plan_review.list_plan_reviews(
+            "sample", base_dir=config_home / "crew" / "reviews"
+        )
+    }
+    assert stored["r-content-1"]["responses"][finding]["action"] == "acted", stored[
+        "r-content-1"
+    ]
+    assert stored["r-design-0"]["responses"] == {}, stored["r-design-0"]
+
+
+def test_an_unordered_pair_of_covering_reviews_is_refused_naming_both(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    config_home, _repo, plan_path = reviewed_project
+    finding = "dup-1"
+    design, content = _two_covering_reviews(config_home, plan_path, finding)
+    # Neither record carries a plan commit or a stored timestamp, so the store
+    # can place neither against the other and refuses rather than guessing.
+    _strip_the_order(design, content)
 
     result = CliRunner().invoke(
         cli_module.main,

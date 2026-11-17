@@ -1,19 +1,27 @@
-"""A directory write claim over a live claim warns, and asks before it proceeds.
+"""A directory write claim over an unmergeable live claim warns, and asks first.
 
 A declared directory sweeps up every path under it, so it can collide with a
-peer's exact file claim without either caller intending it. The check here is
-narrow on purpose: a directory claim that overlaps a live run warns, names the
+peer's exact file claim without either caller intending it. The rule the code
+keeps is narrower than "every directory claim asks": a claim under a shared
+region shares as the files beneath it do, because the worktree isolates the
+edits and git reconciles them at the merge. What cannot be reconciled asks
+first — a directory claim that is, contains, or sits under an exclusive pattern,
+which for a project that declares nothing is the built-in artifact classes
+(plans, recorded state, figures, archived evidence, lockfiles, generated
+receipts) and for any project is its own declared ``exclusive_patterns``.
+
+So a directory claim over a live claim in an unmergeable region warns, names the
 overlapping claim, its owning run and the exact alternative the brief's files
 give, and does not proceed; the same claim proceeds only when it carries
 ``--accept-directory-claim``, and the acceptance is recorded on the result. A
-file path that overlaps nothing, and a directory that overlaps no live claim,
-dispatch as before with no warning.
+file path that overlaps nothing, a directory that overlaps no live claim, and a
+mergeable directory claim over a peer's file dispatch as before with no warning.
 
 Every case drives the ``crew dispatch`` entry the operator uses, through its
 ``--dry-run`` mode, so the warning is the one a real dispatch would raise and no
-worktree or process is created. The live claimant's launcher pid is this process,
-so its claim is binding for the honest reason — its worker is alive — rather than
-because a stub named an exited pid.
+worktree or process is created. The live claimant's launcher pid is this
+interpreter, so its claim is binding for the honest reason — its worker is alive
+— rather than because a stub named an exited pid.
 
 A declared directory need not exist on disk yet: a node writes into a topic
 directory the live claim already covers, so an absent path with no file suffix
@@ -43,6 +51,8 @@ SESSION = "session-directory-claim"
 CLAIMANT_RUN = "r-20260101T000000000000-holding-a-test-file"
 CLAIMANT_NODE = "peer-holding-one-test-file"
 CLAIMANT_PATH = "tests/test_x.py"
+#: A file inside a default-exclusive class, which no merge reconciles.
+EXCLUSIVE_CLAIM = "docs/figures/topic/panel.svg"
 REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
 CONFIG: dict[str, Any] = {
@@ -97,6 +107,9 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     tests = repo / "tests"
     tests.mkdir()
     (tests / "test_x.py").write_text("# a peer's test file\n", encoding="utf-8")
+    figures = repo / "docs" / "figures" / "topic"
+    figures.mkdir(parents=True)
+    (figures / "panel.svg").write_text("<svg/>\n", encoding="utf-8")
     (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
     _git(repo, "init", "-q", "-b", "main")
     _git(repo, "config", "user.email", "worker@example.invalid")
@@ -143,7 +156,9 @@ def _dry_run(
     accept_directory_claim: bool = False,
 ):
     """One ``crew dispatch --dry-run`` issuing from the operator's hand."""
-    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *a, **k: CONFIG)
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_resolved_flight", lambda *a, **k: CONFIG
+    )
     arguments = [
         "crew",
         "dispatch",
@@ -182,20 +197,24 @@ def _warnings(payload: dict[str, Any]) -> list[str]:
     return [str(line) for line in payload.get("warnings") or ()]
 
 
+def _directory_warnings(payload: dict[str, Any]) -> list[str]:
+    return [line for line in _warnings(payload) if "claims a directory" in line]
+
+
 def test_a_directory_claim_over_a_live_file_claim_warns_and_does_not_proceed(
     home: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The defect: a broad directory claim must not sweep over a peer silently."""
     _config_home, repo = home
-    _publish_claim(repo, [CLAIMANT_PATH])
+    _publish_claim(repo, [EXCLUSIVE_CLAIM])
 
-    result = _dry_run(repo, monkeypatch, "tests")
+    result = _dry_run(repo, monkeypatch, "docs/figures/topic")
     payload = json.loads(result.output)
 
     assert result.exit_code == 2, result.output
     assert payload["ok"] is False
     warning = "\n".join(_warnings(payload))
-    assert CLAIMANT_PATH in warning
+    assert EXCLUSIVE_CLAIM in warning
     assert CLAIMANT_RUN in warning
     assert CLAIMANT_NODE in warning
     assert "--accept-directory-claim" in warning
@@ -206,14 +225,16 @@ def test_the_warning_lists_the_files_the_brief_names_as_the_alternative(
 ) -> None:
     """The exact alternative is the brief's own files, not the whole directory."""
     _config_home, repo = home
-    _publish_claim(repo, [CLAIMANT_PATH])
+    _publish_claim(repo, [EXCLUSIVE_CLAIM])
 
-    result = _dry_run(repo, monkeypatch, "tests", "tests/test_mine.py")
+    result = _dry_run(
+        repo, monkeypatch, "docs/figures/topic", "docs/figures/topic/panel-2.svg"
+    )
     payload = json.loads(result.output)
 
     assert result.exit_code == 2, result.output
     warning = "\n".join(_warnings(payload))
-    assert "tests/test_mine.py" in warning
+    assert "docs/figures/topic/panel-2.svg" in warning
 
 
 def test_the_flag_lets_the_directory_claim_proceed_and_is_recorded(
@@ -221,15 +242,17 @@ def test_the_flag_lets_the_directory_claim_proceed_and_is_recorded(
 ) -> None:
     """With the flag the same claim proceeds, and the exception is written down."""
     _config_home, repo = home
-    _publish_claim(repo, [CLAIMANT_PATH])
+    _publish_claim(repo, [EXCLUSIVE_CLAIM])
 
-    result = _dry_run(repo, monkeypatch, "tests", accept_directory_claim=True)
+    result = _dry_run(
+        repo, monkeypatch, "docs/figures/topic", accept_directory_claim=True
+    )
     payload = json.loads(result.output)
 
     assert result.exit_code == 0, result.output
     assert payload["ok"] is True
     acceptances = payload.get("directory_claim_acceptances") or []
-    assert [row["claimed_path"] for row in acceptances] == [CLAIMANT_PATH]
+    assert [row["claimed_path"] for row in acceptances] == [EXCLUSIVE_CLAIM]
     assert any("--accept-directory-claim" in line for line in _warnings(payload))
 
 
@@ -262,9 +285,7 @@ def test_a_declared_file_overlapping_nothing_dispatches_without_a_warning(
 
     assert result.exit_code == 0, result.output
     assert payload["ok"] is True
-    assert not any(
-        "claims a directory overlapping" in line for line in _warnings(payload)
-    )
+    assert _directory_warnings(payload) == []
     assert not payload.get("directory_claim_acceptances")
 
 
@@ -279,9 +300,28 @@ def test_a_directory_overlapping_no_live_claim_dispatches_without_a_warning(
 
     assert result.exit_code == 0, result.output
     assert payload["ok"] is True
-    assert not any(
-        "claims a directory overlapping" in line for line in _warnings(payload)
-    )
+    assert _directory_warnings(payload) == []
+    assert not payload.get("directory_claim_acceptances")
+
+
+def test_a_mergeable_directory_claim_over_a_live_file_claim_dispatches(
+    home: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A directory claim shares as its files do, so a mergeable pair never asks.
+
+    ``tests/`` is not an exclusive class and this project declares none, so the
+    worktree isolates both edits and the merge reconciles them: the claim
+    proceeds with no acceptance to record and no warning to read.
+    """
+    _config_home, repo = home
+    _publish_claim(repo, [CLAIMANT_PATH])
+
+    result = _dry_run(repo, monkeypatch, "tests")
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["ok"] is True
+    assert _directory_warnings(payload) == []
     assert not payload.get("directory_claim_acceptances")
 
 
@@ -290,13 +330,13 @@ def test_an_absent_directory_inside_a_live_claim_warns_and_does_not_proceed(
 ) -> None:
     """A topic directory not yet on disk still sits inside the live claim."""
     _config_home, repo = home
-    _publish_claim(repo, ["docs/evidence"])
+    _publish_claim(repo, ["docs/figures/topic"])
 
-    result = _dry_run(repo, monkeypatch, "docs/evidence/new-topic")
+    result = _dry_run(repo, monkeypatch, "docs/figures/topic/new-panel")
     payload = json.loads(result.output)
     warning = "\n".join(_warnings(payload))
 
-    assert "docs/evidence" in warning
+    assert "docs/figures/topic" in warning
     assert "--accept-directory-claim" in warning
     assert result.exit_code == 2, result.output
     assert payload["ok"] is False
@@ -308,18 +348,43 @@ def test_the_flag_lets_an_absent_directory_claim_proceed(
 ) -> None:
     """With the flag the absent-directory claim proceeds, and is recorded."""
     _config_home, repo = home
-    _publish_claim(repo, ["docs/evidence"])
+    _publish_claim(repo, ["docs/figures/topic"])
 
     result = _dry_run(
-        repo, monkeypatch, "docs/evidence/new-topic", accept_directory_claim=True
+        repo,
+        monkeypatch,
+        "docs/figures/topic/new-panel",
+        accept_directory_claim=True,
     )
     payload = json.loads(result.output)
 
     assert result.exit_code == 0, result.output
     assert payload["ok"] is True
     acceptances = payload.get("directory_claim_acceptances") or []
-    assert {row["claimed_path"] for row in acceptances} == {"docs/evidence"}
-    assert "docs/evidence/new-topic" in {row["candidate_path"] for row in acceptances}
+    assert {row["claimed_path"] for row in acceptances} == {"docs/figures/topic"}
+    assert "docs/figures/topic/new-panel" in {
+        row["candidate_path"] for row in acceptances
+    }
+
+
+def test_an_absent_directory_inside_a_mergeable_claim_dispatches(
+    home: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An absent topic directory under a shared claim shares like its files.
+
+    The live run holds ``tests/``, whose subtree git reconciles edit by edit, so
+    the absent ``tests/new-topic`` is not a claim that has to ask.
+    """
+    _config_home, repo = home
+    _publish_claim(repo, ["tests"])
+
+    result = _dry_run(repo, monkeypatch, "tests/new-topic")
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["ok"] is True
+    assert _directory_warnings(payload) == []
+    assert not payload.get("directory_claim_acceptances")
 
 
 def test_an_absent_directory_claim_classifier_judges_a_suffix_as_a_file(
@@ -331,7 +396,7 @@ def test_an_absent_directory_claim_classifier_judges_a_suffix_as_a_file(
     alone: no suffix and a path-component prefix of the live claim. A path with
     a file suffix inside the same claim names a file, not a directory.
     """
-    claim = tmp_path / "docs" / "evidence"
+    claim = tmp_path / "docs" / "figures"
     assert _directory_claim_overlaps(claim / "new-topic", claim)
     assert not _directory_claim_overlaps(claim / "new-topic.html", claim)
     assert not _directory_claim_overlaps(claim / "sibling" / "other.py", claim)
@@ -343,18 +408,18 @@ def test_an_absent_dotted_directory_inside_a_live_claim_warns_and_does_not_proce
     """A topic directory whose name carries a dot is still a directory.
 
     A version-style topic name such as ``2026.09`` is declared by its tree and
-    sits inside the live claim, so it must warn exactly as ``new-topic`` does;
+    sits inside the live claim, so it must warn exactly as ``new-panel`` does;
     reading its ``.09`` as a file extension would let the broad claim proceed
     unseen, the silent collision this check exists to prevent.
     """
     _config_home, repo = home
-    _publish_claim(repo, ["docs/evidence"])
+    _publish_claim(repo, ["docs/figures/topic"])
 
-    result = _dry_run(repo, monkeypatch, "docs/evidence/2026.09")
+    result = _dry_run(repo, monkeypatch, "docs/figures/topic/2026.09")
     payload = json.loads(result.output)
     warning = "\n".join(_warnings(payload))
 
-    assert "docs/evidence" in warning
+    assert "docs/figures/topic" in warning
     assert "--accept-directory-claim" in warning
     assert result.exit_code == 2, result.output
     assert payload["ok"] is False
@@ -366,30 +431,35 @@ def test_the_flag_lets_an_absent_dotted_directory_claim_proceed(
 ) -> None:
     """With the flag the dotted absent-directory claim proceeds, and is recorded."""
     _config_home, repo = home
-    _publish_claim(repo, ["docs/evidence"])
+    _publish_claim(repo, ["docs/figures/topic"])
 
     result = _dry_run(
-        repo, monkeypatch, "docs/evidence/2026.09", accept_directory_claim=True
+        repo,
+        monkeypatch,
+        "docs/figures/topic/2026.09",
+        accept_directory_claim=True,
     )
     payload = json.loads(result.output)
 
     assert result.exit_code == 0, result.output
     assert payload["ok"] is True
     acceptances = payload.get("directory_claim_acceptances") or []
-    assert {row["claimed_path"] for row in acceptances} == {"docs/evidence"}
-    assert "docs/evidence/2026.09" in {row["candidate_path"] for row in acceptances}
+    assert {row["claimed_path"] for row in acceptances} == {"docs/figures/topic"}
+    assert "docs/figures/topic/2026.09" in {
+        row["candidate_path"] for row in acceptances
+    }
 
 
-def test_age_names_a_directory_and_a_file_extension_names_a_file(
+def test_a_dotted_directory_name_and_a_file_extension_name_a_file(
     tmp_path: Path,
 ) -> None:
     """A dotted directory name and a leaf file name are told apart by their name.
 
     The suffix alone does not settle it: a numeric suffix such as ``.09`` is a
-    directory name, while an alphabetic extension such as ``.html`` names a
-    leaf file inside the peer's claim.
+    directory name, while an alphabetic extension such as ``.svg`` names a leaf
+    file inside the peer's claim.
     """
-    claim = tmp_path / "docs" / "evidence"
+    claim = tmp_path / "docs" / "figures"
     assert _directory_claim_overlaps(claim / "2026.09", claim)
     assert _directory_claim_overlaps(claim / "2026.09.15", claim)
     assert not _directory_claim_overlaps(claim / "notes.html", claim)

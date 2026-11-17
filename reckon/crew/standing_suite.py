@@ -270,7 +270,7 @@ def run(
     started = time.monotonic()
     over_budget = False
     exit_status: int | None = None
-    with log_path.open("w", encoding="utf-8") as log_file:
+    with log_path.open("x", encoding="utf-8") as log_file:
         try:
             proc = subprocess.Popen(
                 command,

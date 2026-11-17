@@ -216,5 +216,21 @@
    ]
   }
  ],
- "base_correction": "2026-11-16: corrected before any replay was dispatched. The first draft took each section's base as the parent of the earliest commit its ledger rows list, but a ledger row lists only a run's last commit, which for six sections is an evidence-only commit whose parent already holds the section's code. The base is now the earliest original run's dispatch base (base_sha), and changed_paths is that run's diff from base to head outside evidence; the section choice and seed are unchanged. The first-draft base is kept per section as base_from_first_landed_commit_parent."
+ "base_correction": "2026-11-16: corrected before any replay was dispatched. The first draft took each section's base as the parent of the earliest commit its ledger rows list, but a ledger row lists only a run's last commit, which for six sections is an evidence-only commit whose parent already holds the section's code. The base is now the earliest original run's dispatch base (base_sha), and changed_paths is that run's diff from base to head outside evidence; the section choice and seed are unchanged. The first-draft base is kept per section as base_from_first_landed_commit_parent.",
+ "exclusions": [
+  {
+   "plan": "workers-spend-fewer-tokens-per-landed-node",
+   "section": "s4",
+   "orders": [
+    25,
+    31,
+    37,
+    38,
+    42,
+    58
+   ],
+   "reason": "the local lane's dispatch refused the first s4 replay on context fit: estimated 306578 usable input tokens against a 230144 token window, dominated by reckon/crew/dispatch_launch.py, docs/_shared/flight.schema.json and reckon/_backends.py in its write paths. Every local arm (clive, clive-anchored, omp-local, clive replicate) has that window, so the section cannot be paired and is excluded for all six arms before any of its replays ran.",
+   "recorded": "2026-11-16"
+  }
+ ]
 }

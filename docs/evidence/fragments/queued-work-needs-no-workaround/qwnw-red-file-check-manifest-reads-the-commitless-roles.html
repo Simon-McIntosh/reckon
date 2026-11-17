@@ -1,0 +1,60 @@
+<section id="qwnw-red-file-check-manifest-reads-the-commitless-roles-landing">
+  <h2>The manifest check reads the commitless roles it was written for</h2>
+
+  <p><strong>What changed.</strong> One test file:
+  <code>tests/test_check_manifest_reads_the_commitless_roles.py</code>. Its
+  fixture manifest did not declare <code>messages_received</code>, a key
+  <code>crew check --manifest</code> began reconciling against a run's own
+  delivery receipts after this file was written, so all five cases failed on
+  that finding whether or not the commitless-role rule they assert held. The
+  fixture's run has an empty inbox, so the fixture now owes
+  <code>messages_received: none</code>. The commitless-role rule itself is
+  correct at head and needed no product change: <code>investigate</code> with
+  <code>commits: none</code> or <code>commits: []</code> reads clean, and the
+  paired refusals for <code>implement</code> still report
+  <code>status is complete but no commit is recorded</code>.</p>
+
+  <p>No assertion was deleted, weakened or re-pinned. The five cases still
+  assert the same four rules they named before the fixture gained a key: a
+  read-only role promotes with no commit, a role that owes a commit is refused
+  without one, a zero is not a citation, and a real citation passes.</p>
+
+  <h3 id="qwnw-red-file-check-manifest-reads-the-commitless-roles-arms">Measured</h3>
+
+  <table id="qwnw-red-file-check-manifest-reads-the-commitless-roles-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's test file, base</td>
+        <td><code>6fa76c49f4</code>, pre-fix tree</td>
+        <td>5 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's test file, head, as a job on <code>all_debug</code>
+        with <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>dfe1673f8c</code>, the node's worktree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite, base</td>
+        <td><code>6fa76c49f4</code> content, scratch tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite, after</td>
+        <td><code>dfe1673f8c</code>, the node's worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> report nothing
+  on the changed path.</p>
+
+  <h3 id="qwnw-red-file-check-manifest-reads-the-commitless-roles-control">Negative control</h3>
+
+  <p>Every one of the five cases fails at the base revision, and the log names
+  the branch each one takes. The two <code>investigate</code> cases and the
+  positive control fail with
+  <code>messages_received: no delivery receipt was recorded, so the manifest
+  must say `messages_received: none`</code>; the two <code>implement</code>
+  refusals fail because the same finding is appended to the commit finding they
+  assert, so <code>findings == [COMMIT_FINDING]</code> sees two entries. That
+  the four commitless-role rules were already satisfied at the base revision is
+  visible in the same log: the commit finding appears exactly where it should,
+  and nowhere else.</p>
+</section>

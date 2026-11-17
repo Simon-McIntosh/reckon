@@ -1,0 +1,52 @@
+<section id="qwnw-red-file-resume-anchors-the-run-harness-home-run">
+<h3>A red file that was already green at head: the anchor guard and its control</h3>
+<p>The file passes in full at the merged head, so this node changes no product and no test line. The recorded three failures at <code>8d50b0333f</code> do not reproduce in isolation at that same revision either; what the record shows is recovered here as a mutation control against the guard the file declares. Every run below is an <code>all_debug</code> job (1319987, node 98dci4-clu-3144) with <code>SLURM_JOB_ID</code> unset.</p>
+
+<h4 id="qwnw-red-file-resume-anchors-the-run-harness-home-run-head">Head gate</h4>
+<pre># revision: 13345d00f75f3d4595afdb6f32600966a47fbbab
+# tree: worktree, merged fast-forward from 7061ebe583 to 5c4ff34929
+# command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_resume_anchors_the_run_harness_home.py
+# measurement_module: &lt;worktree&gt;/reckon/crew/dispatch_sessions.py
+......                                                                   [100%]
+6 passed in 8.49s
+EXIT=0</pre>
+
+<h4 id="qwnw-red-file-resume-anchors-the-run-harness-home-run-base">The assigned base arm, same revision as the recorded failures</h4>
+<pre># revision: 8d50b0333f
+# tree: archive of the revision in the run's scratch
+# command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_resume_anchors_the_run_harness_home.py
+# measurement_module: &lt;scratch&gt;/reckon/crew/dispatch_sessions.py
+......                                                                   [100%]
+6 passed in 8.40s
+EXIT=0</pre>
+<p>The three <code>[clive]</code> ids recorded in the 15 November suite log (<code>test_a_resume_reaches_the_home_the_dispatch_composed[clive]</code>, <code>test_a_pointer_that_records_no_manifest_path_falls_back_to_the_run_directory[clive]</code>, <code>test_a_resume_writes_nothing_outside_the_temporary_home[clive]</code>) are green in isolation at that revision. The one context difference probed — a leaked <code>CLAUDE_CONFIG_DIR</code>/<code>CODEX_HOME</code> in the process environment — still passes 6/6, so the reading is that the recorded failures were a full-suite interaction rather than a rule this file keeps.</p>
+
+<h4 id="qwnw-red-file-resume-anchors-the-run-harness-home-run-control">Negative control: the pointer's top-level path read alone</h4>
+<p>The file's declared mutation — <code>read the pointer's own top-level manifest path alone</code> — is applied to the head's <code>_recorded_manifest_path</code>, which then returns <code>record.get("manifest_path") or ""</code>. Both null-path cases fail on both dialects, and the resumed environment carries <code>RECKON_MANIFEST: ''</code>:</p>
+<pre># revision: 5c4ff3492998cfcf7fe9270398943770dd2cb7b2+mutation
+# tree: archive of the head with the mutation applied
+# command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_resume_anchors_the_run_harness_home.py
+FFFF..                                                                   [100%]
+FAILED tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_reaches_the_home_the_dispatch_composed[clive]
+FAILED tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_reaches_the_home_the_dispatch_composed[codex]
+FAILED tests/test_resume_anchors_the_run_harness_home.py::test_a_pointer_that_records_no_manifest_path_falls_back_to_the_run_directory[clive]
+FAILED tests/test_resume_anchors_the_run_harness_home.py::test_a_pointer_that_records_no_manifest_path_falls_back_to_the_run_directory[codex]
+4 failed, 2 passed in 8.63s
+EXIT=1</pre>
+<p>The two passing ids are the seeded-home isolation case, which asserts the operator home untouched rather than a composed home, so it is not a guard on the anchor.</p>
+
+<h4 id="qwnw-red-file-resume-anchors-the-run-harness-home-run-arms">Suite arms</h4>
+<pre># baseline, revision 7061ebe583fabf0a527ad78177b396fbd6940d61
+# tree: scratch clone of the worktree, detached at the base revision
+# command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 38.56s
+EXIT=0
+
+# after, revision 13345d00f75f3d4595afdb6f32600966a47fbbab
+# command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 45.26s
+EXIT=0</pre>
+<p>Both arms pass 58 of 58 and the change adds no failure. An earlier attempt ran the same command in an extraction of the base revision, which holds no repository, and reported <code>2 failed, 56 passed</code> — <code>test_every_staged_write_reaches_the_owner</code> and <code>test_claim_move_aside_is_not_a_staged_write</code>. The same two ids fail the same way in an extraction of the head, so the fault was the instrument rather than the revision: the fixture reads its inventory through <code>git</code> and an archive has no <code>HEAD</code> to read. The baseline recorded above is that revision in a checkout. <code>ruff check</code> and <code>ruff format --check</code> on the file report nothing at head. Both runs above are at <code>13345d00f</code>; the commit carrying this fragment follows it and changes only this file.</p>
+</section>

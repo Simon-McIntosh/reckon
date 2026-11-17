@@ -1,0 +1,74 @@
+<section id="qwnw-red-file-crew-recovery-cause">
+<h2>A pre-spawn label no longer outranks the worker it left behind</h2>
+<p>The named file is <code>tests/test_crew_recovery.py</code>. At the base revision
+<code>f0cbdd0b4ebed84ee482f69efe93b1f4278cd5f1</code> it ran 19 failed and 67 passed, and all 19
+come from one cause. The product was wrong, not the tests: <code>classify_pointer</code> granted the
+pre-spawn reading on "the launch is not stranded", and a launch is not stranded when any of its
+records exist, so a pointer left at <code>phase: starting</code> that carried a worker's stream, a
+folded budget or a dead process was held at <code>running</code> for as long as it lived. On the same
+row <code>fleet_verdict.state</code> read <code>abandoned</code> while
+<code>recovery_classification</code> read <code>running</code> &mdash; one reading stating two
+outcomes, neither of them actionable. Three of the nineteen carry the second half of the same cause
+through <code>_watch_snapshot</code>, which takes its state from that same classifier row, so the
+ticker path was wrong for the same reason and not independently.</p>
+<pre># revision: f0cbdd0b4ebed84ee482f69efe93b1f4278cd5f1
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-recovery
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py
+.....F...............FFFFFFF......FFF.FFF.F.F..FF.F..................... [ 83%]
+..............                                                           [100%]
+FAILED tests/test_crew_recovery.py::test_no_manifest_no_wait_and_no_commits_still_abandons - AssertionError: assert 'running' == 'abandoned'
+FAILED tests/test_crew_recovery.py::test_refusal_stream_classifies_blocked_not_abandoned - AssertionError: assert 'running' == 'blocked'
+FAILED tests/test_crew_recovery.py::test_refusal_recovery_remedy_survives_promotion - KeyError: 'resume_remedy'
+FAILED tests/test_crew_recovery.py::test_refusal_without_a_session_states_why_no_remedy_exists - AssertionError: assert 'running' == 'blocked'
+FAILED tests/test_crew_recovery.py::test_refusal_block_matches_the_phase_observe_reports - AssertionError: assert 'running' == 'blocked'
+FAILED tests/test_crew_recovery.py::test_refusal_block_detail_states_nothing_delivered_without_a_manifest - AssertionError: assert 'running' == 'blocked'
+FAILED tests/test_crew_recovery.py::test_refusal_block_names_delivery_from_an_unverdict_manifest - AssertionError: assert 'running' == 'blocked'
+FAILED tests/test_crew_recovery.py::test_a_crash_without_a_refusal_still_abandons - AssertionError: assert 'running' == 'abandoned'
+FAILED tests/test_crew_recovery.py::test_a_truncated_json_manifest_classifies_unreadable_not_abandoned - AssertionError: assert 'running' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_the_three_manifest_outcomes_stay_distinct - AssertionError: assert {'running', 'scoring'} == {'abandoned', 'blocked', 'unreadable'}
+FAILED tests/test_crew_recovery.py::test_unreadable_pointer_snapshots_unreadable_in_the_ticker_path - AssertionError: assert 'abandoned' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_the_unreadable_detail_asserts_only_what_is_established - AssertionError: assert 'running' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_a_missing_manifest_still_abandons_with_its_existing_detail - AssertionError: assert 'running' == 'abandoned'
+FAILED tests/test_crew_recovery.py::test_every_reader_of_the_manifest_tolerates_an_unparseable_body - AssertionError: assert 'running' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_an_unknown_status_word_manifest_classifies_unreadable - AssertionError: assert 'running' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_every_reader_tolerates_the_widened_raise - AssertionError: assert 'running' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_a_dead_run_on_the_same_unreadable_manifest_stays_unreadable[status: completed quickly\ncommits: abc123\n] - AssertionError: assert 'running' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_a_dead_run_on_the_same_unreadable_manifest_stays_unreadable[status: waiting on a peer reply\ncommits: abc123\n] - AssertionError: assert 'running' == 'unreadable'
+FAILED tests/test_crew_recovery.py::test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path - AssertionError: assert 'abandoned' == 'blocked'
+19 failed, 67 passed in 73.24s
+EXIT=1</pre>
+</section>
+
+<section id="qwnw-red-file-crew-recovery-repair">
+<h2>The repair, and the four causes it covers</h2>
+<p>The evidence a spawned worker leaves &mdash; a pid, a budget folded from that worker's stream, the
+supervisor's worker record, a stream, or the launch log &mdash; is now one predicate,
+<code>_spawn_evidence</code>, in <code>reckon/crew/recovery_liveness.py</code>.
+<code>classify_pointer</code> reads it before granting the pre-spawn reading, so a launch that
+reached a worker takes the liveness arms and its refusal, its pointer's manifest and its process
+decide the row, while a launch that has spawned nothing keeps the <code>running</code> reading that
+replaced the <code>UnboundLocalError</code> of 14 November. The stranded-launch test reads the same
+predicate, so its four evidence checks are stated once rather than twice.</p>
+<p>One cause, four readings, each repaired at that one point:</p>
+<ul>
+<li><strong>A provider refusal</strong> (<code>blocked</code>): 7 ids &mdash; six through
+<code>classify_pointer</code> and one through the ticker's <code>_watch_snapshot</code>. The refusal
+stream now reaches <code>_refusal_block</code> whatever the stored phase, and that fold also supplies
+the <strong>resume remedy</strong> one of them reads (<code>KeyError: 'resume_remedy'</code>), which
+only the blocked arm attaches.</li>
+<li><strong>A present but unparseable manifest</strong> (<code>unreadable</code>): 8 ids &mdash; seven
+through the classifier and one through the ticker. The manifest read runs, and the liveness gate
+admits the parse error as a condition of the delivery.</li>
+<li><strong>No manifest and a dead process</strong> (<code>abandoned</code>): 3 ids. The liveness arms
+decide, and a dead run on an unreadable manifest stays <code>unreadable</code> rather than joining
+them.</li>
+<li><strong>The three-outcome discrimination</strong>: 1 id, which asserts all three words at once and
+so failed on whichever arm won the gate; it reads the three distinct outcomes again.</li>
+</ul>
+<p>The two ticker ids are the same cause read on the second surface, not a second cause: the
+snapshot's state is the classifier's <code>fleet_verdict</code>, so once that verdict is the
+classifier's own, the reduction says <code>blocked</code> or <code>unreadable</code> where the
+classifier does instead of collapsing both to <code>abandoned</code>.</p>
+<p>No test was edited, no assertion deleted or weakened: every one of the nineteen ids is a
+pre-existing case that encoded the rule the product had stopped keeping.</p>
+</section>

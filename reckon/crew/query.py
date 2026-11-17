@@ -774,6 +774,12 @@ def _lane_config_for(
     can be read. Rows of one project share the resolution; a configuration that
     cannot be resolved leaves the row with no reading rather than failing a
     view whose other rows are readable.
+
+    The resolution skips the local-lane selection a dispatch makes: a row's
+    lane document is named by the backend the row records, so reading it never
+    depends on this host declaring a local backend. A host that declares no
+    local backend therefore still reads every row whose lane publishes a
+    document, instead of failing the whole view.
     """
     key = (str(record.get("project") or ""), str(record.get("repo") or ""))
     # Configuration is resolved per project, so a pointer that names no project
@@ -783,11 +789,16 @@ def _lane_config_for(
     from click import ClickException
 
     from reckon.crew.queue_admission import _resolve_lane_config
+    from reckon.flight import FlightConfigError
 
     if key not in configs:
         try:
-            configs[key] = _resolve_lane_config(record)
-        except (OSError, ValueError, ClickException):
+            configs[key] = _resolve_lane_config(record, select_local=False)
+        # A host with no declared local worker route is a valid configuration
+        # (``local_backend`` absent means exactly that), and the refusal
+        # selecting it raises is a dispatch refusal, not a read failure: the
+        # row keeps no lane reading and the rest of the view stays readable.
+        except (OSError, ValueError, ClickException, FlightConfigError):
             configs[key] = {}
     return configs[key]
 

@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any, Self
 
 from reckon import _store, run_record
-from reckon._timestamps import parse_utc
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -47,13 +46,26 @@ DETAIL_FIELDS = (
 )
 
 # The query keys a reader routes through. Each is a real indexed column on the
-# runs row, extracted from the payload at insert, so a question about one run
+# runs row, extracted from the record at insert, so a question about one run
 # is answered by an index search rather than by the scan-plus-parse the flat
-# file costs. run_id is the sixth query key and is indexed by the table's
+# file costs. run_id is also a query key and is indexed by the table's
 # primary key alone. The declaration is the only place the key list is
 # spelled out; it drives both the schema and the insert, so the two cannot
 # drift.
-QUERY_KEYS = ("member", "node", "project", "completed_at", "backend")
+QUERY_KEYS = ("member", "node", "project", "completed_at", "backend", "plan")
+
+
+def _query_values(
+    payload: Mapping[str, Any], detail: Mapping[str, Any]
+) -> tuple[Any, ...]:
+    """Index the same identity the reader derives from the complete record."""
+    from reckon.ledger import row_plan
+
+    return tuple(
+        row_plan({**payload, **detail}) if key == "plan" else payload.get(key)
+        for key in QUERY_KEYS
+    )
+
 
 # The commit a run's own record file entered the tree at. Nothing routes a
 # question through it, so it is not a query key and carries no index; it is a
@@ -69,20 +81,28 @@ ROW_REVISION = "revision"
 # The runs table built from QUERY_KEYS. Precomputed once at import so the
 # schema, the indexes and the insert all come from the same declaration and
 # no caller input ever reaches a string.
-_RUNS_COLUMNS = frozenset(("run_id", "payload", ROW_REVISION, *QUERY_KEYS))
+_RUNS_COLUMNS = frozenset(
+    ("run_id", "payload", ROW_REVISION, "activity_seconds", *QUERY_KEYS)
+)
 _RUNS_COLUMN_DEFS = ", ".join(
     [
         '"run_id" TEXT PRIMARY KEY',
         *(f'"{name}" TEXT' for name in QUERY_KEYS),
         f'"{ROW_REVISION}" TEXT',
         '"payload" TEXT NOT NULL',
+        '"activity_seconds" REAL',
     ]
 )
 _RUNS_CREATE = f'CREATE TABLE IF NOT EXISTS "runs" ({_RUNS_COLUMN_DEFS});'
 _RUNS_INDEXES = "".join(
     f'CREATE INDEX IF NOT EXISTS "idx_runs_{name}" ON "runs" ("{name}");'
     for name in QUERY_KEYS
+) + (
+    'CREATE INDEX IF NOT EXISTS "idx_runs_project_activity" '
+    'ON "runs" ("project", "activity_seconds");'
+    'CREATE INDEX IF NOT EXISTS "idx_runs_activity" ON "runs" ("activity_seconds");'
 )
+_ARCHIVE_RUNS_INDEXES = _RUNS_INDEXES.replace('EXISTS "', 'EXISTS archive."')
 _RUNS_SCHEMA = _RUNS_CREATE + _RUNS_INDEXES
 # The retired-history tables live in a file of their own, created from the same
 # declarations so a retirement moves a row without losing its revision.
@@ -97,10 +117,12 @@ _RUNS_INSERT_COLUMNS = ", ".join(
         *(f'"{name}"' for name in QUERY_KEYS),
         f'"{ROW_REVISION}"',
         '"payload"',
+        '"activity_seconds"',
     ]
 )
-_RUNS_INSERT_MARKS = ", ".join(
-    "?" for _name in ("run_id", *QUERY_KEYS, ROW_REVISION, "payload")
+_RUNS_INSERT_MARKS = (
+    ", ".join("?" for _name in ("run_id", *QUERY_KEYS, ROW_REVISION, "payload"))
+    + f", run_activity_seconds(?{len(QUERY_KEYS) + 3})"
 )
 _RUNS_INSERT = (
     f'INSERT INTO "runs" ({_RUNS_INSERT_COLUMNS}) VALUES ({_RUNS_INSERT_MARKS})'  # noqa: S608
@@ -118,6 +140,7 @@ _RUNS_UPDATE_SET = ", ".join(
         '"payload" = ?',
         *(f'"{name}" = ?' for name in QUERY_KEYS),
         f'"{ROW_REVISION}" = COALESCE(?, "{ROW_REVISION}")',
+        '"activity_seconds" = run_activity_seconds(?1)',
     ]
 )
 _RUNS_UPDATE = f'UPDATE "runs" SET {_RUNS_UPDATE_SET} WHERE "run_id" = ?'  # noqa: S608
@@ -192,12 +215,13 @@ INDEX_BUSY_TIMEOUT_SECONDS = 0.2
 #: scan so the write lands once the reader is done.
 RECORD_BUSY_TIMEOUT_SECONDS = 120.0
 
-# The bound on retrying an append that lost a race for the store's write lock.
-# A lock held by a concurrent writer lasts milliseconds, so a few seconds of
-# backoff writes the row a single attempt would have lost; a store locked past
-# this bound is raised to the caller and left to the repair pass rather than
-# holding a promotion open.
-INDEX_RETRY_SECONDS = 3.0
+# The bound on retrying an append that lost a race for the store's lock. A
+# concurrent writer holds it for milliseconds, but the store keeps a rollback
+# journal, so one reader scanning it holds off every writer for as long as the
+# scan runs, and a scan of the whole store takes several seconds. A bound
+# shorter than one scan refused a promotion on every scan it met; the bound is
+# set well past the longest scan so the row is written once the reader is done.
+INDEX_RETRY_SECONDS = 120.0
 INDEX_RETRY_MAX_DELAY_SECONDS = 0.2
 
 # A scheduled pass bounds both its row transfers and its physical page moves.
@@ -316,10 +340,11 @@ def _record_rows(
 ) -> Iterator[tuple[Any, ...]]:
     """Read selected records through the single durable/detail join.
 
-    Projection and selection happen before SQLite returns any payload to Python.
-    Each query is fetched and its cursor closed before yielding, so decoding or
-    consuming its rows cannot prolong a rollback-journal read lock. Encoded rows
-    are buffered per query; identity batches stay below driver limits.
+    Plan and activity selection search their indexed columns. Activity
+    predicates consume a buffered narrow projection after its cursor closes,
+    then only matching identities fetch the requested payload.
+    Python selection, decoding and consumption therefore hold no read lock.
+    Encoded rows are buffered per query; identity batches stay below driver limits.
     """
     selected = None if run_ids is None else sorted(set(map(str, run_ids)))
     batches = (
@@ -327,53 +352,75 @@ def _record_rows(
         if selected is None
         else [selected[index : index + 500] for index in range(0, len(selected), 500)]
     )
-    if plan:
+    filtering = activity_since is not None
+    if filtering:
         from reckon import ledger
 
-        connection.create_function(
-            "record_plan",
-            1,
-            lambda value: ledger.row_plan(json.loads(value)),
-            deterministic=True,
-        )
-    if activity_since is not None:
-
-        def epoch(value):
-            stamp = parse_utc(value)
-            return stamp.timestamp() if stamp is not None else None
-
-        connection.create_function("record_epoch", 1, epoch, deterministic=True)
     for schema in schemas:
         if schema not in ("main", "archive"):
             raise ValueError(f"unknown store schema {schema!r}")
+        indexed_activity = activity_since is not None and any(
+            column[0] == "activity_seconds"
+            for column in connection.execute(
+                f'SELECT * FROM "{schema}".runs LIMIT 0'  # noqa: S608 - fixed schema
+            ).description
+        )
         for batch in batches:
             params: list[Any] = []
             columns = []
-            for column in ("r.payload", "d.detail"):
-                if fields == ("run_id",) or (
-                    column == "d.detail"
-                    and fields is not None
-                    and not any(field in DETAIL_FIELDS for field in fields)
-                ):
-                    columns.append("NULL")
-                elif fields is None:
-                    columns.append(column)
-                else:
-                    marks = ",".join("?" for _ in fields)
-                    columns.append(
-                        "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
-                        "WHEN type IN ('object','array') THEN json(value) "
-                        "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
-                        f"FROM json_each({column}) WHERE key IN ({marks}))"
+            if filtering:
+                pairs = []
+                if activity_since is not None:
+                    pairs.extend(
+                        f"'{key}', json_extract(r.payload, '$.{key}')"
+                        for key in (
+                            "launched_at",
+                            "created_at",
+                            "dispatched_at",
+                            "completed_at",
+                        )
                     )
-                    params.extend(fields)
+                columns = [f"json_object({','.join(pairs)})", "NULL"]
+            else:
+                for column in ("r.payload", "d.detail"):
+                    if fields == ("run_id",) or (
+                        column == "d.detail"
+                        and fields is not None
+                        and not any(field in DETAIL_FIELDS for field in fields)
+                    ):
+                        columns.append("NULL")
+                    elif fields is None:
+                        columns.append(column)
+                    else:
+                        marks = ",".join("?" for _ in fields)
+                        columns.append(
+                            "(SELECT json_group_object(key, CASE "  # noqa: S608 - fixed columns and parameter markers
+                            "WHEN type IN ('object','array') THEN json(value) "
+                            "WHEN type IN ('true','false') THEN json(type) ELSE value END) "
+                            f"FROM json_each({column}) WHERE key IN ({marks}))"
+                        )
+                        params.extend(fields)
             query = (
                 f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
-                f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
             )
+            if plan and batch is None and not node:
+                query += "INDEXED BY idx_runs_plan "
+            elif indexed_activity and batch is None and not node:
+                # Force the range index rather than a project-only scan when
+                # the planner has no statistics for the recent population.
+                query += (
+                    "INDEXED BY idx_runs_project_activity "
+                    if project is not None
+                    else "INDEXED BY idx_runs_activity "
+                )
+            query += f'LEFT JOIN "{schema}".run_details d ON r.run_id = d.run_id'
             clauses = []
             if project is not None:
-                clauses.append("r.project = ?")
+                # Identity and node lookups must not fall back to walking the
+                # project's history after the activity range selected its ids.
+                clauses.append(
+                    "+r.project = ?" if batch is not None or node else "r.project = ?"
+                )
                 params.append(project)
             if batch is not None:
                 clauses.append(f"r.run_id IN ({','.join('?' for _ in batch)})")
@@ -384,35 +431,48 @@ def _record_rows(
                 clauses.append("r.node = ?")
                 params.append(node)
             if plan:
-                # Resolve the same narrow record through the ledger's owner;
-                # the store query must not invent a separate fallback order.
-                clauses.append(
-                    "record_plan(json_object("
-                    "'plan', json_extract(r.payload, '$.plan'), "
-                    "'impl_move', json_object('plan', json_extract(r.payload, '$.impl_move.plan')), "
-                    "'node_definition', json_object('plan', json_extract(d.detail, '$.node_definition.plan'))"
-                    ")) = ?"
-                )
+                clauses.append("r.plan = ?")
                 params.append(plan)
-            if activity_since is not None:
-                stamps = [
-                    f"coalesce(record_epoch(json_extract(r.payload, '$.{key}')), -1e300)"
-                    for key in (
-                        "launched_at",
-                        "created_at",
-                        "dispatched_at",
-                        "completed_at",
-                    )
-                ]
-                clauses.append(f"max({','.join(stamps)}) >= ?")
+            if indexed_activity:
+                clauses.append("r.activity_seconds >= ?")
                 params.append(activity_since)
             if clauses:
                 query += " WHERE " + " AND ".join(clauses)
+            # Range indexes also compete for unbounded project reads. Keep
+            # insertion order explicit whichever index supplies the rows.
+            query += " ORDER BY r.rowid"
             cursor = connection.execute(query, params)
             try:
                 rows = cursor.fetchall()
             finally:
                 cursor.close()
+            if filtering:
+                identities = []
+                for identity, payload, _detail in rows:
+                    record = json.loads(payload)
+                    if activity_since is not None:
+                        moment = ledger.run_activity_seconds(record)
+                        if moment is None or moment < activity_since:
+                            continue
+                    identities.append(identity)
+                # Fetch by identity only after predicate work has released the
+                # cursor, retaining the scan order even across identity batches.
+                matching = {
+                    row[0]: row
+                    for row in _record_rows(
+                        connection,
+                        schemas=(schema,),
+                        project=project,
+                        run_ids=identities,
+                        node=node,
+                        fields=fields,
+                    )
+                }
+                rows = [
+                    matching[identity]
+                    for identity in identities
+                    if identity in matching
+                ]
             yield from rows
 
 
@@ -536,13 +596,10 @@ def _read_attached_tables(connection: sqlite3.Connection, path: Path) -> list[st
     tables = ["main"]
     archive = _archive_path(path)
     if archive.is_file():
-        try:
-            connection.execute(
-                "ATTACH DATABASE ? AS archive",
-                (f"{archive.resolve().as_uri()}?mode=ro",),
-            )
-        except (OSError, sqlite3.Error):
-            return tables
+        connection.execute(
+            "ATTACH DATABASE ? AS archive",
+            (f"{archive.resolve().as_uri()}?mode=ro",),
+        )
         tables.append("archive")
     return tables
 
@@ -710,6 +767,13 @@ def _split_durable(project: str, record: Mapping[str, Any]) -> tuple[str, dict, 
     return run_id, payload, detail
 
 
+def _payload_activity_seconds(payload: str) -> float | None:
+    """Cache the ledger's timestamp semantics once per inserted or amended row."""
+    from reckon import ledger
+
+    return ledger.run_activity_seconds(json.loads(payload))
+
+
 class RunStore:
     """One embedded SQLite store, creating its schema on first use."""
 
@@ -729,10 +793,13 @@ class RunStore:
             if busy_timeout is None
             else busy_timeout,
         )
+        self._conn.create_function(
+            "run_activity_seconds", 1, _payload_activity_seconds, deterministic=True
+        )
         if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
             self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
-        self._create()
         self._archive_attached = False
+        self._create()
 
     def __enter__(self) -> Self:
         return self
@@ -761,6 +828,8 @@ class RunStore:
         if self._recorded_schema_version() == _STORE_SCHEMA_VERSION:
             return
         self._migrate_runs()
+        if self.archive_path.is_file():
+            self._attach_archive(create=True)
         self._record_schema_version()
 
     def _recorded_schema_version(self) -> str | None:
@@ -806,10 +875,12 @@ class RunStore:
         reader afterwards.
         """
         columns = self._runs_columns(table)
+        indexes = _RUNS_INDEXES if table == "runs" else _ARCHIVE_RUNS_INDEXES
         if not columns:
             self._conn.executescript(
                 _RUNS_SCHEMA if table == "runs" else _ARCHIVE_RUNS_SCHEMA
             )
+            self._conn.executescript(indexes)
             return
         names = [
             str(desc[0])
@@ -818,34 +889,44 @@ class RunStore:
             ).description
         ]
         if columns == _RUNS_COLUMNS:
-            if table == "runs":
-                self._conn.executescript(_RUNS_INDEXES)
+            self._conn.executescript(indexes)
             return
-        rows = self._conn.execute(f"SELECT * FROM {table}").fetchall()  # noqa: S608 - a fixed table name
+        details = "run_details" if table == "runs" else "archive.run_details"
+        rows = self._conn.execute(
+            f"SELECT r.*, d.detail FROM {table} r "  # noqa: S608 - fixed table names
+            f"LEFT JOIN {details} d ON r.run_id = d.run_id"
+        ).fetchall()
         update = (
             _RUNS_UPDATE
             if table == "runs"
             else _RUNS_UPDATE.replace('"runs"', "archive.runs")
         )
         with self._conn:
+            # DDL needs an explicit transaction: implicit transactions begin
+            # only at the first data write, leaving added columns behind if
+            # the backfill fails and making a retry mistake shape for completion.
+            if not self._conn.in_transaction:
+                self._conn.execute("BEGIN IMMEDIATE")
             # Added columns are nullable because SQLite cannot add a NOT NULL
             # payload without rebuilding the table; the backfill supplies it.
-            for name in (*QUERY_KEYS, ROW_REVISION, "payload"):
+            for name in (*QUERY_KEYS, ROW_REVISION, "payload", "activity_seconds"):
                 if name not in columns:
-                    self._conn.execute(f'ALTER TABLE {table} ADD COLUMN "{name}" TEXT')
+                    kind = "REAL" if name == "activity_seconds" else "TEXT"
+                    self._conn.execute(
+                        f'ALTER TABLE {table} ADD COLUMN "{name}" {kind}'
+                    )
             for row in rows:
-                record = _legacy_payload(dict(zip(names, row, strict=True)))
+                record = _legacy_payload(dict(zip(names, row[:-1], strict=True)))
                 self._conn.execute(
                     update,
                     (
                         json.dumps(record, sort_keys=True, separators=(",", ":")),
-                        *(record.get(name) for name in QUERY_KEYS),
+                        *_query_values(record, json.loads(row[-1] or "{}")),
                         None,
                         record["run_id"],
                     ),
                 )
-            if table == "runs":
-                self._conn.executescript(_RUNS_INDEXES)
+            self._conn.executescript(indexes)
 
     def append(self, project: str, record: Mapping[str, Any]) -> None:
         """Insert one run's durable record and its wide detail in one transaction.
@@ -874,7 +955,7 @@ class RunStore:
                 _RUNS_INSERT,
                 (
                     run_id,
-                    *(payload.get(name) for name in QUERY_KEYS),
+                    *_query_values(payload, detail),
                     None,
                     json.dumps(payload, sort_keys=True, separators=(",", ":")),
                 ),
@@ -887,13 +968,18 @@ class RunStore:
     def sync_run(self, project: str, record: Mapping[str, Any]) -> str:
         """Ensure one run's row matches the record, returning what happened.
 
-        The outcome is one of ``inserted`` (the run was absent), ``updated``
-        (the run was present but its durable payload disagreed and was
-        rewritten to match), or ``unchanged`` (the run was present and already
-        byte-identical, so it was left untouched). The last case is what makes
-        a corpus import re-runnable: once the store holds the committed
-        content, a second pass does no work at all. ``store_write`` is never
-        part of the stored payload, exactly as in ``append``.
+        The outcome is ``inserted`` when the store held no row for this run,
+        ``updated`` when it held one that disagreed, and ``unchanged`` when it
+        already held the record byte for byte. ``store_write`` is never part of
+        the stored payload, exactly as in ``append``.
+
+        An ``unchanged`` answer is what makes a corpus import and a repeated
+        amendment no work at all, so the row is compared whole: the durable
+        payload and the wide detail. The detail is exactly the fields a
+        rotation may wash out — a retention, a lane receipt, a gate check — and
+        an amendment confined to one of them moves without its durable payload
+        moving. Comparing the payload alone reports that amendment as
+        ``unchanged`` and leaves the store holding the revision it superseded.
         """
         run_id, payload, detail = _split_durable(project, record)
         encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -904,10 +990,12 @@ class RunStore:
             details = (
                 "archive.run_details" if table == "archive.runs" else "run_details"
             )
+            # Both names are this class's own declarations rather than anything
+            # a caller supplies, so the statement is fixed text.
             select = (
-                "SELECT payload FROM archive.runs WHERE run_id = ?"
-                if table == "archive.runs"
-                else "SELECT payload FROM runs WHERE run_id = ?"
+                f"SELECT stored.payload, wide.detail FROM {table} AS stored "  # noqa: S608
+                f"LEFT JOIN {details} AS wide ON wide.run_id = stored.run_id "
+                "WHERE stored.run_id = ?"
             )
             existing = self._conn.execute(select, (run_id,)).fetchone()
             if existing is None:
@@ -915,7 +1003,7 @@ class RunStore:
                     _RUNS_INSERT,
                     (
                         run_id,
-                        *(payload.get(name) for name in QUERY_KEYS),
+                        *_query_values(payload, detail),
                         None,
                         encoded_payload,
                     ),
@@ -925,13 +1013,13 @@ class RunStore:
                     (run_id, encoded_detail),
                 )
                 return "inserted"
-            if existing[0] == encoded_payload:
+            if existing[0] == encoded_payload and (existing[1] or "") == encoded_detail:
                 return "unchanged"
             self._conn.execute(
                 _RUNS_UPDATE.replace('"runs"', table),
                 (
                     encoded_payload,
-                    *(payload.get(name) for name in QUERY_KEYS),
+                    *_query_values(payload, detail),
                     None,
                     run_id,
                 ),
@@ -957,16 +1045,9 @@ class RunStore:
             )
             if create:
                 self._conn.executescript(_ARCHIVE_RUNS_SCHEMA)
-                # A retirement writes the same declarations the hot table
-                # carries, so an archive written before a column was added owes
-                # the same repair the hot table does.
+                # Both stores are migrated before the schema version is
+                # recorded, so an unchanged open owes neither backfill.
                 self._migrate_runs("archive.runs")
-                self._conn.execute(
-                    "CREATE INDEX IF NOT EXISTS archive.idx_runs_project ON runs(project)"
-                )
-                self._conn.execute(
-                    "CREATE INDEX IF NOT EXISTS archive.idx_runs_node ON runs(node)"
-                )
             self._archive_attached = True
         return self._archive_attached
 
@@ -1179,7 +1260,7 @@ class RunStore:
                                     json.dumps(
                                         payload, sort_keys=True, separators=(",", ":")
                                     ),
-                                    *(payload.get(key) for key in QUERY_KEYS),
+                                    *_query_values(payload, detail),
                                     None,
                                     run_id,
                                 ),
@@ -1199,7 +1280,7 @@ class RunStore:
                             _RUNS_INSERT,
                             (
                                 run_id,
-                                *(payload.get(key) for key in QUERY_KEYS),
+                                *_query_values(payload, detail),
                                 None,
                                 json.dumps(
                                     payload, sort_keys=True, separators=(",", ":")
@@ -1464,6 +1545,33 @@ def append(project: str, record: Mapping[str, Any]) -> None:
     already written, leaving neither store holding a row.
     """
     _retrying(lambda store: store.append(project, record))
+
+
+def sync(project: str, record: Mapping[str, Any]) -> str | None:
+    """Bring the store's own row for one run up to date with ``record``.
+
+    Returns the store's outcome — ``inserted``, ``updated`` or ``unchanged`` —
+    or ``None`` when the store is absent or holds no row for this run. An
+    amendment therefore reaches the store through this seam rather than through
+    :func:`append`, which writes a new row and refuses one already there, and a
+    store that does not hold the run is left exactly as it was: a project with
+    no store does not acquire one from an amendment, and a run the store has
+    never seen is a corpus import's row rather than one write's.
+
+    A locked store is retried inside this one call, as :func:`append` retries
+    it, so a concurrent writer's millisecond lock costs the amendment no row.
+    A failure of any other kind is raised: the store is the copy a stored read
+    answers from, so an amendment it declined would be read as the revision it
+    superseded.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    if not stored_run_rows(project, run_ids=(run_id,), fields=("run_id",)):
+        return None
+    outcomes: list[str] = []
+    _retrying(lambda store: outcomes.append(store.sync_run(project, dict(record))))
+    return outcomes[-1] if outcomes else None
 
 
 def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, Any]]:

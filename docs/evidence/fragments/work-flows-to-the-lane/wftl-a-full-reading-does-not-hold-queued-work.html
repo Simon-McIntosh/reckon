@@ -1,0 +1,86 @@
+<section id="wftl-a-full-reading-does-not-hold-queued-work-landing">
+  <h2>A full reading at one instant does not hold queued work</h2>
+
+  <p><strong>What changed.</strong> An admission pass read the router's worker
+  allowance once, and a reading of full at that instant held every queued
+  request until the next pass &mdash; 45 to 185 seconds on the fleet, while a
+  full reading clears in seconds because a worker holds a router request for
+  about a quarter of its run. A candidate held for an exhausted allowance is now
+  deferred to the pass's second sweep. There, once per session per pass, the pass
+  re-reads the lane, bounded by the pass's own launch deadline and by the 30
+  seconds the measure names, and replaces the grant it cached with the figure
+  the lane actually published. A paused lane is never waited on: a pause is a
+  decision, not an instant, so the pass takes its reading, holds every request
+  and moves on.</p>
+
+  <p><strong>The measure.</strong> A temporary crew home holds twelve queued
+  requests and a stand-in router that republishes a real lane document before
+  every read: full for the first five seconds of the first pass, then open with a
+  slot for every request. The test reads all twelve launched, and the last launch
+  lands well inside the 60-second bound the measure puts on the cohort. Two
+  companions hold the guard's other edges: a paused lane reads no launch and
+  takes no pause at all, and a lane that stays full spends only the pass budget
+  it was given rather than the whole wait.</p>
+
+  <table id="wftl-a-full-reading-does-not-hold-queued-work-figures">
+    <caption>Each row is a run's own summary line, from a log named on the
+    manifest's <code>test_logs</code> line.</caption>
+    <thead>
+      <tr><th>run</th><th>revision</th><th>where</th><th>summary</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>this node's gate</td>
+        <td>head of the node</td>
+        <td>all_debug, <code>SLURM_JOB_ID</code> unset</td>
+        <td>18 passed in 16.73s</td>
+      </tr>
+      <tr>
+        <td>negative control, the measure test</td>
+        <td><code>6b7c8a2bf2b4</code></td>
+        <td>all_debug, <code>SLURM_JOB_ID</code> unset</td>
+        <td>1 failed, 2 passed in 0.81s &mdash; twelve queued, none launched</td>
+      </tr>
+      <tr>
+        <td>suite, base arm</td>
+        <td><code>6b7c8a2bf2b4</code></td>
+        <td>extracted base tree</td>
+        <td>58 passed in 50.16s</td>
+      </tr>
+      <tr>
+        <td>admission family, both arms</td>
+        <td>base and head</td>
+        <td>the node's worktree, and an extracted base tree</td>
+        <td>2 failed, 28 passed at each &mdash; the same two ids, red at base already</td>
+      </tr>
+      <tr>
+        <td>suite, after arm</td>
+        <td>head of the node</td>
+        <td>the node's worktree</td>
+        <td>58 passed in 63.57s</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>The negative control fails for the reason the section names.</strong>
+  At the base revision the same test reads the full reading, holds all twelve,
+  and returns: <code>assert set() == {'r-queued-0', &hellip;}</code> with
+  <code>EXIT=1</code>. The red run is quoted in full in <a
+  href="#s79">the section's own record</a>.</p>
+
+  <p><strong>What this node did not take.</strong> The one-hour record of live
+  admission passes the section asks for is the coordinator's after landing, and
+  no pass in it is claimed here.</p>
+
+  <section id="wftl-a-full-reading-does-not-hold-queued-work-paths">
+    <h3>Paths</h3>
+    <ul>
+      <li><code>reckon/crew/admission/selection.py</code> &mdash; the deferral,
+      the bounded re-read and its constants.</li>
+      <li><code>reckon/crew/admission/holds.py</code> &mdash; the session read
+      that carries the router's own verdict beside its allowance.</li>
+      <li><code>tests/test_a_full_reading_does_not_hold_queued_work.py</code>
+      &mdash; the measure and its two companions.</li>
+    </ul>
+  </section>
+</section>

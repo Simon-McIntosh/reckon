@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-landing">
+<h3>A red checkout-guard file passes, and its cause was the test's invocation</h3>
+<p>The named file was red on the primary branch at <code>ee93819a0d</code>: 6 failed, 1 passed, every failure reading <code>assert 0 != 0</code> on a <code>crew complete</code> that answered <code>{"ok": true}</code> and refused nothing. One cause accounted for all six, and it was the test encoding a call shape the code no longer keeps. The product rule — a promotion refuses a checkout with an open merge, rebase, cherry-pick or revert before it reads the ledger or opens a run store — was already correct, and every case now exercises it. No assertion was deleted or weakened.</p>
+
+<h4 id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-cause">Cause and verdict</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>Bare <code>crew complete</code> no longer promotes synchronously</td>
+<td>6 of 7 — the five open-state cases plus <code>test_a_clean_checkout_reaches_the_ledger</code>, all <code>assert 0 != 0 where 0 = &lt;Result okay&gt;.exit_code</code></td>
+<td><strong>test wrong</strong> — <code>crew complete</code> now records a durable promotion request and returns unless <code>--wait</code> carries the promotion out in the added call; the guard lives in the promotion body (<code>promotion.complete</code>, before <code>ledger.load_open</code>), so the test's invocation now passes <code>--wait</code>. The module docstring states the same distinction, and the read counter still asserts zero ledger loads and zero run-store constructions on every refusal.</td>
+</tr>
+</tbody>
+</table>
+<p>Nothing in <code>reckon/</code> changed. The guard is where the rule says it is: the open-state cases assert the refusal text <code>has an open &lt;operation&gt; in progress</code>, so a nonzero exit for an unrelated reason would not satisfy them, and <code>test_a_clean_checkout_reaches_the_ledger</code> is the positive control showing the same wrappers see a promotion's real ledger read.</p>
+
+<h4 id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-negative-control">Negative control: the base revision's own run</h4>
+<pre>
+# revision: ee93819a0dfd283816a577795513c00bca2b8e19
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031731323671-qwnw-red-file-an-open-operation-refuses-a-promotion-first/omp-home/.cache/reckon-run-qwnw-open-op/base-tree (git archive of the base revision)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_open_operation_refuses_a_promotion_first.py
+# cwd: .../base-tree
+# slurm_job_id: unset
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[MERGE_HEAD-merge-merge]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[rebase-merge-rebase-dir]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[rebase-apply-rebase-dir]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[CHERRY_PICK_HEAD-cherry-pick-file]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_an_open_operation_refuses_before_any_ledger_read[REVERT_HEAD-revert-file]
+FAILED tests/test_an_open_operation_refuses_a_promotion_first.py::test_a_clean_checkout_reaches_the_ledger
+6 failed, 1 passed in 8.61s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<pre>
+# revision: 054268e860 at head 054268e860, tree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-an-open-operation-refuses-a-promotion-first
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_open_operation_refuses_a_promotion_first.py
+# slurm: all_debug job 1319426, SLURM_JOB_ID unset inside the script
+.......                                                                  [100%]
+7 passed in 3.07s
+EXIT=0
+</pre>
+<p>The commit at this head is the test change alone; the run also read 7 passed with <code>EXIT=0</code> in place before the evidence commit.</p>
+
+<h4 id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-arms">Armed suite arms: no failure added</h4>
+<pre>
+# baseline at ee93819a0dfd283816a577795513c00bca2b8e19
+# tree: .../base-tree (git archive of the base revision, made a repository there)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+# cwd: .../base-tree
+..........................................................               [100%]
+58 passed in 46.08s
+EXIT=0
+
+# head at 054268e860, in the run's own worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+..........................................................               [100%]
+58 passed in 48.28s
+EXIT=0
+</pre>
+<p>The node's change is confined to <code>tests/test_an_open_operation_refuses_a_promotion_first.py</code>; no product module is touched, so nothing imports what it changed and the arm over the importers of the change is the gate itself, where 6 failing ids at base become none at head. <code>uv run ruff check</code> and <code>uv run ruff format --check</code> on that one path report <code>All checks passed!</code> and <code>1 file already formatted</code>.</p>
+
+<h4 id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-origin">The instruction to merge origin/main first</h4>
+<p><code>origin/main</code> is <code>cb557f9711</code>, which is an ancestor of the worktree head (<code>git rev-list HEAD..origin/main</code> is empty), so the worktree already carried it and the file was still red; the merge the brief asks for had nothing to bring in.</p>
+</section>

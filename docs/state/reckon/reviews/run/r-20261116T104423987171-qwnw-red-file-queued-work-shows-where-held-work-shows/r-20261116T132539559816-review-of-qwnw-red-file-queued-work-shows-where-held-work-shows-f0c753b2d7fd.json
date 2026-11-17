@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/query.py:445",
+    "reckon/crew/query.py:1072",
+    "reckon/crew_follow_commands.py:2971",
+    "reckon/hooks/coordinator_obligations.py:1943",
+    "reckon/hooks/coordinator_obligations.py:1951"
+  ],
+  "completed_at": "2026-11-16T13:51:15.098Z",
+  "dispatched_at": "2026-11-16T13:50:52Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "The head line cites d6665d49d3 with 5 passed, but the only head-arm log on disk ran at f0c753b2d7 and the manifest claims a second head run at c0e92cd96b, so the figure names a revision no reader can open against a receipt."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "Both guard probes quote base and head output with no script and no log path, and the manifest names no probe log, so the query-side probe cannot be re-run; I reproduced the hook side from reckon/hooks/coordinator_obligations.py:260,822, where _row_is_actionable reads the set, but the query-side output has no receipt at all."
+    },
+    {
+      "file": "reckon/crew/query.py",
+      "line": 791,
+      "severity": "non-blocking",
+      "text": "The added local import aliases reckon.flight as flight_module while query.py:845 already aliases the distinct module reckon.crew.flight under the same alias, so one file names two modules flight_module."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "The done_when asks the named file green as a job on all_debug with SLURM_JOB_ID unset, and every arm instead ran in the worker's own worktree with env -u, so that one unmet condition is recorded nowhere in the manifest."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/query.py:445, reckon/crew/query.py:1072, reckon/crew_follow_commands.py:2971, reckon/hooks/coordinator_obligations.py:1943, reckon/hooks/coordinator_obligations.py:1951",
+    "diff": "Read against base 24bc79d8ee: d6665d49d3 changes select_local=False, FlightConfigError and route-defaulted; c0e92cd96b and f0c753b2d7 are the evidence fragment, and the range's four other commits belong to other runs.",
+    "done_when": "It asks the file green as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, no assertion deleted, an importer arm adding no failure and a base control; all are recorded but the all_debug job, the four ids are at fragment line 19 and the importer arm moves 23 failed to 19.",
+    "goal": "The goal is that tests/test_queued_work_shows_where_held_work_shows.py passes in full; head-arm-target-file.log records 5 passed EXIT=0 at f0c753b2d7, and both repairs are in the diff at reckon/crew/query.py:796 and reckon/hooks/coordinator_obligations.py:260.",
+    "manifest": "Read; both suite arms read 58 passed EXIT=0 at 24bc79d8ee and f0c753b2d7, the base target arm 4 failed 1 passed, the head arm 5 passed, and the test file is stated unchanged.",
+    "write_paths": "The brief declares reckon, tests and the queued-work-needs-no-workaround fragment; the three commits touch reckon/crew/query.py, reckon/hooks/coordinator_obligations.py and that fragment, and no tests/ path is in the diff."
+  },
+  "justifications": {
+    "durability": "tests/test_queued_work_shows_where_held_work_shows.py:246-249 compares two independent sets and the base arm reddens it, though a widened except clause at reckon/crew/query.py:797 would still pass.",
+    "evidence": "baseline-suite.log and after-suite.log both reach a 58 passed summary with EXIT=0 at their own revisions, but the all_debug job was never opened and the fragment cites d6665d49d3, which no log on disk ran.",
+    "fit": "the added lines follow query.py's function-local import style and the hook's prose-plus-frozenset idiom, but reckon/crew/query.py:791 reuses the alias flight_module for another module than query.py:845.",
+    "goal_fidelity": "reckon/crew/query.py:796 stops the live view selecting this host's local lane and reckon/hooks/coordinator_obligations.py:260 stops route-defaulted holding a stop, so the five cases pass at f0c753b2d7.",
+    "reuse": "the read reuses reckon/crew/admission/launching.py:127's own select_local parameter, already called that way at reckon/crew/admission/ordering.py:54, and the hook extends the copy the test holds to the derivation.",
+    "scope_discipline": "reckon/crew/query.py, reckon/hooks/coordinator_obligations.py and the one evidence fragment are the whole of the three commits, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_queued_work_shows_where_held_work_shows.py passes in full; head-arm-target-file.log records 5 passed EXIT=0 at f0c753b2d7 and both repairs are at reckon/crew/query.py:796 and reckon/hooks/coordinator_obligations.py:260.\nVERDICT done_when: it asks the file green as an all_debug job with SLURM_JOB_ID unset, per-cause verdicts, an importer arm adding no failure and a base control; all are recorded but the all_debug job.\nVERDICT write_paths: the brief declares reckon, tests and the queued-work-needs-no-workaround fragment, and the three commits stay inside them with no tests/ path.\nVERDICT manifest: both suite arms 58 passed EXIT=0, base target arm 4 failed 1 passed, head arm 5 passed, test file unchanged.\nVERDICT diff: read against base 24bc79d8ee, d6665d49d3 carries both repairs and c0e92cd96b and f0c753b2d7 are the fragment; four foreign commits sit in the range.\nCALL_SITES: reckon/crew/query.py:445, reckon/crew/query.py:1072, reckon/crew_follow_commands.py:2971, reckon/hooks/coordinator_obligations.py:1943, reckon/hooks/coordinator_obligations.py:1951\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:796 stops the live view selecting this host's local lane and the five cases pass at f0c753b2d7.\nSCORE evidence: 14\nJUSTIFICATION evidence: both suite logs reach 58 passed EXIT=0, but the all_debug job was never opened and the fragment cites d6665d49d3, which no log ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: reckon/crew/query.py, reckon/hooks/coordinator_obligations.py and the one evidence fragment are the whole of the three commits.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_queued_work_shows_where_held_work_shows.py:246-249 compares two independent sets and the base arm reddens it.\nSCORE fit: 16\nJUSTIFICATION fit: the added lines follow query.py's function-local import style, but reckon/crew/query.py:791 reuses the alias flight_module for another module than query.py:845.\nSCORE reuse: 20\nJUSTIFICATION reuse: the read reuses reckon/crew/admission/launching.py:127's own select_local parameter, and the hook extends the copy the test holds to the derivation.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html:17 non-blocking: the head figure cites d6665d49d3 while the only head-arm log on disk ran at f0c753b2d7.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html:21 non-blocking: both guard probes quote output with no script and no log path, so the query-side one cannot be re-run.\nFINDING reckon/crew/query.py:791 non-blocking: flight_module aliases reckon.flight here and reckon.crew.flight at query.py:845.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html:13 non-blocking: the done_when's all_debug job was never opened; every arm ran in the worker's own worktree.",
+  "review_run_id": "r-20261116T132539559816-review-of-qwnw-red-file-queued-work-shows-where-held-work-shows-f0c753b2d7fd",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "f0c753b2d7fdb72b1f950dd626325d83a9bc72df",
+  "reviewed_run_id": "r-20261116T104423987171-qwnw-red-file-queued-work-shows-where-held-work-shows",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:16:55.988253+00:00",
+  "total": 106
+}

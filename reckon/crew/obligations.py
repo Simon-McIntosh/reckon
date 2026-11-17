@@ -564,7 +564,8 @@ def action_form(command: str) -> str | None:
     quotation mark — likewise has no form, so a stored command that cannot be
     parsed leaves the read it belongs to intact rather than failing it.
 
-    Every option on the command is rendered, and an option this form cannot
+    Complete already waits on the tool surface, so its CLI --wait flag adds
+    no argument. Every other option on the command is rendered, and one this form cannot
     carry — one with no tool parameter, one whose value is missing — makes the
     whole command unrenderable. Half a command is worse than a printed one: it
     reads as callable and is refused, or is silently called without the
@@ -591,10 +592,15 @@ def action_form(command: str) -> str | None:
     order: list[tuple[str, bool]] = []
     index = 3
     while index < len(tokens):
-        token = tokens[index]
-        if not token.startswith("-"):
+        word = tokens[index]
+        if not word.startswith("-"):
             return None
-        option, _, inline = token.partition("=")
+        # The complete action invokes crew_complete synchronously by default,
+        # so its CLI --wait flag requires no additional tool parameter.
+        if verb == "complete" and word == "--wait":
+            index += 1
+            continue
+        option, _, inline = word.partition("=")
         parameter = _action_parameter(option)
         if parameter is None:
             return None
@@ -763,6 +769,50 @@ _VIEW_LIVE_POINTERS: ContextVar[Mapping[str, tuple[dict[str, Any], ...]] | None]
 _VIEW_REVIEWS_IN_FLIGHT: ContextVar[Mapping[str, Any] | None] = ContextVar(
     "reckon_obligations_view_reviews_in_flight", default=None
 )
+
+
+@contextmanager
+def live_pointer_snapshot(
+    project: str | None = None,
+    *,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> Iterator[list[dict[str, Any]]]:
+    """Publish one project's live pointers for the length of one derivation.
+
+    Every duty kind reads the same live pointers, so a derivation over several
+    of them would otherwise list and decode the directory once per reader, and
+    could report duties derived from different snapshots of it. The directory
+    is listed once here — or the caller's own pass's read is taken as given,
+    so a pass that already holds one population does not read a second — and
+    that population is yielded and published, so the derivation drawing its own
+    rows and every nested reader answer from one listing.
+
+    A snapshot handed in may span projects, and each reader asks for a project:
+    the listing is published under the project each pointer names, so a reader
+    gets its own project's pointers rather than another's.
+
+    The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
+    exactly as long as the block and no later read inherits it.
+    """
+    listing = (
+        list(pointers) if pointers is not None else runs.list_live(project=project)
+    )
+    published: dict[str, list[dict[str, Any]]] = {}
+    for pointer in listing:
+        published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
+    token = _VIEW_LIVE_POINTERS.set(
+        {name: tuple(rows) for name, rows in published.items()}
+    )
+    # The in-flight review answer is keyed on the snapshot that asked the
+    # question, so it is dropped with the previous snapshot rather than left
+    # holding a pass whose pointers have gone. A reader below fills it in for
+    # this listing; it outlives nothing.
+    reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
+    try:
+        yield listing
+    finally:
+        _VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
+        _VIEW_LIVE_POINTERS.reset(token)
 
 
 def _live_pointers(project: str) -> list[dict[str, Any]]:
@@ -1433,22 +1483,6 @@ def _pointer_review(
     return _in_flight_review(pointer, _launched_candidates(pointers))
 
 
-@contextmanager
-def _pass_reviews_in_flight() -> Iterator[None]:
-    """Scope the shared answer to the derivation that published the pointers.
-
-    The memo carries the pass's own snapshot so it can tell one pass from the
-    next, so it must not outlive the pass either. Publishing the empty answer
-    with a token and resetting it in a finally drops the memo when the
-    derivation ends, as the pointer snapshot itself is dropped.
-    """
-    token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
-    try:
-        yield
-    finally:
-        _VIEW_REVIEWS_IN_FLIGHT.reset(token)
-
-
 def _reviews_in_flight(project: str) -> Mapping[str, str | None]:
     """Every pointer's standing review, answered once for the whole pass.
 
@@ -1647,7 +1681,11 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
     what keeps the two surfaces from disagreeing about a refused request.
     """
     rows: list[dict[str, Any]] = []
-    for pointer in _live_pointers(project):
+    # The rows are classified from one snapshot of the view's pointers, and each
+    # row reads that same snapshot for a review that may stand for its head, so
+    # one fleet is classified from one read of the directory.
+    snapshot = _live_pointers(project)
+    for pointer in snapshot:
         # A pointer whose phase still reads queued while it carries
         # ``launched_at`` was launched and never had its phase advanced, so the
         # queued phase says nothing about the run. Classifying it as stored
@@ -1661,7 +1699,7 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
         ):
             subject = {**pointer, "phase": ""}
         try:
-            row = recovery.classify_pointer(subject)
+            row = recovery.classify_pointer(subject, pointers=snapshot)
         except Exception as error:  # noqa: BLE001 - one run must not fail the fleet
             # A classification that raises would otherwise take the whole
             # project's derivation with it, so no session's obligations are
@@ -2850,6 +2888,8 @@ def _review_duty_item(
     may leave them out, and the queued reading reads the pointers and the
     ordering for itself when it needs them.
     """
+    if (row.get("delivery") or {}).get("status") == "promotion-queued":
+        return None
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
     if pointer is not None and not recovery_classification.completion_offer(
@@ -3111,6 +3151,10 @@ def _review_duty_item(
                     item["overdue_remedy"] = overdue_remedy
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
+    if item["kind"] in {"review-ready", "promotable-stale"} and pointer is not None:
+        item["next_command"] = recovery_classification._promotion_command(
+            str(row.get("run_id") or ""), pointer, list(row.get("manifest_commits") or [])
+        )
     return item
 
 
@@ -3353,22 +3397,31 @@ def _tree_holds_unmerged_work(tree: Path) -> bool:
 
 @dataclass(frozen=True)
 class _RecordedPass:
-    """One record pass's answer: the trees still owed, and the rows it filed.
+    """One record pass's answer: the trees still owed, every tree a row names,
+    and the rows it filed.
 
-    Both travel together because they are one read. A caller that needs the
+    All three travel together because they are one read. A caller that needs the
     history this pass read takes it from here instead of opening the ledger
-    again, which is what keeps two derivations of the same tick to one read.
+    again, which is what keeps two derivations of the same tick to one read; a
+    caller that needs every tree a row still names takes the same answer instead
+    of running a second pass for it.
     """
 
     held: dict[Path, Mapping[str, Any]]
+    named: dict[Path, Mapping[str, Any]]
     rows: tuple[Mapping[str, Any], ...]
 
+    def trees(self, *, include_landed: bool = False) -> dict[Path, Mapping[str, Any]]:
+        """The trees owed, or every tree a row still names, as a fresh dict."""
+        return dict(self.named if include_landed else self.held)
 
-_EMPTY_PASS = _RecordedPass({}, ())
+
+_EMPTY_PASS = _RecordedPass({}, {}, ())
 
 
 def _held_records_pass(project: str) -> _RecordedPass:
-    """Return each held tree's record and the rows every record was filed from.
+    """Return held trees, every named tree, and the rows every record was filed
+    from.
 
     Source identities validate per-run files, live claims, the common Git
     registry and registered-tree presence. Unchanged inputs reuse the answer;
@@ -3378,6 +3431,8 @@ def _held_records_pass(project: str) -> _RecordedPass:
     An aggregate rewrite rebuilds the index because its envelope has no per-row
     identity. Reader failures retain the unrefused document-reader fallback.
     The read-only region shares parsed document views without copying them.
+    One pass answers both views a caller can want, so the trees a landing frees
+    and the history a duty needs cost one read between them.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -3396,9 +3451,27 @@ def _held_records_pass(project: str) -> _RecordedPass:
         )
 
 
-def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
-    """Return the record holding each registered, present and unoccupied tree."""
-    return _held_records_pass(project).held
+def _held_worktree_records(
+    project: str, *, include_landed: bool = False
+) -> dict[Path, Mapping[str, Any]]:
+    """Return the record holding each registered, present and unoccupied tree.
+
+    ``include_landed`` answers with every tree a row still names rather than
+    only the trees owed as duties. A landing empties a tree of work the primary
+    branch lacks, so the duty view drops exactly the trees a merge is about to
+    free; a caller deciding what may be released reads them through here.
+    """
+    return _held_records_pass(project).trees(include_landed=include_landed)
+
+
+def _named_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
+    """Every present, unoccupied tree a ledger row names, landed work or not.
+
+    A landing moves the branch the duty view judges a tree against, so the tree
+    the landing emptied stops being a duty at the very moment the landing is
+    the thing that could free it. The release reads this view instead.
+    """
+    return _held_worktree_records(project, include_landed=True)
 
 
 def recorded_run_rows(
@@ -3647,6 +3720,7 @@ class _HeldWorktreeState:
         self.extra: set[str] = set()
         self.trees: dict[Any, set[Path]] = {}
         self.inspected: set[Path] = set()
+        self.matched: dict[Path, Mapping[str, Any]] = {}
         self.held: dict[Path, Mapping[str, Any]] = {}
 
     def replace(
@@ -3670,9 +3744,16 @@ class _HeldWorktreeState:
         have taken: a tree that survived its run but holds nothing unmerged
         only costs someone a look, while a row claiming otherwise costs a
         reader their trust in every row beside it.
+
+        ``matched`` keeps the record of every inspected tree a row still names,
+        judged by nothing else. The duty view is the wrong answer for a caller
+        deciding which trees it may free: a landing empties the tree of exactly
+        the work the duty view judges against, so the tree the landing could
+        release stops being a duty as the landing completes.
         """
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
+            self.matched.pop(tree, None)
             for name in self.records.worktree_keys(tree):
                 self.trees[name].discard(tree)
                 if not self.trees[name]:
@@ -3684,15 +3765,16 @@ class _HeldWorktreeState:
         self.inspected = inspected
         for tree in affected & inspected:
             record = _holding_record(tree, self.records)
-            release = record.get("release") if record is not None else None
+            if record is None:
+                self.matched.pop(tree, None)
+                self.held.pop(tree, None)
+                continue
+            self.matched[tree] = record
+            release = record.get("release")
             if (
-                record is None
-                or (
-                    isinstance(release, Mapping)
-                    and release.get("worktree_released") is True
-                )
-                or not _tree_holds_unmerged_work(tree)
-            ):
+                isinstance(release, Mapping)
+                and release.get("worktree_released") is True
+            ) or not _tree_holds_unmerged_work(tree):
                 self.held.pop(tree, None)
             else:
                 self.held[tree] = record
@@ -3710,7 +3792,7 @@ def _filed_rows(index: _HeldWorktreeState) -> tuple[Mapping[str, Any], ...]:
 
 
 def _held_worktree_records_read(
-    project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
+project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
 ) -> _RecordedPass:
     """Apply changed run documents and tree registrations to the previous answer.
 
@@ -3780,6 +3862,23 @@ def _held_worktree_records_read(
                     key = (1, run_id)
                     index.extra.add(run_id)
                 index.replace(key, row, retained)
+            # The merged reader answers from the run store, whose identity is a
+            # run id, so a row the aggregate carries without one is not a run it
+            # can return even though the ledger still holds that row. The
+            # aggregate is read here anyway, and the ordinals still pending are
+            # the rows it kept and the read above did not deliver; one of those
+            # without a run id is filed from the aggregate's own position, so a
+            # tree only such a row names stays held rather than being lost to
+            # which reader answered. A pending row that does carry a run id is a
+            # disagreement between the aggregate and the store, which the store's
+            # own refresh settles; filing it here would answer for a row the
+            # store retired or has yet to take.
+            for (run_id, _order), ordinals in aggregate_order.items():
+                if run_id:
+                    continue
+                for ordinal in ordinals:
+                    row = aggregate_rows[ordinal]
+                    index.replace((0, ordinal), row, _retained_worktree(row))
             affected = set(inspected)
         else:
             _stamp, old_identities, index = previous
@@ -3820,7 +3919,7 @@ def _held_worktree_records_read(
             _held_remember(
                 _HELD_RECORD_READS, cache_key, (aggregate_stamp, identities, index)
             )
-        return _RecordedPass(dict(index.held), _filed_rows(index))
+        return _RecordedPass(dict(index.held), dict(index.matched), _filed_rows(index))
 
 
 def _held_worktrees_by_session(
@@ -4273,14 +4372,8 @@ def obligations(
     and a run in flight cannot appear in one duty and be absent from another
     read in the same view.
     """
-    with _pass_reviews_in_flight():
-        token = _VIEW_LIVE_POINTERS.set(
-            {project: tuple(runs.list_live(project=project))}
-        )
-        try:
-            return _obligations_view(project, session, fields=fields)
-        finally:
-            _VIEW_LIVE_POINTERS.reset(token)
+    with live_pointer_snapshot(project):
+        return _obligations_view(project, session, fields=fields)
 
 
 def _obligations_view(
@@ -4683,6 +4776,8 @@ def _obligations_view(
         ),
         "unreconciled_runs": int(unreconciled),
     }
+    delivery = recovery_classification.delivery_summary(classified, session=session)
+    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
     view = {
         "project": project,
         "session": session,
@@ -4700,6 +4795,7 @@ def _obligations_view(
             vocabulary=DUTY_ROW_FIELDS,
             sections=sections,
         ),
+        "remove_pointers": delivery["remove_pointers"],
         "summary": summary,
     }
     # Carried only when the session has one. The published snapshot is sliced

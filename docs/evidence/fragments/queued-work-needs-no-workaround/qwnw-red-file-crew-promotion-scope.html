@@ -1,0 +1,114 @@
+<section id="qwnw-red-file-crew-promotion-scope-landing">
+  <h2>Promotion-scope guards judged by what a merge cannot reconcile</h2>
+
+  <p><strong>What changed.</strong> Five cases in
+  <code>tests/test_crew_promotion_scope.py</code> encoded the rule that a
+  declared write path reserves the whole file. They were written before
+  <code>5695689722</code> ("reserve path claims for nonmergeable artifacts")
+  replaced the "path is on the shared list" test with
+  <code>_claim_paths_share</code>, and before <code>e7e46bfc5f</code> gave the
+  worktree-at-its-base guard its own function so a stated
+  <code>--no-commit</code> reason cannot skip it. Every cause is a test holding
+  a rule the code no longer keeps; no product code was repaired, and no
+  assertion was deleted or weakened. Each case now asserts the rule in force,
+  and the classes the product still refuses are asserted just as strictly as
+  the classes it now admits.</p>
+
+  <h3 id="qwnw-red-file-crew-promotion-scope-causes">Causes and verdicts</h3>
+
+  <table id="qwnw-red-file-crew-promotion-scope-cause-table">
+    <caption>Verdict per cause. A product repair would be named here if a rule
+    had broken instead.</caption>
+    <thead>
+      <tr><th>failing case at base</th><th>cause</th><th>verdict</th><th>now asserts</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>test_main_checkout_write_is_refused_and_pointer_is_retained</code></td>
+        <td>the boundary walk charged a declared <em>source</em> path edited in the main checkout</td>
+        <td>test wrong</td>
+        <td>a source edit in the main checkout promotes
+        (<code>test_main_checkout_source_write_allows_promotion</code>); an
+        unmergeable edit there is still refused and the pointer retained, under
+        the original name</td>
+      </tr>
+      <tr>
+        <td><code>test_peer_worktree_write_is_refused_and_pointer_is_retained</code></td>
+        <td>the same walk, over a peer worktree</td>
+        <td>test wrong</td>
+        <td>a source edit in a peer worktree promotes
+        (<code>test_peer_worktree_source_write_allows_promotion</code>); an
+        unmergeable edit there is still refused and the pointer retained, under
+        the original name</td>
+      </tr>
+      <tr>
+        <td><code>test_companion_path_acceptance_admits_a_shared_write_claim</code></td>
+        <td>a declared shared entry was expected to admit a live claim on a
+        binary</td>
+        <td>test wrong</td>
+        <td><code>--accept-path</code> on a declared shared binary is refused
+        naming the live holder and the <code>binary or generated receipt</code>
+        class (<code>test_companion_path_acceptance_refuses_a_shared_binary_claim</code>)</td>
+      </tr>
+      <tr>
+        <td><code>test_directory_claim_keeps_refusing_paths_under_it[rendered/note.txt]</code></td>
+        <td>a directory claim was expected to fence every path beneath it,
+        mergeable text included</td>
+        <td>test wrong</td>
+        <td>a text file under a claimed directory lands; a binary under the same
+        claim still refuses naming the claim
+        (<code>test_a_directory_claim_holds_only_what_a_merge_cannot_reconcile</code>)</td>
+      </tr>
+      <tr>
+        <td><code>test_a_passing_gate_may_not_leave_the_run_s_own_commits_uncited</code></td>
+        <td>a stated <code>--no-commit</code> reason was expected to skip the
+        worktree-at-its-base guard</td>
+        <td>test wrong</td>
+        <td>a stated reason over a worktree that committed is refused naming the
+        commit; the same reason over a worktree at its base still promotes, and
+        citing the commit still passes</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-crew-promotion-scope-arms">Arms</h3>
+
+  <table id="qwnw-red-file-crew-promotion-scope-arm-table">
+    <caption>Each arm is a log whose first lines name the log's revision, tree
+    and command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision / tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>negative control: the file as the base revision carries it</td>
+        <td><code>0e0f25b0f941</code>, <code>git archive</code> extraction</td>
+        <td>5 failed, 21 passed, <code>EXIT=1</code> —
+        <code>~/.config/reckon/crew/runs/r-20261116T031949761769-qwnw-red-file-crew-promotion-scope/logs/baseline-crew-promotion-scope.log</code></td>
+      </tr>
+      <tr>
+        <td>gate: the file at this node's head, as a job on
+        <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset (job
+        1319610)</td>
+        <td><code>75b1857de816</code>, this worktree</td>
+        <td>28 passed, <code>EXIT=0</code> —
+        <code>~/.config/reckon/crew/runs/r-20261116T031949761769-qwnw-red-file-crew-promotion-scope/logs/after-gate-all_debug.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-crew-promotion-scope-failing-ids">The five failing ids the
+  negative control records, the same five the suite run at
+  <code>8d50b0333f</code> reported:</p>
+  <pre id="qwnw-red-file-crew-promotion-scope-failing-id-list">FAILED tests/test_crew_promotion_scope.py::test_main_checkout_write_is_refused_and_pointer_is_retained
+FAILED tests/test_crew_promotion_scope.py::test_peer_worktree_write_is_refused_and_pointer_is_retained
+FAILED tests/test_crew_promotion_scope.py::test_companion_path_acceptance_admits_a_shared_write_claim
+FAILED tests/test_crew_promotion_scope.py::test_directory_claim_keeps_refusing_paths_under_it[rendered/note.txt]
+FAILED tests/test_crew_promotion_scope.py::test_a_passing_gate_may_not_leave_the_run_s_own_commits_uncited</pre>
+
+  <h3 id="qwnw-red-file-crew-promotion-scope-imports">The arm over importers</h3>
+
+  <p>The node changed no product source, and no test file imports this one, so
+  the affected selection is the gate file itself and its head arm is the
+  28-passed run above. <code>ruff check</code> and
+  <code>ruff format --check</code> report nothing on
+  <code>tests/test_crew_promotion_scope.py</code>.</p>
+</section>

@@ -1,0 +1,134 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "No product condition: directory / fixed filename constructs the asserted prefix; redundant fixture assertion recorded as non-blocking and excluded from coverage.",
+      "lines": "25"
+    },
+    {
+      "failure_condition": "Fails if run directory is lexically under the repository; fixture isolation only.",
+      "lines": "26"
+    },
+    {
+      "failure_condition": "Fails if fixture creates repository dirt, independently measured by git status.",
+      "lines": "39"
+    },
+    {
+      "failure_condition": "Fails if actual promotion or persisted ledger records any commit; [] is an independent expected result.",
+      "lines": "52,60,127,133"
+    },
+    {
+      "failure_condition": "Fails if review-self refuses or selects wrong route; original relative-path resolver refuses both delivered shapes.",
+      "lines": "55,56,130"
+    },
+    {
+      "failure_condition": "Fails if successful promotion leaves a live pointer, read independently after completion.",
+      "lines": "57,131"
+    },
+    {
+      "failure_condition": "Singleton unpack fails if zero or multiple ledger rows exist; identity assertion fails if a different run was written.",
+      "lines": "58,59,132"
+    },
+    {
+      "failure_condition": "Fails if repository seed.txt is accepted without a commit, refusal diagnostic changes, or refused operation deletes pointer or writes ledger.",
+      "lines": "71-75"
+    },
+    {
+      "failure_condition": "Fails if repository collision, missing file or escaped symlink is accepted, or refusal mutates pointer or ledger; removing containment, is_file or collision checks admits corresponding invalid cases.",
+      "lines": "154-157"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete:1295",
+    "reckon/crew/promotion_checks.py:_manifest_repository_paths:555",
+    "reckon/crew/promotion_records.py:138",
+    "reckon/crew/promotion_evidence.py:374",
+    "reckon/crew/recovery_review_acceptance.py:promote_review_run_itself:1331"
+  ],
+  "completed_at": "2026-11-16T23:13:45Z",
+  "dispatched_at": "2026-11-16T23:07:59Z",
+  "finding_disposition_recommendation": {
+    "0": {
+      "disposition": "exempted",
+      "reason": "Redundant fixture sanity check; no durability score relies on it; independent integration assertions cover repaired behavior. Coordinator owns final disposition."
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_review_manifest_naming_run_files_promotes.py",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: path.is_relative_to(directory) checks a prefix the fixture constructed at line 22, so it cannot detect a product regression and must not count as regression coverage; independent promotion and refusal assertions already provide that coverage."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read 7e021cb1d4408233a06459d2fc48007ac864b5b3 and 8416a054f3803ec7be4f495ad382c84f8cdc8f6e against d26a2f0d3a45643ebe826ccda5accdc4b40ae528; the first adds already-passing absolute-path guards and the second adds relative-path recognition and four red-at-base promotion cases.",
+    "done_when": "source prompt.txt:266 names promotion and refusal tests on all_debug; suite-head-final.log records 68 passed and EXIT=0, and negative-control-delivered-base.log records four promotion failures against the base.",
+    "goal": "source prompt.txt:38 asks that commitless reviews naming run files promote, and reckon/crew/promotion_scope.py:199 recognizes existing relative run artifacts while preserving repository-file refusals.",
+    "manifest": "source manifest.md names both commits and final revision; its 58-pass baseline, 68-pass head and identical seven compatibility failures at both revisions reconcile with the cited logs.",
+    "write_paths": "source prompt.txt:94-98 grants reckon/crew and the named regression test; the complete diff changes only reckon/crew/promotion_scope.py and tests/test_a_review_manifest_naming_run_files_promotes.py."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_manifest_naming_run_files_promotes.py:119-157 independently checks promotion, ledger writes, pointer deletion and refusal side effects, and restoring the original resolver fails four acceptance cases; line 25 is excluded from this assessment.",
+    "evidence": "suite-base.log records 58 passed, suite-head-final.log records 68 passed, and negative-control-delivered-base.log names four tests failing with the original product, each with revision and EXIT receipts.",
+    "fit": "reckon/crew/promotion_scope.py:148 extends the existing classifier using its Path and commitless-role conventions, and added helper names describe their mechanism without prohibited plan labels.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:199-214 accepts existing files inside a commitless run directory only when repository and worktree have no competing path, satisfying the source node's promotion goal.",
+    "reuse": "capability searches found the classifier owner at reckon/crew/promotion_scope.py:148 and fixture owner at tests/test_a_review_run_promotes_itself.py:68-175, both extended or wrapped here; reckon/crew/promotion_gate.py:185 preserves logs rather than classifying changed paths and is not duplicated.",
+    "scope_discipline": "both commits touch only reckon/crew/promotion_scope.py and tests/test_a_review_manifest_naming_run_files_promotes.py, granted at source prompt.txt:95-96 and directly required by the goal."
+  },
+  "negative_control": {
+    "failure_ids": [
+      "tests/test_a_review_manifest_naming_run_files_promotes.py::test_delivered_review_with_relative_run_logs_promotes[complete-queue-cap]",
+      "tests/test_a_review_manifest_naming_run_files_promotes.py::test_delivered_review_with_relative_run_logs_promotes[complete-review-run]",
+      "tests/test_a_review_manifest_naming_run_files_promotes.py::test_delivered_review_with_relative_run_logs_promotes[review-self-queue-cap]",
+      "tests/test_a_review_manifest_naming_run_files_promotes.py::test_delivered_review_with_relative_run_logs_promotes[review-self-review-run]"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T220958579320-qwnw-s30-a-review-manifest-naming-run-files-promotes/negative-control-delivered-base.log",
+    "refusal": "has a complete manifest with changed_paths, but the manifest field 'commits' is missing",
+    "summary": "4 failed, 6 passed in 3.07s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 asks that commitless reviews naming run files promote, and reckon/crew/promotion_scope.py:199 recognizes existing relative run artifacts while preserving repository-file refusals.\nVERDICT done_when: source prompt.txt:266 names promotion and refusal tests on all_debug; suite-head-final.log records 68 passed and EXIT=0, and negative-control-delivered-base.log records four promotion failures against the base.\nVERDICT write_paths: source prompt.txt:94-98 grants reckon/crew and the named regression test; the complete diff changes only reckon/crew/promotion_scope.py and tests/test_a_review_manifest_naming_run_files_promotes.py.\nVERDICT manifest: source manifest.md names both commits and final revision; its 58-pass baseline, 68-pass head and identical seven compatibility failures at both revisions reconcile with the cited logs.\nVERDICT diff: read 7e021cb1d4408233a06459d2fc48007ac864b5b3 and 8416a054f3803ec7be4f495ad382c84f8cdc8f6e against d26a2f0d3a45643ebe826ccda5accdc4b40ae528; the first adds already-passing absolute-path guards and the second adds relative-path recognition and four red-at-base promotion cases.\nCALL_SITES: reckon/crew/promotion.py:complete:1295, reckon/crew/promotion_checks.py:_manifest_repository_paths:555, reckon/crew/promotion_records.py:138, reckon/crew/promotion_evidence.py:374, reckon/crew/recovery_review_acceptance.py:promote_review_run_itself:1331\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:199-214 accepts existing files inside a commitless run directory only when repository and worktree have no competing path, satisfying the source node's promotion goal.\nSCORE evidence: 20\nJUSTIFICATION evidence: suite-base.log records 58 passed, suite-head-final.log records 68 passed, and negative-control-delivered-base.log names four tests failing with the original product, each with revision and EXIT receipts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only reckon/crew/promotion_scope.py and tests/test_a_review_manifest_naming_run_files_promotes.py, granted at source prompt.txt:95-96 and directly required by the goal.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_review_manifest_naming_run_files_promotes.py:119-157 independently checks promotion, ledger writes, pointer deletion and refusal side effects, and restoring the original resolver fails four acceptance cases; line 25 is excluded from this assessment.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:148 extends the existing classifier using its Path and commitless-role conventions, and added helper names describe their mechanism without prohibited plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches found the classifier owner at reckon/crew/promotion_scope.py:148 and fixture owner at tests/test_a_review_run_promotes_itself.py:68-175, both extended or wrapped here; reckon/crew/promotion_gate.py:185 preserves logs rather than classifying changed paths and is not duplicated.\nFINDING tests/test_a_review_manifest_naming_run_files_promotes.py:25 non-blocking: path.is_relative_to(directory) checks a prefix the fixture constructed at line 22, so it cannot detect a product regression and must not count as regression coverage; independent promotion and refusal assertions already provide that coverage.\n",
+  "review_run_id": "r-20261116T230021662341-review-of-qwnw-s30-a-review-manifest-naming-run-files-promotes-8416a054f380",
+  "reviewed_base_sha": "d26a2f0d3a45643ebe826ccda5accdc4b40ae528",
+  "reviewed_head_sha": "8416a054f3803ec7be4f495ad382c84f8cdc8f6e",
+  "reviewed_run_id": "r-20261116T220958579320-qwnw-s30-a-review-manifest-naming-run-files-promotes",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T220958579320-qwnw-s30-a-review-manifest-naming-run-files-promotes/suite-head-final.log",
+      "revision": "8416a054f3803ec7be4f495ad382c84f8cdc8f6e",
+      "summary": "68 passed in 38.65s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T220958579320-qwnw-s30-a-review-manifest-naming-run-files-promotes/suite-base.log",
+      "revision": "d26a2f0d3a45643ebe826ccda5accdc4b40ae528",
+      "summary": "58 passed in 42.02s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:12:20.612223+00:00",
+  "total": 120
+}

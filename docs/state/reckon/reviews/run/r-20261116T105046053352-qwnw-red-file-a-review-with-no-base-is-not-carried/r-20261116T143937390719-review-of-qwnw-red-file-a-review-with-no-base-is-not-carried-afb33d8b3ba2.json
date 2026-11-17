@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T16:01:42.555Z",
+  "dispatched_at": "2026-11-16T16:01:24Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-with-no-base-is-not-carried.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states that ruff check and ruff format --check report no finding on the changed path, but the run directory holds only the gate, suite, imports and negative-control logs and no ruff output, so that lint result is claimed rather than recorded and cannot be re-read by a later reader."
+    }
+  ],
+  "head_log_revision": "ba0dc1d74fd44fc1f9810482ff0d25d95bd32a3c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 655a2befa9 \u2014 de2297b453 adds two statements to the world fixture (a bare origin, its push at the reviewed head), ba0dc1d74f and afb33d8b3b add the two evidence fragments; no assertion was added, deleted or weakened.",
+    "done_when": "the done_when requires the file green as an all_debug job with SLURM_JOB_ID unset against a base of three red, no added failure over the importing files, and a negative control; gate-head.log carries \"env -u SLURM_JOB_ID ... -q tests/test_a_review_with_no_base_is_not_carried.py\" and \"3 passed\", gate-base.log \"3 failed\", suite-base.log and suite-head.log \"58 passed\" each, and negative-control.log \"2 failed, 1 passed\", so the gate asserts the measure.",
+    "goal": "the node's goal is that tests/test_a_review_with_no_base_is_not_carried.py passes in full; the landed fixture at tests/test_a_review_with_no_base_is_not_carried.py:75-100 adds the bare origin the reflex needs, and gate-head.log records \"3 passed in 1.21s\" EXIT=0 for that file.",
+    "manifest": "read; status complete, commits de2297b453 ba0dc1d74f afb33d8b3b, tests the single-file gate, test_logs naming the gate, suite, imports and negative-control logs, baseline_suite (655a2befa9, exit 0, 0 failures) and after_suite (ba0dc1d74f, 0 failures), and evidence_inputs stating the one cause and the test-wrong verdict.",
+    "write_paths": "the node's fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 655a2befa9..afb33d8b3b names tests/test_a_review_with_no_base_is_not_carried.py and the two evidence fragments in that directory, all inside it."
+  },
+  "justifications": {
+    "durability": "dropping the two fixture lines reproduces gate-base.log's \"3 failed\" on \"assert None is not None\", and mutating reckon/crew/recovery_review_dispatch.py:1410-1417 to read a missing base as an empty diff reddens two cases at negative-control.log on \"assert True is False\"; no assertion compares against a value the test itself passed in, the one literal comparison at tests/test_a_review_with_no_base_is_not_carried.py:232 reading a path the code measured from git.",
+    "evidence": "gate-base.log (\"3 failed\", EXIT=1), gate-head.log (\"3 passed\", EXIT=0), both suite arms (\"58 passed\") and negative-control.log (\"2 failed, 1 passed\") are recorded, but the arms are at ba0dc1d74f rather than the delivered afb33d8b3b, and the fragment's ruff claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-with-no-base-is-not-carried.html:50 has no log.",
+    "fit": "the added lines reuse the file's own _git/_commit idiom (tests/test_a_review_with_no_base_is_not_carried.py:33-58) and the bare-origin shape at tests/test_a_review_reads_only_its_runs_changes.py:59-70, with a docstring stating why the remote is required.",
+    "goal_fidelity": "every case in tests/test_a_review_with_no_base_is_not_carried.py reads green at the head arm ba0dc1d74f and git diff --stat ba0dc1d74f..afb33d8b3b shows the delivered head changes only evidence HTML, so the file the goal names passes in full.",
+    "reuse": "the diff adds no definition \u2014 the fixture gains two statements calling the file's existing _git helper, and the no-base rule stays in reckon/crew/recovery_review_dispatch.py:1410 rather than being restated in the test.",
+    "scope_discipline": "git diff --stat 655a2befa9..afb33d8b3b lists only tests/test_a_review_with_no_base_is_not_carried.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, every path inside the node's declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_review_with_no_base_is_not_carried.py passes in full; the landed fixture at tests/test_a_review_with_no_base_is_not_carried.py:75-100 adds the bare origin the reflex needs, and gate-head.log records \"3 passed in 1.21s\" EXIT=0 for that file.\nVERDICT done_when: the done_when requires the file green as an all_debug job with SLURM_JOB_ID unset against a base of three red, no added failure over the importing files, and a negative control; gate-head.log carries \"env -u SLURM_JOB_ID ... -q tests/test_a_review_with_no_base_is_not_carried.py\" and \"3 passed\", gate-base.log \"3 failed\", suite-base.log and suite-head.log \"58 passed\" each, and negative-control.log \"2 failed, 1 passed\", so the gate asserts the measure.\nVERDICT write_paths: the node's fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 655a2befa9..afb33d8b3b names tests/test_a_review_with_no_base_is_not_carried.py and the two evidence fragments in that directory, all inside it.\nVERDICT manifest: read; status complete, commits de2297b453 ba0dc1d74f afb33d8b3b, tests the single-file gate, test_logs naming the gate, suite, imports and negative-control logs, baseline_suite (655a2befa9, exit 0, 0 failures) and after_suite (ba0dc1d74f, 0 failures), and evidence_inputs stating the one cause and the test-wrong verdict.\nVERDICT diff: read commit by commit against 655a2befa9 \u2014 de2297b453 adds two statements to the world fixture (a bare origin, its push at the reviewed head), ba0dc1d74f and afb33d8b3b add the two evidence fragments; no assertion was added, deleted or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every case in tests/test_a_review_with_no_base_is_not_carried.py reads green at the head arm ba0dc1d74f and git diff --stat ba0dc1d74f..afb33d8b3b shows the delivered head changes only evidence HTML, so the file the goal names passes in full.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log (\"3 failed\", EXIT=1), gate-head.log (\"3 passed\", EXIT=0), both suite arms (\"58 passed\") and negative-control.log (\"2 failed, 1 passed\") are recorded, but the arms are at ba0dc1d74f rather than the delivered afb33d8b3b, and the fragment's ruff claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-with-no-base-is-not-carried.html:50 has no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 655a2befa9..afb33d8b3b lists only tests/test_a_review_with_no_base_is_not_carried.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, every path inside the node's declared fence.\nSCORE durability: 18\nJUSTIFICATION durability: dropping the two fixture lines reproduces gate-base.log's \"3 failed\" on \"assert None is not None\", and mutating reckon/crew/recovery_review_dispatch.py:1410-1417 to read a missing base as an empty diff reddens two cases at negative-control.log on \"assert True is False\"; no assertion compares against a value the test itself passed in, the one literal comparison at tests/test_a_review_with_no_base_is_not_carried.py:232 reading a path the code measured from git.\nSCORE fit: 19\nJUSTIFICATION fit: the added lines reuse the file's own _git/_commit idiom (tests/test_a_review_with_no_base_is_not_carried.py:33-58) and the bare-origin shape at tests/test_a_review_reads_only_its_runs_changes.py:59-70, with a docstring stating why the remote is required.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition \u2014 the fixture gains two statements calling the file's existing _git helper, and the no-base rule stays in reckon/crew/recovery_review_dispatch.py:1410 rather than being restated in the test.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-with-no-base-is-not-carried.html:50 non-blocking: the fragment states that ruff check and ruff format --check report no finding on the changed path, but the run directory holds only the gate, suite, imports and negative-control logs and no ruff output, so that lint result is claimed rather than recorded and cannot be re-read by a later reader.",
+  "review_run_id": "r-20261116T143937390719-review-of-qwnw-red-file-a-review-with-no-base-is-not-carried-afb33d8b3ba2",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "afb33d8b3ba23dcd6a4d007202c1d950413aba5b",
+  "reviewed_run_id": "r-20261116T105046053352-qwnw-red-file-a-review-with-no-base-is-not-carried",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T143937390719-review-of-qwnw-red-file-a-review-with-no-base-is-not-carried-afb33d8b3ba2"
+  },
+  "reviewer_run_id": "r-20261116T143937390719-review-of-qwnw-red-file-a-review-with-no-base-is-not-carried-afb33d8b3ba2",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T16:08:46.169305+00:00",
+  "total": 113
+}

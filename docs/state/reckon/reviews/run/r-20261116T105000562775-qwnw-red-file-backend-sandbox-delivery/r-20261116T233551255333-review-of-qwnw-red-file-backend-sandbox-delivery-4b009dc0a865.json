@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_backends.py:3004 launch_plan",
+    "reckon/_worker_fence.py:1655 fence_writable_roots"
+  ],
+  "completed_at": "2026-11-17T00:33:03.468Z",
+  "dispatched_at": "2026-11-17T00:32:27Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html",
+      "id": "f6b72dea913",
+      "line": "72",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm table's base row says its 16 ids include all three repaired ids and the after row at :73 says the same 16 less the three repaired, but the recorded lists logs/base-importer-ids.txt and logs/head-importer-ids-committed.txt differ by exactly two ids, because the ambient-root case did not fail in that arm, which ran with TMPDIR set, so the table overstates what the arm measured."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html",
+      "id": "f2f59893268",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run block quotes a run at e76c9704 reading 5 passed in 2.39s and the paragraph at :64 claims a TMPDIR-unset head run in 2.85s, but no log in the reviewed run's logs/ directory records either figure, the only stored head log being head-backend-sandbox.log at 4b009dc0a8 reading 5 passed in 2.69s, so the fragment's head evidence cannot be reconciled with the run directory it belongs to."
+    },
+    {
+      "file": "tests/test_backend_sandbox_delivery.py",
+      "id": "f5a013fc222",
+      "line": "152",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added case duplicates the seal-withholding property owned by tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:173-192, which already asserts that no --add-dir names a path at or above a node-tmp seal, that a root beneath the seal is kept, and which carries the declared negative control restoring the base fence_writable_roots, so one property now has two assertions that must agree and neither extends the other."
+    }
+  ],
+  "head_log_revision": "4b009dc0a865a8382d3e63071d1f65c0d5dc6a32",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 23b2b31ddccb; e76c9704da imports tempfile and node_tmp_seal_root at tests/test_backend_sandbox_delivery.py:13-19, pins tempfile.tempdir in the computed-roots case at :125 and adds test_claude_read_only_withholds_a_temp_root_the_fence_seals at :152-193, and 4b009dc0a8 rewrites only the two evidence fragments.",
+    "done_when": "the done_when asks for that file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an arm adding no failure, the base red run stored beside the head run, and clean ruff on the changed path; the run carries the verdicts, the arm pair, the red log and the lint readings, but logs/head-backend-sandbox.log's header names the worktree rather than a submitted step, and the TMPDIR-unset head run claimed at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html:64 is recorded only as fragment prose, with no log on disk.",
+    "goal": "the node's goal is that tests/test_backend_sandbox_delivery.py passes in full, and the two commits gained since the last review split the environment-dependent computed-roots case at tests/test_backend_sandbox_delivery.py:113-193 so the file reads green in both TMPDIR configurations, with logs/head-backend-sandbox.log recording 5 passed EXIT=0 at 4b009dc0a8.",
+    "manifest": "read at its delivered state; status complete, commits 53b822e8, 23b2b31, e76c9704 and 4b009dc0, test_logs naming base-backend-sandbox-tmpdir-unset.log, head-backend-sandbox.log, both importer arms and the two suite-arm logs, baseline_suite and after_suite both completed with exit_status 0 and no failure ids, and a rubric line for all six dimensions.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two subpaths, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery; git diff --stat 23b2b31ddccb5627ab394fc160f2dd4dd880200c..4b009dc0a865 lists only tests/test_backend_sandbox_delivery.py and the two fragments inside that directory, with nothing under reckon/."
+  },
+  "justifications": {
+    "durability": "reinstating the base fence_writable_roots, which consults only shared_store_seal_roots and not node_tmp_seal_root, puts the sealed ambient root back into --add-dir and reddens assert sealed not in grant at tests/test_backend_sandbox_delivery.py:190, while the loop at :191-193 reddens if roots beneath the seal are dropped.",
+    "evidence": "logs/head-backend-sandbox.log records 5 passed EXIT=0 at 4b009dc0a8, but it is the only stored head run and it carries TMPDIR set, while qwnw-red-file-backend-sandbox-delivery.html:61 quotes 5 passed in 2.39s at e76c9704 and :64 claims a TMPDIR-unset run in 2.85s that no log in the run directory reproduces, and the gate ran in place rather than as the all_debug job the done_when names.",
+    "fit": "the new case follows the file's description-first docstrings and monkeypatch fixture usage at tests/test_backend_sandbox_delivery.py:113-150, though it imports node_tmp_seal_root directly at :19 where tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:178 reads the same seam through the module.",
+    "goal_fidelity": "the added case at tests/test_backend_sandbox_delivery.py:152-193 is the second half of the third cause's repair, and the head run of the file reads 5 passed EXIT=0 in the reviewed run's logs/head-backend-sandbox.log, so the file passes in full at the reviewed head.",
+    "reuse": "the property the new case restates, that no --add-dir names a path at or above a node-tmp seal and that a root beneath it is kept, is owned by tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:173-192 with its own negative control, so tests/test_backend_sandbox_delivery.py:152-193 duplicates the owner rather than extending it.",
+    "scope_discipline": "git diff --stat 23b2b31ddccb5627ab394fc160f2dd4dd880200c..4b009dc0a865 lists only tests/test_backend_sandbox_delivery.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside the declared write paths, and no product line changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_backend_sandbox_delivery.py passes in full, and the two commits gained since the last review split the environment-dependent computed-roots case at tests/test_backend_sandbox_delivery.py:113-193 so the file reads green in both TMPDIR configurations, with logs/head-backend-sandbox.log recording 5 passed EXIT=0 at 4b009dc0a8.\nVERDICT done_when: the done_when asks for that file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, an arm adding no failure, the base red run stored beside the head run, and clean ruff on the changed path; the run carries the verdicts, the arm pair, the red log and the lint readings, but logs/head-backend-sandbox.log's header names the worktree rather than a submitted step, and the TMPDIR-unset head run claimed at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html:64 is recorded only as fragment prose, with no log on disk.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two subpaths, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery; git diff --stat 23b2b31ddccb5627ab394fc160f2dd4dd880200c..4b009dc0a865 lists only tests/test_backend_sandbox_delivery.py and the two fragments inside that directory, with nothing under reckon/.\nVERDICT manifest: read at its delivered state; status complete, commits 53b822e8, 23b2b31, e76c9704 and 4b009dc0, test_logs naming base-backend-sandbox-tmpdir-unset.log, head-backend-sandbox.log, both importer arms and the two suite-arm logs, baseline_suite and after_suite both completed with exit_status 0 and no failure ids, and a rubric line for all six dimensions.\nVERDICT diff: read commit by commit against 23b2b31ddccb; e76c9704da imports tempfile and node_tmp_seal_root at tests/test_backend_sandbox_delivery.py:13-19, pins tempfile.tempdir in the computed-roots case at :125 and adds test_claude_read_only_withholds_a_temp_root_the_fence_seals at :152-193, and 4b009dc0a8 rewrites only the two evidence fragments.\nCALL_SITES: reckon/_backends.py:3004 launch_plan, reckon/_worker_fence.py:1655 fence_writable_roots\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the added case at tests/test_backend_sandbox_delivery.py:152-193 is the second half of the third cause's repair, and the head run of the file reads 5 passed EXIT=0 in the reviewed run's logs/head-backend-sandbox.log, so the file passes in full at the reviewed head.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/head-backend-sandbox.log records 5 passed EXIT=0 at 4b009dc0a8, but it is the only stored head run and it carries TMPDIR set, while qwnw-red-file-backend-sandbox-delivery.html:61 quotes 5 passed in 2.39s at e76c9704 and :64 claims a TMPDIR-unset run in 2.85s that no log in the run directory reproduces, and the gate ran in place rather than as the all_debug job the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 23b2b31ddccb5627ab394fc160f2dd4dd880200c..4b009dc0a865 lists only tests/test_backend_sandbox_delivery.py and the two fragments under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside the declared write paths, and no product line changed.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the base fence_writable_roots, which consults only shared_store_seal_roots and not node_tmp_seal_root, puts the sealed ambient root back into --add-dir and reddens assert sealed not in grant at tests/test_backend_sandbox_delivery.py:190, while the loop at :191-193 reddens if roots beneath the seal are dropped.\nSCORE fit: 17\nJUSTIFICATION fit: the new case follows the file's description-first docstrings and monkeypatch fixture usage at tests/test_backend_sandbox_delivery.py:113-150, though it imports node_tmp_seal_root directly at :19 where tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:178 reads the same seam through the module.\nSCORE reuse: 5\nJUSTIFICATION reuse: the property the new case restates, that no --add-dir names a path at or above a node-tmp seal and that a root beneath it is kept, is owned by tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:173-192 with its own negative control, so tests/test_backend_sandbox_delivery.py:152-193 duplicates the owner rather than extending it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html:72 non-blocking: the arm table's base row says its 16 ids include all three repaired ids and the after row at :73 says the same 16 less the three repaired, but the recorded lists logs/base-importer-ids.txt and logs/head-importer-ids-committed.txt differ by exactly two ids, because the ambient-root case did not fail in that arm, which ran with TMPDIR set, so the table overstates what the arm measured.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-backend-sandbox-delivery.html:61 non-blocking: the head-run block quotes a run at e76c9704 reading 5 passed in 2.39s and the paragraph at :64 claims a TMPDIR-unset head run in 2.85s, but no log in the reviewed run's logs/ directory records either figure, the only stored head log being head-backend-sandbox.log at 4b009dc0a8 reading 5 passed in 2.69s, so the fragment's head evidence cannot be reconciled with the run directory it belongs to.\nFINDING tests/test_backend_sandbox_delivery.py:152 non-blocking: the added case duplicates the seal-withholding property owned by tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:173-192, which already asserts that no --add-dir names a path at or above a node-tmp seal, that a root beneath the seal is kept, and which carries the declared negative control restoring the base fence_writable_roots, so one property now has two assertions that must agree and neither extends the other.",
+  "review_run_id": "r-20261116T233551255333-review-of-qwnw-red-file-backend-sandbox-delivery-4b009dc0a865",
+  "reviewed_base_sha": "23b2b31ddccb5627ab394fc160f2dd4dd880200c",
+  "reviewed_head_sha": "4b009dc0a865a8382d3e63071d1f65c0d5dc6a32",
+  "reviewed_run_id": "r-20261116T105000562775-qwnw-red-file-backend-sandbox-delivery",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T233551255333-review-of-qwnw-red-file-backend-sandbox-delivery-4b009dc0a865"
+  },
+  "reviewer_run_id": "r-20261116T233551255333-review-of-qwnw-red-file-backend-sandbox-delivery-4b009dc0a865",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T00:51:09.518118+00:00",
+  "total": 88
+}

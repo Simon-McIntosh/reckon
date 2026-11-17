@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs on disk: logs/suite-baseline.log at ba3443a9ae6a records '58 passed in 41.98s' with no FAILED line and a bare EXIT=0, and logs/suite-after.log at 73c3cf5f60 records '58 passed in 44.82s' with no FAILED line and a bare EXIT=0, so the set difference is empty. The wider importer arm the done_when names was checked the same way: importer-base.failed carries 90 FAILED ids and importer-head.failed 86, and comm of the two id sets leaves nothing in the head arm that the base arm does not already fail.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1823 _derive_fleet_state passes merged_sections after held_worktrees",
+    "reckon/crew/section_obligations.py:180 merged_section_items calls merged_section_items_by_session",
+    "reckon/crew/obligations.py:4304 obligation rows extend from the merged section slice",
+    "reckon/crew/merge.py:1544 release_landed_worktrees calls _held_worktree_records",
+    "reckon/crew/station_obligations.py:331 fleet_state per session"
+  ],
+  "completed_at": "2026-11-16T16:17:20.514Z",
+  "dispatched_at": "2026-11-16T16:16:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "3747",
+      "severity": "non-blocking",
+      "text": "non-blocking: dropping the 'previous is None and not inspected' early return makes a project holding no retained tree read its whole history on every signature change, and reckon/crew/merge.py:1544 calls _held_worktree_records on every landing, so a landing in a repository with no retained trees now pays a run-history read it did not pay before, with no measurement of that cost in the manifest."
+    },
+    {
+      "file": "reckon/crew/section_obligations.py",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: the section duty's candidate population now comes from the held-record pass's index (ledger.runs/open_runs plus the aggregate) instead of ledger.load's own store read, and no assertion in tests/test_fleet_state_reuses_its_reads_between_ticks.py compares the two populations, so a drift between the rows handed over and the reader that was replaced would be silent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites: reckon/crew/obligation_snapshot.py:1823 (_derive_fleet_state builds merged_sections after held_worktrees, so the pass has already answered), reckon/crew/section_obligations.py:180 (merged_section_items), reckon/crew/obligations.py:4304 (obligation rows extend from that slice), reckon/crew/merge.py:1544 (release_landed_worktrees calls _held_worktree_records on every landing), reckon/crew/station_obligations.py:331 (fleet_state per session).",
+    "diff": "read commit by commit from ba3443a9ae6 to f3628b5bd0; three commits are this node's and add the _RecordedPass/_held_records_pass split with recorded_run_rows in reckon/crew/obligations.py:3355-3429, WorktreeRecordIndex.rows in reckon/crew/routing.py:1351, the recorded_run_rows call in reckon/crew/section_obligations.py:43-47, and uncommitted-work writes in the test fixture with no assertion edited; the range's other three commits (272a3bc0e7, 25dcca50a9, 398015d5d5) belong to the queue-ordering landing that preceded this node and touch no file this node's three do.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a logged red base run with its ids, an importer arm adding no failure, and ruff clean on the changed paths; logs/gate-head-red-file-job.log records 4 passed EXIT=0 with SLURM_JOB_ID unset, logs/negative-control-base-red-file.log records 3 failed EXIT=1 with the three ids, the importer arms record 90 failed at base against 86 at head with an empty set difference, and my own ruff check plus ruff format --check over the four changed python paths report no finding the base versions do not already carry.",
+    "goal": "the node goal is 'Make tests/test_fleet_state_reuses_its_reads_between_ticks.py pass in full on the primary branch'; the file's four tests pass at 73c3cf5f60 (logs/gate-head-red-file.log: '4 passed in 10.19s', EXIT=0) while the same file at base ba3443a is red with three failing ids, so the goal's deliverable is present.",
+    "manifest": "read the reviewed run's manifest; it reads status complete, names commits 13dcc47b49/73c3cf5f60/f3628b5bd0 in its commits line, gives one cause with a verdict each (test wrong on the clean-checkout fixture, product wrong on the per-derivation ledger.load), and records both promotion arms at 58 passed with their logs, but it records no ruff result although the done_when names ruff as part of the measure.",
+    "write_paths": "the fence names reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two per-node fragment paths; the three commits touch reckon/crew/obligations.py, reckon/crew/routing.py, reckon/crew/section_obligations.py, tests/test_fleet_state_reuses_its_reads_between_ticks.py and files under the fragment directory, all inside it."
+  },
+  "justifications": {
+    "durability": "reverting reckon/crew/section_obligations.py:45-47 to ledger.load reddens tests/test_fleet_state_reuses_its_reads_between_ticks.py:214, :226 and :305 (they count calls to the patched ledger.load, an independent source), and reverting the fixture writes reddens the row-set assertions as the base receipt shows; what is unguarded is that the rows handed over match the population ledger.load returned.",
+    "evidence": "logs/gate-head-red-file-job.log and logs/negative-control-base-red-file.log carry revision, tree, command, imported module, cwd and a bare EXIT line, but the manifest leaves the done_when's ruff clause unrecorded, which I could only confirm by running ruff myself.",
+    "fit": "the dataclass and the lazy 'from reckon.crew import obligations' in reckon/crew/section_obligations.py:43 follow the module's own idiom (obligations.py:4302 imports section_obligations lazily for the same cycle), though WorktreeRecordIndex.rows at reckon/crew/routing.py:1351 hands back unsorted filing order that its caller must re-sort.",
+    "goal_fidelity": "tests/test_fleet_state_reuses_its_reads_between_ticks.py:216 and :305 pass at head and the same file is red at ba3443a9ae6, so the file the goal names passes in full.",
+    "reuse": "no owner for handing already-read rows to a second caller exists: a search over reckon/file_memo.py, reckon/run_store.py (stored_run_rows, RunStore), reckon/ledger.py (load, read_records, runs, open_runs) and reckon/crew/obligation_snapshot.py found only memoized readers, so the addition extends the owner it belongs to by exposing _held_records_pass's own rows and WorktreeRecordIndex's own filings.",
+    "scope_discipline": "every path in the node's three commits (reckon/crew/obligations.py, reckon/crew/routing.py, reckon/crew/section_obligations.py, the test file, the fragment directory) sits inside the declared write paths, though the recorded diff range also carries three commits of the queue-ordering landing that precede them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_fleet_state_reuses_its_reads_between_ticks.py pass in full on the primary branch'; the file's four tests pass at 73c3cf5f60 (logs/gate-head-red-file.log: '4 passed in 10.19s', EXIT=0) while the same file at base ba3443a is red with three failing ids, so the goal's deliverable is present.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a logged red base run with its ids, an importer arm adding no failure, and ruff clean on the changed paths; logs/gate-head-red-file-job.log records 4 passed EXIT=0 with SLURM_JOB_ID unset, logs/negative-control-base-red-file.log records 3 failed EXIT=1 with the three ids, the importer arms record 90 failed at base against 86 at head with an empty set difference, and my own ruff check plus ruff format --check over the four changed python paths report no finding the base versions do not already carry.\nVERDICT write_paths: the fence names reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two per-node fragment paths; the three commits touch reckon/crew/obligations.py, reckon/crew/routing.py, reckon/crew/section_obligations.py, tests/test_fleet_state_reuses_its_reads_between_ticks.py and files under the fragment directory, all inside it.\nVERDICT manifest: read the reviewed run's manifest; it reads status complete, names commits 13dcc47b49/73c3cf5f60/f3628b5bd0 in its commits line, gives one cause with a verdict each (test wrong on the clean-checkout fixture, product wrong on the per-derivation ledger.load), and records both promotion arms at 58 passed with their logs, but it records no ruff result although the done_when names ruff as part of the measure.\nVERDICT diff: read commit by commit from ba3443a9ae6 to f3628b5bd0; three commits are this node's and add the _RecordedPass/_held_records_pass split with recorded_run_rows in reckon/crew/obligations.py:3355-3429, WorktreeRecordIndex.rows in reckon/crew/routing.py:1351, the recorded_run_rows call in reckon/crew/section_obligations.py:43-47, and uncommitted-work writes in the test fixture with no assertion edited; the range's other three commits (272a3bc0e7, 25dcca50a9, 398015d5d5) belong to the queue-ordering landing that preceded this node and touch no file this node's three do.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1823, reckon/crew/section_obligations.py:180, reckon/crew/obligations.py:4304, reckon/crew/merge.py:1544, reckon/crew/station_obligations.py:331\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_fleet_state_reuses_its_reads_between_ticks.py:216 and :305 pass at head and the same file is red at ba3443a9ae6, so the file the goal names passes in full.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head-red-file-job.log and logs/negative-control-base-red-file.log carry revision, tree, command, imported module, cwd and a bare EXIT line, but the manifest leaves the done_when's ruff clause unrecorded, which I could only confirm by running ruff myself.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the node's three commits (reckon/crew/obligations.py, reckon/crew/routing.py, reckon/crew/section_obligations.py, the test file, the fragment directory) sits inside the declared write paths, though the recorded diff range also carries three commits of the queue-ordering landing that precede them.\nSCORE durability: 18\nJUSTIFICATION durability: reverting reckon/crew/section_obligations.py:45-47 to ledger.load reddens tests/test_fleet_state_reuses_its_reads_between_ticks.py:214, :226 and :305 (they count calls to the patched ledger.load, an independent source), and reverting the fixture writes reddens the row-set assertions as the base receipt shows; what is unguarded is that the rows handed over match the population ledger.load returned.\nSCORE fit: 17\nJUSTIFICATION fit: the dataclass and the lazy 'from reckon.crew import obligations' in reckon/crew/section_obligations.py:43 follow the module's own idiom (obligations.py:4302 imports section_obligations lazily for the same cycle), though WorktreeRecordIndex.rows at reckon/crew/routing.py:1351 hands back unsorted filing order that its caller must re-sort.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for handing already-read rows to a second caller exists: a search over reckon/file_memo.py, reckon/run_store.py (stored_run_rows, RunStore), reckon/ledger.py (load, read_records, runs, open_runs) and reckon/crew/obligation_snapshot.py found only memoized readers, so the addition extends the owner it belongs to by exposing _held_records_pass's own rows and WorktreeRecordIndex's own filings.\nFINDING reckon/crew/obligations.py:3747 non-blocking: dropping the 'previous is None and not inspected' early return makes a project holding no retained tree read its whole history on every signature change, and reckon/crew/merge.py:1544 calls _held_worktree_records on every landing, so a landing in a repository with no retained trees now pays a run-history read it did not pay before, with no measurement of that cost in the manifest.\nFINDING reckon/crew/section_obligations.py:45 non-blocking: the section duty's candidate population now comes from the held-record pass's index (ledger.runs/open_runs plus the aggregate) instead of ledger.load's own store read, and no assertion in tests/test_fleet_state_reuses_its_reads_between_ticks.py compares the two populations, so a drift between the rows handed over and the reader that was replaced would be silent.",
+  "review_node": "review-of-qwnw-red-file-fleet-state-reuses-its-reads-between-ticks-f3628b5bd086",
+  "review_run_id": "r-20261116T161427482675-review-of-qwnw-red-file-fleet-state-reuses-its-reads-between-ticks-f3628b5bd086",
+  "reviewed_base_sha": "ba3443a9ae6a2bc171c76560016a6ca24e055f02",
+  "reviewed_head_sha": "f3628b5bd086345f10680be9a6358bf1896f1622",
+  "reviewed_run_id": "r-20261116T104928709587-qwnw-red-file-fleet-state-reuses-its-reads-between-ticks",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T161427482675-review-of-qwnw-red-file-fleet-state-reuses-its-reads-between-ticks-f3628b5bd086"
+  },
+  "rubric": "",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:16:23.449623+00:00",
+  "total": 110
+}

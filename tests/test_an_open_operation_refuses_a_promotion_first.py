@@ -9,6 +9,11 @@ refusal reached after the landing checks has already spent the whole promotion's
 work, and in a serial sweep every such refusal delays every later promotion by
 as much.
 
+``crew complete`` records a promotion request for the fleet service to drain,
+which reads no store, and ``--wait`` is what carries the promotion out in the
+call. The refusal asserted here is the promotion's, so the invocation carries
+it out: the request path is a receipt, not the judgement.
+
 Each open state is resolved with ``git rev-parse --git-path`` so a linked
 worktree, whose ``.git`` is a file, is read where git actually keeps the marker.
 
@@ -265,6 +270,10 @@ def _invoke(root: Path) -> tuple[object, _ReadCounter]:
                 "a fixture that exercises the checkout guard",
                 "--checkout-path",
                 str(root),
+                # The refusal is judged by the promotion itself, so the call
+                # carries it out rather than only recording the request the
+                # fleet service would drain later.
+                "--wait",
             ],
         )
     return result, counter

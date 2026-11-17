@@ -172,6 +172,24 @@ def _seed_git_repository(root: Path) -> None:
         )
 
 
+def _seeded_head(root: Path) -> str:
+    """The revision the fixture worktree sits on.
+
+    A run's base revision is the commit its own tree stands at when it starts,
+    and promotion measures a commitless row against exactly that. A placeholder
+    here reads as a worktree that moved off its base, so the fixture reports
+    the revision it actually made.
+    """
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return head.stdout.strip()
+
+
 def _write_pointer(
     run_id: str,
     repository: Path,
@@ -197,7 +215,7 @@ def _write_pointer(
             "base_sha": (
                 base_sha
                 if base_sha is not None
-                else "base-abc"
+                else _seeded_head(repository)
                 if suite_command
                 else ""
             ),
@@ -212,6 +230,13 @@ def _write_pointer(
             },
         },
     )
+
+
+# A citation-shaped value for the manifests no store is asked to resolve: the
+# attribution tests audit a manifest without a repository, and a complete
+# manifest for a working role has to cite a commit. Repository-backed fixtures
+# pass the commit their own tree holds.
+_FIXTURE_COMMIT = "4f3c1a9d5b2e7c8a1d6f0b3e9c2a7d5f8e1b4c6a"
 
 
 def _suite_observation(revision: str, failure_ids: list[str]) -> dict[str, object]:
@@ -232,8 +257,9 @@ def _write_suite_manifest(
     baseline: dict[str, object] | None,
     after: dict[str, object] | None,
     failure_attribution: dict[str, str] | None = None,
+    commits: str = _FIXTURE_COMMIT,
 ) -> None:
-    lines = ["node: node-a", "status: complete", "commits: abc123", "tests: done"]
+    lines = ["node: node-a", "status: complete", f"commits: {commits}", "tests: done"]
     if baseline is not None:
         lines.append("baseline_suite: " + json.dumps(baseline))
     if after is not None:
@@ -268,6 +294,7 @@ def _complete_arguments(
     arguments = [
         "crew",
         "complete",
+        "--wait",
         "--run",
         run_id,
         "--gate",
@@ -298,6 +325,7 @@ def test_promoting_a_passing_gate_with_no_check_is_refused(repository: Path) -> 
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -326,6 +354,7 @@ def test_promoting_a_passing_gate_with_a_full_check_is_accepted_and_stored(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -361,6 +390,7 @@ def test_a_log_digest_satisfies_the_check_in_place_of_a_log_path(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -391,6 +421,7 @@ def test_a_failing_or_not_run_gate_needs_no_check_evidence(repository: Path) -> 
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -413,10 +444,16 @@ def test_armed_promotion_refuses_missing_observation_and_keeps_pointer(
 ) -> None:
     run_id = "r-20260826T090400000000-node-a"
     _stored_review(run_id)
+    (repository / "docs" / "plans" / f"{PLAN}.html").write_text(
+        "<!doctype html><html><body>the node's uncommitted work</body></html>"
+    )
     manifest = tmp_path / "missing-after.md"
     _write_suite_manifest(
         manifest,
-        baseline=_suite_observation("base-abc", ["tests/test_old.py::test_old"]),
+        commits=_seeded_head(repository),
+        baseline=_suite_observation(
+            _seeded_head(repository), ["tests/test_old.py::test_old"]
+        ),
         after=None,
     )
     _write_pointer(
@@ -443,9 +480,12 @@ def test_armed_promotion_refuses_added_failures_with_ids(
     manifest = tmp_path / "added.md"
     _write_suite_manifest(
         manifest,
-        baseline=_suite_observation("base-abc", ["tests/test_old.py::test_old"]),
+        commits=_seeded_head(repository),
+        baseline=_suite_observation(
+            _seeded_head(repository), ["tests/test_old.py::test_old"]
+        ),
         after=_suite_observation(
-            "after-abc",
+            _seeded_head(repository),
             ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
         ),
     )
@@ -471,12 +511,16 @@ def test_reasoned_waiver_promotes_and_stores_observations(
     run_id = "r-20260826T090600000000-node-a"
     _stored_review(run_id)
     manifest = tmp_path / "waived.md"
-    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    baseline = _suite_observation(
+        _seeded_head(repository), ["tests/test_old.py::test_old"]
+    )
     after = _suite_observation(
-        "after-abc",
+        _seeded_head(repository),
         ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
     )
-    _write_suite_manifest(manifest, baseline=baseline, after=after)
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, commits=_seeded_head(repository)
+    )
     _write_pointer(
         run_id,
         repository,
@@ -497,8 +541,8 @@ def test_reasoned_waiver_promotes_and_stores_observations(
     suite_delta = json.loads(result.output)["record"]["suite_delta"]
     assert suite_delta["status"] == "waived"
     assert suite_delta["waiver_reason"] == "known flaky host probe"
-    assert suite_delta["baseline_suite"]["revision"] == "base-abc"
-    assert suite_delta["after_suite"]["revision"] == "after-abc"
+    assert suite_delta["baseline_suite"]["revision"] == baseline["revision"]
+    assert suite_delta["after_suite"]["revision"] == after["revision"]
     assert suite_delta["added_failure_ids"] == ["tests/test_new.py::test_regression"]
 
 
@@ -510,10 +554,14 @@ def test_repair_run_with_only_baseline_failures_is_clean(
     manifest = tmp_path / "clean.md"
     _write_suite_manifest(
         manifest,
+        commits=_seeded_head(repository),
         baseline=_suite_observation(
-            "base-abc", ["tests/test_old.py::test_one", "tests/test_old.py::test_two"]
+            _seeded_head(repository),
+            ["tests/test_old.py::test_one", "tests/test_old.py::test_two"],
         ),
-        after=_suite_observation("after-abc", ["tests/test_old.py::test_two"]),
+        after=_suite_observation(
+            _seeded_head(repository), ["tests/test_old.py::test_two"]
+        ),
     )
     _write_pointer(
         run_id,
@@ -563,6 +611,7 @@ def test_real_cited_commit_and_clean_suite_delta_promote_together(
         manifest,
         baseline=_suite_observation(base_sha, ["tests/test_old.py::test_old"]),
         after=_suite_observation(landed_sha, ["tests/test_old.py::test_old"]),
+        commits=landed_sha,
     )
     run_id = "r-20260826T090800000000-node-a"
     _stored_review(run_id)
@@ -602,9 +651,11 @@ def test_known_bad_promotion_with_twenty_added_failures_is_refused(
     baseline_failures = [_DOCUMENTATION_LAYOUT_COLLECTION_FAILURE]
     _write_suite_manifest(
         manifest,
-        baseline=_suite_observation("base-abc", baseline_failures),
+        commits=_seeded_head(repository),
+        baseline=_suite_observation(_seeded_head(repository), baseline_failures),
         after=_suite_observation(
-            "after-abc", [*baseline_failures, *_STANDARD_NAME_EDIT_FAILURE_IDS]
+            _seeded_head(repository),
+            [*baseline_failures, *_STANDARD_NAME_EDIT_FAILURE_IDS],
         ),
     )
     _write_pointer(
@@ -649,8 +700,9 @@ def test_fifteen_repair_promotions_with_no_added_failures_are_accepted(
         )
         _write_suite_manifest(
             manifest,
-            baseline=_suite_observation("base-abc", inherited_failures),
-            after=_suite_observation(f"repair-{index}", after_failures),
+            commits=_seeded_head(repository),
+            baseline=_suite_observation(_seeded_head(repository), inherited_failures),
+            after=_suite_observation(_seeded_head(repository), after_failures),
         )
         _write_pointer(
             run_id,
@@ -1023,15 +1075,21 @@ def test_added_failure_ids_matches_promotions_suite_delta_arithmetic(
 ) -> None:
     run_id = "r-20260826T090900000000-node-a"
     _stored_review(run_id)
-    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    baseline = _suite_observation(
+        _seeded_head(repository), ["tests/test_old.py::test_old"]
+    )
     after = _suite_observation(
-        "after-abc",
+        _seeded_head(repository),
         ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
     )
     attribution = {"tests/test_new.py::test_regression": "deadbeef1234"}
     manifest = tmp_path / "attributed-waived.md"
     _write_suite_manifest(
-        manifest, baseline=baseline, after=after, failure_attribution=attribution
+        manifest,
+        baseline=baseline,
+        after=after,
+        failure_attribution=attribution,
+        commits=_seeded_head(repository),
     )
     _write_pointer(
         run_id,
@@ -1072,14 +1130,20 @@ def test_promoted_run_stores_failure_attribution_beside_added_ids(
     run_id = "r-20260903T000100000000-node-a"
     _stored_review(run_id)
     manifest = tmp_path / "attributed-waived.md"
-    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    baseline = _suite_observation(
+        _seeded_head(repository), ["tests/test_old.py::test_old"]
+    )
     after = _suite_observation(
-        "after-abc",
+        _seeded_head(repository),
         ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
     )
     attribution = {"tests/test_new.py::test_regression": "deadbeef1234"}
     _write_suite_manifest(
-        manifest, baseline=baseline, after=after, failure_attribution=attribution
+        manifest,
+        baseline=baseline,
+        after=after,
+        failure_attribution=attribution,
+        commits=_seeded_head(repository),
     )
     _write_pointer(
         run_id,
@@ -1111,9 +1175,11 @@ def test_added_failure_with_no_attribution_entry_still_refuses(
     run_id = "r-20260903T000200000000-node-a"
     _stored_review(run_id)
     manifest = tmp_path / "unattributed-added.md"
-    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    baseline = _suite_observation(
+        _seeded_head(repository), ["tests/test_old.py::test_old"]
+    )
     after = _suite_observation(
-        "after-abc",
+        _seeded_head(repository),
         ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
     )
     # An attribution naming only pre-existing failures leaves the added
@@ -1121,7 +1187,11 @@ def test_added_failure_with_no_attribution_entry_still_refuses(
     # exactly as if no attribution had been offered.
     attribution = {"tests/test_old.py::test_old": "pre-existing-commit"}
     _write_suite_manifest(
-        manifest, baseline=baseline, after=after, failure_attribution=attribution
+        manifest,
+        baseline=baseline,
+        after=after,
+        failure_attribution=attribution,
+        commits=_seeded_head(repository),
     )
     _write_pointer(
         run_id,
@@ -1144,9 +1214,11 @@ def test_attribution_naming_a_pre_existing_failure_is_dropped(
     run_id = "r-20260903T000300000000-node-a"
     _stored_review(run_id)
     manifest = tmp_path / "pre-existing-attribution.md"
-    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    baseline = _suite_observation(
+        _seeded_head(repository), ["tests/test_old.py::test_old"]
+    )
     after = _suite_observation(
-        "after-abc",
+        _seeded_head(repository),
         ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
     )
     attribution = {
@@ -1154,7 +1226,11 @@ def test_attribution_naming_a_pre_existing_failure_is_dropped(
         "tests/test_new.py::test_regression": "deadbeef1234",
     }
     _write_suite_manifest(
-        manifest, baseline=baseline, after=after, failure_attribution=attribution
+        manifest,
+        baseline=baseline,
+        after=after,
+        failure_attribution=attribution,
+        commits=_seeded_head(repository),
     )
     _write_pointer(
         run_id,

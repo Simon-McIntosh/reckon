@@ -44,7 +44,10 @@ def merged_section_items_by_session(
 
     rows = obligations_module.recorded_run_rows(project, checkout)
     if rows is None:
-        rows, _version = ledger.load(project, checkout)
+        # The pass has not read this project in this process, so the session's
+        # own slice comes from the writers' projection rather than the whole
+        # ledger. The filter below still applies to it unchanged.
+        rows = ledger.session_rows(project, session, checkout)
     candidates = {
         str(record.get("run_id") or ""): record
         for record in [*pointers, *rows]

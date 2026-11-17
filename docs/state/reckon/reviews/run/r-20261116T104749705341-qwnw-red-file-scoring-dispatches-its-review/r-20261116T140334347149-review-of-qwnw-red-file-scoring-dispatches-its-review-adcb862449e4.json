@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own arms both record an empty failure set: baseline_suite (revision 7061ebe583, logs/suite-base.log) 0 failures / 58 passed / EXIT=0, after_suite (revision adcb862449, logs/suite-after-final.log) 0 failures / 58 passed / EXIT=0, so no failing id is added. Read from the two logs' summary and EXIT lines, not from the manifest's claim.",
+  "completed_at": "2026-11-16T14:56:52.940Z",
+  "dispatched_at": "2026-11-16T14:56:26Z",
+  "findings": [
+    {
+      "file": "tests/test_scoring_dispatches_its_review.py",
+      "line": 246,
+      "severity": "non-blocking",
+      "summary": "the quiet half asserts only that report['reason'] is truthy, so it cannot tell the stored-review refusal from the pre-spawn 'running' refusal it landed on at the base revision; the fragment's claim that the quiet half 'now reaches the stored-review arm it asserts' is asserted by no line, and this case would keep passing if the reflex refused for any other cause."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scoring-dispatches-its-review.html",
+      "line": 76,
+      "severity": "non-blocking",
+      "summary": "the done_when's first instruction is to merge the current origin/main and rerun the file before deciding the cause; the claim that the merged head f361d2bcfc still failed 3 of 4 ('local run') is recorded in prose only and no log in logs/ names that revision, so the arm that justifies repairing rather than merging is unreviewable."
+    },
+    {
+      "file": "tests/test_a_review_waits_for_a_saturated_lane.py",
+      "line": 280,
+      "severity": "non-blocking",
+      "summary": "a second copy of the pointer fixture still writes phase 'starting'; the two copies now disagree and that file stays red at the delivered head (logs/sibling-lane-file-head.log, 2 failed), so the fixture's capability has two implementations and only one carries the corrected phase."
+    }
+  ],
+  "plan_section": "s29",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "project": "reckon",
+  "review_run_id": "r-20261116T140334347149-review-of-qwnw-red-file-scoring-dispatches-its-review-adcb862449e4",
+  "review_text": "VERDICT goal: the goal is to make tests/test_scoring_dispatches_its_review.py pass in full on the primary branch; the authored commit c4d0975cd3 changes one fixture label at tests/test_scoring_dispatches_its_review.py:223 and the file reports 4 passed at adcb862449 in logs/gate-head-final.log:9-10.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each cause verdicted with none weakened, importing-test-file arm and a base negative control; logs/gate-head-final.log:4 records `env -u SLURM_JOB_ID ...` on all_debug at adcb862449 with 4 passed EXIT=0, logs/gate-base.log:last EXIT=1 carries the three failing ids, logs/suite-base.log and logs/suite-after-final.log both read 58 passed EXIT=0 \u2014 but the merged-head rerun the done_when names first (f361d2bcfc, 3 failed / 1 passed) is claimed only at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scoring-dispatches-its-review.html:76 with no log.\nVERDICT write_paths: declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the authored commits c4d0975cd3 and adcb862449 touch tests/test_scoring_dispatches_its_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scoring-dispatches-its-review.html, both inside, while the remaining files in 7061ebe583..adcb862449 arrive through the instructed origin/main merge f361d2bcfc.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104749705341-qwnw-red-file-scoring-dispatches-its-review/manifest.md; it reads status complete, names the gate and both suite arms with log paths and revisions, records the base arm's three ids, carries the sibling file's redness under outside_scope, and answers all six rubric lines.\nVERDICT diff: read commit by commit against 7061ebe583; the authored change is a 6-line fixture edit (phase starting -> working plus its comment) and a 92-line evidence fragment, and no assertion is added, deleted or weakened.\nCALL_SITES: reckon/crew/recovery.py:dispatch_review_for_run, reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/dispatch_launch.py:_started_phase, reckon/crew/dispatch_sessions.py:192\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the repaired fixture at tests/test_scoring_dispatches_its_review.py:223 now carries the 'working' label reckon/crew/dispatch_sessions.py:192 writes, so it is no longer swallowed by the deliberate pre-spawn branch at reckon/crew/recovery_classification.py:1882-1891.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head-final.log and logs/gate-base.log record both arms with EXIT lines at named revisions, but the merge-then-rerun arm the done_when orders first has no log and is prose at qwnw-red-file-scoring-dispatches-its-review.html:76.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the two authored commits touch only tests/test_scoring_dispatches_its_review.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both inside the declared paths, and the rest of the range is the merge f361d2bcfc.\nSCORE durability: 15\nJUSTIFICATION durability: reinstating the regression is the base arm and it reddens exactly the three ids recorded at the end of logs/gate-base.log, while the fourth case's assertion at tests/test_scoring_dispatches_its_review.py:246 is a bare truthiness check that survives any refusal.\nSCORE fit: 19\nJUSTIFICATION fit: the added comment sits inside the local helper at tests/test_scoring_dispatches_its_review.py:218-223 in the surrounding fixture's idiom, and the change introduces no new name.\nSCORE reuse: 15\nJUSTIFICATION reuse: a search over tests/ for a helper that builds a scoring-run pointer found a second copy at tests/test_a_review_waits_for_a_saturated_lane.py:280 that still writes 'starting', so the edit repairs one copy of a duplicated fixture rather than the owner.\nFINDING tests/test_scoring_dispatches_its_review.py:246 non-blocking: the quiet half asserts only that report['reason'] is truthy, so it cannot tell the stored-review refusal from the pre-spawn 'running' refusal it landed on at the base revision; the fragment's claim that the change brings this case to the stored-review arm is asserted by no line, and this case would keep passing if the reflex refused for any other cause.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scoring-dispatches-its-review.html:76 non-blocking: the done_when's first instruction is to merge the current origin/main and rerun the file before deciding the cause; the claim that the merged head f361d2bcfc still failed 3 of 4 is recorded in prose only and no log in logs/ names that revision, so the arm that justifies repairing rather than merging is unreviewable.\nFINDING tests/test_a_review_waits_for_a_saturated_lane.py:280 non-blocking: a second copy of the pointer fixture still writes phase 'starting'; the two copies now disagree and that file stays red at the delivered head (logs/sibling-lane-file-head.log, 2 failed), so the fixture's capability has two implementations and only one carries the corrected phase.",
+  "reviewed_base_sha": "7061ebe583fabf0a527ad78177b396fbd6940d61",
+  "reviewed_head_commits": [
+    "c4d0975cd360115cf62c2cfae90efca3f99687aa",
+    "adcb862449e4e10fdd940970de6beeb3655d1611"
+  ],
+  "reviewed_head_sha": "adcb862449e4e10fdd940970de6beeb3655d1611",
+  "reviewed_run_id": "r-20261116T104749705341-qwnw-red-file-scoring-dispatches-its-review",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:17:01.158034+00:00",
+  "total": 102
+}

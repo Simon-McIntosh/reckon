@@ -361,22 +361,98 @@ def _review_record_subject(path: Path) -> tuple[str, str]:
     return stem, ""
 
 
+class _ReviewCandidateMap:
+    """Which live pointers could stand for a run, filed once per snapshot read.
+
+    :func:`_review_in_flight` asks, for one run, which live reviewer stands for
+    its head. Answering that by walking every live pointer for every run makes
+    one pass over P runs cost P² candidate reads: a 60 s record of the station's
+    tick on 16 November still found 26% of the main thread in this walk after
+    the per-candidate answers had been indexed — 160 delivered runs, each
+    sweeping 200 live pointers. The walk is inverted here instead. Every pointer
+    is filed once, under each record directory its granted paths name and — for
+    a reviewer — under the run its declarations name, so a run's answer is read
+    from the short lists its own identity selects.
+
+    Filings keep the pointers' order in the read, because the rule returns the
+    first candidate that matches and that first match is the answer: a hand
+    dispatch, a figure review and a run review of one head can all appear in
+    these lists, and only the read's own order separates them.
+    """
+
+    def __init__(self) -> None:
+        self.by_directory: dict[Path, list[tuple[int, Mapping[str, Any]]]] = {}
+        self.by_subject: dict[str, list[tuple[int, Mapping[str, Any]]]] = {}
+        self.by_unresolved: list[tuple[int, Mapping[str, Any]]] = []
+
+    def file_directory(
+        self, directory: Path, position: int, pointer: Mapping[str, Any]
+    ) -> None:
+        """File a pointer under one record directory it was granted."""
+        self.by_directory.setdefault(directory, []).append((position, pointer))
+
+    def file_subject(
+        self, reviewed: str, position: int, pointer: Mapping[str, Any]
+    ) -> None:
+        """File a review pointer under the run it stands for."""
+        self.by_subject.setdefault(reviewed, []).append((position, pointer))
+
+    def file_unresolved(self, position: int, pointer: Mapping[str, Any]) -> None:
+        """File a reviewer that spells no subject for every query to read."""
+        self.by_unresolved.append((position, pointer))
+
+    def matches(
+        self, directory: Path, run_id: str
+    ) -> list[tuple[int, Mapping[str, Any]]]:
+        """The pointers that could stand for one run, in the read's order.
+
+        Three filings feed this: the record directories a pointer declares, the
+        run its declarations or node id name, and the unresolved list for a
+        reviewer that spells neither. The unresolved list is examined by every
+        query because only the exact subject read inside the query can say what
+        such a pointer stands for, and a query that skipped an unresolved
+        reviewer could miss the review it owes its answer to.
+        """
+        buckets = [
+            bucket
+            for bucket in (
+                self.by_directory.get(directory, ()),
+                self.by_subject.get(run_id, ()),
+                self.by_unresolved,
+            )
+            if bucket
+        ]
+        if not buckets:
+            return []
+        if len(buckets) == 1:
+            return list(buckets[0])
+        merged: list[tuple[int, Mapping[str, Any]]] = sorted(
+            {entry[0]: entry for bucket in buckets for entry in bucket}.values()
+        )
+        return merged
+
+
 class _ReviewInFlightIndex:
     """What one read of the live pointers answers about the reviews in flight.
 
     :func:`_review_in_flight` is asked once per classified run, and every ask
-    walks the live pointers for the review standing at that run's head. Two of
-    the answers a candidate contributes cost filesystem checks while depending
-    on the candidate or the reviewed run alone: the directory a reviewed run
-    keeps its review records in, which decides where its review's record was
-    granted to be written, and the subject a review pointer stands for. Taken
-    inside the walk they cost a couple of checks per candidate, so a pass over
-    P pointers made on the order of P² checks and never finished on a fleet a
-    restart had left full of pointers — measured 16 November, when the
-    station's first tick after it restarted sat in this walk and its resident
-    memory reached 8.5 GB. An index is built for one snapshot read and holds
-    each of those answers, so every classified run walks the pointers linearly
-    and reads the same answers the base read path reads.
+    walks the live pointers for the review standing at that run's head. Three
+    things a candidate contributes cost filesystem checks: the directory a
+    reviewed run keeps its review records in, which decides where its review's
+    record was granted to be written; the subject a review pointer stands for;
+    and the head a review dispatch composed for. Taken inside the walk they
+    cost a couple of checks per candidate, so a pass over P pointers made on
+    the order of P² checks and never finished on a fleet a restart had left
+    full of pointers — measured 16 November, when the station's first tick
+    after it restarted sat in this walk and its resident memory reached 8.5 GB.
+    An index is built for one snapshot read and holds each of those answers.
+
+    It also holds the walk itself, inverted: :class:`_ReviewCandidateMap` files
+    every pointer once under what it could stand for, so a run's answer is a
+    lookup in the lists its own id selects rather than a sweep of the fleet.
+    Both callers of the rule — the classifier's duty pass and the obligation
+    sweep — reach that index, so one read of the live pointers answers every
+    question asked of it.
 
     The index is consulted only by a caller that passes a snapshot. A reader
     holding none builds one for its own read, so nothing is shared between
@@ -385,13 +461,16 @@ class _ReviewInFlightIndex:
     """
 
     def __init__(self, pointers: Sequence[Mapping[str, Any]]) -> None:
-        self._pointers = pointers
+        self._pointers = tuple(pointers)
         self._lock = threading.Lock()
         self._run_directories: dict[str, Path] = {}
         self._record_directories: dict[str, Path] = {}
         self._declarations: dict[int, dict[Path, set[str]]] = {}
         self._composed: dict[tuple[str, str], dict[str | None, str]] = {}
         self._subjects: dict[tuple[int, str], tuple[str, str]] = {}
+        self._candidate_maps: dict[str, _ReviewCandidateMap] = {}
+        self._standing: dict[tuple[str, str, str, str], str] = {}
+        self._live_ids: set[str] | None = None
 
     def run_directory(self, run_id: str) -> Path:
         """The directory the run keeps its own files in, read once."""
@@ -404,16 +483,46 @@ class _ReviewInFlightIndex:
             return self._run_directories.setdefault(run_id, directory)
 
     def record_directory(self, run_id: str) -> Path:
-        """The directory the reviewed run keeps its review records in."""
+        """The directory the reviewed run keeps its review records in.
+
+        A run the read holds a live pointer for is read from the runs root
+        without an existence check: archiving a run refuses while its pointer
+        stands, so a run that is still live in this read was never moved to the
+        archive and its directory is the one under the runs root. Only a run
+        this read has no pointer for is resolved through :func:`runs.run_dir`,
+        which asks the filesystem where an archived run went. That keeps this
+        answer identical to the one the walk read, at no check for the run the
+        sweep is asking about.
+        """
         with self._lock:
             found = self._record_directories.get(run_id)
         if found is not None:
             return found
-        directory = review_module.run_review_record_directory(
-            self.run_directory(run_id)
-        )
+        if run_id in self._live_run_ids():
+            directory = review_module.run_review_record_directory(
+                runs.runs_dir() / run_id
+            )
+        else:
+            directory = review_module.run_review_record_directory(
+                self.run_directory(run_id)
+            )
         with self._lock:
             return self._record_directories.setdefault(run_id, directory)
+
+    def _live_run_ids(self) -> set[str]:
+        """The run ids this read holds a live pointer for, read once."""
+        with self._lock:
+            found = self._live_ids
+        if found is not None:
+            return found
+        live = {
+            str(pointer.get("run_id") or "")
+            for pointer in self._pointers
+            if str(pointer.get("run_id") or "")
+        }
+        with self._lock:
+            self._live_ids = live
+            return live
 
     def declared_records(self, pointer: Mapping[str, Any]) -> dict[Path, set[str]]:
         """The record names a pointer declares, grouped by their directory.
@@ -481,6 +590,118 @@ class _ReviewInFlightIndex:
         with self._lock:
             return self._subjects.setdefault(key, subject)
 
+    def candidate_map(self, project: Any) -> _ReviewCandidateMap:
+        """The read's pointers filed by record directory and by reviewed run.
+
+        Every pointer is filed once per project: its granted record directories
+        as spelled, and the run its declarations or node id name as a review's
+        subject. Both readings are string reading alone, because an index is
+        otherwise priced at a directory read per reviewer — :func:`_review_subject`
+        answers the subject exactly and pays a reviewed run's ``run_dir`` to do
+        it, which is what made each new index cost filesystem checks even after
+        the walk itself was inverted.
+
+        A filing this cannot read is not dropped: a reviewer whose declarations
+        and node id spell no run lands in the unresolved list every query also
+        examines, and a query reads its exact subject before matching it, so the
+        answer is :func:`_review_subject`'s whether or not this filed it.
+        """
+        key = str(project)
+        with self._lock:
+            found = self._candidate_maps.get(key)
+        if found is not None:
+            return found
+        candidates = _ReviewCandidateMap()
+        for position, pointer in enumerate(self._pointers):
+            for directory in self.declared_records(pointer):
+                candidates.file_directory(directory, position, pointer)
+            if not _is_review_run(pointer):
+                continue
+            reviewed = self.declared_reviewed_runs(pointer)
+            if reviewed:
+                for run_id in reviewed:
+                    candidates.file_subject(run_id, position, pointer)
+            else:
+                candidates.file_unresolved(position, pointer)
+        with self._lock:
+            return self._candidate_maps.setdefault(key, candidates)
+
+    def declared_reviewed_runs(self, pointer: Mapping[str, Any]) -> set[str]:
+        """The runs a review pointer could stand for, read from what it spells.
+
+        The dispatch grants a reviewer the record paths of the run it reviews,
+        so those paths spell the subject; a reviewer dispatched under a node id
+        minted from its subject spells it there instead. Both are read here, and
+        the node-id spelling is matched against the read's own pointers when it
+        names a node rather than a run, which is the one resolution this can do
+        without the store.
+        """
+        spelled = {
+            run_id
+            for path in (pointer.get("node") or {}).get("write_paths") or ()
+            if (run_id := _review_record_subject(Path(str(path)))[0])
+        }
+        node = pointer.get("node") or {}
+        from reckon.crew.repair import round_node_source
+
+        source = round_node_source(str(node.get("id") or ""), REVIEW_NODE_PREFIX)
+        if not source:
+            return spelled
+        if source.startswith("r-"):
+            spelled.add(source)
+            return spelled
+        for candidate in self._pointers:
+            other = candidate.get("node") or {}
+            if str(other.get("id") or "") == source:
+                spelled.add(str(candidate.get("run_id") or ""))
+        spelled.discard("")
+        return spelled
+
+    def standing_review(
+        self, run_id: str, head: str, rubric: str | None, project: Any
+    ) -> str:
+        """The review run standing for this run at this head, or empty.
+
+        The answer is the one :func:`_review_in_flight`'s walk returns, read
+        from the pointers that could possibly return it rather than from all of
+        them, and held for the rest of the read: one obligation sweep asks this
+        of every live pointer, and a run's standing review does not change
+        between two questions about the same head.
+        """
+        key = (run_id, head, str(rubric or ""), str(project))
+        with self._lock:
+            found = self._standing.get(key)
+        if found is not None:
+            return found
+        answer = ""
+        if run_id:
+            directory = self.record_directory(run_id)
+            for _position, pointer in self.candidate_map(project).matches(
+                directory, run_id
+            ):
+                pointer_rubric = _review_pointer_rubric(
+                    pointer, run_id, head, index=self
+                )
+                if pointer_rubric is not None:
+                    if pointer_rubric != (rubric or ""):
+                        continue
+                    answer = str(pointer.get("run_id") or "")
+                    break
+                if not _is_review_run(pointer):
+                    continue
+                if rubric == review_module.FIGURE_REVIEW_RUBRIC:
+                    continue
+                reviewed, reviewed_head = self.subject(pointer, project)
+                if (
+                    reviewed
+                    and reviewed == run_id
+                    and _review_head_covers(reviewed_head, head)
+                ):
+                    answer = str(pointer.get("run_id") or "")
+                    break
+        with self._lock:
+            return self._standing.setdefault(key, answer)
+
 
 #: How many live-pointer reads keep their answers at once. A tick holds one
 #: snapshot and a second reader its own; the bound keeps a long-lived process
@@ -496,11 +717,17 @@ def _review_index(
 ) -> _ReviewInFlightIndex:
     """The index for one live-pointer read, shared by the runs it classifies.
 
-    Keyed on the identity of the sequence a view hands each row it classifies,
-    and holding that sequence so a later read's list, which may reuse the
-    address, cannot answer from this one. A caller with no snapshot — every
-    reader outside a tick — is handed an index of its own for the one call that
-    asked, so no answer is carried between calls.
+    Keyed on the identity of the sequence a caller hands over, and holding that
+    sequence so a later read's list, which may reuse the address, cannot answer
+    from this one. A caller holding no snapshot — every reader outside a tick —
+    passes its own list and is handed an index for it, so no answer is carried
+    into another read.
+
+    The sequence is the read's identity in the other direction too: a caller
+    that mutates a pointer it has already asked about and asks again with the
+    same list is served the answer it was given, so a caller changing what its
+    list holds hands a new one, as a reader that re-read the pointer files
+    between two asks does.
     """
     if pointers is None:
         return _ReviewInFlightIndex(())
@@ -698,6 +925,27 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     return "its pointer was discarded with the reason recorded"
 
 
+def _review_query_fields(record: Mapping[str, Any]) -> tuple[str, str]:
+    """The head and project the in-flight rule keys on, read without composing.
+
+    The rule asks two things of a run: the head a review of it would be about,
+    and the project whose fleet answers. It used to read them out of the run's
+    composed dispatch, which builds the reviewer's record paths, brief path,
+    node id and budget first — filesystem checks and a head read paid for the
+    whole command to return two values. The composed command is what a dispatch
+    launches with, never what this rule keys on, so the two values are read
+    here directly and the composition is left to the caller that launches.
+
+    A plan review carries no head of its own: the composed dispatch for a plan
+    names no ``head`` at all, and the rule keys on the empty head it read there,
+    so a plan record answers the empty head here too rather than reading the
+    plan document to compose a command nothing else in this rule uses.
+    """
+    if record.get("subject") == "plan":
+        return "", str(record.get("project") or "")
+    return _run_head_for_review(record), str(record.get("project") or "")
+
+
 def _review_in_flight(
     record: Mapping[str, Any],
     *,
@@ -730,9 +978,13 @@ def _review_in_flight(
     deriving several duties from one snapshot — pass its own read rather than
     have this sweep read the directory again per run. Every reader that passes
     none reads the live pointers itself, so the answer is the same either way.
+
+    The answer is kept per head in the index of that read, so the sweep that
+    asks this of every live pointer, and the classifier that asks it of every
+    pointer's own row, pay one read of the pointers between them rather than a
+    walk each.
     """
-    fields = _review_dispatch_fields(record, rubric=rubric)
-    head = str(fields.get("head") or "")
+    head, project = _review_query_fields(record)
     dispatch_field = _review_dispatch_field(rubric)
     recorded = record.get(dispatch_field)
     if isinstance(recorded, Mapping) and str(recorded.get("status") or "") == (
@@ -749,26 +1001,11 @@ def _review_in_flight(
             and _recorded_review_is_live(recorded)
         ):
             return standing
-    project = fields["project"]
     if not project:
         return ""
     run_id = str(record.get("run_id") or "")
     candidates = list_live(project=project) if pointers is None else pointers
-    index = _review_index(candidates)
-    for pointer in candidates:
-        pointer_rubric = _review_pointer_rubric(pointer, run_id, head, index=index)
-        if pointer_rubric is not None:
-            if pointer_rubric != (rubric or ""):
-                continue
-            return str(pointer.get("run_id") or "")
-        if not _is_review_run(pointer):
-            continue
-        if rubric == review_module.FIGURE_REVIEW_RUBRIC:
-            continue
-        reviewed, reviewed_head = index.subject(pointer, project)
-        if reviewed and reviewed == run_id and _review_head_covers(reviewed_head, head):
-            return str(pointer.get("run_id") or "")
-    return ""
+    return _review_index(candidates).standing_review(run_id, head, rubric, project)
 
 
 def _record_review_dispatch(
@@ -1334,7 +1571,18 @@ _FIGURE_IMAGE_SUFFIXES = frozenset({".svg", ".png", ".jpg", ".jpeg", ".gif", ".w
 
 
 def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
-    """Images below a figures directory that this run added or changed."""
+    """Images below a figures directory that this run added or changed.
+
+    An uncomparable own-commit range is not an empty one. The own-commit reader
+    answers ``None`` when there is no remote-tracking ref to exclude — a
+    repository with no remote at all — and reading that as an empty delta
+    reports no figure path for a run that changed one, so a lander owing a
+    figure review lands on evidence nobody read. The base-to-head pair is the
+    only comparison left then, so it is read instead. It can name a figure the
+    integration branch brought in as the run's own, which asks for a review of
+    a figure the run did not draw — the safe direction for a guard. The
+    reverse, no figure review owed for a changed figure, is a fail-open.
+    """
     tree = _review_tree(record)
     if tree is None:
         return []
@@ -1343,6 +1591,8 @@ def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
     changed = clones.own_changed_paths(
         tree, base, head, integration_ref=_integration_ref(tree)
     )
+    if changed is None:
+        changed = _changed_paths_between(tree, base, head)
     if changed is None:
         return []
     images: list[str] = []
@@ -2748,42 +2998,42 @@ def _standing_plan_review(
 ) -> str:
     """The live plan-review run standing for ``plan_slug``, or empty.
 
-    One reader for the locked dispatch, the preview and the obligations view,
-    so the answer a dry run reports, the answer the lock protects and the
-    review a queued request is waiting on cannot be three spellings of the same
-    scan. ``session`` keeps only a review that session composed, which is the
-    one whose outcome that session reads as its own. ``pointers`` lets a caller
-    already holding the live pointer set hand it over rather than have it read
-    again, so the review a view names comes from the same reading as the row
-    that names it.
+        One reader for the locked dispatch, the preview and the obligations view,
+        so the answer a dry run reports, the answer the lock protects and the
+        review a queued request is waiting on cannot be three spellings of the same
+        scan. ``session`` keeps only a review that session composed, which is the
+        one whose outcome that session reads as its own. ``pointers`` lets a caller
+        already holding the live pointer set hand it over rather than have it read
+        again, so the review a view names comes from the same reading as the row
+        that names it.
 
-``rubric`` narrows the answer to reviews of that rubric, so a design review
-    and a content review of one plan — which read it independently — can be in
-    flight together, while a second review of a rubric already running is still
-    found and refused. A pointer whose rubric cannot be read keeps standing for
-    every rubric: the reader must not compose a duplicate because a record it
-    could not classify left the answer unknown. A caller with no rubric to
-    state (an obligation asking whether any review of the plan is running) is
-    answered by the plan alone.
+    ``rubric`` narrows the answer to reviews of that rubric, so a design review
+        and a content review of one plan — which read it independently — can be in
+        flight together, while a second review of a rubric already running is still
+        found and refused. A pointer whose rubric cannot be read keeps standing for
+        every rubric: the reader must not compose a duplicate because a record it
+        could not classify left the answer unknown. A caller with no rubric to
+        state (an obligation asking whether any review of the plan is running) is
+        answered by the plan alone.
 
-    Only a review still working stands. Once its record is stored and readable
-    the review has delivered, and what remains is its promotion, which is
-    owed and listed as it is today; it does not hold the next round's compose.
-    A review whose worker has ended stands for nothing either, whatever its
-    record says: a review is stored only by its promotion, and only while it
-    reads the plan's current version, or already reads every unit changed past
-    the version it composed for. A review whose record is missing or
-    unreadable, and one whose scope cannot be read, is still working, and
-    keeps the gate.
+        Only a review still working stands. Once its record is stored and readable
+        the review has delivered, and what remains is its promotion, which is
+        owed and listed as it is today; it does not hold the next round's compose.
+        A review whose worker has ended stands for nothing either, whatever its
+        record says: a review is stored only by its promotion, and only while it
+        reads the plan's current version, or already reads every unit changed past
+        the version it composed for. A review whose record is missing or
+        unreadable, and one whose scope cannot be read, is still working, and
+        keeps the gate.
 
-    The narrowings compose, and the answer is the same whichever fires first:
-    a review of the other rubric, one that has delivered, one whose worker has
-    ended and one reading an older plan version than it covers are each
-    skipped.
+        The narrowings compose, and the answer is the same whichever fires first:
+        a review of the other rubric, one that has delivered, one whose worker has
+        ended and one reading an older plan version than it covers are each
+        skipped.
 
-    A pointer whose ``node`` is not a mapping is skipped rather than read: this
-    runs inside every session's obligations reading, and one malformed pointer
-    on disk must not raise the reader out of listing everything else.
+        A pointer whose ``node`` is not a mapping is skipped rather than read: this
+        runs inside every session's obligations reading, and one malformed pointer
+        on disk must not raise the reader out of listing everything else.
     """
     live = list_live(project=project) if pointers is None else pointers
     wanted = str(rubric or "").strip().lower()
@@ -4364,4 +4614,5 @@ from .recovery_review_subject import (  # noqa: E402
 )
 from .recovery_vocabulary import (  # noqa: E402
     PLAN_REVIEW_NODE_PREFIX,
+    REVIEW_NODE_PREFIX,
 )

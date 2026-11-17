@@ -605,6 +605,7 @@ window.revalidateProjectState = async function () {
       derived,
       {
         milestones: Array.isArray(disc.milestones) ? disc.milestones : state.milestones,
+        north_stars: Array.isArray(disc.north_stars) ? disc.north_stars : state.north_stars,
         projects: projectRows(
           state.inventory,
           Array.isArray(disc.milestones) ? disc.milestones : state.milestones,
