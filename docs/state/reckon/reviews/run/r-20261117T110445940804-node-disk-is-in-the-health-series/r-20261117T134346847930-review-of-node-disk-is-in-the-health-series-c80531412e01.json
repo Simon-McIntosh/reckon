@@ -1,0 +1,112 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "tests/test_fleet_health.py:223-229": "Literal complete header fails if scheduler/disk fields are dropped, reordered or renamed; its expected list is not imported from the production schema.",
+    "tests/test_fleet_health_records_node_tmp.py:512": "Nonzero sampler exit, including a shell-row/schema width mismatch, fails the explicit success assertion.",
+    "tests/test_fleet_health_records_node_tmp.py:514-515": "Losing the source marker or moving/dropping the free-space field fails the literal node and 40 checks; these protect serialization, not independent disk measurement.",
+    "tests/test_fleet_health_records_node_tmp.py:516-521": "Moving the four disk columns ahead of existing columns fails the independent literal suffix list.",
+    "tests/test_fleet_health_records_node_tmp.py:522-534": "Refusing or deduplicating the first scheduler append fails its truth assertion; fixture job/node values only route the row to the file, and are not credited as identity validation.",
+    "tests/test_fleet_health_records_node_tmp.py:536": "Omitting the appended scheduler row or truncating the node row fails the literal two-row count.",
+    "tests/test_fleet_health_records_node_tmp.py:537": "Changing the previously read persisted node row during append fails the before/after equality; this is a preservation check, not an independent measurement of its original contents.",
+    "tests/test_fleet_health_records_node_tmp.py:538-539": "Losing the supplied terminal event fails the literal end check; populating a scheduler row with disk data fails the literal dash check.",
+    "tests/test_fleet_health_records_node_tmp.py:540": "Extra tab-separated fields introduce a None dictionary key and fail; truncated row values are not checked by this assertion, so it is credited only as an excess-field guard."
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "bin/fleet-health:88",
+    "bin/fleet-health:128",
+    "reckon/crew/fleet_node.py:338",
+    "reckon/crew/fleet_node.py:957",
+    "reckon/crew/fleet_node.py:961"
+  ],
+  "compatibility_reading": {
+    "head_header_accepted_by_head": true,
+    "head_schema_columns": 29,
+    "newly_required_disk_fields": [
+      "node_tmp_total_bytes",
+      "node_tmp_used_bytes",
+      "node_tmp_free_bytes",
+      "node_tmp_free_inodes"
+    ],
+    "primary_header_accepted_by_head": false,
+    "primary_header_accepted_by_primary": true,
+    "primary_schema_columns": 25
+  },
+  "completed_at": "2026-11-17T13:50:28Z",
+  "dispatched_at": "2026-11-17T13:44:59Z",
+  "evidence_limits": "No reviewer test rerun or source mutation; source receipt raw SHA-256 values were verified and declared suite failure delta was read from complete logs. The blocking compatibility finding is a direct reading of pinned primary/head schemas and the unchanged suffix validator.",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_fleet_health_records_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/after_suite-1794922094588090481.receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "c80531412e01f6c0eb939ac6c5e7779d845d5462"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/baseline_suite-1794922019732478734.receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21"
+    },
+    "observed_failure_ids": {
+      "after_suite": [],
+      "baseline_suite": []
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_node.py",
+      "line": 195,
+      "severity": "blocking",
+      "text": "Appending four disk fields changes _HEALTH_COLUMNS[-7:] at line 280 from scheduler identity/state columns to a suffix requiring disk columns; a valid existing 25-column health series now raises FleetNodeError, aborting an outside reader restarted before node-side migration or after the allocation ends and losing its terminal scheduler observation. Validate explicit scheduler columns independently of the disk suffix, or migrate compatible series under the shared lock, and cover an existing 25-column series."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "bin/fleet-health:88, bin/fleet-health:128, reckon/crew/fleet_node.py:338, reckon/crew/fleet_node.py:957, reckon/crew/fleet_node.py:961",
+    "diff": "Read merge commit c80531412e01f6c0eb939ac6c5e7779d845d5462 against prior reviewed head ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e and both parents; bin/fleet-health combines the writers, fleet_node.py appends disk columns, the tests add header/coexistence assertions, and fleet_supervisor.py imports primary-side service limits without a new conflict resolution.",
+    "done_when": "Read the live node.done_when and source gate receipts: baseline_suite records 73 passed, after_suite 109 passed, and both declared mutations fail; manifest.md still records importer failures and an unmeasured live one-hour series.",
+    "goal": "Read the live source node.goal and plan section 5; bin/fleet-health:121-128 retains all four disk fields, but the schema extension in reckon/crew/fleet_node.py:195-198 changes the scheduler validator and rejects existing series.",
+    "manifest": "Read source manifest.md and the referenced baseline/head receipt logs, whose source digests match, summaries are 73/109 passed and final lines EXIT=0; deployment and broader importer limitations are disclosed.",
+    "write_paths": "Read the source live pointer node.write_paths and manifest orientation_write_paths; the five named review targets are granted, including fleet_node.py and test_fleet_health.py added to the original dispatch scope."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_health.py:223-229 independently checks the literal header and tests/test_fleet_health_records_node_tmp.py:514-540 catches dropped disk fields or overwritten rows, but its fresh-file setup cannot fail on the existing-series rejection introduced by fleet_node.py:195-198.",
+    "evidence": "The source baseline_suite and after_suite logs record 73 and 109 passes with EXIT=0, while source manifest.md discloses importer failures and the pending live observation required by plan section 5.",
+    "fit": "bin/fleet-health:128 uses the existing fleet_node module entry point and tests/test_fleet_health_records_node_tmp.py:506 uses the established sandbox helper, with capability-based names and no newly introduced forbidden naming.",
+    "goal_fidelity": "bin/fleet-health:124-128 carries the disk metrics through the shared writer, but reckon/crew/fleet_node.py:195-198 changes the suffix consumed at :280 and prevents scheduler append to a valid preceding-schema series.",
+    "reuse": "Capability searches for health-series append, schema and cross-node locking found fleet_node.py:267,918 and node_exclusive_lock.py:79, which were opened; the merge extends their schema and wraps the existing writer rather than adding a parallel production mechanism.",
+    "scope_discipline": "The source live node.write_paths grants every one of the five reviewed targets, and the merge-specific edits in bin/fleet-health:124-128 and tests/test_fleet_health_records_node_tmp.py:503-540 combine the existing disk and scheduler capabilities."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the live source node.goal and plan section 5; bin/fleet-health:121-128 retains all four disk fields, but the schema extension in reckon/crew/fleet_node.py:195-198 changes the scheduler validator and rejects existing series.\nVERDICT done_when: Read the live node.done_when and source gate receipts: baseline_suite records 73 passed, after_suite 109 passed, and both declared mutations fail; manifest.md still records importer failures and an unmeasured live one-hour series.\nVERDICT write_paths: Read the source live pointer node.write_paths and manifest orientation_write_paths; the five named review targets are granted, including fleet_node.py and test_fleet_health.py added to the original dispatch scope.\nVERDICT manifest: Read source manifest.md and the referenced baseline/head receipt logs, whose source digests match, summaries are 73/109 passed and final lines EXIT=0; deployment and broader importer limitations are disclosed.\nVERDICT diff: Read merge commit c80531412e01f6c0eb939ac6c5e7779d845d5462 against prior reviewed head ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e and both parents; bin/fleet-health combines the writers, fleet_node.py appends disk columns, the tests add header/coexistence assertions, and fleet_supervisor.py imports primary-side service limits without a new conflict resolution.\nCALL_SITES: bin/fleet-health:88, bin/fleet-health:128, reckon/crew/fleet_node.py:338, reckon/crew/fleet_node.py:957, reckon/crew/fleet_node.py:961\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: bin/fleet-health:124-128 carries the disk metrics through the shared writer, but reckon/crew/fleet_node.py:195-198 changes the suffix consumed at :280 and prevents scheduler append to a valid preceding-schema series.\nSCORE evidence: 12\nJUSTIFICATION evidence: The source baseline_suite and after_suite logs record 73 and 109 passes with EXIT=0, while source manifest.md discloses importer failures and the pending live observation required by plan section 5.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The source live node.write_paths grants every one of the five reviewed targets, and the merge-specific edits in bin/fleet-health:124-128 and tests/test_fleet_health_records_node_tmp.py:503-540 combine the existing disk and scheduler capabilities.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_fleet_health.py:223-229 independently checks the literal header and tests/test_fleet_health_records_node_tmp.py:514-540 catches dropped disk fields or overwritten rows, but its fresh-file setup cannot fail on the existing-series rejection introduced by fleet_node.py:195-198.\nSCORE fit: 20\nJUSTIFICATION fit: bin/fleet-health:128 uses the existing fleet_node module entry point and tests/test_fleet_health_records_node_tmp.py:506 uses the established sandbox helper, with capability-based names and no newly introduced forbidden naming.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for health-series append, schema and cross-node locking found fleet_node.py:267,918 and node_exclusive_lock.py:79, which were opened; the merge extends their schema and wraps the existing writer rather than adding a parallel production mechanism.\nFINDING reckon/crew/fleet_node.py:195 blocking: Appending four disk fields changes _HEALTH_COLUMNS[-7:] at line 280 from scheduler identity/state columns to a suffix requiring disk columns; a valid existing 25-column health series now raises FleetNodeError, aborting an outside reader restarted before node-side migration or after the allocation ends and losing its terminal scheduler observation. Validate explicit scheduler columns independently of the disk suffix, or migrate compatible series under the shared lock, and cover an existing 25-column series.\n",
+  "review_run_id": "r-20261117T134346847930-review-of-node-disk-is-in-the-health-series-c80531412e01",
+  "review_scope": "Incremental merge repair only, within the five named targets; primary-side inherited definitions are distinguished from merge resolutions. Official source gate baseline remains 45967c6c6399a70306ce0cd5cb106e6ed54e0c21. Source and test reads were pinned to the reviewed head, not the review worktree HEAD.",
+  "reviewed_base_sha": "ab7332f266d8a43e2f0a7bcfd58ca40c53d1e64e",
+  "reviewed_head_sha": "c80531412e01f6c0eb939ac6c5e7779d845d5462",
+  "reviewed_run_id": "r-20261117T110445940804-node-disk-is-in-the-health-series",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:53:30.033918+00:00",
+  "total": 106
+}
