@@ -16,7 +16,7 @@ import re
 import threading
 import time
 from collections import Counter
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import suppress
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -516,7 +516,9 @@ def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, 
     return receipt
 
 
-def _reviewed_run_id(request: Mapping[str, Any]) -> str:
+def _reviewed_run_id(
+    request: Mapping[str, Any], *, pointers: Sequence[Mapping[str, Any]] | None = None
+) -> str:
     """The run a queued review promotion reviews, or empty for any other request.
 
     A review run's node id carries the run it scored, so the queue can tell a
@@ -531,13 +533,46 @@ def _reviewed_run_id(request: Mapping[str, Any]) -> str:
         return ""
     from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
 
+    project = str(request.get("project") or "")
     try:
         return _resolved_reviewed_run_id(
-            {"node": {"id": node_id}, "project": str(request.get("project") or "")},
-            str(request.get("project") or ""),
+            {"node": {"id": node_id}, "project": project},
+            project,
+            pointers=(
+                None
+                if pointers is None
+                else [p for p in pointers if str(p.get("project") or "") == project]
+            ),
         )
     except Exception:  # noqa: BLE001 — ordering must never stop the drain
         return ""
+
+
+def _reviewed_request_runs(
+    requests: Iterable[Mapping[str, Any]],
+) -> Iterator[tuple[Mapping[str, Any], str]]:
+    """Resolve a pass lazily, sharing one listing across source-node reviews."""
+    from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+    from reckon.crew.repair import round_node_source
+
+    pointers = None
+    listing_failed = False
+    for request in requests:
+        source = round_node_source(str(request.get("node") or ""), REVIEW_NODE_PREFIX)
+        needs_population = bool(source and not source.startswith("r-"))
+        if needs_population and pointers is None:
+            try:
+                pointers = runs.list_live()
+            except Exception:  # noqa: BLE001 — ordering must never stop the drain
+                pointers, listing_failed = [], True
+        yield (
+            request,
+            (
+                ""
+                if needs_population and listing_failed
+                else _reviewed_run_id(request, pointers=pointers)
+            ),
+        )
 
 
 def _pending_requests(
@@ -569,8 +604,8 @@ def _pending_requests(
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
         str(request.get("run_id") or "")
-        for request in pending
-        if _reviewed_run_id(request) in waiting
+        for request, reviewed in _reviewed_request_runs(pending)
+        if reviewed in waiting
     }
     served = Counter(
         str(row["session"])
@@ -643,8 +678,12 @@ def _defer_to_a_queued_review(
         return False
     run_id = str(request["run_id"])
     if not any(
-        other.get("phase") in QUEUED and _reviewed_run_id(other) == run_id
-        for other in (_read(path) for path in _requests_dir().glob("*.json"))
+        reviewed == run_id
+        for _other, reviewed in _reviewed_request_runs(
+            request
+            for request in map(_read, _requests_dir().glob("*.json"))
+            if request.get("phase") in QUEUED
+        )
     ):
         return False
     with runs._pointer_lock(f"promotion-request-{run_id}"):
