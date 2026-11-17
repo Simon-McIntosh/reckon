@@ -171,8 +171,8 @@ def test_a_store_written_by_newer_code_is_opened_without_a_backfill(
     # dropped no index, and left the newer code's record alone. The pass count
     # is what the coverage check buys: without that check every open takes a
     # pass whether or not it has anything to do.
-    assert migrations["calls"] == 0
     assert decodes["rows"] == 0
+    assert migrations["calls"] == 0
     assert _declared_shape(store_path)[0] == columns
     assert _declared_shape(store_path)[1] == indexes
     assert _recorded_version(store_path) == _UNKNOWN_VERSION
