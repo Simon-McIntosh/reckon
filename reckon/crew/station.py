@@ -1509,6 +1509,9 @@ def run_station(
     ``census_sweep`` opts this station into stopping proven orphans. It is off
     unless a caller asks for it: signalling a process is a destructive act, so
     no station run takes it as a side effect of starting.
+
+    A single pass propagates its tick failure to the caller. A completed tick
+    records its finish in the store, so success has a positive completion marker.
     """
     from reckon.crew import repository_maintenance
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
@@ -1606,7 +1609,9 @@ def run_station(
                     raise StationHeldError(
                         f"station lost its lease at {lease.path}: {lost}"
                     ) from None
-                except Exception as error:  # noqa: BLE001 - one tick costs one tick
+                except Exception as error:
+                    if once:
+                        raise
                     print(
                         f"station-tick-failure: {error}",
                         file=sys.stderr,
