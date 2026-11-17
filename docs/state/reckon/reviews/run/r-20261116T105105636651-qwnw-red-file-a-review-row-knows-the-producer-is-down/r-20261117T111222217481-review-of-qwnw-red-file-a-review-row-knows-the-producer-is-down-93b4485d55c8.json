@@ -1,0 +1,63 @@
+{
+  "added_failure_basis": "baseline_suite at 655a2befa9 reads '58 passed in 40.55s' EXIT=0 with zero failure ids in logs/baseline-suite.log, and after_suite at 93b4485d55 reads '58 passed in 30.72s' EXIT=0 in logs/after-suite.log, so the suite pair contributes no id; the importer arms re-derived from the FAILED and ERROR lines behind logs/base-ids.txt (54 ids: 44 failed + 10 errors) and logs/head-ids.txt (45 ids: 35 failed + 10 errors) give comm -13 empty (0 ids at head and absent at base) and 9 base ids no longer failing, which is the fragment's '0 added failures, 9 fixed'",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/obligations.py:1719",
+    "reckon/crew/recovery_review_dispatch.py:3229",
+    "reckon/crew/recovery_review_dispatch.py:3324",
+    "reckon/crew/query.py:448",
+    "reckon/crew/recovery_watch.py:757",
+    "reckon/crew/promotion.py:1129",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/pending_landing.py:465"
+  ],
+  "completed_at": "2026-11-17T11:18:13.713Z",
+  "dispatched_at": "2026-11-17T11:17:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "2018",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added clause is masked at the delivered head for the case the fixture builds \u2014 the fixture pointer's manifest reads 'complete', so `not terminal_verdict` at line 2019 already clears pre_spawn_waiting and deleting only `and not manifest_present` would likely leave tests/test_a_review_row_knows_the_producer_is_down.py green; the case the clause uniquely fixes, a pre-spawn pointer carrying a non-terminal manifest which pre_spawn_reads_as_claim at line 2029 would otherwise draw as a claim, has no fixture, so the head-level regression of this line is unguarded."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm table names the named check at 7a104067b9 and the importer head arm at bcbb2fadb0 on line 48, while the logs those rows rest on were re-recorded later at 93b4485d55 (logs/all-debug-target-file.log, job 1322457) and 03c1c8e4a5 (logs/after-importers.log reads 20 failed, 883 passed, 10 errors), so a reader comparing table to log sees a different revision and a 35-failure importer arm the delivered head does not carry."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line records every arm the done_when names except the ruff pair and no ruff output exists under logs/, so the clause 'ruff check and ruff format --check report nothing new on the changed paths' cannot be re-read from the run; measured read-only at the changed path, the one SIM102 at reckon/crew/recovery_classification.py:3611 predates the change and sits outside its hunk, and ruff format --check reports the file already formatted."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 states the done deliverable as tests/test_a_review_row_knows_the_producer_is_down.py passing in full, and the delivered tree meets it \u2014 logs/baseline-target-file.log at 655a2befa9 reads '3 failed in 0.71s' EXIT=1 while logs/all-debug-target-file.log at 93b4485d55 reads '3 passed in 3.07s' EXIT=0.\nVERDICT done_when: the measure at prompt.txt:278 asks for the file green as an all_debug job with SLURM_JOB_ID unset, a logged negative control with its failing ids, no added importer failure and a clean ruff pair; logs/all-debug-target-file.log records job 1322457 at 93b4485d55 under 'env -u SLURM_JOB_ID', the negative control is logs/baseline-target-file.log reading 3 failed EXIT=1 with the same three ids named in the fragment, comm over logs/base-ids.txt and logs/head-ids.txt gives 0 head-only ids, and no artifact in the run records the ruff pair \u2014 verified read-only here, ruff check at the changed path reports one pre-existing SIM102 at reckon/crew/recovery_classification.py:3611 outside the changed hunk and ruff format --check reports the file already formatted.\nVERDICT write_paths: prompt.txt:84-90 declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and this node's fragment; the node's own commits touch only reckon/crew/recovery_classification.py (bcbb2fadb0) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html, every path inside the declaration, and the five remaining commits are merges of primary whose files are not this node's writes.\nVERDICT manifest: read manifest.md \u2014 status complete, eleven commits listed, stating the target file 3 failed at 655a2befa9 and 3 passed at 7a104067b9 and at each repaired head, the gate 58 passed EXIT=0 at both revisions, and the importer arms 44 failed + 10 errors at base down to 0 added ids at both heads; every figure reconciles with the log it names.\nVERDICT diff: read the eleven commits against base 655a2befa9 \u2014 bcbb2fadb0 adds 12 lines and removes 2 inside one predicate in reckon/crew/recovery_classification.py, five commits only edit the landing fragment, five commits are merges of primary, and the delivered predicate at reckon/crew/recovery_classification.py:2014-2021 retains every guard the merges added.\nCALL_SITES: reckon/crew/obligations.py:1719, reckon/crew/recovery_review_dispatch.py:3229, reckon/crew/recovery_review_dispatch.py:3324, reckon/crew/query.py:448, reckon/crew/recovery_watch.py:757, reckon/crew/promotion.py:1129, reckon/crew/directory.py:342, reckon/pending_landing.py:465\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the file the goal names passes in full at the reviewed head, logs/all-debug-target-file.log reading '3 passed' EXIT=0 at 93b4485d55, though that head is a worktree head and primary landing belongs to promotion.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/baseline-target-file.log and logs/all-debug-target-file.log carry the header and EXIT lines the done_when asks for, but the ruff clause at prompt.txt:278 is recorded nowhere in manifest.md:21 or in the fragment and had to be re-established read-only here.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the product commit bcbb2fadb0 changes one hunk of reckon/crew/recovery_classification.py and the remaining owned commits change only the declared fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html.\nSCORE durability: 14\nJUSTIFICATION durability: the base arm reddens with the three ids and the head passes, but at the delivered head reckon/crew/recovery_classification.py:2019 already clears pre_spawn_waiting for the only fixture that walks the pre-spawn path, so reverting the added clause alone would likely leave tests/test_a_review_row_knows_the_producer_is_down.py green.\nSCORE fit: 20\nJUSTIFICATION fit: the change adds one conjunct to the existing condition at reckon/crew/recovery_classification.py:2014-2021 and matches the surrounding comment idiom without introducing a name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change defines nothing new \u2014 it reuses manifest_present and manifest_status, both already resolved at reckon/crew/recovery_classification.py:1410-1496 by the owner of the pre-spawn reading, and adds no second reader of the manifest.\nFINDING reckon/crew/recovery_classification.py:2018 non-blocking: the added clause is masked at the delivered head for the case the fixture builds \u2014 the fixture pointer's manifest reads 'complete', so `not terminal_verdict` at line 2019 already clears pre_spawn_waiting and deleting only `and not manifest_present` would likely leave tests/test_a_review_row_knows_the_producer_is_down.py green; the case the clause uniquely fixes, a pre-spawn pointer carrying a non-terminal manifest which pre_spawn_reads_as_claim at line 2029 would otherwise draw as a claim, has no fixture, so the head-level regression of this line is unguarded.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html:33 non-blocking: the arm table names the named check at 7a104067b9 and the importer head arm at bcbb2fadb0 on line 48, while the logs those rows rest on were re-recorded later at 93b4485d55 (logs/all-debug-target-file.log, job 1322457) and 03c1c8e4a5 (logs/after-importers.log reads 20 failed, 883 passed, 10 errors), so a reader comparing table to log sees a different revision and a 35-failure importer arm the delivered head no longer carries.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down/manifest.md:21 non-blocking: the artifacts line records every arm the done_when names except the ruff pair and no ruff output exists under logs/, so the clause 'ruff check and ruff format --check report nothing new on the changed paths' cannot be re-read from the run; measured read-only at the reviewed head, the one SIM102 at reckon/crew/recovery_classification.py:3611 predates the change and sits outside its hunk, and ruff format --check reports the file already formatted.",
+  "review_run_id": "r-20261117T111222217481-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-93b4485d55c8",
+  "reviewed_base_sha": "655a2befa979af690bab537523cd9ad97dc108c5",
+  "reviewed_head_sha": "93b4485d55c8b205eaa8479e2c5019c2fd1457f6",
+  "reviewed_run_id": "r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T111222217481-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-93b4485d55c8"
+  },
+  "reviewer_run_id": "r-20261117T111222217481-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-93b4485d55c8",
+  "scope_note": "fourth review of this run, covering the commits gained since the previously reviewed head 03c1c8e4a54720c8475fb240e569dd7eb0631a21: the merge 18775a7b1de802b2bb1cc7de097a758a779b9b1d and the primary merge 93b4485d55c8b205eaa8479e2c5019c2fd1457f6, plus the arms this run recorded at that head",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:15:17.171873+00:00",
+  "total": 107
+}

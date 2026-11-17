@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures": [],
+  "added_failures_note": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/base-suite.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/after-suite.log both record 58 passed EXIT=0, so no failing id exists at head that does not exist at base",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:997",
+    "reckon/crew/queue_edit.py:548",
+    "reckon/crew/admission/release.py:667",
+    "reckon/crew/dispatch_batch.py:1027"
+  ],
+  "completed_at": "2026-11-17T11:19:29.419Z",
+  "dispatched_at": "2026-11-17T11:19:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-waits-on-its-dependencies.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: the three head rows at :50, :62 and :74 and the note at :91 name 2ad4ac3956 as the revision the arms ran at, but the logs they cite carry later shas \u2014 logs/head-node-file.log:1 reads 7b5275b204345affadc0daf6a3c2e25890b5e1a3, logs/after-suite.log:1 reads 25524d1d902407774444e5da74012a78af366cf2 and logs/head-import-arm.log:1 reads 5747bb10ffe91be38bee9c917c058f29275ae2ff \u2014 so the record names a revision none of the arms ran at."
+    },
+    {
+      "file": "reckon/crew/admission/reviews.py",
+      "line": "168",
+      "severity": "non-blocking",
+      "text": "non-blocking: the except TypeError at :168 catches any TypeError raised inside _node_from_pointer and its TaskNode construction (reckon/crew/admission/launching.py:99-124), not only the missing-required-field rebuild the docstring at :153-160 names, so a stored value that coerces into a TypeError also silently keeps no contract, and no test separates that case from the thin-node case."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/after-suite.log",
+      "revision": "25524d1d902407774444e5da74012a78af366cf2"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/base-suite.log",
+      "revision": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from 6fa76c49f48e1d4fe4f104431f85f519ce92aae0 \u2014 e5cc90debd adds the guarded rebuild at reckon/crew/admission/reviews.py:166-169, 5747bb10ff retargets the queue-time case and adds the deferral case at tests/test_a_queued_request_waits_on_its_dependencies.py:506-553 and reads result.stdout at tests/test_dispatch_names_its_backend.py:168, 2ad4ac3956 and 704c6d6ce0 add and re-stamp the evidence fragment, and the merges 7b5275b204 and 25524d1d90 resolve both conflicts onto the primary branch's landed wording of the same repairs without touching these paths further.",
+    "done_when": "the done_when asks the named file to pass in full as an all_debug job with SLURM_JOB_ID unset, each cause to carry a product-or-test verdict, no assertion to be deleted or weakened, an importer arm to add no failure, a negative control to sit beside the head run, and ruff to be clean on the changed paths; logs/head-node-file-job.log:6-9 carries the harness line and the 22-passed EXIT=0 line, logs/base-node-file.log:1 and :277-279 carry the 4-failed/17-passed EXIT=1 base arm with its four ids, the manifest's evidence_inputs names all three causes with a verdict, tests/test_a_queued_request_waits_on_its_dependencies.py:506-530 keeps both of the queue-time case's assertions, an independent comm -13 over logs/base-import-ids.txt and logs/head-import-ids.txt gives 0 ids added and 28 fixed, and my own ruff check over the three head blobs reproduces the fragment's claim at :105-108 exactly.",
+    "goal": "the goal is \"Make tests/test_a_queued_request_waits_on_its_dependencies.py pass in full on the primary branch\" (dispatch-detail.json admit_request.node.goal), and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/head-node-file-job.log:1-9 records that file at \"22 passed\" with EXIT=0 at revision 25524d1d902407774444e5da74012a78af366cf2, run as sbatch job 1322407 on all_debug with SLURM_JOB_ID unset.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/manifest.md; status complete, commits e5cc90debd through 25524d1d90, the literal gate command, the two suite arms at 58 passed EXIT=0, both named-file arms with their exit lines, failure_attribution for the two scaffolding failures, and one rubric line per dimension.",
+    "write_paths": "dispatch-detail.json admit_request.node.write_paths declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every path in the base-to-head diff of the touched paths is one of reckon/crew/admission/reviews.py, tests/test_a_queued_request_waits_on_its_dependencies.py, tests/test_dispatch_names_its_backend.py or the one fragment under that directory, so the change stays inside its fence."
+  },
+  "justifications": {
+    "durability": "reinstating the unguarded rebuild reddens two ids in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/base-node-file.log:273-274, restoring result.output at tests/test_dispatch_names_its_backend.py:168 reddens the JSONDecodeError id at :276, and dropping the queue-time refusal reddens the DID NOT RAISE id at :275, but the added deferral case at tests/test_a_queued_request_waits_on_its_dependencies.py:546-552 compares production output against the module's own constant queue_admission.AWAITING_UPSTREAM_PHASE.",
+    "evidence": "logs/head-node-file-job.log:6-9 records the all_debug job and logs/base-node-file.log:277-279 the base failing ids, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-waits-on-its-dependencies.html:50 names a revision its cited log does not carry.",
+    "fit": "the guard at reckon/crew/admission/reviews.py:166-169 follows the module's stated-fallback idiom, but its docstring at :153-160 folds a second bare \"cannot\" clause into one sentence rather than naming the new reason as its own statement.",
+    "goal_fidelity": "logs/head-node-file-job.log:9 reads 22 passed EXIT=0 at the delivered head 25524d1d90, against 4 failed and 17 passed EXIT=1 at base in logs/base-node-file.log:279.",
+    "reuse": "the change adds no definition at all \u2014 it extends record_review_contract, the owner of the can-this-pointer-be-stamped decision at reckon/crew/admission/reviews.py:151, and repairs the shared dispatch payload helper where it is defined at tests/test_dispatch_names_its_backend.py:159 rather than in its callers.",
+    "scope_discipline": "the base-to-head diff of the touched paths is confined to reckon/crew/admission/reviews.py, tests/test_a_queued_request_waits_on_its_dependencies.py, tests/test_dispatch_names_its_backend.py and the one fragment, all inside dispatch-detail.json admit_request.node.write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "\nVERDICT goal: the goal is \"Make tests/test_a_queued_request_waits_on_its_dependencies.py pass in full on the primary branch\" (dispatch-detail.json admit_request.node.goal), and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/head-node-file-job.log:1-9 records that file at \"22 passed\" with EXIT=0 at revision 25524d1d902407774444e5da74012a78af366cf2, run as sbatch job 1322407 on all_debug with SLURM_JOB_ID unset.\nVERDICT done_when: the done_when asks the named file to pass in full as an all_debug job with SLURM_JOB_ID unset, each cause to carry a product-or-test verdict, no assertion to be deleted or weakened, an importer arm to add no failure, a negative control to sit beside the head run, and ruff to be clean on the changed paths; logs/head-node-file-job.log:6-9 carries the harness line and the 22-passed EXIT=0 line, logs/base-node-file.log:1 and :277-279 carry the 4-failed/17-passed EXIT=1 base arm with its four ids, the manifest's evidence_inputs names all three causes with a verdict, tests/test_a_queued_request_waits_on_its_dependencies.py:506-530 keeps both of the queue-time case's assertions, an independent comm -13 over logs/base-import-ids.txt and logs/head-import-ids.txt gives 0 ids added and 28 fixed, and my own ruff check over the three head blobs reproduces the fragment's claim at :105-108 exactly.\nVERDICT write_paths: dispatch-detail.json admit_request.node.write_paths declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every path in the base-to-head diff of the touched paths is one of reckon/crew/admission/reviews.py, tests/test_a_queued_request_waits_on_its_dependencies.py, tests/test_dispatch_names_its_backend.py or the one fragment under that directory, so the change stays inside its fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/manifest.md; status complete, commits e5cc90debd through 25524d1d90, the literal gate command, the two suite arms at 58 passed EXIT=0, both named-file arms with their exit lines, failure_attribution for the two scaffolding failures, and one rubric line per dimension.\nVERDICT diff: read commit by commit from 6fa76c49f48e1d4fe4f104431f85f519ce92aae0 \u2014 e5cc90debd adds the guarded rebuild at reckon/crew/admission/reviews.py:166-169, 5747bb10ff retargets the queue-time case and adds the deferral case at tests/test_a_queued_request_waits_on_its_dependencies.py:506-553 and reads result.stdout at tests/test_dispatch_names_its_backend.py:168, 2ad4ac3956 and 704c6d6ce0 add and re-stamp the evidence fragment, and the merges 7b5275b204 and 25524d1d90 resolve both conflicts onto the primary branch's landed wording of the same repairs without touching these paths further.\nCALL_SITES: reckon/crew/runs.py:997, reckon/crew/queue_edit.py:548, reckon/crew/admission/release.py:667, reckon/crew/dispatch_batch.py:1027\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: logs/head-node-file-job.log:9 reads 22 passed EXIT=0 at the delivered head 25524d1d90, against 4 failed and 17 passed EXIT=1 at base in logs/base-node-file.log:279.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-node-file-job.log:6-9 records the all_debug job and logs/base-node-file.log:277-279 the base failing ids, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-waits-on-its-dependencies.html:50 names a revision its cited log does not carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the base-to-head diff of the touched paths is confined to reckon/crew/admission/reviews.py, tests/test_a_queued_request_waits_on_its_dependencies.py, tests/test_dispatch_names_its_backend.py and the one fragment, all inside dispatch-detail.json admit_request.node.write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the unguarded rebuild reddens two ids in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies/logs/base-node-file.log:273-274, restoring result.output at tests/test_dispatch_names_its_backend.py:168 reddens the JSONDecodeError id at :276, and dropping the queue-time refusal reddens the DID NOT RAISE id at :275, but the added deferral case at tests/test_a_queued_request_waits_on_its_dependencies.py:546-552 compares production output against the module's own constant queue_admission.AWAITING_UPSTREAM_PHASE.\nSCORE fit: 16\nJUSTIFICATION fit: the guard at reckon/crew/admission/reviews.py:166-169 follows the module's stated-fallback idiom, but its docstring at :153-160 folds a second bare \"cannot\" clause into one sentence rather than naming the new reason as its own statement.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition at all \u2014 it extends record_review_contract, the owner of the can-this-pointer-be-stamped decision at reckon/crew/admission/reviews.py:151, and repairs the shared dispatch payload helper where it is defined at tests/test_dispatch_names_its_backend.py:159 rather than in its callers.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-request-waits-on-its-dependencies.html:50 non-blocking: the three head rows at :50, :62 and :74 and the note at :91 name 2ad4ac3956 as the revision the arms ran at, but the logs they cite carry later shas \u2014 logs/head-node-file.log:1 reads 7b5275b204345affadc0daf6a3c2e25890b5e1a3, logs/after-suite.log:1 reads 25524d1d902407774444e5da74012a78af366cf2 and logs/head-import-arm.log:1 reads 5747bb10ffe91be38bee9c917c058f29275ae2ff \u2014 so the record names a revision none of the arms ran at.\nFINDING reckon/crew/admission/reviews.py:168 non-blocking: the except TypeError at :168 catches any TypeError raised inside _node_from_pointer and its TaskNode construction (reckon/crew/admission/launching.py:99-124), not only the missing-required-field rebuild the docstring at :153-160 names, so a stored value that coerces into a TypeError also silently keeps no contract, and no test separates that case from the thin-node case.\n",
+  "review_run_id": "r-20261117T111759344701-review-of-qwnw-red-file-a-queued-request-waits-on-its-dependencies-25524d1d9024",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "25524d1d902407774444e5da74012a78af366cf2",
+  "reviewed_run_id": "r-20261116T032104904209-qwnw-red-file-a-queued-request-waits-on-its-dependencies",
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T11:54:53.369816+00:00",
+  "total": 110
+}

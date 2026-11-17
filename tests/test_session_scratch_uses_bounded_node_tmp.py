@@ -182,9 +182,23 @@ def test_flight_defaults_and_host_override(tmp_path):
 def test_health_sampler_calls_scratch_sampling_and_keeps_the_reading(
     tmp_path, monkeypatch
 ):
+    import socket
+
+    from reckon.crew import fleet_node
     from tests.test_fleet_health import sandbox
 
     box = sandbox(tmp_path)
+    scheduler = {
+        "utc": "2020-01-01T00:00:00Z",
+        "job_id": box.env["SLURM_JOB_ID"],
+        "node": socket.gethostname().split(".")[0],
+        "source": "scheduler",
+        "scheduler_state": "RUNNING",
+        "scheduler_reason": "None",
+        "scheduler_running": "true",
+        "scheduler_event": "sample",
+    }
+    assert fleet_node.append_scheduler_reading(box.health, scheduler)
     stub = box.root / "stubbin" / "scratch-python"
     stub.write_text(
         '#!/bin/bash\ncase "$*" in\n  *sample-session-scratch) echo 12345 ;;\n  *check-interpreters) echo 0 ;;\n  *) exit 9 ;;\nesac\n'.replace(
@@ -206,9 +220,22 @@ def test_health_sampler_calls_scratch_sampling_and_keeps_the_reading(
         check=False,
     )
     assert result.returncode == 0, result.stderr
+    assert fleet_node.append_scheduler_reading(
+        box.health,
+        {
+            **scheduler,
+            "utc": "2020-01-01T00:01:00Z",
+            "scheduler_state": "COMPLETED",
+            "scheduler_running": "false",
+            "scheduler_event": "end",
+        },
+    )
+    assert len(box.samples()) == 1
     with box.samples()[0].open() as sample:
         rows = list(csv.DictReader(sample, delimiter="\t"))
-    assert rows[0]["session_scratch_bytes"] == "12345"
+    assert [row["source"] for row in rows] == ["scheduler", "node", "scheduler"]
+    assert [row["session_scratch_bytes"] for row in rows] == ["-", "12345", "-"]
+    assert rows[-1]["scheduler_event"] == "end"
 
 
 def test_excess_reaches_only_its_conversation_in_both_obligation_views(

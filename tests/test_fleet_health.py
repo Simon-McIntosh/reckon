@@ -220,7 +220,11 @@ def test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns(
 
     # The sample line reports the same count that fired the trigger.
     line = box.samples()[0].read_text().splitlines()
-    assert line[0] == _SAMPLE_HEADER + "\twritable_interpreters\tjob_oom_kill"
+    assert line[0] == (
+        _SAMPLE_HEADER
+        + "\twritable_interpreters\tjob_oom_kill\tjob_id\tnode\tscheduler_state"
+        + "\tscheduler_reason\tscheduler_running\tscheduler_event\tsource\tsession_scratch_bytes"
+    )
     assert line[-1].split("\t")[5] == "60"
 
     alert = box.alerts()

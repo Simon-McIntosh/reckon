@@ -2,19 +2,30 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
+import shlex
+import shutil
 import subprocess
+import tempfile
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from reckon import _worker_fence as fence
-from reckon.crew import fleet_supervisor
+from reckon import nested_launch
+from reckon.crew import dispatch_launch, fleet_supervisor
 
 
 @pytest.fixture
 def decoys(tmp_path, monkeypatch):
+    if os.environ.get("RECKON_TEST_SCHEDULER_ROOT"):
+        root = Path(os.environ["RECKON_TEST_SCHEDULER_ROOT"])
+        root.mkdir(parents=True, exist_ok=True)
+        tmp_path = Path(tempfile.mkdtemp(prefix="decoys-", dir=root))
     home = tmp_path / "home"
     home.mkdir()
     registry = home / ".config/reckon/mounts.json"
@@ -43,6 +54,17 @@ def decoys(tmp_path, monkeypatch):
             "_named_protected_paths",
             lambda home=None: [path for path in original(home) if path != install],
         )
+    if os.environ.get("RECKON_TEST_NO_JOB_REENTRY") == "1":
+        compose = fence.fence_argv
+
+        def without_reentry(*args, **kwargs):
+            argv = compose(*args, **kwargs)
+            if "RECKON_WORKER_FENCE" in argv:
+                index = argv.index("RECKON_WORKER_FENCE") - 1
+                del argv[index : index + 3]
+            return argv
+
+        monkeypatch.setattr(fence, "fence_argv", without_reentry)
     return home, registry, worktree, run, scratch
 
 
@@ -200,3 +222,319 @@ def test_unreadable_registry_refuses_instead_of_omitting_environments(decoys):
     registry.write_text("{")
     with pytest.raises(FlightConfigError, match="readable JSON"):
         fence.fence_argv(["true"], home=decoys[0])
+
+
+@pytest.mark.skipif(
+    not os.environ.get("RECKON_TEST_SCHEDULER_ROOT"),
+    reason="requires dedicated all_debug allocations and durable receipt directory",
+)
+@pytest.mark.parametrize("tool", ["sbatch", "sbatch-script", "sbatch-stdin", "srun"])
+def test_scheduler_task_reenters_fence_and_preserves_decoy(decoys, tool):
+    _scheduler_replay(decoys, tool, absolute=False)
+
+
+@pytest.mark.skipif(
+    not os.environ.get("RECKON_TEST_SCHEDULER_ROOT"),
+    reason="requires dedicated all_debug allocation and durable receipt directory",
+)
+def test_absolute_scheduler_route_measures_the_uncovered_limit(decoys):
+    _scheduler_replay(decoys, "sbatch", absolute=True)
+
+
+def _scheduler_replay(decoys, tool, *, absolute):
+    home, _, worktree, run, scratch = decoys
+    tool, _, form = tool.partition("-")
+    _, _, target = _chain(decoys, registered=False)
+    before = _identity(target)
+    wrapper = run / "gate.sh"
+    wrapper.write_text(
+        '#!/bin/sh\n#SBATCH --job-name=fence-decoy\nprintf "TASK_JOB=%s TASK_STEP=%s\\n" '
+        '"$SLURM_JOB_ID" "${SLURM_STEP_ID:-batch}"\n'
+        'log="$3"\nprintf "replacement gate log\\n" > "$log"\n'
+    )
+    task = [
+        "/bin/sh",
+        str(wrapper),
+        "gate",
+        "command",
+        str(worktree / ".venv/bin/python"),
+    ]
+    shim = Path(__file__).resolve().parents[1] / "reckon/host_shims" / tool
+    executable = str(Path("/usr/bin") / tool) if absolute else str(shim)
+    output = run / "scheduler-output.log"
+    if tool == "sbatch":
+        command = [
+            executable,
+            "--partition=all_debug",
+            "--time=00:03:00",
+            "--cpus-per-task=1",
+            "--mem=1G",
+            f"--chdir={run}",
+            "--wait",
+            "--parsable",
+            f"--output={output}",
+            "--wrap=" + shlex.join(task),
+        ]
+        if form:
+            command.pop()
+            command.append("--export=NONE")
+            if form == "stdin":
+                wrapper.write_text(
+                    wrapper.read_text().replace(
+                        'log="$3"',
+                        "log=" + shlex.quote(str(worktree / ".venv/bin/python")),
+                    )
+                )
+            else:
+                command += [str(wrapper), *task[2:]]
+    else:
+        command = [
+            executable,
+            "--partition=all_debug",
+            "--time=00:03:00",
+            "--mem=1G",
+            f"--chdir={run}",
+            "--ntasks=1",
+            "--cpus-per-task=1",
+            "--cpu-bind=none",
+            f"--output={output}",
+            *task,
+        ]
+    # Explicit resources and a shared working directory let either scheduler
+    # client submit its own job from a batch shell or an occupied job step.
+    shell = "exec " + shlex.join(command)
+    argv = fence.fence_argv(
+        ["/bin/sh", "-c", shell],
+        home=home,
+        worktree=worktree,
+        manifest_path=run / "manifest.md",
+        writable_directories=[scratch],
+    )
+    env = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("SLURM_")
+    }
+    env["PATH"] = f"{shim.parent}:/usr/bin:/bin"
+    env["RECKON_SHIM_PYTHON"] = "/home/ITER/mcintos/Code/reckon/.venv/bin/python"
+    env["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+    result = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=240,
+        env=env,
+        input=wrapper.read_text() if form == "stdin" else None,
+    )
+    output_text = output.read_text() if output.exists() else ""
+    task_job_id = next(
+        (
+            line.split()[0].partition("=")[2]
+            for line in output_text.splitlines()
+            if line.startswith("TASK_JOB=")
+        ),
+        "",
+    )
+    enclosing_job_id = os.environ.get("SLURM_JOB_ID") or os.environ.get("SLURM_JOBID")
+    receipt = {
+        "tool": tool,
+        "job_id": task_job_id,
+        "enclosing_job_id": enclosing_job_id,
+        "form": form,
+        "absolute": absolute,
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output_path": str(output),
+        "output": output_text,
+        "before": before,
+        "after": _identity(target),
+        "target_bytes": target.read_text(),
+    }
+    (run / "receipt.json").write_text(json.dumps(receipt, indent=2))
+    print(json.dumps(receipt, sort_keys=True))
+    assert output.exists(), receipt
+    assert task_job_id, receipt
+    assert task_job_id != enclosing_job_id, (
+        "scheduler task reused the enclosing allocation"
+    )
+    if absolute:
+        assert result.returncode == 0, receipt
+        assert _identity(target) != before
+        assert target.read_text() == "replacement gate log\n"
+    else:
+        assert result.returncode != 0, "scheduler task replaced the decoy"
+        assert "Read-only file system" in receipt["output"], receipt
+        assert _identity(target) == before
+
+
+def _recipe(decoys):
+    home, _, worktree, run, scratch = decoys
+    argv = fence.fence_argv(
+        ["true"],
+        home=home,
+        worktree=worktree,
+        manifest_path=run / "manifest.md",
+        writable_directories=[scratch],
+    )
+    return json.loads(
+        base64.urlsafe_b64decode(argv[argv.index("RECKON_WORKER_FENCE") + 1])
+    )
+
+
+def test_task_recipe_keeps_seals_grants_stdin_and_caller_python_environment(decoys):
+    _, _, worktree, run, scratch = decoys
+    _, _, target = _chain(decoys, registered=False)
+    before = _identity(target)
+    recipe = _recipe(decoys)
+    script = run / "task.sh"
+    script.write_text(
+        '#!/bin/sh\nread value\nprintf "%s|%s" "$value" "$PYTHONHOME" > "$1"\n'
+        'printf "replacement gate log\\n" > "$2"\n'
+    )
+    argv = nested_launch._task_command(
+        recipe,
+        [
+            "/bin/sh",
+            str(script),
+            str(run / "fresh.log"),
+            str(worktree / ".venv/bin/python"),
+        ],
+    )
+    environment = dict(os.environ, PYTHONHOME="/nonexistent-decoy-python-home")
+    environment.pop("RECKON_WORKER_FENCE", None)
+    result = subprocess.run(
+        argv,
+        input="stdin-marker\n",
+        text=True,
+        capture_output=True,
+        env=environment,
+        timeout=20,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "Read-only file system" in result.stderr
+    assert _identity(target) == before
+    assert (
+        run / "fresh.log"
+    ).read_text() == "stdin-marker|/nonexistent-decoy-python-home"
+    assert str(scratch) in recipe["directories"]
+
+
+@pytest.mark.parametrize(
+    "tool,options",
+    [
+        ("srun", ["--output", "--partition=decoy", "-n1", "--cpu-bind=none"]),
+        ("srun", ["--wait=30", "--pty=0", "--compress", "-K1", "-I", "-E"]),
+        ("sbatch", ["--export=NONE", "-vvpall_debug", "--wrap", "printf payload"]),
+    ],
+)
+def test_task_boundary_keeps_option_values_and_resources(decoys, tool, options):
+    recipe = _recipe(decoys)
+    environment = {
+        "RECKON_WORKER_FENCE": base64.urlsafe_b64encode(
+            json.dumps(recipe).encode()
+        ).decode()
+    }
+    original = [*options, "printf", "payload"] if tool == "srun" else options
+    wrapped = nested_launch.fenced_scheduler_task(tool, original, environment)
+    if tool == "srun":
+        assert wrapped[: len(options)] == options
+        task = wrapped[len(options) :]
+    else:
+        assert wrapped[:2] == options[:2]
+        task = shlex.split(wrapped[-1].removeprefix("--wrap="))
+    spec = json.loads(base64.urlsafe_b64decode(task[-1]))
+    assert spec["fence"] == recipe
+    assert spec["command"] == (
+        ["printf", "payload"] if tool == "srun" else ["/bin/sh", "-c", "printf payload"]
+    )
+
+
+@pytest.mark.parametrize(
+    "tool,arguments",
+    [
+        ("srun", ["--unknown-boundary", "printf", "payload"]),
+        ("srun", ["--multi-prog", "commands.conf"]),
+        ("srun", ["printf", "payload", ":", "-n2", "/bin/true"]),
+        ("srun", ["--task-prolog=/bin/true", "printf", "payload"]),
+        ("sbatch", ["--wrap=printf payload", "script.sh"]),
+        ("sbatch", ["--output"]),
+    ],
+)
+def test_unknown_or_unfenced_task_forms_refuse_before_forwarding(
+    decoys, tool, arguments
+):
+    recipe = _recipe(decoys)
+    environment = {
+        "RECKON_WORKER_FENCE": base64.urlsafe_b64encode(
+            json.dumps(recipe).encode()
+        ).decode()
+    }
+    with pytest.raises(ValueError, match=r"unknown|needs a value|cannot"):
+        nested_launch.fenced_scheduler_task(tool, arguments, environment)
+
+
+@pytest.mark.parametrize("tool", ["sbatch", "srun"])
+def test_fenced_launch_resolves_scheduler_shims_outside_allocation(tmp_path, tool):
+    scheduler_bin = tmp_path / "scheduler-bin"
+    scheduler_bin.mkdir()
+    scheduler = scheduler_bin / tool
+    scheduler.write_text("#!/bin/sh\nprintf 'unfenced-scheduler\\n'\n")
+    scheduler.chmod(0o755)
+    path = dispatch_launch.launch_search_path(
+        {"PATH": str(scheduler_bin) + os.pathsep + os.defpath},
+        facts=SimpleNamespace(in_allocation=False),
+        fenced=True,
+        search_directories=[],
+    )
+    resolved = shutil.which(tool, path=path)
+    expected = nested_launch.shim_directory() / tool
+    assert resolved is not None
+    assert Path(resolved).resolve() == expected.resolve(), (
+        f"fenced launch outside SLURM resolved {resolved} instead of {expected}"
+    )
+
+
+@pytest.mark.parametrize("tool", ["sbatch", "srun"])
+def test_scheduler_replay_discards_enclosing_slurm_environment(
+    decoys, monkeypatch, tool
+):
+    inherited = {
+        "SLURM_JOB_ID": "enclosing-job",
+        "SLURM_JOBID": "enclosing-job",
+        "SLURM_STEP_ID": "enclosing-step",
+        "SLURM_STEPID": "enclosing-step",
+        "SLURM_STEP_NUM_TASKS": "4",
+        "SLURM_NTASKS": "4",
+        "SLURM_JOB_NODELIST": "enclosing-node",
+        "SLURM_CPUS_PER_TASK": "4",
+        "SLURM_CPU_BIND": "enclosing-binding",
+        "SLURM_SRUN_COMM_PORT": "1234",
+    }
+    for name, value in inherited.items():
+        monkeypatch.setenv(name, value)
+
+    run = subprocess.run
+
+    def capture(_argv, *args, **kwargs):
+        if not _argv or _argv[0] != fence.FENCE_BINARY:
+            return run(_argv, *args, **kwargs)
+        env = kwargs["env"]
+        remaining = {
+            name: value for name, value in env.items() if name.startswith("SLURM_")
+        }
+        assert not remaining, (
+            f"scheduler inherited enclosing allocation state: {remaining}"
+        )
+        command = shlex.split(_argv[-1].removeprefix("exec "))
+        assert "--partition=all_debug" in command
+        assert "--time=00:03:00" in command
+        assert f"--chdir={decoys[3]}" in command
+        raise RuntimeError("scheduler submission captured")
+
+    monkeypatch.setattr(subprocess, "run", capture)
+    with pytest.raises(RuntimeError, match="scheduler submission captured"):
+        _scheduler_replay(decoys, tool, absolute=False)
+    assert all(os.environ[name] == value for name, value in inherited.items())

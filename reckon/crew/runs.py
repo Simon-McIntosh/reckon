@@ -42,6 +42,10 @@ from reckon._store import (
 )
 from reckon._timestamps import parse_utc as parse_utc
 from reckon.env_duration import read_duration_override
+from reckon.crew.manifest_faults import (
+    SUITE_ARMS as SUITE_ARMS,
+    is_full_revision as is_full_revision,
+)
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 from reckon.crew.host_lease import (
     LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
@@ -2640,6 +2644,7 @@ def release_run_acknowledgement(
 
 
 STATUS_REPAIR_RECORD_NAME = "status-repair.json"
+ARM_REPAIR_RECORD_NAME = "arm-repair.json"
 AS_DELIVERED_SUFFIX = ".asdelivered"
 DEFAULT_MANIFEST_NAME = "manifest.md"
 # The statuses a repaired manifest may carry: exactly the terminal vocabulary
@@ -2766,6 +2771,131 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
         "repaired_at": _utc_now(),
     }
     _write_json(run_dir(run_id) / STATUS_REPAIR_RECORD_NAME, record)
+    return record
+
+
+def _arm_line_replaced(
+    text: str, arm: str, revision: str, *, command: str = "", log_path: str = ""
+) -> tuple[str | None, str]:
+    """Rewrite the first top-level arm line's revision, or None when absent.
+
+    Only a line starting at column zero counts, so an arm nested under some
+    other field is never the manifest's own. The arm's other fields are carried
+    over as the worker recorded them: re-pointing a ``numstat`` at the revision
+    the command actually ran against says nothing about the exit status, the
+    failure ids or the log that arm reported.
+    """
+    prefix = f"{arm}:"
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith(prefix):
+            continue
+        previous = line.split(":", 1)[1].strip()
+        record = _recorded_arm(previous)
+        record["revision"] = revision
+        if command.strip():
+            record["command"] = command.strip()
+        if log_path.strip():
+            record["log_path"] = log_path.strip()
+        lines[index] = f"{arm}: {json.dumps(record)}"
+        replaced = "\n".join(lines)
+        if text.endswith("\n"):
+            replaced += "\n"
+        return replaced, previous
+    return None, ""
+
+
+def _recorded_arm(value: str) -> dict[str, Any]:
+    """The arm a manifest line records, as a record a repair can amend.
+
+    ``none`` and an empty value both read as an arm that recorded nothing, and
+    the repair then writes a record carrying only what it was told. Anything
+    else is read as the JSON a worker writes and, failing that, as the YAML the
+    reader itself accepts.
+    """
+    import yaml
+
+    try:
+        parsed = json.loads(value)
+    except ValueError:
+        try:
+            parsed = yaml.safe_load(value)
+        except yaml.YAMLError:
+            parsed = None
+    return dict(parsed) if isinstance(parsed, Mapping) else {}
+
+
+def repair_manifest_arm(
+    run_id: str,
+    arm: str,
+    *,
+    revision: str,
+    reason: str,
+    command: str = "",
+    log_path: str = "",
+) -> dict[str, Any]:
+    """Re-point a suite arm at the revision its command ran against.
+
+    A worker that records an arm's revision as prose — the base beside a
+    description of it, or an arm the run had no time to measure — delivers a
+    pair promotion cannot compare with the base it must match, and by the time
+    a coordinator reads it the worker's own turn has ended. The manifest is the
+    worker's file, so a hand edit would lose the delivered text and leave
+    nothing a later reader can compare against. The arm line is rewritten in
+    place, the delivered file is kept beside it under
+    ``manifest.md.asdelivered``, and the reason is recorded in the run
+    directory.
+
+    Only the arm's revision is required, and it must be the commit object id
+    itself: a repair that wrote another spelling would leave the arm at
+    something the gate still cannot compare. The command and the log path are
+    optional, because a re-pointed arm commonly ran at a revision the worker
+    recorded no log for, and re-pointing says nothing about the exit status or
+    the failure ids that arm already carried. A manifest with no top-level line
+    for that arm is refused rather than half-repaired.
+    """
+    name = str(arm).strip()
+    if name not in SUITE_ARMS:
+        raise CrewError(
+            f"an arm repair names one of {', '.join(SUITE_ARMS)}, not {arm!r}"
+        )
+    target = str(revision).strip()
+    if not is_full_revision(target):
+        raise CrewError(
+            "an arm repair names the commit object id the command ran "
+            f"against, not {revision!r}"
+        )
+    recorded_reason = str(reason).strip()
+    if not recorded_reason:
+        raise CrewError("an arm repair requires a non-empty --reason")
+
+    manifest = _manifest_for_repair(run_id)
+    try:
+        original = manifest.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CrewError(f"the manifest at {manifest} could not be read: {exc}") from exc
+    rewritten, previous = _arm_line_replaced(
+        original, name, target, command=command, log_path=log_path
+    )
+    if rewritten is None:
+        raise CrewError(
+            f"the manifest at {manifest} carries no top-level {name} line to re-point"
+        )
+    as_delivered = manifest.with_name(manifest.name + AS_DELIVERED_SUFFIX)
+    if not as_delivered.exists():
+        as_delivered.write_text(original, encoding="utf-8")
+    write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
+    record = {
+        "run_id": run_id,
+        "arm": name,
+        "revision": target,
+        "reason": recorded_reason,
+        "previous_arm": previous,
+        "previous_manifest": str(as_delivered),
+        "manifest": str(manifest),
+        "repaired_at": _utc_now(),
+    }
+    _write_json(run_dir(run_id) / ARM_REPAIR_RECORD_NAME, record)
     return record
 
 

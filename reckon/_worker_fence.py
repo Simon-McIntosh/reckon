@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
 import shutil
@@ -1955,13 +1956,15 @@ def fence_argv(
     # the protected paths beneath it; see the emission of ``node_tmp_seal``.
     node_tmp = node_tmp_seal_root()
     node_tmp_seal: list[tuple[Path, Path]] = []
+    runtime_roots: list[Path] = []
     if node_tmp is not None:
         node_tmp_seal = [(node_tmp, node_tmp)]
         # Created, not merely filtered: a runtime path the launch is expected to
         # create itself composes no grant while it is absent, which leaves the
         # lane it belongs to writing against the seal; see
         # :func:`create_node_tmp_runtime_paths`.
-        roots.extend(create_node_tmp_runtime_paths())
+        runtime_roots = create_node_tmp_runtime_paths()
+        roots.extend(runtime_roots)
 
     binds = protected_read_only_binds(
         protected,
@@ -2083,6 +2086,28 @@ def fence_argv(
         fenced += ["--ro-bind", str(source), str(destination)]
     for source, destination in read_write_binds:
         fenced += ["--bind", str(source), str(destination)]
+    # The scheduler starts tasks outside this mount namespace. Carry the
+    # composed mounts rather than rediscovering protection from job-local env,
+    # including masks, credentials and the worktree's exclusive seals.
+    directories = [
+        *(path for path in runtime_roots if path.is_dir()),
+        *sorted(by_construction),
+    ]
+    if scratch_seal is not None:
+        directories.append(scratch_seal)
+    scratch = tmp_mount or next(iter(sorted(by_construction)), None)
+    if scratch is None:
+        scratch = (
+            Path(manifest_path).parent if manifest_path is not None else NODE_TMP_ROOT
+        )
+    recipe = {
+        "argv": list(fenced),
+        "directories": [str(path) for path in directories],
+        "scratch": str(scratch),
+        "limit": "Absolute scheduler paths bypass task re-entry; interpreter permissions guard that route.",
+    }
+    encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
+    fenced += ["--setenv", "RECKON_WORKER_FENCE", encoded]
     fenced.append("--")
     fenced += list(argv)
     return fenced

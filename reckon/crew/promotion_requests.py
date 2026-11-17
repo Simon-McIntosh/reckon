@@ -28,7 +28,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew import runs
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.node import CrewError
-from reckon.crew.queue_order import STARVATION_AGE_SECONDS, _override
+from reckon.crew.queue_order import _override, fair_queue_order_details
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -669,42 +669,17 @@ def _pending_requests(
         for request in pending
         if request.get("phase") == RUNNING
     )
-    classes: dict[tuple[int, int], list[dict[str, Any]]] = {}
-    for request in pending:
-        stamp = parse_utc(request.get("requested_at"))
-        priority = _override(request)
-        if str(request.get("run_id") or "") in review_first:
-            rank, reason = (0, 0), "delivered review"
-        elif (
-            stamp is not None
-            and (moment - stamp).total_seconds() >= STARVATION_AGE_SECONDS
-        ):
-            rank, reason = (1, 0), "ageing"
-        elif priority is not None:
-            rank, reason = (2, -priority), f"priority override {priority}"
-        else:
-            rank, reason = (3, 0), "session fair share; oldest request"
-        classes.setdefault(rank, []).append({**request, "ordering_reason": reason})
-
-    ordered = []
-    for rank in sorted(classes):
-        remaining = classes[rank]
-        turns = served.copy()
-        while remaining:
-            request = min(
-                remaining,
-                key=lambda row: (
-                    turns[str(row.get("session") or "")],
-                    parse_utc(row.get("requested_at"))
-                    or datetime.max.replace(tzinfo=UTC),
-                    str(row.get("run_id") or ""),
-                ),
-            )
-            ordered.append(request)
-            remaining.remove(request)
-            if request.get("phase") == REQUESTED:
-                turns[str(request.get("session") or "")] += 1
-    return ordered
+    return [
+        {**request, "ordering_reason": reason}
+        for request, reason in fair_queue_order_details(
+            pending,
+            now=moment,
+            joined_at=lambda request: parse_utc(request.get("requested_at")),
+            is_review=lambda request: str(request.get("run_id") or "") in review_first,
+            served=served,
+            consumes_turn=lambda request: request.get("phase") == REQUESTED,
+        )
+    ]
 
 
 def _defer_to_a_queued_review(

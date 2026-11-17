@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "tests/test_lifted_holds_read_only_what_was_appended.py:114": "Fails if the initial read does not decode each of the 5,000 complete lines; the fixed fixture count is independent of the returned set.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:118": "Instrument positive control: fails if the independently computed whole-file reference is empty or includes every line despite dry-run entries.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:119": "Fails if the incremental result differs from `_base_lifted_holds`, which reparses the on-disk log with the saved original json.loads.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:124": "Fails if an unchanged second read invokes the decoder; negative-control.log reinstates the base whole-file read and fails here with `assert 5000 == 0`.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:125": "Fails if the cached result changes despite no file growth, including a regression that returns an empty set without decoding.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:135": "Fails if the append path decodes fewer or more than the three newly written records.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:136": "Fails if the post-append set differs from a separate whole-file parse of the enlarged log.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:137": "Fails if the appended records do not enlarge the prior lifted set.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:144": "Fails if shortening does not restart at the beginning and decode all four remaining lines.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:145": "Fails if the post-truncation result differs from a separate whole-file parse of the shortened log.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:146": "Fails if the previous larger-log answer survives truncation.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:159": "Fails if the initial read of the six-line file is not observed, so the replacement test establishes a populated prior scan.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:168": "Fails if a replacement at a new inode is treated as an append instead of decoding all twelve new lines.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:169": "Fails if replacement output differs from the independent whole-file parser.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:170": "Fails if the old file's lifted pair is retained after replacement.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:188": "Fails if the decoder sees the unterminated fragment or misses one of the twenty complete lines; clamp-mutation.log removes the clamp and fails with `assert 21 == 20`.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:189": "Fails if the partial-read result differs from an independent whole-file parse that ignores the malformed trailing fragment.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:190": "Fails if the incomplete record is treated as a completed lifted hold.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:194": "Fails if the scan offset advances beyond the last complete newline while the half-line remains on disk.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:202": "Fails if completing the fragment causes zero or multiple decoder calls; the expected one is based on the single appended report.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:203": "Fails if the completed record's independently constructed pair is not added to the result.",
+    "tests/test_lifted_holds_read_only_what_was_appended.py:204": "Fails if the completed-read result differs from a separate whole-file parse."
+  },
+  "assertion_independence": "No added assertion compares the function's result with a value passed directly to it: set results are checked against a separately decoded whole-file reference using the saved original json.loads, decode counts come from the recording wrapper, and the fragment offset and expected pair come from the fixture's known file contents.",
+  "call_sites": [
+    "reckon/crew/resumption.py:2678 sweep -> _lifted_holds",
+    "reckon/crew/resumption.py:810 _lifted_holds -> recovery_wait.appended_lines"
+  ],
+  "completed_at": "2026-11-17T09:07:22Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-17T08:50:44Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "lifted-holds-read-only-where-the-log-grew",
+      "recorded_at": "2026-11-17T11:12:41.606155+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 810,
+      "severity": "blocking",
+      "text": "appended_lines advances the shared scan offset before _LIFTED_HOLDS is updated under its separate lock. If two sweep calls overlap, a later call can start at the advanced offset while the accumulated set still records the older offset, clear the prior set, and publish only an empty or tail-only answer; an earlier call can then overwrite it with a result missing older holds. A subsequent call starts after those omitted lines, so the sweep can resume a hold already recorded as lifted."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commits 66a9cb034b, 612f7f2dc3 and 39524c0f36 against base 73e2f52fa998607d07caffa8dfcc9f9f1c8cce62: the first adds the cache and sequential tests, the second moves tail-reading into recovery_wait.appended_lines and adds partial-line coverage, and the third adds the evidence fragment; all changed paths are in scope.",
+    "done_when": "docs/plans/the-monitor-reads-each-fact-once.html:816 names the fixed decode counts and whole-file set equivalence; tests/test_lifted_holds_read_only_what_was_appended.py:102-204 asserts those cases, with gate.log and matched base/head arm logs recording passing results.",
+    "goal": "docs/plans/the-monitor-reads-each-fact-once.html:816 requires incremental lifted-hold reads with restart on replacement or shortening; the sequential implementation in reckon/crew/resumption.py:810-838 satisfies those cases but has the concurrent cache race recorded below.",
+    "manifest": "source manifest.md:6-21 records completion, the three commits, literal gate and arm commands with exit results, both mutation logs, and the reported ruff results.",
+    "write_paths": "source manifest.md:3 declares resumption.py, recovery_wait.py, the test, fragment and figure directory; all four paths in the three-commit diff are within that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_lifted_holds_read_only_what_was_appended.py:124 and :188 fail under the recorded base-read and clamp-removal mutations, but none of its assertions covers the interleaving at reckon/crew/resumption.py:810.",
+    "evidence": "gate.log records 3 passed with EXIT=0, base-arm.log and head-arm.log record 58 and 61 passing with EXIT=0, and negative-control.log plus clamp-mutation.log each record the expected regression failure.",
+    "fit": "reckon/crew/resumption.py:780-788 follows the existing module cache style and calls the established reader at :810; the source manifest.md:21 reports clean lint and no added formatting finding, and names follow repository conventions.",
+    "goal_fidelity": "reckon/crew/resumption.py:810-838 reads only newly appended complete lines and rebuilds after a reset, while the race at :810 can still return an incomplete lifted set when sweep calls overlap.",
+    "reuse": "the capability search found reckon/crew/recovery_wait.py:143-209 already owns stream identity, offset and complete-line reading; the new appended_lines wrapper at :170 extends that owner and resumption.py:810 reuses it instead of duplicating the mechanism.",
+    "scope_discipline": "the changed paths from the three commits are exactly within the source manifest.md:3 write-path declaration."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/the-monitor-reads-each-fact-once.html:816 requires incremental lifted-hold reads with restart on replacement or shortening; reckon/crew/resumption.py:810-838 meets the sequential cases but has the concurrent cache race recorded below.\nVERDICT done_when: docs/plans/the-monitor-reads-each-fact-once.html:816 names the decode counts and set-equivalence measure; tests/test_lifted_holds_read_only_what_was_appended.py:102-204 asserts them, with gate.log and matched-arm logs recording their results.\nVERDICT write_paths: source manifest.md:3 declares the source, shared reader, test, fragment and figure paths; the three-commit diff changes only four paths, all within that scope.\nVERDICT manifest: source manifest.md:6-21 records complete status, three commits, passing focused and matched arms, both mutation failures, and the reported lint results.\nVERDICT diff: read 66a9cb034b, 612f7f2dc3 and 39524c0f36 commit by commit against 73e2f52fa998607d07caffa8dfcc9f9f1c8cce62; the changes add incremental reads and tests, reuse recovery_wait's reader, and add the evidence fragment.\nCALL_SITES: reckon/crew/resumption.py:2678 sweep -> _lifted_holds, reckon/crew/resumption.py:810 _lifted_holds -> recovery_wait.appended_lines\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:810-838 meets the sequential cases, but the ordering at :810 can omit already recorded holds during overlapping sweeps.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate.log records 3 passed EXIT=0, both arm logs record 58/61 passed EXIT=0, and the two mutation logs show the expected failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four changed paths are within the five path entries declared in source manifest.md:3.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_lifted_holds_read_only_what_was_appended.py:124 and :188 fail on the recorded mutations, but no assertion covers the cache race at reckon/crew/resumption.py:810.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/resumption.py:780-788 follows the module's cache idiom, uses the existing reader at :810, and the reported lint checks add no findings.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/recovery_wait.py:143-209 owns the offset and complete-line mechanism, and the new wrapper at :170 extends that owner.\nFINDING reckon/crew/resumption.py:810 blocking: appended_lines advances the shared scan offset before _LIFTED_HOLDS is updated under its separate lock. If two sweep calls overlap, a later call can start at the advanced offset while the accumulated set still records the older offset, clear the prior set, and publish only an empty or tail-only answer; an earlier call can then overwrite it with a result missing older holds. A subsequent call starts after those omitted lines, so the sweep can resume a hold already recorded as lifted.",
+  "review_run_id": "r-20261117T084857916191-review-of-lifted-holds-read-only-where-the-log-grew-39524c0f3698",
+  "reviewed_base_sha": "73e2f52fa998607d07caffa8dfcc9f9f1c8cce62",
+  "reviewed_commits": [
+    "66a9cb034b8a82a3b7c71b5abc1c87c59fdd8314",
+    "612f7f2dc32b923da317e653435d45b805c8ae98",
+    "39524c0f369897ad2566b06ad3087fa9b56fc6e8"
+  ],
+  "reviewed_head_sha": "39524c0f369897ad2566b06ad3087fa9b56fc6e8",
+  "reviewed_run_id": "r-20261117T044909932126-lifted-holds-read-only-where-the-log-grew",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T10:55:52.668726+00:00",
+  "total": 110
+}
