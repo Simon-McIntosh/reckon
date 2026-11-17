@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own declared suite arms: logs/baseline-suite-base.txt (revision 69fab1372f, scratch tree base-69fab137, '58 passed in 39.73s', EXIT=0) and logs/after-suite-merge-head.txt (revision 44b546bde9, worktree, '58 passed in 55.63s', EXIT=0). Both are pytest-format and neither lists a failing id, so the head adds no failing test and the count is a measured 0 rather than an unread absence. The instrument was shown to see a known failure before the empty arms were reported: reckon.crew.review.gate_log_failure_ids over logs/negative-control-base-target.txt returns its two FAILED ids (test_a_queued_reflex_review_carries_the_waiver_and_launches and test_an_implementation_dispatch_in_the_same_state_records_the_backlog), and added_failures_from_gate_logs(negative_control, after-suite-merge-head) then reports 0 added, which is the same helper returning a non-empty base.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3216",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/crew/recovery_watch.py:757",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/query.py:597",
+    "reckon/crew/obligations.py:1663",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-17T01:21:16.255Z",
+  "dispatched_at": "2026-11-17T01:20:17Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the after_suite arm names revision fa2df5da897ca703d3ec7e35c38a886a72436a98, which resolves to no commit ('git cat-file -t' refuses it) while the log it cites is headed 44b546bde9, so the arm's revision field names neither its own run nor the reviewed head; manifest.md:7 repeats the same six-hex slip in the commits list, which means the delivered record of the final head cannot be resolved by a reader who does not already know the true sha. The suite result itself stands: logs/after-suite-merge-head.txt reads '58 passed', EXIT=0 at 44b546bde9, and the only commit after it touches the evidence fragment."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "two counts in the merge paragraph do not match the artefacts it supports: 'the twenty-one pre-spawn lines' is 16 insertions and 2 deletions against primary ef83af75fa (19/5 against the prior head 5e2d47e003), and the SIM102 finding is at line 3241 at base, 3253 at primary and 3267 at the merged head, never 3254. The claims the numbers decorate do hold: the merged file differs from primary only in that conjunction at reckon/crew/recovery_classification.py:1844-1852, ruff reports exactly one SIM102 in all three revisions and ruff format --check is clean."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/logs/after-suite-merge-head.txt",
+      "revision": "44b546bde9f33c5941a9cdbc39c22f9f87ac527e"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/logs/baseline-suite-base.txt",
+      "revision": "69fab1372f16686ce6acdb6094a357c6f6bfe18d"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read the three commits gained after the prior review: 44b546bde9 (merge, parents 5e2d47e0 and ef83af75fa), 11c28fb864 and fa2df5da89; against primary ef83af75fa the run's own contribution is +16/-2 in reckon/crew/recovery_classification.py (the terminal_verdict bound and its comment) and +54/-0 in the fragment, and the other 265 paths of the raw 5e2d47e003..fa2df5da range are primary's history the merge brought in.",
+    "done_when": "The done_when asks for that file green as an all_debug job with SLURM_JOB_ID unset plus a base negative control; logs/gate-all_debug-final-head.txt carries '# slurm_job 1320838', '# revision fa2df5da897ca703d3ec7c35c38a886a72436a98' and '# command: env -u SLURM_JOB_ID ...', and logs/negative-control-base-target.txt at 69fab1372f reads '2 failed, 2 passed in 2.67s' EXIT=1 with the refusal 'the run is not awaiting review (running)'.",
+    "goal": "dispatch-detail.json states the goal as 'Make tests/test_a_review_is_not_refused_for_its_run.py pass in full on the primary branch'; the three commits gained since the prior review of 5e2d47e003 carry the merge resolution and its evidence, and logs/gate-all_debug-final-head.txt at fa2df5da897c reads '4 passed in 2.94s' EXIT=0, so the deliverable holds at the reviewed head.",
+    "manifest": "manifest.md reads status complete with all seven commits, but its after_suite arm at manifest.md:18 names revision fa2df5da897ca703d3ec7e35c38a886a72436a98, which is not a commit in the repository ('git cat-file -t' reports could not get object info), while the log it cites, logs/after-suite-merge-head.txt, is headed 44b546bde9f33c5941a9cdbc39c22f9f87ac527e.",
+    "write_paths": "dispatch-detail.json fences reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's own fragment there; the two paths the run gains since the prior review (reckon/crew/recovery_classification.py and that fragment) are both inside the fence."
+  },
+  "justifications": {
+    "durability": "The base arm at 69fab1372f reds tests/test_a_review_is_not_refused_for_its_run.py::test_a_queued_reflex_review_carries_the_waiver_and_launches with the refusal the change removes (logs/negative-control-base-target.txt), which is the reinstated regression; the retained spawn-evidence half is guarded by tests/test_a_held_member_is_read.py::test_a_zero_length_stream_is_read_through_its_stderr, which reads 'launch-failed' only because _spawn_evidence is consulted, so dropping either half of the conjunction reddens a test.",
+    "evidence": "The gate receipt at the reviewed head is on disk (logs/gate-all_debug-final-head.txt: '4 passed', EXIT=0, slurm_job 1320838) and the base arm's red is beside it, but manifest.md:18 records a revision that does not resolve and its arm log was run at 44b546bde9, so the suite pair a promotion reads is only partly traceable to the head, and no suite arm was run at fa2df5da89.",
+    "fit": "The merge keeps the module's own idiom of one named derived flag and a paragraph of reasoning, at reckon/crew/recovery_classification.py:1844-1852, and introduces no name outside the module's vocabulary; the fragment gains a heading and pre blocks in the shape its earlier arms use.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1856 bounds pre_spawn_waiting with the named terminal_verdict defined at :1799, so a completed run no longer reads 'running' and reckon/crew/recovery_review_dispatch.py:3216 no longer refuses its review.",
+    "reuse": "The merge composes primary's reckon/crew/recovery_liveness.py:727 _spawn_evidence by import rather than restating it, and terminal_verdict names the predicate already spelled at :1802; a capability search over reckon/crew for 'a launch's pre-spawn label held against the evidence written after it' found the owner already in recovery_classification.classify_pointer, which this extends.",
+    "scope_discipline": "git diff ef83af75fa..fa2df5da limits this run's own contribution to reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html, both declared, and the merge adds no path of its own."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json states the goal as 'Make tests/test_a_review_is_not_refused_for_its_run.py pass in full on the primary branch'; the three commits gained since the prior review of 5e2d47e003 carry the merge resolution and its evidence, and logs/gate-all_debug-final-head.txt at fa2df5da897c reads '4 passed in 2.94s' EXIT=0, so the deliverable holds at the reviewed head.\nVERDICT done_when: the done_when asks for that file green as an all_debug job with SLURM_JOB_ID unset plus a base negative control; logs/gate-all_debug-final-head.txt carries '# slurm_job 1320838', '# revision fa2df5da897ca703d3ec7c35c38a886a72436a98' and '# command: env -u SLURM_JOB_ID ...', and logs/negative-control-base-target.txt at 69fab1372f reads '2 failed, 2 passed in 2.67s' EXIT=1 with the refusal 'the run is not awaiting review (running)'.\nVERDICT write_paths: dispatch-detail.json fences reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's own fragment there; the two paths the run gains since the prior review (reckon/crew/recovery_classification.py and that fragment) are both inside the fence.\nVERDICT manifest: manifest.md reads status complete with all seven commits, but its after_suite arm at manifest.md:18 names revision fa2df5da897ca703d3ec7e35c38a886a72436a98, which is not a commit in the repository, while the log it cites is headed 44b546bde9.\nVERDICT diff: read the three commits gained after the prior review (44b546bde9 merge of 5e2d47e0 and ef83af75fa, 11c28fb864, fa2df5da89); against primary the run's own contribution is +16/-2 in reckon/crew/recovery_classification.py and +54/-0 in the fragment, the other 265 paths being primary's history the merge brought in.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3216, reckon/crew/queue_landing.py:1704, reckon/crew/recovery_watch.py:757, reckon/crew/directory.py:342, reckon/crew/query.py:597, reckon/crew/obligations.py:1663, reckon/serve.py:902\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1856 bounds pre_spawn_waiting with the named terminal_verdict at :1799, so reckon/crew/recovery_review_dispatch.py:3216 no longer refuses a completed run's review.\nSCORE evidence: 15\nJUSTIFICATION evidence: the head gate's receipt is on disk (logs/gate-all_debug-final-head.txt, '4 passed', EXIT=0, slurm_job 1320838) but manifest.md:18 records a revision that does not resolve and no suite arm was run at the head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ef83af75fa..fa2df5da limits this run's own contribution to reckon/crew/recovery_classification.py and the declared fragment.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control-base-target.txt reinstates the regression and reddens test_a_queued_reflex_review_carries_the_waiver_and_launches, and tests/test_a_held_member_is_read.py::test_a_zero_length_stream_is_read_through_its_stderr guards the retained spawn-evidence half.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1844-1852 keeps the module's one-named-flag-plus-paragraph idiom and adds no foreign name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the merge imports primary's reckon/crew/recovery_liveness.py:727 _spawn_evidence instead of restating it, and the capability search found its owner in classify_pointer, which this extends.\nFINDING manifest.md:18 non-blocking: the after_suite revision fa2df5da897ca703d3ec7e35c38a886a72436a98 resolves to no commit while its cited log is headed 44b546bde9, so the delivered record's suite pair cannot be traced to the head; manifest.md:7 repeats the slip.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html:44 non-blocking: 'twenty-one pre-spawn lines' is measured at 16 insertions/2 deletions against primary, and the SIM102 line is 3241/3253/3267 across base, primary and merge rather than 3254, though the claims those numbers decorate hold.",
+  "review_run_id": "r-20261116T233518017024-review-of-qwnw-red-file-a-review-is-not-refused-for-its-run-fa2df5da897c",
+  "reviewed_base_sha": "5e2d47e0034bb4de6fb7ca820ae73dc3bac98161",
+  "reviewed_head_sha": "fa2df5da897ca703d3ec7c35c38a886a72436a98",
+  "reviewed_run_id": "r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T01:28:08Z",
+  "total": 107
+}

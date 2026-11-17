@@ -90,6 +90,7 @@ class Fixture:
             "artifacts: none\n"
             "evidence_inputs: none\n"
             "follow_ons: none\n"
+            "messages_received: none\n"
             "blockers: none\n"
             f"orientation_base_sha: {self.base}\n",
             encoding="utf-8",

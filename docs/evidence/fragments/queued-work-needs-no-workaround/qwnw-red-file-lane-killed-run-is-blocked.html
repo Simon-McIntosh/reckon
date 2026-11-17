@@ -1,0 +1,141 @@
+<section id="qwnw-red-file-lane-killed-run-is-blocked-landing">
+  <h2>A lane-killed run passes its own test file in full</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_lane_killed_run_is_blocked.py</code>
+  was red on the primary branch: 3 failed, 7 passed at the merged head.
+  All three failures share one cause, and the product was wrong.
+  <code>recovery_classification.classify_pointer</code> read a pre-spawn phase
+  label as a statement about the present: a pointer whose <code>phase</code> is
+  one of <code>starting</code>, <code>launching</code>,
+  <code>launcher</code> or <code>dispatching</code> was classified
+  <code>running</code> by the <code>pre_spawn_waiting</code> arm before any
+  liveness arm could read its process. A killed run keeps the phase it held
+  when it died, and
+  <code>starting</code> is exactly that phase, so a run the lane killed before
+  its first turn read <code>running</code> for as long as its pointer lived,
+  whatever its recorded liveness said. The retry arm's own comment already
+  states the rule the label broke: <em>phase is not consulted, because a
+  finished or killed run can still carry a starting phase in its pointer</em>.</p>
+
+<p><strong>The repair.</strong> A conjunct on <code>pre_spawn_waiting</code>
+  in <code>reckon/crew/recovery_classification.py</code>: a pointer already
+  recorded dead (<code>alive is False</code>) is not waiting to start, so it
+  falls through to the liveness arms that read a lane kill, an exhausted
+  refusal, an unreadable manifest and a vanished worker. A
+  genuinely pre-spawn pointer records <code>process_alive: null</code>.
+  <code>record_process_alive</code> answers <code>None</code> for a record
+  naming no pid — so the launcher-claimed window still reads
+  <code>running</code> as before, and a recorded death outranks the label
+  rather than the label outranking the process.</p>
+
+  <p><strong>The merge repair.</strong> Landing this branch conflicted with the
+  primary branch at <code>9ad5e64e87</code> in that same arm, because primary
+  had repaired it independently: it requires
+  <code>not _spawn_evidence(record)</code>, which asks whether the launch left
+  a pid, a worker record, a stream or the launch log a worker was started
+  against. The two are one rule read at different depths — something recorded
+  showing that a worker existed outranks the launcher's label, and so does a
+  pointer already recorded dead — so the resolution keeps both, beside the
+  stranded-launch bound primary also kept. The gate passes at the merge head
+  with all three conjuncts.</p>
+
+  <h3 id="qwnw-red-file-lane-killed-run-is-blocked-causes">Each failure and its verdict</h3>
+
+  <table id="qwnw-red-file-lane-killed-run-is-blocked-causes-table">
+    <caption>The failing ids at the base revision, the reading each one got, and
+    the verdict. No assertion was deleted or weakened; the test file is
+    unchanged.</caption>
+    <thead><tr><th>failing id</th><th>reading and verdict</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_a_lane_killed_run_is_blocked_at_any_stored_phase</code></td>
+        <td>read <code>running</code> at phase <code>starting</code>, expected
+        <code>blocked</code> — product wrong: the phase label outranked the
+        recorded death</td></tr>
+      <tr><td><code>test_a_dead_run_with_no_retries_still_abandons</code></td>
+        <td>read <code>running</code>, expected <code>abandoned</code> — product
+        wrong, same arm</td></tr>
+      <tr><td><code>test_server_overload_retries_do_not_block_an_abandoned_run</code></td>
+        <td>read <code>running</code>, expected <code>abandoned</code> — product
+        wrong, same arm</td></tr>
+    </tbody>
+  </table>
+
+  <p>The seven passing cases at the base revision are the falsifiers that keep
+  the repair honest, and all seven still pass: a dead run with rate-limit
+  retries at phase <code>complete</code> reads <code>blocked</code> with its
+  lane, retry count and resume remedy; an alive run in the same shape keeps
+  reading <code>running</code>; a terminal exhaustion keeps its refusal
+  wording. Their own phases vary, which is what shows the reading is keyed on
+  liveness rather than on the phase word.</p>
+
+  <h3 id="qwnw-red-file-lane-killed-run-is-blocked-arms">Measured</h3>
+
+  <table id="qwnw-red-file-lane-killed-run-is-blocked-arms-table">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line is a bare <code>EXIT=&lt;code&gt;</code>. Every run is
+    executed with <code>SLURM_JOB_ID</code> unset.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control — the named file at the base revision</td>
+        <td><code>ba3443a9ae</code>, extraction</td>
+        <td>3 failed, 7 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the same file at the merged head, before the repair</td>
+        <td><code>398015d5d5</code> plus the edit, worktree</td>
+        <td>3 failed, 7 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the gate — the named file at the delivered head</td>
+        <td><code>64b94b1ba7</code>, clean worktree</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite, base arm</td>
+        <td><code>ba3443a9ae</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite, after arm</td>
+        <td><code>64b94b1ba7</code>, clean worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>recovery regression arm, batch 02b, base</td>
+        <td><code>ba3443a9ae</code>, extraction</td>
+        <td>31 failed, 359 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>recovery regression arm, batch 02b, after</td>
+        <td><code>64b94b1ba7</code>, worktree</td>
+        <td>9 failed, 381 passed, <code>EXIT=1</code> — 0 added, 22 fixed</td></tr>
+      <tr><td>recovery regression arm, batch 02a, after</td>
+        <td><code>64b94b1ba7</code>, worktree</td>
+        <td>13 failed, 381 passed — 0 added, 5 fixed</td></tr>
+      <tr><td>recovery regression arm, batch 02a, same batch with the repair
+        reverted</td>
+        <td><code>64b94b1ba7</code> content, one-conjunct revert, extraction</td>
+        <td>18 failed, 376 passed — 0 added against the after arm</td></tr>
+      <tr><td>recovery regression arm, batches 00, 01 and 03</td>
+        <td>base extraction against delivered head</td>
+        <td>0 added failures in each batch (1, 1 and 14 fixed)</td></tr>
+      <tr><td>the gate, re-run at the repaired merge head</td>
+        <td><code>fbeb09e7fb</code>, clean worktree</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite, re-run base and after arms at the merge</td>
+        <td><code>ba3443a9ae</code> extraction, then
+        <code>fbeb09e7fb</code> worktree</td>
+        <td>58 passed <code>EXIT=0</code>, then 58 passed
+        <code>EXIT=0</code></td></tr>
+      <tr><td>recovery regression arm, batch 02b, re-run at the merge head</td>
+        <td><code>fbeb09e7fb</code>, worktree</td>
+        <td>9 failed, 381 passed — the same nine ids as the after arm,
+        0 added, 22 fixed against base</td></tr>
+      <tr><td>recovery regression arm, batch 02a, re-run at the merge head</td>
+        <td><code>fbeb09e7fb</code></td>
+        <td>12 failed, 382 passed — 0 added against the after arm's 13</td></tr>
+    </tbody>
+  </table>
+
+  <p>The three failing ids are identical in the negative control and in the
+  pre-repair head run, so the control reddens on the same defect the gate
+  measures, and the after arm fails none of them. The arm's 22 fixed ids in
+  batch 02b are 19 cases of <code>tests/test_crew_recovery.py</code> with the
+  same signature — <code>assert 'running' == 'abandoned'</code>,
+  <code>'blocked'</code> or <code>'unreadable'</code> — beside the three gate
+  ids, so the single cause was wider than the one file the node names.</p>
+
+  <p>The one id the after arm fails that its same-batch reverted arm also fails,
+  <code>test_a_worker_never_outlives_its_supervisor.py::test_a_run_whose_supervisor_exited_is_not_classified_complete</code>,
+  is not this change's: it fails with the repair reverted and passes when its
+  own file runs alone, and its pointer holds phase <code>working</code>, which
+  the changed arm never reads. It is reported outside this node's scope.</p>
+</section>

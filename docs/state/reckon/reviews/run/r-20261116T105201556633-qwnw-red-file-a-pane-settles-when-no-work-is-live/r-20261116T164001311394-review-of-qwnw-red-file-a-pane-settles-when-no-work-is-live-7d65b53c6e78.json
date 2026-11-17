@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/session_host.py:parse_request",
+    "reckon/crew/session_host.py:_SessionHost._pair_is_owners",
+    "reckon/crew/dispatch_watch.py:_request_line",
+    "reckon/crew/dispatch_watch.py:_deliver_request"
+  ],
+  "completed_at": "2026-11-16T16:42:46.576Z",
+  "dispatched_at": "2026-11-16T16:41:40Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-settles-when-no-work-is-live.html",
+      "line": 60,
+      "severity": "non-blocking",
+      "summary": "The arms paragraph and the reviewed run's manifest record the head measure at 74858ce4f3, not at the reviewed head 7d65b53c6e: the landed head's last commit is docs-only, so the passing arm still covers the code under review, but a reader comparing the record's revision against the promoted commit sees a one-commit gap that the record does not explain."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_pane_settles_when_no_work_is_live.py passes in full, and the diff at 74858ce4f3 changes only that file's _Host.request (tests/test_a_pane_settles_when_no_work_is_live.py:426) to send the ownership mark its host requires; the recorded head arm reads 12 passed, EXIT=0.\nVERDICT done_when: the done_when asks for the named file passing in full as an all_debug job with SLURM_JOB_ID unset, a red base arm, and a per-cause verdict with no assertion weakened; base-named-file-worktree.log reads 3 failed, 9 passed, EXIT=1 and head-named-file.log reads 12 passed, EXIT=0, and the manifest carries the three-verdict cause table.\nVERDICT write_paths: the reviewed run declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/<node-id>, and both diff paths (tests/test_a_pane_settles_when_no_work_is_live.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-settles-when-no-work-is-live.html) are inside them.\nVERDICT manifest: read at manifest.md; it reads status complete, names 74858ce4f3 and 7d65b53c6e, records 12 passed at head against 3 failed, 9 passed at base, and attributes the archive-tree errors to a missing .git rather than to code under test.\nVERDICT diff: read both commits against 1feacf337c commit by commit; 74858ce4f3 is a 7-line harness change and 7d65b53c6e adds a 76-line landing fragment, no product source changed and nothing lies outside the declared scope.\nCALL_SITES: reckon/crew/session_host.py:parse_request, reckon/crew/session_host.py:_SessionHost._pair_is_owners, reckon/crew/dispatch_watch.py:_request_line, reckon/crew/dispatch_watch.py:_deliver_request\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_pane_settles_when_no_work_is_live.py:431 now sends owner_checked, which reckon/crew/session_host.py:279 is the field parse_request reads, so the file's 12 cases pass for the reason the production writer passes it.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-named-file.log and base-named-file-worktree.log record the two arms with bare EXIT=0 and EXIT=1 lines from all_debug jobs, though both name 74858ce4f3 rather than the reviewed head 7d65b53c6e.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 1feacf337c 7d65b53c6e touches only tests/test_a_pane_settles_when_no_work_is_live.py and the node's own fragment, both inside the declared paths, with no product or plan edit.\nSCORE durability: 18\nJUSTIFICATION durability: no assertion was added, and the guard is the file itself \u2014 removing owner_checked from tests/test_a_pane_settles_when_no_work_is_live.py:431 reddens exactly the three cases base-named-file-worktree.log records as FAILED at the base revision.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_pane_settles_when_no_work_is_live.py:427-431 follows the marked-request idiom of tests/test_a_settled_follower_rearms_while_its_session_owns_work.py:123, `ruff check` and `ruff format --check` report no finding on the changed path, and the fragment's element ids are node-prefixed.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it reuses the `owner_checked` key whose owner is reckon/crew/dispatch_watch.py:_request_line, searched across reckon/crew for a request-line writer and found there.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-settles-when-no-work-is-live.html:60 non-blocking: the arms paragraph, and the manifest it was copied from, record the head measure at 74858ce4f3 rather than the reviewed head 7d65b53c6e; the last commit is docs-only so the arm still covers the code, but the record's revision and the promoted revision differ without the record saying why.\n",
+  "review_run_id": "r-20261116T164001311394-review-of-qwnw-red-file-a-pane-settles-when-no-work-is-live-7d65b53c6e78",
+  "reviewed_base_sha": "1feacf337c1134a501a59170165adefedb9d4030",
+  "reviewed_head_sha": "7d65b53c6e787ea6e42565a1eb38e29d8a59a0ce",
+  "reviewed_run_id": "r-20261116T105201556633-qwnw-red-file-a-pane-settles-when-no-work-is-live",
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:18:57.652537+00:00",
+  "total": 113,
+  "verdicts": {
+    "diff": "Read both commits against base 1feacf337c: 74858ce4f3 is a 7-line test-harness change and 7d65b53c6e adds the 76-line landing fragment; no product source changed, and neither commit touches a path outside the declared scope.",
+    "done_when": "The done_when asks for the named file passing in full as an all_debug job with SLURM_JOB_ID unset, a red base arm, and a per-cause verdict with no assertion weakened; head-named-file.log and base-named-file-worktree.log carry those two arms with EXIT=0 and EXIT=1, and the manifest's cause table is in the fragment.",
+    "goal": "The node's goal is that tests/test_a_pane_settles_when_no_work_is_live.py passes in full; the diff at 74858ce4f3 changes only that file's _Host.request (tests/test_a_pane_settles_when_no_work_is_live.py:426-436) to send the ownership mark its host requires; the recorded head arm reads 12 passed, EXIT=0.",
+    "manifest": "The reviewed run's manifest.md reads status complete, names commits 74858ce4f3 and 7d65b53c6e, records 12 passed at head and 3 failed, 9 passed at base, and attributes the two archive-tree errors to a missing .git rather than to code under test.",
+    "write_paths": "The reviewed run declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/<node-id>; the diff's two paths are tests/test_a_pane_settles_when_no_work_is_live.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-pane-settles-when-no-work-is-live.html, both inside."
+  }
+}

@@ -1,0 +1,92 @@
+<section data-reckon="evidence" data-id="qwnw-red-file-scoring-dispatches-its-review">
+  <h3 id="qwnw-red-file-scoring-dispatches-its-review-heading">A scoring pointer carries the phase a spawned run carries</h3>
+  <p id="qwnw-red-file-scoring-dispatches-its-review-why">
+    <code>tests/test_scoring_dispatches_its_review.py</code> was red on the
+    primary branch: three of its four cases failed, and the fourth passed
+    without reaching the behaviour it names. Each case builds its source run
+    through one helper, <code>_scoring_pointer</code>, and that helper wrote a
+    pointer whose <em>phase</em> was <code>starting</code> — a pre-spawn label —
+    while its manifest reported <code>status: complete</code>.
+  </p>
+  <p id="qwnw-red-file-scoring-dispatches-its-review-cause">
+    <strong>Verdict: the test's fixture, not the product.</strong> The
+    classifier reports a pointer in a pre-spawn phase
+    (<code>starting</code>, <code>launching</code>, <code>launcher</code>,
+    <code>dispatching</code>) that carries neither a pid nor a launch clock as
+    <em>a run its launcher has not started</em>, which reads
+    <code>running</code>. That rule is deliberate: a pre-spawn pointer once
+    raised <code>UnboundLocalError</code> out of <code>classify_pointer</code>
+    and took the whole live view down for the project. The review dispatch
+    composes only for a row classified <code>scoring</code>, so all three cases
+    answered <code>the run is not awaiting review (running)</code> before the
+    reflex under test was ever asked whether the run is qualified — the two
+    <code>KeyError</code>s are the same cause. No product rule broke: a run in
+    that shape does not exist in production, because the launcher writes the pid
+    when it spawns. The fixture now names <code>working</code>, the phase a
+    spawned run carries once its worker has delivered, and each assertion
+    therefore exercises the composition, the lane hold and the admission
+    refusal it was written for. No assertion was deleted, and the quiet half —
+    which had been passing on the refusal it did not mean to test — now reaches
+    the stored-review arm it asserts.
+  </p>
+  <table id="qwnw-red-file-scoring-dispatches-its-review-arms">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>command or file</th><th>result</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>gate, before (negative control)</td>
+        <td><code>7061ebe583</code></td>
+        <td><code>tests/test_scoring_dispatches_its_review.py</code></td>
+        <td>3 failed, 1 passed, EXIT=1</td>
+        <td><code>logs/gate-base.log</code></td>
+      </tr>
+      <tr>
+        <td>gate, after</td>
+        <td><code>c4d0975cd3</code></td>
+        <td><code>tests/test_scoring_dispatches_its_review.py</code></td>
+        <td>4 passed, EXIT=0</td>
+        <td><code>logs/gate-head.log</code></td>
+      </tr>
+      <tr>
+        <td>suite, base</td>
+        <td><code>7061ebe583</code></td>
+        <td><code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, EXIT=0</td>
+        <td><code>logs/suite-base.log</code></td>
+      </tr>
+      <tr>
+        <td>suite, after</td>
+        <td><code>c4d0975cd3</code></td>
+        <td><code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, EXIT=0</td>
+        <td><code>logs/suite-after.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p id="qwnw-red-file-scoring-dispatches-its-review-control">
+    <strong>Negative control.</strong> At the base revision the gate's three
+    failing ids are
+    <code>test_a_scoring_run_dispatches_its_own_review_unasked</code>
+    (<code>assert False is True</code>),
+    <code>test_an_unavailable_lane_is_recorded_and_a_returning_lane_dispatches</code>
+    (<code>KeyError: 'awaiting_lane'</code>) and
+    <code>test_an_unattached_session_refuses_the_automatic_dispatch_too</code>
+    (<code>KeyError: 'refused'</code>). The same three ids fail at the merged
+    head before the repair (local run at <code>f361d2bcfc</code>, 3 failed /
+    1 passed), so the repair is what turns them, and the base run above is the
+    recorded red.
+  </p>
+  <p id="qwnw-red-file-scoring-dispatches-its-review-runs">
+    Each arm ran on <code>all_debug</code>; the gate arms ran with
+    <code>SLURM_JOB_ID</code> unset. The base arms ran in scratch trees — the
+    gate's from a <code>git archive</code> extraction, the suite's from a
+    detached clone at the base revision because the selected files read the
+    repository's own history — and each log names the revision, the tree, the
+    literal command, <code>module.__file__</code> and the resolved working
+    directory. <code>ruff check</code> reports nothing on the changed path at
+    base or at head, and <code>ruff format --check</code> reports the same three
+    pre-existing regions in both (hunk offsets shift by the five added comment
+    lines and nothing else), so the change adds no finding.
+  </p>
+</section>

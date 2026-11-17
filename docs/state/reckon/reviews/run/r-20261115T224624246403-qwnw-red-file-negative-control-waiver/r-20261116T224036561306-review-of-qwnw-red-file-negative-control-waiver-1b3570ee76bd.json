@@ -1,0 +1,112 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the source run raw suite-arm logs, both completed with 58 passed; the same parser reads 14 known-present failures in base-negative-control.log. The suite pair covers staged inventory and shared-home locks; it is not a full-suite claim or a structured receipt present in the source manifest.",
+  "after_suite": {
+    "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224624246403-qwnw-red-file-negative-control-waiver/after-suite-arm.log",
+    "provenance": "reconstructed from source-run raw log; absent from source manifest",
+    "revision": "d9155c8c5c2686e9da80379996ecca52bec8e437"
+  },
+  "assertion_audit": [
+    {
+      "failure_condition": "Changing the refusal back to an EXIT-only diagnostic or admitting a red log with no failing id would fail the message or exit/pointer assertions.",
+      "location": "tests/test_negative_control_waiver.py:116"
+    },
+    {
+      "failure_condition": "Restoring the former expectation that missing logs must refuse despite a reasoned waiver contradicts production promotion_checks.py:2680-2683; implementing that refusal would fail exit_code == 0.",
+      "location": "tests/test_negative_control_waiver.py:229"
+    },
+    {
+      "failure_condition": "Returning matched or exempt instead of waived would fail the ledger verdict assertion.",
+      "location": "tests/test_negative_control_waiver.py:231"
+    },
+    {
+      "failure_condition": "Dropping or changing the reason or declaration during ledger persistence would fail the comparisons to independently retained fixture constants; these read persisted output rather than comparing a variable to itself.",
+      "location": "tests/test_negative_control_waiver.py:232-233"
+    },
+    {
+      "failure_condition": "Claiming a run-directory or measured log supplied the absent control would fail control_log_source == none.",
+      "location": "tests/test_negative_control_waiver.py:234"
+    },
+    {
+      "failure_condition": "Inventing a log citation or resolved path when none was named would fail the empty-log and absent-key assertions.",
+      "location": "tests/test_negative_control_waiver.py:236-237"
+    },
+    {
+      "failure_condition": "Discarding the cited path when the file is deleted or resolving it to the wrong directory would fail ledger path assertions; the expected path comes from the separately prepared fixture, not the returned record.",
+      "location": "tests/test_negative_control_waiver.py:239-240"
+    },
+    {
+      "failure_condition": "Leaving a successfully promoted live pointer behind would fail the filesystem existence assertion.",
+      "location": "tests/test_negative_control_waiver.py:241"
+    }
+  ],
+  "baseline_suite": {
+    "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224624246403-qwnw-red-file-negative-control-waiver/base-suite-arm.log",
+    "provenance": "reconstructed from source-run raw log; absent from source manifest",
+    "revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_note": "No production module calls the changed test helper or test definition. To validate the asserted runtime rule, examined promotion.py:827 complete and promotion_checks.py:2478-2503, 2632-2686 and 2932-2953 at the reviewed head; these are exercised owners, not callers of changed source.",
+  "completed_at": "2026-11-16T22:53:18Z",
+  "dispatched_at": "2026-11-16T22:48:17Z",
+  "finding_disposition_recommendation": "exempted: the review opens and records the raw test receipts directly; retain the missing lint receipt and malformed source metadata as evidence limitations, without holding a test-only correction whose named head file demonstrably passes. Coordinator owns final disposition.",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_logs names a directory followed by shell redirection rather than the gate logs, structured baseline_suite and after_suite are absent, and the required lint delta has no recorded result; the opened raw receipts establish the test results but the delivered manifest does not carry reproducible evidence citations."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read d0d77f07e2dcc64d74713755aebe748602f9a06f through 1b3570ee76bd309ecd2af1da9326ecb1c6770af8, distinguishing inherited history from the node's commits 8297e31f8e04958cd9cf35d1cc4088d78c96fb56, 9c5b1c40c2abcfb1f33e027395a79119738816ff and 1b3570ee76bd309ecd2af1da9326ecb1c6770af8; they repair the test driver and expectations and add evidence without changing production.",
+    "done_when": "dispatch-detail.json requires the named file on all_debug and no added importer failures; gate-head.log records 17 passed, base-negative-control.log records 14 failed and 3 passed, and base-suite-arm.log and after-suite-arm.log each record 58 passed, although the manifest omits structured arm receipts and lint results.",
+    "goal": "dispatch-detail.json names making tests/test_negative_control_waiver.py pass in full; head-gate.log at 1b3570ee76bd309ecd2af1da9326ecb1c6770af8 records 17 passed and EXIT=0.",
+    "manifest": "manifest.md lists the three causes as test defects and the correct counts, but its test_logs line names a directory plus shell redirection and it contains neither baseline_suite nor after_suite.",
+    "write_paths": "dispatch-detail.json permits reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two test commits and evidence commit change only tests/test_negative_control_waiver.py and its evidence fragment within those roots."
+  },
+  "justifications": {
+    "durability": "tests/test_negative_control_waiver.py:229-239 checks actual ledger state and pointer removal, so refusing a reasoned waiver for an absent log, dropping its recorded metadata, or leaving its pointer live would fail the assertions.",
+    "evidence": "gate-head.log and base-negative-control.log substantiate the target-file delta and both suite-arm logs record 58 passed, but manifest.md:18 omits usable log citations and structured arms and supplies no lint receipt.",
+    "fit": "tests/test_negative_control_waiver.py:207 extends the existing parametrized waiver tests and uses the shared temporary-repository fixtures from tests/test_crew_promotion_requires_review.py:46 without introducing prohibited source names.",
+    "goal_fidelity": "tests/test_negative_control_waiver.py:66 now observes synchronous completion with a readable gate receipt and head-gate.log confirms every named-file case passes at the reviewed head.",
+    "reuse": "capability searches for completion helpers, waiver tests and gate-log fixtures found tests/test_crew_promotion_requires_review.py:46 and :69 as shared fixture owners, which this file already imports, while the renamed test extends the existing waiver-test owner without adding a production mechanism.",
+    "scope_discipline": "commits 8297e31f8e04958cd9cf35d1cc4088d78c96fb56 and 9c5b1c40c2abcfb1f33e027395a79119738816ff change only the scoped test, and 1b3570ee76bd309ecd2af1da9326ecb1c6770af8 adds only its scoped evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names making tests/test_negative_control_waiver.py pass in full; head-gate.log at 1b3570ee76bd309ecd2af1da9326ecb1c6770af8 records 17 passed and EXIT=0.\nVERDICT done_when: dispatch-detail.json requires the named file on all_debug and no added importer failures; gate-head.log records 17 passed, base-negative-control.log records 14 failed and 3 passed, and base-suite-arm.log and after-suite-arm.log each record 58 passed, although the manifest omits structured arm receipts and lint results.\nVERDICT write_paths: dispatch-detail.json permits reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two test commits and evidence commit change only tests/test_negative_control_waiver.py and its evidence fragment within those roots.\nVERDICT manifest: manifest.md lists the three causes as test defects and the correct counts, but its test_logs line names a directory plus shell redirection and it contains neither baseline_suite nor after_suite.\nVERDICT diff: read d0d77f07e2dcc64d74713755aebe748602f9a06f through 1b3570ee76bd309ecd2af1da9326ecb1c6770af8, distinguishing inherited history from the node's commits 8297e31f8e04958cd9cf35d1cc4088d78c96fb56, 9c5b1c40c2abcfb1f33e027395a79119738816ff and 1b3570ee76bd309ecd2af1da9326ecb1c6770af8; they repair the test driver and expectations and add evidence without changing production.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_negative_control_waiver.py:66 now observes synchronous completion with a readable gate receipt and head-gate.log confirms every named-file case passes at the reviewed head.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log and base-negative-control.log substantiate the target-file delta and both suite-arm logs record 58 passed, but manifest.md:18 omits usable log citations and structured arms and supplies no lint receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commits 8297e31f8e04958cd9cf35d1cc4088d78c96fb56 and 9c5b1c40c2abcfb1f33e027395a79119738816ff change only the scoped test, and 1b3570ee76bd309ecd2af1da9326ecb1c6770af8 adds only its scoped evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_negative_control_waiver.py:229-239 checks actual ledger state and pointer removal, so refusing a reasoned waiver for an absent log, dropping its recorded metadata, or leaving its pointer live would fail the assertions.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_negative_control_waiver.py:207 extends the existing parametrized waiver tests and uses the shared temporary-repository fixtures from tests/test_crew_promotion_requires_review.py:46 without introducing prohibited source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for completion helpers, waiver tests and gate-log fixtures found tests/test_crew_promotion_requires_review.py:46 and :69 as shared fixture owners, which this file already imports, while the renamed test extends the existing waiver-test owner without adding a production mechanism.\nFINDING manifest.md:18 non-blocking: test_logs names a directory followed by shell redirection rather than the gate logs, structured baseline_suite and after_suite are absent, and the required lint delta has no recorded result; the opened raw receipts establish the test results but the delivered manifest does not carry reproducible evidence citations.\n",
+  "review_run_id": "r-20261116T224036561306-review-of-qwnw-red-file-negative-control-waiver-1b3570ee76bd",
+  "review_text": "VERDICT goal: dispatch-detail.json names making tests/test_negative_control_waiver.py pass in full; head-gate.log at 1b3570ee76bd309ecd2af1da9326ecb1c6770af8 records 17 passed and EXIT=0.\nVERDICT done_when: dispatch-detail.json requires the named file on all_debug and no added importer failures; gate-head.log records 17 passed, base-negative-control.log records 14 failed and 3 passed, and base-suite-arm.log and after-suite-arm.log each record 58 passed, although the manifest omits structured arm receipts and lint results.\nVERDICT write_paths: dispatch-detail.json permits reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two test commits and evidence commit change only tests/test_negative_control_waiver.py and its evidence fragment within those roots.\nVERDICT manifest: manifest.md lists the three causes as test defects and the correct counts, but its test_logs line names a directory plus shell redirection and it contains neither baseline_suite nor after_suite.\nVERDICT diff: read d0d77f07e2dcc64d74713755aebe748602f9a06f through 1b3570ee76bd309ecd2af1da9326ecb1c6770af8, distinguishing inherited history from the node's commits 8297e31f8e04958cd9cf35d1cc4088d78c96fb56, 9c5b1c40c2abcfb1f33e027395a79119738816ff and 1b3570ee76bd309ecd2af1da9326ecb1c6770af8; they repair the test driver and expectations and add evidence without changing production.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_negative_control_waiver.py:66 now observes synchronous completion with a readable gate receipt and head-gate.log confirms every named-file case passes at the reviewed head.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log and base-negative-control.log substantiate the target-file delta and both suite-arm logs record 58 passed, but manifest.md:18 omits usable log citations and structured arms and supplies no lint receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commits 8297e31f8e04958cd9cf35d1cc4088d78c96fb56 and 9c5b1c40c2abcfb1f33e027395a79119738816ff change only the scoped test, and 1b3570ee76bd309ecd2af1da9326ecb1c6770af8 adds only its scoped evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_negative_control_waiver.py:229-239 checks actual ledger state and pointer removal, so refusing a reasoned waiver for an absent log, dropping its recorded metadata, or leaving its pointer live would fail the assertions.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_negative_control_waiver.py:207 extends the existing parametrized waiver tests and uses the shared temporary-repository fixtures from tests/test_crew_promotion_requires_review.py:46 without introducing prohibited source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for completion helpers, waiver tests and gate-log fixtures found tests/test_crew_promotion_requires_review.py:46 and :69 as shared fixture owners, which this file already imports, while the renamed test extends the existing waiver-test owner without adding a production mechanism.\nFINDING manifest.md:18 non-blocking: test_logs names a directory followed by shell redirection rather than the gate logs, structured baseline_suite and after_suite are absent, and the required lint delta has no recorded result; the opened raw receipts establish the test results but the delivered manifest does not carry reproducible evidence citations.\n",
+  "reviewed_base_sha": "d0d77f07e2dcc64d74713755aebe748602f9a06f",
+  "reviewed_head_sha": "1b3570ee76bd309ecd2af1da9326ecb1c6770af8",
+  "reviewed_run_id": "r-20261115T224624246403-qwnw-red-file-negative-control-waiver",
+  "scope_note": "The manifest lists inherited first-parent commits as well as its own; merged upstream production and plan changes are not attributed to this node or reviewed as new implementation.",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:11:17.724983+00:00",
+  "total": 114
+}

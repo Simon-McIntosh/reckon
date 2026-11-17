@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: logs/negative-control-base-398015d5.log (revision 398015d5, EXIT=1) reports tests/test_figure_review.py::test_changed_figure_dispatches_an_image_review_with_a_png, ::test_source_only_changes_keep_the_text_review and ::test_figure_review_waits_when_no_lane_declares_image_input, and logs/gate-head.log (revision df550c18ec, EXIT=0) reports none, so the head adds no failing test and the count is a measured 0 \u2014 the same three ids manifest.md records for the baseline arm, and the same file is byte-identical at 8d50b0333f and at the base arm's revision.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3852 (dispatch_review_for_run, the entry the changed fixture drives)",
+    "reckon/crew/recovery_classification.py:1246 (classify_pointer, whose pre-spawn reading the verdict rests on)"
+  ],
+  "completed_at": "2026-11-16T16:07:28.685Z",
+  "dispatched_at": "2026-11-16T16:07:03Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-figure-review.html",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "non-blocking: The arms table names b090566d88 for the gate head while the only gate log, logs/gate-head.log:1, names df550c18ec, and line 66 names b090566d88 again for the pre-spawn arm while logs/arm-classification-head.log:1 names a33ade2326, so two of the table's three rows cite a revision no log supports and contradict the table's own caption at :55-56 that each arm is a log naming its revision."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-figure-review.html",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: The negative-control row gives only the counts 3 failed, 4 passed while the done_when expects the base run \"with its failing ids\" in this file; the three node ids appear only in manifest.md:15 and in the log, so the landing record itself does not show which three cases were red."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104935931928-qwnw-red-file-figure-review/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: The done_when's last clause requires ruff check and ruff format --check on the changed paths and the manifest records no such run; both report clean at df550c18ec (All checks passed; 1 file already formatted), so the clause holds while the record carries no receipt for it."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": "logs/gate-head.log (7 passed, EXIT=0 at df550c18ec)",
+    "baseline_suite": "logs/negative-control-base-398015d5.log (3 failed, 4 passed, EXIT=1 at 398015d5)",
+    "importer_arm": "logs/arm-classification-head.log (3 passed, EXIT=0 at a33ade2326)"
+  },
+  "item_aggregate": 6,
+  "justifications": {
+    "durability": "The base arm is the negative control and its outcome is the regression reinstated: with the fixture's phase back at starting, logs/negative-control-base-398015d5.log:70,113 reddens with \"the run is not awaiting review (running)\", failing exactly the three ids manifest.md:15 lists.",
+    "evidence": "The gate is the done_when's own command and its header and summary are on disk at logs/gate-head.log:4,6,7, but the base arm's failing node ids are not reproduced in the fragment the done_when names and manifest.md:11 records no ruff run, so two clauses rest on a claim rather than a recorded run.",
+    "fit": "The five added lines at tests/test_figure_review.py:121-125 are a sentence of reasoning beside a fixture field, the shape the file already uses at tests/test_figure_review.py:212-214, and complete is the manifest status word the observing fold writes at reckon/crew/dispatch_sessions.py:343.",
+    "goal_fidelity": "tests/test_figure_review.py:124-128 is the whole product-facing change and logs/gate-head.log:1,7 show the named file green at the reviewed head, so the goal's file-level measure is met at head and only its promotion to the primary branch is left to the lander.",
+    "reuse": "The diff adds no function, class or module: it corrects one input of an existing fixture, and the search of tests/conftest.py and the other tests for a shared pointer-builder fixture found none, so nothing was forked.",
+    "scope_discipline": "The diff is two paths, tests/test_figure_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-figure-review.html, both inside the declared write paths, and no product module appears in it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal at dispatch-detail.json reads \"Make tests/test_figure_review.py pass in full on the primary branch\"; tests/test_figure_review.py:124-128 is the change and logs/gate-head.log records 7 passed, EXIT=0 at the landed head df550c18ec.\nVERDICT done_when: the done_when asks for a full pass as an all_debug job with SLURM_JOB_ID unset, a base arm with its ids, one cause with a verdict and an importer arm; logs/gate-head.log:3-4 name all_debug with SLURM_JOB_ID unset and logs/negative-control-base-398015d5.log:113-117 hold the three ids and the summary, while the ids are missing from the evidence file and no ruff run is recorded.\nVERDICT write_paths: the declared paths in dispatch-detail.json cover reckon, tests and the qwnw-red-file-figure-review fragment; the diff's two files, tests/test_figure_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-figure-review.html, are inside them.\nVERDICT manifest: read manifest.md; it records the three commits, the three arms with their EXIT lines, one cause and the verdict test wrong.\nVERDICT diff: read b090566d88, a33ade2326 and df550c18ec against base 398015d5d5; one fixture field with its reason, the 84-line fragment, and the outside-scope section, two files in total.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3852, reckon/crew/recovery_classification.py:1246\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_figure_review.py:124-128 with logs/gate-head.log:7 meets the goal's file-level measure at head.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log:4,6,7 record the gate and its EXIT, but the base ids are absent from the fragment and manifest.md:11 records no ruff run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_figure_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-figure-review.html, both lie inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the regression is the base arm, and logs/negative-control-base-398015d5.log:70,113 reddens with \"the run is not awaiting review (running)\" on exactly the three ids the manifest lists.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_figure_review.py:121-125 adds a reason beside a fixture field in the file's own style, and complete is the word the fold writes at reckon/crew/dispatch_sessions.py:343.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added, and tests/conftest.py carries no pointer-builder fixture the change forked from.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-figure-review.html:63 non-blocking: the table names b090566d88 for the gate head and the pre-spawn arm while logs/gate-head.log:1 names df550c18ec and logs/arm-classification-head.log:1 names a33ade2326, contradicting its own caption.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-figure-review.html:61 non-blocking: the negative-control row carries counts without the three failing node ids the done_when asks for in this file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104935931928-qwnw-red-file-figure-review/manifest.md:11 non-blocking: the done_when's ruff clause has no recorded run, though both ruff check and ruff format --check report clean at df550c18ec.",
+  "review_run_id": "r-20261116T155428354829-review-of-qwnw-red-file-figure-review-df550c18ecd5",
+  "reviewed_base_sha": "398015d5d5fb31e353d1e29a4d2d78324aac9d88",
+  "reviewed_head_sha": "df550c18ecd5f3ea2004b78043bf5f2ddfa5346f",
+  "reviewed_run_id": "r-20261116T104935931928-qwnw-red-file-figure-review",
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:14:46.002065+00:00",
+  "total": 110,
+  "verdicts": [
+    {
+      "item": "goal",
+      "verdict": "The goal at dispatch-detail.json reads \"Make tests/test_figure_review.py pass in full on the primary branch\"; the landed head df550c18ec changes one fixture field at tests/test_figure_review.py:124-128 and logs/gate-head.log records 7 passed with EXIT=0 at that head."
+    },
+    {
+      "item": "done_when",
+      "verdict": "The done_when asks the file to pass in full as an all_debug job with SLURM_JOB_ID unset, an arm with the base failures and ids, one cause with a product-or-test verdict, an importer arm, and the base run logged with its failing ids in the evidence file; logs/gate-head.log:3-4 name partition all_debug and \"SLURM_JOB_ID unset inside this job\", logs/negative-control-base-398015d5.log:113-117 hold the three ids and the summary behind EXIT=1, and manifest.md:15-16 name the one cause and the verdict, while the base ids are absent from the evidence file and no ruff run is recorded."
+    },
+    {
+      "item": "write_paths",
+      "verdict": "The declared write paths at dispatch-detail.json are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-figure-review.html, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-figure-review; the diff touches tests/test_figure_review.py and that fragment only, both inside them, with no product file."
+    },
+    {
+      "item": "manifest",
+      "verdict": "manifest.md records status complete, the three commits b090566d88, a33ade2326 and df550c18ec, and the three arm logs with their summaries (7 passed EXIT=0 at df550c18ec; 3 failed, 4 passed, EXIT=1 at 398015d5; 3 passed EXIT=0 at a33ade2326), and names one cause with the verdict test wrong."
+    },
+    {
+      "item": "diff",
+      "verdict": "Read commit by commit against base 398015d5d5: b090566d88 changes the fixture's phase from starting to complete with a five-line reason, a33ade2326 adds the 84-line evidence fragment, and df550c18ec adds the outside-scope section to it, for two files, 98 insertions and 1 deletion."
+    }
+  ]
+}

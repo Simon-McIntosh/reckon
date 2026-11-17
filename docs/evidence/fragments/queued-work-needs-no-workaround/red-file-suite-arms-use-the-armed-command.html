@@ -1,0 +1,85 @@
+<section id="red-file-suite-arms-use-the-armed-command-arms">
+  <h2>Suite arming: the base arm and the head arm</h2>
+
+  <p>Both arms run the same file with the same interpreter and the same working
+  directory form, and both are written by the same script so the header and the
+  exit line have one shape. The base arm runs in a shared clone checked out at
+  <code>827719105952d26737ec2c5da31433132664e0b6</code>; the head arm runs in the
+  delivered worktree. Each log's first lines name the revision, the tree, the
+  resolved working directory and the path of <code>reckon/__init__.py</code> as
+  imported, and its last line is a bare <code>EXIT=</code> line.</p>
+
+  <table id="red-file-suite-arms-use-the-armed-command-arms-table">
+    <caption>Arm, revision, tree, summary and exit status</caption>
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Tree</th><th>Summary line</th><th>EXIT</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, the named file</td>
+        <td><code>827719105952d26737ec2c5da31433132664e0b6</code></td>
+        <td>shared clone in the run's scratch</td>
+        <td><code>3 failed in 1.28s</code></td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td>head, the named file in full, <code>all_debug</code> job 1320057 with
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>a80adf413aa81dad1ab954d60cb410ee1674d1f0</code></td>
+        <td>the delivered worktree</td>
+        <td><code>3 passed in 3.24s</code></td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>baseline suite arm (the armed pair) at the base revision</td>
+        <td><code>827719105952d26737ec2c5da31433132664e0b6</code></td>
+        <td>shared clone in the run's scratch</td>
+        <td><code>58 passed in 40.80s</code></td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>after suite arm (the armed pair) at the head</td>
+        <td><code>8231d14518fdebcaeb43c5f16f67add5aad9aefb</code></td>
+        <td>the delivered worktree</td>
+        <td><code>58 passed in 43.21s</code></td>
+        <td>0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="red-file-suite-arms-use-the-armed-command-base-ids">The three ids the
+  base arm fails</h3>
+
+  <p>Read from the base log's own <code>short test summary info</code> section,
+  which reads <code>3 failed in 1.28s</code>:</p>
+
+  <ul id="red-file-suite-arms-use-the-armed-command-base-ids-list">
+    <li><code>tests/test_suite_arms_use_the_armed_command.py::test_focused_pair_against_a_whole_suite_arming_is_refused</code>
+      — <code>AssertionError: ... assert 0 == 1</code>: <code>crew complete</code>
+      answered <code>{"kind": "command", "ok": true, "phase":
+      "promotion-requested"}</code> and exited 0 where the case expects a
+      <code>suite-delta-refused</code> payload.</li>
+    <li><code>tests/test_suite_arms_use_the_armed_command.py::test_pair_matching_the_arming_modulo_spacing_is_accepted</code>
+      — <code>KeyError: 'record'</code>: the accepted payload carries the
+      promotion-request receipt and no <code>record</code> to read
+      <code>suite_delta</code> from.</li>
+    <li><code>tests/test_suite_arms_use_the_armed_command.py::test_one_arm_matching_the_arming_and_one_not_is_refused</code>
+      — the same <code>assert 0 == 1</code> as the first id.</li>
+  </ul>
+
+  <p><strong>Negative control for the delivered change.</strong> With
+  the arming-mismatch append in <code>_arm_missing_fields</code> replaced by
+  <code>pass</code> in <code>reckon/crew/promotion_records.py</code>, the file
+  reads <code>2 failed, 1 passed in 2.54s</code>: both refusal cases fail on the
+  exact assertions this file exists for, and only the whitespace case passes, so
+  the refusal is asserted by the tests rather than assumed. The mutation was
+  reverted and the file reads <code>3 passed</code> again; the product tree is
+  unchanged in the delivered commit.</p>
+
+  <p>Logs, in the run directory
+  <code>r-20261116T104725926834-qwnw-red-file-suite-arms-use-the-armed-command</code>:
+  <code>logs/negative-control-base-named-file.log</code>,
+  <code>logs/gate-all-debug.log</code>,
+  <code>logs/baseline-suite-before.log</code>,
+  <code>logs/after-suite-before.log</code>.</p>
+</section>

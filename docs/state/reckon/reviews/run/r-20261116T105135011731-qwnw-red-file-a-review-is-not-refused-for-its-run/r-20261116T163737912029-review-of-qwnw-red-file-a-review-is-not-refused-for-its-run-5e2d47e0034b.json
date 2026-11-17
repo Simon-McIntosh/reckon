@@ -1,0 +1,98 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own declared suite arms: logs/baseline-suite-base.txt (revision 69fab1372f, scratch tree base-69fab137, '58 passed in 39.73s', EXIT=0) and logs/after-suite-head.txt (revision 4fcb673bca, worktree, '58 passed in 39.65s', EXIT=0) are both pytest-format and neither lists a failing id, so the head adds no failing test and the count is a measured 0 rather than an unread absence. The instrument was shown to see a known failure before the empty arms were reported: the same helper reads the two failing ids out of logs/negative-control-base-target.txt (test_a_queued_reflex_review_carries_the_waiver_and_launches and test_an_implementation_dispatch_in_the_same_state_records_the_backlog) and none out of logs/gate-all_debug-head-final.txt.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3221",
+    "reckon/crew/recovery_watch.py:750",
+    "reckon/crew/queue_landing.py:1704",
+    "reckon/crew/directory.py:342",
+    "reckon/crew/query.py:597",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-16T16:39:43.790Z",
+  "dispatched_at": "2026-11-16T16:39:24Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "after_suite records its arm at revision 4fcb673bca, the run's first commit, not at the head 5e2d47e003 the fence asks the after arm to record; the arm's result still stands because the three later commits touch only the evidence fragment, but a reader comparing the pair against the promoted commits cannot tell from the record that the head was measured, and logs/gate-all_debug-head-final.txt repeats the gap by naming 894e759a35 in its header."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "the fragment states the head arm carries '98 failing-or-erroring ids' while its own logs/import-arm-head.txt summary reads '89 failed, 1691 passed, 56 warnings, 13 errors' - 102; the 98 comes from logs/head-ids.txt, which strips parametrisation so four distinct parametrised ids collapse into their base id, so the figure disagrees with the log it cites even though the id-set comparison it supports (0 ids only at head, 16 only at base) reproduces under reckon.crew.review.added_failures_from_gate_logs."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1799",
+      "severity": "non-blocking",
+      "text": "terminal_verdict is named 19 lines below the arm at line 1780 that already spells the same predicate as 'manifest_status == \"complete\" and not deferred_outcome', leaving three spellings of one rule in the function (1780, 1799-1801, 2063); a later edit to the complete arm can drift from the named verdict without reddening anything, which is the disagreement the new comment says the name exists to prevent."
+    },
+    {
+      "file": "tests/test_a_review_is_not_refused_for_its_run.py",
+      "line": "112",
+      "severity": "non-blocking",
+      "text": "the guard the repair rests on is not deterministic on this host: one run of the named file at head 5e2d47e003 reddened with the base arm's own two ids and the message 'the run is not awaiting review (running)' (logs/reviewed-node-gate-rerun.txt in review run r-20261116T163737912029, '2 failed, 2 passed in 2.52s', EXIT=1), while six further identical runs and the reviewed run's own job 1320281 read '4 passed'; the cause is not established here, and its effect is that a single red at head cannot be told from a regression from the log's wording alone."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/logs/after-suite-head.txt",
+      "revision": "4fcb673bca60ac75f508c2da70a95e43e3a1757e"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/logs/baseline-suite-base.txt",
+      "revision": "69fab1372f16686ce6acdb6094a357c6f6bfe18d"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read all four commits against base 69fab1372f: 4fcb673bca is the single product hunk in classify_pointer, and 4bf1ae4afe, 894e759a35 and 5e2d47e003 add only the evidence fragment and its later arms.",
+    "done_when": "The done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, an importing-test arm adding no failure, and a base negative control; logs/gate-all_debug-head-final.txt carries '# slurm_job 1320281' with the env -u SLURM_JOB_ID command, logs/negative-control-base-target.txt reads '2 failed, 2 passed in 2.67s' EXIT=1 at 69fab1372f, and the two importing arms differ by 0 ids at head and 16 at base.",
+    "goal": "The goal in dispatch-detail.json is to make tests/test_a_review_is_not_refused_for_its_run.py pass in full; that file reads 4 passed at head 5e2d47e003 in logs/gate-all_debug-head-final.txt and again on a re-run in the reviewed worktree, so the deliverable holds in the run's own tree, with the landing on the primary branch still owed by promotion.",
+    "manifest": "manifest.md in the run directory reads status complete, four commits 4fcb673bca/4bf1ae4afe/894e759a35/5e2d47e003, the named file green at 894e759a with EXIT=0, the base arm red 2 failed of 4, the 216-module importing arm, and both suite arms at 58 passed EXIT=0.",
+    "write_paths": "dispatch-detail.json fences reckon (the module's directory), tests, and docs/evidence/fragments/queued-work-needs-no-workaround/<slug>.html; git diff 69fab1372f..5e2d47e003 touches exactly reckon/crew/recovery_classification.py and that fragment, and no test file."
+  },
+  "justifications": {
+    "durability": "Reinstating the old condition at reckon/crew/recovery_classification.py:1843 reddens tests/test_a_review_is_not_refused_for_its_run.py::test_a_queued_reflex_review_carries_the_waiver_and_launches, red at 69fab1372f in logs/negative-control-base-target.txt with exactly the 'not awaiting review (running)' refusal the change removes, but one of seven head runs of that same file on this host reddened with the identical two ids and six more passed, so the guard's red is not yet distinguishable from the base arm's text.",
+    "evidence": "The gate's receipt is on disk (logs/gate-all_debug-head-final.txt: '4 passed', EXIT=0, slurm_job 1320281) and the base arm's red is on disk beside it, though both that log's header and manifest.md:20 name 894e759a35/4fcb673bca rather than the head 5e2d47e003.",
+    "fit": "The hunk follows the module's own idiom of one named derived flag with a paragraph of reasoning at reckon/crew/recovery_classification.py:1793-1801, but the name is introduced below line 1780, where the same predicate is already spelled out for the complete-manifest arm.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1840-1845 bounds pre_spawn_waiting with the named terminal_verdict, so a completed run no longer reads running and reckon/crew/recovery_review_dispatch.py:3221 no longer refuses its review.",
+    "reuse": "The addition composes the existing reckon/crew/reports.py:127 TERMINAL_MANIFEST_STATUSES and the local deferred_outcome at reckon/crew/recovery_classification.py:1742 rather than forking either; a capability search for an owner of 'the manifest's terminal word as the run's outcome' found none (reckon/lifecycle.py:72 effective_status is plan status), so the flag is the first naming of that composite.",
+    "scope_discipline": "git diff 69fab1372f..5e2d47e003 changes only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html, both inside the declared write paths, and leaves tests/ untouched as the product-defect verdict implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal in dispatch-detail.json is to make tests/test_a_review_is_not_refused_for_its_run.py pass in full; the file reads '4 passed' at head 5e2d47e003 in logs/gate-all_debug-head-final.txt and again on a re-run in the reviewed worktree, so the deliverable holds in the run's own tree, with the primary-branch landing owed by promotion.\nVERDICT done_when: the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, an importing-test arm adding no failure, and a base negative control; logs/gate-all_debug-head-final.txt carries '# slurm_job 1320281' under the env -u SLURM_JOB_ID command, logs/negative-control-base-target.txt reads '2 failed, 2 passed in 2.67s' EXIT=1 at 69fab1372f, and the importing arms differ by no id at head and 16 ids at base, which reckon.crew.review.added_failures_from_gate_logs reproduces.\nVERDICT write_paths: dispatch-detail.json fences reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html; git diff 69fab1372f..5e2d47e003 touches exactly reckon/crew/recovery_classification.py and that fragment, and no file under tests/.\nVERDICT manifest: manifest.md records status complete, the four commits 4fcb673bca, 4bf1ae4afe, 894e759a35 and 5e2d47e003, the named file green at 894e759a with EXIT=0, the base arm red '2 failed, 2 passed' EXIT=1, the 216-module importing arm, and both suite arms at '58 passed' EXIT=0.\nVERDICT diff: read commit by commit against base 69fab1372f: 4fcb673bca carries the single product hunk in classify_pointer (naming terminal_verdict at line 1799 and bounding pre_spawn_waiting with it at line 1843), and 4bf1ae4afe, 894e759a35 and 5e2d47e003 add only the evidence fragment and its later arms.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3221, reckon/crew/recovery_watch.py:750, reckon/crew/queue_landing.py:1704, reckon/crew/directory.py:342, reckon/crew/query.py:597, reckon/serve.py:902\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1843-1845 ends the pre-spawn reading on the terminal verdict, so a completed run stops reading running and reckon/crew/recovery_review_dispatch.py:3221 stops refusing its review.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate's own receipt is on disk at logs/gate-all_debug-head-final.txt ('4 passed in 2.83s', EXIT=0, slurm_job 1320281) with the red base arm beside it, though that header and manifest.md:20 name 894e759a35 and 4fcb673bca rather than the head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 69fab1372f..5e2d47e003 changes only reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html, both inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: restoring the old condition at reckon/crew/recovery_classification.py:1843 reddens tests/test_a_review_is_not_refused_for_its_run.py's test_a_queued_reflex_review_carries_the_waiver_and_launches (red at 69fab1372f in logs/negative-control-base-target.txt), though one of seven head runs of that file reddened with the same two ids and six passed, so the red is not yet attributable.\nSCORE fit: 16\nJUSTIFICATION fit: the hunk matches the module's one-named-flag habit at reckon/crew/recovery_classification.py:1793-1801, but the name lands below line 1780, where the same predicate is already spelled out.\nSCORE reuse: 20\nJUSTIFICATION reuse: classify_pointer reuses reckon/crew/reports.py:127 TERMINAL_MANIFEST_STATUSES and its own deferred_outcome at reckon/crew/recovery_classification.py:1742, and no owner of the composite existed to extend (reckon/lifecycle.py:72 effective_status is plan status).\nFINDING manifest.md:20 non-blocking: the after_suite arm records revision 4fcb673bca rather than the head, and logs/gate-all_debug-head-final.txt repeats it with 894e759a35, so the record does not show the head was measured although the later commits are evidence-only.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-refused-for-its-run.html:28 non-blocking: the fragment's '98 failing-or-erroring ids' disagrees with its own cited log's '89 failed ... 13 errors', the 98 being the parametrisation-stripped count in logs/head-ids.txt.\nFINDING reckon/crew/recovery_classification.py:1799 non-blocking: terminal_verdict is named below the line-1780 arm that spells the same predicate, leaving three spellings of one rule in classify_pointer.\nFINDING tests/test_a_review_is_not_refused_for_its_run.py:112 non-blocking: the guard is not deterministic on this host \u2014 one head run read '2 failed, 2 passed' EXIT=1 with the base arm's own ids and message (logs/reviewed-node-gate-rerun.txt) while six identical runs and the reviewed run's job 1320281 read '4 passed', so a single red at head cannot be told from a regression.\n",
+  "review_run_id": "r-20261116T163737912029-review-of-qwnw-red-file-a-review-is-not-refused-for-its-run-5e2d47e0034b",
+  "reviewed_base_sha": "69fab1372f16686ce6acdb6094a357c6f6bfe18d",
+  "reviewed_head_sha": "5e2d47e0034bb4de6fb7ca820ae73dc3bac98161",
+  "reviewed_run_id": "r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T22:03:45.657093+00:00",
+  "total": 107
+}

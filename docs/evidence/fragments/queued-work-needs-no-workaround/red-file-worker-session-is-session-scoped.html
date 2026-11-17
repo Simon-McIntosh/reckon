@@ -1,0 +1,73 @@
+<section id="qwnw-red-file-worker-session-is-session-scoped-red-file">
+  <h3>The red file: <code>tests/test_worker_session_is_session_scoped.py</code></h3>
+  <p>At <code>8d50b0333f</code> the whole-suite log
+  (<code>~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log</code>) lists four
+  failing ids for this file. At the assigned base
+  <code>cc8a94d9398d801764e29c427362ebbcdf0f45dc</code> all five cases pass on a
+  host whose user namespace works, so the recorded defect was reproduced by
+  making the fence capability report what a fence-less host reports
+  (<code>bwrap: Can't bind mount /oldroot/ on /newroot/: Invalid argument</code>).
+  Under that probe the same four ids fail at the base and pass at head.</p>
+  <table id="qwnw-red-file-worker-session-is-session-scoped-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>recorded whole-suite run, 15 November</td>
+        <td><code>8d50b0333fe3fbdb17199253225f73730d22207d</code></td>
+        <td><code>4 failed</code> of this file (whole suite: 1037 failed, 21127 passed, 41 errors)</td>
+        <td>1</td>
+        <td><code>~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log</code></td>
+      </tr>
+      <tr>
+        <td>base (assigned revision, fence-capable host)</td>
+        <td><code>cc8a94d9398d801764e29c427362ebbcdf0f45dc</code></td>
+        <td><code>5 passed in 5.22s</code></td>
+        <td>0</td>
+        <td><code>logs/head-worker-session-is-session-scoped.log</code> (in place, at the base tree)</td>
+      </tr>
+      <tr>
+        <td>base, fence-less-host probe</td>
+        <td><code>cc8a94d9398d801764e29c427362ebbcdf0f45dc</code> + <code>nsfshim</code></td>
+        <td><code>4 failed, 1 passed in 2.35s</code></td>
+        <td>1</td>
+        <td><code>logs/probe-fenceless-host.log</code></td>
+      </tr>
+      <tr>
+        <td>head, fence-less-host probe</td>
+        <td><code>05da4553f5beb7e179ffbbdce9d897618d8473d5</code> + <code>nsfshim</code></td>
+        <td><code>5 passed in 3.05s</code></td>
+        <td>0</td>
+        <td><code>logs/probe-fenceless-host-after.log</code></td>
+      </tr>
+      <tr>
+        <td>head, job on <code>all_debug</code>, <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>d2dc80466ada15314345db21694ae5981a4f51ed</code></td>
+        <td><code>5 passed in 2.95s</code></td>
+        <td>0</td>
+        <td><code>logs/all-debug-head-worker-session-is-session-scoped.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Logs live under the run directory
+  <code>~/.config/reckon/crew/runs/r-20261116T032212586673-qwnw-red-file-worker-session-is-session-scoped/</code>.
+  The probe plugin <code>logs/nsfshim.py</code> replaces only
+  <code>reckon._backends.fence_capability_problem</code> with the fence-less
+  host's answer; no product path is otherwise altered.</p>
+  <p>The four failing ids, which are the four the whole-suite log lists:</p>
+  <ul id="qwnw-red-file-worker-session-is-session-scoped-red-file-ids">
+    <li><code>test_a_roster_session_no_run_of_this_task_left_is_withheld</code></li>
+    <li><code>test_the_absence_names_that_no_run_of_this_task_left_a_session</code></li>
+    <li><code>test_a_run_of_this_task_supplies_the_session_instead</code></li>
+    <li><code>test_the_capture_path_records_the_session_on_the_run</code></li>
+  </ul>
+  <p>One cause accounts for all four, and the verdict is <em>test wrong</em>.
+  Each case drives <code>crew.dispatch</code> through a stub launcher, so no
+  worker ever runs, but the helper passed no fence waiver: dispatch read the
+  host's user-namespace capability and refused with <code>D22</code> before
+  session selection — the rule the file asserts — was reached. The file was
+  therefore red for a fact outside the repository under test. The fifth case,
+  <code>test_a_run_whose_member_holds_no_matching_entry_still_resolves</code>,
+  never dispatched and passed in both arms. The repair names the waiver and its
+  reason in the helper; no assertion is removed or weakened, and the product is
+  unchanged.</p>
+</section>

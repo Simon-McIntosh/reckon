@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/reports.py:_log_location_findings",
+    "reckon/hooks/worker_inbox.py:manifest_message_finding"
+  ],
+  "completed_at": "2026-11-16T14:17:15.458Z",
+  "dispatched_at": "2026-11-16T14:16:47Z",
+  "findings": [
+    {
+      "file": "base-red-file.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative control's command header carries the literal token PYTHONPATH... ahead of the real command, so the arm cannot be re-run from its own log without a reader deleting the placeholder; head-red-file.log:3 has the clean form."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fragment-ids-are-checked.html",
+      "line": "89",
+      "severity": "non-blocking",
+      "text": "non-blocking: the section claims both fixture corrections were falsified against temporary copies and returned 4 failed 2 passed, but the run directory holds no log for either mutation, so that claim rests on the section's own prose rather than on an artifact."
+    },
+    {
+      "file": "head-red-file.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the file to pass as a job on all_debug and every recorded arm ran in place with SLURM_JOB_ID unset instead, which the manifest discloses under outside_scope; the substitution does not change what pytest measured but the arm's shape differs from the one the measure names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from 24bc79d8ee to fa3a02e24c; 29d9cd6579 changes only fixture data in tests/test_fragment_ids_are_checked.py (TEST_LOG_NAME and TEST_LOG_TEXT at :130-137, the manifest tests/test_logs/messages_received lines at :146-148, the write at :243), d779fdb778 adds the 116-line fragment recording the causes and arms, and fa3a02e24c corrects only the fragment's two cited revisions; no assertion line is touched by any commit.",
+    "done_when": "the measure asks for the file green at head with SLURM_JOB_ID unset, each cause carrying a product-wrong or test-wrong verdict, and a base negative control with its failing ids; the manifest's tests line is that pytest invocation, head-red-file.log reads 6 passed EXIT=0 at d779fdb778, base-red-file.log reads 4 failed 2 passed EXIT=1 at 24bc79d8ee with the four ids quoted, and both suite arms read 58 passed EXIT=0, though no arm ran as an all_debug job the measure names.",
+    "goal": "the node goal is that tests/test_fragment_ids_are_checked.py passes in full; in the node's worktree at fa3a02e24c all six cases pass (head-red-file.log reads 6 passed EXIT=0) where 24bc79d8ee reddened four, and the goal's primary-branch clause is left to promotion.",
+    "manifest": "read; status complete, commits 29d9cd6579 c047b3f684 d779fdb778 fa3a02e24c, changed_paths the two landed files, tests the literal gate command, test_logs the four logs, negative_control_log base-red-file.log, baseline_suite at 24bc79d8ee and after_suite at d779fdb778 both completed with failure_count 0, and every rubric line answered",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with the node fragment, and a figures directory; the node's own commits 29d9cd6579 and d779fdb778 touch only tests/test_fragment_ids_are_checked.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fragment-ids-are-checked.html, both inside the fence, and the base to head diff adds two primary-branch files carried in by merge commit c047b3f684."
+  },
+  "justifications": {
+    "durability": "reverting the fixture half returns the four failures recorded in base-red-file.log, whose assertions at tests/test_fragment_ids_are_checked.py:307,319,330,363 read the product's own findings payload rather than a value the fixture passed in, and the diff adds no assertion that could be circular.",
+    "evidence": "head-red-file.log:1-5 and base-red-file.log:1-4 carry revision, tree, command and a bare EXIT= line for the gate and the negative control, yet the measure names an all_debug job while head-red-file.log:2 shows the run was in place in the worktree, and base-red-file.log:3 carries a literal placeholder token ahead of its command.",
+    "fit": "the two new module constants at tests/test_fragment_ids_are_checked.py:130-137 follow the file's existing upper-case constant at :37 and carry no plan or ticket identifier, and the fragment prefixes every element id with the node id as the brief requires.",
+    "goal_fidelity": "tests/test_fragment_ids_are_checked.py runs 6 passed EXIT=0 at d779fdb778 per head-red-file.log, but fa3a02e24c is not yet an ancestor of the primary branch, so the goal's primary-branch clause lands only at promotion.",
+    "reuse": "the change adds no mechanism, inlining a gate log the way tests/test_a_control_log_is_judged_at_write.py:183 already does, and a search over tests/ found no shared fixture-gate-log helper to extend.",
+    "scope_discipline": "the node's own commits touch only tests/test_fragment_ids_are_checked.py and its fragment, while the base to head diff also carries docs/plans/the-monitor-reads-each-fact-once.html brought in by merge commit c047b3f684."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_fragment_ids_are_checked.py passes in full; in the node's worktree at fa3a02e24c all six cases pass (head-red-file.log reads 6 passed EXIT=0) where 24bc79d8ee reddened four, and the goal's primary-branch clause is left to promotion.\nVERDICT done_when: the measure asks for the file green at head with SLURM_JOB_ID unset, each cause carrying a product-wrong or test-wrong verdict, and a base negative control with its failing ids; the manifest's tests line is that pytest invocation, head-red-file.log reads 6 passed EXIT=0 at d779fdb778, base-red-file.log reads 4 failed 2 passed EXIT=1 at 24bc79d8ee with the four ids quoted, and both suite arms read 58 passed EXIT=0, though no arm ran as an all_debug job the measure names.\nVERDICT write_paths: the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with the node fragment, and a figures directory; the node's own commits 29d9cd6579 and d779fdb778 touch only tests/test_fragment_ids_are_checked.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fragment-ids-are-checked.html, both inside the fence, and the base to head diff adds two primary-branch files carried in by merge commit c047b3f684.\nVERDICT manifest: read; status complete, commits 29d9cd6579 c047b3f684 d779fdb778 fa3a02e24c, changed_paths the two landed files, tests the literal gate command, test_logs the four logs, negative_control_log base-red-file.log, baseline_suite at 24bc79d8ee and after_suite at d779fdb778 both completed with failure_count 0, and every rubric line answered\nVERDICT diff: read commit by commit from 24bc79d8ee to fa3a02e24c; 29d9cd6579 changes only fixture data in tests/test_fragment_ids_are_checked.py (TEST_LOG_NAME and TEST_LOG_TEXT at :130-137, the manifest tests/test_logs/messages_received lines at :146-148, the write at :243), d779fdb778 adds the 116-line fragment recording the causes and arms, and fa3a02e24c corrects only the fragment's two cited revisions; no assertion line is touched by any commit.\nCALL_SITES: reckon/crew/reports.py:_log_location_findings, reckon/hooks/worker_inbox.py:manifest_message_finding\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_fragment_ids_are_checked.py runs 6 passed EXIT=0 at d779fdb778 per head-red-file.log, but fa3a02e24c is not yet an ancestor of the primary branch, so the goal's primary-branch clause lands only at promotion.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-red-file.log:1-5 and base-red-file.log:1-4 carry revision, tree, command and a bare EXIT= line for the gate and the negative control, yet the measure names an all_debug job while head-red-file.log:2 shows the run was in place in the worktree, and base-red-file.log:3 carries a literal placeholder token ahead of its command.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the node's own commits touch only tests/test_fragment_ids_are_checked.py and its fragment, while the base to head diff also carries docs/plans/the-monitor-reads-each-fact-once.html brought in by merge commit c047b3f684.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the fixture half returns the four failures recorded in base-red-file.log, whose assertions at tests/test_fragment_ids_are_checked.py:307,319,330,363 read the product's own findings payload rather than a value the fixture passed in, and the diff adds no assertion that could be circular.\nSCORE fit: 20\nJUSTIFICATION fit: the two new module constants at tests/test_fragment_ids_are_checked.py:130-137 follow the file's existing upper-case constant at :37 and carry no plan or ticket identifier, and the fragment prefixes every element id with the node id as the brief requires.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no mechanism, inlining a gate log the way tests/test_a_control_log_is_judged_at_write.py:183 already does, and a search over tests/ found no shared fixture-gate-log helper to extend.\nFINDING base-red-file.log:3 non-blocking: the negative control's command header carries the literal token PYTHONPATH... ahead of the real command, so the arm cannot be re-run from its own log without a reader deleting the placeholder; head-red-file.log:3 has the clean form.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fragment-ids-are-checked.html:89 non-blocking: the section claims both fixture corrections were falsified against temporary copies and returned 4 failed 2 passed, but the run directory holds no log for either mutation, so that claim rests on the section's own prose rather than on an artifact.\nFINDING head-red-file.log:2 non-blocking: the done_when asks for the file to pass as a job on all_debug and every recorded arm ran in place with SLURM_JOB_ID unset instead, which the manifest discloses under outside_scope; the substitution does not change what pytest measured but the arm's shape differs from the one the measure names.",
+  "review_run_id": "r-20261116T132856728752-review-of-qwnw-red-file-fragment-ids-are-checked-fa3a02e24c7d",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "fa3a02e24c7daa0d1bbe2c17e0315764a969e6f0",
+  "reviewed_run_id": "r-20261116T104527321362-qwnw-red-file-fragment-ids-are-checked",
+  "reviewer_run_id": "r-20261116T132856728752-review-of-qwnw-red-file-fragment-ids-are-checked-fa3a02e24c7d",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:42:19.590767+00:00",
+  "total": 110
+}

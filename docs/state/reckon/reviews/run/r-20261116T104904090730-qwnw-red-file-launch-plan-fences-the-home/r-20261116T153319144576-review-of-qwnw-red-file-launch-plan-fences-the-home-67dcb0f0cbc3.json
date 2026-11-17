@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: base-arm-test_launch_plan_fences_the_home.log (revision ba3443a9ae6a2bc171c76560016a6ca24e055f02, scratch tree, 3 failed, EXIT=1) reports 3 failing ids and after-arm-test_launch_plan_fences_the_home.log (revision 904a21701385bd32741b3e165e970bc03249d8b4, 0 failed, EXIT=0) reports none, so the head adds no failing test and the count is a measured 0 rather than an unmeasured one.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_worker_fence.py:node_tmp_seal_root",
+    "reckon/_worker_fence.py:fence_argv",
+    "reckon/crew/dispatch_launch.py:1385"
+  ],
+  "completed_at": "2026-11-16T15:36:07.471Z",
+  "dispatched_at": "2026-11-16T15:35:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment claims the file was reproduced red \"again after merging origin/main (398015d5d5): 3 failed, 4 passed, EXIT=1\", but no log in the run directory records a run at 398015d5d5 \u2014 the recorded base arm is at ba3443a9 \u2014 so the merging step the done_when asks for is asserted where a reader cannot check it."
+    },
+    {
+      "file": "tests/test_launch_plan_fences_the_home.py",
+      "line": "162",
+      "severity": "non-blocking",
+      "text": "non-blocking: the autouse fixture moves the synthetic home out of the node-tmp seal, which is the only fixture in the suite that placed a protected path beneath that seal; the composition rule at reckon/_worker_fence.py:1933 depends on exactly that order, and no test now builds it, so a regression that let the node-tmp seal dedupe a protected path would pass every test."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_launch_plan_fences_the_home.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/logs/after-arm-test_launch_plan_fences_the_home.log",
+      "revision": "904a21701385bd32741b3e165e970bc03249d8b4"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_launch_plan_fences_the_home.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 3,
+      "failure_ids": [
+        "tests/test_launch_plan_fences_the_home.py::test_the_negative_control_deletes_the_claude_sentinel",
+        "tests/test_launch_plan_fences_the_home.py::test_a_symlinked_protected_path_does_not_stop_the_launch",
+        "tests/test_launch_plan_fences_the_home.py::test_the_negative_control_rebinds_a_target_inside_a_sealed_directory"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/logs/base-arm-test_launch_plan_fences_the_home.log",
+      "revision": "ba3443a9ae6a2bc171c76560016a6ca24e055f02"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read 15f0c3d4a3, 904a217013 and 67dcb0f0cbc against 398015d5d5 commit by commit; the code change is a fixture plus helper at tests/test_launch_plan_fences_the_home.py:141-166 and one added assertion at :510-516, and the other two commits add and then correct the 50-line evidence fragment \u2014 nothing else is touched.",
+    "done_when": "The done_when at prompt.txt:277 asks for the file passing in full at head as a job on all_debug with SLURM_JOB_ID unset, plus a cause-by-cause verdict; logs/gate-test_launch_plan_fences_the_home.log:1-5 names the revision, the all_debug job environment and the unset SLURM_JOB_ID and ends EXIT=0 with 7 passed, logs/base-arm-test_launch_plan_fences_the_home.log ends EXIT=1 with 3 failed ids, and fragment qwnw-red-file-launch-plan-fences-the-home.html:5-19 gives cause one a \"the test was wrong\" verdict.",
+    "goal": "The goal at prompt.txt:38 is \"Make tests/test_launch_plan_fences_the_home.py pass in full on the primary branch\"; I extracted 67dcb0f0 into a scratch tree and ran the file there \u2014 7 passed, EXIT=0 \u2014 so the file the goal names now passes in full at the reviewed head.",
+    "manifest": "Read manifest.md in the reviewed run directory; it records status complete, the three commits 15f0c3d4a33a/904a21701385/67dcb0f0cbc3, the gate command with its log, baseline_suite at ba3443a9 (3 failed ids) and after_suite at 904a21701385 (0 failed), and a negative_control_log pointing at the base arm.",
+    "write_paths": "Read the declared fence at prompt.txt:84-89 (reckon, tests, the plan's fragments directory and this node's fragment, the plan's figures directory); the node's three commits touch only tests/test_launch_plan_fences_the_home.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html, both inside that declaration."
+  },
+  "justifications": {
+    "durability": "logs/mutation-fixture-not-applied.log records that removing the fixture at tests/test_launch_plan_fences_the_home.py:162 reddens four tests including the added seal assertion at :516, so the repair and its guard both fail when reverted.",
+    "evidence": "logs/gate-test_launch_plan_fences_the_home.log:1-6 carries revision, tree, command, module.__file__ and cwd and ends EXIT=0, but the fragment's claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html:3 of a rerun at 398015d5d5 has no log, and the gate predates the two commits that followed it.",
+    "fit": "The fixture's monkeypatch of _worker_fence.NODE_TMP_ROOT at tests/test_launch_plan_fences_the_home.py:166 is the idiom eight sibling test files already use, e.g. tests/test_fence_pid_namespace.py:45, and every fragment element id at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html:1,12 begins with the node id.",
+    "goal_fidelity": "A scratch tree at 67dcb0f0 run under /home/ITER/mcintos/Code/reckon/.venv/bin/python reports \"7 passed in 4.34s\" for tests/test_launch_plan_fences_the_home.py, so the goal's file passes in full at the reviewed head.",
+    "reuse": "The added tests/test_launch_plan_fences_the_home.py:141 helper only names the node tmp path, which the product owns at reckon/_worker_fence.py:1611; I searched tests/ for NODE_TMP_ROOT and found eight sibling files composing their own, and no shared owner exists to extend.",
+    "scope_discipline": "git diff 398015d5d5..67dcb0f0cbc changes only tests/test_launch_plan_fences_the_home.py and the node's own evidence fragment, both named at prompt.txt:86-88."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal at prompt.txt:38 is \"Make tests/test_launch_plan_fences_the_home.py pass in full on the primary branch\"; I extracted 67dcb0f0 into a scratch tree and ran the file there \u2014 7 passed, EXIT=0 \u2014 so the file the goal names now passes in full at the reviewed head.\nVERDICT done_when: The done_when at prompt.txt:277 asks for the file passing in full at head as a job on all_debug with SLURM_JOB_ID unset, plus a cause-by-cause verdict; logs/gate-test_launch_plan_fences_the_home.log:1-5 names the revision, the all_debug job environment and the unset SLURM_JOB_ID and ends EXIT=0 with 7 passed, logs/base-arm-test_launch_plan_fences_the_home.log ends EXIT=1 with 3 failed ids, and fragment qwnw-red-file-launch-plan-fences-the-home.html:5-19 gives cause one a \"the test was wrong\" verdict.\nVERDICT write_paths: Read the declared fence at prompt.txt:84-89 (reckon, tests, the plan's fragments directory and this node's fragment, the plan's figures directory); the node's three commits touch only tests/test_launch_plan_fences_the_home.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html, both inside that declaration.\nVERDICT manifest: Read manifest.md in the reviewed run directory; it records status complete, the three commits 15f0c3d4a33a/904a21701385/67dcb0f0cbc3, the gate command with its log, baseline_suite at ba3443a9 (3 failed ids) and after_suite at 904a21701385 (0 failed), and a negative_control_log pointing at the base arm.\nVERDICT diff: Read 15f0c3d4a3, 904a217013 and 67dcb0f0cbc against 398015d5d5 commit by commit; the code change is a fixture plus helper at tests/test_launch_plan_fences_the_home.py:141-166 and one added assertion at :510-516, and the other two commits add and then correct the 50-line evidence fragment \u2014 nothing else is touched.\nCALL_SITES: reckon/_worker_fence.py:node_tmp_seal_root, reckon/_worker_fence.py:fence_argv, reckon/crew/dispatch_launch.py:1385\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: A scratch tree at 67dcb0f0 run under /home/ITER/mcintos/Code/reckon/.venv/bin/python reports \"7 passed in 4.34s\" for tests/test_launch_plan_fences_the_home.py, so the goal's file passes in full at the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-test_launch_plan_fences_the_home.log:1-6 carries revision, tree, command, module.__file__ and cwd and ends EXIT=0, but the fragment's claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html:3 of a rerun at 398015d5d5 has no log, and the gate predates the two commits that followed it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 398015d5d5..67dcb0f0cbc changes only tests/test_launch_plan_fences_the_home.py and the node's own evidence fragment, both named at prompt.txt:86-88.\nSCORE durability: 18\nJUSTIFICATION durability: logs/mutation-fixture-not-applied.log records that removing the fixture at tests/test_launch_plan_fences_the_home.py:162 reddens four tests including the added seal assertion at :516, so the repair and its guard both fail when reverted.\nSCORE fit: 16\nJUSTIFICATION fit: The fixture's monkeypatch of _worker_fence.NODE_TMP_ROOT at tests/test_launch_plan_fences_the_home.py:166 is the idiom eight sibling test files already use, e.g. tests/test_fence_pid_namespace.py:45, and every fragment element id at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html:1,12 begins with the node id.\nSCORE reuse: 18\nJUSTIFICATION reuse: The added tests/test_launch_plan_fences_the_home.py:141 helper only names the node tmp path, which the product owns at reckon/_worker_fence.py:1611; I searched tests/ for NODE_TMP_ROOT and found eight sibling files composing their own, and no shared owner exists to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-launch-plan-fences-the-home.html:3 non-blocking: the fragment claims the file was reproduced red \"again after merging origin/main (398015d5d5): 3 failed, 4 passed, EXIT=1\", but no log in the run directory records a run at 398015d5d5 \u2014 the recorded base arm is at ba3443a9 \u2014 so the merging step the done_when asks for is asserted where a reader cannot check it.\nFINDING tests/test_launch_plan_fences_the_home.py:162 non-blocking: the autouse fixture moves the synthetic home out of the node-tmp seal, which is the only fixture in the suite that placed a protected path beneath that seal; the composition rule at reckon/_worker_fence.py:1933 depends on exactly that order, and no test now builds it, so a regression that let the node-tmp seal dedupe a protected path would pass every test.\nreviewed_base_sha: 398015d5d5fb31e353d1e29a4d2d78324aac9d88\nreviewed_head_sha: 67dcb0f0cbc3c1194a3bc8704ae46f4913f3deee\n",
+  "review_run_id": "r-20261116T153319144576-review-of-qwnw-red-file-launch-plan-fences-the-home-67dcb0f0cbc3",
+  "reviewed_base_sha": "398015d5d5fb31e353d1e29a4d2d78324aac9d88",
+  "reviewed_head_sha": "67dcb0f0cbc3c1194a3bc8704ae46f4913f3deee",
+  "reviewed_run_id": "r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:18:35.211490+00:00",
+  "total": 105
+}

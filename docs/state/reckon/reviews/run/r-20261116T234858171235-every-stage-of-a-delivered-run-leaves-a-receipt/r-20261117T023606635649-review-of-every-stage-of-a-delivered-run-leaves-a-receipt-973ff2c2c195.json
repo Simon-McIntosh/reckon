@@ -1,0 +1,142 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from source baseline_suite and after_suite raw logs: no FAILED ids and both completed with EXIT=0; repair-base arm independently has no failures. Original importer comparison is outside this repair review and remains qualified in the source manifest.",
+  "assertion_audit": [
+    {
+      "assertions": "Accepted delivery exists and record_mtime equals the independently set filesystem mtime.",
+      "fails_if": "The existing delivery owner refuses valid JSON or substitutes observation time for filesystem time.",
+      "lines": "tests/test_review_handoff_has_durable_stage_receipts.py:460-463"
+    },
+    {
+      "assertions": "Exactly one receipt has original file mtime and reviewer identity; source JSON is unchanged; later wrapper filing/re-observation does not alter journal bytes.",
+      "fails_if": "Remove the watcher observer, use observation time, misassociate the reviewer, rewrite source content, or append a duplicate on replay.",
+      "lines": "tests/test_review_handoff_has_durable_stage_receipts.py:471-479"
+    },
+    {
+      "assertions": "Filing succeeds without refusals and produces one receipt at the original file mtime.",
+      "fails_if": "Remove review_file_instant context so note_review_record uses the delayed store clock; the recorded reversal fails :499.",
+      "lines": "tests/test_review_handoff_has_durable_stage_receipts.py:492-499"
+    },
+    {
+      "assertions": "Unparsed, scoreless, foreign-review and wrong-head files fail delivery recognition and create no write receipt.",
+      "fails_if": "Bypass existing delivery validation in the observer and stamp arbitrary declared files; valid-file positive control above proves the instrument can observe one.",
+      "lines": "tests/test_review_handoff_has_durable_stage_receipts.py:516-521"
+    },
+    {
+      "assertions": "Suppressed second-round request yields positive unknown time and an unknown interval; complete two-round history yields zero unknown.",
+      "fails_if": "Remove review_admitted from _PAIRED so the earlier round satisfies the later round; the recorded reversal fails :538.",
+      "lines": "tests/test_review_handoff_has_durable_stage_receipts.py:538-541"
+    },
+    {
+      "assertions": "The journal request identity equals the dispatched identity and returned/queued identity, fallback pointers are queued, repeat rounds get distinct identities, and complete history has no unknown time.",
+      "fails_if": "Stop forwarding receipt_run_id to dispatch or either queue builder, reuse an earlier round identity, omit a request or break stage pairing.",
+      "lines": "tests/test_review_handoff_has_durable_stage_receipts.py:624-635"
+    }
+  ],
+  "assertion_independence": "No vacuous guard found. Timestamp expectations originate from os.utime on the delivered file, not an at argument supplied to record_stage. The direct dispatch mock returns its input ID, so dispatched[-1] == reviewer_id alone is a passthrough assertion; the same chain also compares the independently read journal request attempt, and fallback arms compare the real queued pointer ID. Census cases read persisted receipts and include a suppressed-request negative branch. Passthrough equality is not counted alone as durability.",
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_compute_watch_snapshot",
+    "reckon/crew/review.py:file_delivered_run_review_report",
+    "reckon/crew/review.py:_write_record",
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review",
+    "reckon/crew/recovery_review_dispatch.py:_queue_router_held_review",
+    "reckon/crew/recovery_review_dispatch.py:_queue_review_without_producer"
+  ],
+  "completed_at": "2026-11-17T02:58:03Z",
+  "dispatched_at": "2026-11-17T02:51:20Z",
+  "finding_dispositions": {},
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/repair-head-suite.log",
+      "summary": "84 passed in 37.64s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/base-suite.log",
+      "summary": "58 passed in 35.35s"
+    },
+    "repair_base": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/repair-base-suite.log",
+      "summary": "73 passed in 43.09s"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read commits 0f872795b677a4e88fc31690b1639c1f47babe5f and 973ff2c2c1952835e2cf10e3de76c871990feab4 against e828b0d65579a7b837828cac71c135a57d6f43e8; the five-file repair retains original delivery instants, pairs admission to request, and adds regression checks.",
+    "done_when": "Read resume-2-advice.txt and the source gate logs; repair-base-suite.log records 73 passed, repair-head-suite.log records 84 passed, and repair-negative-controls.log records two timestamp failures and one request-pair failure when the respective repairs are reversed.",
+    "goal": "Read prompt.txt:38 and live plan section 13; stage_receipts.py:312 now records accepted direct-file write instants and recovery_review_dispatch.py:4069 binds each request to its reviewer, answering both prior gaps.",
+    "manifest": "Read source manifest.md including acted f20f05d29ff and acted f1574381247, both suite pairs and their logs; zero added armed failures reconciles with completed summaries, while the original importer caveat remains explicit.",
+    "write_paths": "Read the repair grant in resume-2-advice.txt and manifest.md orientation_write_paths; the two commits change exactly the five targets named in this review and all are granted."
+  },
+  "justifications": {
+    "durability": "tests/test_review_handoff_has_durable_stage_receipts.py:471 and :499 fail without direct delivery/original-time preservation, :538 fails without attempt pairing, and :625 checks journal-to-dispatch identity across direct and queued paths.",
+    "evidence": "repair-base-suite.log and repair-head-suite.log identify the repair revisions, imported module, completed 73/84-case summaries and EXIT=0, while repair-negative-controls.log records the expected three regression failures.",
+    "fit": "reckon/crew/stage_receipts.py:302 uses a reset-in-finally ContextVar scope, matching the surrounding context-local idiom, and the five-file diff uses mechanism-based names without transient labels.",
+    "goal_fidelity": "reckon/crew/stage_receipts.py:312 observes direct JSON through the existing delivery verdict, review.py:3745 preserves its mtime during filing, and stage_receipts.py:65 pairs admission with its own request.",
+    "reuse": "Capability searches for original review write-time preservation and direct-file observation found recovery_review_delivery.py:518 as the delivery owner; stage_receipts.py:319 delegates to it, while :302 adds context propagation within the existing journal owner instead of duplicating delivery validation.",
+    "scope_discipline": "The two commit diffs touch only recovery_review_dispatch.py, stage_receipts.py, recovery_watch.py, review.py and tests/test_review_handoff_has_durable_stage_receipts.py, all granted in resume-2-advice.txt."
+  },
+  "method": "Read exact git objects at the canonical pair; assigned checkout HEAD is 567be9b10a02bf981ba3355ad88d07afc85d2665 and does not contain this node. No source mutation or suite rerun.",
+  "negative_control_evidence": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/repair-negative-controls.log",
+    "request_pair_reversal": "1 failed, 1 passed, 24 deselected in 4.54s; EXIT=1",
+    "timestamp_reversal": "2 failed, 24 deselected in 0.77s; EXIT=1"
+  },
+  "prior_defect_reproduction": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/repair-reproduction.log",
+    "quotes": [
+      "assert 0 == 1",
+      "assert 0 > 0"
+    ],
+    "summary": "2 failed, 15 deselected in 4.40s; EXIT=1"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live plan section 13; stage_receipts.py:312 now records accepted direct-file write instants and recovery_review_dispatch.py:4069 binds each request to its reviewer, answering both prior gaps.\nVERDICT done_when: Read resume-2-advice.txt and the source gate logs; repair-base-suite.log records 73 passed, repair-head-suite.log records 84 passed, and repair-negative-controls.log records two timestamp failures and one request-pair failure when the respective repairs are reversed.\nVERDICT write_paths: Read the repair grant in resume-2-advice.txt and manifest.md orientation_write_paths; the two commits change exactly the five targets named in this review and all are granted.\nVERDICT manifest: Read source manifest.md including acted f20f05d29ff and acted f1574381247, both suite pairs and their logs; zero added armed failures reconciles with completed summaries, while the original importer caveat remains explicit.\nVERDICT diff: Read commits 0f872795b677a4e88fc31690b1639c1f47babe5f and 973ff2c2c1952835e2cf10e3de76c871990feab4 against e828b0d65579a7b837828cac71c135a57d6f43e8; the five-file repair retains original delivery instants, pairs admission to request, and adds regression checks.\nCALL_SITES: reckon/crew/recovery_watch.py:_compute_watch_snapshot, reckon/crew/review.py:file_delivered_run_review_report, reckon/crew/review.py:_write_record, reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review, reckon/crew/recovery_review_dispatch.py:_queue_router_held_review, reckon/crew/recovery_review_dispatch.py:_queue_review_without_producer\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/stage_receipts.py:312 observes direct JSON through the existing delivery verdict, review.py:3745 preserves its mtime during filing, and stage_receipts.py:65 pairs admission with its own request.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-base-suite.log and repair-head-suite.log identify the repair revisions, imported module, completed 73/84-case summaries and EXIT=0, while repair-negative-controls.log records the expected three regression failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two commit diffs touch only recovery_review_dispatch.py, stage_receipts.py, recovery_watch.py, review.py and tests/test_review_handoff_has_durable_stage_receipts.py, all granted in resume-2-advice.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_review_handoff_has_durable_stage_receipts.py:471 and :499 fail without direct delivery/original-time preservation, :538 fails without attempt pairing, and :625 checks journal-to-dispatch identity across direct and queued paths.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/stage_receipts.py:302 uses a reset-in-finally ContextVar scope, matching the surrounding context-local idiom, and the five-file diff uses mechanism-based names without transient labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for original review write-time preservation and direct-file observation found recovery_review_delivery.py:518 as the delivery owner; stage_receipts.py:319 delegates to it, while :302 adds context propagation within the existing journal owner instead of duplicating delivery validation.",
+  "reuse_search": {
+    "added_definitions": "review_file_instant extends journal timestamp propagation; observe_review_delivery wraps existing accepted-delivery owner; _direct_review and _observe_review are local test setup/adapters, and new test functions assert distinct cases.",
+    "opened_owners": [
+      "reckon/crew/recovery_review_delivery.py:_delivered_review_record",
+      "reckon/crew/recovery_review_delivery.py:_review_delivery_verdict",
+      "reckon/crew/stage_receipts.py:record_stage",
+      "reckon/crew/stage_receipts.py:note_review_record"
+    ],
+    "searches": [
+      "original.*(write|mtime)",
+      "source.*st_mtime",
+      "review.*instant",
+      "def .*direct_review",
+      "def .*observe_review",
+      "review_record_written",
+      "ContextVar"
+    ]
+  },
+  "review_run_id": "r-20261117T023606635649-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-973ff2c2c195",
+  "reviewed_base_sha": "e828b0d65579a7b837828cac71c135a57d6f43e8",
+  "reviewed_commits": [
+    "0f872795b677a4e88fc31690b1639c1f47babe5f",
+    "973ff2c2c1952835e2cf10e3de76c871990feab4"
+  ],
+  "reviewed_head_sha": "973ff2c2c1952835e2cf10e3de76c871990feab4",
+  "reviewed_run_id": "r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T02:56:15.348292+00:00",
+  "total": 120
+}

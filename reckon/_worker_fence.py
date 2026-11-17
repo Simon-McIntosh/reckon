@@ -1444,6 +1444,26 @@ def worktree_git_write_roots(worktree: str | Path) -> list[Path]:
     return roots
 
 
+def _worker_scratch_roots(
+    writable_roots: Iterable[str | Path],
+) -> tuple[Path, list[Path]]:
+    """Return the scratch root's spelling and handed destinations within it.
+
+    The root itself can trigger its seal but must never become a writable
+    grant or tmp mount. Import dispatch lazily because backend translation
+    loads this module while the crew package is still loading.
+    """
+    from reckon.crew.dispatch_launch import worker_scratch_root
+
+    root = worker_scratch_root()
+    target = resolved_destination(root)
+    return root, [
+        path
+        for path in (resolved_destination(Path(raw)) for raw in writable_roots)
+        if path.is_relative_to(target)
+    ]
+
+
 def worker_scratch_seal_root(
     writable_roots: Iterable[str | Path],
 ) -> Path | None:
@@ -1462,19 +1482,9 @@ def worker_scratch_seal_root(
     with no such grant is not fencing a run's scratch, so it neither seals nor
     creates the root — a preview invents nothing, and a launch never given a
     scratch directory owns none to protect.
-
-    The dispatch package is imported here rather than at module load: reckon's
-    backend translation imports this module while the crew package is still
-    loading, so a module-level import would close a cycle.
     """
-    from reckon.crew.dispatch_launch import worker_scratch_root
-
-    root = worker_scratch_root()
-    root_target = resolved_destination(root)
-    for raw in writable_roots:
-        if resolved_destination(Path(raw)).is_relative_to(root_target):
-            return root
-    return None
+    root, members = _worker_scratch_roots(writable_roots)
+    return root if members else None
 
 
 # The node's own temp root. Pinned rather than read from ``TMPDIR`` for the
@@ -1563,6 +1573,27 @@ def create_node_tmp_runtime_paths() -> list[Path]:
     return [resolved_destination(path) for path in paths]
 
 
+def worker_scratch_write_roots(
+    writable_roots: Iterable[str | Path],
+) -> set[Path]:
+    """The handed writable roots that are some run's own scratch directory.
+
+    Every run's scratch directory is a direct child of one node-local root
+    (:func:`reckon.crew.dispatch_launch.worker_scratch_root`), and dispatch
+    hands the fence the run's own directory so the seal can re-bind it
+    writable. That directory belongs to the node that runs the worker: creating
+    it while composing the argv would place one on the host that composed the
+    launch, which for a placed step is the fleet node and not the node the
+    worker runs on. The caller therefore creates every handed root except these
+    and leaves them to the launch that knows where the worker lands.
+
+    The scratch root itself is not one of them: it is the directory sealed
+    read-only and it holds every other run's copy.
+    """
+    root, members = _worker_scratch_roots(writable_roots)
+    return set(members) - {resolved_destination(root)}
+
+
 def worker_tmp_mount_source(
     writable_roots: Iterable[str | Path], *, node_tmp: str | Path | None
 ) -> Path | None:
@@ -1592,20 +1623,13 @@ def worker_tmp_mount_source(
     """
     if node_tmp is None:
         return None
-    from reckon.crew.dispatch_launch import worker_scratch_root
-
-    scratch_root = resolved_destination(worker_scratch_root())
+    root, members = _worker_scratch_roots(writable_roots)
+    scratch_root = resolved_destination(root)
     node_target = resolved_destination(node_tmp)
     if scratch_root == node_target or not scratch_root.is_relative_to(node_target):
         return None
-    own = [
-        target
-        for target in (resolved_destination(Path(raw)) for raw in writable_roots)
-        if target != scratch_root and target.is_relative_to(scratch_root)
-    ]
-    if not own:
-        return None
-    return min(own, key=lambda path: len(path.parts))
+    own = (target for target in members if target != scratch_root)
+    return min(own, key=lambda path: len(path.parts), default=None)
 
 
 def node_tmp_seal_root() -> Path | None:
@@ -1978,6 +2002,13 @@ def fence_argv(
             roots.append(target.parent)
 
     granted: set[str] = set()
+    # The run's own scratch directory is a handed root that this host may
+    # deliberately not have created: it belongs to the node that runs the
+    # worker, so the composition grants it while it is absent here and the
+    # launch that knows where the worker lands makes it before the fence runs.
+    # Every other absent root composes no grant; see
+    # :func:`worker_scratch_write_roots`.
+    by_construction = worker_scratch_write_roots(roots)
     # The handed roots minus the sealed delivery stores, resolved the way this
     # loop resolves them, so the rule that decides which roots the fence binds
     # writable is the same one the dialect is handed and an argv's ``--add-dir``
@@ -2001,8 +2032,10 @@ def fence_argv(
         # source is absent refuses the launch outright, so it composes no
         # grant. The caller creates the roots it means to hand before it
         # composes the fence, and a root it has not created yet is granted on
-        # the composition after it does.
-        if not target.exists():
+        # the composition after it does. The run's own scratch directory is the
+        # exception: it is made on the node that runs the worker, so it is
+        # granted here while absent and created there before the fence runs.
+        if not target.exists() and target not in by_construction:
             continue
         granted.add(key)
         fenced += ["--bind", key, key]

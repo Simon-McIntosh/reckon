@@ -1,0 +1,16 @@
+<section id="qwnw-red-file-reserved-lane-window-reading-landing">
+<h2>Reserved-lane window reading: four stale expectations restored to the rule the code keeps</h2>
+<p>The file was red on the primary branch at <code>aa086f1e29d70f7c3bf63a4bd47d8ddfac35715b</code> with four failing tests. All four ask for the reserved Claude lane to be offered where the picker withholds it, and the withholding is deliberate: a Claude CLI reservation gates automatic offers, while other lanes' reservations travel as router evidence. <code>reckon/crew/picker/snapshot.py</code> states the rule (<code>enforce_reservation = policy_family == "claude"</code>) and <code>tests/test_picker_reserved_lanes.py</code> asserts it in five passing cases, including the ceiling, the unknown reading, the tier floor and the review role.</p>
+<p><strong>Verdict per cause: test wrong in all four.</strong> <code>8f84806ed7</code> swept three reserved-lane test files to assert the lane is offered beside its policy text, and flipped these four expectations with it; <code>b14e289ffe</code> then reinstated enforcement for Claude CLI offers and updated the sibling file, without this one. No product path is changed by this node.</p>
+<pre># base run, tests/test_reserved_lane_window_reading.py at aa086f1e29 (before the repair)
+FAILED tests/test_reserved_lane_window_reading.py::test_hardest_pick_reads_a_persisted_five_hour_event[0.6-True]
+FAILED tests/test_reserved_lane_window_reading.py::test_crew_pick_offers_the_reserved_lane_and_states_its_window[0.6-True]
+FAILED tests/test_reserved_lane_window_reading.py::test_crew_pick_offers_the_reserved_lane_and_states_its_window[None-True]
+FAILED tests/test_reserved_lane_window_reading.py::test_routine_pick_never_spends_the_reserved_probe
+4 failed, 10 passed</pre>
+<p>The repair moves the ceiling and unknown-reading cases to withheld, restores the routine-pick case to withheld and names the policy's own reason on it, so no assertion is deleted or weakened: three assertions flip from "offered" to "not offered" and one reason assertion is added.</p>
+<pre># head run at b2461f88fb on all_debug, job 1319750, SLURM_JOB_ID unset
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=$RUN/scratch/pytest-base tests/test_reserved_lane_window_reading.py
+14 passed in 1.79s
+EXIT=0</pre>
+</section>

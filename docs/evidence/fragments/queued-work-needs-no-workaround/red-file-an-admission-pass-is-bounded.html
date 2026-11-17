@@ -1,0 +1,72 @@
+<section id="qwnw-red-file-an-admission-pass-is-bounded-red-file">
+  <h3>The red file: <code>tests/test_an_admission_pass_is_bounded.py</code></h3>
+  <p>The recorded defect does not reproduce at the revision the dispatch names, and the
+  file is green at the worktree head. No product rule was repaired and no test was
+  edited. The runs below are what the instrument saw.</p>
+  <table id="qwnw-red-file-an-admission-pass-is-bounded-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Tree</th><th>Summary line</th><th>Exit</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>head, as an <code>all_debug</code> job (1320084) with <code>SLURM_JOB_ID</code> unset inside the job</td>
+        <td><code>655a2befa979af690bab537523cd9ad97dc108c5</code></td>
+        <td>the assigned worktree</td>
+        <td><code>5 passed in 7.92s</code></td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>head, in place</td>
+        <td><code>655a2befa979af690bab537523cd9ad97dc108c5</code></td>
+        <td>the assigned worktree</td>
+        <td><code>5 passed in 6.78s</code></td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>recorded defect: the same revision the dispatch names, product tree of that revision, test blob identical to head's</td>
+        <td><code>8d50b0333f</code></td>
+        <td>a scratch extraction under the run's <code>$TMPDIR</code></td>
+        <td><code>5 passed in 5.59s</code></td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>falsification control: the product tree of the revision before this file and its change landed in <code>239f5365ab</code>, the head test file copied in</td>
+        <td><code>1d16388a31</code></td>
+        <td>a scratch extraction under the run's <code>$TMPDIR</code></td>
+        <td><code>5 failed in 1.10s</code></td>
+        <td>1</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The command in every arm is the project's own template resolved over that arm's tree:</p>
+  <pre><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_pass_is_bounded.py</code></pre>
+  <p>The scratch arms ran that command with <code>PYTHONPATH</code> and the module import
+  root pointing at the scratch extraction, and printed
+  <code>module.__file__ = &lt;scratch&gt;/reckon/crew/queue_admission.py</code> with
+  <code>cwd = &lt;scratch&gt;</code>, so the product under test was the extracted revision and
+  not the shared checkout. Logs: <code>logs/head-all_debug.log</code>,
+  <code>logs/base-gate.log</code>, <code>logs/negative-control.log</code>,
+  <code>logs/negative-control-pre-landing.log</code>.</p>
+  <p>The dispatch records three failing or erroring tests at <code>8d50b0333f</code>. That
+  claim was checked before anything was repaired, and it did not reproduce: with that
+  revision's own <code>reckon/</code> tree and the byte-identical test file, all five cases
+  pass. The gate in this node's brief asks for a green run and then a stop, so this node
+  delivers the green run and records the non-reproduction rather than inventing a cause.</p>
+  <p>An absent failure is worth nothing unless the instrument is shown to see a present
+  one, so the same test file was run against the product tree of <code>1d16388a31</code>,
+  the revision that precedes the file and its product change. It reads
+  <code>5 failed in 1.10s</code> at <code>EXIT=1</code>, with the five failing ids:</p>
+  <ul id="qwnw-red-file-an-admission-pass-is-bounded-red-file-ids">
+    <li><code>test_a_pass_stops_when_its_launch_budget_is_spent</code> — <code>TypeError: admit_once() got an unexpected keyword argument 'clock'</code>
+    <li><code>test_a_launch_row_carries_its_duration_and_slowest_step</code> — same <code>TypeError</code></li>
+    <li><code>test_a_pass_with_no_budget_reads_the_flight_value</code> — same <code>TypeError</code></li>
+    <li><code>test_a_pass_leaves_the_shared_config_untouched</code> — same <code>TypeError</code></li>
+    <li><code>test_the_budget_defaults_to_sixty_seconds_from_flight</code> — <code>AttributeError: module 'reckon.flight' has no attribute 'admission_pass_budget_seconds'</code></li>
+  </ul>
+  <p>That control shows the command and the scratch import root detect red; the green
+  head arms above are therefore a pass and not a run that collected nothing. Both arms
+  collected five tests.</p>
+  <p>The branch merge the brief asks for first could not be re-fetched: <code>git fetch
+  origin main</code> exits 128 with <code>Bad owner or permissions on
+  /etc/ssh/ssh_config.d/50-redhat.conf</code>. The local <code>origin/main</code> tip
+  <code>915acff37f4d535f44f39ebf0cc21827bbfc5827</code> is an ancestor of the worktree head,
+  so the head already carries every commit main holds here.</p>
+</section>

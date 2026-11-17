@@ -1,0 +1,6 @@
+<section id="refused-promotion-keeps-plan-committed-s17-evidence">
+  <h3>A store refusal restores the committed plan</h3>
+  <p>The promotion restores its landing comment through the existing landing rollback when the run store refuses the append and no competing promotion can be confirmed. Restoration also runs when the confirmation lookup itself refuses. The refusal receipt records the restoration result and names any path whose landing content remains.</p>
+  <p>The regression injects the refusal at the real store append boundary, after observing both the changed plan and the per-run file. At base <code>faef8aae9a2af0d6caddfd07b8510391f5063be1</code>, three cases fail and the successful-promotion control passes: the plan differs from its committed bytes with either a readable or refusing lookup, and the subsequent dispatch visibility check raises <code>PlanVisibilityError</code>. With the repair, the focused check reports <code>4 passed in 2.04s</code>.</p>
+  <p>The checks also assert an unchanged HEAD and live pointer after refusal, removal of the refused run file, and a successful promotion whose comment is present in HEAD and whose plan remains dispatchable. The manifest carries the all_debug armed-suite observations, importer comparison, and the base-order mutation log.</p>
+</section>

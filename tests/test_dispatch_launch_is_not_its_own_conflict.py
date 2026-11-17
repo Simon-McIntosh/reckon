@@ -35,7 +35,6 @@ import pytest
 
 from reckon import crew
 from reckon.crew.runs import list_live, pointer_path
-from tests.real_home_traces import traces_naming
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -44,10 +43,12 @@ NODE_ID = "node-claiming"
 SESSION = "session-launch-claim"
 REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
-# A dispatch grants the node its own landing fragment in its write scope, so
-# this entry is the first the two live claims overlap on, so it is the path a
-# refusal between them names.
-LANDING_FRAGMENT = f"docs/evidence/fragments/fixture/{NODE_ID}.html"
+# A dispatch grants the node its own landing fragment in its write scope, and
+# the node's figure topic. The fragment is one mergeable HTML file, so two
+# worktrees reconcile their edits to it and a claim on it shares; the figure
+# topic is an unmergeable artifact class, so it is the first entry the two live
+# claims cannot share and the path a refusal between them names.
+FIGURE_TOPIC = f"docs/figures/fixture/{NODE_ID}"
 
 # A CLI backend, so a dispatch composes a real launch and writes a live
 # pointer rather than handing back an in-harness directive. Every launcher is
@@ -121,16 +122,50 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     return config_home, repo
 
 
+def _real_home_claim_writes() -> list[str]:
+    """Real crew-home pointers carrying this fixture's own run identities.
+
+    A leaked write is a pointer of the fixture's project, node or session: the
+    case mints the run id its file is named for, and the record it writes names
+    the project, node or session declared below. Those fields are what is read,
+    not the file's text, because a live pointer of any dispatch quotes what its
+    worker said — and a worker summarising a run of this very case leaves the
+    fixture's node id in prose that no fixture wrote. Matching on text reports
+    that entry as this case's write, which is a peer's record read as a leak.
+    """
+    if not REAL_LIVE.is_dir():
+        return []
+    hits: list[str] = []
+    for path in sorted(REAL_LIVE.glob("*")):
+        if not path.is_file():
+            continue
+        if any(identity in path.name for identity in (PROJECT, NODE_ID, SESSION)):
+            hits.append(str(path))
+            continue
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, dict):
+            continue
+        node = record.get("node")
+        node_id = node.get("id") if isinstance(node, dict) else node
+        if (
+            record.get("project") == PROJECT
+            or record.get("session") == SESSION
+            or node_id == NODE_ID
+        ):
+            hits.append(str(path))
+    return hits
+
+
 @pytest.fixture(autouse=True)
 def real_live_directory_is_not_a_fixture_target() -> None:
     """No case may write this fixture's pointer into the real crew home."""
 
-    def fixture_pointers() -> list[str]:
-        return traces_naming(REAL_LIVE.parent, ("live",), (PROJECT, NODE_ID))
-
-    assert fixture_pointers() == []
+    assert _real_home_claim_writes() == []
     yield
-    assert fixture_pointers() == []
+    assert _real_home_claim_writes() == []
 
 
 def _node(config_home: Path) -> crew.TaskNode:
@@ -268,7 +303,7 @@ def test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight(
     refusal = observed.get("refusal")
     assert isinstance(refusal, crew.ScopeConflict)
     assert refusal.run_id == first_run_id
-    assert LANDING_FRAGMENT in str(refusal)
+    assert FIGURE_TOPIC in str(refusal)
     # The refusal left nothing of the refused dispatch behind, and the launch
     # that held the claim kept its own single pointer, run directory and
     # worktree. The second dispatch never reached the worktree seam at all.
@@ -327,7 +362,7 @@ def test_a_second_dispatch_meets_the_claim_made_before_the_preflight(
     refusal = observed.get("refusal")
     assert isinstance(refusal, crew.ScopeConflict)
     assert refusal.run_id == first_run_id
-    assert LANDING_FRAGMENT in str(refusal)
+    assert FIGURE_TOPIC in str(refusal)
     assert live_pointers_naming(NODE_ID) == [first_run_id]
     assert calls["worktrees"] == 1
 
@@ -354,7 +389,13 @@ def test_a_claim_appearing_during_the_launch_is_met_at_the_pointer_write(
                 "run_id": peer_run_id,
                 "project": PROJECT,
                 "repo": str(repo),
-                "node": {"id": "node-peer", "write_paths": ["src/claimed.py"]},
+                "node": {
+                    "id": "node-peer",
+                    # The peer holds the node's figure topic, an unmergeable
+                    # artifact class; a mergeable source file is shared between
+                    # worktrees and never refuses a peer.
+                    "write_paths": ["src/claimed.py", FIGURE_TOPIC],
+                },
                 "phase": "starting",
             },
         )

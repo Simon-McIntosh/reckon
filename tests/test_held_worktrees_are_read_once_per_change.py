@@ -48,6 +48,14 @@ def fleet(tmp_path, monkeypatch):
         tree = tmp_path / "trees" / SESSION / f"held-{index}"
         tree.parent.mkdir(parents=True, exist_ok=True)
         git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+        # The tree carries a commit its primary branch does not reach. The
+        # derivation holds a retained tree only while a landing would otherwise
+        # lose something, so a tree left clean and reachable is dropped before
+        # its naming is ever consulted, and this fixture would then measure
+        # that filter instead of the read-once index.
+        (tree / "work.txt").write_text(f"{tree.name}\n", encoding="utf-8")
+        git(tree, "add", "work.txt")
+        git(tree, "commit", "-qm", f"test: leave {tree.name} work unmerged")
         row = ledger.build_record(
             run_id=f"held-run-{index}",
             plan="fixture-plan",

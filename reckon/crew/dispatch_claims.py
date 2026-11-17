@@ -1279,17 +1279,44 @@ def _refuse_a_discarded_launch(run_id: str, *, started: bool = False) -> None:
         raise CrewError(f"run {run_id!r} was discarded {when}; the launch is refused")
 
 
+def _withdraw_launch_claim(run_id: str) -> None:
+    """Remove a launch's claim, leaving the request a hold stored beside it.
+
+    A hold stores the node as a queued request and keeps its pointer, so only
+    the launch is given back: the claim file says a launch is composing, and a
+    waiting request carries none, exactly as a request requeued after a
+    stranded launch drops the attempt's claim. The directory this launch made
+    goes with it, because a queued request owns no run directory: the brief copy
+    a launch stored there is the one piece a later reader might want, and
+    ``readable_brief_source`` falls back to the source the request names when the
+    copy is gone, as it already did for a request whose earlier attempt was
+    refused.
+    """
+    (run_dir(run_id) / "claim.json").unlink(missing_ok=True)
+    shutil.rmtree(run_dir(run_id), ignore_errors=True)
+
+
 @contextlib.contextmanager
 def _claim_released_on_refusal(run_id: str, published: bool) -> Iterator[None]:
     """Return the claim this dispatch published if the guarded work refuses.
 
-    The claim is published before the work that can refuse it — the ceiling,
-    roster, scope and watcher checks, any of which can take seconds — so a
-    refusal reached under this guard gives the claim back rather than leaving a
-    live claim behind for a launch that never happened.
+    The claim is published before the work that can refuse it — the bound read,
+    the holds, the lane gate and the watcher checks, any of which can take
+    seconds — so a refusal reached under this guard gives the claim back rather
+    than leaving a live claim behind for a launch that never happened. A
+    :class:`LaneHeld` is not a refusal: the dispatch stored the node as a queued
+    request and kept its pointer, so only the claim goes and the request waits
+    as it would have without a launch in front of it.
     """
+    from reckon.crew.dispatch_admission import LaneHeld
+
     try:
         yield
+    except LaneHeld:
+        if published:
+            _withdraw_launch_claim(run_id)
+        _leave_dispatch_in_flight(run_id)
+        raise
     except Exception:
         if published:
             _release_launch_claim(run_id)
@@ -1651,7 +1678,9 @@ def _live_conflict_rows(
             for repository, path, absolute, _declared, _derived_from in candidates
             if repository == claim.repository
             and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
-            and not _claim_paths_share(shared_files, path, claim.path)
+            and not _claim_shares_overlap(
+                shared_files, repository, path, absolute, claim
+            )
         ]
         if not overlapping:
             continue
@@ -2191,6 +2220,48 @@ def _fragment_scope_paths(
     return tuple(sorted(paths))
 
 
+def _is_fragment_record(absolute: Path, repository: Path | None) -> bool:
+    """Whether a compared path is one plan node's own landing fragment file.
+
+    The record lives at ``docs/evidence/fragments/<plan>/<node>.html`` and is
+    cumulative for the node that wrote it, so one fragment file is one node's
+    document. Its siblings under the same plan directory are separate files
+    that merge, which is what makes the directory a composition point rather
+    than a contested file.
+    """
+    if repository is None or not absolute.is_relative_to(repository):
+        return False
+    parts = absolute.relative_to(repository).parts
+    return (
+        len(parts) >= 5
+        and parts[:3] == ("docs", "evidence", "fragments")
+        and parts[-1].endswith(".html")
+    )
+
+
+def _claim_shares_overlap(
+    shared_files: frozenset[str],
+    repository: Path | None,
+    candidate: str,
+    candidate_absolute: Path,
+    claim: _RepositoryScopeClaim,
+) -> bool:
+    """Whether the repository's sharing policy excuses one claim overlap.
+
+    A comparison that names a fragment record on either side is never excused:
+    the files a fragment directory is compared as are already narrowed to the
+    owning node's own record (``_fragment_scope_paths``), so an overlap on one
+    is that node's read and its writer's, and sharing it would let two nodes
+    write one cumulative document. Every other overlap keeps the policy the
+    declaration states.
+    """
+    if _is_fragment_record(candidate_absolute, repository) or _is_fragment_record(
+        claim.absolute_path, claim.repository
+    ):
+        return False
+    return _claim_paths_share(shared_files, candidate, claim.path)
+
+
 def _fragment_comparison_scopes(
     candidates: Iterable[tuple[Path | None, str, Path, str, str | None]],
     claims: Iterable[_RepositoryScopeClaim],
@@ -2298,8 +2369,11 @@ def _raise_repository_scope_conflict(
             # Worktrees isolate concurrent edits to one shared file, and a
             # directory claim under a shared root shares as the files beneath
             # it do, so a peer naming one of those files passes. A claim that is
-            # or contains an exclusive pattern still fences below.
-            if _claim_paths_share(shared_files, candidate, claim.path):
+            # or contains an exclusive pattern still fences below, and so does a
+            # plan fragment record, which names one node's own document.
+            if _claim_shares_overlap(
+                shared_files, _repository, candidate, absolute, claim
+            ):
                 continue
             if not claim.binding:
                 # Named on the record rather than passed over quietly: an

@@ -67,7 +67,6 @@ def tick(project, monkeypatch):
     monkeypatch.setattr(recovery_watch, "_watch_registration", registration)
     monkeypatch.setattr(recovery_watch, "_refuse_unresolvable_watch", lambda _: None)
     monkeypatch.setattr(runs, "renew_watch_host_lease", lambda _: True)
-    monkeypatch.setattr(recovery_watch, "watch_lease_renewed_at", lambda _: None)
     monkeypatch.setattr(
         recovery_watch, "update_watch_registration", lambda *a, **kw: None
     )

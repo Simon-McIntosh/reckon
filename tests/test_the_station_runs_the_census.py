@@ -66,6 +66,15 @@ def stubs(monkeypatch):
         child.stdout.close()
 
 
+def _station_duties():
+    """The station's derivation beat, as far as a station run observes it.
+
+    A stopping station drains its duties before it stops their reflex, so a
+    stand-in station needs that collaborator to reach the census under test.
+    """
+    return SimpleNamespace(drain=lambda *, timeout: None)
+
+
 def test_station_beat_stops_only_the_ownerless_stub(
     stubs, tmp_path, monkeypatch, capsys
 ):
@@ -92,6 +101,7 @@ def test_station_beat_stops_only_the_ownerless_stub(
         home=home,
         clock=lambda: datetime.now(tz=UTC),
         reflex=SimpleNamespace(start=lambda: None, stop=lambda: None),
+        duties=_station_duties(),
         tick=tick,
     )
     monkeypatch.setattr(station, "StationReloader", lambda root: None)
@@ -160,6 +170,7 @@ def _station_named(home, tick=lambda: None):
         home=home,
         clock=lambda: datetime.now(tz=UTC),
         reflex=SimpleNamespace(start=lambda: None, stop=lambda: None),
+        duties=_station_duties(),
         tick=tick,
     )
 

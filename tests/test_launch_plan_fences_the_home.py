@@ -37,7 +37,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends
+from reckon import _backends, _worker_fence
 
 NEGATIVE_CONTROL_MUTATION = (
     "drop the --ro-bind for the ~/.claude stand-in so its sentinel can be deleted"
@@ -136,6 +136,34 @@ done < "$FENCE_GRANTS_FILE"
 requires_bwrap = pytest.mark.skipif(
     shutil.which("bwrap") is None, reason="bubblewrap is not installed"
 )
+
+
+def _node_tmp_for(root: Path) -> Path:
+    """The node tmp the fence seals, placed beside the synthetic home.
+
+    The fence seals the node's ``/tmp`` read-only, and pytest's base temp lives
+    beneath it, so the home these tests build sits under that seal as well as
+    under the overlays they assert. Two of the file's own observations are then
+    dead rather than passing: dropping the ``~/.claude`` overlay leaves its
+    sentinel read-only anyway, so the declared negative control shows nothing,
+    and the sealed ``/tmp`` covers every protected overlay, so the
+    redundant-overlay clause reads the node tmp as a covering directory.
+
+    A node tmp inside the test's own directory keeps a seal in the argv — it is
+    still composed, over this path, which the sealing test asserts — while
+    leaving the home outside it, which is the layout a real launch has: the
+    operator's home is not under ``/tmp``. The node tmp's own seal is asserted
+    in ``tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py``.
+    """
+    return root / "node-tmp"
+
+
+@pytest.fixture(autouse=True)
+def _node_tmp_beside_the_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the fence's node tmp at the sealed path beside the home."""
+    node_tmp = _node_tmp_for(tmp_path)
+    node_tmp.mkdir()
+    monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", node_tmp)
 
 
 class Fence:
@@ -476,6 +504,16 @@ def test_the_fence_seals_every_protected_class(tmp_path: Path) -> None:
     argv = fence.argv()
     assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
     assert "--ro-bind" in argv
+    # The node tmp is still sealed; the fixture only moved it beside the home.
+    # Asserting it here keeps that fixture honest: a home sitting under no seal
+    # at all would leave every sentinel below proving nothing.
+    seal = str(_node_tmp_for(tmp_path))
+    triplets = [
+        tuple(argv[index : index + 3])
+        for index, flag in enumerate(argv)
+        if flag == "--ro-bind"
+    ]
+    assert ("--ro-bind", seal, seal) in triplets
 
     proc = fence.run_fence(argv)
     assert proc.returncode == 0, proc.stderr
