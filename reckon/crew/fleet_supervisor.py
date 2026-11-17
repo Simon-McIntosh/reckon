@@ -1045,6 +1045,36 @@ def next_backoff(delay: float, ran_seconds: float) -> tuple[float, float]:
     return delay, min(delay * 2, BACKOFF_CAP_SECONDS)
 
 
+def shell_backoff_transition() -> tuple[str, str]:
+    """Compile the service policy's reachable transitions for a shell holder.
+
+    Short and steady lifetimes are the policy's two input classes. Resolve both
+    through next_backoff at submission time; the shell only selects a table row
+    and can continue using it while no Python interpreter works.
+    """
+    states = [FIRST_BACKOFF_SECONDS]
+    rows: list[str] = []
+    for state in states:
+        if len(states) > 64:
+            raise ValueError("backoff policy has no bounded transition graph")
+        for name, runtime in (("short", 0.0), ("steady", STEADY_RUN_SECONDS)):
+            wait, following = next_backoff(state, runtime)
+            if following not in states:
+                states.append(following)
+            rows.append(
+                f"{state:g}:{name}) delay={wait:g}; backoff_state={following:g} ;;"
+            )
+    transition = "\n".join(
+        [
+            f"if (( ran >= {STEADY_RUN_SECONDS:g} )); then run_class=steady; else run_class=short; fi",
+            'case "$backoff_state:$run_class" in',
+            *rows,
+            "esac",
+        ]
+    )
+    return f"backoff_state={FIRST_BACKOFF_SECONDS:g}", transition
+
+
 def trim_file_ends(
     path: Path, *, limit: int, head: int, tail: int = 0
 ) -> tuple[bytes, bytes] | None:
@@ -2785,6 +2815,13 @@ class StationProcess:
             self.process.wait()
 
 
+def _mark_allocation_lifetime(environ: Mapping[str, str], name: str) -> None:
+    """Tell the shell holder about explicit retirement or standby promotion."""
+    directory = environ.get("FLEET_LIFETIME_DIRECTORY")
+    if directory:
+        (Path(directory) / name).touch()
+
+
 def handle_line(
     line: str,
     runtime: Path,
@@ -2840,6 +2877,7 @@ def handle_line(
         except (OSError, ValueError, KeyError, TypeError) as exc:
             log(f"spawn failed for {run_id}: {type(exc).__name__}: {exc}")
     elif request.verb == "stop":
+        _mark_allocation_lifetime(os.environ if environ is None else environ, "stop")
         log("stopping")
         return False
     elif request.verb == "":
@@ -2935,6 +2973,7 @@ def serve(
         is_standby = True
     if not is_standby:
         publish_record(runtime, environ)
+        _mark_allocation_lifetime(environ, "active")
         reserve_fleet_projects(environ)
     fifo = runtime / REQUEST_FIFO_NAME
     with suppress(FileNotFoundError):
@@ -2971,6 +3010,7 @@ def serve(
         if not is_standby:
             return
         publish_record(runtime, environ)
+        _mark_allocation_lifetime(environ, "active")
         reserve_fleet_projects(environ)
         is_standby = False
         services.reload()
