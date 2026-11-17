@@ -114,14 +114,20 @@ def _state(slug: str, sections: tuple[str, ...], done: tuple[str, ...]) -> dict:
 
 
 def _write_plan(
-    root: Path, slug: str, sections: tuple[str, ...], done: tuple[str, ...]
+    root: Path,
+    slug: str,
+    sections: tuple[str, ...],
+    done: tuple[str, ...],
+    *,
+    unlanded: tuple[str, ...] = (),
 ) -> None:
     path = root / "docs" / "plans" / f"{slug}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
+    state = _state(slug, sections, done)
+    for section in unlanded:
+        del state["comments"][section]
     path.write_text(
-        _plan_html.write_state(
-            _authored(slug, sections, done), _state(slug, sections, done)
-        ),
+        _plan_html.write_state(_authored(slug, sections, done), state),
         encoding="utf-8",
     )
 
@@ -192,7 +198,7 @@ def _run_record(
 def _build_repo(root: Path) -> Path:
     docs = root / "docs"
     create_project_state(docs, PROJECT)
-    _write_plan(root, ALPHA, ("s1", "s2"), ("s1", "s2"))
+    _write_plan(root, ALPHA, ("s1", "s2", "s3"), ("s1", "s2", "s3"), unlanded=("s3",))
     _write_plan(root, BETA, ("s1",), ("s1",))
     _write_plan(root, GAMMA, ("s1",), ())
     figure = docs / "figures" / ALPHA / "s1-node" / "attempts.svg"
@@ -322,6 +328,34 @@ def test_the_page_has_a_row_per_member_plan_with_its_overview_counts(
         runs, landed = _overview_counts(checkout, slug)
         assert int(by_plan[title]["Runs"]) == runs, (title, by_plan[title])
         assert int(by_plan[title]["Sections landed"]) == landed, (title, by_plan[title])
+
+
+def test_a_done_section_without_a_landing_does_not_inflate_the_row(
+    checkout: Path,
+) -> None:
+    plan = _plan_html.parse_plan(checkout / "docs" / "plans" / f"{ALPHA}.html")
+    assert list(plan["section_declarations"].values()) == ["done"] * 3
+    assert not plan["comments"].get("s3")
+    records = ledger.runs(PROJECT, root=checkout, plan=ALPHA)
+    assert {record["section"] for record in records} == {"§1", "§2"}
+    row = next(row for row in _rows(_page(checkout)) if row["Plan"] == "Alpha Plan")
+    assert int(row["Sections landed"]) == 2, row
+
+
+def test_a_member_with_no_document_is_listed_without_a_link(checkout: Path) -> None:
+    docs = checkout / "docs"
+    sprint, _version = read_resource(docs, PROJECT, "sprint", SPRINT)
+    (docs / "plans" / f"{GAMMA}.html").unlink()
+    path = evidence.write_sprint_page(
+        docs, PROJECT, SPRINT, [item["slug"] for item in sprint["items"]]
+    )
+    page = BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
+    rows = page.find("section", id="sprint-plans").find("tbody").find_all("tr")
+    missing = next(row for row in rows if row.find("td").get_text() == GAMMA)
+    assert missing.find_all("td")[1].get_text() == "no plan document"
+    assert missing.find("a") is None, missing
+    present = next(row for row in rows if row.find("td").get_text() == "Alpha Plan")
+    assert present.find("a") is not None, "a member with a document stays linked"
 
 
 def test_a_plan_with_no_overview_is_listed_with_its_status_and_no_broken_link(

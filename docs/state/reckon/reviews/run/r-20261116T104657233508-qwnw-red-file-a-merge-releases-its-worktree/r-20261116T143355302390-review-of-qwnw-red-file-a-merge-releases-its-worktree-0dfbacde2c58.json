@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T15:33:29.553Z",
+  "dispatched_at": "2026-11-16T15:32:31Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "the baseline_suite/after_suite fields record an arm over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither reckon/crew/merge.py nor reckon/crew/obligations.py (they name obligations.py only as static census data), so the structured arm fields describe a different arm than the done_when's arm over files that import the change; the 148-file importer arm that does cover it (93 failed at base, 92 at head, no id added) appears only in the artifacts line."
+    },
+    {
+      "file": "manifest.md",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "orientation_base_sha states 8277191059 but the node's own work descends from 5c4ff34929, the fast-forward merge of origin/main the done_when ordered (git reflog HEAD@{4}); the commits line omits that merge, so a reader diffing the stated base against the head sees docs/plans/the-monitor-reads-each-fact-once.html and a review record with nothing in the manifest saying they arrived from origin/main."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_merge_releases_its_worktree.py passes in full on the primary branch; reckon/crew/merge.py:1548 and tests/test_a_merge_releases_its_worktree.py:181 now release the promoted tree the landing empties, and the gate log records the file green.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each cause given a product-or-test verdict, an importer arm that adds no failure, and the base red logged beside it; logs/gate-all_debug.log records 5 passed EXIT=0 at 16856d6056, logs/base-gate.log 4 failed 1 passed EXIT=1 at 8277191059, sacct shows three qwnw-gate jobs on all_debug, and the importer arm reads 93 failed at base against 92 at head with no id added.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every file the four node commits touch (reckon/crew/merge.py, reckon/crew/obligations.py, tests/test_a_merge_releases_its_worktree.py, tests/test_a_review_duty_reads_its_run_review_once.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merge-releases-its-worktree.html) is inside that fence.\nVERDICT manifest: the manifest reports status complete, four commits, the gate file's 5-passed run and its 4-failure base arm, and records one defect it found outside its measure in ledger.write_run_file never syncing the run store; its baseline_suite/after_suite fields name a two-file arm over tests that do not import the changed modules.\nVERDICT diff: read commit by commit from 5c4ff34929 (the origin/main merge the done_when ordered, reflog HEAD@{4}) to 0dfbacde2c: 13f9a4b275 adds the include_landed view in reckon/crew/obligations.py:3284 and reads it at reckon/crew/merge.py:1548, 6635b7d169 rewrites the fixture's promotion, 16856d6056 forwards the view through the warm-read stub, 0dfbacde2c adds the evidence fragment; the two files the wider 8277191059 base also shows came from the origin/main merge, not the node.\nCALL_SITES: reckon/crew/merge.py:1494 release_landed_worktrees (called from the merge path), reckon/crew/pending_landing.py:156 release_landed_worktrees, reckon/crew/pending_landing.py:897 release_landed_worktrees, reckon/crew/obligations.py:3707 _held_worktree_records (session duty view), reckon/crew/obligations.py:3291 _named_worktree_records (new, read only by the release)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:1548 reads the named-tree view and tests/test_a_merge_releases_its_worktree.py:181-184 asserts the landed tree is in report['release']['released'] and is gone, which is what the goal's named file now passes on.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-all_debug.log ends `5 passed in 4.49s / EXIT=0` at revision 16856d6056 and logs/base-gate.log ends `4 failed, 1 passed / EXIT=1` at 8277191059, but the gate ran one docs-only commit before the head and the manifest's baseline_suite/after_suite fields name an arm the change does not reach.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path the four node commits touch sits under the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround fence as listed in the manifest's changed_paths line.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_merge_releases_its_worktree.py:181 asserts the tree appears in report['release']['released'], which reddens if reckon/crew/merge.py:1548 returns to obligations._held_worktree_records, but the recorded base arm ran the pre-change test file so the new assertion itself was never shown red.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:3284 delegates to the existing read through a keyword-only flag and its docstring states why, matching the surrounding private-helper idiom and introduced no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/obligations.py:3284 wraps the owner of the join (_held_worktree_records at :3244) rather than forking it, and merge.py calls the thin view instead of a second derivation; the search for another tree-to-record join found only this owner.\nFINDING manifest.md:16 non-blocking: the baseline_suite/after_suite fields record an arm over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither reckon/crew/merge.py nor reckon/crew/obligations.py (they name obligations.py only as static census data), so the structured arm fields describe a different arm than the done_when's arm over files that import the change; the 148-file importer arm that does cover it (93 failed at base, 92 at head, no id added) appears only in the artifacts line.\nFINDING manifest.md:2 non-blocking: orientation_base_sha states 8277191059 but the node's own work descends from 5c4ff34929, the fast-forward merge of origin/main the done_when ordered (git reflog HEAD@{4}); the commits line omits that merge, so a reader diffing the stated base against the head sees docs/plans/the-monitor-reads-each-fact-once.html and a review record with nothing in the manifest saying they arrived from origin/main.\n",
+  "review_run_id": "r-20261116T143355302390-review-of-qwnw-red-file-a-merge-releases-its-worktree-0dfbacde2c58",
+  "reviewed_base_sha": "827719105952d26737ec2c5da31433132664e0b6",
+  "reviewed_head_sha": "0dfbacde2c5807d7a7ff843dbafd4fb6df8244e5",
+  "reviewed_run_id": "r-20261116T104657233508-qwnw-red-file-a-merge-releases-its-worktree",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:17:30.346519+00:00",
+  "total": 105
+}

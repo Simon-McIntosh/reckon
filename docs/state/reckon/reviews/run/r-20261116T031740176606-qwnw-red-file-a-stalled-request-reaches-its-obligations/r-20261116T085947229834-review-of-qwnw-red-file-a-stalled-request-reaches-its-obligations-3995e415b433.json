@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:1618 compose_landed_record reads docs/evidence/fragments/<plan>/<node>.html and appends each fragment's body",
+    "reckon/serve.py:2751 serves the composed landed record",
+    "reckon/mcp.py:1344 composes the landed record for a plan read",
+    "reckon/doccheck.py:1964 composes the landed record when checking the record document"
+  ],
+  "completed_at": "2026-11-16T09:07:14.773Z",
+  "dispatched_at": "2026-11-16T09:06:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031740176606-qwnw-red-file-a-stalled-request-reaches-its-obligations/manifest.md",
+      "id": "f6522a668ea",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing line quotes a head gate of `6 passed in 2.26s` at ee93819a0d as all_debug job 1319429, while test_logs cites logs/gate-head-all_debug.log, which records job 1319526 at 3995e415b4 with `6 passed in 2.45s`; the 1319429 run left only an empty logs/sbatch-1319429.out, so the figure the landing quotes has no log a reader can open and the manifest's summary does not reconcile with the receipt it names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031740176606-qwnw-red-file-a-stalled-request-reaches-its-obligations/manifest.md",
+      "id": "f59ef97c95b",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: both suite arms record `PYTHONPATH=. .venv/bin/python` rather than an absolute interpreter path, which the manifest contract asks for; it is faithful to what ran because the worktree's .venv is a symlink into /home/ITER/mcintos/Code/reckon/.venv, but a later reader resolving the command from any other directory reaches a different interpreter or none."
+    }
+  ],
+  "justifications": {
+    "durability": "the diff adds no assertion - it is 94 lines of HTML - so nothing in the landed change reddens if the fragment's own claims go stale; the behaviour it records is guarded only by the pre-existing six cases, which logs/negative-control-8d50b0333f.log shows reddening with 'reckon.crew.CrewError: node n1 is refused at queue time: no manifest path is named' at 8d50b0333f.",
+    "evidence": "logs/gate-head-all_debug.log records `6 passed in 2.45s` with EXIT=0 at revision 3995e415b4, job 1319526 on all_debug with SLURM_JOB_ID unset, and both suite arms are recorded as EXIT=0 with 58 passed, but manifest.md:12's landing quotes `6 passed in 2.26s` from job 1319429 at ee93819a0d, whose only surviving artefact is an empty logs/sbatch-1319429.out.",
+    "fit": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stalled-request-reaches-its-obligations.html opens with a bare `<section id=...>` and carries the h2/table/pre shape of its sibling qwnw-a-commit-keyed-list-item-is-read-codex-negative-control, and its filename is the node id as the composer's `_fragment_body_bytes` reader expects.",
+    "goal_fidelity": "tests/test_a_stalled_request_reaches_its_obligations.py passes 6/6 at 3995e415b4 in logs/gate-head-all_debug.log, and the repair c3933bacfb 'fix(queue): assign durable manifests before validating requests' is an ancestor of base ee93819a0d, so the goal's substance holds on the primary branch and the node delivers it as the passing run the section allows.",
+    "reuse": "the diff adds no function, class or module; it uses the evidence-fragment mechanism owned by reckon/evidence.py:compose_landed_record rather than composing its own record, and a search across reckon/ for a second fragment composer found only reckon/resources.py:65 and reckon/evidence.py:1628 naming that one owner.",
+    "scope_discipline": "`git diff --stat ee93819a0d 3995e415b4` is one new file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stalled-request-reaches-its-obligations.html, inside the declared docs/evidence/fragments/queued-work-needs-no-workaround write path, and no source or test line moved against `git diff 8d50b0333f 3995e415b4 -- tests/test_a_stalled_request_reaches_its_obligations.py`."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (`Make tests/test_a_stalled_request_reaches_its_obligations.py pass in full on the primary branch`) against `git diff --stat ee93819a0d 3995e415b4`, which is the single new fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stalled-request-reaches-its-obligations.html; logs/gate-head-all_debug.log reports `6 passed in 2.45s` EXIT=0 for that file at 3995e415b4, and the repair the fragment names, c3933bacfb, is an ancestor of the node's base ee93819a0d, so the goal holds on the primary branch and the node delivers it as the passing run its section allows.\nVERDICT done_when: read the done_when's three demands - passes in full at head as an all_debug job with SLURM_JOB_ID unset, six failing or erroring tests at 8d50b0333f, and a current origin/main merge first; logs/gate-head-all_debug.log records job 1319526 on all_debug running `env -u SLURM_JOB_ID` with 6 passed EXIT=0 at 3995e415b4, logs/negative-control-8d50b0333f.log records the six failing ids with EXIT=1 over a tree extracted at 8d50b0333f, the named cache log ~/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log is present and carries the same six ids for this file, and the merge step was not carried out - manifest.md:21 records the ssh refusal, and the local origin/main cb557f9711 is 0 commits ahead of the base and 2 behind, so nothing was mergeable.\nVERDICT write_paths: read the manifest's declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node .html and a docs/figures topic) and compared them with `git diff --stat ee93819a0d 3995e415b4`, whose one added path lies inside the fragment directory.\nVERDICT manifest: read; it records the head gate with its command and log, the negative control with its six ids, both suite arms with JSON receipts of 58 passed EXIT=0, the byte-identity of the test file between 8d50b0333f and head, and the product-wrong cause with the repair commit - with its landing line quoting job 1319429 and `2.26s`, a receipt no retained log carries, against the 1319526 run its test_logs cites.\nVERDICT diff: read all three commits against base ee93819a0d - dbdeabada9 records the passing run, 5cdeba97cd re-quotes the negative control's own `6 failed in 1.46s`, 3995e415b4 drops the frozen revision from the table in favour of the gate log's first line - 94 added lines in one evidence fragment and no source or test change, and the fragment's claims both verify (`git diff 8d50b0333f 3995e415b4 -- tests/test_a_stalled_request_reaches_its_obligations.py` is empty; c3933bacfb touches reckon/crew/dispatching/requests.py).\nCALL_SITES: reckon/evidence.py:1618 compose_landed_record, reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1964\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the file passes 6/6 at 3995e415b4 per logs/gate-head-all_debug.log and the repair c3933bacfb precedes base ee93819a0d, delivered as the new fragment rather than as a code change the goal does not need.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head-all_debug.log and logs/negative-control-8d50b0333f.log measure the done_when with EXIT lines, but manifest.md:12 quotes a 2.26s run whose log is absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stalled-request-reaches-its-obligations.html, inside the declared write path.\nSCORE durability: 13\nJUSTIFICATION durability: the fragment adds no assertion, and the guard on the behaviour it records is the pre-existing six cases shown red at 8d50b0333f in logs/negative-control-8d50b0333f.log rather than anything the diff introduced.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the bare-`<section id=...>` shape of its sibling qwnw-a-commit-keyed-list-item-is-read-codex-negative-control.html and its filename is the node id the composer keys on.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and consumes reckon/evidence.py:1618 compose_landed_record, the sole owner of fragment composition found by a search over reckon/ for evidence-fragment readers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031740176606-qwnw-red-file-a-stalled-request-reaches-its-obligations/manifest.md:12 non-blocking: the landing quotes `6 passed in 2.26s` from job 1319429 at ee93819a0d while the cited gate log records job 1319526 at 3995e415b4 with `6 passed in 2.45s`, and nothing survives of the 1319429 run but an empty sbatch output.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T031740176606-qwnw-red-file-a-stalled-request-reaches-its-obligations/manifest.md:17 non-blocking: both suite arms record the relative interpreter `.venv/bin/python` where the contract asks for an absolute path, so the arm commands resolve only from inside the worktree, where .venv is a symlink into the root checkout's environment.",
+  "review_run_id": "r-20261116T085947229834-review-of-qwnw-red-file-a-stalled-request-reaches-its-obligations-3995e415b433",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "3995e415b433e495b6d1a3e51fffd0890a50dda0",
+  "reviewed_run_id": "r-20261116T031740176606-qwnw-red-file-a-stalled-request-reaches-its-obligations",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:17:03.527765+00:00",
+  "total": 105
+}

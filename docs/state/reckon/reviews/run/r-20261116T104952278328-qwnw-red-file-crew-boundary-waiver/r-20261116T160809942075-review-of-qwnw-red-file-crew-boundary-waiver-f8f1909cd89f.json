@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T16:10:56.655Z",
+  "dispatched_at": "2026-11-16T16:09:58Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_boundary_waiver.py",
+      "line": 97,
+      "severity": "non-blocking",
+      "text": "non-blocking: tests/test_crew_boundary_waiver.py:97 `_commit_allowed` now writes and stages DECLARED_PATH (docs/state/sample/record.json), so the helper's name still says it commits allowed.txt; the fixture change left the name behind and a reader now learns the wrong thing from it."
+    },
+    {
+      "file": "logs/suite-after.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "non-blocking: logs/suite-after.log:1 records the after arm at revision 20ae1421 while the run's head is f8f1909; the armed fence asks for the after arm at the run's head, and although the commit between them is docs-only, the recorded arm names a revision that is not the one being promoted."
+    },
+    {
+      "file": "manifest.md",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "non-blocking: manifest.md:13 reads `retry_failures: none` while manifest.md:23 discloses a discarded first baseline arm that errored in two ids before reaching code under test; the retry is recorded only in artifacts, so the field that counts repeated runs understates them."
+    },
+    {
+      "file": "manifest.md",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "non-blocking: manifest.md:23 states the ruff check and format result on tests/test_crew_boundary_waiver.py as prose and test_logs names no ruff log, so the lint receipt the done_when asks for is claimed rather than readable on disk."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 398015d5; c121d04 moves the fixture's declared path to generated state, 20ae1421 adds the two evidence fragments, f8f1909 edits only the landing fragment, and no product module moved.",
+    "done_when": "The done_when asks for a green all_debug job with SLURM_JOB_ID unset, a base red run with failing ids, one named cause per failure with a verdict, no deleted or weakened assertion, a non-regressing arm, a logged negative control and a clean ruff; logs/gate-head.log, logs/negative-control-base-gate.log, the two suite logs and the two fragments carry them, and only the ruff figure lacks a log.",
+    "goal": "The node goal is that tests/test_crew_boundary_waiver.py passes in full; logs/gate-head.log reads 4 passed EXIT=0 at 20ae1421, and tests/test_crew_boundary_waiver.py:24 is the fixture move that makes the three red ids green; the green run is in the run's worktree rather than observed on the primary branch.",
+    "manifest": "Read; it states 4 passed EXIT=0 at 20ae1421 on all_debug with the job id stripped, names logs/gate-head.log and logs/negative-control-base-gate.log, and records both census arms at 58 passed EXIT=0 with no failure ids.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named fragments, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew-boundary-waiver; every path the three commits touch is inside them."
+  },
+  "notes": "Bounded read: the six checklist targets plus the exclusive-class owner reckon/crew/runs.py:1821, read to judge the node's test-wrong verdict.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_crew_boundary_waiver.py pass in full; logs/gate-head.log reads 4 passed EXIT=0 at 20ae1421 and the fixture move at tests/test_crew_boundary_waiver.py:24 is what makes the three red ids green.\nVERDICT done_when: the done_when asks for a green all_debug gate with SLURM_JOB_ID unset; logs/gate-head.log, logs/negative-control-base-gate.log and the two fragments carry the rest.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround with its fragments, and every path the three commits touch is inside them.\nVERDICT manifest: read; it records 4 passed EXIT=0 at 20ae1421 with the job id stripped and both census arms at 58 passed EXIT=0.\nVERDICT diff: read commit by commit against 398015d5; c121d04 moves the fixture path, 20ae1421 adds the two fragments, f8f1909 edits the landing fragment only, and no product module moved.\nCALL_SITES: reckon/crew/promotion.py:3408, reckon/crew/promotion_checks.py:2897\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all four cases in tests/test_crew_boundary_waiver.py pass at head, though the green run is in the run worktree and not observed on the primary branch.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log and logs/negative-control-base-gate.log hold the two receipts the done_when names, while manifest.md:23 states the ruff figure with no log path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, with no product module moved.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the shared-path fixture at tests/test_crew_boundary_waiver.py:24 reddens the three ids the negative-control log records, and the four retained assertions guard the refusal, the waiver and the no-referent case.\nSCORE fit: 15\nJUSTIFICATION fit: the change follows the surrounding fixture idiom through one module constant, but tests/test_crew_boundary_waiver.py:97 leaves `_commit_allowed` naming a path it no longer writes.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds only a module constant and duplicates no capability, and the exclusive classes it relies on stay owned by reckon/crew/runs.py:1821.",
+  "review_run_id": "r-20261116T160809942075-review-of-qwnw-red-file-crew-boundary-waiver-f8f1909cd89f",
+  "reviewed_base_sha": "398015d5d5fb31e353d1e29a4d2d78324aac9d88",
+  "reviewed_head_sha": "f8f1909cd89f976b63ab7c77bf211f893e98c6fa",
+  "reviewed_run_id": "r-20261116T104952278328-qwnw-red-file-crew-boundary-waiver",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:16:01.639325+00:00",
+  "total": 107
+}

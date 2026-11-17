@@ -81,7 +81,7 @@ if TYPE_CHECKING:
 
 from reckon import service
 from reckon._store import write_json_atomically
-from reckon.crew import oom_priority
+from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
 
@@ -1503,6 +1503,7 @@ class _ServiceState:
     # outlive SIGKILL for a long time; retrying at once would hold the
     # service guard through another full stop grace on every pass.
     restart_after: float | None = None
+    reload_window: follower_reload.ReloadWindow | None = None
 
 
 def _checkout_trust_verdict() -> Any:
@@ -1656,6 +1657,11 @@ class DeclaredServices:
             state.code_stamp = recorded
         else:
             recorded = state.code_stamp
+        state.reload_window = follower_reload.ReloadWindow.for_supervisor(name, pid)
+        if state.reload_window is not None and not state.reload_window.due(
+            current, publish=False
+        ):
+            return "adopt"
         if not recorded or recorded == _unknown_code_stamp():
             if not self._pass_allows_restart(name, pid):
                 return "adopt"
@@ -1753,11 +1759,20 @@ class DeclaredServices:
     def _restart_locked(self, name: str, state: _ServiceState) -> None:
         """Stop the stale copy before starting its replacement on selected code."""
         argv, image = list(state.argv), state.start_image
+        window = state.reload_window
+        if window is not None:
+            window = follower_reload.ReloadWindow.for_supervisor(name, state.pid)
+            if window is None or not window.due(
+                self._code_stamp_value(), publish=False
+            ):
+                return
         if not self._stop_locked(name):
             # The stale copy is still alive, so it still holds the lock and
             # whatever the service owns. A replacement started beside it
             # would run two copies of a service meant to run once.
             return
+        if window is not None:
+            window.reloaded(self._code_stamp_value())
         replacement = self._states.setdefault(name, _ServiceState(argv=argv))
         replacement.start_image = image
         replacement.image_pin = _pin_image(image)
@@ -1863,6 +1878,7 @@ class DeclaredServices:
         existing = child.get("PYTHONPATH", "")
         child["PYTHONPATH"] = str(image) + (os.pathsep + existing if existing else "")
         child["RECKON_FOLLOWER_SOURCE_ROOT"] = str(_checkout_root())
+        child["RECKON_FOLLOWER_IMAGE_COMMIT"] = image.name
         return child
 
     def _release_image_pin(self, state: _ServiceState | None) -> None:

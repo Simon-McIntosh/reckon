@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/crew/admission/launching.py:_restore_queued",
+    "reckon/crew/admission/verdicts.py:_record_readiness_verdicts",
+    "reckon/crew/admission/attempts.py:_attempt_launch",
+    "reckon/crew/queue_admission.py:admit_once"
+  ],
+  "completed_at": "2026-11-16T10:33:18.159Z",
+  "dispatched_at": "2026-11-16T10:32:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-held-request-records-what-holds-it-second-launch.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the opening paragraph names head 84fe063da8 for the 7-passed run while the log block it quotes at line 36 and logs/head-named-file.log:1 record 252b99e4429, so the fragment contradicts its own evidence and a reader cannot tell which revision the gate read."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-held-request-records-what-holds-it-second-launch.html",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after-arm line quotes 58 passed in 44.18s but logs/after-suite.log at 5249ae1b ends 58 passed in 39.93s and the manifest's own artifacts line quotes 39.93s, so a quoted metric does not reconcile with the log it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064934298273-qwnw-red-file-a-held-request-records-what-holds-it-second-launch/manifest.md",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the checkpoint dates the named-file gate to 5249ae1bc9 while logs/head-named-file.log:1 records job 1319618 running at 252b99e4429, and the delivered head is a later docs-only commit that no gate was run over."
+    },
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": "736",
+      "severity": "non-blocking",
+      "text": "non-blocking: _released_claim restates the still-claims predicate that _claim_collision at holds.py:508 and _refreshed_claim at holds.py:536 own, and drops their _claim_paths_share test, so a stored refusal whose path the project treats as a shared source file is never retired and the stale record this node repairs survives on that class."
+    },
+    {
+      "file": "reckon/crew/admission/holds.py",
+      "line": "835",
+      "severity": "non-blocking",
+      "text": "non-blocking: the release test runs after the pass has already searched the fleet for a binding claim, so a pass that finds the holder claiming a different one of the request's paths writes the declined back-off over its own fresh held-on-claim record, replacing the holder-naming reason with one that names nobody."
+    },
+    {
+      "file": "tests/test_a_held_request_records_what_holds_it.py",
+      "line": "301",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertions added at line 299 and line 301 compare the record against CLAIMED_PATH, the same constant the case hands in as both the request's and the holder's write path, so they cannot distinguish the requested path from the claimed one and the cause's guard is the verdict assertion at line 298."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 0e0f25b0 (84fe063da8 the product repair, 34e5e88715 the evidence fragment, 252b99e442 the test-side case and a dropped duplicate comparison, 5249ae1bc9 the final-head note in both logs); 209 insertions and 12 deletions, the product change confined to the two admission modules.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no assertion weakened and an importing arm; logs/head-named-file.log records 7 passed with EXIT=0 from job 1319618 whose sbatch script logs/head-gate.sh unsets SLURM_JOB_ID, logs/base-named-file.log records 3 failed 4 passed with EXIT=1 at 0e0f25b0, the fragment table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-held-request-records-what-holds-it-second-launch.html:9 gives one verdict per cause, and logs/base-claim-arm.log and logs/head-claim-arm.log carry the same four pre-existing ids.",
+    "goal": "the node's goal is that tests/test_a_held_request_records_what_holds_it.py passes in full on the primary branch; the diff at reckon/crew/admission/holds.py:694 and :835 repairs the two product causes the file reported and tests/test_a_held_request_records_what_holds_it.py:271 moves its third case onto a path class a claim can still fence, and the file reads 7 passed at 252b99e4.",
+    "manifest": "read; it records status complete, four commits, five changed paths, the named-file gate with its base arm, both suite arms at 58 passed, and one clause per rubric dimension, but its checkpoint at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064934298273-qwnw-red-file-a-held-request-records-what-holds-it-second-launch/manifest.md:6 names 5249ae1b as the revision of the job that ran at 252b99e4.",
+    "write_paths": "the declared scope is reckon, tests, the plan's evidence-fragment directory and this node's two evidence paths; every path in the diff (reckon/crew/admission/holds.py, reckon/crew/admission/launching.py, tests/test_a_held_request_records_what_holds_it.py and the two fragments) is inside it."
+  },
+  "justifications": {
+    "durability": "reinstating the base behaviour at reckon/crew/admission/holds.py:694 and :714 reddens tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder and ::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path, both shown failing in logs/base-named-file.log, while the assertions added at line 299 and 301 are corroboration only.",
+    "evidence": "logs/head-named-file.log ends 7 passed and EXIT=0 at 252b99e4 while logs/base-named-file.log ends 3 failed 4 passed and EXIT=1 at 0e0f25b0, but the delivered head 5249ae1b is only reasoned to carry that result and the fragment's after-arm figure at line 75 matches no log.",
+    "fit": "the helpers at reckon/crew/admission/holds.py:694 and :740 are private, documented, and reached from launching.py through the _holds prefix that module already uses at line 5, and ruff check and format --check report nothing on the three changed files.",
+    "goal_fidelity": "tests/test_a_held_request_records_what_holds_it.py reads 7 passed at 252b99e4 and the repairs at reckon/crew/admission/holds.py:694 and :714 are the two product rules its base failures named.",
+    "reuse": "_carried_hold consolidates the identity rule that was spelled twice, but _released_claim at reckon/crew/admission/holds.py:714 restates the still-claims predicate that _claim_collision at holds.py:508 and _refreshed_claim at holds.py:536 own, without their _claim_paths_share rule.",
+    "scope_discipline": "every hunk in the diff lies under reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround, the declared paths, and no change reaches a figure directory the node also declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_held_request_records_what_holds_it.py passes in full on the primary branch; the diff at reckon/crew/admission/holds.py:694 and :835 repairs the two product causes the file reported and tests/test_a_held_request_records_what_holds_it.py:271 moves its third case onto a path class a claim can still fence, and the file reads 7 passed at 252b99e4.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no assertion weakened and an importing arm; logs/head-named-file.log records 7 passed with EXIT=0 from job 1319618 whose sbatch script logs/head-gate.sh unsets SLURM_JOB_ID, logs/base-named-file.log records 3 failed 4 passed with EXIT=1 at 0e0f25b0, the fragment table at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-held-request-records-what-holds-it-second-launch.html:9 gives one verdict per cause, and logs/base-claim-arm.log and logs/head-claim-arm.log carry the same four pre-existing ids.\nVERDICT write_paths: the declared scope is reckon, tests, the plan's evidence-fragment directory and this node's two evidence paths; every path in the diff (reckon/crew/admission/holds.py, reckon/crew/admission/launching.py, tests/test_a_held_request_records_what_holds_it.py and the two fragments) is inside it.\nVERDICT manifest: read; it records status complete, four commits, five changed paths, the named-file gate with its base arm, both suite arms at 58 passed, and one clause per rubric dimension, but its checkpoint at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064934298273-qwnw-red-file-a-held-request-records-what-holds-it-second-launch/manifest.md:6 names 5249ae1b as the revision of the job that ran at 252b99e4.\nVERDICT diff: read commit by commit against 0e0f25b0 (84fe063da8 the product repair, 34e5e88715 the evidence fragment, 252b99e442 the test-side case and a dropped duplicate comparison, 5249ae1bc9 the final-head note in both logs); 209 insertions and 12 deletions, the product change confined to the two admission modules.\nCALL_SITES: reckon/crew/admission/selection.py:admit_once, reckon/crew/admission/launching.py:_restore_queued, reckon/crew/admission/verdicts.py:_record_readiness_verdicts, reckon/crew/admission/attempts.py:_attempt_launch, reckon/crew/queue_admission.py:admit_once\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_held_request_records_what_holds_it.py reads 7 passed at 252b99e4 and the repairs at reckon/crew/admission/holds.py:694 and :714 are the two product rules its base failures named.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-named-file.log ends 7 passed and EXIT=0 at 252b99e4 while logs/base-named-file.log ends 3 failed 4 passed and EXIT=1 at 0e0f25b0, but the delivered head 5249ae1b is only reasoned to carry that result and the fragment's after-arm figure at line 75 matches no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every hunk in the diff lies under reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround, the declared paths, and no change reaches a figure directory the node also declared.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the base behaviour at reckon/crew/admission/holds.py:694 and :714 reddens tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder and ::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path, both shown failing in logs/base-named-file.log, while the assertions added at line 299 and 301 are corroboration only.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers at reckon/crew/admission/holds.py:694 and :740 are private, documented, and reached from launching.py through the _holds prefix that module already uses at line 5, and ruff check and format --check report nothing on the three changed files.\nSCORE reuse: 13\nJUSTIFICATION reuse: _carried_hold consolidates the identity rule that was spelled twice, but _released_claim at reckon/crew/admission/holds.py:714 restates the still-claims predicate that _claim_collision at holds.py:508 and _refreshed_claim at holds.py:536 own, without their _claim_paths_share rule.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-held-request-records-what-holds-it-second-launch.html:5 non-blocking: the opening paragraph names head 84fe063da8 for the 7-passed run while the log block it quotes at line 36 and logs/head-named-file.log:1 record 252b99e4429, so the fragment contradicts its own evidence and a reader cannot tell which revision the gate read.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-held-request-records-what-holds-it-second-launch.html:75 non-blocking: the after-arm line quotes 58 passed in 44.18s but logs/after-suite.log at 5249ae1b ends 58 passed in 39.93s and the manifest's own artifacts line quotes 39.93s, so a quoted metric does not reconcile with the log it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T064934298273-qwnw-red-file-a-held-request-records-what-holds-it-second-launch/manifest.md:6 non-blocking: the checkpoint dates the named-file gate to 5249ae1bc9 while logs/head-named-file.log:1 records job 1319618 running at 252b99e4429, and the delivered head is a later docs-only commit that no gate was run over.\nFINDING reckon/crew/admission/holds.py:736 non-blocking: _released_claim restates the still-claims predicate that _claim_collision at holds.py:508 and _refreshed_claim at holds.py:536 own, and drops their _claim_paths_share test, so a stored refusal whose path the project treats as a shared source file is never retired and the stale record this node repairs survives on that class.\nFINDING reckon/crew/admission/holds.py:835 non-blocking: the release test runs after the pass has already searched the fleet for a binding claim, so a pass that finds the holder claiming a different one of the request's paths writes the declined back-off over its own fresh held-on-claim record, replacing the holder-naming reason with one that names nobody.\nFINDING tests/test_a_held_request_records_what_holds_it.py:301 non-blocking: the assertions added at line 299 and line 301 compare the record against CLAIMED_PATH, the same constant the case hands in as both the request's and the holder's write path, so they cannot distinguish the requested path from the claimed one and the cause's guard is the verdict assertion at line 298.\n",
+  "review_run_id": "r-20261116T103107514973-review-of-qwnw-red-file-a-held-request-records-what-holds-it-second-launch-5249ae1bc9ff",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_head_sha": "5249ae1bc9ff1f580502561e5f8345eb2be924f1",
+  "reviewed_run_id": "r-20261116T064934298273-qwnw-red-file-a-held-request-records-what-holds-it-second-launch",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T13:15:16.814008+00:00",
+  "total": 98
+}

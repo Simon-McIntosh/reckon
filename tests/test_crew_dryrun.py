@@ -1,4 +1,11 @@
-"""Hermetic coverage for dry-run visibility into live write claims."""
+"""Hermetic coverage for dry-run visibility into live write claims.
+
+A claim binds only over the paths a git merge cannot reconcile — plan documents,
+generated state, evidence records, figures, lockfiles and binary artifacts. A
+source path is shared: two isolated worktrees meet at the merge. So the refusal
+cases here hold and request an unmergeable path, and the admission cases name a
+source tree whose file the live claim overlaps.
+"""
 
 from __future__ import annotations
 
@@ -143,10 +150,12 @@ def _worktrees(repo: Path) -> str:
 
 
 def test_dry_run_refuses_a_live_claim_with_its_owner(home: Path, repo: Path) -> None:
-    owner = _claim(repo, "package")
+    owner = _claim(repo, "docs/state")
     worktrees_before = _worktrees(repo)
 
-    result = CliRunner().invoke(cli_module.main, _arguments(repo, "package/target.py"))
+    result = CliRunner().invoke(
+        cli_module.main, _arguments(repo, "docs/state/generated.json")
+    )
 
     payload = json.loads(result.output)
     assert result.exit_code == 7
@@ -166,8 +175,13 @@ def test_dry_run_refuses_a_live_claim_with_its_owner(home: Path, repo: Path) -> 
             "candidate": "candidate",
             "run_id": owner["run_id"],
             "node": "owner-node",
-            "claimed_path": "package",
-            "paths": [{"left_path": "package/target.py", "right_path": "package"}],
+            "claimed_path": "docs/state",
+            "paths": [
+                {
+                    "left_path": "docs/state/generated.json",
+                    "right_path": "docs/state",
+                }
+            ],
         }
     ]
     assert crew.list_live(project="proj") == [owner]
@@ -220,7 +234,7 @@ def test_dry_run_reports_a_conflict_from_a_declared_derivation(
                         {
                             "name": "proj",
                             "derivations": {
-                                "package/schema.yaml": ["package/generated.py"]
+                                "package/schema.yaml": ["docs/state/generated.json"]
                             },
                         }
                     ],
@@ -229,7 +243,7 @@ def test_dry_run_reports_a_conflict_from_a_declared_derivation(
         ),
         encoding="utf-8",
     )
-    owner = _claim(repo, "package/generated.py")
+    owner = _claim(repo, "docs/state/generated.json")
 
     result = CliRunner().invoke(
         cli_module.main, _arguments(repo, "package/schema.yaml")
@@ -245,11 +259,11 @@ def test_dry_run_reports_a_conflict_from_a_declared_derivation(
             "candidate": "candidate",
             "run_id": owner["run_id"],
             "node": "owner-node",
-            "claimed_path": "package/generated.py",
+            "claimed_path": "docs/state/generated.json",
             "paths": [
                 {
-                    "left_path": "package/generated.py",
-                    "right_path": "package/generated.py",
+                    "left_path": "docs/state/generated.json",
+                    "right_path": "docs/state/generated.json",
                 }
             ],
         }
@@ -257,12 +271,31 @@ def test_dry_run_reports_a_conflict_from_a_declared_derivation(
     assert crew.live_dir().is_relative_to(home)
 
 
+def test_dry_run_admits_an_overlap_over_a_mergeable_path(
+    home: Path, repo: Path
+) -> None:
+    owner = _claim(repo, "package")
+
+    result = CliRunner().invoke(cli_module.main, _arguments(repo, "package/target.py"))
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["admission"] == {"state": "admitted"}
+    # Isolated worktrees meet at git merge, so a live claim over a source tree
+    # holds nothing from a node naming a file inside it.
+    assert payload["live_conflicts"] == []
+    assert crew.list_live(project="proj") == [owner]
+
+
 def test_stopped_clean_claim_does_not_refuse_admission(home: Path, repo: Path) -> None:
-    owner = _claim(repo, "package/target.py")
+    owner = _claim(repo, "docs/state/generated.json")
     owner.update({"phase": "stopped", "pid": 999999999, "worktree": str(repo)})
     crew._write_json(crew.pointer_path(owner["run_id"]), owner)
 
-    preview = CliRunner().invoke(cli_module.main, _arguments(repo, "package/target.py"))
+    preview = CliRunner().invoke(
+        cli_module.main, _arguments(repo, "docs/state/generated.json")
+    )
 
     payload = json.loads(preview.output)
     assert preview.exit_code == 0
@@ -272,7 +305,7 @@ def test_stopped_clean_claim_does_not_refuse_admission(home: Path, repo: Path) -
     assert any("disregarded" in warning for warning in payload["warnings"])
 
     record = crew.dispatch(
-        node=_node("package/target.py"),
+        node=_node("docs/state/generated.json"),
         project="proj",
         repo=repo,
         config=CONFIG,
@@ -285,8 +318,8 @@ def test_stopped_clean_claim_does_not_refuse_admission(home: Path, repo: Path) -
 def test_accepted_directory_claim_admits_its_landing_fragment(
     home: Path, repo: Path
 ) -> None:
-    _claim(repo, "docs/evidence")
-    path = "docs/evidence/topic"
+    _claim(repo, "docs/state")
+    path = "docs/state/topic"
     preview = CliRunner().invoke(
         cli_module.main, [*_arguments(repo, path), "--accept-directory-claim"]
     )
@@ -294,6 +327,10 @@ def test_accepted_directory_claim_admits_its_landing_fragment(
     payload = json.loads(preview.output)
     assert preview.exit_code == 0
     assert payload["admission"] == {"state": "admitted"}
+    assert [
+        (row["candidate_path"], row["claimed_path"])
+        for row in payload["directory_claim_acceptances"]
+    ] == [(path, "docs/state")]
 
     record = crew.dispatch(
         node=_node(path),
@@ -305,21 +342,22 @@ def test_accepted_directory_claim_admits_its_landing_fragment(
         launcher=lambda *args, **kwargs: 4242,
     )
     assert record["run_id"]
-    assert {row["candidate_path"] for row in record["directory_claim_acceptances"]} >= {
-        path,
-        "docs/evidence/fragments/dispatch-safety/candidate.html",
-    }
+    accepted = {row["candidate_path"] for row in record["directory_claim_acceptances"]}
+    assert path in accepted
+    # The node's landing fragment is a mergeable path, so the directory claim
+    # over the exclusive figure tree does not sweep it up.
+    assert "docs/evidence/fragments/dispatch-safety/candidate.html" not in accepted
 
 
 def test_real_dispatch_still_refuses_before_creating_a_worktree(
     home: Path, repo: Path
 ) -> None:
-    owner = _claim(repo, "package")
+    owner = _claim(repo, "docs/state")
     worktrees_before = _worktrees(repo)
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("package/target.py"),
+            node=_node("docs/state/generated.json"),
             project="proj",
             repo=repo,
             config=CONFIG,
@@ -328,8 +366,8 @@ def test_real_dispatch_still_refuses_before_creating_a_worktree(
         )
 
     assert excinfo.value.run_id == owner["run_id"]
-    assert excinfo.value.candidate_path == "package/target.py"
-    assert excinfo.value.claimed_path == "package"
+    assert excinfo.value.candidate_path == "docs/state/generated.json"
+    assert excinfo.value.claimed_path == "docs/state"
     assert crew.list_live(project="proj") == [owner]
     assert _worktrees(repo) == worktrees_before
     assert crew.live_dir().is_relative_to(home)

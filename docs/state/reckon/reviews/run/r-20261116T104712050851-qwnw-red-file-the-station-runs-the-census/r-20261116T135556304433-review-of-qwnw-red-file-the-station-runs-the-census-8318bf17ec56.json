@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "125628f608ef00b5f4a4a9ce845c5e8a04b12f58",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/station.py:1523 run_station shutdown drains station.duties before stopping the reflex"
+  ],
+  "completed_at": "2026-11-16T14:52:28.329Z",
+  "dispatched_at": "2026-11-16T14:51:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-runs-the-census.html",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base row quotes its summary line as `3 failed, 5 passed in 0.75s`, but the log the same row cites (logs/baseline-arm.log) ends `3 failed, 5 passed in 0.62s`; the fragment's headline metric does not reconcile with its own cited log, so a later reader cannot tell a stale row from a stale log."
+    }
+  ],
+  "head_log_revision": "8318bf17ec56255f8c5ec0d7b3bb23c324c93d78",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production code the stand-in must satisfy: reckon/crew/station.py:1523 in run_station's shutdown drains station.duties with a bounded timeout before stopping the reflex.",
+    "diff": "read both commits against 125628f6: 68f206f4d2 adds `_station_duties()` and one `duties=_station_duties(),` line to each of the two SimpleNamespace stand-ins in tests/test_the_station_runs_the_census.py, and 8318bf17 adds the 45-line evidence fragment; no assertion is added, changed or removed.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, and an importer arm adding no failure; logs/after-arm-final.log's header reads `partition: all_debug job: unset` at 8318bf17 with `8 passed in 1.60s` EXIT=0, the manifest states the single cause with its `test wrong` verdict, and no file imports the test module so the importer arm is the named file itself.",
+    "goal": "the node's goal is `Make tests/test_the_station_runs_the_census.py pass in full on the primary branch`; the landed change supplies the `duties` collaborator both stand-in stations were missing, and logs/after-arm-final.log reads `8 passed in 1.60s` EXIT=0 at 8318bf17, so the file passes in full.",
+    "manifest": "read; status complete, commits 68f206f4d2 and 8318bf17, changed_paths the test file and the fragment, tests `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_runs_the_census.py`, baseline_suite (125628f6, 3 failures, completed) and after_suite (8318bf17, 0 failures, completed) both carrying log paths.",
+    "write_paths": "the declared fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; `git diff --stat 125628f6 8318bf17` lists only tests/test_the_station_runs_the_census.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-runs-the-census.html, and `-- reckon/` prints nothing."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, so what guards it is the file's pre-existing assertions: logs/baseline-arm.log shows a tree without the fixture lines reddening exactly the three ids with `AttributeError: 'types.SimpleNamespace' object has no attribute 'duties'`, so reverting either `duties=_station_duties(),` line reproduces that redness.",
+    "evidence": "the gate is the file itself: logs/baseline-arm.log records `3 failed, 5 passed in 0.62s` EXIT=1 at 125628f6 and logs/after-arm-final.log records `8 passed in 1.60s` EXIT=0 at 8318bf17, but the evidence fragment at line 15 quotes the base summary as `3 failed, 5 passed in 0.75s`, a line no cited log contains.",
+    "fit": "tests/test_the_station_runs_the_census.py:69 defines `_station_duties()` with the file's own docstring voice and leading-underscore helper naming, and logs/ruff.log records `All checks passed!` and `1 file already formatted` at EXIT=0 for that file.",
+    "goal_fidelity": "the goal is that tests/test_the_station_runs_the_census.py passes in full on the primary branch, and the head arm at 8318bf17 reads `8 passed in 1.60s` EXIT=0 with all eight of the file's tests executing.",
+    "reuse": "the search for an owner of a station-duties double over tests/ (`duties=`, `class *Duties`, `def drain`) found only file-local doubles \u2014 tests/test_the_station_runs_the_census.py:69 follows tests/test_station_queue_survives_a_restart.py:16 and tests/test_the_schedule_needs_no_hand_command.py:32 \u2014 and tests/helpers/ holds only git.py and landing_repository.py.",
+    "scope_discipline": "git diff 125628f6..8318bf17 touches only tests/test_the_station_runs_the_census.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-runs-the-census.html, both inside the declared fence, and `git diff --stat 125628f6 8318bf17 -- reckon/` prints nothing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is `Make tests/test_the_station_runs_the_census.py pass in full on the primary branch`; the landed change supplies the `duties` collaborator both stand-in stations were missing, and logs/after-arm-final.log reads `8 passed in 1.60s` EXIT=0 at 8318bf17, so the file passes in full.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, and an importer arm adding no failure; logs/after-arm-final.log's header reads `partition: all_debug job: unset` at 8318bf17 with `8 passed in 1.60s` EXIT=0, the manifest states the single cause with its `test wrong` verdict, and no file imports the test module so the importer arm is the named file itself.\nVERDICT write_paths: the declared fence is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; `git diff --stat 125628f6 8318bf17` lists only tests/test_the_station_runs_the_census.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-runs-the-census.html, and `-- reckon/` prints nothing.\nVERDICT manifest: read; status complete, commits 68f206f4d2 and 8318bf17, changed_paths the test file and the fragment, tests `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_runs_the_census.py`, baseline_suite (125628f6, 3 failures, completed) and after_suite (8318bf17, 0 failures, completed) both carrying log paths.\nVERDICT diff: read both commits against 125628f6: 68f206f4d2 adds `_station_duties()` and one `duties=_station_duties(),` line to each of the two SimpleNamespace stand-ins in tests/test_the_station_runs_the_census.py, and 8318bf17 adds the 45-line evidence fragment; no assertion is added, changed or removed.\nCALL_SITES: reckon/crew/station.py:1523 run_station shutdown drains station.duties before stopping the reflex\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is that tests/test_the_station_runs_the_census.py passes in full on the primary branch, and the head arm at 8318bf17 reads `8 passed in 1.60s` EXIT=0 with all eight of the file's tests executing.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is the file itself: logs/baseline-arm.log records `3 failed, 5 passed in 0.62s` EXIT=1 at 125628f6 and logs/after-arm-final.log records `8 passed in 1.60s` EXIT=0 at 8318bf17, but the evidence fragment at line 15 quotes the base summary as `3 failed, 5 passed in 0.75s`, a line no cited log contains.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 125628f6..8318bf17 touches only tests/test_the_station_runs_the_census.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-runs-the-census.html, both inside the declared fence, and `git diff --stat 125628f6 8318bf17 -- reckon/` prints nothing.\nSCORE durability: 17\nJUSTIFICATION durability: the diff adds no assertion, so what guards it is the file's pre-existing assertions: logs/baseline-arm.log shows a tree without the fixture lines reddening exactly the three ids with `AttributeError: 'types.SimpleNamespace' object has no attribute 'duties'`, so reverting either `duties=_station_duties(),` line reproduces that redness.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_the_station_runs_the_census.py:69 defines `_station_duties()` with the file's own docstring voice and leading-underscore helper naming, and logs/ruff.log records `All checks passed!` and `1 file already formatted` at EXIT=0 for that file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search for an owner of a station-duties double over tests/ (`duties=`, `class *Duties`, `def drain`) found only file-local doubles \u2014 tests/test_the_station_runs_the_census.py:69 follows tests/test_station_queue_survives_a_restart.py:16 and tests/test_the_schedule_needs_no_hand_command.py:32 \u2014 and tests/helpers/ holds only git.py and landing_repository.py.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-station-runs-the-census.html:15 non-blocking: the base row quotes its summary line as `3 failed, 5 passed in 0.75s`, but the log the same row cites (logs/baseline-arm.log) ends `3 failed, 5 passed in 0.62s`; the fragment's headline metric does not reconcile with its own cited log, so a later reader cannot tell a stale row from a stale log.",
+  "review_run_id": "r-20261116T135556304433-review-of-qwnw-red-file-the-station-runs-the-census-8318bf17ec56",
+  "reviewed_base_sha": "125628f608ef00b5f4a4a9ce845c5e8a04b12f58",
+  "reviewed_head_sha": "8318bf17ec56255f8c5ec0d7b3bb23c324c93d78",
+  "reviewed_run_id": "r-20261116T104712050851-qwnw-red-file-the-station-runs-the-census",
+  "reviewer_run_id": "r-20261116T135556304433-review-of-qwnw-red-file-the-station-runs-the-census-8318bf17ec56",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:57:30.866428+00:00",
+  "total": 110
+}

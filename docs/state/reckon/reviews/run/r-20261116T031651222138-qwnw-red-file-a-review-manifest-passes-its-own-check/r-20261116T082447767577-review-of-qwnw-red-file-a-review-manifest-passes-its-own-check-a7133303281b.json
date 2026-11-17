@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_check_manifest",
+    "reckon/crew/reports.py:_write_scope_findings",
+    "reckon/hooks/worker_inbox.py:manifest_message_finding"
+  ],
+  "completed_at": "2026-11-16T08:55:22.875Z",
+  "dispatched_at": "2026-11-16T08:54:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-manifest-passes-its-own-check.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names red-file-a-review-manifest-passes-its-own-check.html and the record landed under a qwnw- prefix, so a reader following the measure's own path finds no file; the content is present and complete at the prefixed name."
+    },
+    {
+      "file": "tests/test_a_review_manifest_passes_its_own_check.py",
+      "line": "197",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected finding text interpolates `undeclared`, the path the case hands to the check, so that part of the assertion moves with its input; the independent guard is exit_code != 0 at line 196, and the message text should be sourced from the module rather than from the value under test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is read against three production call sites and all three are reached by contract, none modified: reckon/crew_run_commands.py:1343 crew_check_manifest, reckon/crew/reports.py:3026 _write_scope_findings and reckon/hooks/worker_inbox.py:344 manifest_message_finding",
+    "diff": "read cb557f9711..a7133303281b commit by commit; 81ab2fa35d adds messages_received: none to the fixture and two inline bodies and retargets the scope case, fd75ebbd9c adds the evidence fragment, a713330328 adds the importer arm to it; no production file is touched.",
+    "done_when": "the measure requires the file green as an all_debug job with SLURM_JOB_ID unset, a base run carrying its failing ids, an importer arm adding no failure and ruff clean; logs/gate-all-debug.log carries the 7-passed arm at 81ab2fa35d (EXIT=0), logs/negative-control-base-file.log the 7-failure base at cb557f9711 (EXIT=1), logs/related-arm-head.log the importer arm (53 failed, EXIT=1, of which 49 ids appear in the recorded base suite log and 4 fail on an untouched file, shown at logs/related-arm-four-unrecorded.log), and the manifest records ruff clean.",
+    "goal": "dispatch-detail.json's goal asks that tests/test_a_review_manifest_passes_its_own_check.py pass in full; at reviewed head a7133303281b logs/gate-all-debug.log reads 7 passed with EXIT=0 and no test in the file was deleted.",
+    "manifest": "read; it names three commits (81ab2fa35d, fd75ebbd9c, a713330328), the gate command and its 7-passed EXIT=0 result, the base negative control, both armed suite arms at 58 passed, the importer arm, and states cause 1 (a fixture written before the messages_received rule) and cause 2 (a scope rule commit 78752b3438 replaced) each as test-wrong, naming the rule it now asserts.",
+    "write_paths": "node.write_paths in dispatch-detail.json declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two files the diff touches are tests/test_a_review_manifest_passes_its_own_check.py and a fragment under that evidence directory, both inside the declaration, and no product module changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_manifest_passes_its_own_check.py:196 fails if the unmergeable-class refusal stops firing and reinstating the missing messages_received line reddens the file as logs/negative-control-base-file.log shows, but line 197 builds its expectation from the path the case hands in, so only its message prefix is independent.",
+    "evidence": "logs/gate-all-debug.log records revision, command, summary line and EXIT, but the all_debug context is carried by the file name alone (logs/gate-slurm-1319318.out is 0 bytes), so that part of the done_when rests on the dispatch rather than on the log.",
+    "fit": "the rename to test_a_changed_path_the_merge_cannot_reconcile_is_still_refused (tests/test_a_review_manifest_passes_its_own_check.py:181) keeps the file's sentence-named test idiom and its fixture template spelling, adding no name the repository rules forbid.",
+    "goal_fidelity": "the reviewed file at tests/test_a_review_manifest_passes_its_own_check.py passes 7 of 7 in logs/gate-all-debug.log and origin/main cb557f9711 is an ancestor of the head, so the full-pass shape is met on top of the primary tip.",
+    "reuse": "the diff adds no definition and enters existing owners, reckon/crew/reports.py:_write_scope_findings for the class rule and reckon/hooks/worker_inbox.py:manifest_message_finding for the statement, whose two directions are asserted at tests/test_a_declared_write_path_fences_nothing.py:110,133.",
+    "scope_discipline": "only tests/test_a_review_manifest_passes_its_own_check.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-manifest-passes-its-own-check.html changed, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json's goal asks that tests/test_a_review_manifest_passes_its_own_check.py pass in full; at reviewed head a7133303281b logs/gate-all-debug.log reads 7 passed with EXIT=0 and no test in the file was deleted.\nVERDICT done_when: the measure requires the file green as an all_debug job with SLURM_JOB_ID unset, a base run carrying its failing ids, an importer arm adding no failure and ruff clean; logs/gate-all-debug.log carries the 7-passed arm at 81ab2fa35d (EXIT=0), logs/negative-control-base-file.log the 7-failure base at cb557f9711 (EXIT=1), logs/related-arm-head.log the importer arm (53 failed, EXIT=1, of which 49 ids appear in the recorded base suite log and 4 fail on an untouched file, shown at logs/related-arm-four-unrecorded.log), and the manifest records ruff clean.\nVERDICT write_paths: node.write_paths in dispatch-detail.json declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two files the diff touches are tests/test_a_review_manifest_passes_its_own_check.py and a fragment under that evidence directory, both inside the declaration, and no product module changed.\nVERDICT manifest: read; it names three commits (81ab2fa35d, fd75ebbd9c, a713330328), the gate command and its 7-passed EXIT=0 result, the base negative control, both armed suite arms at 58 passed, the importer arm, and states cause 1 (a fixture written before the messages_received rule) and cause 2 (a scope rule commit 78752b3438 replaced) each as test-wrong, naming the rule it now asserts.\nVERDICT diff: read cb557f9711..a7133303281b commit by commit; 81ab2fa35d adds messages_received: none to the fixture and two inline bodies and retargets the scope case, fd75ebbd9c adds the evidence fragment, a713330328 adds the importer arm to it; no production file is touched.\nCALL_SITES: reckon/crew_run_commands.py:crew_check_manifest, reckon/crew/reports.py:_write_scope_findings, reckon/hooks/worker_inbox.py:manifest_message_finding\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the reviewed file at tests/test_a_review_manifest_passes_its_own_check.py passes 7 of 7 in logs/gate-all-debug.log and origin/main cb557f9711 is an ancestor of the head, so the full-pass shape is met on top of the primary tip.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-all-debug.log records revision, command, summary line and EXIT, but the all_debug context is carried by the file name alone (logs/gate-slurm-1319318.out is 0 bytes), so that part of the done_when rests on the dispatch rather than on the log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: only tests/test_a_review_manifest_passes_its_own_check.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-manifest-passes-its-own-check.html changed, both inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_review_manifest_passes_its_own_check.py:196 fails if the unmergeable-class refusal stops firing and reinstating the missing messages_received line reddens the file as logs/negative-control-base-file.log shows, but line 197 builds its expectation from the path the case hands in, so only its message prefix is independent.\nSCORE fit: 19\nJUSTIFICATION fit: the rename to test_a_changed_path_the_merge_cannot_reconcile_is_still_refused (tests/test_a_review_manifest_passes_its_own_check.py:181) keeps the file's sentence-named test idiom and its fixture template spelling, adding no name the repository rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and enters existing owners, reckon/crew/reports.py:_write_scope_findings for the class rule and reckon/hooks/worker_inbox.py:manifest_message_finding for the statement, whose two directions are asserted at tests/test_a_declared_write_path_fences_nothing.py:110,133.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-manifest-passes-its-own-check.html:1 non-blocking: the done_when names red-file-a-review-manifest-passes-its-own-check.html and the record landed under a qwnw- prefix, so a reader following the measure's own path finds no file; the content is present and complete at the prefixed name.\nFINDING tests/test_a_review_manifest_passes_its_own_check.py:197 non-blocking: the expected finding text interpolates `undeclared`, the path the case hands to the check, so that part of the assertion moves with its input; the independent guard is exit_code != 0 at line 196, and the message text should be sourced from the module rather than from the value under test.\n",
+  "review_run_id": "r-20261116T082447767577-review-of-qwnw-red-file-a-review-manifest-passes-its-own-check-a7133303281b",
+  "reviewed_base_sha": "cb557f9711670ca8a00dd1d6dd22a17b42d3a51e",
+  "reviewed_head_sha": "a7133303281b316f5c04976200e39e822dab9e77",
+  "reviewed_run_id": "r-20261116T031651222138-qwnw-red-file-a-review-manifest-passes-its-own-check",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:10:41.205051+00:00",
+  "total": 110
+}

@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1848",
+    "reckon/crew/dispatch_claims.py:2302",
+    "reckon/crew/runs.py:1985"
+  ],
+  "completed_at": "2026-11-16T09:27:16.749Z",
+  "dispatched_at": "2026-11-16T09:26:42Z",
+  "findings": [
+    {
+      "file": "logs/gate-head.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head run's receipt records `# command: PYTHONPATH=. .../python -m pytest ...` with no `env -u SLURM_JOB_ID`, while the done_when requires the file to pass with SLURM_JOB_ID unset and the manifest's tests line and after_suite assert that flag, so the recorded command does not show the condition was met; my re-run with the flag unset read 14 passed in 2.49s, so the measure holds and only its receipt is short."
+    },
+    {
+      "file": "logs/gate-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm's header names the node's own worktree as its tree and carries no scheduler job, so the done_when's \"as a job on all_debug\" is not evidenced by the log that promotion will read as the gate, and a reader cannot tell the run apart from one on any other host."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-directory-claim-asks-first.html",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the file \"gains three positive cases\" but the diff adds two test functions, the leaf-inside-a-peer-claim case it names having pre-existed, and its line 33 calls the classifier and no-op case fixture-preserving cases \"unchanged\" although their fixture paths moved from docs/evidence to docs/figures, so the evidence prose overstates what the change added."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against ee93819a; one commit, 174 insertions and 44 deletions over the test file and one new evidence fragment, no product source, with every assertion kept and the seven ask cases moved onto the built-in figure class.",
+    "done_when": "the done_when asks for the file green at head with SLURM_JOB_ID unset, a recorded base run with its failing ids, no assertion deleted or weakened, a neighbour arm, and clean ruff; the manifest and logs/negative-control-base-ee93819a.log carry all but the all_debug job, which the head log does not show.",
+    "goal": "the node goal is that tests/test_directory_claim_asks_first.py passes in full; at 470cdccaa9 the file reads 14 passed, EXIT=0 in logs/gate-head.log and I re-ran the same file at that head with SLURM_JOB_ID unset for 14 passed in 2.49s.",
+    "manifest": "read; it records status complete, commit 470cdccaa9, one cause with the verdict test wrong, the gate command and its log, base arm 7 failed / 5 passed at ee93819a, a mutation control, and the five pre-existing dryrun failures under outside_scope.",
+    "write_paths": "the node's declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the single commit 470cdccaa9 touches only tests/test_directory_claim_asks_first.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-directory-claim-asks-first.html, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_directory_claim_asks_first.py:324 fails with exit 2 if _claim_paths_share at reckon/crew/runs.py:1985 again refuses a mergeable directory over a live file, and logs/mutation-control-shares-every-overlap.log shows the seven ask cases reddening when sharing is made unconditional.",
+    "evidence": "logs/negative-control-base-ee93819a.log records 7 failed / 5 passed, EXIT=1 at ee93819a and its seven ids are absent from logs/gate-head.log's 14 passed, though the head log's command line omits the env -u SLURM_JOB_ID the done_when names.",
+    "fit": "the added cases reuse the file's own home fixture, _dry_run harness and _publish_claim helper at tests/test_directory_claim_asks_first.py:96-200, and no plan, run or stage identifier appears in the diff, though the rename to test_a_dotted_directory_name_and_a_file_extension_name_a_file at :453 reads awkwardly.",
+    "goal_fidelity": "tests/test_directory_claim_asks_first.py at 470cdccaa9 runs 14 passed with every case asserting a definite exit code or record, so the file the goal names is green rather than skipped or loosened.",
+    "reuse": "the diff adds one test-local filter, _directory_warnings at tests/test_directory_claim_asks_first.py:200, which wraps the existing _warnings helper rather than restating warning detection, and the sharing rule it asserts is reckon/crew/runs.py:1985 unchanged.",
+    "scope_discipline": "the commit at 470cdccaa9 changes only tests/test_directory_claim_asks_first.py and its fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both declared, and leaves product source untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_directory_claim_asks_first.py passes in full; at 470cdccaa9 the file reads 14 passed, EXIT=0 in logs/gate-head.log and I re-ran the same file at that head with SLURM_JOB_ID unset for 14 passed in 2.49s.\nVERDICT done_when: the done_when asks for the file green at head with SLURM_JOB_ID unset, a recorded base run with its failing ids, no assertion deleted or weakened, a neighbour arm, and clean ruff; the manifest and logs/negative-control-base-ee93819a.log carry all but the all_debug job, which the head log does not show.\nVERDICT write_paths: the node's declared scope is reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the single commit 470cdccaa9 touches only tests/test_directory_claim_asks_first.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-directory-claim-asks-first.html, both inside it.\nVERDICT manifest: read; it records status complete, commit 470cdccaa9, one cause with the verdict test wrong, the gate command and its log, base arm 7 failed / 5 passed at ee93819a, a mutation control, and the five pre-existing dryrun failures under outside_scope.\nVERDICT diff: read commit by commit against ee93819a; one commit, 174 insertions and 44 deletions over the test file and one new evidence fragment, no product source, with every assertion kept and the seven ask cases moved onto the built-in figure class.\nCALL_SITES: reckon/crew_dispatch_commands.py:1848, reckon/crew/dispatch_claims.py:2302, reckon/crew/runs.py:1985\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_directory_claim_asks_first.py at 470cdccaa9 runs 14 passed with every case asserting a definite exit code or record, so the file the goal names is green rather than skipped or loosened.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/negative-control-base-ee93819a.log records 7 failed / 5 passed, EXIT=1 at ee93819a and its seven ids are absent from logs/gate-head.log's 14 passed, though the head log's command line omits the env -u SLURM_JOB_ID the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit at 470cdccaa9 changes only tests/test_directory_claim_asks_first.py and its fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both declared, and leaves product source untouched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_directory_claim_asks_first.py:324 fails with exit 2 if _claim_paths_share at reckon/crew/runs.py:1985 again refuses a mergeable directory over a live file, and logs/mutation-control-shares-every-overlap.log shows the seven ask cases reddening when sharing is made unconditional.\nSCORE fit: 17\nJUSTIFICATION fit: the added cases reuse the file's own home fixture, _dry_run harness and _publish_claim helper at tests/test_directory_claim_asks_first.py:96-200, and no plan, run or stage identifier appears in the diff, though the rename to test_a_dotted_directory_name_and_a_file_extension_name_a_file at :453 reads awkwardly.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff adds one test-local filter, _directory_warnings at tests/test_directory_claim_asks_first.py:200, which wraps the existing _warnings helper rather than restating warning detection, and the sharing rule it asserts is reckon/crew/runs.py:1985 unchanged.\nFINDING logs/gate-head.log:2 non-blocking: the head run's receipt records `# command: PYTHONPATH=. .../python -m pytest ...` with no `env -u SLURM_JOB_ID`, while the done_when requires the file to pass with SLURM_JOB_ID unset and the manifest's tests line and after_suite assert that flag, so the recorded command does not show the condition was met; my re-run with the flag unset read 14 passed in 2.49s, so the measure holds and only its receipt is short.\nFINDING logs/gate-head.log:1 non-blocking: the head arm's header names the node's own worktree as its tree and carries no scheduler job, so the done_when's \"as a job on all_debug\" is not evidenced by the log that promotion will read as the gate, and a reader cannot tell the run apart from one on any other host.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-directory-claim-asks-first.html:30 non-blocking: the fragment says the file \"gains three positive cases\" but the diff adds two test functions, the leaf-inside-a-peer-claim case it names having pre-existed, and its line 33 calls the classifier and no-op case fixture-preserving cases \"unchanged\" although their fixture paths moved from docs/evidence to docs/figures, so the evidence prose overstates what the change added.\n",
+  "review_run_id": "r-20261116T092540482298-review-of-qwnw-red-file-directory-claim-asks-first-470cdccaa902",
+  "reviewed_base_sha": "ee93819a0dfd283816a577795513c00bca2b8e19",
+  "reviewed_head_sha": "470cdccaa902a8149ad17305f30a315a9e5a1956",
+  "reviewed_run_id": "r-20261116T031635158616-qwnw-red-file-directory-claim-asks-first",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:09:43.102315+00:00",
+  "total": 106
+}

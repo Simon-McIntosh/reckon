@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-title" content="Queued Work Needs No Workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround#s29">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-16">
+  <title>The manifest check's file passes at head, on fixtures the audit still keeps | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="qwnw-red-file-manifest-check-command" data-reckon="landed" data-when="2026-11-16">
+  <h2 id="qwnw-red-file-manifest-check-command-title">Five red cases, three stale rules, one repaired fixture file</h2>
+
+  <p id="qwnw-red-file-manifest-check-command-change"><strong>What changed.</strong>
+  <code>tests/test_manifest_check_command.py</code> only. Every failing case there
+  fails on a finding its fixture manufactures, not on the scope resolver the case
+  exists to pin, so the repair is in the fixtures and in two scope expectations —
+  no product source is touched. The cited log moves from
+  <code>/tmp/manifest-check.log</code> to <code>check.log</code>, written beside
+  the manifest as a real capture (<code># command: …</code> head,
+  <code>EXIT=0</code> last line), because a citation must resolve under the run
+  directory and carry its command and status. Both fixture manifests gain
+  <code>messages_received: none</code>, the statement a run with no delivery
+  receipt owes. The two scope cases now name a path of the class a merge cannot
+  reconcile — <code>pyproject.toml</code> and <code>docs/state/plan.html</code> —
+  because a declared write path became a hint: the merge-safe neighbour
+  <code>reckon/other_module.py</code> is delivered, and the by-name case asserts
+  that it is <em>not</em> reported alongside the dependency manifest that is.</p>
+
+  <table>
+    <caption>Each cause, the finding it produced at base, and the verdict.
+    Verdicts read: <em>test wrong</em> where the case encoded a rule the audit
+    has since replaced, and no case is a product defect — nothing in
+    <code>reckon/</code> was edited.</caption>
+    <thead><tr><th>cause</th><th>finding quoted from the base arm</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <th scope="row">cited log outside the run directory</th>
+        <td><code>test_logs log '/tmp/manifest-check.log' resolves outside the run directory: every cited log must exist under the run directory '…'</code></td>
+        <td>test wrong — the fixture cites node scratch; the containment rule is deliberate (<code>a8273bfc43</code>)</td>
+      </tr>
+      <tr>
+        <th scope="row">no messages statement</th>
+        <td><code>messages_received: no delivery receipt was recorded, so the manifest must say `messages_received: none`</code></td>
+        <td>test wrong — the fixture predates the receipt rule; three sibling fixture files already carry the line</td>
+      </tr>
+      <tr>
+        <th scope="row">merge-safe path expected to be stray</th>
+        <td><code>['changed paths outside the write scope: "docs/plan.html"']</code> — and at head <code>{"findings": [], "ok": true</code>…</td>
+        <td>test wrong — a declared write path is a hint now; only the unmergeable class is refused (<code>_write_scope_findings</code> → <code>_merge_unsafe</code> → <code>DEFAULT_EXCLUSIVE_PATHS</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-manifest-check-command-arms"><strong>Both arms, on <code>all_debug</code>.</strong>
+  One <code>sbatch --wait</code> job ran both, each arm recording its own
+  revision and its own command, and each python invocation made with
+  <code>env -u SLURM_JOB_ID</code> so the suite never sees the job it is running
+  in.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">base tree</th><td><code>0e0f25b0f941</code></td><td><strong>5 failed, 4 passed</strong> — <code>EXIT=1</code></td></tr>
+      <tr><th scope="row">run head</th><td><code>32664e5ab597</code></td><td><strong>9 passed</strong> — <code>EXIT=0</code></td></tr>
+    </tbody>
+    <caption>The base tree was extracted from a <code>git archive</code> of the base
+    revision into the job's own scratch, so its <code>module.__file__</code> named
+    the extracted <code>reckon/crew/reports.py</code> rather than the worktree copy.</caption>
+  </table>
+
+  <p id="qwnw-red-file-manifest-check-command-negative"><strong>Negative control — the base arm, unfalsified.</strong>
+  The same file at the composition base reports exactly the five ids the recorded
+  suite log names, so the instrument is shown to see this defect before the
+  repair is accepted. The ids, verbatim from the base log:</p>
+
+  <pre id="qwnw-red-file-manifest-check-command-negative-ids"><code>FAILED tests/test_manifest_check_command.py::test_a_manifest_inside_its_fence_exits_zero_with_no_finding
+FAILED tests/test_manifest_check_command.py::test_a_path_outside_the_node_fence_is_reported_by_name
+FAILED tests/test_manifest_check_command.py::test_an_absolute_declaration_resolves_from_outside_the_run_worktree
+FAILED tests/test_manifest_check_command.py::test_a_path_under_no_declaration_is_reported_from_outside
+FAILED tests/test_manifest_check_command.py::test_the_scope_comes_from_the_run_pointer_not_the_working_directory</code></pre>
+
+  <p id="qwnw-red-file-manifest-check-command-guard"><strong>The narrowed refusal still fires.</strong>
+  A fixture that made every case green by removing the stray path would have
+  proven nothing, so the by-name case keeps a stray in its manifest and names it:
+  <code>pyproject.toml</code> is reported while the merge-safe neighbour is not,
+  and the exact-finding case still matches its one quoted stray
+  character for character. The nine cases carry no assertion deleted and none
+  weakened; the two scope cases gained one each.</p>
+
+  <p id="qwnw-red-file-manifest-check-command-checks"><strong>Lint and format.</strong>
+  <code>ruff check tests/test_manifest_check_command.py</code> — all checks
+  passed. <code>ruff format --check</code> clean on the same path. Nothing was
+  linted or formatted beyond the one file this node changed.</p>
+</article>
+</body>
+</html>

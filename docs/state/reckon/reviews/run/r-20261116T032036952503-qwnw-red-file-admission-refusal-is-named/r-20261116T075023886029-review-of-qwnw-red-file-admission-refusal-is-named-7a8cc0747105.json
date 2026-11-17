@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own gate logs logs/red-file-admission-refusal-is-named-baseline.log and logs/red-file-admission-refusal-is-named-head.log: the base log reports five FAILED ids in tests/test_admission_refusal_is_named.py, the head log reports 8 passed and no FAILED id, so the added set is empty and the reviewed change adds none.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The added line is a fixture input, not an assertion, and it is independent of the code under test: removing it reddens the five pre-existing assertions because classify_pointer leaves each row at 'running' instead of 'refused-at-admission' or 'abandoned', which logs/red-file-admission-refusal-is-named-baseline.log shows at 6fa76c49. No added assertion compares a value against the input the test itself passed in; the assertions compare each row against the literal label the row is supposed to carry.",
+      "lines": "tests/test_admission_refusal_is_named.py:102"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T08:15:30.965Z",
+  "dispatched_at": "2026-11-16T08:15:14Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/red-file-admission-refusal-is-named-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The done_when asks for the pass as a job on all_debug with SLURM_JOB_ID unset, and this header records neither a Slurm job nor the unset variable: the tree is the worktree and the command line carries no job identity, so the measure's job clause is unproven by its own receipt rather than merely unmentioned."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/neighbour-focused-head-without-node-change.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The header names revision 3aa4af70e684bb4fe6aeb4b7454a0d2a9f01b1f5, which resolves to no object in the repository (git cat-file fails; the commit is 3aa4af70e684bb4d1bc05a71f4489ffefc00152b), and the manifest's artifacts line and the evidence fragment both quote this arm's 42-then-43 figures, so the figure stands on a header a reader cannot resolve."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/neighbour-arm-base.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "The header names revision 6fa76c49 but its tree is /tmp/reckon-crew-scratch/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/base-tree, the copy that logs/base-product-with-fixture-repair.log:2-3 records as carrying the fixture repair in place; those runs read 38 failures with no target-file failure where the clean base reads 42 and the five ids, so a reader who opens the log its header names as the base arm sees the repaired tree's figure instead of the base's."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_refusal_is_named.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/red-file-admission-refusal-is-named-head.log",
+      "revision": "7a8cc07471052f5ea9fb22ba6d07b520fc084f28"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_refusal_is_named.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 5,
+      "failure_ids": [
+        "tests/test_admission_refusal_is_named.py::test_a_refused_admission_is_named",
+        "tests/test_admission_refusal_is_named.py::test_a_genuine_vanished_run_still_abandons",
+        "tests/test_admission_refusal_is_named.py::test_a_refusal_missing_a_mark_does_not_reach_the_arm",
+        "tests/test_admission_refusal_is_named.py::test_an_in_harness_run_with_those_marks_is_not_refused",
+        "tests/test_admission_refusal_is_named.py::test_every_other_classification_is_unchanged"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/red-file-admission-refusal-is-named-baseline.log",
+      "revision": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "The landed change is a test fixture, so no runtime code reaches it; the production path it exercises, classify_pointer, is unchanged and its callers reckon/crew/recovery_watch.py:750, reckon/crew/query.py:448 and reckon/serve.py:902 read no different value.",
+    "diff": "Read all six commits from 6fa76c49 to 7a8cc07471: c6d6b6854f adds a launched guard plus the pid fixture, 5bb8b073ce reverts the guard, 54f2517aa3 rewrites only the pid comment, and c7985f6c60, 3aa4af70e6 and 7a8cc07471 write the evidence fragment, so the net change is the pid line and its comment plus the fragment.",
+    "done_when": "Read against logs/red-file-admission-refusal-is-named-baseline.log (5 failed, 3 passed, EXIT=1 at 6fa76c49), logs/red-file-admission-refusal-is-named-head.log (8 passed, EXIT=0) and the derived added-failure set (0, []): the pass-at-head, base-arm and added-failure clauses are measured, but no log records the clause requiring the run as an all_debug job with SLURM_JOB_ID unset.",
+    "goal": "The node's goal is that tests/test_admission_refusal_is_named.py pass in full; the head gate log records 8 passed EXIT=0 at 7a8cc07471, reached by giving the fixture the pid every launch writes at tests/test_admission_refusal_is_named.py:102, with the product blob 723797e5 identical at base and head.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/manifest.md: status complete at line 5, the pytest gate at line 11, baseline_suite with five ids at line 15 and after_suite with none at line 16, and the four measured arm logs named in test_logs.",
+    "write_paths": "Read the declared paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround against all six commits from 6fa76c49 to 7a8cc07471; every changed path is inside one of them, and the single product edit is reverted inside the same range."
+  },
+  "justifications": {
+    "durability": "Deleting the pid line at tests/test_admission_refusal_is_named.py:102 reinstates exactly the five failing ids logs/red-file-admission-refusal-is-named-baseline.log records, so the fixture is guarded by assertions the file already carried.",
+    "evidence": "logs/red-file-admission-refusal-is-named-head.log carries the command, revision, cwd, module path and a bare EXIT=0 line, and logs/base-product-with-fixture-repair.log isolates the same base product passing with only the fixture repaired, but no log records the done_when's all_debug job with SLURM_JOB_ID unset.",
+    "fit": "The added key and its comment at tests/test_admission_refusal_is_named.py:98-102 sit inside the existing _pointer dict literal and follow the fixture's own comment style, and the commits carry conventional subjects with bodies.",
+    "goal_fidelity": "The head gate log logs/red-file-admission-refusal-is-named-head.log reports 8 passed EXIT=0 at 7a8cc07471, and the only landed edit is the pointer pid at tests/test_admission_refusal_is_named.py:102.",
+    "reuse": "No function, class or module is added; the edit extends the fixture helper _pointer at tests/test_admission_refusal_is_named.py:92, and a search over reckon/crew found no other owner of that pointer fixture shape.",
+    "scope_discipline": "Every path across the six commits from 6fa76c49 to 7a8cc07471 (tests/test_admission_refusal_is_named.py, the queued-work-needs-no-workaround evidence fragment, and reckon/crew/recovery_classification.py added then reverted) sits inside the declared roots reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that tests/test_admission_refusal_is_named.py pass in full; the head gate log records 8 passed EXIT=0 at 7a8cc07471, reached by giving the fixture the pid every launch writes at tests/test_admission_refusal_is_named.py:102, with the product blob 723797e5 identical at base and head.\nVERDICT done_when: Read against logs/red-file-admission-refusal-is-named-baseline.log (5 failed, 3 passed, EXIT=1 at 6fa76c49), logs/red-file-admission-refusal-is-named-head.log (8 passed, EXIT=0) and the derived added-failure set (0, []): the pass-at-head, base-arm and added-failure clauses are measured, but no log records the clause requiring the run as an all_debug job with SLURM_JOB_ID unset.\nVERDICT write_paths: Read the declared paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround against all six commits from 6fa76c49 to 7a8cc07471; every changed path is inside one of them, and the single product edit is reverted inside the same range.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/manifest.md: status complete at line 5, the pytest gate at line 11, baseline_suite with five ids at line 15 and after_suite with none at line 16, and the four measured arm logs named in test_logs.\nVERDICT diff: Read all six commits from 6fa76c49 to 7a8cc07471: c6d6b6854f adds a launched guard plus the pid fixture, 5bb8b073ce reverts the guard, 54f2517aa3 rewrites only the pid comment, and c7985f6c60, 3aa4af70e6 and 7a8cc07471 write the evidence fragment, so the net change is the pid line and its comment plus the fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The head gate log logs/red-file-admission-refusal-is-named-head.log reports 8 passed EXIT=0 at 7a8cc07471, and the only landed edit is the pointer pid at tests/test_admission_refusal_is_named.py:102.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/red-file-admission-refusal-is-named-head.log carries the command, revision, cwd, module path and a bare EXIT=0 line, and logs/base-product-with-fixture-repair.log isolates the same base product passing with only the fixture repaired, but no log records the done_when's all_debug job with SLURM_JOB_ID unset.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path across the six commits from 6fa76c49 to 7a8cc07471 (tests/test_admission_refusal_is_named.py, the queued-work-needs-no-workaround evidence fragment, and reckon/crew/recovery_classification.py added then reverted) sits inside the declared roots reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\nSCORE durability: 17\nJUSTIFICATION durability: Deleting the pid line at tests/test_admission_refusal_is_named.py:102 reinstates exactly the five failing ids logs/red-file-admission-refusal-is-named-baseline.log records, so the fixture is guarded by assertions the file already carried.\nSCORE fit: 19\nJUSTIFICATION fit: The added key and its comment at tests/test_admission_refusal_is_named.py:98-102 sit inside the existing _pointer dict literal and follow the fixture's own comment style, and the commits carry conventional subjects with bodies.\nSCORE reuse: 20\nJUSTIFICATION reuse: No function, class or module is added; the edit extends the fixture helper _pointer at tests/test_admission_refusal_is_named.py:92, and a search over reckon/crew found no other owner of that pointer fixture shape.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/red-file-admission-refusal-is-named-head.log:1 non-blocking: The done_when asks for the pass as a job on all_debug with SLURM_JOB_ID unset, and this header records neither a Slurm job nor the unset variable: the tree is the worktree and the command line carries no job identity, so the measure's job clause is unproven by its own receipt rather than merely unmentioned.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/neighbour-focused-head-without-node-change.log:1 non-blocking: The header names revision 3aa4af70e684bb4fe6aeb4b7454a0d2a9f01b1f5, which resolves to no object in the repository (git cat-file fails; the commit is 3aa4af70e684bb4d1bc05a71f4489ffefc00152b), and the manifest's artifacts line and the evidence fragment both quote this arm's 42-then-43 figures, so the figure stands on a header a reader cannot resolve.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/logs/neighbour-arm-base.log:2 non-blocking: The header names revision 6fa76c49 but its tree is /tmp/reckon-crew-scratch/r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named/base-tree, the copy that logs/base-product-with-fixture-repair.log:2-3 records as carrying the fixture repair in place; those runs read 38 failures with no target-file failure where the clean base reads 42 and the five ids, so a reader who opens the log its header names as the base arm sees the repaired tree's figure instead of the base's.",
+  "review_run_id": "r-20261116T075023886029-review-of-qwnw-red-file-admission-refusal-is-named-7a8cc0747105",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "7a8cc07471052f5ea9fb22ba6d07b520fc084f28",
+  "reviewed_run_id": "r-20261116T032036952503-qwnw-red-file-admission-refusal-is-named",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:08:32.371327+00:00",
+  "total": 109
+}

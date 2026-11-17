@@ -392,6 +392,7 @@ def crew_merge(
     """
     from reckon.crew import merge
 
+    _accept_a_matching_project(run_id, project)
     try:
         repository = merge.project_repository(project)
         promotion_options = {
@@ -2827,8 +2828,11 @@ def _codex_inbox_override_gap(argv: Any) -> str | None:
     help="Live run that receives the message.",
 )
 @click.argument("message")
+@click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_tell(run_id, message, pretty):
+def crew_tell(run_id, message, project, pretty):
     """Write one message into a live run's inbox, delivered at its next tool call.
 
     The write is a queue, not a delivery: the run's inbox hook hands the message
@@ -2860,6 +2864,7 @@ def crew_tell(run_id, message, pretty):
 
     if not message.strip():
         raise click.UsageError("the message is empty; nothing would be delivered")
+    _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     try:
         record = read_pointer(run_id)
@@ -3584,8 +3589,16 @@ def crew_complete(
         request_promotion,
     )
 
+    if gate not in _ledger_module().GATE_VERDICTS:
+        raise click.ClickException(
+            f"unknown gate verdict {gate!r}; expected passed, failed or not-run"
+        )
     if land and not dry_run:
         _refuse_a_landing_without_its_pointer(run_id)
+    # The identity check runs before the request block below: that block writes
+    # a promotion request, and a caller whose --project disagrees with the run
+    # must be refused without a request left queued for a run it did not name.
+    _accept_a_matching_project(run_id, project)
     driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
         # The drain forwards every stored option as a keyword, so the snapshot
@@ -3614,7 +3627,6 @@ def crew_complete(
         # request it found is the one this call then carries out, and the
         # promotion settles it when it finishes.
         driven = True
-    _accept_a_matching_project(run_id, project)
     if candidate and not land:
         raise click.UsageError("--candidate requires --land")
     if land and dry_run:
@@ -3837,6 +3849,9 @@ def crew_complete(
 @crew.command(name="declare-gate")
 @click.option("--run", "run_id", required=True, help="Run whose gate is declared.")
 @click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
+@click.option(
     "--command",
     default="",
     help="The suite command this run's arms ran with, when it differs from the "
@@ -3862,6 +3877,7 @@ def crew_complete(
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_declare_gate(
     run_id: str,
+    project: str | None,
     command: str,
     partition: str,
     long_partition: str,
@@ -3882,11 +3898,13 @@ def crew_declare_gate(
         raise click.UsageError(
             "--declare-gate requires at least one of --command and --partition"
         )
+    _accept_a_matching_project(run_id, project)
     from reckon.crew import runs as runs_module
     from reckon.crew.promotion_records import (
         GATE_DECLARATION_KEY,
         gate_declaration,
     )
+    from reckon.crew.run_paths import _utc_now
 
     try:
         pointer = runs_module.read_pointer(run_id)
@@ -3900,7 +3918,7 @@ def crew_declare_gate(
             str(long_partition).strip() or previous.get("long_partition", "")
         ),
         "reason": str(reason).strip(),
-        "declared_at": _utc_now_text(),
+        "declared_at": _utc_now(),
     }
     runs_module._mutate_pointer(
         run_id, lambda record: {**record, GATE_DECLARATION_KEY: declaration}
@@ -3916,14 +3934,11 @@ def crew_declare_gate(
     )
 
 
-def _utc_now_text() -> str:
-    from datetime import UTC, datetime
-
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 @crew.command(name="record-merge")
 @click.option("--run", "run_id", required=True, help="Run the merge carried.")
+@click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
 @click.option(
     "--merge",
     "merge_sha",
@@ -3963,6 +3978,7 @@ def _utc_now_text() -> str:
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_record_merge(
     run_id: str,
+    project: str | None,
     merge_sha: str,
     reason: str,
     outcome: str,
@@ -3985,6 +4001,7 @@ def crew_record_merge(
     from reckon.crew import pending_landing
     from reckon.crew import runs as runs_module
 
+    _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     try:
         pointer = runs_module.read_pointer(run_id)
@@ -5526,8 +5543,11 @@ def crew_repair_completion(project, write_changes, checkout_path, pretty):
     default="",
     help="Decide and launch only this queued request, without release or landing.",
 )
+@click.option(
+    "--project", default=None, help="Project owning the request; cross-checks it."
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_admit(lane, once, run_id, pretty):
+def crew_admit(lane, once, run_id, project, pretty):
     """Launch queued dispatches while the lane grants a slot.
 
     One pass reads the fleet gate, then the queued run pointers, and launches
@@ -5548,6 +5568,7 @@ def crew_admit(lane, once, run_id, pretty):
     from reckon.crew import queue_admission
     from reckon.crew.node import CrewError
 
+    _accept_a_matching_project(run_id, project)
     try:
         result = (
             queue_admission.admit_once(lane=lane, run_id=run_id)

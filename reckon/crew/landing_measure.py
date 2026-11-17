@@ -183,7 +183,13 @@ export PYTHONPATH={shlex.quote(str(source))}
 
 
 def measurement_job_state(job: Mapping[str, Any]) -> str:
-    """Read one scheduler observation; an absent accounting row is unknown."""
+    """Read one scheduler observation; an absent accounting row is unknown.
+
+    The queue forgets a job some minutes after it ends and then refuses a
+    query naming it, so a refused queue read says only that the job is no
+    longer queued. The accounting record is asked next, and it is the one
+    whose failure leaves the state unknown.
+    """
     job_id = str(job["job_id"])
     for argv in (
         ["squeue", "-h", "-j", job_id, "-o", "%T"],
@@ -192,6 +198,8 @@ def measurement_job_state(job: Mapping[str, Any]) -> str:
         finished = _SCHEDULER_RUN(
             argv, capture_output=True, text=True, check=False, timeout=10
         )
+        if finished.returncode and argv[0] == "squeue":
+            continue
         if finished.returncode:
             raise ValueError(
                 f"job {job_id}, log {job['log_path']}: scheduler query failed: "
