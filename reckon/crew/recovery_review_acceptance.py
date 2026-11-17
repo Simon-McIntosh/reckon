@@ -622,6 +622,9 @@ def accept_clean_review(
     nothing to add. A dict is returned whenever the run was eligible and an
     outcome was reached, so the sweep records why a refusal did not promote.
     """
+    from reckon.crew.promotion_requests import judging_code_revision
+
+    code_revision = judging_code_revision()
     pointer = {**pointer, **runs.read_dispatch_detail(pointer)}
     run_id = str(pointer.get("run_id") or "")
     project = str(pointer.get("project") or "")
@@ -663,6 +666,7 @@ def accept_clean_review(
         memo = None
     if (
         isinstance(memo, dict)
+        and memo.get("code_revision") == code_revision
         and memo.get("inputs") == refusal_key
         and isinstance(memo.get("refusal"), dict)
         and memo["refusal"].get("accepted") is False
@@ -670,10 +674,14 @@ def accept_clean_review(
         return {**memo["refusal"], "unchanged": True}
 
     def refuse(result: dict[str, Any]) -> dict[str, Any]:
+        result = {**result, "code_revision": code_revision}
         # A cache that cannot be written costs another judgement, not a
         # different acceptance verdict.
         with suppress(OSError):
-            runs._write_json(memo_path, {"inputs": refusal_key, "refusal": result})
+            runs._write_json(
+                memo_path,
+                {"inputs": refusal_key, "refusal": result, "code_revision": code_revision},
+            )
         if implementation and not result.get("held"):
             review_landing.record_refusal(
                 pointer, head, str(result.get("reason") or "landing refused")
