@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="435">
+<meta name="plan-version" content="436">
 <meta name="plan-modified" content="2026-11-17">
 </head>
 <body>
@@ -1010,6 +1010,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-partial-r-20261110T144727201340-station-tick-reads-only-what-changed" data-who="1fb615a0-2801-4418-bbb4-c2914719e520" data-when="2026-11-15T19:16:00+00:00">
     <div class="r-comment-body">Run r-20261110T144727201340-station-tick-reads-only-what-changed delivered the first of the per-tick change reads. The section's live tick bound is still unmet, so s13 stays implementable.</div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261117T120750092280-review-of-the-station-reads-only-what-changed-after-one-pointer-read-5d61bd888ac8" data-who="reckon-build" data-when="2026-11-17T12:10:06.887Z">
+    <div class="r-comment-body"><p>Reviewed r-20261116T220347695299 at 73a771c..5d61bd888a: scope is clean (3 files inside the declared paths) but the node&#x27;s goal is the dominant census read and the diff repairs the 19.5% reader while `_backends._cached_stream_entry` holds 42.7% (docs/research/monitor-storage-load-rca.html:460), the live done_when bound is measured unmet at 1,376 and 1,724 MB/min against 20 and 75-78% of one core against 5, and `_result_stream_head`/`_result_stream_head_intact` (reckon/crew/recovery_memo.py:734,745) duplicate `reckon/_backends.py:4255` `stream_head_fingerprint` and its intact check under a 256-byte sample; scores 8/10/20/15/13/5, one blocking and six non-blocking findings, added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261108T053351721397-review-of-a-sessions-duties-run-while-its-follower-is-alive-3aec564ad491" data-who="reckon-build" data-when="2026-11-08T05:46:04Z">
     <div class="r-comment-body"><p>Independent review of base fdfcd7d77a7347a068604e52f00696e3c338eb15 to head 3aec564ad491f6d9d6dde4606786f2a68bc78231 stored parsed scores 14, 7, 20, 14, 19, 20, zero observed added failure IDs, and three blocking findings.</p></div>
