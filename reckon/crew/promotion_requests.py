@@ -250,9 +250,11 @@ def read_promotion(run_id: str) -> dict[str, Any]:
     return _read(_request_path(run_id)) or _read(_receipt_path(run_id))
 
 
-def _mark_pointer(request: Mapping[str, Any], phase: str) -> None:
+def _mark_pointer(
+    request: Mapping[str, Any], phase: str, *, readiness_checked: bool = False
+) -> None:
     run_id = str(request["run_id"])
-    if phase == REQUESTED and _review_self_waits(request)[0]:
+    if phase == REQUESTED and not readiness_checked and _review_self_waits(request)[0]:
         phase = WAITING
     try:
         with runs._pointer_lock(run_id, blocking=False):
@@ -351,31 +353,32 @@ def _review_self_waits(request: Mapping[str, Any]) -> tuple[bool, str]:
     return state == acceptance.REVIEW_SELF_WAITING, reason
 
 
-def _mark_waiting(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
-    """Park a request on the record its reviewer still owes.
+def _mark_readiness(
+    request: Mapping[str, Any], *, waiting: bool, reason: str
+) -> dict[str, Any]:
+    """Date a readiness verdict without claiming a promotion slot.
 
-    The pointer keeps the working phase its reviewer is in: a request waiting
-    for a record must not read as a promotion the coordinator has to answer.
-    The request is written outside ``PENDING`` so the next tick starts the
-    requests behind it instead of spending a slot on this one.
+    A parked request keeps its reviewer's working phase. A ready one joins the
+    requested population so queue ordering charges its session a future turn.
+    The request identity and phase must still match the judged snapshot.
     """
     run_id = str(request["run_id"])
-    waiting = {
+    refreshed = {
         **dict(request),
-        "phase": WAITING,
+        "phase": WAITING if waiting else REQUESTED,
         "waiting_reason": reason,
         "checked_at": _now(),
     }
     with runs._pointer_lock(f"promotion-request-{run_id}"):
         current = _read(_request_path(run_id))
-        if current.get("request_id") != waiting["request_id"] or current.get(
+        if current.get("request_id") != refreshed["request_id"] or current.get(
             "phase"
         ) != request.get("phase"):
             # Another drain moved this request on while it was being judged.
             return {}
-        runs._write_json(_request_path(run_id), waiting)
-        _mark_pointer(waiting, WAITING)
-    return waiting
+        runs._write_json(_request_path(run_id), refreshed)
+        _mark_pointer(refreshed, refreshed["phase"], readiness_checked=True)
+    return refreshed
 
 
 class PromotionRequests:
@@ -822,13 +825,23 @@ class PromotionService:
         self._threads = [thread for thread in self._threads if thread.is_alive()]
         if self._draining:
             return []
+        pending = _pending_requests()
+        parked = [request for request in pending if request.get("phase") == WAITING]
+        for request in parked:
+            waiting, reason = _review_self_waits(request)
+            _mark_readiness(request, waiting=waiting, reason=reason)
+        if parked:
+            # Newly ready requests consume fair session turns before admission.
+            pending = _pending_requests()
         launched: list[str] = []
-        for request in _pending_requests():
+        for request in pending:
+            if request.get("phase") == WAITING:
+                continue
             waiting, reason = _review_self_waits(request)
             if waiting:
                 # Nothing is owed here yet, so this request takes no slot and
                 # the loop carries on to the ones behind it.
-                _mark_waiting(request, reason)
+                _mark_readiness(request, waiting=True, reason=reason)
                 continue
             slot = next(
                 (
@@ -893,7 +906,9 @@ class PromotionService:
             if result.get("waiting"):
                 # The reviewer is still writing the record: park the request
                 # rather than refusing a run that is not finished.
-                _mark_waiting(request, str(result.get("reason") or ""))
+                _mark_readiness(
+                    request, waiting=True, reason=str(result.get("reason") or "")
+                )
                 return
             if (
                 result.get("accepted") is False
