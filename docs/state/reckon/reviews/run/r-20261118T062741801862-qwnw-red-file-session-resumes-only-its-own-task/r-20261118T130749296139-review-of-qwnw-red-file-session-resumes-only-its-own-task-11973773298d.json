@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: suite-arm-00e5bd109e.log at 00e5bd109e44209141475c852cd5490b8bef9be3 reads '58 passed in 50.04s' EXIT=0 with no FAILED line and suite-arm-11973773298db4a90e68d8eb1a38ad0aaa42efed.log at 11973773298db4a90e68d8eb1a38ad0aaa42efed reads '58 passed in 50.17s' EXIT=0 with no FAILED line, so the set difference is empty (0); the same reader over arm-00e5bd109e.log does not read an absence, it returns tests/test_session_resumes_only_its_own_task.py::test_a_new_node_does_not_continue_the_members_other_node_session with EXIT=1.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T14:26:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-session-resumes-only-its-own-task.html",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scoped-gate paragraph calls 1c584aee the final head and cites the gate log at that revision (scoped-gate-1795006127702848317.log), while the delivered head is 11973773 and the manifest names the gate at it (scoped-gate-1795006492279692198.log), so a reader following the reviewed evidence reaches a gate one commit short of what landed; the test bytes are identical at the two revisions, so the claim is stale rather than false."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit from base 00e5bd109e to head 11973773; 6e45b29992 replaces the checkout-file roster snapshot at tests/test_session_resumes_only_its_own_task.py:181,193,199 with ledger.members(\"proj\", root=repo) and adds the guard assertion at :184, 1c584aee7e adds the 67-line evidence fragment, and 11973773 appends the scoped-gate paragraph to it.",
+    "done_when": "the done_when asks for a green head run, the base run's failing id logged beside it in the fragment, an arm over importers with both arms as inline JSON at full 40-character revisions, and ruff clean; the manifest records all four and each reconciles with a reproducible log on disk (scoped-gate-1795006492279692198.log reads 10 passed EXIT=0; arm-00e5bd109e.log reads 1 failed, 9 passed EXIT=1 with the failing id; suite-arm-00e5bd109e.log and suite-arm-1197377329.log read 58 passed EXIT=0 each at full revisions; ruff re-run by me reads \"All checks passed!\" and \"1 file already formatted\").",
+    "goal": "the goal is that tests/test_session_resumes_only_its_own_task.py passes in full on the primary branch, and the scoped gate at the delivered head 1197377329 in a landing tree merged at current main records \"10 passed\" EXIT=0 (scoped-gate-1795006492279692198.log) against \"1 failed, 9 passed\" EXIT=1 at base 00e5bd109e (arm-00e5bd109e.log).",
+    "manifest": "read; status complete, gate 10 passed EXIT=0, base arm 1 failed/9 passed EXIT=1, both suite arms 58 passed, ruff clean, three full commit ids, and every figure it states matches the log I opened.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment under it; the delivered diff touches only tests/test_session_resumes_only_its_own_task.py and that fragment, both inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating the removed docs/state/proj/crew.json read reddens this case with FileNotFoundError as arm-00e5bd109e.log shows, and the guard at tests/test_session_resumes_only_its_own_task.py:184 stops the two roster comparisons at :193 and :199 from passing over two empty rosters.",
+    "evidence": "arm-00e5bd109e.log carries the failing id this case names and scoped-gate-1795006492279692198.log is green at head, but qwnw-red-file-session-resumes-only-its-own-task.html:55 calls 1c584aee the final head and no log shows the all_debug partition or the SLURM_JOB_ID absence the done_when names.",
+    "fit": "the case now reads ledger.members the way tests/test_crew_ephemeral_members.py:125 does, and ruff check and ruff format --check are clean on tests/test_session_resumes_only_its_own_task.py.",
+    "goal_fidelity": "tests/test_session_resumes_only_its_own_task.py:181 now reads the roster the store serves, and scoped-gate-1795006492279692198.log at the delivered head 11973773 records all ten cases green.",
+    "reuse": "the diff adds no definition; it calls the existing roster reader at reckon/ledger.py:3278 rather than opening the store or the retired file, and a search for another roster-reading mechanism found only that owner.",
+    "scope_discipline": "the two paths in the diff, tests/test_session_resumes_only_its_own_task.py and the fragment, are both inside the declared write paths, and no production module changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_session_resumes_only_its_own_task.py passes in full on the primary branch, and the scoped gate at the delivered head 1197377329 in a landing tree merged at current main records \"10 passed\" EXIT=0 (scoped-gate-1795006492279692198.log) against \"1 failed, 9 passed\" EXIT=1 at base 00e5bd109e (arm-00e5bd109e.log).\nVERDICT done_when: the done_when asks for a green head run, the base run's failing id logged beside it in the fragment, an arm over importers with both arms as inline JSON at full 40-character revisions, and ruff clean; the manifest records all four and each reconciles with a reproducible log on disk (scoped-gate-1795006492279692198.log reads 10 passed EXIT=0; arm-00e5bd109e.log reads 1 failed, 9 passed EXIT=1 with the failing id; suite-arm-00e5bd109e.log and suite-arm-1197377329.log read 58 passed EXIT=0 each at full revisions; ruff re-run by me reads \"All checks passed!\" and \"1 file already formatted\").\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment under it; the delivered diff touches only tests/test_session_resumes_only_its_own_task.py and that fragment, both inside the fence.\nVERDICT manifest: read; status complete, gate 10 passed EXIT=0, base arm 1 failed/9 passed EXIT=1, both suite arms 58 passed, ruff clean, three full commit ids, and every figure it states matches the log I opened.\nVERDICT diff: read commit by commit from base 00e5bd109e to head 11973773; 6e45b29992 replaces the checkout-file roster snapshot at tests/test_session_resumes_only_its_own_task.py:181,193,199 with ledger.members(\"proj\", root=repo) and adds the guard assertion at :184, 1c584aee7e adds the 67-line evidence fragment, and 11973773 appends the scoped-gate paragraph to it.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_session_resumes_only_its_own_task.py:181 now reads the roster the store serves, and scoped-gate-1795006492279692198.log at the delivered head 11973773 records all ten cases green.\nSCORE evidence: 16\nJUSTIFICATION evidence: arm-00e5bd109e.log carries the failing id this case names and scoped-gate-1795006492279692198.log is green at head, but qwnw-red-file-session-resumes-only-its-own-task.html:55 calls 1c584aee the final head and no log shows the all_debug partition or the SLURM_JOB_ID absence the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two paths in the diff, tests/test_session_resumes_only_its_own_task.py and the fragment, are both inside the declared write paths, and no production module changed.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the removed docs/state/proj/crew.json read reddens this case with FileNotFoundError as arm-00e5bd109e.log shows, and the guard at tests/test_session_resumes_only_its_own_task.py:184 stops the two roster comparisons at :193 and :199 from passing over two empty rosters.\nSCORE fit: 17\nJUSTIFICATION fit: the case now reads ledger.members the way tests/test_crew_ephemeral_members.py:125 does, and ruff check and ruff format --check are clean on tests/test_session_resumes_only_its_own_task.py.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it calls the existing roster reader at reckon/ledger.py:3278 rather than opening the store or the retired file, and a search for another roster-reading mechanism found only that owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-session-resumes-only-its-own-task.html:55 non-blocking: the scoped-gate paragraph calls 1c584aee the final head and cites the gate log at that revision (scoped-gate-1795006127702848317.log), while the delivered head is 11973773 and the manifest names the gate at it (scoped-gate-1795006492279692198.log), so a reader following the reviewed evidence reaches a gate one commit short of what landed; the test bytes are identical at the two revisions, so the claim is stale rather than false.",
+  "review_node": "review-of-qwnw-red-file-session-resumes-only-its-own-task-11973773298d",
+  "review_run_id": "r-20261118T130749296139-review-of-qwnw-red-file-session-resumes-only-its-own-task-11973773298d",
+  "reviewed_base_sha": "00e5bd109e44209141475c852cd5490b8bef9be3",
+  "reviewed_head_sha": "11973773298db4a90e68d8eb1a38ad0aaa42efed",
+  "reviewed_run_id": "r-20261118T062741801862-qwnw-red-file-session-resumes-only-its-own-task",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T130749296139-review-of-qwnw-red-file-session-resumes-only-its-own-task-11973773298d"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:45:46.845607+00:00",
+  "total": 108
+}
