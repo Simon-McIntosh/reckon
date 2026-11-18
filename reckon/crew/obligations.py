@@ -27,7 +27,7 @@ import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -399,6 +399,7 @@ INDEX_LAG_GIT_ENV = {"GIT_OPTIONAL_LOCKS": "0"}
 #: stop describing the checkout (the index's stat identity and HEAD), so a
 #: sweep that recomputes every session's payload does not run git per tick.
 _INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = {}
+_SOURCE_CLEAN_READINGS: dict[str, tuple[Any, tuple[str, ...], tuple[Any, ...]]] = {}
 
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
@@ -2795,6 +2796,7 @@ def _review_tier_key(
 def _clear_cached_obligation_inputs() -> None:
     """Drop every memoised per-run derivation, so the next read recomputes."""
     _INDEX_LAG_READINGS.clear()
+    _SOURCE_CLEAN_READINGS.clear()
     with _HELD_READ_LOCK:
         _HELD_RECORD_READS.clear()
         _HELD_REGISTRY_READS.clear()
@@ -4546,6 +4548,195 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+def _source_file_signatures(
+    repository: Path, paths: tuple[str, ...]
+) -> tuple[Any, ...]:
+    """The tracked source identities, including missing files and symlinks."""
+    signatures = []
+    for name in paths:
+        try:
+            signatures.append(
+                file_memo.signature_from_stat((repository / name).lstat())
+            )
+        except OSError:
+            signatures.append(None)
+    return tuple(signatures)
+
+
+def _unlanded_source_items(project: str) -> list[dict[str, Any]]:
+    """Attribute staged or serving source absent from primary to a run's commit.
+
+    Inspect both the index and disk: a staged copy can differ even when disk
+    matches HEAD. Search a run's unmerged history, since its reviewed head may
+    have advanced past the copy a refused landing left in this checkout.
+    """
+    from reckon.crew import merge
+    from reckon.crew.dispatch_sections import project_mount_repository
+    from reckon.path_classes import path_class
+
+    repository = project_mount_repository(project)
+    if repository is None:
+        return []
+    key = _index_lag_reading_key(repository)
+    cached = _SOURCE_CLEAN_READINGS.get(str(repository))
+    if key is not None and cached is not None and cached[0] == key:
+        source_paths = cached[1]
+        signatures = _source_file_signatures(repository, source_paths)
+        if signatures == cached[2]:
+            return []
+    else:
+        tracked = run_git(repository, "ls-files", "-z", env=INDEX_LAG_GIT_ENV)
+        if tracked.returncode:
+            return []
+        source_paths = tuple(
+            sorted(
+                {
+                    os.fsdecode(name)
+                    for name in tracked.stdout.split(b"\0")
+                    if name and path_class(os.fsdecode(name)) == "source"
+                }
+            )
+        )
+        signatures = _source_file_signatures(repository, source_paths)
+    names: set[str] = set()
+    for options in (("--cached",), ()):
+        changed = run_git(
+            repository,
+            "diff",
+            *options,
+            "--name-only",
+            "-z",
+            "HEAD",
+            env=INDEX_LAG_GIT_ENV,
+        )
+        if changed.returncode:
+            return []
+        names.update(
+            os.fsdecode(name)
+            for name in changed.stdout.split(b"\0")
+            if name and path_class(os.fsdecode(name)) == "source"
+        )
+    if not names:
+        # A clean answer is reusable only while the index, HEAD and every
+        # tracked source identity agree. Compare both sides of the git read so
+        # a source write during that read cannot become a cached clean answer.
+        if (
+            key is not None
+            and _index_lag_reading_key(repository) == key
+            and _source_file_signatures(repository, source_paths) == signatures
+        ):
+            _SOURCE_CLEAN_READINGS[str(repository)] = (key, source_paths, signatures)
+        return []
+    paths = sorted(names)
+    index = merge._checkout_index(repository, paths)
+    blobs: dict[str, set[str]] = {}
+    for name in paths:
+        primary = run_git(
+            repository,
+            "rev-list",
+            "--objects",
+            "HEAD",
+            "--",
+            name,
+            env=INDEX_LAG_GIT_ENV,
+        )
+        if primary.returncode:
+            continue
+        known = {
+            line.split(b" ", 1)[0].decode() for line in primary.stdout.splitlines()
+        }
+        candidates = {
+            entry.split(" ")[1] for entry in index.get(name, "").split("\0") if entry
+        }
+        value = merge._checkout_path(repository / name)
+        if value is not None and value[1] is not None:
+            content = os.fsencode(value[1]) if isinstance(value[1], str) else value[1]
+            hashed = run_git(
+                repository,
+                "hash-object",
+                "--stdin",
+                input=content,
+                env=INDEX_LAG_GIT_ENV,
+            )
+            if hashed.returncode == 0:
+                candidates.add(hashed.stdout.decode().strip())
+        if candidates - known:
+            blobs[name] = candidates - known
+    if not blobs:
+        return []
+    records = {
+        str(row.get("run_id") or ""): dict(row)
+        for row in _run_file_rows(project, repository)
+    }
+    for pointer in _live_pointers(project):
+        run_id = str(pointer.get("run_id") or "")
+        records[run_id] = {**records.get(run_id, {}), **pointer}
+    items = []
+    for run_id, row in records.items():
+        if not run_id:
+            continue
+        heads = list(row.get("commits") or [])
+        heads.extend(str(row.get(key) or "") for key in ("head", "reviewed_head"))
+        worktree = str(row.get("worktree") or "")
+        if worktree:
+            with suppress(merge.MergeError):
+                heads.append(merge._rev_parse(Path(worktree), "HEAD"))
+        matched: dict[str, str] = {}
+        for head in dict.fromkeys(heads):
+            if not re.fullmatch(r"[0-9a-f]{40,64}", head):
+                continue
+            history = run_git(
+                repository,
+                "rev-list",
+                head,
+                "^HEAD",
+                "--",
+                *blobs,
+                env=INDEX_LAG_GIT_ENV,
+            )
+            if history.returncode:
+                continue
+            for revision in history.stdout.decode().splitlines():
+                for name, candidates in blobs.items():
+                    if (
+                        name not in matched
+                        and merge._blob_id(repository, revision, name) in candidates
+                    ):
+                        matched[name] = revision
+        if matched:
+            items.append(
+                {
+                    "kind": "unlanded-source",
+                    "run_id": run_id,
+                    "run_ids": [run_id],
+                    "age_seconds": 0,
+                    "paths": sorted(matched),
+                    "head": next(iter(matched.values())),
+                    "reason": (
+                        f"the checkout's staged or serving source at {', '.join(sorted(matched))} "
+                        f"matches unlanded commits of run {run_id}; no commit on the primary "
+                        "branch carries that content, so a refused landing may be serving source"
+                    ),
+                    "next_command": " && ".join(
+                        shlex.join(
+                            [
+                                "git",
+                                "-C",
+                                str(repository),
+                                "diff",
+                                *options,
+                                "HEAD",
+                                "--",
+                                *matched,
+                            ]
+                        )
+                        for options in (("--cached",), ())
+                    ),
+                }
+            )
+    return items
+
+
 def _node_disk_notice(project: str) -> dict[str, Any] | None:
     """The project's fleet disk pressure, from the sampler on that node."""
     from reckon.crew.fleet_supervisor import node_disk_obligation
@@ -5007,6 +5198,7 @@ def _obligations_view(
     index_lag = _index_lag_notice(project, now=now)
     if index_lag is not None:
         items.append(index_lag)
+    items.extend(_unlanded_source_items(project))
     acknowledgements = _acknowledgements_in_force(project, now=now)
     items, acknowledged = _partition_acknowledged(items, acknowledgements)
     items.sort(
