@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import copy
-import dataclasses
 import importlib
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -17,8 +15,6 @@ from tests.test_crew import CONFIG, _node, home, repo  # noqa: F401
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
-DROP_RESUME_EXPORT = "drop the export on resume"
-DROP_RESUME_EXPORT_ENV = "RECKON_TEST_DROP_RESUME_EXPORT"
 RUNTIME_KEYS = {
     "RECKON_RUN_ID",
     "RECKON_MANIFEST",
@@ -123,15 +119,6 @@ def test_clive_dispatch_and_resume_carry_identity_and_additive_headers(
     # The supervisor recorded the run's end, the observation a resume rests on.
     liveness._write_exit_record(record["run_id"])
     resumed = crew.resume_plan(record["run_id"], "continue", config=_config("clive"))
-    if os.environ.get(DROP_RESUME_EXPORT_ENV) == DROP_RESUME_EXPORT:
-        resumed = dataclasses.replace(
-            resumed,
-            environment={
-                key: value
-                for key, value in resumed.environment.items()
-                if key != "RECKON_ATTEMPT_STARTED_AT"
-            },
-        )
 
     _assert_attempt_environment(
         resumed.environment,
@@ -140,6 +127,12 @@ def test_clive_dispatch_and_resume_carry_identity_and_additive_headers(
     )
     assert resumed.environment["ANTHROPIC_CUSTOM_HEADERS"] == expected_headers
 
+    # The launcher names the attempt it launches, and the spawn refuses a
+    # spec the run's pointer no longer names: the resume continues the attempt
+    # the pointer holds under a new number, using the launch instant the resume
+    # composed onto the plan.
+    attempt = int(crew.read_pointer(record["run_id"]).get("attempt") or 1) + 1
+    attempt_started_at = resumed.environment["RECKON_ATTEMPT_STARTED_AT"]
     spec = dispatch_module._supervisor_spec(
         run_id=record["run_id"],
         run_directory=crew.run_dir(record["run_id"]),
@@ -149,6 +142,8 @@ def test_clive_dispatch_and_resume_carry_identity_and_additive_headers(
         prompt_path=home / "resume-advice.txt",
         log_path=home / "resume.jsonl",
         stderr_path=home / "resume.stderr.log",
+        attempt=attempt,
+        attempt_started_at=attempt_started_at,
     )
     persisted = spec["plan"]["environment"]
     assert RUNTIME_KEYS.isdisjoint(persisted)
