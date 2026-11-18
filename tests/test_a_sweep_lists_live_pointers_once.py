@@ -18,6 +18,7 @@ from reckon.crew import recovery_classification as classification
 from reckon.crew import recovery_review_acceptance as acceptance
 from reckon.crew import recovery_review_delivery as delivery
 from reckon.crew import recovery_review_dispatch as reviews
+from reckon.crew import review as review_module
 
 PROJECT = "sweep-fixture"
 SESSION = "sweep-owner"
@@ -248,6 +249,7 @@ def test_scoped_queries_preserve_project_filters_and_standalone_reads(
     home, originals = fleet
     source, reviewer = originals[0], originals[140]
     source["worktree"] = str(home / "retained-tree")
+    source["suite_delta_waiver"] = {"reason": "fixture waiver"}
     foreign = {**source, "run_id": "r-foreign", "project": "another-project"}
     foreign["node"] = {**source["node"]}
     for pointer in (source, foreign):
@@ -266,9 +268,13 @@ def test_scoped_queries_preserve_project_filters_and_standalone_reads(
             "reviewed_run": delivery._resolved_reviewed_run_id(reviewer, PROJECT),
             "review_pointer": classification._review_pointer(reviewer["run_id"]),
             "trees": routing._live_pointer_worktrees(),
+            "suite_waiver": review_module.recorded_suite_delta_waiver(
+                source["run_id"], PROJECT
+            ),
         }
 
     standalone = queries()
+    assert standalone["suite_waiver"] == "fixture waiver"
     assert standalone["review"] == reviewer["run_id"]
     assert standalone["reviewed_run"] == source["run_id"]
     assert standalone["other_project_ids"] == [foreign["run_id"]]
@@ -292,6 +298,7 @@ def test_scoped_queries_preserve_project_filters_and_standalone_reads(
             "reviewed_run": "node-r-000",
             "review_pointer": None,
             "trees": {},
+            "suite_waiver": "",
         }
     else:
         assert held == standalone

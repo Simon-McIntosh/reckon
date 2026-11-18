@@ -1264,10 +1264,8 @@ def recorded_suite_delta_waiver(reviewed_run_id: object, project: object = "") -
     run_id = str(reviewed_run_id or "").strip()
     if not run_id:
         return ""
-    from reckon.crew import runs as runs_module
-
     try:
-        pointer = runs_module.read_pointer(run_id)
+        pointer = _reviewed_run_pointer(run_id) or {}
     except Exception:  # noqa: BLE001 - an unread pointer is a run with no waiver
         pointer = {}
     reason = _recorded_waiver_reason(pointer.get("suite_delta_waiver"))
