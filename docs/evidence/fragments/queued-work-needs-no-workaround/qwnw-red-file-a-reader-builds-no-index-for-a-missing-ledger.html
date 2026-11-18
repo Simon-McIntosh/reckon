@@ -43,4 +43,13 @@ is a deliberate product field that
 cases now name the rule the reader keeps — exact equality including
 <code>auxiliary_version: 0</code> at version 0. The expectation gained a key rather
 than losing one, and no assertion in the file was removed or loosened.</p>
+<p>A passing file does not show that the no-index assertion fires, so the guard
+was forced: with <code>ledger._ledger_holds_content</code> replaced in-process by a
+predicate answering <code>True</code>, both empty-ledger cases failed on exactly
+the assertion under test, naming the
+<code>ledger-&lt;sha256&gt;-v8.sqlite</code> each read wrote under its temporary
+cache root — 2 of 2 refused. The same file passed
+4 of 4 at <code>2324ca9a132ae90500013b0197aca1040d2e5a69</code> and again at the
+head this fragment was committed with, so the assertion is live in both
+directions rather than vacuously green and stale.</p>
 </section>
