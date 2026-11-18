@@ -254,6 +254,20 @@ def test_a_successful_landing_keeps_its_files_and_the_push(checkout, tmp_path):
     assert not (repo / "removed.py").exists()
 
 
+def test_a_head_with_no_file_delta_uses_the_same_landing(checkout):
+    repo = checkout
+    base = git(repo, "rev-parse", "HEAD")
+    tree = git(repo, "rev-parse", "HEAD^{tree}")
+    head = git(
+        repo, "commit-tree", tree, "-p", base, "-m", "test: record an empty delivery"
+    )
+    before = digest(repo)
+    report = land(repo, head)
+    assert report["pushed"] is True
+    assert git(repo, "rev-parse", "HEAD^@").split() == [base, head]
+    assert digest(repo) == before
+
+
 @pytest.mark.parametrize("staged", [True, False])
 def test_source_residue_names_the_run_and_its_older_head(
     checkout, tmp_path, monkeypatch, staged

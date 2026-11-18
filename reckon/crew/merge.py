@@ -1434,6 +1434,8 @@ def _restore_checkout(
     flags: dict[str, str],
 ) -> None:
     """Restore this attempt's entries, leaving every other index path alone."""
+    if not paths:
+        return
     current = _checkout_index(repo, paths)
     changed = [name for name in paths if current.get(name) != index.get(name)]
     if changed:
@@ -1518,10 +1520,8 @@ def _fast_forward(
     HEAD belongs to a completed landing or another writer and is never undone.
     """
     paths = landed_paths(repo, base, commit)
-    if not paths:
-        return _run(repo, "merge", "--ff-only", commit)
-    index = _checkout_index(repo, paths)
-    flags = _checkout_flags(repo, paths)
+    index = _checkout_index(repo, paths) if paths else {}
+    flags = _checkout_flags(repo, paths) if paths else {}
     files = {name: _checkout_path(repo / name) for name in paths}
     try:
         result = _run(repo, "merge", "--ff-only", commit)
