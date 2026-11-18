@@ -396,12 +396,17 @@ def test_an_unlocked_decision_means_the_node_is_not_closed() -> None:
     assert verdict.ok
 
 
-def test_a_budget_over_the_fence_is_recorded_on_the_node() -> None:
-    """The resolved fence sizes the work rather than refusing dispatch."""
+def test_a_budget_over_the_fence_needs_a_reason_and_records_it() -> None:
+    """The fence binds: an overage rides the node only with a stated reason."""
     node = _node(time_budget="90m")
     verdict = crew.validate_node(node, budget_ceiling="25m")
-    assert "bounded" not in verdict.failed_properties
+    assert "bounded" in verdict.failed_properties
     assert node.over_fence_note == "budget 90m exceeds the resolved fence 25m"
+
+    admitted = _node(time_budget="90m", over_fence_reason="the gate runs a long suite")
+    verdict = crew.validate_node(admitted, budget_ceiling="25m")
+    assert "bounded" not in verdict.failed_properties
+    assert admitted.over_fence_note == "budget 90m exceeds the resolved fence 25m"
 
 
 def test_a_malformed_budget_names_the_accepted_form() -> None:
