@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-a-quiet-foreign-producer-reads-live-runs">
+<h3>A quiet foreign producer reads live: the red file and its repair</h3>
+<p>Two of the file's five cases were red at base 2f00851c42f2 and are green at
+head 17904fb5b27c. Both failing ids are one cause, and the cause is the test:
+it asserts the absent-producer sentence for a session that dispatched nothing,
+which the hook stopped speaking on 15 November (8e1af360be) so that a
+coordinator who never joined a fleet is not told to arm a seat nothing is owed
+to. That rule is owned and asserted by
+<code>tests/test_the_hook_counts_only_what_is_owed.py::test_a_session_with_no_runs_and_no_producer_is_told_nothing</code>,
+which is green at base; the red file was the last holder of the old reading.</p>
+
+<h4>Negative control — base 2f00851c42f2, failing ids</h4>
+<pre># revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76
+# tree: /tmp/reckon-crew-scratch/r-20261118T062542237388-qwnw-red-file-a-quiet-foreign-producer-reads-live/base-2f00851c42f2
+# cwd: /tmp/reckon-crew-scratch/r-20261118T062542237388-qwnw-red-file-a-quiet-foreign-producer-reads-live/base-2f00851c42f2
+# measurement_module: /tmp/reckon-crew-scratch/r-20261118T062542237388-qwnw-red-file-a-quiet-foreign-producer-reads-live/base-2f00851c42f2/reckon/__init__.py
+# command: PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T062542237388-qwnw-red-file-a-quiet-foreign-producer-reads-live/base-2f00851c42f2 SLURM_JOB_ID= /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_quiet_foreign_producer_reads_live.py
+.FF..                                                                    [100%]
+FAILED tests/test_a_quiet_foreign_producer_reads_live.py::test_stale_or_mismatched_lease_does_not_revive_quiet_seat[producer-elsewhere.invalid-31] - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_a_quiet_foreign_producer_reads_live.py::test_stale_or_mismatched_lease_does_not_revive_quiet_seat[different-holder.invalid-0] - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+2 failed, 3 passed in 5.27s
+EXIT=1</pre>
+<p>The empty stdout the decode error names is the hook's silence, not a crash:
+the hook exited 0 and wrote nothing, because the fixture session holds no live
+pointer. The <code>_line</code> helper asserted the exit and stderr before it
+decoded, so both passed.</p>
+
+<h4>Head run — all_debug job 1325880, SLURM_JOB_ID unset inside the job</h4>
+<pre># revision: 17904fb5b27c96369f3dc27f970d87ca52afc09b
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-quiet-foreign-producer-reads-live
+# host: 98dci4-clu-3142.iter.org
+# command: PYTHONPATH=. SLURM_JOB_ID= .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_quiet_foreign_producer_reads_live.py
+.....                                                                    [100%]
+5 passed in 4.14s
+EXIT=0</pre>
+
+<h4>The repaired case, and the two mutations that show it bites</h4>
+<p>The case records one live pointer before seating the lease, so the
+absent-producer sentence is reachable, and it holds the reading to both halves:
+the line names no producer and offers <code>watch --ensure</code>, and it names
+neither the foreign host nor this session's follower arming — the reading a
+lease this host never renewed must not revive. No assertion was deleted or
+weakened; the case gained the two exclusions and the fixture that makes the
+sentence speak.</p>
+<pre>mutation 1 — lease age 31 -> 0, so the seat is freshly renewed:
+>       assert watch_unit.live_foreign_seat_host(PROJECT) == ""
+E       AssertionError: assert 'producer-elsewhere.invalid' == ''
+FAILED ...test_stale_or_mismatched_lease_does_not_revive_quiet_seat[producer-elsewhere.invalid-0] - AssertionError: assert 'producer-elsewhere.invalid' == ''
+1 failed, 1 passed in 1.73s
+
+mutation 2 — lease fresh and the seat-helper assertion dropped:
+>       assert "no producer" in line and ENSURE in line, line
+E       AssertionError: reckon obligations for session quiet-foreign-session (project quiet-foreign-producer) are not current: the seat is held on producer-elsewhere.invalid, whose producer has published no snapshot for this session; run `reckon crew follow --project quiet-foreign-producer --session quiet-foreign-session` to arm this session's follower
+1 failed, 1 passed in 2.45s</pre>
+<p>Both mutated runs were made in an extracted HEAD tree under the run's
+scratch directory, so the delivered worktree never held them. A seat wrongly
+read as live fails on the helper and again on the line, and the line the second
+mutation prints is exactly the revival the case forbids.</p>
+
+<h4>Verdicts</h4>
+<ul>
+<li>Cause 1 — the absent-producer sentence for a session holding no live work
+(leftover from <code>session_holds_live_work</code>, 8e1af360be):
+<strong>test wrong</strong>. Both ids
+(<code>test_stale_or_mismatched_lease_does_not_revive_quiet_seat</code> at two
+parameters) encode the pre-silence rule; the product rule (write, 8e1af360be)
+keeps its own asserted coverage in
+<code>tests/test_the_hook_counts_only_what_is_owed.py</code>, green at base.</li>
+</ul>
+</section>
