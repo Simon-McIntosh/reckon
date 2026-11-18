@@ -1,0 +1,85 @@
+<section id="qwnw-red-file-pointer-classification-is-memoised-landing">
+  <h2>The pointer-classification file is green at the base revision</h2>
+
+  <p><strong>What was recorded.</strong> This file was queued as a test file red
+  on the primary branch, one node to one file: repair the cause, or state that
+  the test encoded a rule the code no longer keeps, without deleting or
+  weakening an assertion.</p>
+
+  <p><strong>What reproduced.</strong> Nothing. At the base revision
+  <code>577adbbe51728af1e1499236b0ab00dd1b37166a</code> — the worktree's own head,
+  with neither a merge nor a pull — the file runs in full and green:
+  <code>10 passed</code>, no skips, <code>EXIT=0</code>. The memoisation it names
+  landed before this node was dispatched, in
+  <code>5f98ae3741</code> (the file itself), <code>a72081a5e0</code>,
+  <code>0a0702f00c</code> and <code>1986b59f17</code>. So there is no cause to
+  attribute to the product or to the test, no assertion was touched, and no
+  source path changed. What this node delivers is the passing run the fence asks
+  for, plus the observation below, which is the one thing the run does not
+  settle on its own.</p>
+
+  <p><strong>What the run does settle.</strong> Ten cases, green, on the base
+  revision, as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+  unset and the log on shared storage. The instrument is live rather than
+  vacuous: the first case's counter reads <code>2</code> lines handed to
+  <code>_backends.parse_events</code> on the first classification and still
+  <code>2</code> after the second, so the parse it counts for that stream is
+  observable before its absence is reported. Two arms of the same revision were
+  taken — the composed gate and a scratch extraction — and both read the same
+  ten passes.</p>
+
+  <h3 id="qwnw-red-file-pointer-classification-is-memoised-measured">Measured</h3>
+
+  <table id="qwnw-red-file-pointer-classification-is-memoised-arms">
+    <caption>Every arm ran the same file at the same revision; the two mutation
+    arms run a scratch copy of that revision with the persisted memo disabled,
+    and the repository is untouched by both.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base and head, composed scoped gate</td>
+        <td><code>577adbbe5172</code></td>
+        <td><code>all_debug</code> job, scratch extraction</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>base and head, explicit measurement</td>
+        <td><code>577adbbe5172</code></td>
+        <td><code>all_debug</code> job, scratch extraction</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control — the reader serves no memo</td>
+        <td><code>577adbbe5172</code></td>
+        <td>scratch extraction, mutated</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control — no memo path at all</td>
+        <td><code>577adbbe5172</code></td>
+        <td>scratch extraction, mutated</td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base run has no failing ids to log beside the head run, because it has
+  none: the arm the fence asks for as a negative control is this green run.</p>
+
+  <h3 id="qwnw-red-file-pointer-classification-is-memoised-mutation">The mutation that did not move the file</h3>
+
+  <p>Green on its own does not show that a guard fires, so the guard the file
+  names was made to fail twice, in a scratch extraction of the same revision.
+  First <code>_read_classification_memo</code> was made to return
+  <code>{}</code>, so no classification could serve what the last one wrote.
+  Then <code>_classification_memo_path</code> was made to return
+  <code>None</code>, so the memo was neither read nor written at all. Both
+  mutations left the file green: <code>10 passed</code>, <code>EXIT=0</code>, on
+  each.</p>
+
+  <p>The reason is in the product, not in the assertions. A second
+  classification of an unchanged stream does not reach
+  <code>_backends.parse_events</code> even with the classification memo gone,
+  because <code>reckon/_backends.py</code> keeps a process-wide
+  <code>_STREAM_SUMMARIES</code> entry keyed by the stream's stat identity and
+  serves the whole read from it. So the eight cases here that count parses are
+  satisfied by that cache inside one process, and the file does not discriminate
+  the persisted memo it is named for. That is worth stating plainly rather than
+  reading as coverage: a regression that stopped the memo being written would
+  leave this file green. A case that opens a second process, or one that clears
+  the backend summary between the two classifications, is what would make the
+  memo load-bearing here; it is not this node's change, and it is not needed for
+  the deliverable, which is the file passing in full.</p>
+</section>
