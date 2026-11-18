@@ -1,0 +1,35 @@
+<section id="qwnw-red-file-code-reload-never-cuts-off-a-promotion">
+<h3>A reload test that never let the reload window come due</h3>
+<p><code>tests/test_code_reload_never_cuts_off_a_promotion.py</code> did not fail at base: two of its three cases hung, and a run of the file never returned. The two cases that hang are the ones that drive the loop, and the case that only drives <code>PromotionService</code> passes.</p>
+<p id="qwnw-red-file-code-reload-never-cuts-off-a-promotion-cause"><strong>Cause, verdict: test wrong.</strong> The test was committed as <code>966e47a3b6bd4bd2c6be52445af428a39210971d</code>, when the loop compared the stamp directly:</p>
+<pre>if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():</pre>
+<p><code>8a45bd001e</code> then batched standing service reloads behind an export window, and the same line became a query of that window.</p>
+<pre>if reload_window.due(newest_code) and _checkout_code_is_trusted():</pre>
+<p>The test's fixture moves the stamp and then spins the loop on a zero interval, never satisfying <code>ReloadWindow.due</code>, which requires the image to have exported a pass <em>and</em> the window's deadline to have passed. A fresh window carries its deadline 1800 s ahead, so the loop never reaches its drain and never replaces itself. The test now writes the pass schedule the product reads, with a deadline already in the past, so the move is due in the pass after the first; the window's length stays what the product computes. No assertion was deleted or weakened, and the fixture additionally places the loop's pass boundary inside <code>tmp_path</code>, because its default name resolved against the working directory and left lock and registration files in the checkout.</p>
+
+<h4 id="qwnw-red-file-code-reload-never-cuts-off-a-promotion-probe">The window, read both ways</h4>
+<pre>fresh schedule next_reload_at: 1799.9986851215363 seconds from now
+fresh due('new'): False
+past-deadline due('new'): True
+past-deadline due('old'): False</pre>
+<p>The instrument sees the true reading as well as the false one: with the deadline in the past and the stamp moved, <code>due</code> answers True, and with the stamp unchanged it answers False.</p>
+
+<h4 id="qwnw-red-file-code-reload-never-cuts-off-a-promotion-negative-control">Negative control: the same file at the base revision</h4>
+<p>Revision <code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code>, in a scratch tree under <code>$TMPDIR</code>, with <code>pytest-timeout</code> turning each hang into a failure so the run has failing ids to report. Log: <code>logs/negative-control-base.log</code> and <code>logs/negative-control-base-compact.log</code> in the run directory <code>~/.config/reckon/crew/runs/r-20261118T044609684406-qwnw-red-file-code-reload-never-cuts-off-a-promotion</code>; the first is the 16 MB run whose stacks show the spinning loop, the second the run quoted here.</p>
+<pre>FF.                                                                       [100%]
+=========================== short test summary info ============================
+FAILED tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes - Failed: Timeout (&gt;30.0s) from pytest-timeout.
+FAILED tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes - Failed: Timeout (&gt;30.0s) from pytest-timeout.
+2 failed, 1 passed in 60.35s (0:01:00)
+EXIT=1</pre>
+<p>The passing case in that run is the third, which drives <code>PromotionService</code> directly and never starts the loop.</p>
+
+<h4 id="qwnw-red-file-code-reload-never-cuts-off-a-promotion-head">The same file at head</h4>
+<pre>...                                                                      [100%]
+3 passed in 2.26s
+EXIT=0</pre>
+<p>Head <code>abe4e20796282dcd7e1a24a24e32384a43cc2b44</code>; log <code>logs/head-run.log</code> in the same run directory, and the scoped gate run of this file as an <code>all_debug</code> job in that directory too.</p>
+
+<h4 id="qwnw-red-file-code-reload-never-cuts-off-a-promotion-mutation">The guarantee still fires when the product is broken</h4>
+<p>Removing the loop's drain &#8212; <code>begin_drain</code>, <code>wait_for_in_flight</code> and <code>worker.settle</code> &#8212; makes both cases fail on a replacement recorded while the work is still held: <code>assert 1 == 0 where 1 = &lt;_LoopDriver object&gt;.reexecs_while_work_held</code>, <code>2 failed, 1 passed in 1.79s</code>. The repaired test therefore still catches the defect it was written for, rather than passing because its fixture no longer reaches the replacement.</p>
+</section>
