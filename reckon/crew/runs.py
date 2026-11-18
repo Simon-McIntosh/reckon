@@ -3342,7 +3342,13 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
 
 
 def _drain_plan_states(project: str) -> list[tuple[str, dict[str, Any]]] | None:
-    """Read live plans without publishing the plan index or any other file."""
+    """Read live plans without publishing the plan index or any other file.
+
+    A plan whose bytes cannot be read leaves the whole inventory unknown rather
+    than shortening it: the remainder is a count, and a file the drain could not
+    read would otherwise be counted as a plan declaring nothing, which reads as
+    a drained project.
+    """
     from reckon import _plan_html, resources
 
     docs_dir = _docs_dir_for_project(project)
@@ -3354,7 +3360,7 @@ def _drain_plan_states(project: str) -> list[tuple[str, dict[str, Any]]] | None:
             resource = resources.identify_resource(docs_dir, path, project)
             if resource is None or resource.type != "plan" or resource.archived:
                 continue
-            plans.append((resource.slug, _plan_html.read_state_file(path)))
+            plans.append((resource.slug, _plan_html.read_readable_state_file(path)))
     except (OSError, ValueError):
         return None
     return plans
