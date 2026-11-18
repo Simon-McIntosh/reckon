@@ -1,4 +1,4 @@
-<section id="qwnw-red-file-dispatch-suite-head">
+<section id="qwnw-red-file-dispatch-session-host">
   <h2>A session-host case that asked a session it was not</h2>
 
   <p><strong>What was red.</strong> At the base revision
@@ -13,9 +13,9 @@ EXIT=1</code></pre>
   changed.</strong> The file was written on 7 October; three rules it encoded
   were changed or extended afterwards, and each is guarded where it lives.</p>
 
-  <h3 id="qwnw-red-file-dispatch-suite-head-causes">The three causes</h3>
+  <h3 id="qwnw-red-file-dispatch-session-host-causes">The three causes</h3>
 
-  <ol id="qwnw-red-file-dispatch-suite-head-cause-list">
+  <ol id="qwnw-red-file-dispatch-session-host-cause-list">
     <li><strong>A request is written only for the calling process's own session
       pair</strong> (<code>reckon/crew/dispatch_watch.py</code>,
       <code>_request_host_follower</code>: <em>“the FIFO belongs to the calling
@@ -31,7 +31,7 @@ EXIT=1</code></pre>
 session claude-session-host-test request written: True elapsed 0.0
 line: b'{"project": "sample", "session": "claude-session-host-test", "owner_checked": true}\n'</code></pre>
 
-  <ol start="2" id="qwnw-red-file-dispatch-suite-head-cause-list-2">
+  <ol start="2" id="qwnw-red-file-dispatch-session-host-cause-list-2">
     <li><strong>The answer dispatch accepts is the host's own live child in its
       census</strong>, not a bare follower registration
       (<code>_ask_session_host_for_follower</code> waits on
@@ -44,7 +44,7 @@ line: b'{"project": "sample", "session": "claude-session-host-test", "owner_chec
   <pre><code>census child with registration only: None
 census child after record = the follower's pid is the host's: True</code></pre>
 
-  <ol start="3" id="qwnw-red-file-dispatch-suite-head-cause-list-3">
+  <ol start="3" id="qwnw-red-file-dispatch-session-host-cause-list-3">
     <li><strong>The request line carries the owner mark</strong>
       (<code>_request_line</code> writes <code>owner_checked</code>), and the case
       asserted a two-key line. That mark is printed in the probe above.</li>
@@ -59,9 +59,9 @@ census child after record = the follower's pid is the host's: True</code></pre>
   a three-key one, which is stricter; the delivery, attachment and empty arming
   line assertions are unchanged.</p>
 
-  <h3 id="qwnw-red-file-dispatch-suite-head-arms">The arms</h3>
+  <h3 id="qwnw-red-file-dispatch-session-host-arms">The arms</h3>
 
-  <table id="qwnw-red-file-dispatch-suite-head-arm-table">
+  <table id="qwnw-red-file-dispatch-session-host-arm-table">
     <caption>Every arm is a log whose first lines name the revision, tree and
     command, and whose last line reads <code>EXIT=&lt;code&gt;</code>. Both ran
     as jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code> removed from
@@ -80,7 +80,7 @@ census child after record = the follower's pid is the host's: True</code></pre>
   <p>The base arm is the negative control and fails exactly one id, which the
   head arm passes:</p>
 
-  <ul id="qwnw-red-file-dispatch-suite-head-failing-ids">
+  <ul id="qwnw-red-file-dispatch-session-host-failing-ids">
     <li><code>tests/test_dispatch_session_host.py::test_dispatch_asks_the_session_host_and_is_admitted_by_it</code></li>
   </ul>
 
