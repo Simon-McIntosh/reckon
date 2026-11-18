@@ -407,23 +407,36 @@ def _default_gate_evidence_from_manifest(
     resolved_commits = tuple(str(sha).strip() for sha in commits if str(sha).strip())
     if str(verdict).strip().lower() != "passed":
         return resolved_gate, resolved_commits
-    # A command and the log it ran against describe one execution, so a caller
-    # that supplies one and leaves the other absent would get a check pairing
-    # its own command with evidence this fill derived from somewhere else. The
-    # half-filled case is refused rather than completed, because the completed
-    # check reads as a run nobody performed.
+    # A command and the log it ran against describe one execution, so a check
+    # completed here — a caller's own half beside evidence this fill derived
+    # from the manifest or the stored record — reads as a run nobody performed.
+    # The completion is refused where it would happen, not up front: a
+    # half-stated check this fill completes nothing for is a check missing a
+    # field, and the gate's own refusal names that field. Raising up front
+    # instead hides every other precondition the promotion judges beside it,
+    # which is the one-refusal contract the rest of the promotion keeps.
     given_command = bool(str(resolved_gate.get("command") or "").strip())
     given_log = bool(
         str(resolved_gate.get("log_path") or "").strip()
         or str(resolved_gate.get("log_digest") or "").strip()
     )
-    if given_command != given_log:
-        raise CrewError(
-            "a gate check is a command and the evidence it ran against: pass "
-            "--gate-command and --gate-log-path (or --gate-log-digest) "
-            "together, or neither, because a command beside a log the "
-            "promotion found elsewhere records a run that never happened"
-        )
+
+    def refuse_a_completed_check() -> None:
+        """Refuse filling the half a caller left out of a half-stated check."""
+        if given_command != given_log:
+            raise CrewError(
+                "a gate check is a command and the evidence it ran against: "
+                "pass --gate-command and --gate-log-path (or "
+                "--gate-log-digest) together, or neither, because a command "
+                "beside a log the promotion found elsewhere records a run "
+                "that never happened"
+            )
+
+    def fill(key: str, value: Any) -> None:
+        """Fill one check field, refusing a check completed from elsewhere."""
+        refuse_a_completed_check()
+        resolved_gate[key] = value
+
     manifest = _fresh_manifest(record)
     if manifest is None:
         return resolved_gate, resolved_commits
@@ -433,7 +446,7 @@ def _default_gate_evidence_from_manifest(
             manifest, manifest_path=manifest_path
         )
         if default_log:
-            resolved_gate["log_path"] = default_log
+            fill("log_path", default_log)
     log_path = str(resolved_gate.get("log_path") or "").strip()
     log_text = ""
     if log_path:
@@ -457,6 +470,11 @@ def _default_gate_evidence_from_manifest(
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
     if review_evidence is not None:
+        # The stored record supplies both halves of the check, and the log it
+        # captures is written where the promotion will cite it, so a half-stated
+        # check is refused before that derivation rather than after it: a
+        # promotion that refuses leaves no file behind it.
+        refuse_a_completed_check()
         # The check's log is captured only where the promotion will cite it: a
         # caller's own flag, or a log the manifest already names, is the
         # evidence that run re-executed, and writing a second log beside it
@@ -470,10 +488,10 @@ def _default_gate_evidence_from_manifest(
                 if resolved_gate.get(key) is None:
                     resolved_gate[key] = value
             elif not str(resolved_gate.get(key) or "").strip():
-                resolved_gate[key] = value
+                fill(key, value)
     command_unset = not str(resolved_gate.get("command") or "").strip()
     if command_unset and declared_command and not _gate_command_prose(declared_command):
-        resolved_gate["command"] = declared_command
+        fill("command", declared_command)
     # A worker that writes a description of its suite on the `tests:` line
     # rather than the command cannot have that text re-run at the integrated
     # head. The cited log's own header names the command that actually ran, so
@@ -485,9 +503,9 @@ def _default_gate_evidence_from_manifest(
     if not str(resolved_gate.get("command") or "").strip():
         recovered = _command_from_gate_log(log_text)
         if recovered:
-            resolved_gate["command"] = recovered
+            fill("command", recovered)
         elif declared_command:
-            resolved_gate["command"] = declared_command
+            fill("command", declared_command)
     if resolved_gate.get("exit_status") is None:
         recorded = _recorded_exit_status(log_text) if log_text else None
         if recorded is not None:
