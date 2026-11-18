@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="459">
+<meta name="plan-version" content="460">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1447,7 +1447,10 @@
     <div class="r-comment-body"><p>tests/test_passed_verdict_needs_exit_zero.py read the bounded completion receipt instead of the record it names — a refusal detail cut at 240 characters, and no `record` on a passing run — and now reads the recorded completion through `_completion_record`/`_refusal_detail` with every assertion unchanged; the file passes 10/10 on all_debug job 1325566 at 2b7c28c9 (EXIT=0) where base 3006761c5a ran 7 failed and 3 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T054056150537-qwnw-red-file-the-drain-keeps-up-with-a-burst" data-who="reckon-build" data-when="2026-11-18T08:24:59.426Z">
-    <div class="r-comment-body"><p>`tests/test_the_drain_keeps_up_with_a_burst.py` already passes in full on the primary branch — 26 passed, EXIT=0 at both base f29efdc635 and head 944700bc04 as all_debug jobs with SLURM_JOB_ID unset — so this node repaired no cause and changed no product or test line; the red state the section quotes was measured at 8d50b0333f on 15 November and was repaired earlier in this plan&#x27;s node for the same scenario (last touching commit 487cc32505), recorded with both gate logs in the node&#x27;s evidence fragment.</p></div>
+    <div class="r-comment-body"><p>`tests/test_the_drain_keeps_up_with_a_burst.py` already passes in full on the primary branch — 26 passed, EXIT=0 at both base f29efdc635 and head 944700bc04 as all_debug jobs with SLURM_JOB_ID unset — so this node repaired no cause and changed no product or test line; the red state the section quotes was measured at 8d50b0333f on 15 November and was repaired earlier in this plan's node for the same scenario (last touching commit 487cc32505), recorded with both gate logs in the node's evidence fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044617464935-qwnw-red-file-skills-load-full-width" data-who="reckon-build" data-when="2026-11-18T09:12:22.723Z">
+    <div class="r-comment-body"><p>tests/test_skills_load_full_width.py passes in full at head, 9 passed with EXIT=0 in the scoped gate at c7efa46ac0 on all_debug, from 2 failed and 7 passed with 2 of 9 ids red at base 97dec20bfb; both causes were the test&#x27;s and not the product&#x27;s, because commit 9da8596517 replaced the choose-each-section rule with the full-width queue and reworded the guidance clause from those to sections, so the two assertions now name the instruction the surfaces carry, with the retired sentence barred rather than left unasserted, and no assertion was deleted or weakened.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
