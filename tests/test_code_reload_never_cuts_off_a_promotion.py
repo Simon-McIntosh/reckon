@@ -2,17 +2,21 @@
 
 The admission service replaces its own process image when the checkout's code
 stamp moves. ``os.execve`` ends every thread the old image started, and both the
-promotion threads and the landing thread live there. So on a moved stamp the
-loop starts nothing new, waits for the work already running, and only then
-re-executes.
+promotion threads and the landing thread live there. A moved stamp is not
+replaced at once: it is coalesced until the reload window's deadline and until
+this image has exported a pass, so the replacement happens in the pass that
+finds both satisfied. In that pass the loop starts nothing new, waits for the
+work already running, and only then re-executes.
 
 Each case drives the real loop with the loop's own seams patched: a promotion
 executor and a landing action that block on an event, a pause that moves the
-stamp while that work runs, and a re-execution recorded rather than performed.
+stamp while that work runs, a reload schedule whose deadline has already
+passed, and a re-execution recorded rather than performed.
 """
 
 from __future__ import annotations
 
+import json
 import threading
 import time
 from pathlib import Path
@@ -22,6 +26,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import promotion_requests, queue_admission, runs
+from reckon.crew.follower_reload import reload_paths
 from reckon.crew.promotion_requests import PromotionService
 
 PROMOTION_THREAD_PREFIX = "promotion-request-"
@@ -109,6 +114,17 @@ class _LoopDriver:
             "reckon.crew.resumption._promotion_settings", lambda _config: (1, 0.0)
         )
         monkeypatch.setattr("reckon.flight.resolve", lambda: SimpleNamespace(config={}))
+        # The pass boundary and the reload schedule both hang off the pass path
+        # and the crew home, so both are placed inside this test's temporary
+        # directory rather than left in the checkout or shared between runs.
+        pass_path = tmp_path / "admission.pass"
+        monkeypatch.setenv("RECKON_SERVICE_PASS_PATH", str(pass_path))
+        schedule_path, _request_path = reload_paths(pass_path.stem)
+        # A moved stamp is due only once the reload window's deadline has
+        # passed: this leaves behind the pass schedule of a service up for
+        # longer than its window. The window's own length stays the product's.
+        schedule_path.parent.mkdir(parents=True, exist_ok=True)
+        schedule_path.write_text(json.dumps({"next_reload_at": 0}))
         monkeypatch.setattr(
             promotion_requests,
             "PromotionService",
