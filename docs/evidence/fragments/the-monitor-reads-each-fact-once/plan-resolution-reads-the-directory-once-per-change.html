@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s98">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-18">
+  <meta name="evidence-commit" content="a3e7504e26">
+  <title>Plan resolution reads its directory once per change | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="plan-resolution-reads-the-directory-once-per-change">
+  <h2>Plan resolution reads its directory once per change</h2>
+
+  <p><strong>The defect.</strong> A named plan read takes the plan's canonical
+  path and then asks whether another file in that root claims the same
+  identity. That question is one lookup into a held index of the root, and the
+  index is revalidated against the root's listing &mdash; a glob of the
+  directory and one stat of every sibling. The listing itself was rebuilt per
+  resolve, so the whole plan population's metadata was paid once per named
+  read. At the base revision 200 named reads cost 400 directory globs and
+  80,000 sibling stats across two passes over an unchanged directory.</p>
+
+  <p><strong>What landed.</strong> <code>reckon/resources.py</code> holds each
+  directory's listing beside the directory's own stat stamp &mdash;
+  device, inode, <code>mtime_ns</code>, <code>ctime_ns</code> and size &mdash;
+  read before the listing is taken. A resolve whose directory stamp has not
+  moved is answered from the held listing, so it costs one
+  <code>stat</code> of the directory instead of a glob and a stat per sibling.
+  An entry added, removed or renamed moves the stamp, and the next resolve
+  lists the directory again. The stamp is read first, so a change landing
+  during a listing leaves the stored stamp behind the directory and the next
+  changed call lists it again. Only the directory's entry set is held: the
+  resolved document's own head is still read from its file on every resolve, so
+  a document written in place stays current.</p>
+
+  <h3 id="plan-resolution-reads-the-directory-once-per-change-measure">Two passes, then one change</h3>
+
+  <p><code>tests/test_plan_resolution_reads_the_directory_once_per_change.py</code>
+  writes 200 plans at their canonical paths, resolves all 200 twice, then adds
+  one plan and renames one and resolves all 200 plus the added plan. It stands
+  in for <code>resources._identity_listing</code>, for the plans
+  directory's <code>glob</code>, and for
+  <code>file_memo.file_signature</code>, so the globs are the directory's own
+  and the sibling stats are the stamps one listing takes.</p>
+
+  <p>The head arm reads one glob and exactly 200 sibling stamps across the
+  first two passes &mdash; the first listing stamps every sibling, which is the
+  check that the instrument sees something before an absence is claimed, and
+  the second pass takes none &mdash; and one further glob after the plan is
+  added and one renamed. Each resolve is compared for equality with the
+  classifier's answer for the file it names, including the added and the
+  renamed plan, so the held listing changes no answer.</p>
+
+  <h3 id="plan-resolution-reads-the-directory-once-per-change-negative">The negative control</h3>
+
+  <p>The same test, run against the base revision's
+  <code>reckon/resources.py</code> in a scratch tree, fails on the glob
+  assertion with <code>two passes over 200 plans globbed the directory 400
+  times</code> and <code>EXIT=1</code>, matching the section's declared
+  string. The head arm passes at <code>EXIT=0</code>.</p>
+
+  <h3 id="plan-resolution-reads-the-directory-once-per-change-arms">Matched arms</h3>
+
+  <p>The node's suite resolves to
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> at the
+  base revision &mdash; the test this node adds is not in that tree &mdash; and
+  to those two files plus this node's test at the head. Both arms ran as an
+  <code>all_debug</code> partition job submitted through
+  <code>sbatch</code>, each with its own revision checkout and its own log
+  under the run directory.</p>
+</section>
+</main>
+</body>
+</html>
