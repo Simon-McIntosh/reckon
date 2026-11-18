@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4c169dca728fefcf22dc55c936480478fb4181e0",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3028 _transition_event -> _recorded_transition_spend",
+    "reckon/crew/recovery.py:416 re-export of _recorded_transition_spend"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T08:04:51Z",
+  "findings": [
+    {
+      "file": "tests/test_a_transition_reads_one_run_row.py",
+      "line": "123",
+      "severity": "non-blocking",
+      "text": "non-blocking: the decode measure is an upper bound only, so a code path that answers without decoding the store (0 rows counted) passes the same assertion; a lower bound such as len(decoded) == SAMPLED would let the test tell one row read from none, and the head arm actually decodes 50."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "3073",
+      "severity": "non-blocking",
+      "text": "non-blocking: the storeless fallback is exercised by no test in the added file (the fixture always creates a store), so an edit that drops run_ids=(run_id,) here restores the whole-history read for a project with no store and nothing reddens."
+    },
+    {
+      "file": "logs/importer-head.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head importer arm's file list omits tests/test_every_shared_home_lock_holds_across_nodes.py that logs/importer-base.log:2 ran, so the done_when's matched arms are not literally matched; the gap is covered because the suite arms ran that file at both revisions with 0 failures."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-transition-reads-one-run-row.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node's declared evidence fragment was not written, so the plan's per-node evidence set has no entry for this node and the coordinator's writeback would cite a path that does not exist unless a followup node carries it."
+    }
+  ],
+  "head_log_revision": "730a29a8e95e9879b97e44881546b90f5fdc326b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified two production call sites: the transition event builder at reckon/crew/recovery_watch.py:3028, the only caller of _recorded_transition_spend, and the re-export at reckon/crew/recovery.py:416, which has no other in-repository caller.",
+    "diff": "Read the single commit 730a29a8e9 against base 4c169dca: reckon/crew/recovery_watch.py replaces the whole-history ledger read with a keyed store read plus a narrowed storeless fallback (+11 -2), and tests/test_a_transition_reads_one_run_row.py is new (+125).",
+    "done_when": "The done_when asks for a 2,000-row store whose 51 calls decode at most 51 rows, with the base revision decoding at least 100,000; tests/test_a_transition_reads_one_run_row.py:104-125 asserts exactly that and logs/negative-control.log shows it failing at 102000 rows on base, though logs/importer-head.log:2 omits a file logs/importer-base.log:2 ran so the matched importer arms are off by one file.",
+    "goal": "The node's goal is that a transition's recorded spend reads one run's row from the run store; reckon/crew/recovery_watch.py:3070 selects that identity by key and :3075 keeps the published spend mapping for it.",
+    "manifest": "Read; it reports status complete, commit 730a29a8e9, the literal scoped gate command, baseline_suite 58 passed at 4c169dca and after_suite 59 passed at 730a29a8e9, both EXIT=0, and the log paths it names exist and carry the matching summary lines.",
+    "write_paths": "The node declared reckon/crew/recovery_watch.py, reckon/run_store.py, the new test file, an evidence fragment and a figures directory; the diff touches the first and third only, all inside the fence, and the declared fragment docs/evidence/fragments/the-monitor-reads-each-fact-once/a-transition-reads-one-run-row.html was not written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_transition_reads_one_run_row.py:123 reddens at 102000 decoded rows when the whole-history read is reinstated (logs/negative-control.log), but the bound is one-sided and no test exercises the storeless fallback at reckon/crew/recovery_watch.py:3073, so a dropped run_ids= there stays green.",
+    "evidence": "The scoped gate the manifest records (scoped-gate-1794982194014207285.log:3 at revision 730a29a8e9, 59 passed, EXIT=0) measures the done_when's decode bound and logs/negative-control.log fires it at 102000 rows, but the head importer arm ran a narrower file population than the base arm.",
+    "fit": "The addition at reckon/crew/recovery_watch.py:3059-3075 keeps the module's in-function import idiom and the existing keyed-read call shape already used at reckon/crew/review.py:1281, and ruff check and ruff format --check add no finding on either staged path at 730a29a8e9.",
+    "goal_fidelity": "At 730a29a8e9, reckon/crew/recovery_watch.py:3070 reads the settled run's row with run_store.stored_run_rows(project, run_ids=(run_id,)) rather than walking the project's history, so a transition now pays for its own row.",
+    "reuse": "run_store.stored_run_rows (reckon/run_store.py:844) already owns the keyed row read with a run_ids selector and ledger.read_records (reckon/ledger.py:4102) owns the narrower ledger read, so the change calls both owners and introduces no second reader.",
+    "scope_discipline": "The commit 730a29a8e9 changes only reckon/crew/recovery_watch.py:3059-3075 and the new tests/test_a_transition_reads_one_run_row.py, both inside the node's declared write paths, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T080204763674-review-of-a-transition-reads-one-run-row-730a29a8e95e",
+  "review_text": "VERDICT goal: read the node goal against reckon/crew/recovery_watch.py:3070 at 730a29a8e9 and found the transition's spend selected by key via run_store.stored_run_rows(project, run_ids=(run_id,)), which is the goal.\nVERDICT done_when: the manifest's gate command matches scoped-gate-1794982194014207285.log:3 (59 passed, EXIT=0) and the measure is asserted at tests/test_a_transition_reads_one_run_row.py:104-125 with logs/negative-control.log reddening at 102000 rows.\nVERDICT write_paths: the declared fence is reckon/crew/recovery_watch.py, reckon/run_store.py, the test file, the evidence fragment and a figures directory; the diff touches the first and third, and the fragment is absent.\nVERDICT manifest: read; complete at 730a29a8e9 with baseline_suite 58 passed at 4c169dca and after_suite 59 passed at 730a29a8e9, both logs ending EXIT=0 at the cited paths.\nVERDICT diff: read commit 730a29a8e9 against 4c169dca: reckon/crew/recovery_watch.py:3066-3075 replaces the history walk with a keyed read plus a narrowed fallback, and the new 125-line test seeds 2,000 rows and counts decodes through a stand-in.\nCALL_SITES: reckon/crew/recovery_watch.py:3028, reckon/crew/recovery.py:416\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:3070 selects the run's row by key and :3075 keeps the previous published mapping.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1794982194014207285.log:3 records 59 passed EXIT=0 and logs/negative-control.log records the assertion firing, but logs/importer-head.log:2 dropped a file the base arm ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is confined to reckon/crew/recovery_watch.py:3059-3075 and the declared new test file.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_transition_reads_one_run_row.py:123 fails on the reinstated history walk, but the storeless fallback at reckon/crew/recovery_watch.py:3073 is unasserted.\nSCORE fit: 20\nJUSTIFICATION fit: the change follows the module idiom at reckon/crew/review.py:1281 and ruff check and format are clean on both staged paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: it calls the existing owners reckon/run_store.py:844 stored_run_rows and reckon/ledger.py:4102 read_records rather than adding a reader.\nFINDING tests/test_a_transition_reads_one_run_row.py:123 non-blocking: the decode measure is one-sided, so an answer that decodes nothing passes it.\nFINDING reckon/crew/recovery_watch.py:3073 non-blocking: the storeless fallback is untested, so dropping run_ids= there restores the history read unobserved.\nFINDING logs/importer-head.log:2 non-blocking: the head importer arm ran a narrower file population than the base arm, so the matched arms the done_when names are off by one file.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-transition-reads-one-run-row.html:1 non-blocking: the declared evidence fragment was never written.",
+  "reviewed_base_sha": "4c169dca728fefcf22dc55c936480478fb4181e0",
+  "reviewed_head_sha": "730a29a8e95e9879b97e44881546b90f5fdc326b",
+  "reviewed_run_id": "r-20261118T054122485303-a-transition-reads-one-run-row",
+  "reviewer_run_id": "r-20261118T080204763674-review-of-a-transition-reads-one-run-row-730a29a8e95e",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:29:04.870428+00:00",
+  "total": 112
+}
