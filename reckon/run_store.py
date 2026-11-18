@@ -1727,7 +1727,7 @@ class RunStore:
             # answers through the store whenever one exists and leaves the
             # check comparing the store with itself, so a ledger that moved
             # would never rebuild the rows it outgrew.
-            committed = ledger.file_run_ids(name, root)
+            committed = ledger.run_ids(name, root, use_index=False)
             self._membership_stamps[name] = stamp
             if indexed != committed:
                 data, _version = ledger.load(name, root, use_index=False)

@@ -32,10 +32,16 @@ run the ledger no longer carries in the archive.
 </p>
 
 <p id="qwnw-red-file-the-run-store-retires-old-runs-fix">
-<code>ledger.file_run_ids()</code> answers membership from the committed documents alone (the
-published index while it matches the files, otherwise a reading of the sources), and the refresh
-compares that against its own ids. <code>run_ids()</code> keeps its store-first answer and is built
-on the new reader, so document membership has one owner.
+<code>ledger.run_ids(..., use_index=False)</code> answers membership from the committed documents alone,
+and the refresh compares that against its own ids. <code>run_ids()</code> keeps its store-first
+answer for every other caller and takes the document read as a parameter, so document membership has
+one owner rather than a second reader beside it.
+</p>
+
+<p>
+A project whose ledger documents are absent or empty is skipped before the comparison: the committed
+set would read as empty and the rebuild would delete rows that a mount simply not present here still
+holds, which the method's own docstring forbids.
 </p>
 
 <h2 id="qwnw-red-file-the-run-store-retires-old-runs-base">Base run at 97dec20bfb8603ab71c4e9deeefddab685e0a42e — 1 failed, 17 passed</h2>
