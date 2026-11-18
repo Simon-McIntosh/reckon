@@ -1,0 +1,68 @@
+<section id="qwnw-discard-test-imports-the-shared-git-helper-landing">
+  <h2>The discard-read tests call the shared git helper</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_crew_discard_reads_discarded.py</code> carried its own git
+  wrapper — <code>_git(repo, *arguments)</code>, a
+  <code>subprocess.run</code> of <code>git -C &lt;repo&gt;</code> with the
+  inherited environment. It now imports <code>git</code> from
+  <code>tests/helpers/git.py</code> <code>as _git</code> and defines nothing of
+  its own. The local name is kept so the six call sites in the fixture read
+  unchanged.</p>
+
+  <p>The shared helper runs the same git command with
+  <code>cwd=repository</code> and with the crew run identity
+  (<code>RUN_ID_ENV</code>) stripped from the child's environment. That is the
+  difference that matters: the git shim refuses a mutating verb whose run's
+  live pointer it cannot read, so a test that names a temporary
+  <code>RECKON_HOME</code> but inherits the worker's run id is refused its own
+  <code>git init</code> the moment the suite runs inside a worker. The local
+  wrapper carried that bug; the shared helper is the one place it is fixed.</p>
+
+  <p>No assertion was deleted or weakened: the file's diff is one added import
+  line and ten deleted lines — the import of <code>subprocess</code> and the
+  local <code>_git</code> body.</p>
+
+  <h3 id="qwnw-discard-test-imports-the-shared-git-helper-control">Control</h3>
+
+  <p>A grep for the local helper at both revisions, the same pattern run over
+  the base blob and the head tree. It is shown to see the helper that
+  <em>is</em> present at base before the head's absence is reported:</p>
+
+  <pre id="qwnw-discard-test-imports-the-shared-git-helper-grep">$ git show 97dec20b:tests/test_crew_discard_reads_discarded.py | grep -n 'def _git\|subprocess.run'
+39:def _git(repo: Path, *arguments: str) -&gt; str:
+40:    return subprocess.run(
+
+$ grep -n 'def _git\|subprocess.run\|helpers.git import' tests/test_crew_discard_reads_discarded.py
+27:from tests.helpers.git import git as _git</pre>
+
+  <p>The head side prints the import line and no definition, so the file no
+  longer runs git through a wrapper of its own.</p>
+
+  <h3 id="qwnw-discard-test-imports-the-shared-git-helper-measured">Measured</h3>
+
+  <table id="qwnw-discard-test-imports-the-shared-git-helper-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, in place</td>
+        <td><code>22675cab8</code>, worktree</td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate, head</td>
+        <td><code>22675cab8</code>, job on <code>all_debug</code></td>
+        <td>64 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, base</td>
+        <td><code>97dec20bf</code>, job on <code>all_debug</code></td>
+        <td>64 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, after</td>
+        <td><code>22675cab8</code>, job on <code>all_debug</code></td>
+        <td>64 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm passes at base as well, so there is no product defect this
+  node repairs: the declared negative control is <code>none</code>, and the
+  grep above is the control — a file that still defined its own helper would
+  show it, and the head side prints only the import line.</p>
+</section>
