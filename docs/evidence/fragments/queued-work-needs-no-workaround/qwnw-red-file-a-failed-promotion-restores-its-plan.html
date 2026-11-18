@@ -12,21 +12,13 @@ EXIT=0
 
 <section id="qwnw-red-file-a-failed-promotion-restores-its-plan-head-run">
 <h2>Head run as a job on all_debug</h2>
-<p>Measured through <code>reckon crew verify-gate --worker</code>, which submits through <code>sbatch --wait --partition=all_debug</code> with the caller's scheduler variables removed, so the job is not a step of any held allocation, and writes the log under the run directory on shared storage. The job archived <code>733461c8</code> into its own scratch tree, linked the project environment and ran the file there.</p>
-<pre># revision: 733461c8d8d352db23c859392481c65ef7ac73b3
+<p>Measured through <code>reckon crew verify-gate --worker</code>, which submits through <code>sbatch --wait --partition=all_debug</code> with the caller's scheduler variables removed, so the job is not a step of any held allocation, and writes the log under the run directory on shared storage. The job archived the head revision into its own scratch tree, linked the project environment and ran the file there. The same call at the base revision <code>733461c8</code> reported the same 50 passed and exit 0 at base and at head. Because this section's shipped-declaration premise did not reproduce, the two measurements are the record, not a before-and-after of a repair: the node changed no product source and no test. The only later commit in this node writes this fragment, which no test imports.</p>
+<pre># revision: a4c47928d7a2ae424c0c7eeeab21cd29df7a6e31
 # host: 98dci4-clu-3144.iter.org
-# tree: /tmp/mcintos-landing-fda1d2b4715e-LjNQC2/tree
+# tree: /tmp/mcintos-landing-932256868897-LIaCcU/tree
 # command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py'
 ..................................................                       [100%]
-50 passed in 13.71s
+50 passed in 12.78s
 EXIT=0
-</pre>
-</section>
-
-<section id="qwnw-red-file-a-failed-promotion-restores-its-plan-suite-arms">
-<h2>Suite arms</h2>
-<p>Both arms of the node's declared suite ran on all_debug; both exited 0 with no failing id. Because this node changes no product source or test, the two arms name the same revision and the same command.</p>
-<pre>baseline_suite: {"revision": "733461c8d8d352db23c859392481c65ef7ac73b3", "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py", "exit_status": 0, "completed": true, "failure_count": 0, "failure_ids": []}
-after_suite: {"revision": "733461c8d8d352db23c859392481c65ef7ac73b3", "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py", "exit_status": 0, "completed": true, "failure_count": 0, "failure_ids": []}
 </pre>
 </section>
