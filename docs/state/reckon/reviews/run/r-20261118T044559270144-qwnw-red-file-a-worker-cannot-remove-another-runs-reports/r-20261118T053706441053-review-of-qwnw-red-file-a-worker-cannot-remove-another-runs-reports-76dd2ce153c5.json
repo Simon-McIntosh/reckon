@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8a9d873cb91d05af20ae5c6530880c260e1c5dbe",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/_worker_fence.py:fence_argv",
+    "reckon/_worker_fence.py:node_tmp_seal_root",
+    "reckon/_worker_fence.py:worker_tmp_mount_source",
+    "reckon/_worker_fence.py:shared_store_seal_roots",
+    "reckon/crew/dispatch_admission.py:_fence_write_roots"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T06:00:39Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_another_runs_reports.py",
+      "line": "170",
+      "severity": "non-blocking",
+      "text": "non-blocking: pinning NODE_TMP_ROOT to <tmp>/node-tmp while RECKON_WORKER_SCRATCH_ROOT stays <tmp>/scratch leaves the scratch outside the node tmp, so reckon/_worker_fence.py:1628 worker_tmp_mount_source returns None for these arms, and the two \"production composition\" arms no longer reproduce the production layout whose interaction broke them; that branch stays covered only by tests/test_fenced_worker_tmp_is_its_scratch.py:240."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-reports.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base and head arm logs are cited by bare filename inside the run directory under ~/.config/reckon/crew/runs/ rather than stored under docs/evidence/fragments/ as the done_when asks, so the primary record of the two base failing ids becomes unresolvable once the run directory is retired, even though the fragment itself carries the ids, the revisions and the counts."
+    }
+  ],
+  "head_log_revision": "7e49e73b9d8a9d934c13d9b2ddbc19bd554797fb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production seams the change reaches: fence_argv, node_tmp_seal_root, worker_tmp_mount_source and shared_store_seal_roots in reckon/_worker_fence.py and _fence_write_roots in reckon/crew/dispatch_admission. Set below.",
+    "diff": "read commit by commit against base 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed; 7e49e73 adds sixteen fixture lines pinning NODE_TMP_ROOT and node_tmp_runtime_paths inside the synthetic tree at tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176 and 76dd2ce adds the 58-line evidence fragment, and no assertion is added, deleted or weakened.",
+    "done_when": "the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, each cause given a product-or-test verdict, an armed suite pair adding no failure, and the base run logged; scoped-gate-1794978571473709828.log records 8 passed EXIT=0 at 7e49e73 on host 98dci4-clu-3142 (an all_debug node by sacct), target-file-head-7e49e73.log records 8 passed under env -u SLURM_JOB_ID, target-file-base-8a9d873.log records 2 failed 6 passed EXIT=1 with both ids, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-reports.html:40-43 states the \"test wrong\" verdict, and baseline_suite-1794978490208599928.log and after_suite-1794978532426788408.log are 58 passed each.",
+    "goal": "the node's goal is that tests/test_a_worker_cannot_remove_another_runs_reports.py passes in full on the primary branch; the landed fixture pin at tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176 makes all eight arms run, and the head arm records 8 passed EXIT=0 at 7e49e73.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044559270144-qwnw-red-file-a-worker-cannot-remove-another-runs-reports/manifest.md; status complete, commits 7e49e73 and 76dd2ce, both changed paths listed, tests line naming the file gate, test_logs naming the scoped gate and the base, head and two negative-control logs, baseline_suite 8a9d873 0 failures and after_suite 7e49e73 0 failures, and evidence_inputs stating that the armed pair resolved to two files that do not import the change.",
+    "write_paths": "the reviewed node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 6699d025..76dd2ce153c5 lists only tests/test_a_worker_cannot_remove_another_runs_reports.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-reports.html, both inside the reviewed node's declared scope, with no product file touched."
+  },
+  "justifications": {
+    "durability": "removing the pin restores exactly the base failure \u2014 target-file-base-8a9d873.log records the two production-composition ids failing at Stores.results_text() while target-file-head-7e49e73.log records 8 passed \u2014 and both declared controls redden at negative-control-REPORTS.log and negative-control-REVIEW.log with EXIT=1.",
+    "evidence": "the gate result is recorded rather than claimed, but the armed pair in baseline_suite/after_suite names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import the change, and the two arm logs are cited only by bare filename.",
+    "fit": "the pin reproduces the idiom already used at tests/test_fenced_worker_tmp_is_its_scratch.py:240-246 and its comment names the mechanism without a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176 pins the node tmp and runtime paths inside the fixture's own tree, which is why the two production-composition arms that could not execute at 8a9d873 now pass.",
+    "reuse": "the diff adds no definition at all \u2014 it sets the existing reckon/_worker_fence.py:1526 NODE_TMP_ROOT and the reckon/_worker_fence.py:1536 node_tmp_runtime_paths seam, and a search of tests/ found no shared node-tmp fixture it should have extended.",
+    "scope_discipline": "git diff 6699d025..76dd2ce153c5 touches only tests/test_a_worker_cannot_remove_another_runs_reports.py and the queued-work-needs-no-workaround evidence fragment, both inside the node's declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_worker_cannot_remove_another_runs_reports.py passes in full on the primary branch; the landed fixture pin at tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176 makes all eight arms run, and the head arm records 8 passed EXIT=0 at 7e49e73.\nVERDICT done_when: the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, each cause given a product-or-test verdict, an armed suite pair adding no failure, and the base run logged; scoped-gate-1794978571473709828.log records 8 passed EXIT=0 at 7e49e73 on host 98dci4-clu-3142 (an all_debug node by sacct), target-file-head-7e49e73.log records 8 passed under env -u SLURM_JOB_ID, target-file-base-8a9d873.log records 2 failed 6 passed EXIT=1 with both ids, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-reports.html:40-43 states the \"test wrong\" verdict, and baseline_suite-1794978490208599928.log and after_suite-1794978532426788408.log are 58 passed each.\nVERDICT write_paths: the reviewed node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 6699d025..76dd2ce153c5 lists only tests/test_a_worker_cannot_remove_another_runs_reports.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-reports.html, both inside the fence, with no product file touched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044559270144-qwnw-red-file-a-worker-cannot-remove-another-runs-reports/manifest.md; status complete, commits 7e49e73 and 76dd2ce, both changed paths listed, tests line naming the file gate, test_logs naming the scoped gate and the base, head and two negative-control logs, baseline_suite 8a9d873 0 failures and after_suite 7e49e73 0 failures, and evidence_inputs stating that the armed pair resolved to two files that do not import the change.\nVERDICT diff: read commit by commit against base 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed; 7e49e73 adds sixteen fixture lines pinning NODE_TMP_ROOT and node_tmp_runtime_paths inside the synthetic tree at tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176 and 76dd2ce adds the 58-line evidence fragment, and no assertion is added, deleted or weakened.\nCALL_SITES: reckon/_worker_fence.py:fence_argv, reckon/_worker_fence.py:node_tmp_seal_root, reckon/_worker_fence.py:worker_tmp_mount_source, reckon/_worker_fence.py:shared_store_seal_roots, reckon/crew/dispatch_admission.py:_fence_write_roots\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176 pins the node tmp and runtime paths inside the fixture's own tree, which is why the two production-composition arms that could not execute at 8a9d873 now pass.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate result is recorded rather than claimed, but the armed pair in baseline_suite/after_suite names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import the change, and the two arm logs are cited only by bare filename.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 6699d025..76dd2ce153c5 touches only tests/test_a_worker_cannot_remove_another_runs_reports.py and the queued-work-needs-no-workaround evidence fragment, both inside the node's declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: removing the pin restores exactly the base failure \u2014 target-file-base-8a9d873.log records the two production-composition ids failing at Stores.results_text() while target-file-head-7e49e73.log records 8 passed \u2014 and both declared controls redden at negative-control-REPORTS.log and negative-control-REVIEW.log with EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the pin reproduces the idiom already used at tests/test_fenced_worker_tmp_is_its_scratch.py:240-246 and its comment names the mechanism without a plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all \u2014 it sets the existing reckon/_worker_fence.py:1526 NODE_TMP_ROOT and the reckon/_worker_fence.py:1536 node_tmp_runtime_paths seam, and a search of tests/ found no shared node-tmp fixture it should have extended.\nFINDING tests/test_a_worker_cannot_remove_another_runs_reports.py:170 non-blocking: pinning NODE_TMP_ROOT to <tmp>/node-tmp while RECKON_WORKER_SCRATCH_ROOT stays <tmp>/scratch leaves the scratch outside the node tmp, so reckon/_worker_fence.py:1628 worker_tmp_mount_source returns None for these arms, and the two \"production composition\" arms no longer reproduce the production layout whose interaction broke them; that branch stays covered only by tests/test_fenced_worker_tmp_is_its_scratch.py:240.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-another-runs-reports.html:23 non-blocking: the base and head arm logs are cited by bare filename inside the run directory under ~/.config/reckon/crew/runs/ rather than stored under docs/evidence/fragments/ as the done_when asks, so the primary record of the two base failing ids becomes unresolvable once the run directory is retired, even though the fragment itself carries the ids, the revisions and the counts.\n",
+  "review_run_id": "r-20261118T053706441053-review-of-qwnw-red-file-a-worker-cannot-remove-another-runs-reports-76dd2ce153c5",
+  "reviewed_base_sha": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed",
+  "reviewed_head_sha": "76dd2ce153c5dd211e59ca724f43498941689134",
+  "reviewed_run_id": "r-20261118T044559270144-qwnw-red-file-a-worker-cannot-remove-another-runs-reports",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T053706441053-review-of-qwnw-red-file-a-worker-cannot-remove-another-runs-reports-76dd2ce153c5"
+  },
+  "reviewer_run_id": "r-20261118T053706441053-review-of-qwnw-red-file-a-worker-cannot-remove-another-runs-reports-76dd2ce153c5",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T06:22:24.136500+00:00",
+  "total": 111
+}
