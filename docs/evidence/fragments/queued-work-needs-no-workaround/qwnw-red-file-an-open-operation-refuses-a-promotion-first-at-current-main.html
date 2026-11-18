@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main-account">
+  <h2>An open git operation still refuses a promotion first</h2>
+
+  <p><strong>What was red.</strong> Five of the file's seven cases failed at
+  <code>8c7ea625</code>, one per open state — merge, both rebase states,
+  cherry-pick and revert. Each failed on the same assertion: the snapshot of
+  everything the refusal promises to leave alone found one file it had not
+  held before. The refusal itself was reached first, as the file demands:
+  the message named the operation, the ledger-load and run-store counters both
+  read zero, and point to the check that makes that count mean something — the
+  clean-checkout case, whose counter reads a promotion's real ledger load.</p>
+
+  <p>The new file was the call's own receipt,
+  <code>completion-&lt;ns&gt;.json</code> in the run's directory. Commit
+  <code>ba811581d3</code> (17 November, after this file's earlier repair at
+  <code>6239b615cc</code>) made <code>crew complete</code> answer every request
+  it carries out with a receipt beside the run's own files, a refusal included,
+  so that a caller reads a settled answer rather than an absent one. That
+  receipt is the request's answer, not the promotion's landing: the landing
+  still wrote no ledger, plan or run file.</p>
+
+  <p><strong>Verdict: test wrong.</strong> The rule the code keeps is that a
+  refused <code>crew complete</code> adds exactly one file — its own receipt,
+  in the run's directory, carrying the same refusal the reply carried — and
+  rewrites nothing. The snapshot is unchanged; the comparison now holds the
+  single added file to that rule (path, name, <code>ok: false</code>, and the
+  operation word in its <code>detail</code>) and still requires every
+  pre-existing file to be byte-identical. No assertion was deleted or
+  weakened: the check gained the receipt's content and still refuses any other
+  added file.</p>
+
+  <p><strong>That the guard fires.</strong> With the product's receipt write
+  removed in a throwaway edit, the five cases fail on the new assertion —
+  <code>the refusal added files besides its own completion receipt: []</code> —
+  so the assertion is shown to see the file it names rather than passing on an
+  empty diff, and passing again with the write restored.</p>
+
+  <h3 id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main-arms">Arms</h3>
+
+  <table id="qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm (all_debug job, negation)</td>
+        <td><code>8c7ea625</code>, git-archive extraction</td>
+        <td>5 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head arm (all_debug job)</td>
+        <td><code>214b9886</code>, landing tree</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>8c7ea625</code></td>
+        <td><code>58 passed</code>, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>214b9886</code></td>
+        <td><code>58 passed</code>, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The five base-arm failing ids, all the same assertion across the open
+  states: <code>test_an_open_operation_refuses_before_any_ledger_read[
+  MERGE_HEAD-merge-merge]</code>, <code>[rebase-merge-rebase-dir]</code>,
+  <code>[rebase-apply-rebase-dir]</code>,
+  <code>[CHERRY_PICK_HEAD-cherry-pick-file]</code>,
+  <code>[REVERT_HEAD-revert-file]</code>.</p>
+</section>
