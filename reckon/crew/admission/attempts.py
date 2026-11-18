@@ -70,6 +70,7 @@ class LaunchBatch:
             max_workers=self.width, thread_name_prefix="admit-launch"
         )
         self.pending = {}
+        self.reservation_pending = {}
 
     def __enter__(self):
         return self
@@ -83,6 +84,7 @@ class LaunchBatch:
 
     def _settle(self, future):
         key = self.pending.pop(future)
+        self.reservation_pending.pop(future, None)
         outcome = future.result()
         if not outcome["launched"] and self.remaining[key] is not None:
             self.remaining[key] += 1
@@ -113,13 +115,50 @@ class LaunchBatch:
             wait(pending, return_when=FIRST_COMPLETED)
             self.collect_ready()
 
+    def _wait_for_reservation_room(self, pointer, config_for):
+        """Count setups still arriving against the reservation's free seats."""
+        from reckon import flight
+        from reckon.crew import placement
+
+        config = (
+            config_for(pointer)
+            if config_for is not None
+            else _launching._resolve_lane_config(pointer)
+        )
+        backend = (config.get("backends") or {}).get(pointer.get("backend")) or {}
+        if flight.placement_for(backend) is None:
+            return None
+        reservation = placement.read_reservation(str(pointer.get("project") or ""))
+        identity = str((reservation or {}).get("job_id") or "")
+        if not identity:
+            return None
+        while True:
+            pending = [
+                future
+                for future, owner in self.reservation_pending.items()
+                if owner == identity
+            ]
+            if not pending:
+                return identity
+            occupants = placement.roster_occupants(
+                placement.placed_in_reservation(runs.list_live(), reservation)
+            )
+            free = max(0, placement.RESERVATION_ROSTER_LIMIT - len(occupants))
+            if len(pending) < free:
+                return identity
+            wait(pending, return_when=FIRST_COMPLETED)
+            self.collect_ready()
+
     def submit(self, key, pointer, **kwargs):
+        reservation = self._wait_for_reservation_room(pointer, kwargs.get("config_for"))
         if self.remaining[key] is not None:
             self.remaining[key] -= 1
         future = self.pool.submit(
             copy_context().run, _attempt_launch, pointer, **kwargs
         )
         self.pending[future] = key
+        if reservation is not None:
+            self.reservation_pending[future] = reservation
 
 
 def _attempt_launch(
