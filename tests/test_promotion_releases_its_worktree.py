@@ -339,6 +339,9 @@ def test_promotion_releases_only_the_integrated_clean_case(
                 "ok": True,
                 "reversals": [],
                 "mismatched": [],
+                # A landing reads the index back once its commit lands, so the
+                # check also reports the landed paths it found staged in reverse.
+                "unstaged": [],
             }
 
         if name == "dirty":
