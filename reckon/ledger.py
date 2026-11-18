@@ -1749,10 +1749,41 @@ _STORED_HISTORY: dict[
     tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]],
 ] = {}
 
+# How many stored histories one process keeps: eight projects, each read
+# through both the picker projection and the full record. Each entry holds a
+# project's decoded rows, so the bound is what stops a monitor that reads many
+# projects from holding every project's history at once; a read whose entry was
+# evicted decodes its project's rows again, exactly as every read used to.
+_MAX_STORED_HISTORIES = 16
+
 
 def clear_stored_history() -> None:
     """Forget every history this process decoded from a run store."""
     _STORED_HISTORY.clear()
+
+
+def _hold_history(
+    key: tuple[str, str, bool],
+    entry: tuple[
+        tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]
+    ],
+) -> None:
+    """Keep one project's rows, evicting the least recently used history."""
+    _STORED_HISTORY[key] = entry
+    while len(_STORED_HISTORY) > _MAX_STORED_HISTORIES:
+        _STORED_HISTORY.pop(next(iter(_STORED_HISTORY)))
+
+
+def _recent_history(
+    key: tuple[str, str, bool],
+) -> (
+    tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]] | None
+):
+    """The rows held for one history, moved to the young end of the bound."""
+    held = _STORED_HISTORY.pop(key, None)
+    if held is not None:
+        _STORED_HISTORY[key] = held
+    return held
 
 
 def _history_token(project: str, target: Path, *, run_store: Any) -> tuple[Any, ...]:
@@ -1838,7 +1869,7 @@ def stored_history(
     target = run_store.store_path()
     key = (str(target), project, picker_only)
     token = _history_token(project, target, run_store=run_store)
-    held = _STORED_HISTORY.get(key)
+    held = _recent_history(key)
     if held is not None and held[0] == token:
         return sorted(held[2].values(), key=promotion_order_key), _stored_auxiliary(
             project, root
@@ -1881,7 +1912,7 @@ def stored_history(
     # asked for arrived: a row promoted between the signature and the rows, or
     # one that vanished under them, would otherwise be cached as already seen.
     if complete and _history_token(project, target, run_store=run_store) == token:
-        _STORED_HISTORY[key] = (token, current, rows)
+        _hold_history(key, (token, current, rows))
     return answer, auxiliary
 
 

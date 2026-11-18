@@ -226,3 +226,41 @@ def test_an_amended_row_reaches_the_next_answer(
     _amend(root, "r-seed-0000", "failed")
     rows = {row["run_id"]: row for row in ledger.picker_runs(PROJECT, root=root)}
     assert rows["r-seed-0000"]["gate"] == "failed"
+
+
+def test_the_held_histories_stay_bounded(
+    crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The rows a process holds are bounded, and an evicted history is read.
+
+    A monitor reads every project it watches from one process, so what a read
+    keeps has to be bounded by count rather than by how many projects exist.
+    The project whose history fell out of the bound answers the same rows and
+    pays for them again, which is what every read used to pay.
+    """
+    root = crew_home
+    if not hasattr(ledger, "_MAX_STORED_HISTORIES"):
+        pytest.skip("this tree holds no stored history to bound")
+    projects = [
+        f"{PROJECT}-{index:02d}" for index in range(ledger._MAX_STORED_HISTORIES + 4)
+    ]
+    with run_store.RunStore(run_store.store_path()) as store:
+        for index, project in enumerate(projects):
+            for row in range(5):
+                store.append(
+                    project,
+                    _record(
+                        row,
+                        run_id=f"r-seed-{index:02d}-{row:02d}",
+                        completed=NOW - timedelta(minutes=row),
+                    ),
+                )
+    decoded = _count_decodes(monkeypatch)
+    for project in projects:
+        assert len(ledger.picker_runs(project, root=root)) == 5
+    assert len(ledger._STORED_HISTORY) == ledger._MAX_STORED_HISTORIES
+
+    decoded.clear()
+    first = {row["run_id"] for row in ledger.picker_runs(projects[0], root=root)}
+    assert first == {f"r-seed-00-{row:02d}" for row in range(5)}
+    assert sum(decoded) == 5
