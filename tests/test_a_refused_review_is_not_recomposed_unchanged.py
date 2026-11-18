@@ -158,7 +158,7 @@ def _compositions(monkeypatch: pytest.MonkeyPatch) -> tuple[list[str], dict]:
     refusal. Admitting the lane is one flag, because this stand-in *is* the
     admission the sweep meets, reached through the facade the composition calls.
     """
-    state = {"admits": False, "claim": None}
+    state = {"admits": False, "claim": None, "reason": REFUSAL}
     composed: list[str] = []
     real_dispatch = preparation_module.dispatch
 
@@ -170,7 +170,7 @@ def _compositions(monkeypatch: pytest.MonkeyPatch) -> tuple[list[str], dict]:
             refusal.claimed_path = state["claim"]["path"]
             raise refusal
         if not state["admits"]:
-            raise CrewError(REFUSAL)
+            raise CrewError(state["reason"])
         return real_dispatch(**kwargs)
 
     monkeypatch.setattr(dispatch_module, "dispatch", stand_in)
@@ -292,3 +292,40 @@ def test_a_refusal_naming_another_runs_claim_is_composed_again(delivered, monkey
 
     assert len(composed) == 3 * RUN_COUNT, composed
     assert len(third.get("dispatched") or ()) == RUN_COUNT, third
+
+
+def test_a_budget_refused_review_is_recomposed_once_the_bound_passes(
+    delivered, monkeypatch
+):
+    """A hold the memory cannot see costs one composition a minute, not none.
+
+    The lane's budget verdict is a projection over history the identity does
+    not watch, so a review refused on it would be answered from memory for
+    ever. The refusal is trusted for the bound and no longer: a sweep in the
+    same minute composes nothing, and the first sweep past the bound composes
+    the run again, so the verdict the hold names is asked afresh.
+    """
+    config = delivered["config"]
+    composed, state = _compositions(monkeypatch)
+    recorded: list = []
+    state["reason"] = BUDGET_REFUSAL
+
+    first = _sweep(config, recorded)
+
+    assert len(composed) == RUN_COUNT, composed
+    assert len(first.get("refused") or ()) == RUN_COUNT, first
+
+    second = _sweep(config, recorded)
+
+    assert len(composed) == RUN_COUNT, composed
+    assert all(report.get("settled_refusal") for report in second["refused"]), second
+
+    _age_remembered_refusals(reflex_dispatch._REFUSED_COMPOSITION_RETRY_SECONDS + 1)
+
+    third = _sweep(config, recorded)
+
+    assert len(composed) == 2 * RUN_COUNT, composed
+    assert all(
+        not report.get("settled_refusal") for report in third.get("refused") or ()
+    ), third
+    assert len(third.get("refused") or ()) == RUN_COUNT, third

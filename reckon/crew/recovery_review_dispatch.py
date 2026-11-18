@@ -3733,6 +3733,16 @@ def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
 # documents its lanes publish their admission in. Those are three cheap reads
 # in place of one composition.
 #
+# Those three are not everything a refusal can rest on, though. The lane's
+# budget verdict is a projection over run history, the roster is a snapshot of
+# member health, and a plan subject's plan document is a file of its own: a
+# hold from any of them lifts without touching this run's pointer, records or
+# lanes, and nothing here would notice. So the memory is bounded in time as
+# well as in inputs — a refusal is trusted for a minute and then reached again,
+# which keeps the saving at one composition per awaiting run per minute instead
+# of one per sweep, while a review held on budget is composed again soon after
+# the hold lifts rather than never.
+#
 # The memory is per process — like the refusal line the station writes once per
 # identity — so a restarted station composes each run once more, which is the
 # safe direction: a composition that succeeds is what a run's review needs, and
@@ -3741,11 +3751,16 @@ def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
 # its cause is that run's record rather than this one's inputs, and
 # :func:`stored_claim_refusal` already answers it, on the sweep after the
 # holder releases.
-_REFUSED_COMPOSITIONS: OrderedDict[str, tuple[tuple[Any, ...], dict[str, Any]]] = (
-    OrderedDict()
-)
+_REFUSED_COMPOSITIONS: OrderedDict[
+    str, tuple[tuple[Any, ...], dict[str, Any], float]
+] = OrderedDict()
 _REFUSED_COMPOSITIONS_LOCK = threading.Lock()
 _REFUSED_COMPOSITIONS_LIMIT = 4096
+#: The longest a remembered refusal is trusted with its inputs unchanged. A
+#: minute is about how long a budget hold or a roster wobble is worth trusting;
+#: it costs one composition per awaiting run per minute in place of one per
+#: sweep.
+_REFUSED_COMPOSITION_RETRY_SECONDS = 60.0
 
 
 def _file_identity(path: Path) -> tuple[Any, ...]:
@@ -3851,7 +3866,7 @@ def _remember_composed_refusal(
         return
     identity = _composition_identity(record, config=config)
     with _REFUSED_COMPOSITIONS_LOCK:
-        _REFUSED_COMPOSITIONS[run_id] = (identity, dict(report))
+        _REFUSED_COMPOSITIONS[run_id] = (identity, dict(report), time.monotonic())
         _REFUSED_COMPOSITIONS.move_to_end(run_id)
         while len(_REFUSED_COMPOSITIONS) > _REFUSED_COMPOSITIONS_LIMIT:
             _REFUSED_COMPOSITIONS.popitem(last=False)
@@ -3862,12 +3877,16 @@ def _settled_composed_refusal(
 ) -> dict[str, Any] | None:
     """The refusal this run's last composition reached, while its inputs hold.
 
-    ``None`` means this pass has to compose: either nothing was refused for the
-    run, or one of the three inputs the refusal was decided on has moved since
-    — its pointer, its review records or its lanes' published admission. The
-    report returned is the refusal the composition produced, so a reader sees
-    what it would have seen had the composition run, and one key marks that no
-    composition was spent reaching it.
+    ``None`` means this pass has to compose: nothing was refused for the run,
+    or one of the three inputs the refusal was decided on has moved since — its
+    pointer, its review records or its lanes' published admission — or the
+    refusal has stood longer than :data:`_REFUSED_COMPOSITION_RETRY_SECONDS`,
+    which is the bound that reaches it again when the hold it names rests on
+    something this identity does not watch, such as the lane's budget verdict,
+    the roster or a plan's own document. The report returned is the refusal the
+    composition produced, so a reader sees what it would have seen had the
+    composition run, and one key marks that no composition was spent reaching
+    it.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
@@ -3876,8 +3895,10 @@ def _settled_composed_refusal(
         remembered = _REFUSED_COMPOSITIONS.get(run_id)
     if remembered is None:
         return None
-    identity, report = remembered
+    identity, report, composed_at = remembered
     if identity != _composition_identity(record, config=config):
+        return None
+    if time.monotonic() - composed_at >= _REFUSED_COMPOSITION_RETRY_SECONDS:
         return None
     return {**report, "settled_refusal": True}
 
