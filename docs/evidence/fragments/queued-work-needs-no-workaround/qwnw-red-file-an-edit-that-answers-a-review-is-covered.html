@@ -25,18 +25,23 @@ guard is load-bearing and the assertions can fail.</p>
 run, one failing id</h3>
 <pre># revision: 60ecc274f1bf7008b09057c6a5252423deb4cfe5
 # host: 98dci4-clu-3141.iter.org
-# tree: /tmp/reckon-crew-scratch/r-20261118T063442639732-qwnw-red-file-an-edit-that-answers-a-review-is-covered/tmp.r5FoH7ka4m/tree (git archive of the base revision)
+# tree: /tmp/reckon-crew-scratch/r-20261118T063442639732-qwnw-red-file-an-edit-that-answers-a-review-is-covered/tmp.r5FoH7ka4m/tree
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_edit_that_answers_a_review_is_covered.py
 FAILED tests/test_an_edit_that_answers_a_review_is_covered.py::test_ignoring_the_acceptance_leaves_the_section_uncovered - AssertionError: without reading the acceptance record the acceptance has no effect
 1 failed, 8 passed in 2.55s
 EXIT=1</pre>
+<p>The tree line names the git archive of the base revision the base arm ran in,
+not the worktree.</p>
 <h3 id="qwnw-red-file-an-edit-that-answers-a-review-is-covered-control-head">Head
-run, nine passing cases</h3>
-<pre># revision: 45d17d056f84deb29cb39501f3158d1df5c954f5
-# host: 98dci4-clu-3142.iter.org
+run at the node's final head, nine passing cases</h3>
+<pre># revision: 024b19b844173bd151d408a0efcf30f803b033a6
+# host: 98dci4-clu-3144.iter.org
 # tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-an-edit-that-answers-a-review-is-covered
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_edit_that_answers_a_review_is_covered.py
 .........                                                                [100%]
-9 passed in 2.50s
+9 passed in 5.43s
 EXIT=0</pre>
+<p>This is <code>head-run-final.log</code> in the run directory, quoted verbatim.
+The repairing commits after it change only this fragment, so the figures still
+describe the code the check reads.</p>
 </section>
