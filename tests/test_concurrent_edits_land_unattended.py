@@ -479,8 +479,22 @@ def test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate(
     monkeypatch.setattr(
         resumption, "_resume", lambda *args, **kwargs: seen.append(kwargs["advice"])
     )
-    with pytest.raises(runs.CrewError, match="merge-conflict"):
-        promotion_requests._execute_command(conflicting["options"])
+    # Retain the repair before recording promotion; a promoted run cannot
+    # recreate its live pointer to open a repair round.
+    pending_landing.write_pending(
+        pointer["run_id"], PROJECT, pointer=pointer, head=conflicting["head"]
+    )
+    recovery_repair_dispatch.dispatch_merge_repair(
+        pointer,
+        head=conflicting["head"],
+        primary=primary,
+        paths=["sample.py"],
+        promoted=True,
+    )
+    runs._write_json(
+        ledger.run_path(PROJECT, pointer["run_id"], fleet.repo),
+        {"promoted_revision": conflicting["head"], "commits": [conflicting["head"]]},
+    )
     pointer = runs.read_pointer(pointer["run_id"])
     repair = pointer["merge_conflict"]
     assert len(seen) == 1
