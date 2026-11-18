@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:376 resolve_resource in read_plan",
+    "reckon/serve.py:2436 resolve_resource in the HTTP plan handler",
+    "reckon/mcp_edit_plan.py:1847 resolve_resource",
+    "reckon/roadmap.py:199 resolve_resource"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:14:19Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "854",
+      "severity": "blocking",
+      "text": "_identity_listing answers from the memoised listing whenever the directory's own entry-set stamp is unchanged, so a sibling rewritten in place keeps its old per-file signature in the listing that _directory_identity_index (:857) revalidates the held index against, the index is reused and _canonical_identity_is_unique (:797) never sees the new claimant. Reproduced in review-probe-inplace.log: warm plans/alpha.html for slug alpha, rewrite plans/beta.html in place so it declares plan-slug alpha, and head resolves plans/alpha.html while base raises ResourceCollision 'duplicate resource sample:plan:alpha: plans/alpha.html, plans/beta.html'. That breaks the section's 'Every resolution returns what the base revision returns' and the docstring claim at :847 that only an entry set can hide behind the stamp; the fix is to key or invalidate the listing on the per-file signatures its consumers revalidate against, not only on the directory stamp."
+    },
+    {
+      "file": "reckon/resources.py",
+      "line": "820",
+      "severity": "non-blocking",
+      "text": "_directory_stamp duplicates a capability the repository already owns: reckon/metadata_index.py:1394 _dir_identity returns the same directory entry-set identity, and reckon/file_memo.py:280 signature_from_stat is documented as the one place the five stat fields and their order are written; the diff writes the fields itself in a third order, and the same function already imports metadata_index at :865, so it duplicates rather than extends either owner."
+    },
+    {
+      "file": "tests/test_plan_resolution_reads_the_directory_once_per_change.py",
+      "line": "146",
+      "severity": "non-blocking",
+      "text": "The equality assertions at :146-:147 and :168 compare resolve_resource against resources.identify_resource, both in the module under test, and the test never rewrites a sibling in place, so the case where head differs from base (a refusal base made and head does not) is not reached and the gate stays green on the defect at reckon/resources.py:854; the repair owes a case that rewrites a sibling in place and asserts the refusal base gives."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "The matched arms record tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.resources, so the done_when's population ('the test files importing the changed modules', 17 files under tests/) was not the one measured and the arms say nothing about the changed module."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read both commits from 4dd916ef308f to a0352ad3d94d: a3e7504e26 splits the listing into a memoised _identity_listing over a new _directory_stamp plus _list_identity_entries in reckon/resources.py, the test is new at 168 lines, and a0352ad3d9 adds only the fragment.",
+    "done_when": "The done_when names tests/test_plan_resolution_reads_the_directory_once_per_change.py; its assertions at :135-:142 bound the two-pass globs and sibling stats and :164 bounds the glob after the add and rename, and logs/gate-head.log records that file passing EXIT=0 with logs/negative-control-base-globs.log recording the 400-glob failure at base.",
+    "goal": "The node goal is 'Make plan resolution take the docs directory listing once per directory change'; the memo at reckon/resources.py:835-860 does take it once per entry-set change (gate-head.log: one glob across two passes over 200 plans), but the section's deliverable also requires 'Every resolution returns what the base revision returns', and a sibling rewritten in place at reckon/resources.py:854 now resolves where the base refused.",
+    "manifest": "The reviewed run's manifest.md records two commits, the source, test and fragment paths, an exact gate command, the head and base gate logs, a negative-control log at EXIT=1 and rubric lines per dimension; its baseline_suite/after_suite at :20-:21 both record 0 failures.",
+    "write_paths": "The declared write paths are reckon/resources.py, the node's test file and the section-98 fragment; the three commit paths in the diff (sources, test, fragment) are each inside that list, and the declared docs/figures path was not needed."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_resolution_reads_the_directory_once_per_change.py:139 fails with 400 globs if the memo is withdrawn, but :146 compares resolve_resource against resources.identify_resource and no case rewrites a sibling in place, so the gate cannot fail on the stale-listing answer at reckon/resources.py:854.",
+    "evidence": "logs/gate-head.log records a3e7504e26 passing EXIT=0 and logs/negative-control-base-globs.log records 'two passes over 200 plans globbed the directory 400 times' at EXIT=1, but the manifest's arms at manifest.md:20-:21 run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.resources.",
+    "fit": "reckon/resources.py:817 follows the neighbouring _INDEX_MEMO/_INDEX_LOCK idiom at :515-:516 and stays behind private names, with prose docstrings matching the module's style.",
+    "goal_fidelity": "reckon/resources.py:854 answers a revalidate from the memoised listing whenever the directory stamp is unchanged, so the listing is taken once per entry-set change, while the collapsed in-place sibling check at :857 shows the goal was met by widening the key past the per-file stamps the index is revalidated against.",
+    "reuse": "reckon/resources.py:820 re-writes the five stat fields that reckon/metadata_index.py:1394 (_dir_identity) and reckon/file_memo.py:280 (signature_from_stat, documented as the one place the fields and their order are written) already own.",
+    "scope_discipline": "git diff 4dd916ef308f..a0352ad3d94d touches only reckon/resources.py, tests/test_plan_resolution_reads_the_directory_once_per_change.py and the section's fragment, all three inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is 'Make plan resolution take the docs directory listing once per directory change'; the memo at reckon/resources.py:835-860 does take it once per entry-set change (gate-head.log: one glob across two passes over 200 plans), but the section's deliverable also requires 'Every resolution returns what the base revision returns', and a sibling rewritten in place at reckon/resources.py:854 now resolves where the base refused.\nVERDICT done_when: The done_when names tests/test_plan_resolution_reads_the_directory_once_per_change.py; its assertions at :135-:142 bound the two-pass globs and sibling stats and :164 bounds the glob after the add and rename, and logs/gate-head.log records that file passing EXIT=0 with logs/negative-control-base-globs.log recording the 400-glob failure at base.\nVERDICT write_paths: The declared write paths are reckon/resources.py, the node's test file and the section-98 fragment; the three commit paths in the diff (sources, test, fragment) are each inside that list, and the declared docs/figures path was not needed.\nVERDICT manifest: The reviewed run's manifest.md records two commits, the source, test and fragment paths, an exact gate command, the head and base gate logs, a negative-control log at EXIT=1 and rubric lines per dimension; its baseline_suite/after_suite at :20-:21 both record 0 failures.\nVERDICT diff: Read both commits from 4dd916ef308f to a0352ad3d94d: a3e7504e26 splits the listing into a memoised _identity_listing over a new _directory_stamp plus _list_identity_entries in reckon/resources.py, the test is new at 168 lines, and a0352ad3d9 adds only the fragment.\nCALL_SITES: reckon/_store.py:376 resolve_resource in read_plan, reckon/serve.py:2436 resolve_resource in the HTTP plan handler, reckon/mcp_edit_plan.py:1847 resolve_resource, reckon/roadmap.py:199 resolve_resource\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/resources.py:854 answers a revalidate from the memoised listing whenever the directory stamp is unchanged, so the listing is taken once per entry-set change, while the collapsed in-place sibling check at :857 shows the goal was met by widening the key past the per-file stamps the index is revalidated against.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/gate-head.log records a3e7504e26 passing EXIT=0 and logs/negative-control-base-globs.log records 'two passes over 200 plans globbed the directory 400 times' at EXIT=1, but the manifest's arms at manifest.md:20-:21 run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.resources.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 4dd916ef308f..a0352ad3d94d touches only reckon/resources.py, tests/test_plan_resolution_reads_the_directory_once_per_change.py and the section's fragment, all three inside the declared write paths.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_plan_resolution_reads_the_directory_once_per_change.py:139 fails with 400 globs if the memo is withdrawn, but :146 compares resolve_resource against resources.identify_resource and no case rewrites a sibling in place, so the gate cannot fail on the stale-listing answer at reckon/resources.py:854.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/resources.py:817 follows the neighbouring _INDEX_MEMO/_INDEX_LOCK idiom at :515-:516 and stays behind private names, with prose docstrings matching the module's style.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/resources.py:820 re-writes the five stat fields that reckon/metadata_index.py:1394 (_dir_identity) and reckon/file_memo.py:280 (signature_from_stat, documented as the one place the fields and their order are written) already own.\nFINDING reckon/resources.py:854 blocking: _identity_listing answers from the memoised listing whenever the directory's own entry-set stamp is unchanged, so a sibling rewritten in place keeps its old per-file signature in the listing that _directory_identity_index (:857) revalidates the held index against, the index is reused and _canonical_identity_is_unique (:797) never sees the new claimant. Reproduced in review-probe-inplace.log: warm plans/alpha.html for slug alpha, rewrite plans/beta.html in place so it declares plan-slug alpha, and head resolves plans/alpha.html while base raises ResourceCollision 'duplicate resource sample:plan:alpha: plans/alpha.html, plans/beta.html'. That breaks the section's 'Every resolution returns what the base revision returns' and the docstring claim at :847 that only an entry set can hide behind the stamp; the fix is to key or invalidate the listing on the per-file signatures its consumers revalidate against, not only on the directory stamp.\nFINDING reckon/resources.py:820 non-blocking: _directory_stamp duplicates a capability the repository already owns: reckon/metadata_index.py:1394 _dir_identity returns the same directory entry-set identity, and reckon/file_memo.py:280 signature_from_stat is documented as the one place the five stat fields and their order are written; the diff writes the fields itself in a third order, and the same function already imports metadata_index at :865, so it duplicates rather than extends either owner.\nFINDING tests/test_plan_resolution_reads_the_directory_once_per_change.py:146 non-blocking: The equality assertions at :146-:147 and :168 compare resolve_resource against resources.identify_resource, both in the module under test, and the test never rewrites a sibling in place, so the case where head differs from base (a refusal base made and head does not) is not reached and the gate stays green on the defect at reckon/resources.py:854; the repair owes a case that rewrites a sibling in place and asserts the refusal base gives.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change/manifest.md:20 non-blocking: The matched arms record tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.resources, so the done_when's population ('the test files importing the changed modules', 17 files under tests/) was not the one measured and the arms say nothing about the changed module.\n",
+  "review_checks": [],
+  "review_run_id": "r-20261118T223733645223-review-of-plan-resolution-reads-the-directory-once-per-change-a0352ad3d94d",
+  "reviewed_base_sha": "4dd916ef308f57b97a58e5406a5ef12f2e7f5508",
+  "reviewed_head_sha": "a0352ad3d94d4717f9dae336d13c04aecfc692f7",
+  "reviewed_run_id": "r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change",
+  "scores": {
+    "durability": 11,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:37:54.374844+00:00",
+  "total": 77
+}
