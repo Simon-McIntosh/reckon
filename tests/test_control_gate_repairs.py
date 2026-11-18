@@ -374,3 +374,23 @@ def test_a_promotion_presenting_an_unresolvable_sha_names_it_in_the_refusal(
     # Nothing was recorded, so the refusal is not a report beside a stored row.
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).exists()
+
+
+def test_the_launch_module_imports_first_in_a_fresh_interpreter() -> None:
+    """A launch imports the fence module before any other part of the package.
+
+    The manifest audit recognises the fence's notice, and the fence module
+    reaches the audit while it is still initialising, so the audit must not
+    need the notice at import time.
+    """
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-c", "import reckon.nested_launch"],
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).resolve().parents[1],
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
