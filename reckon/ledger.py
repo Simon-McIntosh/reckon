@@ -2638,7 +2638,12 @@ def _load_file_history(
             fields=fields,
             activity_since=activity_since,
         )
-        if stored is not None:
+        # The store answers a project's history once it holds a row for that
+        # project. A store opened for the project's mutable state alone holds
+        # none, and no reader unions the aggregate back in afterwards, so an
+        # empty store must fall through to the committed ledger rather than
+        # answer that history as though nothing had ever been promoted.
+        if stored:
             data, version = _aggregate_headers(project, root)
             data["runs"] = sorted(stored, key=promotion_order_key)
             _report_damaged_run_records(project, ())
@@ -4254,7 +4259,11 @@ def read_records(
     selected_ids = None if run_ids is None else {str(run_id) for run_id in run_ids}
     from reckon import run_store
 
-    stored = run_store.store_path().exists()
+    # The store answers a project's history once it holds a row for that
+    # project. A store created for its mutable state alone holds none, and the
+    # committed ledger is still the copy every row of that history came from,
+    # so its existence cannot be what selects the fleet-wide figure population.
+    stored = bool(run_store.stored_run_rows(project, fields=("run_id",)))
     data, version = load(
         project,
         root,
