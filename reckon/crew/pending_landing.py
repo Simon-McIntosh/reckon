@@ -448,15 +448,20 @@ def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool])
 def promoted_pointer_write_refusal(run_id: str, pointer: Mapping[str, Any]) -> str:
     """Name the journal requiring intervention rather than recreate a promoted run."""
     project = str(pointer.get("project") or "")
-    if _promoted_row(project, run_id) is None:
+    if _promoted_row_absent(project, run_id):
         return ""
+    state = (
+        "is promoted"
+        if _promoted_row(project, run_id) is not None
+        else "has unreadable promotion evidence; row absence is unproved"
+    )
     group_id = str(pointer.get("landing_group") or "")
     path = (
         group_path(group_id)
         if group_id and group_path(group_id).exists()
         else _record_path(run_id)
     )
-    return f"run {run_id} is promoted; pending-landing record {path} cannot write a live pointer"
+    return f"run {run_id} {state}; pending-landing record {path} cannot write a live pointer"
 
 
 def mark_pending_landing_repair(
@@ -1055,12 +1060,22 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
         if not pointer.get("worktree") or pointer.get("landing_group"):
             continue
         # A journaled landing already has an owner in the pending-record pass.
-        # Its repair mark also keeps a newer attempt outside that owner's reach.
         if _record_path(run_id).exists():
             continue
         marked = pointer.get("pending_landing_repair_attempt")
-        if pointer.get("pending_landing_repair") and marked_identity(pointer) != marked:
-            continue
+        if pointer.get("pending_landing_repair"):
+            identity = marked_identity(pointer)
+            if pointer.get("phase") == "complete":
+                # Completion may rewrite the phase without changing the attempt.
+                identity.pop("phase")
+                if isinstance(marked, Mapping):
+                    marked = {
+                        key: value for key, value in marked.items() if key != "phase"
+                    }
+                elif marked is None:
+                    marked = identity
+            if identity != marked:
+                continue
         if (
             COMMAND_REPLY.get() is None
             and read_promotion(run_id).get("phase") in PENDING
