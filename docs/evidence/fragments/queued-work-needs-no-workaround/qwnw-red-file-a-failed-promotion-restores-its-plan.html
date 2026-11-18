@@ -1,0 +1,24 @@
+<section id="qwnw-red-file-a-failed-promotion-restores-its-plan-base-run">
+<h2>Base run of the file: already green, no cause to attribute</h2>
+<p><code>tests/test_a_failed_promotion_restores_its_plan.py</code> was run at the node's base revision before any change, in the assigned worktree, and passed in full: 50 tests, no failure and no error, three consecutive runs. The section's premise — a file red on the primary branch's ledger — does not reproduce at <code>733461c8d8d352db23c859392481c65ef7ac73b3</code>, so this node records no cause and repairs neither product nor test, and deletes or weakens no assertion.</p>
+<pre># revision: 733461c8d8d352db23c859392481c65ef7ac73b3
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-failed-promotion-restores-its-plan
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py
+..................................................                       [100%]
+50 passed in 22.41s
+EXIT=0
+</pre>
+</section>
+
+<section id="qwnw-red-file-a-failed-promotion-restores-its-plan-head-run">
+<h2>Head run as a job on all_debug</h2>
+<p>Measured through <code>reckon crew verify-gate --worker</code>, which submits through <code>sbatch --wait --partition=all_debug</code> with the caller's scheduler variables removed, so the job is not a step of any held allocation, and writes the log under the run directory on shared storage. The job archived the head revision into its own scratch tree, linked the project environment and ran the file there. The same call at the base revision <code>733461c8</code> reported the same 50 passed and exit 0 at base and at head. Because this section's shipped-declaration premise did not reproduce, the two measurements are the record, not a before-and-after of a repair: the node changed no product source and no test. The only later commit in this node writes this fragment, which no test imports.</p>
+<pre># revision: a4c47928d7a2ae424c0c7eeeab21cd29df7a6e31
+# host: 98dci4-clu-3144.iter.org
+# tree: /tmp/mcintos-landing-932256868897-LIaCcU/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py'
+..................................................                       [100%]
+50 passed in 12.78s
+EXIT=0
+</pre>
+</section>
