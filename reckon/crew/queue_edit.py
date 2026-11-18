@@ -504,6 +504,12 @@ def edit(
             node_block["write_paths"] = list(write_paths)
         if time_budget is not None:
             node_block["time_budget"] = time_budget
+        # The fence is a sizing reference, so a budget past it is recorded
+        # beside the request exactly as a dispatch records it, and a budget
+        # edited back within the fence drops the note. The check above
+        # recomputed it on the edited node, so the request carries the note the
+        # launch would.
+        node_block["over_fence_note"] = node.over_fence_note
         target = steering_path(run_id)
         if steering_text is not None:
             target.parent.mkdir(parents=True, exist_ok=True)
