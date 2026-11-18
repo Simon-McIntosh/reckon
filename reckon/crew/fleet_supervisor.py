@@ -95,6 +95,7 @@ from reckon._store import _fsync_directory, write_json_atomically
 from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
+from reckon.node_exclusive_lock import exclusive_lock
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -431,9 +432,10 @@ def node_disk_reading_obligation(error: NodeDiskSampleError) -> dict[str, Any]:
     return {
         "kind": error.kind,
         "run_id": "",
+        "service": "fleet-health",
         "age_seconds": 0,
-        "reason": str(error),
-        "next_command": "Restore current fleet disk samples before admitting new launches",
+        "reason": f"{error}. Service fleet-health owes the published disk sample",
+        "next_command": "Restore current disk publication from service fleet-health",
     }
 
 
@@ -716,6 +718,8 @@ def published_node_disk_sample(
     target = f"Fleet node {fleet['node']} disk sample {path}"
     try:
         sample = json.loads(path.read_text())
+    except FileNotFoundError as exc:
+        raise NodeDiskSampleError("missing", f"{target} is missing") from exc
     except (OSError, ValueError) as exc:
         raise NodeDiskSampleError(
             "unreadable", f"{target} is unreadable: {exc}"
@@ -1605,32 +1609,138 @@ def apply_task_ceiling(environ: Mapping[str, str] | None = None) -> int:
 
 
 def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None:
-    """Start the node sampler as this batch step's own child, and return its pid.
-
-    The sampler holds a lock in the runtime directory, so a reload that calls
-    this again starts a copy that exits at once rather than a second sampler.
-    It leads its own session, so it ends with the allocation and with nothing
-    else.
-    """
+    """Replace the runtime's sampler with a child running the current script."""
     environ = os.environ if environ is None else environ
     name = environ.get(HEALTH_SAMPLER_ENV, DEFAULT_HEALTH_SAMPLER)
     if not name:
         return None
-    sampler = shutil.which(name, path=environ.get("PATH"))
+    checkout_script = _checkout_root() / "bin" / DEFAULT_HEALTH_SAMPLER
+    sampler = (
+        str(checkout_script)
+        if name == DEFAULT_HEALTH_SAMPLER and checkout_script.is_file()
+        else shutil.which(name, path=environ.get("PATH"))
+    )
     if sampler is None:
         log(f"no node sampler: {name} is not on PATH")
         return None
-    sampler_environment = {**environ, "RECKON_SHIM_PYTHON": sys.executable}
-    process = subprocess.Popen(
-        [sampler],
-        env=sampler_environment,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=None,
-        start_new_session=True,
-    )
+    runtime = Path(environ.get("XDG_RUNTIME_DIR") or runtime_directory(environ))
+    runtime.mkdir(parents=True, exist_ok=True)
+    with exclusive_lock(runtime / "fleet-health.handover.lock"):
+        if not _stop_health_sampler(runtime):
+            return None
+        sampler_environment = {
+            **environ,
+            "XDG_RUNTIME_DIR": str(runtime),
+            "RECKON_SHIM_PYTHON": sys.executable,
+        }
+        process = subprocess.Popen(
+            [sampler],
+            env=sampler_environment,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=None,
+            start_new_session=True,
+        )
     log(f"node sampler {sampler} started as pid {process.pid}")
     return process.pid
+
+
+def _health_sampler_processes(runtime: Path) -> dict[int, list[str]]:
+    """Processes sharing the exclusive sampler lock through descriptor 9."""
+    try:
+        inode = (runtime / "fleet-health.lock").stat()
+    except FileNotFoundError:
+        return {}
+    holders = {}
+    for pid, argv in all_process_cmdlines().items():
+        proc = Path(f"/proc/{pid}")
+        try:
+            if proc.stat().st_uid != os.getuid():
+                continue
+            held = (proc / "fd/9").stat()
+            if (held.st_dev, held.st_ino) != (inode.st_dev, inode.st_ino):
+                continue
+            info = (proc / "fdinfo/9").read_text()
+        except OSError:
+            continue
+        for line in info.splitlines():
+            if not line.startswith("lock:"):
+                continue
+            record = line.partition(":")[2].strip()
+            if record.split()[1:4] == [
+                "FLOCK",
+                "ADVISORY",
+                "WRITE",
+            ] and lock_holders_in(record, inode.st_dev, inode.st_ino):
+                holders[pid] = argv
+                break
+    return holders
+
+
+def _stop_health_sampler(runtime: Path) -> bool:
+    """Stop the lock-owning shell and its tree without assuming its launch path.
+
+    The held descriptor identifies the sampler independently of its script's
+    current location or parent. Descriptor inheritance identifies its children;
+    only the root shell is an incumbent. Signals target enumerated processes,
+    because a manually launched sampler can share its group with other work.
+    """
+    from reckon.crew.process_liveness import _process_start_time, _process_stat_fields
+    from reckon.crew.process_signal import _running_descendants, _signal_one
+
+    if not lock_held("fleet-health", runtime):
+        return True
+    holders = _health_sampler_processes(runtime)
+    candidates = []
+    for pid, argv in holders.items():
+        if len(argv) < 2 or Path(argv[0]).name not in {"bash", "sh", "dash"}:
+            continue
+        if argv[1].startswith("-"):
+            continue
+        fields = _process_stat_fields(pid)
+        if len(fields) > 1 and int(fields[1]) not in holders:
+            candidates.append(pid)
+    if len(candidates) != 1:
+        log(
+            f"sampler replacement refused: lock held with {len(candidates)} identified owners"
+        )
+        return False
+    pid = candidates[0]
+    targets = {}
+    for target in _running_descendants(pid):
+        try:
+            if Path(f"/proc/{target}").stat().st_uid != os.getuid():
+                continue
+        except OSError:
+            continue
+        started = _process_start_time(target)
+        if started is not None:
+            targets[target] = started
+    shown = {target: process_cmdline(target) for target in targets}
+    log(
+        f"replacing sampler pid {pid}; targets {shown}; its parent and peers are outside this tree"
+    )
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for target, started in targets.items():
+            if _process_start_time(target) == started:
+                _signal_one(
+                    target, sig, reason="fleet-health-replace", allow_group=False
+                )
+        deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
+        while time.monotonic() < deadline:
+            with suppress(ChildProcessError):
+                os.waitpid(pid, os.WNOHANG)
+            live = any(
+                _process_start_time(target) == started and process_cmdline(target)
+                for target, started in targets.items()
+            )
+            if not lock_held("fleet-health", runtime) and not live:
+                return True
+            time.sleep(SERVICE_POLL_SECONDS)
+    log(
+        f"sampler replacement refused: pid {pid} still owns its runtime or live children"
+    )
+    return False
 
 
 def config_directory(environ: Mapping[str, str] | None = None) -> Path:

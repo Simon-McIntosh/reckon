@@ -95,9 +95,9 @@ last_kills=$(awk -F '\t' '
 last_snapshot=0
 count=0
 while :; do
-    session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
-    writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
-    test_sample=$(timeout 20 "${RECKON_SHIM_PYTHON:-python3}" -m reckon.crew.fleet_supervisor sample-test-processes) || test_sample=$'unknown\tunknown\t[]'
+    session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
+    writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
+    test_sample=$(timeout 20 "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor sample-test-processes) || test_sample=$'unknown\tunknown\t[]'
     IFS=$'\t' read -r test_trees test_rss test_runs <<< "$test_sample"
     test_rss=${test_rss:-unknown}
     test_runs=${test_runs:-[]}
@@ -126,7 +126,7 @@ while :; do
     read -r top_n top_pid < <(awk '{print $2}' <<<"$table" | sort | uniq -c | sort -rn | head -1)
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
-    disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-python3}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
+    disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-$health_python}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
     read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
     now=$(date -u +%FT%TZ)
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
