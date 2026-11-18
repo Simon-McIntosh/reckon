@@ -17,7 +17,8 @@
   live pointer it cannot read, so a test that names a temporary
   <code>RECKON_HOME</code> but inherits the worker's run id is refused its own
   <code>git init</code> the moment the suite runs inside a worker. The local
-  wrapper carried that bug; the shared helper is the one place it is fixed.</p>
+  wrapper did not strip the run id; the shared helper does, and it is the one
+  place that strip lives for the suite.</p>
 
   <p>No assertion was deleted or weakened: the file's diff is one added import
   line and ten deleted lines — the import of <code>subprocess</code> and the
