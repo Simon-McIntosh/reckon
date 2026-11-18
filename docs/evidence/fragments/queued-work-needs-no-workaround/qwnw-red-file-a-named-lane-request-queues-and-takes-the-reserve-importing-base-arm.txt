@@ -1,0 +1,1004 @@
+# arm: importing base arm
+# revision: ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5
+# tree: /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X
+# command: cd /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X && PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_brief_carried_run_counts_toward_its_section.py tests/test_a_claim_refused_launch_returns_to_the_queue.py tests/test_a_dispatch_reaps_idle_members_at_most_every_interval.py tests/test_a_dispatch_waits_for_the_router.py tests/test_a_figure_review_node_names_its_reviewed_run.py tests/test_a_held_lane_never_holds_a_review.py tests/test_a_held_request_names_its_hold.py tests/test_a_launch_failure_names_where_it_was_raised.py tests/test_a_launch_reads_a_plan_and_the_mounts_once.py tests/test_a_launch_reads_only_its_own_rows_from_the_store.py tests/test_a_lift_reaches_every_budget_row.py tests/test_a_named_lane_keeps_seats_the_local_queue_cannot_take.py tests/test_a_named_lane_request_queues_and_takes_the_reserve.py tests/test_a_new_plan_review_is_a_first_attempt.py tests/test_a_node_is_queued_once.py tests/test_a_node_may_change_any_mergeable_file.py tests/test_a_node_names_its_inputs_and_measurement.py tests/test_a_paired_arm_is_reviewed_as_itself.py tests/test_a_pass_sets_up_few_launches_at_once.py tests/test_a_promoted_runs_review_resolves_its_run.py tests/test_a_queued_plan_review_is_stored.py tests/test_a_queued_refusal_names_its_remedy.py tests/test_a_queued_request_arranges_its_follower.py tests/test_a_queued_run_is_admitted.py tests/test_a_quoted_session_id_is_not_a_session_refusal.py tests/test_a_request_that_cannot_launch_costs_nothing.py tests/test_a_request_whose_stored_brief_is_gone_reads_its_source.py tests/test_a_requeued_refusal_draws_no_dropped_row.py tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py tests/test_a_run_review_cannot_remove_a_siblings_record.py tests/test_a_run_review_with_run_directory_records_dispatches.py tests/test_a_session_side_refusal_reaches_the_session.py tests/test_a_worker_cannot_remove_another_runs_reports.py tests/test_a_worker_cannot_remove_another_runs_scratch.py tests/test_an_admission_pass_reads_the_roadmap_once.py tests/test_anchored_edit_claude_arm.py tests/test_composed_review_waits_for_a_roster_slot.py tests/test_concurrency_bound_refuses_by_name.py tests/test_crew_placement_reservation.py tests/test_crew_refusal_visibility.py tests/test_dispatch_holds_while_the_lane_is_paused.py tests/test_dispatch_names_the_health_review.py tests/test_dispatch_reads_only_its_node_runs.py tests/test_dispatch_timestamps_reuse_the_parser.py tests/test_domain_rules_reach_the_brief.py tests/test_drain_lists_unloaded.py tests/test_every_launch_joins_the_composed_sidecar.py tests/test_fence_widening.py tests/test_host_facts.py tests/test_one_composer_for_the_domain_block.py tests/test_queue_dag_waits.py tests/test_reserves_read_the_lift.py tests/test_route_before_queue.py tests/test_section_waits_read_normalised_keys.py tests/test_session_scratch_uses_bounded_node_tmp.py tests/test_structural_invariants.py tests/test_unmanaged_producer_keeps_a_log.py
+# slurm: run with SLURM_JOB_ID unset; job 1327486 partition all_debug
+............F.F.....................F................................... [ 14%]
+FFFFF....................................................F.............. [ 29%]
+..............F...F.....................F........................F...... [ 43%]
+........................................................................ [ 58%]
+........................................................................ [ 72%]
+..............................FF........................................ [ 87%]
+.............................................F....F.............         [100%]
+=================================== FAILURES ===================================
+_________ test_a_stopped_holders_claim_holds_the_request_before_launch _________
+
+admit_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_stopped_holders_claim_h0/checkout')
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_stopped_holders_claim_h0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5ccc73ef90>
+
+    def test_a_stopped_holders_claim_holds_the_request_before_launch(
+        admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A stopped run holding an unlanded commit fences the request first."""
+        _, resolve = _config_for()
+        _queue_request(admit_repo)
+        _stopped_holder(admit_repo, tmp_path)
+        probe = _LaunchProbe(monkeypatch)
+    
+        result = queue_admission.admit_once(config_for=resolve)
+    
+>       assert probe.attempted == [], "a held claim must cost the pass no dispatch"
+E       AssertionError: a held claim must cost the pass no dispatch
+E       assert ['r-queued'] == []
+E         
+E         Left contains one more item: 'r-queued'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'r-queued',
+E         + ]
+
+tests/test_a_claim_refused_launch_returns_to_the_queue.py:233: AssertionError
+________ test_the_request_launches_once_the_holders_commits_reach_main _________
+
+admit_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_the_request_launches_once0/checkout')
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_the_request_launches_once0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5ccb24dff0>
+
+    def test_the_request_launches_once_the_holders_commits_reach_main(
+        admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The hold releases with the claim, and the next pass launches."""
+        _, resolve = _config_for()
+        _queue_request(admit_repo)
+        head = _stopped_holder(admit_repo, tmp_path)
+        held = _LaunchProbe(monkeypatch)
+    
+        queue_admission.admit_once(config_for=resolve)
+>       assert held.attempted == []
+E       AssertionError: assert ['r-queued'] == []
+E         
+E         Left contains one more item: 'r-queued'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'r-queued',
+E         + ]
+
+tests/test_a_claim_refused_launch_returns_to_the_queue.py:275: AssertionError
+________________ test_a_run_review_records_the_lane_it_followed ________________
+
+isolated_project = (PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-r...le-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_run_review_records_the_0/repo'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5cca2ef3f0>
+
+    @pytest.mark.arms_watch_producer
+    def test_a_run_review_records_the_lane_it_followed(
+        isolated_project, monkeypatch
+    ) -> None:
+        """A run review's lane was the reviewed run's, and its route says so.
+    
+        This is the write side of the rebind above: without it the queue cannot
+        tell a lane the reflex followed from one a coordinator named, and a review
+        sitting on a held lane waits for the reset it was never bound to.
+    
+        The assertion reads the review's own pointer rather than the arguments the
+        composer handed dispatch. What admission reads is the written
+        ``named_route``, so a composer that passed the origin and a dispatch that
+        dropped it would still satisfy a capture of the call and leave the queue
+        unable to tell the two routes apart.
+        """
+        config_home, repo = isolated_project
+        record = reflex_tests._scoring_pointer(config_home, repo, "r-followed")
+        record["backend"] = reflex_tests.OTHER_BACKEND
+    
+        def budget(**kwargs):
+            held = kwargs["backend_name"] == reflex_tests.OTHER_BACKEND
+            return {
+                "held": held,
+                "backend": kwargs["backend_name"],
+                "reason": "beta pace window is held",
+                "state": {"resets_at": "2026-11-18T09:00:00Z"},
+                "warnings": [],
+            }
+    
+        monkeypatch.setattr(dispatch_module, "_budget_verdict", budget)
+        try:
+            with runs.follower_claim("sample", "session-orchestrating", delivery="stream"):
+                recovery.dispatch_review_for_run(
+                    record,
+                    config=reflex_tests.CONFIG,
+                    launcher=lambda *a, **k: os.getpid(),
+                )
+            queued = [
+                pointer
+                for pointer in runs.list_live(project="sample", phase="queued")
+                if str(pointer.get("node", {}).get("id", "")).startswith(
+                    recovery.REVIEW_NODE_PREFIX
+                )
+            ]
+            assert len(queued) == 1, queued
+            assert queued[0]["named_route"] == {
+                "backend": reflex_tests.OTHER_BACKEND,
+                "set_by": REVIEW_FOLLOWS_RUN,
+            }
+        finally:
+>           reflex_tests._release_watcher()
+
+tests/test_a_held_lane_never_holds_a_review.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_review_reflex_selects_a_backend.py:133: in _release_watcher
+    recovery.unwatch("sample")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+project = 'sample'
+
+    def unwatch(project: str) -> dict[str, Any]:
+        """Stop the local watcher, refusing remote and unresponsive seat holders."""
+        path = watch_lock_path(project)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lease = runs.watch_host_lease(project)
+        holder = lease.holder()
+        if holder is not None and holder.host != socket.gethostname():
+            raise CrewError(
+                f"refusing to unwatch {project!r}: producer seat held by "
+                f"{holder.host} pid {holder.pid} job {holder.job or 'unknown'}"
+            )
+        with path.open("a+b") as handle:
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                watcher = _read_watch_record(handle)
+                if runs._seat_names_a_foreign_host(watcher):
+                    raise CrewError(
+                        f"refusing to unwatch {project!r}: producer seat names "
+                        f"{watcher['host']} pid {watcher.get('pid')}"
+                    ) from None
+                registered_project = str(watcher.get("project") or "")
+                if registered_project and registered_project != project:
+                    raise CrewError(
+                        f"refusing to stop watcher for project {project!r}: "
+                        f"the locked registration names {registered_project!r}"
+                    )
+                if not registered_project:
+                    # The record names no project, which is what a seat caught
+                    # mid-write looks like: its rewrite truncates before it writes,
+                    # so a reader in that window reads an emptied record and would
+                    # otherwise take the absent name for a foreign registration. The
+                    # reconciled reading then decides the seat's project — and
+                    # supplies the pid the stop needs, which the emptied record
+                    # cannot — from the live holder this project's lease names.
+                    watcher = _reconciled_seat_record(project)
+                try:
+                    pid = int(watcher.get("pid"))
+                except (TypeError, ValueError) as exc:
+                    raise CrewError(
+                        f"refusing to stop watcher for project {project!r}: "
+                        "the locked registration has no valid pid"
+                    ) from exc
+    
+                # A watcher has no run directory, so the watch directory the seat
+                # registration sits in is the sender file's home. The shared writer
+                # owns the attribution and outcome records, so unwatch names that
+                # directory and the project the watcher serves rather than writing
+                # an attribution of its own: the project rides its own field, which
+                # a reader of the shared directory can act on without parsing a
+                # message.
+                try:
+                    _signal_process_group(
+                        pid,
+                        watcher.get("pid_start_time"),
+                        run_dir=path.parent,
+                        reason="unwatch",
+                        project=project,
+                    )
+                except ProcessLookupError:
+                    stopped = False
+                    reason = "watcher-exited"
+                    detail = (
+                        f"watcher pid {pid} exited before it could be signalled; "
+                        "its registration was released"
+                    )
+                else:
+                    stopped = True
+                    reason = "stopped"
+                    detail = f"stopped registered watcher pid {pid}"
+    
+                # The watcher owns this lock until its process exits. Taking it
+                # before clearing the record makes registration release observable
+                # to a subsequent arming command, without replacing the lock inode.
+                deadline = time.monotonic() + UNWATCH_SEAT_WAIT_SECONDS
+                while True:
+                    try:
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        if time.monotonic() >= deadline:
+>                           raise CrewError(
+                                f"refusing to unwatch {project!r}: producer seat held "
+                                f"by {watcher.get('host') or socket.gethostname()} "
+                                f"pid {pid} beyond {UNWATCH_SEAT_WAIT_SECONDS:g}s"
+                            ) from None
+E                           reckon.crew.CrewError: refusing to unwatch 'sample': producer seat held by 98dci4-clu-3141.iter.org pid 1239 beyond 2s
+
+reckon/crew/recovery_watch.py:943: CrewError
+_ test_a_full_roster_keeps_every_lane_queued_and_the_named_lane_takes_the_next_seat _
+
+dispatch_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_full_roster_keeps_every0/repo')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5cc96a7310>
+
+    def test_a_full_roster_keeps_every_lane_queued_and_the_named_lane_takes_the_next_seat(
+        dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A pass at the cap loses nothing, and the freed seat goes to codex."""
+        _reserve_the_roster(dispatch_repo, monkeypatch, occupants=LIMIT)
+        config = _config()
+        for run_id, backend, local in (
+            ("r-codex", NAMED, False),
+            ("r-local-a", LOCAL, True),
+            ("r-local-b", LOCAL, True),
+        ):
+            _pointer(run_id, dispatch_repo, backend=backend, local=local, phase="queued")
+        recorded: list = []
+        launcher = _launcher(recorded)
+    
+        at_the_cap = _admit(config, launcher)
+    
+        assert at_the_cap["launched"] == [], at_the_cap
+        assert recorded == [], "nothing may launch into a full roster"
+        assert at_the_cap["failed"] == [], at_the_cap
+        for run_id in ("r-codex", "r-local-a", "r-local-b"):
+            assert run_id in at_the_cap["held"], run_id
+            assert runs.read_pointer(run_id)["phase"] == "queued", run_id
+    
+        # One seat frees: the named request takes it, and the local queue stays
+        # short of the seats the reserve keeps for it.
+        runs.pointer_path(f"r-occupant-{LIMIT - 1}").unlink()
+        next_pass = _admit(config, launcher)
+    
+>       assert next_pass["launched"] == ["r-codex"], next_pass
+E       AssertionError: {'gate': 'open', 'launched': ['r-codex', 'r-local-a', 'r-local-b'], 'held': [], 'failed': [], ...}
+E       assert ['r-codex', '..., 'r-local-b'] == ['r-codex']
+E         
+E         Left contains 2 more items, first extra item: 'r-local-a'
+E         
+E         Full diff:
+E           [
+E               'r-codex',
+E         +     'r-local-a',
+E         +     'r-local-b',
+E           ]
+
+tests/test_a_named_lane_request_queues_and_takes_the_reserve.py:464: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-codex
+reckon: created run r-local-a
+reckon: created run r-local-b
+_________ test_a_queued_review_edited_to_codex_keeps_its_reviewed_run __________
+
+dispatch_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_queued_review_edited_to0/repo')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5cc9c34a60>
+
+    def test_a_queued_review_edited_to_codex_keeps_its_reviewed_run(
+        dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Moving a waiting review changes the lane, not the run it reviews."""
+        _reserve_the_roster(dispatch_repo, monkeypatch, occupants=LIMIT)
+        config = _config()
+        _pointer(
+            "r-delivered",
+            dispatch_repo,
+            backend=LOCAL,
+            local=True,
+            phase="working",
+            node_id="delivered-node",
+            pid=os.getpid(),
+        )
+        _pointer(
+            "r-review",
+            dispatch_repo,
+            backend=LOCAL,
+            local=True,
+            phase="queued",
+            node_id="review-of-r-delivered",
+        )
+        _pointer(
+            "r-local-waiting",
+            dispatch_repo,
+            backend=LOCAL,
+            local=True,
+            phase="queued",
+            node_id="local-waiting",
+        )
+    
+        from reckon.crew import queue_edit, recovery_review_delivery
+    
+        # The edit resolves the lane's own flight config; this test states it.
+        monkeypatch.setattr(queue_admission, "_resolve_lane_config", lambda _record: config)
+        queue_edit.edit("r-review", backend=NAMED)
+        moved = runs.read_pointer("r-review")
+        assert moved["backend"] == NAMED, moved
+    
+        recorded: list = []
+        # A full roster holds it: the moved review waits rather than being lost.
+        at_the_cap = _admit(config, _launcher([]))
+        assert at_the_cap["launched"] == [], at_the_cap
+        assert at_the_cap["failed"] == [], at_the_cap
+        assert runs.read_pointer("r-review")["phase"] == "queued"
+    
+        # One seat frees, and the named request takes it from the local queue.
+        runs.pointer_path(f"r-occupant-{LIMIT - 1}").unlink()
+        admitted = _admit(config, _launcher(recorded))
+    
+>       assert admitted["launched"] == ["r-review"], admitted
+E       AssertionError: {'gate': 'open', 'launched': ['r-review', 'r-local-waiting'], 'held': [], 'failed': [], ...}
+E       assert ['r-review', ...ocal-waiting'] == ['r-review']
+E         
+E         Left contains one more item: 'r-local-waiting'
+E         
+E         Full diff:
+E           [
+E               'r-review',
+E         +     'r-local-waiting',
+E           ]
+
+tests/test_a_named_lane_request_queues_and_takes_the_reserve.py:520: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-review
+reckon: created run r-local-waiting
+___________ test_a_plan_review_of_a_revised_plan_is_a_first_attempt ____________
+
+project = (PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-r...le-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_plan_review_of_a_revise0/repo'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5ccc11de80>
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_plan_review_of_a_revise0')
+
+    def test_a_plan_review_of_a_revised_plan_is_a_first_attempt(
+        project: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        _home, repo = project
+        # An earlier review of this same plan was promoted: one committed run under
+        # the shared node id, which is exactly what made the next compose read as a
+        # redispatch before the marker existed.
+        _commit_prior_row(
+            repo, PLAN_REVIEW_NODE, run_id=f"r-20261015T000000000000-{PLAN_REVIEW_NODE}"
+        )
+    
+        payload = _compose_plan_review(repo, monkeypatch, tmp_path)
+    
+        assert payload["dispatched"] is True, payload.get("reason")
+        launched = payload["dispatch"]
+        pointer = runs.read_pointer(payload["review_run_id"])
+>       assert pointer["node"]["id"] == PLAN_REVIEW_NODE
+E       AssertionError: assert 'plan-review-...ixture-design' == 'plan-review-of-fixture'
+E         
+E         - plan-review-of-fixture
+E         + plan-review-of-fixture-design
+E         ?                       +++++++
+
+tests/test_a_new_plan_review_is_a_first_attempt.py:183: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-20261118T165410261516-plan-review-of-fixture-design
+________ test_a_held_plan_review_records_a_first_attempt_when_admitted _________
+
+project = (PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-r...le-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_held_plan_review_record0/repo'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5cca13cd70>
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_held_plan_review_record0')
+
+    def test_a_held_plan_review_records_a_first_attempt_when_admitted(
+        project: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        _home, repo = project
+        _commit_prior_row(
+            repo, PLAN_REVIEW_NODE, run_id=f"r-20261015T000000000000-{PLAN_REVIEW_NODE}"
+        )
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    
+        real_dispatch = dispatch_module.dispatch
+        captured: dict = {}
+    
+        def hold(**kwargs):
+            # The lane holds the review: the request is stored as a queued pointer
+            # that keeps the dispatch options the compose supplied, which is the
+            # record the admission pass later replays.
+            captured["options"] = dict(kwargs.get("dispatch_options") or {})
+            node = kwargs["node"]
+            runs.queue_dispatch(
+                {
+                    "run_id": "queued-review",
+                    "project": PROJECT,
+                    "plan": node.plan,
+                    "section": node.section,
+                    "repo": str(repo),
+                    "session": "coordinator",
+                    "node": node.as_dict(),
+                    "backend": "worker",
+                    "launch": "cli",
+                    "local": True,
+                    "phase": "queued",
+                    "queued_at": PRIOR_AT,
+                    "created_at": PRIOR_AT,
+                    "reason": "the router grants 0 slots",
+                    "dispatch_options": dict(kwargs.get("dispatch_options") or {}),
+                }
+            )
+            raise LanePaused({"state": "held", "detail": "the router grants 0 slots"})
+    
+        monkeypatch.setattr(dispatch_module, "dispatch", hold)
+        held = recovery.dispatch_review_for_run(_subject(), config=CONFIG)
+        assert held["dispatched"] is False, held
+        assert captured["options"].get("fresh_review") is True
+    
+        # The queued request kept the marker, and the admission pass replays it
+        # through the real dispatch path.
+        queued = runs.read_pointer("queued-review")
+        assert queued["dispatch_options"].get("fresh_review") is True
+    
+        monkeypatch.setattr(dispatch_module, "dispatch", real_dispatch)
+        monkeypatch.setattr(
+            dispatch_module, "_create_worktree", _prepare_worktree(tmp_path, head)
+        )
+        admission = importlib.import_module("reckon.crew.queue_admission")
+        result = admission.admit_once(
+            launcher=lambda *a, **k: 999911, config_for=lambda _pointer: CONFIG
+        )
+        assert result["launched"], result
+        launched_id = str(result["launched"][0])
+        pointer = runs.read_pointer(launched_id)
+>       assert pointer["node"]["id"] == PLAN_REVIEW_NODE
+E       AssertionError: assert 'plan-review-...ixture-design' == 'plan-review-of-fixture'
+E         
+E         - plan-review-of-fixture
+E         + plan-review-of-fixture-design
+E         ?                       +++++++
+
+tests/test_a_new_plan_review_is_a_first_attempt.py:258: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run queued-review
+__________ test_a_second_dispatch_of_its_own_node_id_is_a_redispatch ___________
+
+project = (PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-r...le-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_second_dispatch_of_its_0/repo'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5ccc11ca60>
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_second_dispatch_of_its_0')
+
+    def test_a_second_dispatch_of_its_own_node_id_is_a_redispatch(
+        project: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        _home, repo = project
+        # This node's first run failed; a promotion commits its row.
+        _commit_prior_row(
+            repo, IMPL_NODE, run_id="r-20261015T000000000000-impl-node-1", gate="failed"
+        )
+    
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        monkeypatch.setattr(
+            dispatch_module, "_create_worktree", _prepare_worktree(tmp_path, head)
+        )
+        brief = tmp_path / "impl-brief.md"
+        brief.write_text("Record a second dispatch of this node.\n", encoding="utf-8")
+        node = crew.TaskNode(
+            id=IMPL_NODE,
+            goal="record a second dispatch of this node as a redispatch",
+            plan="",
+            brief=str(brief),
+            role="implement",
+            spec_level="guided",
+            done_when="pytest tests/test_a_new_plan_review_is_a_first_attempt.py exits 0",
+            write_paths=["result.json"],
+            time_budget="20m",
+        )
+    
+        record = crew.dispatch(
+            node=node,
+            project=PROJECT,
+            repo=repo,
+            config=CONFIG,
+            session="coordinator",
+            launcher=lambda *a, **k: 999911,
+        )
+    
+>       assert record["attempt"] == 2
+E       assert 1 == 2
+
+tests/test_a_new_plan_review_is_a_first_attempt.py:309: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-20261118T165411615433-impl-node
+_____________ test_queued_request_attaches_before_dispatch_returns _____________
+
+queued_with_host = ({'backend': 'clive', 'created_at': '2026-11-18T16:54:17Z', 'dispatch_options': {'local': True, 'named_route': {'backe...time_budget': '25m', 'needs_help_after_failures': 2}, ...}, <_pytest.monkeypatch.MonkeyPatch object at 0x7f5cc95c8520>)
+
+    def test_queued_request_attaches_before_dispatch_returns(queued_with_host) -> None:
+        request, host, _slots, _config, _monkeypatch = queued_with_host
+        assert request["phase"] == "queued"
+>       assert host.line == b'{"project": "sample", "session": "hosted-session"}'
+E       assert b'{"project":...cked": false}' == b'{"project":...ted-session"}'
+E         
+E         At index 49 diff: b',' != b'}'
+E         
+E         Full diff:
+E         - (b'{"project": "sample", "session": "hosted-session"}')
+E         + (b'{"project": "sample", "session": "hosted-session", "owner_checked": false}')
+E         ?                                                     ++++++++++++++++++++++++
+
+tests/test_a_queued_request_arranges_its_follower.py:84: AssertionError
+________ test_a_request_held_by_a_stopped_runs_claim_is_not_dispatched _________
+
+admit_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_request_held_by_a_stopp0/checkout')
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_request_held_by_a_stopp0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5ccb01f690>
+
+    def test_a_request_held_by_a_stopped_runs_claim_is_not_dispatched(
+        admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The claim holds it with no attempt, and releases it when it goes."""
+        _, resolve = _config_for()
+        runs.queue_dispatch(_queue(admit_repo, node_id="claimed", run_id="r-claimed"))
+        _stopped_holder(admit_repo, tmp_path, run_id="r-holder", path="claimed.txt")
+        probe = _LaunchProbe(monkeypatch)
+        probe.answer = _launched
+    
+        first = queue_admission.admit_once(config_for=resolve)
+    
+>       assert probe.attempted == [], "a held claim must cost the pass no dispatch"
+E       AssertionError: a held claim must cost the pass no dispatch
+E       assert ['r-claimed'] == []
+E         
+E         Left contains one more item: 'r-claimed'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'r-claimed',
+E         + ]
+
+tests/test_a_request_that_cannot_launch_costs_nothing.py:196: AssertionError
+______ test_a_pass_over_four_requests_attempts_only_the_one_it_can_launch ______
+
+admit_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_pass_over_four_requests0/checkout')
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_pass_over_four_requests0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5cc8cd3f50>
+
+    def test_a_pass_over_four_requests_attempts_only_the_one_it_can_launch(
+        admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Three requests held on claims cost one path comparison each, no dispatch."""
+        config, resolve = _config_for()
+        config["backends"]["clive"]["lane_document"] = str(
+            _lane_document(tmp_path, worker_slots=10)
+        )
+        held_ids = []
+        for node_id in ("alpha", "beta", "gamma"):
+            run_id = f"r-{node_id}"
+            runs.queue_dispatch(_queue(admit_repo, node_id=node_id, run_id=run_id))
+            _stopped_holder(
+                admit_repo, tmp_path, run_id=f"r-holder-{node_id}", path=f"{node_id}.txt"
+            )
+            held_ids.append(run_id)
+        runs.queue_dispatch(_queue(admit_repo, node_id="ready", run_id="r-ready"))
+        probe = _LaunchProbe(monkeypatch)
+        probe.answer = _launched
+    
+        result = queue_admission.admit_once(config_for=resolve)
+    
+>       assert probe.attempted == ["r-ready"], "exactly one request reaches the launch"
+E       AssertionError: exactly one request reaches the launch
+E       assert ['r-alpha', '...a', 'r-ready'] == ['r-ready']
+E         
+E         At index 0 diff: 'r-alpha' != 'r-ready'
+E         Left contains 3 more items, first extra item: 'r-beta'
+E         
+E         Full diff:
+E           [
+E         +     'r-alpha',
+E         +     'r-beta',
+E         +     'r-gamma',
+E               'r-ready',
+E           ]
+
+tests/test_a_request_that_cannot_launch_costs_nothing.py:339: AssertionError
+_______________ test_a_fenced_review_removes_no_siblings_record ________________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_fenced_review_removes_n0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5ccadcc670>
+mutations = None
+
+    @requires_bwrap
+    def test_a_fenced_review_removes_no_siblings_record(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutations: None
+    ) -> None:
+        """The fenced command writes its own record and cannot remove a sibling's."""
+        store = Store(tmp_path)
+        store.point_the_stores(monkeypatch)
+        argv = store.composed_argv(
+            store.composition()["write_paths"], stub=store.write_stub()
+        )
+        env = {
+            "HOME": str(store.home),
+            "FENCE_RESULTS": str(store.results),
+            "FENCE_OWN_RECORD": str(Path(store.composition()["write_paths"][0])),
+            "FENCE_SIBLING_RECORD": str(store.sibling_record),
+        }
+        completed = subprocess.run(
+            argv, env=env, cwd=str(store.base), capture_output=True, text=True, check=False
+        )
+        results = store.results.read_text() if store.results.exists() else ""
+>       assert "own-record-write-ok" in results, (
+            f"the fenced command could not write its own record: {results!r} "
+            f"stderr={completed.stderr!r}"
+        )
+E       AssertionError: the fenced command could not write its own record: '' stderr='bwrap: execvp /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_fenced_review_removes_n0/stub.sh: No such file or directory\n'
+E       assert 'own-record-write-ok' in ''
+
+tests/test_a_run_review_cannot_remove_a_siblings_record.py:352: AssertionError
+______________ test_a_fenced_run_cannot_remove_a_siblings_scratch ______________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_fenced_run_cannot_remov0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5ccae2da90>
+declared_seal_mutation = None
+
+    @requires_bwrap
+    def test_a_fenced_run_cannot_remove_a_siblings_scratch(
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        declared_seal_mutation: None,
+    ) -> None:
+        """Case 1: the sibling removal is refused read-only; the own write lands."""
+        scratch = Scratch(tmp_path)
+        scratch.point_the_scratch_root(monkeypatch)
+        proc = scratch.run_fence(scratch.argv())
+>       results = scratch.results_text()
+                  ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_a_worker_cannot_remove_another_runs_scratch.py:223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_a_worker_cannot_remove_another_runs_scratch.py:131: in results_text
+    return self.results.read_text()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/pathlib/__init__.py:787: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-re...pytest-1/test_a_fenced_run_cannot_remov0/home/.config/reckon/crew/runs/r-20261016T120000000000-under-test/results.txt')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_fenced_run_cannot_remov0/home/.config/reckon/crew/runs/r-20261016T120000000000-under-test/results.txt'
+
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_________________ test_a_free_path_reaches_the_promoted_ledger _________________
+
+blocked_run = {'run_id': 'r-20260921T000000000000-widen-blocked', 'project': 'sample', 'repo': '/tmp/reckon-crew-scratch/r-20261118T...-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_free_path_reaches_the_p0/repo', ...}
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_free_path_reaches_the_p0')
+crew_home_watch = <tests.test_fence_widening.CrewHomeWatch object at 0x7f5cccd69590>
+
+    def test_a_free_path_reaches_the_promoted_ledger(
+        blocked_run: dict, tmp_path: Path, crew_home_watch: CrewHomeWatch
+    ) -> None:
+        repo = tmp_path / "repo"
+        (repo / "docs" / "state" / "sample").mkdir(parents=True)
+        (repo / "docs" / "state" / "sample" / "shared-write-paths.json").write_text(
+            json.dumps({"shared_roots": []}) + "\n"
+        )
+        (repo / "docs" / "state" / "sample" / "index.json").write_text(
+            json.dumps({"project": "sample", "data": {"_version": 0}}) + "\n"
+        )
+        ledger.write("sample", {"members": [], "runs": [], "holds": []}, 0, root=repo)
+        for args in (
+            ["init", "-q", "-b", "main"],
+            ["config", "user.email", "test@example.invalid"],
+            ["config", "user.name", "Test"],
+            ["add", "docs"],
+            ["commit", "-q", "-m", "test: seed repository"],
+        ):
+            subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+        base = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        pointer = _read(BLOCKED_RUN_ID)
+        pointer["base_sha"] = base
+        _write_json(pointer_path(BLOCKED_RUN_ID), pointer)
+    
+        result = _widen(BLOCKED_RUN_ID, GRANTED)
+        assert result.exit_code == 0, result.output
+        held_path = "reckon/crew/dispatch.py"
+        holder_id = "r-20260921T000000000000-later-holder"
+        holder = _blocked_pointer(tmp_path, holder_id, phase="working")
+        holder["node"]["write_paths"] = [held_path]
+        _write_json(pointer_path(holder_id), holder)
+        before_refusal = pointer_path(BLOCKED_RUN_ID).read_bytes()
+        refused = _widen(BLOCKED_RUN_ID, held_path)
+>       assert refused.exit_code != 0, refused.output
+E       AssertionError: {"added": ["reckon/crew/dispatch.py"], "folded_disposition": null, "grants": [{"path": "reckon/crew/runs.py", "reason": "", "source": "dispatch"}, {"path": "reckon/crew/node.py", "reason": "", "source": "dispatch"}, {"path": "reckon/crew/dispatch.py", "reason": "", "source": "dispatch"}], "manifest_status": "", "node": "widen", "ok": true, "phase": "blocked", "run_id": "r-20260921T000000000000-widen-blocked", "self_widen": false, "session_id": "s19-codex-20260916", "takes_effect": "the worker's liveness could not be read on this host, so it is not known when the added paths take effect. The fence is built from node.write_paths at launch.", "write_paths": ["reckon/crew/runs.py", "reckon/crew/node.py", "reckon/crew/dispatch.py"]}
+E         
+E       assert 0 != 0
+E        +  where 0 = <Result okay>.exit_code
+
+tests/test_fence_widening.py:220: AssertionError
+_________ test_a_peer_held_path_refuses_without_changing_pointer_bytes _________
+
+blocked_run = {'run_id': 'r-20260921T000000000000-widen-blocked', 'project': 'sample', 'repo': '/tmp/reckon-crew-scratch/r-20261118T...-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_peer_held_path_refuses_0/repo', ...}
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_peer_held_path_refuses_0')
+crew_home_watch = <tests.test_fence_widening.CrewHomeWatch object at 0x7f5cccd6a5d0>
+
+    def test_a_peer_held_path_refuses_without_changing_pointer_bytes(
+        blocked_run: dict, tmp_path: Path, crew_home_watch: CrewHomeWatch
+    ) -> None:
+        subprocess.run(
+            ["git", "init", "-q", "-b", "main"],
+            cwd=tmp_path / "repo",
+            check=True,
+            capture_output=True,
+        )
+        declaration = tmp_path / "repo" / "docs" / "state" / "sample"
+        declaration.mkdir(parents=True)
+        (declaration / "shared-write-paths.json").write_text(
+            json.dumps({"shared_roots": []}), encoding="utf-8"
+        )
+        holder_id = "r-20260921T000000000000-holder"
+        holder = _blocked_pointer(tmp_path, holder_id, phase="working")
+        holder["node"]["write_paths"] = [GRANTED]
+        _write_json(pointer_path(holder_id), holder)
+        assert any(
+            claim.run_id == holder_id and claim.binding and claim.path == GRANTED
+            for claim in _repository_scope_claims()
+        )
+        candidate = crew.TaskNode(
+            id="widen", goal="", plan="fixture", write_paths=[GRANTED]
+        )
+>       with pytest.raises(ScopeConflict, match=holder_id):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ScopeConflict
+
+tests/test_fence_widening.py:273: Failed
+_______ test_health_sampler_calls_scratch_sampling_and_keeps_the_reading _______
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_health_sampler_calls_scra0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5cc9a4a270>
+
+    def test_health_sampler_calls_scratch_sampling_and_keeps_the_reading(
+        tmp_path, monkeypatch
+    ):
+        import socket
+    
+        from reckon.crew import fleet_node
+        from tests.test_fleet_health import sandbox
+    
+        box = sandbox(tmp_path)
+        scheduler = {
+            "utc": "2020-01-01T00:00:00Z",
+            "job_id": box.env["SLURM_JOB_ID"],
+            "node": socket.gethostname().split(".")[0],
+            "source": "scheduler",
+            "scheduler_state": "RUNNING",
+            "scheduler_reason": "None",
+            "scheduler_running": "true",
+            "scheduler_event": "sample",
+        }
+        assert fleet_node.append_scheduler_reading(box.health, scheduler)
+        stub = box.root / "stubbin" / "scratch-python"
+        stub.write_text(
+            '#!/bin/bash\ncase "$*" in\n  *sample-session-scratch) echo 12345 ;;\n  *check-interpreters) echo 0 ;;\n  *) exit 9 ;;\nesac\n'.replace(
+                '"', '"'
+            )
+        )
+        stub.chmod(0o700)
+        env = {**box.env, "RECKON_SHIM_PYTHON": str(stub)}
+        result = subprocess.run(
+            [
+                "bash",
+                str(Path(__file__).resolve().parents[1] / "bin/fleet-health"),
+                "--once",
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X/bin/fleet-health: line 88: /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X/.venv/bin/python: No such file or directory
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['bash', '/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-qu...file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X/.venv/bin/python: No such file or directory\n').returncode
+
+tests/test_session_scratch_uses_bounded_node_tmp.py:230: AssertionError
+_______________ test_only_the_shared_parser_calls_fromisoformat ________________
+
+    def test_only_the_shared_parser_calls_fromisoformat() -> None:
+        """No module parses an ISO stamp outside the shared parser and its named
+        exceptions. Every deviation is listed with a reason, so a second parser
+        cannot appear silently, and a listed exception that no longer exists is a
+        stale entry that fails this test.
+        """
+    
+        shared = _shared_parser_module()
+        seen: set[tuple[str, str]] = set()
+        offenders: list[str] = []
+        for path in _module_paths():
+            rel = path.relative_to(_ROOT).as_posix()
+            if rel == shared:
+                continue
+            for owner, _ in _enclosing_fromisoformat_calls(path):
+                seen.add((rel, owner))
+                if (rel, owner) not in _RETAINED_FROMISOFORMAT:
+                    offenders.append(f"{rel}:{owner}")
+    
+>       assert offenders == [], (
+            "these modules parse ISO stamps without the shared parser or a named "
+            f"exception: {offenders}"
+        )
+E       AssertionError: these modules parse ISO stamps without the shared parser or a named exception: ['crew/fleet_supervisor.py:fleet_test_obligations', 'crew/plan_review.py:_answer_instant', 'crew/plan_review.py:_commit_time', 'crew/promotion_requests.py:_waited_seconds', 'crew/promotion_requests.py:_waited_seconds', 'crew/promotion_requests.py:promotion_queue_report', 'crew/promotion_requests.py:_pending_requests', 'crew/promotion_requests.py:failure_obligations', 'crew/repository_maintenance.py:maintenance_due', 'crew/review_records.py:_delivery_order', 'crew/station.py:_prune_released_followers', 'crew/station_obligations.py:refresh', 'crew/station_obligations.py:_publish_pending', 'crew/station_obligations.py:_publish_pending', 'hooks/coordinator_obligations.py:_instant']
+E       assert ['crew/fleet_..._report', ...] == []
+E         
+E         Left contains 15 more items, first extra item: 'crew/fleet_supervisor.py:fleet_test_obligations'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'crew/fleet_supervisor.py:fleet_test_obligations',
+E         +     'crew/plan_review.py:_answer_instant',
+E         +     'crew/plan_review.py:_commit_time',
+E         +     'crew/promotion_requests.py:_waited_seconds',
+E         +     'crew/promotion_requests.py:_waited_seconds',
+E         +     'crew/promotion_requests.py:promotion_queue_report',
+E         +     'crew/promotion_requests.py:_pending_requests',
+E         +     'crew/promotion_requests.py:failure_obligations',
+E         +     'crew/repository_maintenance.py:maintenance_due',
+E         +     'crew/review_records.py:_delivery_order',
+E         +     'crew/station.py:_prune_released_followers',
+E         +     'crew/station_obligations.py:refresh',
+E         +     'crew/station_obligations.py:_publish_pending',
+E         +     'crew/station_obligations.py:_publish_pending',
+E         +     'hooks/coordinator_obligations.py:_instant',
+E         + ]
+
+tests/test_structural_invariants.py:132: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_a_claim_refused_launch_returns_to_the_queue.py::test_a_stopped_holders_claim_holds_the_request_before_launch - AssertionError: a held claim must cost the pass no dispatch
+assert ['r-queued'] == []
+  
+  Left contains one more item: 'r-queued'
+  
+  Full diff:
+  - []
+  + [
+  +     'r-queued',
+  + ]
+FAILED tests/test_a_claim_refused_launch_returns_to_the_queue.py::test_the_request_launches_once_the_holders_commits_reach_main - AssertionError: assert ['r-queued'] == []
+  
+  Left contains one more item: 'r-queued'
+  
+  Full diff:
+  - []
+  + [
+  +     'r-queued',
+  + ]
+FAILED tests/test_a_held_lane_never_holds_a_review.py::test_a_run_review_records_the_lane_it_followed - reckon.crew.CrewError: refusing to unwatch 'sample': producer seat held by 98dci4-clu-3141.iter.org pid 1239 beyond 2s
+FAILED tests/test_a_named_lane_request_queues_and_takes_the_reserve.py::test_a_full_roster_keeps_every_lane_queued_and_the_named_lane_takes_the_next_seat - AssertionError: {'gate': 'open', 'launched': ['r-codex', 'r-local-a', 'r-local-b'], 'held': [], 'failed': [], ...}
+assert ['r-codex', '..., 'r-local-b'] == ['r-codex']
+  
+  Left contains 2 more items, first extra item: 'r-local-a'
+  
+  Full diff:
+    [
+        'r-codex',
+  +     'r-local-a',
+  +     'r-local-b',
+    ]
+FAILED tests/test_a_named_lane_request_queues_and_takes_the_reserve.py::test_a_queued_review_edited_to_codex_keeps_its_reviewed_run - AssertionError: {'gate': 'open', 'launched': ['r-review', 'r-local-waiting'], 'held': [], 'failed': [], ...}
+assert ['r-review', ...ocal-waiting'] == ['r-review']
+  
+  Left contains one more item: 'r-local-waiting'
+  
+  Full diff:
+    [
+        'r-review',
+  +     'r-local-waiting',
+    ]
+FAILED tests/test_a_new_plan_review_is_a_first_attempt.py::test_a_plan_review_of_a_revised_plan_is_a_first_attempt - AssertionError: assert 'plan-review-...ixture-design' == 'plan-review-of-fixture'
+  
+  - plan-review-of-fixture
+  + plan-review-of-fixture-design
+  ?                       +++++++
+FAILED tests/test_a_new_plan_review_is_a_first_attempt.py::test_a_held_plan_review_records_a_first_attempt_when_admitted - AssertionError: assert 'plan-review-...ixture-design' == 'plan-review-of-fixture'
+  
+  - plan-review-of-fixture
+  + plan-review-of-fixture-design
+  ?                       +++++++
+FAILED tests/test_a_new_plan_review_is_a_first_attempt.py::test_a_second_dispatch_of_its_own_node_id_is_a_redispatch - assert 1 == 2
+FAILED tests/test_a_queued_request_arranges_its_follower.py::test_queued_request_attaches_before_dispatch_returns - assert b'{"project":...cked": false}' == b'{"project":...ted-session"}'
+  
+  At index 49 diff: b',' != b'}'
+  
+  Full diff:
+  - (b'{"project": "sample", "session": "hosted-session"}')
+  + (b'{"project": "sample", "session": "hosted-session", "owner_checked": false}')
+  ?                                                     ++++++++++++++++++++++++
+FAILED tests/test_a_request_that_cannot_launch_costs_nothing.py::test_a_request_held_by_a_stopped_runs_claim_is_not_dispatched - AssertionError: a held claim must cost the pass no dispatch
+assert ['r-claimed'] == []
+  
+  Left contains one more item: 'r-claimed'
+  
+  Full diff:
+  - []
+  + [
+  +     'r-claimed',
+  + ]
+FAILED tests/test_a_request_that_cannot_launch_costs_nothing.py::test_a_pass_over_four_requests_attempts_only_the_one_it_can_launch - AssertionError: exactly one request reaches the launch
+assert ['r-alpha', '...a', 'r-ready'] == ['r-ready']
+  
+  At index 0 diff: 'r-alpha' != 'r-ready'
+  Left contains 3 more items, first extra item: 'r-beta'
+  
+  Full diff:
+    [
+  +     'r-alpha',
+  +     'r-beta',
+  +     'r-gamma',
+        'r-ready',
+    ]
+FAILED tests/test_a_run_review_cannot_remove_a_siblings_record.py::test_a_fenced_review_removes_no_siblings_record - AssertionError: the fenced command could not write its own record: '' stderr='bwrap: execvp /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_fenced_review_removes_n0/stub.sh: No such file or directory\n'
+assert 'own-record-write-ok' in ''
+FAILED tests/test_a_worker_cannot_remove_another_runs_scratch.py::test_a_fenced_run_cannot_remove_a_siblings_scratch - FileNotFoundError: [Errno 2] No such file or directory: '/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-1/test_a_fenced_run_cannot_remov0/home/.config/reckon/crew/runs/r-20261016T120000000000-under-test/results.txt'
+FAILED tests/test_fence_widening.py::test_a_free_path_reaches_the_promoted_ledger - AssertionError: {"added": ["reckon/crew/dispatch.py"], "folded_disposition": null, "grants": [{"path": "reckon/crew/runs.py", "reason": "", "source": "dispatch"}, {"path": "reckon/crew/node.py", "reason": "", "source": "dispatch"}, {"path": "reckon/crew/dispatch.py", "reason": "", "source": "dispatch"}], "manifest_status": "", "node": "widen", "ok": true, "phase": "blocked", "run_id": "r-20260921T000000000000-widen-blocked", "self_widen": false, "session_id": "s19-codex-20260916", "takes_effect": "the worker's liveness could not be read on this host, so it is not known when the added paths take effect. The fence is built from node.write_paths at launch.", "write_paths": ["reckon/crew/runs.py", "reckon/crew/node.py", "reckon/crew/dispatch.py"]}
+  
+assert 0 != 0
+ +  where 0 = <Result okay>.exit_code
+FAILED tests/test_fence_widening.py::test_a_peer_held_path_refuses_without_changing_pointer_bytes - Failed: DID NOT RAISE ScopeConflict
+FAILED tests/test_session_scratch_uses_bounded_node_tmp.py::test_health_sampler_calls_scratch_sampling_and_keeps_the_reading - AssertionError: /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X/bin/fleet-health: line 88: /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X/.venv/bin/python: No such file or directory
+  
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['bash', '/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-qu...file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X/.venv/bin/python: No such file or directory\n').returncode
+FAILED tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat - AssertionError: these modules parse ISO stamps without the shared parser or a named exception: ['crew/fleet_supervisor.py:fleet_test_obligations', 'crew/plan_review.py:_answer_instant', 'crew/plan_review.py:_commit_time', 'crew/promotion_requests.py:_waited_seconds', 'crew/promotion_requests.py:_waited_seconds', 'crew/promotion_requests.py:promotion_queue_report', 'crew/promotion_requests.py:_pending_requests', 'crew/promotion_requests.py:failure_obligations', 'crew/repository_maintenance.py:maintenance_due', 'crew/review_records.py:_delivery_order', 'crew/station.py:_prune_released_followers', 'crew/station_obligations.py:refresh', 'crew/station_obligations.py:_publish_pending', 'crew/station_obligations.py:_publish_pending', 'hooks/coordinator_obligations.py:_instant']
+assert ['crew/fleet_..._report', ...] == []
+  
+  Left contains 15 more items, first extra item: 'crew/fleet_supervisor.py:fleet_test_obligations'
+  
+  Full diff:
+  - []
+  + [
+  +     'crew/fleet_supervisor.py:fleet_test_obligations',
+  +     'crew/plan_review.py:_answer_instant',
+  +     'crew/plan_review.py:_commit_time',
+  +     'crew/promotion_requests.py:_waited_seconds',
+  +     'crew/promotion_requests.py:_waited_seconds',
+  +     'crew/promotion_requests.py:promotion_queue_report',
+  +     'crew/promotion_requests.py:_pending_requests',
+  +     'crew/promotion_requests.py:failure_obligations',
+  +     'crew/repository_maintenance.py:maintenance_due',
+  +     'crew/review_records.py:_delivery_order',
+  +     'crew/station.py:_prune_released_followers',
+  +     'crew/station_obligations.py:refresh',
+  +     'crew/station_obligations.py:_publish_pending',
+  +     'crew/station_obligations.py:_publish_pending',
+  +     'hooks/coordinator_obligations.py:_instant',
+  + ]
+17 failed, 479 passed in 196.38s (0:03:16)
+EXIT=1
