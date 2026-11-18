@@ -3126,14 +3126,23 @@ def _recorded_transition_spend(project: str, run_id: str) -> dict[str, Any] | No
     if not run_id:
         return None
     from reckon import ledger as ledger_module
+    from reckon import run_store
 
     try:
         path = ledger_module.run_path(project, run_id)
         if path.is_file():
             row = json.loads(path.read_text(encoding="utf-8"))
         else:
-            rows, _version = ledger_module.read_records(project, with_figures=False)
-            row = next((item for item in rows if item.get("run_id") == run_id), None)
+            # The store answers one identity by key, decoding that row alone,
+            # so a transition pays for its own run rather than for the
+            # project's history. A project with no store is read from its
+            # ledger, narrowed to the same identity.
+            rows = run_store.stored_run_rows(project, run_ids=(run_id,))
+            if rows is None:
+                rows, _version = ledger_module.read_records(
+                    project, with_figures=False, run_ids=(run_id,)
+                )
+            row = rows[0] if rows else None
     except (OSError, ValueError, ledger_module.LedgerError):
         return None
     if not isinstance(row, Mapping) or row.get("run_id") != run_id:
