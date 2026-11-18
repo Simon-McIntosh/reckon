@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_release_waiters_of_the_landed_section",
+    "reckon/crew/queue_admission.py:_release_waiters",
+    "reckon/evidence.py:_fragment_href",
+    "reckon/crew/reports.py:_fragment_plan_of"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T06:27:35Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: the block headed \"Head run\" quotes the run at 3349de93d8, which is the base of the delivered diff, not the run head 145ceb730d, and the fragment never quotes scoped-gate-1794978552256000412.log (7 passed at 145ceb730d) nor after_suite-1794978629498982781.log, so a reader comparing the record's revisions with the promoted commit finds the record measuring its own base."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim that both runs were all_debug jobs is stated in prose, while no log in the run directory records a partition and the done_when's SLURM_JOB_ID-unset condition appears in no header and in no gate command line, so two stated conditions of the measure cannot be checked from the artefacts."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "one commit, 145ceb730d \"docs(evidence): record the green run of the promotion waiter-releasing tests\", one new file with 65 added lines and no deletions and no change under reckon/ or tests/.",
+    "done_when": "its measure is the file passing at head as an all_debug job with SLURM_JOB_ID unset and shared-storage output; the manifest's gate at 145ceb730d is recorded as 7 passed EXIT=0 in scoped-gate-1794978552256000412.log, but no log header records the partition or the unset variable, so those two conditions rest on the manifest's and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:25 prose rather than on a recorded field.",
+    "goal": "the node goal is \"Make tests/test_a_promotion_releases_waiters_however_spelled.py pass in full on the primary branch\"; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:4-12 records that the file is green at 6699d0257d and at 3349de93d8 with the repair commit d675c26964 named, which the done_when's \"if it already passes, deliver that passing run and stop\" branch permits.",
+    "manifest": "read in full; it states the head gate at 145ceb730d (7 passed), the base run at 6699d0257d (7 passed), both declared-suite arms as inline JSON at 58 passed each with full 40-character revisions, and a mutation control at 3 failed with EXIT=1.",
+    "write_paths": "the manifest and dispatch-detail.json declare reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the delivered diff 3349de93d8..145ceb730d touches the one fragment inside that directory and no other path."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, so the guard is the pre-existing tests/test_a_promotion_releases_waiters_however_spelled.py::test_section_spellings_release_in_both_directions whose reddening appears only in a recorded mutation run, not in any assertion this node added.",
+    "evidence": "scoped-gate-1794978552256000412.log's header records revision, host, tree and command but not the all_debug partition or an unset SLURM_JOB_ID the done_when requires, and the fragment's quoted head block at line 15 is the 3349de93d8 run rather than the head run.",
+    "fit": "the fragment opens with a node-prefixed section id and h3/h4/pre blocks as 84 of the 197 siblings in docs/evidence/fragments/queued-work-needs-no-workaround do, though the file ends without a trailing newline.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:4 states the pass at both revisions, and scoped-gate-1794978552256000412.log confirms 7 passed at the run head 145ceb730d.",
+    "reuse": "the diff adds no function, class or module; a search over reckon/ for fragment consumers finds the owners reckon/evidence.py:_fragment_href and reckon/crew/reports.py:_fragment_plan_of, and the record reuses that location rather than introducing a second store.",
+    "scope_discipline": "the diff's only path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html, sits inside the declared fragment directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_a_promotion_releases_waiters_however_spelled.py pass in full on the primary branch\"; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:4-12 records that the file is green at 6699d0257d and at 3349de93d8 with the repair commit d675c26964 named, which the done_when's \"if it already passes, deliver that passing run and stop\" branch permits.\nVERDICT done_when: its measure is the file passing at head as an all_debug job with SLURM_JOB_ID unset and shared-storage output; the manifest's gate at 145ceb730d is recorded as 7 passed EXIT=0 in scoped-gate-1794978552256000412.log, but no log header records the partition or the unset variable, so those two conditions rest on the manifest's and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:25 prose rather than on a recorded field.\nVERDICT write_paths: the manifest and dispatch-detail.json declare reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the delivered diff 3349de93d8..145ceb730d touches the one fragment inside that directory and no other path.\nVERDICT manifest: read in full; it states the head gate at 145ceb730d (7 passed), the base run at 6699d0257d (7 passed), both declared-suite arms as inline JSON at 58 passed each with full 40-character revisions, and a mutation control at 3 failed with EXIT=1.\nVERDICT diff: one commit, 145ceb730d \"docs(evidence): record the green run of the promotion waiter-releasing tests\", one new file with 65 added lines and no deletions and no change under reckon/ or tests/.\nCALL_SITES: reckon/crew/promotion.py:_release_waiters_of_the_landed_section, reckon/crew/queue_admission.py:_release_waiters, reckon/evidence.py:_fragment_href, reckon/crew/reports.py:_fragment_plan_of\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:4 states the pass at both revisions, and scoped-gate-1794978552256000412.log confirms 7 passed at the run head 145ceb730d.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1794978552256000412.log's header records revision, host, tree and command but not the all_debug partition or an unset SLURM_JOB_ID the done_when requires, and the fragment's quoted head block at line 15 is the 3349de93d8 run rather than the head run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's only path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html, sits inside the declared fragment directory.\nSCORE durability: 13\nJUSTIFICATION durability: the diff adds no assertion, so the guard is the pre-existing tests/test_a_promotion_releases_waiters_however_spelled.py::test_section_spellings_release_in_both_directions whose reddening appears only in a recorded mutation run, not in any assertion this node added.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment opens with a node-prefixed section id and h3/h4/pre blocks as 84 of the 197 siblings in docs/evidence/fragments/queued-work-needs-no-workaround do, though the file ends without a trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; a search over reckon/ for fragment consumers finds the owners reckon/evidence.py:_fragment_href and reckon/crew/reports.py:_fragment_plan_of, and the record reuses that location rather than introducing a second store.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:14 non-blocking: the block headed \"Head run\" quotes the run at 3349de93d8, which is the base of the delivered diff, not the run head 145ceb730d, and the fragment never quotes scoped-gate-1794978552256000412.log (7 passed at 145ceb730d) nor after_suite-1794978629498982781.log, so a reader comparing the record's revisions with the promoted commit finds the record measuring its own base.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-releases-waiters-however-spelled.html:25 non-blocking: the claim that both runs were all_debug jobs is stated in prose, while no log in the run directory records a partition and the done_when's SLURM_JOB_ID-unset condition appears in no header and in no gate command line, so two stated conditions of the measure cannot be checked from the artefacts.",
+  "review_run_id": "r-20261118T053749137934-review-of-qwnw-red-file-a-promotion-releases-waiters-however-spelled-145ceb730d48",
+  "reviewed_base_sha": "3349de93d8ff1aed3524df18b505bec5174ff791",
+  "reviewed_head_sha": "145ceb730d48bc48eb3f3b6341afb395bd817b32",
+  "reviewed_run_id": "r-20261118T044604744083-qwnw-red-file-a-promotion-releases-waiters-however-spelled",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261118T053749137934-review-of-qwnw-red-file-a-promotion-releases-waiters-however-spelled-145ceb730d48",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T06:44:45.738755+00:00",
+  "total": 102
+}
