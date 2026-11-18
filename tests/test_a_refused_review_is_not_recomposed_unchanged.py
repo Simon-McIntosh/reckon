@@ -51,6 +51,8 @@ preparation_module = importlib.import_module("reckon.crew.dispatching.preparatio
 RUN_COUNT = 50
 RUNS = [f"r-refused-composition-{index:02d}" for index in range(RUN_COUNT)]
 REFUSAL = "the review lane refused the composed review"
+CLAIM_REFUSAL = "the review is held by another run's claim on the same path"
+HOLDER = "r-holder-of-the-reviewed-path"
 
 
 @pytest.fixture(autouse=True)
@@ -143,12 +145,17 @@ def _compositions(monkeypatch: pytest.MonkeyPatch) -> tuple[list[str], dict]:
     refusal. Admitting the lane is one flag, because this stand-in *is* the
     admission the sweep meets, reached through the facade the composition calls.
     """
-    state = {"admits": False}
+    state = {"admits": False, "claim": None}
     composed: list[str] = []
     real_dispatch = preparation_module.dispatch
 
     def stand_in(**kwargs):
         composed.append(str(kwargs["node"].id))
+        if state["claim"]:
+            refusal = CrewError(CLAIM_REFUSAL)
+            refusal.run_id = state["claim"]["run_id"]
+            refusal.claimed_path = state["claim"]["path"]
+            raise refusal
         if not state["admits"]:
             raise CrewError(REFUSAL)
         return real_dispatch(**kwargs)
@@ -231,3 +238,44 @@ def test_one_runs_review_record_recomposes_only_that_run(delivered, monkeypatch)
     assert len(recomposed) == 1, composed
     assert changed in recomposed[0], recomposed
     assert len(third.get("refused") or ()) == RUN_COUNT, third
+
+
+def test_a_refusal_naming_another_runs_claim_is_composed_again(delivered, monkeypatch):
+    """A claim is another run's state, so it outlives none of this run's inputs.
+
+    The pointer, the records and the lanes' admission are unchanged across the
+    release, so a refusal remembered against them would answer for ever and the
+    run would never be reviewed. The sweep composes again and asks the holder's
+    own pointer instead, which is what the retry sees when the claim clears.
+    """
+    config = delivered["config"]
+    composed, state = _compositions(monkeypatch)
+    recorded: list = []
+    state["claim"] = {"run_id": HOLDER, "path": "reckon/signal.py"}
+
+    first = _sweep(config, recorded)
+
+    assert len(composed) == RUN_COUNT, composed
+    assert len(first.get("refused") or ()) == RUN_COUNT, first
+
+    state["claim"] = None
+
+    second = _sweep(config, recorded)
+
+    assert len(composed) == 2 * RUN_COUNT, composed
+    assert all(
+        not report.get("settled_refusal") for report in second.get("refused") or ()
+    ), second
+
+    state["admits"] = True
+    delivered["lane"].write_text(
+        delivered["lane"]
+        .read_text(encoding="utf-8")
+        .replace('"worker_slots": 0', '"worker_slots": 10'),
+        encoding="utf-8",
+    )
+
+    third = _sweep(config, recorded)
+
+    assert len(composed) == 3 * RUN_COUNT, composed
+    assert len(third.get("dispatched") or ()) == RUN_COUNT, third

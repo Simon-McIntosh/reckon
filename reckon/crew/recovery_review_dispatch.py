@@ -3829,17 +3829,25 @@ def _remember_composed_refusal(
     record: Mapping[str, Any],
     report: Mapping[str, Any],
     *,
+    claim: Mapping[str, Any] | None,
     config: Mapping[str, Any] | None,
 ) -> None:
     """Keep the refusal this pass composed against the inputs read for it.
 
     The identity is taken after the refusal has been recorded on the pointer,
     so the sweep that reads it next compares against the pointer the record
-    itself left behind. A refusal naming another run's claim is not kept: its
-    cause is that run's record, which this identity does not watch.
+    itself left behind.
+
+    A refusal that names another run's claim is not kept, and the claim comes
+    from the refusal itself rather than from the report: whether the holder
+    still fences its paths is that run's state, not one of this run's three
+    inputs, so a remembered refusal would outlive the release — the pointer,
+    this run's records and its lanes' admission would all still match, and the
+    run would never be composed again. The sweep composes instead and asks
+    :func:`stored_claim_refusal`, which reads the holder's own pointer.
     """
     run_id = str(record.get("run_id") or "")
-    if not run_id or report.get("claim"):
+    if not run_id or claim:
         return
     identity = _composition_identity(record, config=config)
     with _REFUSED_COMPOSITIONS_LOCK:
@@ -4832,7 +4840,7 @@ def _dispatch_composed_review(
         # from here rather than by composing the same refusal again. The
         # refusal is recorded on the pointer first, because the pointer's own
         # identity is one of those inputs.
-        _remember_composed_refusal(record, report, config=resolved)
+        _remember_composed_refusal(record, report, claim=claim, config=resolved)
         return report
 
     review_run_id = str(launched.get("run_id") or "")
