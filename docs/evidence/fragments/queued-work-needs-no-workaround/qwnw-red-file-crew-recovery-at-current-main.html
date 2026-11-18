@@ -1,0 +1,97 @@
+<section id="qwnw-red-file-crew-recovery-at-current-main-landing">
+  <h2>The crew recovery file passes on the primary branch</h2>
+
+  <p><strong>What was red.</strong> At <code>65ae7f6f1b</code> the file read 4
+  failed and 82 passed, in four cases and through three causes.</p>
+
+  <ol>
+    <li><code>test_fleet_counts_still_partition_the_runs_in_flight</code>,
+    <code>test_fleet_counts_scope_to_the_session_the_reader_follows</code> and
+    <code>test_an_unowned_snapshot_stays_counted_for_a_scoped_reader</code>
+    compared the counters payload with its three buckets alone.
+    <code>130499dbb3</code> had added the promotion queue's own figures —
+    <code>promotion_queued</code> and the oldest request's position and stamp both
+    named <code>oldest_promotion_position</code> and
+    <code>oldest_promotion_requested_at</code> — to the same payload, and had
+    replaced the delivered bucket with the promotion fold's own
+    <code>delivered</code> figure, which reads only promotable rows.</li>
+    <li><code>test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path</code>
+    pinned the pre-rename action word for a run refused on a usage limit.
+    <code>3efa649f03</code> moved the four self-lifting states into the waiting
+    family, <code>held</code> among them, and <code>564f48e1c8</code> drew a held
+    row carrying no written hold record in that waiting word.</li>
+  </ol>
+
+  <p><strong>Verdicts.</strong> Three causes are test-wrong: each case encoded a
+  rule the code no longer keeps, and each now asserts the rule it does.</p>
+
+  <p>One cause is product-wrong. Replacing the delivered bucket with the fold's
+  figure counted a run only when the classifier reads it promotable, so a run
+  the pane draws delivered while its review is still owed —
+  <code>completed_unpromoted</code> as its state, <code>scoring</code> to the
+  classifier — was counted in no cell: the buckets summed to two for a fleet of
+  three, which is exactly the property the partition case exists to hold, and a
+  row word and its counter disagreed about the same run.
+  <code>_fleet_counts</code> now counts a row once when its own state names the
+  delivered family or the fold reads it delivered, and the fold continues to
+  supply the queue's figures beside it.</p>
+
+  <p>No assertion was deleted or weakened: the three counters cases state the
+  whole payload explicitly (the queue figures at their measured zero through one
+  helper) and still add the three members that are buckets back to the fixture's
+  population; the word case keeps its refusal-not-crash pair and asserts the
+  waiting word that state now draws.</p>
+
+  <h3 id="qwnw-red-file-crew-recovery-at-current-main-measured">Measured</h3>
+
+  <table id="qwnw-red-file-crew-recovery-at-current-main-arms">
+    <caption>A gate or arm log's first lines name its revision, tree and command;
+    its last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the file at the base revision</td>
+        <td><code>65ae7f6f1b</code>, extraction</td>
+        <td>4 failed, 82 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the file at head</td>
+        <td><code>67d2d6890d</code>, all_debug job 1328193</td>
+        <td>86 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the affected arm, base</td>
+        <td><code>65ae7f6f1b</code>, extraction</td>
+        <td>36 failing ids, 1064 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the affected arm, head</td>
+        <td><code>67d2d6890d</code>, working tree</td>
+        <td>28 failing ids, 1072 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the affected arm, delta</td>
+        <td>base arm against head arm</td>
+        <td>0 added failures, 8 base-only ids (the four repaired ones among them)</td></tr>
+      <tr><td>the scoped gate</td>
+        <td><code>67d2d6890d</code>, all_debug</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>65ae7f6f1b</code>, all_debug</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, head</td>
+        <td><code>67d2d6890d</code>, all_debug</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Both affected arms run the same 116 test files — every file under
+  <code>tests/</code> importing <code>reckon.crew.recovery_watch</code> or
+  <code>_fleet_counts</code> — so the delta is this node's change rather than a
+  different test set. The head arm's 28 ids are a subset of the base arm's 36;
+  the extra base ids are the four repaired cases plus four the extraction
+  changes, because it is not a git repository: the two staged-write inventory
+  cases reach <code>git ls-tree HEAD</code> and raise, and two cases that count
+  git spawns read a tree with no repository behind it. The 28 that remain red in
+  both arms are other files red on the primary branch at this revision, outside
+  this node's file.</p>
+
+  <h3 id="qwnw-red-file-crew-recovery-at-current-main-control">Negative control</h3>
+
+  <p>The base run of the named file is the control: 4 failed, 82 passed,
+  <code>EXIT=1</code>, with the four ids this node repairs and no fifth. The head
+  run of the same file reads 86 passed, <code>EXIT=0</code>, as an
+  <code>all_debug</code> batch job with <code>SLURM_JOB_ID</code> unset for the
+  pytest step; both logs sit beside this fragment's run record.</p>
+</section>
