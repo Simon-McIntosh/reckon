@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -144,7 +144,7 @@ def _reference(monkeypatch, originals):
     """Force independent reads at each query, the unshared listing semantics."""
     _reset(originals)
     with monkeypatch.context() as patch:
-        patch.setattr(open_run_index, "pointers", lambda **kwargs: None)
+        patch.setattr(open_run_index, "read_scope", lambda **kwargs: nullcontext())
         report = _sweep()
         return _observations(report, originals)
 

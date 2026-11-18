@@ -8,6 +8,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
 from reckon.crew import review as review_module
+from reckon.crew.open_run_index import pointers as scoped_pointers
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     CrewError,
@@ -337,6 +338,8 @@ def _resolved_reviewed_run_id(
         return ""
     if source.startswith("r-"):
         return source
+    if pointers is None:
+        pointers = scoped_pointers(project=project)
     matches = [
         str(pointer.get("run_id") or "")
         for pointer in (list_live(project=project) if pointers is None else pointers)

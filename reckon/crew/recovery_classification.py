@@ -910,7 +910,14 @@ def _review_pointer(review_run_id: str) -> Mapping[str, Any] | None:
     dispatch that composed the review, and the stranded-launch reading is taken
     from the same mapping: one read answers both questions about the pointer.
     """
+    from reckon.crew.open_run_index import pointers
     from reckon.crew.runs import read_pointer
+
+    snapshot = pointers()
+    if snapshot is not None:
+        return next(
+            (row for row in snapshot if row.get("run_id") == review_run_id), None
+        )
 
     try:
         pointer = read_pointer(review_run_id)

@@ -1143,7 +1143,10 @@ def _live_pointer_worktrees() -> dict[Path, list[str]]:
     holds its node claim and prepares the tree, its own pointer is excluded.
     """
     claims: dict[Path, list[str]] = {}
-    for record in list_live():
+    from reckon.crew.open_run_index import pointers
+
+    snapshot = pointers()
+    for record in list_live() if snapshot is None else snapshot:
         if LAUNCH_RUN_ID.get() and record.get("run_id") == LAUNCH_RUN_ID.get():
             continue
         worktree = record.get("worktree")
