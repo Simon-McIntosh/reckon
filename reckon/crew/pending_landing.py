@@ -1139,6 +1139,118 @@ def landed_workspace_refusal(
     return ""
 
 
+def _promoted_run_worker_is_live(pointer: Mapping[str, Any]) -> bool:
+    """Whether any process the promoted run records for its worker is alive.
+
+    The release decision rests on processes, not on streams. A resumed turn that
+    ended leaves its unfinished stream behind, and a stream is evidence about a
+    turn only while the process that wrote it is there — but a promoted run held
+    by a leftover stream could never be released, which is what the fleet showed
+    on 18 November: three promoted pointers whose recorded workers were all dead
+    were held for ever. A repair dispatch still reads the stream, because there
+    silence about a process is genuinely the only evidence it has; a release
+    asks the narrower question its own decision needs.
+    """
+    from reckon.crew.recovery_liveness import _worker_record_liveness, process_alive
+
+    if runs.record_process_alive(pointer, process_alive) is True:
+        return True
+    return _worker_record_liveness(pointer) is True
+
+
+def _measured_workspace_refusal(
+    pointer: Mapping[str, Any], repository: Path, head: str
+) -> str:
+    """What a promoted measurement run's worktree holds that must be kept.
+
+    Integration ancestry cannot be asked of a measurement run — its head is
+    never merged — so the tree is judged against the promoted head itself: a
+    dirty tree, or one carrying commits beyond that head, is the only copy of
+    work nobody recorded elsewhere and is kept with the reason.
+    """
+    from reckon.crew import merge, routing
+
+    run_id = str(pointer.get("run_id") or "")
+    value = str(pointer.get("worktree") or "")
+    if not value or not Path(value).exists():
+        return ""
+    tree = Path(value)
+    claims = [
+        claim
+        for claim in routing._live_pointer_worktrees().get(tree.resolve(), ())
+        if claim != run_id
+    ]
+    inspected = routing._inspect_workspace(repository, tree, head, claims)
+    if inspected["dirty"]:
+        return "worktree has uncommitted files: " + "; ".join(inspected["dirty"])
+    if not merge._is_ancestor(repository, str(inspected["head"]), head):
+        return f"worktree carries commits beyond the promoted head {head}"
+    return ""
+
+
+def _release_measured_pointer(
+    pointer: Mapping[str, Any],
+    repository: Path,
+    head: str,
+    row: Mapping[str, Any] | None,
+) -> tuple[str, dict[str, Any], str]:
+    """Retire a promoted measurement run's pointer after releasing its tree.
+
+    A measurement run's head is never merged: it replays work the primary
+    branch already carries, so the integration ancestry every ordinary release
+    proves cannot exist for it and requiring it kept measurement trees forever.
+    Its promotion row states the measurement, which is the whole proof this
+    path has; the tree leaves through the same removal promotion itself makes,
+    and the outcome is recorded on the row before the pointer is retired.
+    """
+    from reckon.crew import promotion, promotion_release
+
+    run_id = str(pointer["run_id"])
+    project = str(pointer["project"])
+    refusal = ""
+    outcome: dict[str, Any] = {}
+
+    def release(current: Mapping[str, Any]) -> bool:
+        nonlocal refusal, outcome
+        if dict(current) != pointer:
+            refusal = "the live pointer changed before workspace release"
+            return False
+        refusal = _measured_workspace_refusal(current, repository, head)
+        if refusal:
+            return False
+        removed = promotion._release_measurement_worktree(current)
+        outcome = promotion_release._release_after_promotion(
+            run_id,
+            current,
+            gate=str(row.get("gate") or "") if row is not None else "passed",
+            integration_repo=repository,
+            integration_commit=head,
+        )
+        if removed:
+            outcome["measurement_worktree"] = removed
+        if row is not None:
+            outcome, recorded = promotion._record_release_on_ledger(
+                project=project,
+                root=repository,
+                run_id=run_id,
+                release=outcome,
+                checkout=repository,
+                after_merge=True,
+            )
+            if recorded is None:
+                refusal = "the workspace outcome could not be recorded"
+                return False
+        if not outcome.get("worktree_released"):
+            refusal = str(
+                outcome.get("worktree_withheld") or "workspace release withheld"
+            )
+            return False
+        return True
+
+    retired = retire_pointer_if(run_id, release)
+    return retired, outcome, refusal
+
+
 def release_merged_promotions(
     *, only_run: str = "", project: str | None = None, session: str | None = None
 ) -> list[dict[str, Any]]:
@@ -1151,8 +1263,8 @@ def release_merged_promotions(
     failed write leaves the pointer for the next pass to finish.
     """
     from reckon.crew import merge, promotion
+    from reckon.crew.promotion import _measurement_reason
     from reckon.crew.promotion_requests import COMMAND_REPLY, PENDING, read_promotion
-    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
 
     results: list[dict[str, Any]] = []
     for pointer in runs.list_live():
@@ -1169,23 +1281,6 @@ def release_merged_promotions(
         # A journaled landing already has an owner in the pending-record pass.
         if _record_path(run_id).exists():
             continue
-        marked = pointer.get("pending_landing_repair_attempt")
-        # An integrated delivery can retire a legacy unpaired mark. A phase
-        # rewrite does not start another attempt; the process and attempt
-        # fields still protect a worker that superseded the mark.
-        if (
-            pointer.get("pending_landing_repair")
-            and marked is not None
-            and (
-                not isinstance(marked, Mapping)
-                or any(
-                    pointer.get(field) != marked.get(field)
-                    for field in MARKED_FIELDS
-                    if field != "phase"
-                )
-            )
-        ):
-            continue
         if (
             COMMAND_REPLY.get() is None
             and read_promotion(run_id).get("phase") in PENDING
@@ -1193,10 +1288,55 @@ def release_merged_promotions(
             continue
         row = _promoted_row(run_project, run_id)
         head = _reviewed_head(row) if row else ""
-        if not head or _promotion_lease_held(run_id) or _reviewed_run_is_busy(pointer):
+        if not head or _promotion_lease_held(run_id):
+            continue
+        # A repair mark names the attempt that wrote it, and the pointer may
+        # since belong to a later one: that is not a reason to keep the pointer,
+        # because the attempt the mark names ended and the later attempt is
+        # judged by its own process. A recorded worker process still alive is
+        # the one fact that holds the pointer, whichever attempt the mark
+        # names, and an ended turn's leftover stream does not hold it. A marked
+        # pointer held for a live worker is reported once, so an owner sees why
+        # it stays; an unmarked live run is the ordinary in-flight case and is
+        # left silent.
+        if _promoted_run_worker_is_live(pointer):
+            if pointer.get("pending_landing_repair"):
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "release-held",
+                        "reason": "the reviewed run's worker is live",
+                    }
+                )
             continue
         try:
             repository = merge.project_repository(run_project)
+            if _measurement_reason(pointer) or _measurement_reason(row or {}):
+                # A measurement run's head is never merged — not landing is what
+                # the run is for — so its promotion alone is the whole proof.
+                retired, release, refusal = _release_measured_pointer(
+                    pointer, repository, head, row
+                )
+                if retired == POINTER_RETIRED:
+                    clear_pending(run_id)
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "already-landed",
+                            "head": head,
+                            "release": release,
+                            "measured": True,
+                        }
+                    )
+                elif refusal:
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "release-refused",
+                            "error": refusal,
+                        }
+                    )
+                continue
             remote = merge.head_on_remote_branch(repository, head)
             primary = str(remote["remote_head"] or "")
             on_branch = remote["on_branch"]
