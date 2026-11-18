@@ -1,0 +1,31 @@
+<section id="qwnw-red-file-admission-survives-a-kill-run">
+<h3>Admission survives a kill: the file is already green at the base revision</h3>
+<p>The named file passes in full at the assigned base revision <code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code>. The node was queued while it was red; the repair that made it green is already an ancestor of that revision
+(<code>a8ae750ed66022a623f6334d3a27031345343f73</code>, <code>fix(crew): launch admitted requests concurrently within a pass</code>, which touched
+<code>reckon/crew/admission/attempts.py</code>, <code>readiness.py</code>, <code>selection.py</code> and added five lines to this test file among others).
+Per the section's own clause, a file that already passes because another node's repair reached it is delivered as such with the passing run: nothing was repaired, no assertion was touched, and this node commits no source or test change.</p>
+
+<h4 id="qwnw-red-file-admission-survives-a-kill-base">Base run of the named file (negative result: no cause remains)</h4>
+<pre id="qwnw-red-file-admission-survives-a-kill-base-log">
+# base-arm: 97dec20bfb8603ab71c4e9deeefddab685e0a42e
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-admission-survives-a-kill
+# measurement_module: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-admission-survives-a-kill/reckon/__init__.py
+# measurement_cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-admission-survives-a-kill
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_survives_a_kill.py
+............                                                             [100%]
+12 passed, 5 warnings in 12.59s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-admission-survives-a-kill-head">Head run of the named file: partitioned job on <code>all_debug</code> at the delivered head</h4>
+<p>Quoted from <code>scoped-gate-1794994432625277780.log</code>, the gate measured at this run's delivered head.</p>
+<pre id="qwnw-red-file-admission-survives-a-kill-head-log">
+# revision: d693eaaf7f23aee9d22790a7d433d8a02001b979
+# host: 98dci4-clu-3144.iter.org
+# tree: /tmp/mcintos-landing-a14fac219d93-RgWqgN/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_admission_survives_a_kill.py'
+............                                                             [100%]
+12 passed, 5 warnings in 10.44s
+EXIT=0
+</pre>
+</section>

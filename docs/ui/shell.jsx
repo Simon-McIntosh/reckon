@@ -34,7 +34,9 @@ function ArtifactSurface({
 
   return (
     <div className={`r-canvas-view ${kind === "plan" ? "r-plans-view" : `r-${kind}-view`} ${kind === "plan" && filtersHidden ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""}`} data-artifact-kind={kind} data-artifact-selection={selected || ""}>
-      {kind === "plan" && !readingMode && (
+      {/* An artifact index owns the whole window and drills into the reader;
+          the list column belongs to the open plan, not to the index route. */}
+      {selected && kind === "plan" && !readingMode && (
         <ListCol
           route={route}
           onNav={nav}
