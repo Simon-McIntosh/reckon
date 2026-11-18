@@ -1,0 +1,97 @@
+<section id="qwnw-red-file-hold-check-leaves-the-tree-clean-landing">
+  <h2>A hold check that writes only the store is read by its own file again</h2>
+
+  <p><strong>Verdict: the test was wrong.</strong> The file asserted that
+  <code>ledger.record_hold_checks</code> rewrote the committed aggregate and
+  the run record that write folded, and that it committed them under a
+  <code>chore(holds): open|close &lt;id&gt;</code> subject — the behaviour
+  of 8 November, when the hold path wrote the whole aggregate. That path was
+  superseded on 15 November by the store-backed mutable state
+  (<code>feat(store): persist roster members and budget holds</code>, whose
+  own evidence reads "a roster or hold mutation rewrote a committed path" as
+  its declared negative control). Holds now replace project-scoped rows in
+  the run store and touch no committed path at all, so the file's four hold
+  cases had been red on the primary branch since that change landed.</p>
+
+  <p><strong>What changed.</strong> Only
+  <code>tests/test_hold_check_leaves_the_tree_clean.py</code>. Each case
+  now asserts the rule the code keeps, and none is weaker: the tree is clean
+  when the call returns; <code>HEAD</code> is where it was, read before and
+  after; the committed aggregate is byte-identical, so a regression that
+  wrote it again fails on content rather than on a commit subject; the run
+  record that still carries the retired <code>follow_on_paths</code> key is
+  byte-identical on disk, while the reader still maps it to
+  <code>outside_scope_paths</code>, so leaving the file alone changes no
+  answer; and the transition itself is read from the store, including the
+  closed hold's <code>held_seconds</code> of 600 for its ten-minute window.
+  The merge case asserts the checkout's status is byte-identical to what the
+  merge itself left, which subsumes the old stderr notice: the notice was
+  the commit path reporting a commit it could not make, and there is no
+  commit path left to skip. The two cases that were already green — a
+  committing roster write commits the run record it rewrote, and a hold
+  check that changes no hold commits nothing — keep their assertions
+  unchanged. The fixture now names <code>RECKON_RUN_STORE</code> inside its
+  temp tree beside <code>RECKON_HOME</code>, so a case cannot reach this
+  workstation's own store.</p>
+
+  <h3 id="qwnw-red-file-hold-check-leaves-the-tree-clean-arms">Measured</h3>
+
+  <p>The node's file runs on <code>all_debug</code> as a scheduler job whose
+  log records the revision, the tree and the command on its first lines and
+  ends in <code>EXIT=&lt;code&gt;</code>; the base figure comes from the
+  same file's source at the base revision, read with
+  <code>git show f29efdc635:tests/…</code> and run against the same product
+  tree, since this node changes no product code.</p>
+
+  <table id="qwnw-red-file-hold-check-leaves-the-tree-clean-table">
+    <caption>Each row is a log on disk under the run directory.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td>
+        <td><code>f29efdc635a1b578bb4461ff90785d3be848646b</code></td>
+        <td>4 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head (the gate)</td>
+        <td><code>867ead7d40bf51f2c0a83e9f7fbb012d75643e3a</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>f29efdc635a1b578bb4461ff90785d3be848646b</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>867ead7d40bf51f2c0a83e9f7fbb012d75643e3a</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the mutation (below)</td>
+        <td><code>867ead7d40bf51f2c0a83e9f7fbb012d75643e3a</code></td>
+        <td>4 failed, 2 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base revision's failing ids, in the order the log reports them:</p>
+
+  <ul id="qwnw-red-file-hold-check-leaves-the-tree-clean-base-ids">
+    <li><code>test_closing_a_hold_leaves_the_tree_clean_and_changes_no_run_row</code></li>
+    <li><code>test_opening_a_hold_leaves_the_tree_clean_and_changes_no_run_row</code></li>
+    <li><code>test_a_hold_check_makes_no_commit_while_a_merge_is_in_progress</code></li>
+    <li><code>test_opening_a_hold_commits_the_run_record_it_rewrote</code></li>
+  </ul>
+
+  <h3 id="qwnw-red-file-hold-check-leaves-the-tree-clean-control">Negative control</h3>
+
+  <p>A passing case shows nothing about a guard unless the guarded thing is
+  made to happen. A pytest plugin wraps
+  <code>ledger.record_hold_checks</code> so that, after the real call, the
+  holds are also written into the committed aggregate and committed — the
+  superseded behaviour, restored on the head revision. All four rewritten
+  cases fail under it and the two untouched cases pass: the closing case
+  and the opening case on <code>HEAD</code> moving away from the value read
+  before the call, the merge case on
+  <code>M docs/state/reckon/crew.json</code> appearing in a status that
+  carried only the merge's own <code>A side.txt</code>, and the run-record
+  case on the same moved <code>HEAD</code>. The plugin and its log live
+  under the run directory; the plugin's own file is scratch and is not
+  committed.</p>
+
+  <h3 id="qwnw-red-file-hold-check-leaves-the-tree-clean-lint">Lint</h3>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> on the one
+  changed path report nothing new: both are clean at the head.</p>
+</section>
