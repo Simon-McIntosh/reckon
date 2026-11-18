@@ -487,8 +487,12 @@ def retire_promoted_pointers(
     *, project: str | None = None, session: str | None = None, only_run: str = ""
 ) -> list[dict[str, Any]]:
     """Retire proved rows before a pass can rewrite their leftover pointers."""
+    from reckon.node_exclusive_lock import LockHeld, exclusive_lock
+
     retired = []
-    for pointer in runs.list_live(project=project):
+    groups = set()
+    live = runs.list_live() if project is None else runs.list_live(project=project)
+    for pointer in live:
         run_id = str(pointer.get("run_id") or "")
         if only_run and only_run != run_id:
             continue
@@ -496,6 +500,21 @@ def retire_promoted_pointers(
             continue
         if retire_promoted_pointer(pointer) == POINTER_RETIRED:
             retired.append({"run_id": run_id, "status": "retired-promoted-pointer"})
+            if pointer.get("landing_group"):
+                groups.add(str(pointer["landing_group"]))
+    for group_id in sorted(groups):
+        path = group_path(group_id)
+        try:
+            with exclusive_lock(path.with_suffix(".lock"), blocking=False):
+                group = _read(path)
+                if group is not None:
+                    retire_integrated_group_members(group)
+        except LockHeld:
+            continue
+        except (runs.CrewError, OSError, ValueError) as exc:
+            retired.append(
+                {"run_id": group_id, "status": "group-refused", "error": str(exc)}
+            )
     return retired
 
 
@@ -1193,7 +1212,6 @@ def finish_pending_landings(
 
     moment = time.time() if now is None else now
     lander = land or merge.land
-    retired = retire_promoted_pointers(only_run=only_run)
     results: list[dict[str, Any]] = release_judged_resume_holds(only_run=only_run)
     results.extend(finish_landing_groups(only_run=only_run))
     results.extend(retire_stuck_review_pointers(only_run=only_run))
@@ -1202,7 +1220,7 @@ def finish_pending_landings(
     handled = {row["run_id"] for row in released}
     directory = pending_dir()
     if not directory.is_dir():
-        return results + retired
+        return results + retire_promoted_pointers(only_run=only_run)
     live = (
         set(live_run_ids)
         if live_run_ids is not None
@@ -1541,7 +1559,8 @@ def finish_pending_landings(
             }
         )
     handled = {row["run_id"] for row in results}
-    return results + [row for row in retired if row["run_id"] not in handled]
+    retired_pointers = retire_promoted_pointers(only_run=only_run)
+    return results + [row for row in retired_pointers if row["run_id"] not in handled]
 
 
 def _released_pending_delivery(
