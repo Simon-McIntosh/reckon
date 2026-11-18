@@ -399,6 +399,7 @@ INDEX_LAG_GIT_ENV = {"GIT_OPTIONAL_LOCKS": "0"}
 #: stop describing the checkout (the index's stat identity and HEAD), so a
 #: sweep that recomputes every session's payload does not run git per tick.
 _INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = {}
+_SOURCE_CLEAN_READINGS: dict[str, tuple[Any, tuple[str, ...], tuple[Any, ...]]] = {}
 
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
@@ -2795,6 +2796,7 @@ def _review_tier_key(
 def _clear_cached_obligation_inputs() -> None:
     """Drop every memoised per-run derivation, so the next read recomputes."""
     _INDEX_LAG_READINGS.clear()
+    _SOURCE_CLEAN_READINGS.clear()
     with _HELD_READ_LOCK:
         _HELD_RECORD_READS.clear()
         _HELD_REGISTRY_READS.clear()
@@ -4546,6 +4548,21 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+def _source_file_signatures(
+    repository: Path, paths: tuple[str, ...]
+) -> tuple[Any, ...]:
+    """The tracked source identities, including missing files and symlinks."""
+    signatures = []
+    for name in paths:
+        try:
+            signatures.append(
+                file_memo.signature_from_stat((repository / name).lstat())
+            )
+        except OSError:
+            signatures.append(None)
+    return tuple(signatures)
+
+
 def _unlanded_source_items(project: str) -> list[dict[str, Any]]:
     """Attribute staged or serving source absent from primary to a run's commit.
 
@@ -4560,6 +4577,27 @@ def _unlanded_source_items(project: str) -> list[dict[str, Any]]:
     repository = project_mount_repository(project)
     if repository is None:
         return []
+    key = _index_lag_reading_key(repository)
+    cached = _SOURCE_CLEAN_READINGS.get(str(repository))
+    if key is not None and cached is not None and cached[0] == key:
+        source_paths = cached[1]
+        signatures = _source_file_signatures(repository, source_paths)
+        if signatures == cached[2]:
+            return []
+    else:
+        tracked = run_git(repository, "ls-files", "-z", env=INDEX_LAG_GIT_ENV)
+        if tracked.returncode:
+            return []
+        source_paths = tuple(
+            sorted(
+                {
+                    os.fsdecode(name)
+                    for name in tracked.stdout.split(b"\0")
+                    if name and path_class(os.fsdecode(name)) == "source"
+                }
+            )
+        )
+        signatures = _source_file_signatures(repository, source_paths)
     names: set[str] = set()
     for options in (("--cached",), ()):
         changed = run_git(
@@ -4579,6 +4617,15 @@ def _unlanded_source_items(project: str) -> list[dict[str, Any]]:
             if name and path_class(os.fsdecode(name)) == "source"
         )
     if not names:
+        # A clean answer is reusable only while the index, HEAD and every
+        # tracked source identity agree. Compare both sides of the git read so
+        # a source write during that read cannot become a cached clean answer.
+        if (
+            key is not None
+            and _index_lag_reading_key(repository) == key
+            and _source_file_signatures(repository, source_paths) == signatures
+        ):
+            _SOURCE_CLEAN_READINGS[str(repository)] = (key, source_paths, signatures)
         return []
     paths = sorted(names)
     index = merge._checkout_index(repository, paths)

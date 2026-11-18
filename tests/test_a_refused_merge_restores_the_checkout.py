@@ -294,6 +294,13 @@ def test_source_residue_names_the_run_and_its_older_head(
     monkeypatch.setattr(obligations, "_live_pointers", lambda project: [pointer])
     monkeypatch.setattr(obligations, "_run_file_rows", lambda *args: [])
     assert obligations._unlanded_source_items("project") == []
+    with monkeypatch.context() as unchanged:
+
+        def unexpected_git(*args, **kwargs):
+            raise AssertionError("unchanged source spawned another git read")
+
+        unchanged.setattr(obligations, "run_git", unexpected_git)
+        assert obligations._unlanded_source_items("project") == []
     (repo / "source.py").write_text(git(repo, "show", f"{older}:source.py") + "\n")
     if staged:
         git(repo, "add", "source.py")
