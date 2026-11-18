@@ -1,0 +1,69 @@
+<section id="a-waived-review-is-reachable-landing">
+  <h2>A waived failure count is reachable from the brief and from the row</h2>
+
+  <p><strong>What changed.</strong> A review may file
+  <code>added_failure_count</code> as the literal <code>"waived"</code> against
+  a run whose suite delta stands waived, but nothing reached that form on the
+  path a waived run takes, so the capability was unreachable in both
+  directions.</p>
+
+  <p><em>The brief.</em> <code>_review_brief_text</code> in
+  <code>reckon/crew/recovery_review_subject.py</code> asked only for a count
+  derived from the reviewed run's <code>baseline_suite</code> and
+  <code>after_suite</code> gate logs. A reviewer whose arms carry no pytest
+  summary has nothing to difference, so it wrote a null count and the delivery
+  contract refused it &mdash; exactly where the waiver applies. The brief now
+  carries a block naming the waived form, the <code>added_failure_waiver</code>
+  field it must state, and the run's own recorded reason, and the dispatch
+  <code>done_when</code> admits the waived form beside the measured one. Both
+  are conditioned on a waiver the run's record actually holds: the reason is
+  read through <code>recorded_suite_delta_waiver</code>, the same reader the
+  delivery check judges with, so the instruction and the acceptance cannot
+  disagree. A run with no waiver gets a brief that names neither the heading
+  nor the field.</p>
+
+  <p><em>The committed row.</em> Once a run's live pointer is gone, the
+  committed-row fallback in <code>reckon/crew/review.py</code> recognised a
+  waiver only under <code>suite_delta.status == "waived"</code>. A matched pair
+  that <code>crew complete --waive-suite-delta</code> was given a reason for
+  records <code>status clean</code> with the reason in
+  <code>waiver_reason</code>, because there the status names what the evidence
+  found rather than how it was accepted &mdash; so a waived count filed against
+  a landed run was refused once its pointer was dropped. The reader now takes
+  both spellings, from the pointer and from the row, and a record carrying
+  neither is still no waiver: neither an absent <code>status</code> nor an empty
+  <code>waiver_reason</code> authorises the form.</p>
+
+  <h3 id="a-waived-review-is-reachable-landing-measured">Measured</h3>
+
+  <p><code>tests/test_a_waived_review_is_reachable.py</code> asserts three
+  things on a temporary crew home. (a) The brief composed after
+  <code>crew complete --waive-suite-delta</code> names
+  <code>Suite delta waived</code>, <code>added_failure_waiver</code> and
+  <code>"waived"</code>, and carries the run's written reason; the brief of a
+  matched unwaived run, composed at the same head, carries the record contract
+  and none of the three. (b) A promoted run whose row reads
+  <code>status clean</code> with a non-empty <code>waiver_reason</code> accepts
+  the waived record once its pointer is deleted &mdash;
+  <code>crew check --review</code> exits 0 and <code>store_review</code> files
+  it. (c) The same record against a promoted run whose row carries
+  <code>status clean</code> and <code>waiver_reason: null</code> is refused by
+  the check and by the store with <code>no suite-delta waiver</code>.</p>
+
+  <p>Negative control, the declared mutation &mdash; the base revision with the
+  same test file: the waived brief does not name the waived form
+  (<code>assert 'Suite delta waived' in '...'</code> fails), and the waived
+  record against the clean-with-reason row is refused with
+  <code>added_failure_count is waived but the reviewed run records no
+  suite-delta waiver</code>. 2 failed, 1 passed, <code>EXIT=1</code>; at head
+  the same three cases pass, <code>EXIT=0</code>. The test files importing the
+  two changed modules ran as matched arms: every <code>tests/*.py</code> naming
+  <code>recovery_review_subject</code> or the review module ran on
+  <code>all_debug</code>, one job per arm, base <code>97 failed, 1931 passed,
+  2 errors</code> and head <code>97 failed, 1934 passed, 2 errors</code>. The
+  failing id sets are identical &mdash; the 97 are pre-existing here, and the
+  two errors are sandboxed scheduler verbs both arms hit &mdash; so the added
+  passes are the three new cases and nothing the change touches.
+  Ruff <code>check</code> and <code>format --check</code> add no finding on the
+  three staged paths.</p>
+</section>

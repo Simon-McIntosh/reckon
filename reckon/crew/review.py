@@ -1215,12 +1215,31 @@ def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
 #: suite-delta waiver, which is what keeps an absent count from passing as one.
 WAIVED_ADDED_FAILURE_COUNT = "waived"
 
+#: The committed ``suite_delta.status`` values a recorded waiver may appear
+#: under. Two spellings write one fact: a pair whose added failure or whose arms
+#: were waived records ``waived``, and a matched pair that ``crew complete
+#: --waive-suite-delta`` was given a reason for records ``clean`` with that
+#: reason in ``waiver_reason``, because there the status names what the evidence
+#: found rather than how it was accepted. A reader that knew only the first
+#: spelling made the waiver invisible once the run's pointer was gone, so a
+#: review of a run that landed clean-with-reason was refused its waived count.
+WAIVER_ROW_STATUSES = ("waived", "clean")
 
-def _recorded_waiver_reason(value: object, *, status: str = "") -> str:
-    """The reason a recorded suite-delta waiver carries, or ""."""
+
+def _recorded_waiver_reason(value: object, *, statuses: Sequence[str] = ()) -> str:
+    """The reason a recorded suite-delta waiver carries, or "".
+
+    ``statuses``, when given, admits only those ``status`` values. The two
+    spellings a record may use differ in status rather than in where the reason
+    lives: a pair whose addition or arms were waived records ``waived``, and a
+    matched pair that ``crew complete --waive-suite-delta`` was given a reason
+    for records ``clean`` with that reason beside it, because the status names
+    what the evidence found rather than how it was accepted. Both carry
+    ``waiver_reason``, and a record carrying neither form yields nothing.
+    """
     if not isinstance(value, Mapping):
         return ""
-    if status and str(value.get("status") or "") != status:
+    if statuses and str(value.get("status") or "") not in statuses:
         return ""
     return str(value.get("waiver_reason") or value.get("reason") or "").strip()
 
@@ -1248,7 +1267,9 @@ def recorded_suite_delta_waiver(reviewed_run_id: object, project: object = "") -
     reason = _recorded_waiver_reason(pointer.get("suite_delta_waiver"))
     if reason:
         return reason
-    reason = _recorded_waiver_reason(pointer.get("suite_delta"), status="waived")
+    reason = _recorded_waiver_reason(
+        pointer.get("suite_delta"), statuses=WAIVER_ROW_STATUSES
+    )
     if reason:
         return reason
     named_project = str(pointer.get("project") or project or "").strip()
@@ -1261,7 +1282,9 @@ def recorded_suite_delta_waiver(reviewed_run_id: object, project: object = "") -
     except Exception:  # noqa: BLE001 - an unread store is no waiver either
         return ""
     for row in rows or ():
-        reason = _recorded_waiver_reason(row.get("suite_delta"), status="waived")
+        reason = _recorded_waiver_reason(
+            row.get("suite_delta"), statuses=WAIVER_ROW_STATUSES
+        )
         if reason:
             return reason
     return ""
