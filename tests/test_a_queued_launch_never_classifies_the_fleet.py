@@ -95,10 +95,9 @@ def test_direct_dispatch_records_the_ten_session_runs(fleet):
 
     backlog = runs.dispatch_field(record, "unreconciled_override")
     assert backlog["source"] == "coordinator"
-    assert {row["run_id"] for row in backlog["waived_runs"]} == {
-        f"r-delivered-{index:02}" for index in range(10)
-    }
-    assert set(calls) >= {f"r-delivered-{index:02}" for index in range(50)}
+    session_runs = {f"r-delivered-{index:02}" for index in range(10)}
+    assert {row["run_id"] for row in backlog["waived_runs"]} == session_runs
+    assert set(calls) == session_runs, calls
     print("direct dispatch backlog:", len(backlog["waived_runs"]), file=sys.__stdout__)
 
 
