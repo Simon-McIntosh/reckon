@@ -39,7 +39,7 @@ def cohort(tmp_path, monkeypatch):
     unlanded_head = git(unlanded_tree, "rev-parse", "HEAD")
     pointers = {}
     for name in ("orphan", "journal", "grouped", "unpromoted", "unreadable"):
-        run_id = f"r-{name}"
+        run_id = "r-awaiting" if name == "unpromoted" else f"r-{name}"
         directory = runs.run_dir(run_id)
         directory.mkdir(parents=True)
         manifest = directory / "manifest.md"
@@ -129,10 +129,10 @@ def _station_sweep():
 def test_promoted_pointers_retire_and_never_return(cohort):
     repo, _head, pointers = cohort
     identity_fields = ("run_id", "attempt", "phase", "landing_group")
-    unpromoted = runs.read_pointer("r-unpromoted")
+    unpromoted = runs.read_pointer("r-awaiting")
     expected_identity = {key: unpromoted[key] for key in identity_fields}
     group = pending_landing._read(pending_landing.group_path("r-grouped"))
-    position = list(group["members"]).index("r-unpromoted")
+    position = list(group["members"]).index("r-awaiting")
     unreadable = runs.pointer_path("r-unreadable").read_bytes()
     assert pending_landing._promoted_row(PROJECT, "r-orphan") is not None
     assert pending_landing._promoted_row(PROJECT, "r-unreadable") is None
@@ -143,14 +143,14 @@ def test_promoted_pointers_retire_and_never_return(cohort):
         _station_sweep()
         for name in ("orphan", "journal", "grouped"):
             assert not runs.pointer_path(pointers[name]["run_id"]).exists(), name
-        assert runs.pointer_path("r-unpromoted").exists()
-        current = runs.read_pointer("r-unpromoted")
+        assert runs.pointer_path("r-awaiting").exists()
+        current = runs.read_pointer("r-awaiting")
         assert {key: current[key] for key in identity_fields} == expected_identity
         assert runs.pointer_path("r-unreadable").read_bytes() == unreadable
         group = pending_landing._read(pending_landing.group_path("r-grouped"))
-        assert list(group["members"]) == ["r-unpromoted"]
-        assert list(group["members"]).index("r-unpromoted") == position
-        assert group["members"]["r-unpromoted"]["pointer"] == pointers["unpromoted"]
+        assert list(group["members"]) == ["r-awaiting"]
+        assert list(group["members"]).index("r-awaiting") == position
+        assert group["members"]["r-awaiting"]["pointer"] == pointers["unpromoted"]
     assert (repo / "seed.txt").read_text() == "delivered\n"
 
 
