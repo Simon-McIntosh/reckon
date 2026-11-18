@@ -1,0 +1,83 @@
+<section id="qwnw-red-file-promotion-releases-its-worktree-landing">
+  <h2>Promotion releases only the worktree it can free</h2>
+
+  <p><strong>What changed.</strong> This file was red at the base revision with
+  two causes, and both were the test's: the product's current rules are the ones
+  it now asserts, and every assertion about the release is the one the file
+  already carried.</p>
+
+  <p><em>A release receipt gained a field — test wrong.</em> A landing now reads
+  the shared index back once its branch has moved and reports the landed paths
+  it found staged in reverse, so the promotion commit's
+  <code>landing_check</code> carries an <code>unstaged</code> list beside
+  <code>ok</code>, <code>reversals</code> and <code>mismatched</code>. The
+  withheld-case assertion compared the receipt to the three-key shape written
+  before that rule, so it failed on the first non-clean case with the extra key
+  named and nothing else different. The expectation now states the receipt the
+  code returns, including the empty report; the sibling completion case in
+  <code>tests/test_promotion_never_amends_its_commit.py</code> already read the
+  four-key shape, which is the same rule read in one place fewer.</p>
+
+  <p><em>A divergent worktree declared no commit — test wrong.</em> The
+  fixture's <code>unintegrated</code> case made a commit in its worktree and
+  then promoted with <code>no_commit</code>, a reason saying the commits are not
+  being registered. A passing promotion whose tree sits past its base now
+  refuses that declaration however it is spelled: the row would report a success
+  pointing at nothing while the release takes the tree, and the work would
+  survive only in a tree the next sweep removes. The case cites the commit it
+  made, which is what the rule asks for, and reads the same withheld release it
+  read before — <code>not reachable</code>, not released, tree still standing.
+  Citing a commit that changes no runtime source also resolves the review tier
+  to none, and a waiver offered for a review nobody owes is refused as a waiver
+  of nothing, so the fixture offers the waiver only for the commitless cases,
+  which declare nothing about what they changed and are granted the fuller
+  review.</p>
+
+  <p>No assertion was deleted or weakened. What the file measures is unchanged:
+  a clean integrated tree is released and gone, and a dirty, unreachable,
+  live-claimed or failing run is withheld with the reason that withheld it and
+  its tree left standing.</p>
+
+  <h3 id="qwnw-red-file-promotion-releases-its-worktree-measured">Measured</h3>
+
+  <p>Every case synthesises its own repository, worktrees, run pointers and
+  config home under a temporary directory; none reads or writes the live crew
+  home. The gate file is
+  <code>tests/test_promotion_releases_its_worktree.py</code>, run on the
+  <code>all_debug</code> partition with <code>SLURM_JOB_ID</code> unset.</p>
+
+  <table id="qwnw-red-file-promotion-releases-its-worktree-arms">
+    <thead>
+      <tr><th>Revision</th><th>State</th><th>Summary</th><th>Failing ids</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>84df41f817943ad9f228ac90491b8faf87dbd2c1</code></td>
+        <td>base (negative control)</td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code></td>
+        <td><code>tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case</code>
+        — <code>AssertionError</code>: <code>landing_check</code> — the receipt
+        carries one more item, <code>{'unstaged': []}</code></td>
+      </tr>
+      <tr>
+        <td><code>0038797da151eab0e44f633fd7d905bdff9311f6</code></td>
+        <td>first cause repaired</td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code></td>
+        <td>the same id — <code>CrewError</code>: run
+        <code>r-20260925T070000000000-unintegrated</code> "has a passing gate
+        and cites no commit, but its worktree is at … rather than its base …"</td>
+      </tr>
+      <tr>
+        <td><code>2043ca4984a3322e92590a37f3b13ce32da9f026</code></td>
+        <td>head (gate)</td>
+        <td>4 passed, <code>EXIT=0</code></td>
+        <td>none</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The base row is dominated by the first cause and the second is masked behind
+  it, which is why the middle row exists: it is the same gate command at the
+  revision where the receipt shape was already updated and nothing else was, so
+  the second cause is measured on its own rather than inferred.</p>
+</section>
