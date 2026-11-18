@@ -3020,15 +3020,21 @@ def sweep(
                 [str(pointer.get("run_id") or "") for pointer in live],
                 pointers=live,
             )
-            if census["obligations"]:
-                review_requests = {
-                    "obligations": census["obligations"],
-                    "deadline_seconds": census["deadline_seconds"],
-                }
+            # Both readings travel on the report: a request that took four
+            # minutes is a fact about the fleet whether or not the run owes an
+            # obligation, and the returned report is where a reader of a sweep
+            # receives the census's own fields rather than a retelling of them.
+            review_requests = {
+                "obligations": census["obligations"],
+                "deadline_seconds": census["deadline_seconds"],
+                "late_requests": census["late_requests"],
+                "request_window_seconds": census["request_window_seconds"],
+            }
         except Exception as exc:  # noqa: BLE001 - a reading must not fail a sweep
             review_requests = {"error": str(exc)}
-    if review_requests.get("obligations"):
+    if review_requests.get("obligations") or review_requests.get("late_requests"):
         report["review_requests"] = review_requests
+    if review_requests.get("obligations"):
         # The obligation has to reach the row a coordinator reads, not only this
         # pass's return value: the station keeps the review pass's owed rows per
         # session and turns each into a duty, which is the one channel from a

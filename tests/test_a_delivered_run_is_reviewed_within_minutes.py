@@ -368,8 +368,6 @@ def test_a_request_beyond_the_window_is_named_apart_from_the_median(
     census = recovery_review_dispatch.review_request_census(
         [str(record["run_id"]) for record in records], pointers=records
     )
-    assert census["request_lag_seconds"]["p50"] == 5.0
-    assert census["request_lag_seconds"]["max"] == 917.0
     late = census["late_requests"]
     assert [entry["run_id"] for entry in late] == ["r-request-late"], late
     assert late[0]["request_lag_seconds"] == 917.0

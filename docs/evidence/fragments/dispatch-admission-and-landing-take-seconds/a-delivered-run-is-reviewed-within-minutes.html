@@ -96,32 +96,25 @@
   manifest's <code>negative_control_log</code> line.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-census"><strong>The live census.</strong>
-  Read over the live crew home on 2026-11-17 at 21:45Z: <strong>39</strong> run
-  receipt files, <strong>31</strong> with a delivery recorded, <strong>23</strong>
-  of them not themselves reviews. Of those 23, <strong>5</strong> carry a review
-  request's instant and <strong>9</strong> carry a recorded dispatch with no
-  instant, because the receipts landed today and older dispatches predate them:
-  the recorded fact without the clock reading is reported apart, never as an
-  obligation. The request lag's median is <strong>96.7 s</strong>; its 90th
-  percentile is <strong>917.1 s</strong> over five samples, which is the largest
-  member of a sample too small to establish a fleet percentile — the receipt
-  population is hours old. The launch lag is reported apart from it: median
-  <strong>124.1 s</strong>, 90th <strong>147.5 s</strong> over four launches,
-  which is the split this section exists to expose. The median request landed
-  inside the window, and one of the five did not: 917.1 s is the largest request
-  lag in the run directory, so the median is not a statement about every request
-  and the paragraph does not make one. The census reports such a run apart as
-  <code>late_requests</code>, against the same 120 s window its median is judged
-  by, and the launches came after the requests rather than before them.
-  <strong>8</strong> delivered runs owe an obligation, each with the reason its
-  own record gives, and the nine older unrequested runs are not the same count:
-  one of them is younger than the <strong>600 s</strong> deadline and owes
-  nothing yet. The eight reasons are four runs with no live pointer, one whose
-  resumed attempt has not delivered, one measurement run, one the reflex
-  recorded <code>skipped</code> because it changes no runtime source, and one it
-  recorded <code>lane-paused</code> because the lane grants its session no extra
-  workers. The log is <code>live-census-20261117T2145Z.log</code> in the run's
-  directory, and every figure above is that log's own.</p>
+  Taken over the live crew home at 2026-11-17T21:45Z, of the fleet before this
+  change lands. The log is <code>live-census-20261117T2145Z.log</code> in the
+  run's directory; its first line reads <code>receipt files: 39 delivered
+  runs: 31</code>, and its fields are pasted here as it writes them:
+  <code>counts</code> = <code>{"delivered": 23, "launched": 4,
+  "request_unrecorded": 9, "requested": 5, "unrequested": 9}</code>;
+  <code>request_lag_seconds</code> = <code>{"p50": 96.674459, "p90": 917.087791,
+  "max": 917.087791}</code>; <code>launch_lag_seconds</code> =
+  <code>{"p50": 124.142871, "p90": 147.50823, "max": 147.50823}</code>;
+  <code>deadline_seconds</code> 600; <code>obligations</code> 8 entries;
+  <code>request_unrecorded</code> 9 entries. Two of the five requested runs are
+  outside the 120 s window: 197.951593
+  (<code>r-20261117T160244730423-a-live-pointer-carries-no-clone-report</code>)
+  and 917.087791, the sample's own max. The rows the log prints carry
+  <code>request_lag_seconds</code> 96.674459, 197.951593 and 86.610988, and
+  <code>launch_lag_seconds</code> 130.764802 and 124.142871. The census returns
+  the runs outside its 120 s window as <code>late_requests</code>; that reading
+  is asserted by the node's late-request case and travels on the sweep's report,
+  not on a pane row.</p>
 
   <p id="a-delivered-run-is-reviewed-within-minutes-priority"><strong>What is not here.</strong>
   The request's priority is inherited from the run it reviews by
