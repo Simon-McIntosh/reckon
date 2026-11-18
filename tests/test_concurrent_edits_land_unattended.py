@@ -9,6 +9,7 @@ import sys
 import threading
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -547,21 +548,14 @@ def test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate(
         == head
     )
     # Compose the review through the real dispatcher without launching a worker.
-    requests = []
-
-    def compose(pointer, fields, **kwargs):
-        requests.append((pointer["run_id"], fields["head"]))
-        return {
-            "run_id": pointer["run_id"],
-            "dispatched": True,
-            "review_run_id": "review-" + pointer["run_id"],
-        }
-
+    compose = Mock(return_value={"dispatched": True})
     monkeypatch.setattr(recovery_review_dispatch, "_dispatch_composed_review", compose)
     promoted_before = list(fleet.calls)
     result = pending_landing.finish_pending_landings()
     assert result[0]["status"] == "awaiting-review", result
-    assert requests == [(pointer["run_id"], head)]
+    compose.assert_called_once()
+    assert compose.call_args.args[0]["run_id"] == pointer["run_id"]
+    assert compose.call_args.args[1]["head"] == head
     assert (
         pending_landing._read(pending_landing._record_path(pointer["run_id"]))["head"]
         == head
@@ -586,7 +580,7 @@ def test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate(
     # A stored review releases the gated repair without another promotion.
     result = pending_landing.finish_pending_landings()
     assert result[0]["status"] == "finished", result
-    assert requests == [(pointer["run_id"], head)]
+    compose.assert_called_once()
     assert fleet.calls == promoted_before
     assert not runs.pointer_path(pointer["run_id"]).exists()
     assert not pending_landing._record_path(pointer["run_id"]).exists()
