@@ -1,0 +1,284 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Native baseline_suite/after_suite logs have zero added failures; separate importer arms have 18 added failures, retained in importer_delta and judged in evidence.",
+  "assertion_audit": [
+    {
+      "fails_if": "First changed sweep request is refused (fixture control).",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 124
+    },
+    {
+      "fails_if": "Synchronous sweep fails to emit exactly one report.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 125
+    },
+    {
+      "fails_if": "Known valid ledger row is not found (positive instrument control).",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 137
+    },
+    {
+      "fails_if": "Malformed row is accepted as promotion evidence.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 138
+    },
+    {
+      "fails_if": "Unreadable row is classified as proven absence.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 139
+    },
+    {
+      "fails_if": "Orphan fixture accidentally has a pending record.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 140
+    },
+    {
+      "fails_if": "Removing retirement leaves an orphan, journal or group pointer, or a later pass recreates one; base log demonstrates orphan failure.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 145
+    },
+    {
+      "fails_if": "Unpromoted pointer is removed.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 146
+    },
+    {
+      "fails_if": "Run, attempt, phase or group changes against independently read pre-pass identity.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 148
+    },
+    {
+      "fails_if": "Unreadable pointer is removed or modified against independently read pre-pass bytes.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 149
+    },
+    {
+      "fails_if": "Group pruning leaves the promoted member or removes the unpromoted member.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 151
+    },
+    {
+      "fails_if": "Surviving first member changes index; fixture does not cover order among several survivors.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 152
+    },
+    {
+      "fails_if": "Persisted group pointer changes relative to original fixture snapshot.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 153
+    },
+    {
+      "fails_if": "Committed seed file changes unexpectedly.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 154
+    },
+    {
+      "fails_if": "Station writes orphan pointer during sweep; base control does not hit this but fails next assertion.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 171
+    },
+    {
+      "fails_if": "Removing station retirement leaves orphan pointer present, as recorded base control demonstrates.",
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": 172
+    }
+  ],
+  "assertion_audit_note": "Before/after identity and group readbacks are independent observations; no assertion was found tautologically comparing the same supplied variable without observing persisted state.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew/pending_landing.py:retire_integrated_group_members",
+    "reckon/crew/station.py:SweepBeat._run"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T07:29:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "478",
+      "severity": "blocking",
+      "text": "blocking: Retirement recreates a pending journal whenever a surviving promoted pointer has none, including immediately after finish_pending_landings cleared a successfully completed journal; the reviewed importer log shows test_the_pass_merges_the_cited_head_not_a_later_one failing because that finished record reappears, so settled landings can remain or repeat instead of ending."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "501",
+      "severity": "blocking",
+      "text": "blocking: The station invokes this retirement before ordinary sweep work, unlinking a grouped member before retire_integrated_group_members calls _release_integrated_group_member; that existing helper returns early for an absent pointer at :138-142, skipping _release_integrated_pointer and _release_waiters_of_the_landed_section, so group pruning can discard the release work and its receipts while retaining the worktree and waiting dependants."
+    }
+  ],
+  "importer_delta": {
+    "added_failure_ids": [
+      "tests/test_a_discarded_run_stays_discarded.py::test_discarded_conflict_is_refused_through_the_landing_queue",
+      "tests/test_a_discarded_run_stays_discarded.py::test_settled_landing_releases_only_the_marked_attempt[pending-pass-True]",
+      "tests/test_a_landing_group_ends_when_its_members_land.py::test_a_delivered_promoted_repair_lands_without_rewriting_its_pointer[still-conflicted]",
+      "tests/test_a_landing_group_ends_when_its_members_land.py::test_retirement_records_its_outcome_before_removing_the_journal",
+      "tests/test_a_landing_record_waits_for_the_merge.py::test_a_newer_attempt_keeps_its_pointer_when_the_landing_finishes",
+      "tests/test_a_merged_promoted_run_is_released.py::test_unmerged_run_is_untouched",
+      "tests/test_a_merged_promoted_run_is_released.py::test_unsafe_merged_run_is_retained_as_one_obligation[dirty-uncommitted]",
+      "tests/test_a_merged_promoted_run_is_released.py::test_unsafe_merged_run_is_retained_as_one_obligation[unresolved-missing-commit]",
+      "tests/test_a_promotion_that_moved_under_itself_still_lands.py::test_a_pointer_that_lost_its_mark_still_owes_the_promoted_merge",
+      "tests/test_a_repaired_head_is_reviewed_and_landed.py::test_three_redeliveries_are_reviewed_then_land_or_name_their_hold",
+      "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_a_hold_does_not_bypass_workspace_evidence[dirty]",
+      "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_a_hold_does_not_bypass_workspace_evidence[unresolved]",
+      "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_manual_release_attempts_pending_landing_on_the_next_pass[False]",
+      "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_manual_release_attempts_pending_landing_on_the_next_pass[True]",
+      "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py::test_a_cited_head_merged_by_hand_is_cleared_with_nothing_merged",
+      "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py::test_a_promoted_run_is_never_held_awaiting_review_at_a_later_head",
+      "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py::test_the_pass_merges_the_cited_head_not_a_later_one",
+      "tests/test_no_caller_waits_on_a_promotion.py::test_a_pending_landing_is_not_finished_beside_its_requested_promotion"
+    ],
+    "base": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired/importer_probe.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 21,
+      "failure_ids": [
+        "tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py::test_a_missing_pointer_refuses_without_overwriting_the_record[synchronous]",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+        "tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py::test_a_missing_pointer_refuses_without_overwriting_the_record[queued]",
+        "tests/test_a_hand_merged_run_is_recorded.py::test_a_hand_merged_run_is_recorded_on_the_branch",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+        "tests/test_a_measurement_run_never_lands.py::test_an_ordinary_failed_run_still_refuses_added_suite_failures",
+        "tests/test_a_measurement_run_never_lands.py::test_a_passing_measurement_still_refuses_added_suite_failures",
+        "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[True]",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[False]",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_tick_that_raises_costs_one_tick_and_the_station_goes_on",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_lost_lease_still_ends_the_station",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim",
+        "tests/test_queue_landing.py::test_accepted_delivery_uses_the_real_crew_land_path",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_promotion",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired/importer_base-1794985751045295554.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "bf04be8120c77494d77ff646f075107963038273"
+    },
+    "head": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired/importer_probe.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 39,
+      "failure_ids": [
+        "tests/test_a_landing_record_waits_for_the_merge.py::test_a_newer_attempt_keeps_its_pointer_when_the_landing_finishes",
+        "tests/test_a_discarded_run_stays_discarded.py::test_discarded_conflict_is_refused_through_the_landing_queue",
+        "tests/test_a_discarded_run_stays_discarded.py::test_settled_landing_releases_only_the_marked_attempt[pending-pass-True]",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+        "tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py::test_a_missing_pointer_refuses_without_overwriting_the_record[synchronous]",
+        "tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py::test_a_missing_pointer_refuses_without_overwriting_the_record[queued]",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_finished_pending_landing_retires_its_run",
+        "tests/test_a_hand_merged_run_is_recorded.py::test_a_hand_merged_run_is_recorded_on_the_branch",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_refused_push_keeps_the_run_and_its_recovery_state",
+        "tests/test_a_landing_group_ends_when_its_members_land.py::test_retirement_records_its_outcome_before_removing_the_journal",
+        "tests/test_a_landing_group_ends_when_its_members_land.py::test_a_delivered_promoted_repair_lands_without_rewriting_its_pointer[still-conflicted]",
+        "tests/test_a_finished_pending_landing_retires_its_run.py::test_a_newer_attempt_keeps_its_pointer_and_worktree",
+        "tests/test_a_repaired_head_is_reviewed_and_landed.py::test_three_redeliveries_are_reviewed_then_land_or_name_their_hold",
+        "tests/test_a_promotion_that_moved_under_itself_still_lands.py::test_a_pointer_that_lost_its_mark_still_owes_the_promoted_merge",
+        "tests/test_a_measurement_run_never_lands.py::test_an_ordinary_failed_run_still_refuses_added_suite_failures",
+        "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_a_hold_does_not_bypass_workspace_evidence[dirty]",
+        "tests/test_a_measurement_run_never_lands.py::test_a_passing_measurement_still_refuses_added_suite_failures",
+        "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_a_hold_does_not_bypass_workspace_evidence[unresolved]",
+        "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_manual_release_attempts_pending_landing_on_the_next_pass[False]",
+        "tests/test_a_resume_hold_ends_when_it_is_judged.py::test_manual_release_attempts_pending_landing_on_the_next_pass[True]",
+        "tests/test_a_merged_promoted_run_is_released.py::test_unsafe_merged_run_is_retained_as_one_obligation[dirty-uncommitted]",
+        "tests/test_a_merged_promoted_run_is_released.py::test_unsafe_merged_run_is_retained_as_one_obligation[unresolved-missing-commit]",
+        "tests/test_a_merged_promoted_run_is_released.py::test_unmerged_run_is_untouched",
+        "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[True]",
+        "tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[False]",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_tick_that_raises_costs_one_tick_and_the_station_goes_on",
+        "tests/test_a_vanished_review_pointer_does_not_stop_the_station.py::test_a_lost_lease_still_ends_the_station",
+        "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py::test_the_pass_merges_the_cited_head_not_a_later_one",
+        "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py::test_a_cited_head_merged_by_hand_is_cleared_with_nothing_merged",
+        "tests/test_an_interrupted_landing_finishes_at_its_cited_head.py::test_a_promoted_run_is_never_held_awaiting_review_at_a_later_head",
+        "tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim",
+        "tests/test_queue_landing.py::test_accepted_delivery_uses_the_real_crew_land_path",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_promotion",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_pending_landing_is_not_finished_beside_its_requested_promotion"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired/importer_head_release_repair-1794986428172184620.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "938b4d62c42f1f9a5bb987f9f8ea1013b4021818"
+    },
+    "removed_failure_ids": []
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read c04bf53801f656f11f41e67479b49c4f40aab752, b958a0f80b3cfd114011f83dbc5d009a6b0bfc16, e683f9e5e21b417d6e90efbe1cf945675ad41f27 and 938b4d62c42f1f9a5bb987f9f8ea1013b4021818; pending_landing.py adds retirement and group pruning, queue_landing.py skips retired/grouped members, station.py invokes retirement, and the test adds two regression cases.",
+    "done_when": "The two cases in tests/test_a_promoted_runs_marked_pointer_is_retired.py cover the pointer cohort and repeated passes, while importer_head_release_repair-1794986428172184620.log records 18 added failures against importer_base-1794985751045295554.log, so the zero-added-importer measure is unmet.",
+    "goal": "The source prompt.txt:38 requires retiring every proved-promoted pointer permanently, and live docs/plans/delivered-work-lands-without-a-coordinator.html:208 also requires independent group release; pending_landing.py:451 implements retirement but its journal recreation and station release ordering leave lifecycle defects.",
+    "manifest": "The reviewed run's manifest.md records four commits, complete native base/head arms, a red negative control and the 18-failure importer handoff, with matching logs present on disk.",
+    "write_paths": "The four paths in the bf04be8120c77494d77ff646f075107963038273..938b4d62c42f1f9a5bb987f9f8ea1013b4021818 diff are all within the source run's orientation_write_paths in manifest.md."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promoted_runs_marked_pointer_is_retired.py:145 and :172 fail on the recorded base and :148-155 protect survivors, but the fixture supplies an already integrated grouped head and does not assert journal clearance or workspace release receipts.",
+    "evidence": "after_suite-1794986429216257108.log records 60 passing checks and negative-control-1794985933817100380.log records two base failures, but importer_head_release_repair-1794986428172184620.log has 39 failures against 21 in its baseline, missing the plan's importer bound.",
+    "fit": "pending_landing.py:451-518 follows the module's Mapping annotations, lazy imports, compare-under-lock retirement and existing group-lock idiom, with mechanism-based names.",
+    "goal_fidelity": "pending_landing.py:451 retires proved promotions and preserves unreadable rows, but pending_landing.py:478 can resurrect a settled journal and station.py:458 bypasses group release sequencing.",
+    "reuse": "Capability searches for retirement, release and sweep owners in reckon/crew found pending_landing.py:426, :73, :157 and promotion.py:280; the additions extend pending_landing and wrap its existing retirement, journal and group owners rather than duplicating their mechanisms.",
+    "scope_discipline": "The reviewed diff touches only reckon/crew/pending_landing.py, reckon/crew/queue_landing.py, reckon/crew/station.py and the declared regression test, each serving the pointer lifecycle goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requires retiring every proved-promoted pointer permanently, and live docs/plans/delivered-work-lands-without-a-coordinator.html:208 also requires independent group release; pending_landing.py:451 implements retirement but its journal recreation and station release ordering leave lifecycle defects.\nVERDICT done_when: The two cases in tests/test_a_promoted_runs_marked_pointer_is_retired.py cover the pointer cohort and repeated passes, while importer_head_release_repair-1794986428172184620.log records 18 added failures against importer_base-1794985751045295554.log, so the zero-added-importer measure is unmet.\nVERDICT write_paths: The four paths in the bf04be8120c77494d77ff646f075107963038273..938b4d62c42f1f9a5bb987f9f8ea1013b4021818 diff are all within the source run's orientation_write_paths in manifest.md.\nVERDICT manifest: The reviewed run's manifest.md records four commits, complete native base/head arms, a red negative control and the 18-failure importer handoff, with matching logs present on disk.\nVERDICT diff: Read c04bf53801f656f11f41e67479b49c4f40aab752, b958a0f80b3cfd114011f83dbc5d009a6b0bfc16, e683f9e5e21b417d6e90efbe1cf945675ad41f27 and 938b4d62c42f1f9a5bb987f9f8ea1013b4021818; pending_landing.py adds retirement and group pruning, queue_landing.py skips retired/grouped members, station.py invokes retirement, and the test adds two regression cases.\nCALL_SITES: reckon/crew/queue_landing.py:land_once, reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew/pending_landing.py:retire_integrated_group_members, reckon/crew/station.py:SweepBeat._run\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: pending_landing.py:451 retires proved promotions and preserves unreadable rows, but pending_landing.py:478 can resurrect a settled journal and station.py:458 bypasses group release sequencing.\nSCORE evidence: 12\nJUSTIFICATION evidence: after_suite-1794986429216257108.log records 60 passing checks and negative-control-1794985933817100380.log records two base failures, but importer_head_release_repair-1794986428172184620.log has 39 failures against 21 in its baseline, missing the plan's importer bound.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The reviewed diff touches only reckon/crew/pending_landing.py, reckon/crew/queue_landing.py, reckon/crew/station.py and the declared regression test, each serving the pointer lifecycle goal.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_promoted_runs_marked_pointer_is_retired.py:145 and :172 fail on the recorded base and :148-155 protect survivors, but the fixture supplies an already integrated grouped head and does not assert journal clearance or workspace release receipts.\nSCORE fit: 20\nJUSTIFICATION fit: pending_landing.py:451-518 follows the module's Mapping annotations, lazy imports, compare-under-lock retirement and existing group-lock idiom, with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for retirement, release and sweep owners in reckon/crew found pending_landing.py:426, :73, :157 and promotion.py:280; the additions extend pending_landing and wrap its existing retirement, journal and group owners rather than duplicating their mechanisms.\nFINDING reckon/crew/pending_landing.py:478 blocking: Retirement recreates a pending journal whenever a surviving promoted pointer has none, including immediately after finish_pending_landings cleared a successfully completed journal; the reviewed importer log shows test_the_pass_merges_the_cited_head_not_a_later_one failing because that finished record reappears, so settled landings can remain or repeat instead of ending.\nFINDING reckon/crew/pending_landing.py:501 blocking: The station invokes this retirement before ordinary sweep work, unlinking a grouped member before retire_integrated_group_members calls _release_integrated_group_member; that existing helper returns early for an absent pointer at :138-142, skipping _release_integrated_pointer and _release_waiters_of_the_landed_section, so group pruning can discard the release work and its receipts while retaining the worktree and waiting dependants.\n",
+  "review_run_id": "r-20261118T072855461582-review-of-a-promoted-runs-marked-pointer-is-retired-938b4d62c42f",
+  "reviewed_base_sha": "bf04be8120c77494d77ff646f075107963038273",
+  "reviewed_head_sha": "938b4d62c42f1f9a5bb987f9f8ea1013b4021818",
+  "reviewed_run_id": "r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promoted_runs_marked_pointer_is_retired.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired/after_suite-1794986429216257108.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "938b4d62c42f1f9a5bb987f9f8ea1013b4021818"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired/baseline_suite-1794985711981834598.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "bf04be8120c77494d77ff646f075107963038273"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T07:36:43.902661+00:00",
+  "total": 105
+}
