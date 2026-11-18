@@ -1,11 +1,13 @@
 <section id="red-file-the-drain-keeps-up-with-a-burst-log">
-  <h2>Base run of the named file on the primary branch</h2>
+  <h2>Base and head runs of the named file on the primary branch</h2>
 
   <p>The node's done-when is the file <code>tests/test_the_drain_keeps_up_with_a_burst.py</code>
   passing in full as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
   unset, its output on shared storage. It was run at the branch head the node
   started from, <code>f29efdc635a1b578bb4461ff90785d3be848646b</code>, before any
-  change was made, and it passed in full.</p>
+  change was made, and again at the head this node commits,
+  <code>3e719f0c2c612b065d785de07507d5c6e0a81c5f</code>. Both runs passed in
+  full, and both logs are quoted below.</p>
 
   <pre id="red-file-the-drain-keeps-up-with-a-burst-base-log">
 # gate log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054056150537-qwnw-red-file-the-drain-keeps-up-with-a-burst/scoped-gate-1794990782889463007.log
@@ -17,7 +19,17 @@
 26 passed in 2.86s
 EXIT=0</pre>
 
-  <p>The same file run in the worker's own worktree at the same revision, with
+  <pre id="red-file-the-drain-keeps-up-with-a-burst-head-log">
+# gate log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054056150537-qwnw-red-file-the-drain-keeps-up-with-a-burst/scoped-gate-1794991213222554593.log
+# revision: 3e719f0c2c612b065d785de07507d5c6e0a81c5f
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-3a66efc1c236-LIWgup/tree
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_drain_keeps_up_with_a_burst.py'
+..........................                                               [100%]
+26 passed in 2.91s
+EXIT=0</pre>
+
+  <p>The same file run in the worker's own worktree at the base revision, with
   and without <code>SLURM_JOB_ID</code> in the environment, reads
   <code>26 passed</code> in both cases.
   <code>tests/test_the_drain_keeps_up_with_a_burst.py</code> records no failing id
