@@ -217,6 +217,29 @@ def _lane_rate_contributions(
     return contributions
 
 
+def _lane_rate_window(
+    contributions: _LaneRateContributions, start: float, end: float
+) -> _LaneRateContributions:
+    """The contributions the window admits, and nothing else.
+
+    The previous bucket's contributions are both the roll's working set and
+    the answer it stores, so a row the new window's start has passed is
+    removed here rather than merely filtered out of the returned rates. A
+    long-lived process's memory and its per-bucket walk are then bounded by
+    the population the window can hold, not by how long it has been reading.
+    """
+    windowed: _LaneRateContributions = {}
+    for lane, entries in contributions.items():
+        kept = {
+            run_id: entry
+            for run_id, entry in entries.items()
+            if start <= entry[0] <= end
+        }
+        if kept:
+            windowed[lane] = kept
+    return windowed
+
+
 def _lane_reference_rates(
     project: str, window_bucket: int
 ) -> dict[tuple[str, str], tuple[float, ...]]:
@@ -257,6 +280,7 @@ def _lane_reference_rates(
     if contributions is None:
         _LANE_RATE_BUCKETS.pop(project, None)
         return {}
+    contributions = _lane_rate_window(contributions, start, end)
     _LANE_RATE_BUCKETS.pop(project, None)
     _LANE_RATE_BUCKETS[project] = (window_bucket, contributions)
     while len(_LANE_RATE_BUCKETS) > _LANE_RATE_BUCKETS_LIMIT:

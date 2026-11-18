@@ -150,6 +150,20 @@ def _seed(records: list[dict[str, Any]]) -> None:
             store.append(PROJECT, record)
 
 
+def _retained_entries() -> dict[tuple[str, str], dict[Any, tuple[float, float]]]:
+    """The contributions the process keeps for the project between buckets."""
+    return recovery_stream._LANE_RATE_BUCKETS[PROJECT][1]
+
+
+def _retained_count() -> int:
+    """How many rows the process keeps for the project between buckets.
+
+    The retained contributions are the previous bucket's working set, so this
+    is the population a roll re-walked, not the answer's row count alone.
+    """
+    return sum(len(entries) for entries in _retained_entries().values())
+
+
 def _expected_rates(bucket: int) -> dict[tuple[str, str], tuple[float, ...]]:
     """The rates a whole-window read answers for this bucket.
 
@@ -273,9 +287,66 @@ def test_a_bucket_roll_decodes_only_the_rows_added(
         assert len(expected_next[LANES[1]]) == len(expected_first[LANES[1]]) + 3
         assert len(expected_next[LANES[2]]) == len(expected_first[LANES[2]]) + 2
 
+        expected_count = sum(len(values) for values in expected_next.values())
+        assert _retained_count() == expected_count, (
+            "the roll must keep only the new window's rows, not every row "
+            f"completed since the first read: retained {_retained_count()} of "
+            f"{expected_count}"
+        )
+        aged_ids = {record["run_id"] for record in _aged()}
+        retained_ids = {
+            identity for entries in _retained_entries().values() for identity in entries
+        }
+        assert not aged_ids.intersection(retained_ids), (
+            "a row the new window's start has passed must leave the state: "
+            f"{sorted(aged_ids.intersection(retained_ids))} survived"
+        )
+
         causes_next = _causes(NEXT_END)
         recovery_stream._lane_reference_rates.cache_clear()
         base_causes_next = _causes(NEXT_END)
         assert causes_next == base_causes_next
+    finally:
+        recovery_stream._lane_reference_rates.cache_clear()
+
+
+def test_an_idle_process_retains_only_its_window(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Rolling on with no new rows neither decodes nor grows the retained set."""
+    _seed(_population())
+    decoded = _count_decodes(monkeypatch)
+    recovery_stream._lane_reference_rates.cache_clear()
+    try:
+        recovery_stream._lane_reference_rates(PROJECT, BUCKET)
+        _seed(_promoted())
+        del decoded[:]
+        recovery_stream._lane_reference_rates(PROJECT, BUCKET + 1)
+        assert 0 < sum(decoded) <= DECODE_CEILING
+        settled = _retained_count()
+        for offset in range(2, 14):
+            bucket = BUCKET + offset
+            del decoded[:]
+            rates = recovery_stream._lane_reference_rates(PROJECT, bucket)
+            assert sum(decoded) <= 1, (
+                "no row was promoted since the previous bucket, so the roll "
+                f"decodes at most the row completed at that bucket's end: "
+                f"decoded {sum(decoded)} at bucket +{offset}"
+            )
+            expected = _expected_rates(bucket)
+            assert rates == expected
+            window_count = sum(len(values) for values in expected.values())
+            assert _retained_count() == window_count, (
+                "the retained set must be bounded by the window, not by the "
+                f"process's uptime: {_retained_count()} retained at bucket "
+                f"+{offset} against {window_count} in the window"
+            )
+            assert _retained_count() <= settled
+            start = bucket * 300 - WINDOW_SECONDS
+            assert all(
+                entry[0] >= start
+                for entries in _retained_entries().values()
+                for entry in entries.values()
+            )
     finally:
         recovery_stream._lane_reference_rates.cache_clear()
