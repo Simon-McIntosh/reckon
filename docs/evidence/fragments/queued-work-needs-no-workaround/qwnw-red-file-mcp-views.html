@@ -1,0 +1,59 @@
+<section id="qwnw-red-file-mcp-views-landing">
+  <h2>The read_plan schema view is back inside its 24 KiB response bound</h2>
+
+  <p><strong>What was red.</strong> <code>tests/test_mcp_views.py</code> failed
+  one case at the base revision <code>23b901694b</code>:
+  <code>test_raw_and_schema_are_explicit_layers</code> asserts
+  <code>compact_size(schema) &lt;= 24 * 1024</code> and the view measured
+  <strong>24,868</strong> against the 24,576-byte bound —
+  <code>AssertionError: assert 24868 &lt;= (24 * 1024)</code>. The other 38
+  cases in the file passed, so one cause covers the whole file.</p>
+
+  <p><strong>Verdict: product wrong, test unchanged.</strong> The bound is a
+  rule the MCP surface has held since the progressive views landed, and the
+  payload breached it: <code>storage_schema</code> 13,127 bytes,
+  <code>response_schemas</code> 5,236, <code>op_vocab</code> 3,469,
+  <code>dos_donts</code> 1,796, <code>response_schema</code> 763. The
+  vocabulary the view inlines had grown by restating rules it already stated —
+  a terminal status refused by <code>set</code> and named again by
+  <code>close</code>, a followup prompt's one-line form in both
+  <code>append</code> and the dos list, the required section-record fields in
+  both <code>insert_section</code> and <code>append</code>. That restatement is
+  removed and nothing else: every op keeps its name, its
+  <code>{op:'…'}</code> signature and its required fields, and every rule is
+  still stated once in the same payload. No assertion was changed, and the
+  test file is untouched by this node.</p>
+
+  <table id="qwnw-red-file-mcp-views-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base arm</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code>, extraction</td>
+        <td>1 failed, 38 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head arm</td>
+        <td><code>fc8a10f3ff95dbed9d240762e416eb2492d8e3ca</code>, extraction</td>
+        <td>39 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file as an all_debug job</td>
+        <td><code>fc8a10f3ff</code>, scratch tree on <code>98dci4-clu-3141</code></td>
+        <td>39 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-mcp-views-measure"><strong>Measure.</strong> The same
+  synthetic plan, read through <code>_read_plan(view="schema")</code>, measures
+  <strong>24,289</strong> bytes at a 131-character checkout path where it
+  measured 24,868 at base — 287 bytes under the 24,576-byte bound. The
+  payload embeds <code>provenance.checkout</code>, so the figure tracks the
+  checkout path's length; both arms are quoted at the same path length and
+  both runs quote the checkout they measured.</p>
+
+  <p><strong>Logs.</strong> <code>mcp-views-base.log</code> and
+  <code>mcp-views-head.log</code> in the run directory carry the two arms
+  above; <code>scoped-gate-1795011843400625515.log</code> is the head run as an
+  <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset, and
+  <code>baseline_suite-1795012130905818384.log</code> /
+  <code>after_suite-1795012174397430595.log</code> are the declared suite's two
+  arms, 58 passed on each.</p>
+</section>
