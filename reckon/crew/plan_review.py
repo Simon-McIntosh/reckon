@@ -2202,14 +2202,9 @@ def _answer_instant(when: str) -> datetime | None:
     module wrote it. A stamp without one is read as UTC so a comparison against a
     commit's own time is never between two different zones.
     """
-    text = (when or "").strip()
-    if not text:
-        return None
-    try:
-        instant = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(when)
 
 
 def _commit_time(
@@ -2223,10 +2218,9 @@ def _commit_time(
     output = _git(repo, "show", "-s", "--format=%cI", commit)
     if not output or not output.strip():
         return None
-    try:
-        return datetime.fromisoformat(output.strip())
-    except ValueError:
-        return None
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(output)
 
 
 def _plan_text_at(

@@ -719,16 +719,9 @@ def budget_reset_store_path() -> Path:
 
 def _instant(value: Any) -> datetime | None:
     """One stored UTC instant, or None when it cannot be read."""
-    text = str(value or "").strip()
-    if not text:
-        return None
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    try:
-        parsed = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(str(value or ""))
 
 
 def limit_reset_events(
