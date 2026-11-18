@@ -51,21 +51,28 @@
         <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, extracted tree</td>
         <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
       <tr><td>node test, head arm</td>
-        <td><code>029461d3e0122147bd4dceeb2f828325be33fe96</code>, worktree</td>
+        <td><code>d07f87bd6d55c31e3e14ac5b239a9580cdcc3bbf</code>, worktree</td>
         <td>3 passed, <code>EXIT=0</code></td></tr>
       <tr><td>declared suite, base arm</td>
         <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, extracted tree</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>declared suite, head arm</td>
-        <td><code>029461d3e0122147bd4dceeb2f828325be33fe96</code>, worktree</td>
+        <td><code>d07f87bd6d55c31e3e14ac5b239a9580cdcc3bbf</code>, worktree</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>negative control, <code>RECKON_TEST_SCRATCH_SEAL_NEGATIVE=1</code></td>
-        <td><code>029461d3e0122147bd4dceeb2f828325be33fe96</code>, worktree</td>
+        <td><code>d07f87bd6d55c31e3e14ac5b239a9580cdcc3bbf</code>, worktree</td>
         <td>1 failed, 2 passed, <code>EXIT=1</code> — the sibling <code>rm
         -rf</code> exits 0 and the directory is gone, as the declared mutation
         states</td></tr>
     </tbody>
   </table>
+
+  <p>The base tree is <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code> extracted
+  with <code>git archive</code> under the run directory and made a git repository
+  of its own (<code>dbba59636eca4b032fd453fbde4ab2e60c92b230</code>), because the
+  declared suite's census reads the tracked file list through git and the plain
+  archive first reported an empty inventory — 2 failed, 56 passed, a measurement
+  of the instrument rather than of the base.</p>
 
   <p>The refusal the head arm observes, reproduced by hand at the head revision:
   the fenced stub writes and deletes <code>probe</code> in its own scratch
