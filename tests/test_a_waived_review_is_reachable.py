@@ -356,6 +356,9 @@ def test_a_waived_count_is_accepted_from_a_clean_promoted_row(
     assert row["suite_delta"]["status"] == "clean"
     assert row["suite_delta"]["waiver_reason"] == WAIVER_REASON
     _drop_pointer(run_id)
+    # The row is the only record left, and it is the reader that answers from
+    # it — not a path the check happens to accept.
+    assert review_module.recorded_suite_delta_waiver(run_id, PROJECT) == WAIVER_REASON
 
     record = _record(run_id, base_sha, head_sha, **_waived())
     delivered = _deliver(record, run_dir(run_id))
@@ -378,6 +381,7 @@ def test_a_waived_count_is_refused_from_a_row_with_no_waiver(
     assert row["suite_delta"]["status"] == "clean"
     assert row["suite_delta"]["waiver_reason"] is None
     _drop_pointer(run_id)
+    assert review_module.recorded_suite_delta_waiver(run_id, PROJECT) == ""
 
     record = _record(run_id, base_sha, head_sha, **_waived())
     delivered = _deliver(record, run_dir(run_id))
