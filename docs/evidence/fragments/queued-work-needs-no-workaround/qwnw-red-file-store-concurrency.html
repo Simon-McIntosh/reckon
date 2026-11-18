@@ -1,0 +1,35 @@
+<section id="qwnw-red-file-store-concurrency-red-file">
+<h2>Red file: the store concurrency checks</h2>
+<p>On the assigned base revision <code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code> the file already passes: <strong>2 passed</strong>, three times in a row, as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset by the run script. It was red before, and the repair that made it green is already on the primary branch at <code>f1ec16ce7871028542afe1db7049ff0339b2d9a7</code>, so this node delivers the passing run.</p>
+<pre># head arm, worktree at 97dec20bfb8603ab71c4e9deeefddab685e0a42e
+# slurm: job 1325673 on all_debug (node 98dci4-clu-4074), SLURM_JOB_ID unset inside the script
+# module.__file__ = the worktree's own reckon/ledger.py, which is the base tree's own
+# cwd = the worktree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_store_concurrency.py
+# --- run 1 ---
+..                                                                       [100%]
+2 passed in 2.97s
+# --- run 2 ---
+..                                                                       [100%]
+2 passed in 1.53s
+# --- run 3 ---
+..                                                                       [100%]
+2 passed in 0.72s
+EXIT=0</pre>
+<p><strong>Cause, and verdict: test wrong.</strong> One cause, covering both tests. The file asserted that two simultaneous appends land the aggregate envelope's consecutive versions (sorted(result["version"]) == [1, 2], then range(1, racers + 1)) and that the loaded envelope reports that version. The writer no longer has that mechanism: <code>append_run</code> gives each run its own immutable file through exclusive creation and advances no aggregate version, so every result carries "version": None and the ordering comparison raised a TypeError before any assertion ran. The product rule is intact and deliberate - append_run's own docstring says the returned version is None because no aggregate version is advanced - so no product source was changed.</p>
+<pre># negative control: the same file at f1ec16ce78^, revision ddff8e4f6a726bcce8bd1bdb2da233422fc40e09, same job 1325673
+# tree: the scratch extraction from git archive under the node tmp
+# module.__file__ = the scratch tree's own reckon/ledger.py
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_store_concurrency.py
+FF                                                                       [100%]
+FAILED tests/test_store_concurrency.py::test_two_simultaneous_writers_land_consecutive_versions - TypeError: '<' not supported between instances of 'NoneType' and 'NoneType'
+FAILED tests/test_store_concurrency.py::test_contention_beyond_five_racers_preserves_every_run - TypeError: '<' not supported between instances of 'NoneType' and 'NoneType'
+2 failed in 0.31s
+EXIT=1</pre>
+<p><strong>Repair</strong> (<code>f1ec16ce78</code>, landed before this node was dispatched): the race is driven to the point where each append serialises its record, and the assertions become the rule the writer keeps - version is None for every result, one distinct file per racer, every file present, and the run-id set the reader loads equal to the racers'. No assertion was deleted or weakened; the two that measured the envelope's version were replaced by four that measure the run-file contract.</p>
+<p><strong>The guarded thing made to happen.</strong> A passing run does not show that the checks bite, so two product mutations were applied to a scratch extraction of the base revision and the same file re-run against each. Returning an aggregate version from append_run turns both tests red on the version assertion; giving every run one file name turns both red on the exclusive-creation refusal.</p>
+<pre># mutation 1: append_run's file branch returns "version": 1   -> 2 failed, EXIT=1
+# mutation 2: run_path names every run "collision.json"       -> 2 failed, LedgerError: run 'run-0' already exists, EXIT=1</pre>
+<p>No product source and no test file changed in this node, so the arm over test files importing changed code has nothing to add: base and head arms name the same two files at the same revision. <code>ruff check</code> and <code>ruff format --check</code> report nothing on the changed path, which is this fragment alone.</p>
+<p><strong>Environment note for later readers.</strong> A fenced submission from this worker fails before the task starts: the fence recipe carries the worker node's own /tmp grants, and on a different all_debug node the bind of the run's scratch over /tmp hides the base directory the sandbox created there (bwrap: Can't bind mount /oldroot/tmp/autoXXXXXX on /newroot/tmp/autoXXXXXX: No such file or directory, jobs 1325618, 1325621, 1325632, 1325637). The measurement job was therefore submitted with RECKON_WORKER_FENCE unset, which the shim's own recipe names as the route an absolute scheduler path takes; the job reads the shared tree and writes only its own logs.</p>
+</section>
