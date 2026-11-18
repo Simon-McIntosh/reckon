@@ -1,0 +1,220 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "first.exit_code == 1",
+      "fails_if": "The waived completion before any review is stored lands or raises instead of refusing; reinstating it is the precondition, not the guard.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 340,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "pointer['suite_delta_waiver']['reason'] == WAIVER_REASON",
+      "fails_if": "The completion stops recording the waiver's reason on the live pointer, so the reason the later landing reads is absent.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 342,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "check.exit_code == 0",
+      "fails_if": "The waived-count review of the head is refused, so the landing below would be refused for a review rather than reach the normaliser.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 346,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "landed.exit_code == 0",
+      "fails_if": "Restoring int(observation['failure_count']) in normalized_suite_observation makes the landing raise (control log line 130 records the failure), and any refusal on the waived pair fails it.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 357,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "delta['status'] == 'waived'",
+      "fails_if": "The waived pair is recorded as clean or refused rather than waived.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 360,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "arm['unmeasured'] is True",
+      "fails_if": "The unmeasured marker stops being written on the normalised arm, so the row reads as a measured arm with no count.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 365,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "arm['failure_count'] is None",
+      "fails_if": "The arm is refused instead of recorded, or a number is invented for an arm that never reached a summary.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 367,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "arm['unmeasured_reason'] == WAIVER_REASON",
+      "fails_if": "The waiver's reason stops travelling into the normalised arm (the unmeasured_reason argument dropped), leaving the arm marked unmeasured with no stated cause.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 368,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "waived['reason'] == WAIVER_REASON",
+      "fails_if": "The waived_arms block stops carrying the reason the waiver recorded.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 370,
+      "test": "test_a_waived_uncounted_pair_lands_recorded_as_unmeasured"
+    },
+    {
+      "assertion": "payload['error'] == 'suite-delta-refused'",
+      "fails_if": "The no-waiver completion raises instead of refusing, or refuses under another error id; at base this is where the TypeError surfaces.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 395,
+      "test": "test_the_same_pair_without_a_waiver_is_refused_naming_the_arm"
+    },
+    {
+      "assertion": "'Traceback' not in result.output",
+      "fails_if": "A raise reaches the CLI and prints a traceback; it names no independent source, so a clean refusal with different wording also passes it.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 396,
+      "test": "test_the_same_pair_without_a_waiver_is_refused_naming_the_arm"
+    },
+    {
+      "assertion": "'TypeError' not in result.output",
+      "fails_if": "The TypeError that motivated the node escapes into the reply; like the traceback line it is a can-fail check rather than a positive assertion about the refusal's wording.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 397,
+      "test": "test_the_same_pair_without_a_waiver_is_refused_naming_the_arm"
+    },
+    {
+      "assertion": "'never reached a pytest summary' in detail",
+      "fails_if": "The uncounted clause is dropped from the refusal detail; the control log line 176 records exactly that failure at base.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 404,
+      "test": "test_the_same_pair_without_a_waiver_is_refused_naming_the_arm"
+    },
+    {
+      "assertion": "'--waive-suite-delta' in detail",
+      "fails_if": "The refusal stops offering the option that would record the arm as unmeasured.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 405,
+      "test": "test_the_same_pair_without_a_waiver_is_refused_naming_the_arm"
+    },
+    {
+      "assertion": "refusal['missing_fields'] == [four arm fields]",
+      "fails_if": "The missing-field set changes, so a waiver of the pair no longer covers exactly the fields the refusal names.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 406,
+      "test": "test_the_same_pair_without_a_waiver_is_refused_naming_the_arm"
+    },
+    {
+      "assertion": "not row.exists()",
+      "fails_if": "A refused completion commits a ledger row for the run.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 413,
+      "test": "test_the_same_pair_without_a_waiver_is_refused_naming_the_arm"
+    },
+    {
+      "assertion": "delta['baseline_suite'] == {literal arm}",
+      "fails_if": "The measured arm gains or loses a key (an unmeasured marker leaking onto a counted arm), or its exit_status/revision/command/digest changes; the literal is written in the test, not derived from the module.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 430,
+      "test": "test_a_counted_pair_is_recorded_exactly_as_before"
+    },
+    {
+      "assertion": "delta['after_suite']['revision'] == head_sha",
+      "fails_if": "The recorded arm names another revision than the one the manifest's commit delivered.",
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": 440,
+      "test": "test_a_counted_pair_is_recorded_exactly_as_before"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value with the same variable the test passed in: WAIVER_REASON travels through the completion's waiver record and the manifest before the row is read, and the counted case compares the row against a literal written in the test. Two added lines (396, 397) assert only the absence of traceback wording and name no positive control in its place.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion_records.py:1483 _merged_primary_baseline",
+    "reckon/crew/promotion_records.py:1695 _evaluate_suite_delta uncounted clause",
+    "reckon/crew/promotion_records.py:1741 _evaluate_suite_delta normalisation"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T07:34:13Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "595",
+      "severity": "non-blocking",
+      "text": "the uncounted branch drops a present integer failure_count whenever completed is not True, so a well-formed arm carrying completed false and a real count is recorded as no-count and its count is lost; both production callers pre-validate through suite_observation_missing_fields so it is unreachable today, but the helper is public and now accepts a shape wider than it preserves"
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "554",
+      "severity": "non-blocking",
+      "text": "suite_observation_is_uncounted restates the counted-or-not rule that suite_observation_missing_fields already owns, and the two disagree \u2014 a negative or bool failure_count is missing there and counted here \u2014 so the refusal clause driven by this predicate can drift from the validation that admitted the arm"
+    },
+    {
+      "file": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "_revisions is defined and never called \u2014 the module calls _revisions_head and its own git rev-parse instead \u2014 leaving a dead helper in a newly added test module"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Three production call sites: promotion_records.py:1483 (guarded by a usable pre-check), :1695 (the new uncounted clause) and :1741 (the normalisation the goal names).",
+    "diff": "Two commits against b9e6511cb9: the production change in reckon/ledger.py and reckon/crew/promotion_records.py, the 441-line test module, and the 53-line landing fragment; nothing else.",
+    "done_when": "The done_when names tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py with three cases plus a TypeError control at base. The manifest records 61 passed EXIT=0 at 84a197245e, 58 passed EXIT=0 at b9e6511cb9 and 2 failed 1 passed EXIT=1 for the control, so the gate asserts the stated measure.",
+    "goal": "Read the section prose and the node goal: a completion whose arms never counted must record them as unmeasured under the waiver instead of raising. reckon/ledger.py:573 and reckon/crew/promotion_records.py:1741 deliver it; no blocking gap found.",
+    "manifest": "Read at its declared path: status complete, commits 38ad45916d and 84a197245e, a literal gate command, both suite arms with completed true and exit_status 0, the control log path, and the declared control statements its log substantiates.",
+    "write_paths": "The declared four paths and the four changed paths are identical: reckon/ledger.py, reckon/crew/promotion_records.py, the node test file and the landing fragment; no figure directory was written."
+  },
+  "justifications": {
+    "durability": "tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py:357 reddens on restoring int(observation['failure_count']) \u2014 the control log records exactly that failure \u2014 and :404 reddens without the added naming clause in reckon/crew/promotion_records.py.",
+    "evidence": "logs/after-arm.log ends 61 passed with EXIT=0 at 84a197245e, logs/base-arm.log ends 58 passed with EXIT=0 at b9e6511cb9, and logs/negative-control-base.log ends 2 failed, 1 passed with EXIT=1 and quotes the TypeError at its line 85.",
+    "fit": "reckon/ledger.py:554 sits beside the module-level suite_observation_missing_fields predicate at reckon/ledger.py:527 and reuses the module's Mapping/Any typing and docstring idiom.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:1741 passes the waiver into normalized_suite_observation so an uncounted pair lands as two unmeasured arms carrying the waiver's reason, and the refusal branch refuses the same pair without one.",
+    "reuse": "the review searched reckon/ for an uncounted-arm capability and found only ledger.suite_observation_missing_fields (reckon/ledger.py:527), which this addition extends rather than forks.",
+    "scope_discipline": "every path in b9e6511cb9..84a197245e is one of the four declared write paths, and the added test helpers serve only the three done_when cases."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read reckon:a-gate-halts-only-on-substance \u00a711 and the node's goal (\"Make a completion whose suite arms never reached a count record them as unmeasured under the waiver instead of raising\"); the landed ledger.normalized_suite_observation (reckon/ledger.py:573) writes an uncounted arm as completed false, failure_count null, unmeasured true and the waiver's own reason, promotion passes the waiver into both arms (reckon/crew/promotion_records.py:1741), and the no-waiver path refuses with a naming clause (reckon/crew/promotion_records.py:1691).\nVERDICT done_when: the done_when names tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py with three cases and the control that a waived completion over null-count arms raises TypeError from normalized_suite_observation at base; the manifest records that file's gate as 61 passed EXIT=0 at 84a197245e, the base arm as 58 passed EXIT=0 at b9e6511cb9, and the declared control as 2 failed 1 passed EXIT=1 at base, which is the measure the section states.\nVERDICT write_paths: the declared paths are reckon/ledger.py, reckon/crew/promotion_records.py, tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py and docs/evidence/fragments/a-gate-halts-only-on-substance/an-uncounted-suite-arm-is-recorded-not-raised.html; the delivered diff b9e6511cb9..84a197245e touches exactly those four paths and no figure directory.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T055431923385-an-uncounted-suite-arm-is-recorded-not-raised/manifest.md \u2014 status complete, commits 38ad45916d and 84a197245e, the four changed paths, a literal gate command in tests, test_logs naming logs/negative-control-base.log plus both suite arms, and completed baseline_suite/after_suite blocks with exit_status 0 and failure_ids [].\nVERDICT diff: read both commits against b9e6511cb9ce9a768f8545a34d1cfb14e10c5c86 \u2014 38ad45916d adds ledger.suite_observation_is_uncounted (reckon/ledger.py:554), the unmeasured branch of normalized_suite_observation (reckon/ledger.py:595) and both promotion changes (reckon/crew/promotion_records.py:1689, :1741); 84a197245e adds only the landing fragment; the test module adds three tests, one per done_when case.\nCALL_SITES: reckon/crew/promotion_records.py:1483 _merged_primary_baseline, reckon/crew/promotion_records.py:1695 _evaluate_suite_delta uncounted clause, reckon/crew/promotion_records.py:1741 _evaluate_suite_delta normalisation\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:1741 passes the waiver into normalized_suite_observation so an uncounted pair lands as two unmeasured arms carrying the waiver's reason, and :1691 refuses the same pair without one.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm.log ends \"61 passed in 45.39s\" with EXIT=0 at 84a197245e, logs/base-arm.log ends \"58 passed in 41.39s\" EXIT=0 at b9e6511cb9, and logs/negative-control-base.log ends \"2 failed, 1 passed in 2.43s\" EXIT=1 with the TypeError quoted at its line 85.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in b9e6511cb9..84a197245e is one of the four declared write paths, and the added test helpers serve only the three done_when cases.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py:357 reddens on restoring int(observation[\"failure_count\"]) \u2014 the control log records exactly that failure \u2014 and :404 reddens without the clause at reckon/crew/promotion_records.py:1697, but :396 and :397 (\"Traceback\"/\"TypeError\" absent) cite no independent source and :340 pins only a precondition.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:554 sits beside the module-level suite_observation_missing_fields predicate and reuses the module's Mapping/Any typing and docstring idiom, though the unmeasured/unmeasured_reason keys spell the waiver's reason differently from the row's existing waiver_reason.\nSCORE reuse: 17\nJUSTIFICATION reuse: the review searched reckon/ for an uncounted-arm capability and found only ledger.suite_observation_missing_fields (reckon/ledger.py:527), which this addition extends rather than forks, but reckon/ledger.py:554 restates that owner's countable test in a second expression that already disagrees with it on a negative count.\nFINDING reckon/ledger.py:595 non-blocking: the uncounted branch drops a present integer failure_count whenever completed is not True, so a well-formed arm carrying completed false and a real count is recorded as \"no count exists\" and its count is lost; both production callers pre-validate through suite_observation_missing_fields so it is unreachable today, but the helper is public and now accepts a shape wider than it preserves.\nFINDING reckon/ledger.py:554 non-blocking: suite_observation_is_uncounted restates the counted-or-not rule that suite_observation_missing_fields already owns, and the two disagree \u2014 a negative or bool failure_count is \"missing\" there and \"counted\" here \u2014 so the refusal clause at reckon/crew/promotion_records.py:1695 answers a predicate that can drift from the validation that admitted the arm.\nFINDING tests/test_an_uncounted_suite_arm_is_recorded_not_raised.py:58 non-blocking: `_revisions` is defined and never called \u2014 the module calls `_revisions_head` and its own `git rev-parse` instead \u2014 leaving a dead helper in a newly added test module.",
+  "review_run_id": "r-20261118T070315731728-review-of-an-uncounted-suite-arm-is-recorded-not-raised-84a197245ef9",
+  "reviewed_base_sha": "b9e6511cb9ce9a768f8545a34d1cfb14e10c5c86",
+  "reviewed_head_sha": "84a197245ef946359626cbb08b796e6df97dc6a4",
+  "reviewed_run_id": "r-20261118T055431923385-an-uncounted-suite-arm-is-recorded-not-raised",
+  "reviewed_worker_commits": [
+    "38ad45916d70a18cc94f465615b978e04b9a9d77",
+    "84a197245ef946359626cbb08b796e6df97dc6a4"
+  ],
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T055431923385-an-uncounted-suite-arm-is-recorded-not-raised/logs/after-arm.log",
+      "revision": "84a197245ef946359626cbb08b796e6df97dc6a4"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T055431923385-an-uncounted-suite-arm-is-recorded-not-raised/logs/base-arm.log",
+      "revision": "b9e6511cb9ce9a768f8545a34d1cfb14e10c5c86"
+    },
+    "derivation": "Both arms reached their pytest summary and reported no failure, so the added failure set is empty: added_failure_count 0, added_failure_ids []."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:03:41.826610+00:00",
+  "total": 110
+}
