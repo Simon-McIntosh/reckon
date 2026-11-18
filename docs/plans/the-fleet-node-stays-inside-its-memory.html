@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -178,6 +178,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261118T043607373965-review-of-the-sampler-runs-the-current-script-646561afbcd3" data-who="reckon-build" data-when="2026-11-18T04:42:53Z">
     <div class="r-comment-body"><p>Incremental independent review answers the previous fractional-overrun blocker; six scores 20/20, no new findings, zero added failures; prior production review remains at its own revision.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261117T211039288247-the-sampler-runs-the-current-script" data-who="reckon-build" data-when="2026-11-18T04:35:31Z">
+    <div class="r-comment-body"><p>The sampler rehearsal retains its ten-second cadence and independently enforces unrounded request-to-first-row latency of at most two periods, whole-instant continuity with at most two consecutive gaps, and replacement identity for the first post-reexec row. The 2.74-period/two-floored-instant overrun is now refused. Ten consecutive all_debug -n 8 runs passed 280 tests; 50 handovers had maximum unrounded latency 0.1600240704137832 periods and zero missed instants. Scoped gate: 131 passed; head/importer arms add zero failure IDs against both recorded baselines. Reversing the answering helper implementation makes both overrun checks fail.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-11-18T04:44:00Z">
     <div class="r-comment-body"><p>§13 landed by direct merge (head <code>9c13eabdcc</code>), on the lead's instruction. An entry in the crew scratch root that belongs to no live run and no running measurement is removed once untouched past the stated time, with its removal recorded durably and a last check of everything inside it immediately before it goes; a live run's directory is never removed, and a live run's entry untouched past that time with no process inside is reported to its owner by name. Merged candidate gate: 36 passed in 9.70s.</p></div>
