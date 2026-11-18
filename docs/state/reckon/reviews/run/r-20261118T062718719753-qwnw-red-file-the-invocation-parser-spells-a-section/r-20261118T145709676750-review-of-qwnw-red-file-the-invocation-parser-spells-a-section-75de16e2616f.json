@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: logs/baseline-suite-arm.log (250d9cf3, 58 passed, EXIT=0) and logs/after-suite-arm.log (75de16e2, 58 passed, EXIT=0), the head log being the file the manifest's after_suite log_path names with an underscore by mistake; corroborated by logs/importing-arm-base.log 16 failed and logs/importing-arm-head.log 12 failed, whose id sets differ only by four ids fixed at head and none added",
+  "base_log_revision": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/plan_review.py:2048 (_normalise_sections matches a token with _SECTION_TOKEN)",
+    "reckon/crew/plan_review.py:3346 (_section_references reads references with _SECTION_REFERENCE)",
+    "reckon/doccheck.py:461 (deferred_work_terms reads terms with _DEFERRED_WORK_TERM)",
+    "reckon/_store.py:1202 (the plan-write refusal compares the terms the detector returns)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:01:48Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "severity": "blocking",
+      "text": "blocking: the after_suite arm's log_path names logs/after_suite-arm.log while the delivered arm log is logs/after-suite-arm.log, so the path resolves to no file and any review that derives its count from the recorded arms reads the head as absent rather than as the 58-passed arm this record claims."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, whose only reckon import is 'from reckon import interface_counts', so the done-when's arm over the test files that import the change is not the inline JSON pair; the 145-file pair added at 75de16e2 is re-runnable only through the artifacts log paths."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html",
+      "line": "102",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment names revision 7e91f9b4 for the importing head arm while the cited logs/importing-arm-head.log states revision 5b179150 on its first line, so the record cites a revision its own log does not name \u2014 harmless here because the intervening commit touches no code, but it is a provenance claim the log contradicts."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says _SECTION_TOKEN's anchored languages are 'the same' after composing the core, but the head pattern accepts s\u0663 where the base '[0-9]' spelling rejected it (both compiled and probed), and no assertion pins the widened class; the widening is defensible because reckon/_plan_html.py:88 already uses \\d one level down, yet the record asserts an equivalence the code does not keep."
+    },
+    {
+      "file": "tests/test_section_spelling_grammars_share_one_core.py",
+      "line": "213",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sibling census still enumerates six sites and is red at head on the two plan_review frames this change composed, so one capability now has two enumerations and the second was left stale; the manifest declares that file outside scope under the one-file-per-node rule."
+    }
+  ],
+  "head_log_revision": "75de16e2616fa7459e9f0b916a4a6263b9fd90d5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all three commits against 250d9cf3 \u2014 7e91f9b4 composes SECTION_NUMBER_PATTERN into _SECTION_TOKEN, _SECTION_REFERENCE and _DEFERRED_WORK_TERM and grows the census expected set to ten sites, while 5b179150 and 75de16e2 only add and then rewrite the 200-line evidence fragment.",
+    "done_when": "the measure names that file passing as an all_debug job with SLURM_JOB_ID unset plus a base control and an arm over the importing population recorded as inline JSON; the two runs are logged with their revisions, but baseline_suite and after_suite at manifest.md:15-16 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts, and the 145-file importing pair exists only as a log path in the artifacts line.",
+    "goal": "the node goal is that tests/test_the_invocation_parser_spells_a_section.py passes in full, and logs/head-run.log records 12 passed EXIT=0 at 7e91f9b4 against logs/base-run.log 1 failed, 11 passed at 250d9cf3, with the repair at reckon/crew/plan_review.py:2031 and reckon/doccheck.py:432 composing the shared core for the three readers the census flags.",
+    "manifest": "read at head; status complete with three commit ids and four changed_paths, the reader gate on the tests line, the importing arms under artifacts, and an after_suite log_path at line 16 that resolves to no file.",
+    "write_paths": "the declared set is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the matching figures directory; all four delivered paths lie inside it and the diff touches nothing outside."
+  },
+  "justifications": {
+    "durability": "the census assertions at tests/test_the_invocation_parser_spells_a_section.py:157 and :161 redden on the uncomposed reader they were written for, but the digit-class widening at reckon/crew/plan_review.py:2031 is pinned by no assertion.",
+    "evidence": "manifest.md:16 records after_suite.log_path logs/after_suite-arm.log, which resolves to no file because the delivered arm log is logs/after-suite-arm.log, so reckon/crew/review.py:annotate_review_of_run reads the head arm as absent and its count as unmeasured.",
+    "fit": "reckon/doccheck.py:432 and reckon/crew/plan_review.py:2031 interpolate SECTION_NUMBER_PATTERN exactly as reckon/_plan_html.py:88 already does, and every group stays non-capturing for the findall caller at reckon/doccheck.py:461.",
+    "goal_fidelity": "tests/test_the_invocation_parser_spells_a_section.py passes 12 of 12 at 7e91f9b4 per logs/head-run.log, one commit short of the delivered head only because the two later commits touch the evidence fragment alone.",
+    "reuse": "the grammar owner reckon/_plan_html.py:85 is extended rather than copied, but the census capability now has two enumerations and this change edits only tests/test_the_invocation_parser_spells_a_section.py while tests/test_section_spelling_grammars_share_one_core.py:175 keeps its own.",
+    "scope_discipline": "every path in git diff 250d9cf3..75de16e2 lies inside the declared write paths, and no module outside reckon/crew/plan_review.py, reckon/doccheck.py and the one test file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_the_invocation_parser_spells_a_section.py passes in full, and logs/head-run.log records 12 passed EXIT=0 at 7e91f9b4 against logs/base-run.log 1 failed, 11 passed at 250d9cf3, with the repair at reckon/crew/plan_review.py:2031 and reckon/doccheck.py:432 composing the shared core for the three readers the census flags.\nVERDICT done_when: the measure names that file passing as an all_debug job with SLURM_JOB_ID unset plus a base control and an arm over the importing population recorded as inline JSON; the two runs are logged with their revisions, but baseline_suite and after_suite at manifest.md:15-16 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts, and the 145-file importing pair exists only as a log path in the artifacts line.\nVERDICT write_paths: the declared set is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the matching figures directory; all four delivered paths lie inside it and the diff touches nothing outside.\nVERDICT manifest: read at head; status complete with three commit ids and four changed_paths, the reader gate on the tests line, the importing arms under artifacts, and an after_suite log_path at line 16 that resolves to no file.\nVERDICT diff: read all three commits against 250d9cf3 \u2014 7e91f9b4 composes SECTION_NUMBER_PATTERN into _SECTION_TOKEN, _SECTION_REFERENCE and _DEFERRED_WORK_TERM and grows the census expected set to ten sites, while 5b179150 and 75de16e2 only add and then rewrite the 200-line evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:2048 (_normalise_sections matches a token with _SECTION_TOKEN), reckon/crew/plan_review.py:3346 (_section_references reads references with _SECTION_REFERENCE), reckon/doccheck.py:461 (deferred_work_terms reads terms with _DEFERRED_WORK_TERM), reckon/_store.py:1202 (the plan-write refusal compares the terms the detector returns)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_invocation_parser_spells_a_section.py passes 12 of 12 at 7e91f9b4 per logs/head-run.log, one commit short of the delivered head only because the two later commits touch the evidence fragment alone.\nSCORE evidence: 10\nJUSTIFICATION evidence: manifest.md:16 records after_suite.log_path logs/after_suite-arm.log, which resolves to no file because the delivered arm log is logs/after-suite-arm.log, so reckon/crew/review.py:annotate_review_of_run reads the head arm as absent and its count as unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 250d9cf3..75de16e2 lies inside the declared write paths, and no module outside reckon/crew/plan_review.py, reckon/doccheck.py and the one test file changed.\nSCORE durability: 16\nJUSTIFICATION durability: the census assertions at tests/test_the_invocation_parser_spells_a_section.py:157 and :161 redden on the uncomposed reader they were written for, but the digit-class widening at reckon/crew/plan_review.py:2031 is pinned by no assertion.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/doccheck.py:432 and reckon/crew/plan_review.py:2031 interpolate SECTION_NUMBER_PATTERN exactly as reckon/_plan_html.py:88 already does, and every group stays non-capturing for the findall caller at reckon/doccheck.py:461.\nSCORE reuse: 16\nJUSTIFICATION reuse: the grammar owner reckon/_plan_html.py:85 is extended rather than copied, but the census capability now has two enumerations and this change edits only tests/test_the_invocation_parser_spells_a_section.py while tests/test_section_spelling_grammars_share_one_core.py:175 keeps its own.\nFINDING manifest.md:16 blocking: the after_suite arm's log_path names logs/after_suite-arm.log while the delivered arm log is logs/after-suite-arm.log, so the path resolves to no file and any review that derives its count from the recorded arms reads the head as absent rather than as the 58-passed arm this record claims.\nFINDING manifest.md:15 non-blocking: baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, whose only reckon import is 'from reckon import interface_counts', so the done-when's arm over the test files that import the change is not the inline JSON pair; the 145-file pair added at 75de16e2 is re-runnable only through the artifacts log paths.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html:102 non-blocking: the fragment names revision 7e91f9b4 for the importing head arm while the cited logs/importing-arm-head.log states revision 5b179150 on its first line, so the record cites a revision its own log does not name \u2014 harmless here because the intervening commit touches no code, but it is a provenance claim the log contradicts.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html:26 non-blocking: the fragment says _SECTION_TOKEN's anchored languages are 'the same' after composing the core, but the head pattern accepts s\u0663 where the base '[0-9]' spelling rejected it (both compiled and probed), and no assertion pins the widened class; the widening is defensible because reckon/_plan_html.py:88 already uses \\d one level down, yet the record asserts an equivalence the code does not keep.\nFINDING tests/test_section_spelling_grammars_share_one_core.py:213 non-blocking: the sibling census still enumerates six sites and is red at head on the two plan_review frames this change composed, so one capability now has two enumerations and the second was left stale; the manifest declares that file outside scope under the one-file-per-node rule.",
+  "review_run_id": "r-20261118T145709676750-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-75de16e2616f",
+  "reviewed_base_sha": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "reviewed_head_sha": "75de16e2616fa7459e9f0b916a4a6263b9fd90d5",
+  "reviewed_run_id": "r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T145709676750-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-75de16e2616f"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:24:55.370797+00:00",
+  "total": 98
+}
