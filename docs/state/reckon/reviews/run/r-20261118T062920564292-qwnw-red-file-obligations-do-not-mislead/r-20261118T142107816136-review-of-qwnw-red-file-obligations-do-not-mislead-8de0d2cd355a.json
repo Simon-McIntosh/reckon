@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:4795 obligations()",
+    "reckon/crew/obligations.py:3969 _HeldWorktreeState.refresh_trees -> _tree_holds_unmerged_work",
+    "reckon/crew/obligations.py:3564 _held_registry_changes -> _tree_holds_unmerged_work",
+    "reckon/mcp_views.py:4669 obligations_module.obligations"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:10:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-do-not-mislead.html",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says logs/base-target-at-23b9016.log carries EXIT=1, but that log's last line is 1 failed, 1 passed in 1.70s and it holds no EXIT= line at all, so the citation attributes a status to a log that does not record one; the failure itself is still proven by that summary and the named failing id."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062920564292-qwnw-red-file-obligations-do-not-mislead/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered manifest is truncated mid-value at line 18, where baseline_suite ends with the opening of its completed value, so baseline_suite does not parse and after_suite, failure_attribution, artifacts, evidence_inputs, outside_scope and blockers are absent; the pair can only be recovered from the two arm logs."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-do-not-mislead.html",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "non-blocking: the all_debug job the fragment records ran at 57b1145f313836030ff15b1dcb116b5cea98af28, not at the delivered head 8de0d2cd355ac53ea4b4815354229e7d4f79c36d, so the done_when's passes at head is recorded at head's parent; the intervening commit touches only the evidence page, so no behavioural gap follows, but the run is one evidence-only commit short of the delivered head."
+    }
+  ],
+  "head_log_revision": "57b1145f313836030ff15b1dcb116b5cea98af28",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "The fixture drives obligations_module.obligations, whose retained-tree rule is applied in _HeldWorktreeState.refresh_trees at reckon/crew/obligations.py:3969 through _tree_holds_unmerged_work at reckon/crew/obligations.py:3564, and reached in production from reckon/mcp_views.py:4669.",
+    "diff": "Read both commits against base 23b901694b4bfec73d95be3a082d4c336d9a4101: 57b1145f31 adds seven fixture lines and the fragment, 8de0d2cd35 adds the all_debug record and the suite-arm paragraph, and no assertion or product source line changes.",
+    "done_when": "The done_when names the failing ids, the head run as an all_debug job and the arm comparison; logs/head-target-all_debug.sbatch.log carries job 1326661 on all_debug with SLURM_JOB_ID unset, 2 passed in 1.59s and EXIT=0, and the base run in logs/base-target-at-23b9016.log carries the failing id test_a_live_run_reusing_a_retained_path_is_not_hintable.",
+    "goal": "The node's goal is that tests/test_obligations_do_not_mislead.py passes in full on the primary branch; the single red case was repaired at tests/test_obligations_do_not_mislead.py:218-224 and the file reads 2 passed in 1.59s EXIT=0 in logs/head-target-all_debug.sbatch.log.",
+    "manifest": "Read the source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062920564292-qwnw-red-file-obligations-do-not-mislead/manifest.md: status complete, commits 57b1145f31 and 8de0d2cd35, changed_paths the two landed files, tests the named-file command, test_logs a malformed tail, and baseline_suite cut off mid-JSON at line 18 with no after_suite.",
+    "write_paths": "The declared fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround for this node; the delivered diff changes one file under tests/ and one under docs/evidence/fragments/queued-work-needs-no-workaround/, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_do_not_mislead.py:271 asserts the derived run_id list equals the free tree's promoted run, and logs/negative-control-no-live-claims.log and logs/mutation-no-live-claims.log both redden it as the pair run-promoted-free, run-promoted-old when the live-claim exclusion is removed, while the base fixture reddens it as an empty list.",
+    "evidence": "The done_when's measure is the named file at head as an all_debug job, and logs/head-target-all_debug.sbatch.log records job 1326661 with SLURM_JOB_ID unset and 2 passed in 1.59s EXIT=0, against logs/base-target-at-23b9016.log's 1 failed and 1 passed, with the 58-passed EXIT=0 pair in baseline_suite-1795011200835415707.log and after_suite-1795011243897865447.log adding no failure.",
+    "fit": "The seven added lines at tests/test_obligations_do_not_mislead.py:218-224 sit inside the existing fixture loop, reuse tests/helpers/git.py's git as _git, and carry a comment naming no plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_obligations_do_not_mislead.py:218-224 leaves a commit in each retained tree so the file's only red case passes, and logs/head-target-all_debug.sbatch.log reads 2 passed with EXIT=0; the pass is not yet on the primary branch, which promotion alone can make true.",
+    "reuse": "The diff adds no function, class or module; it reuses the existing _git helper and the file's own fixture idiom, and a search of tests/helpers and reckon/crew for a retained-worktree fixture found no owner to extend.",
+    "scope_discipline": "git diff 23b901694b4bfec73d95be3a082d4c336d9a4101..8de0d2cd touches only tests/test_obligations_do_not_mislead.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-do-not-mislead.html, both inside the declared write paths, and it adds no assertion."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that tests/test_obligations_do_not_mislead.py passes in full on the primary branch; the single red case was repaired at tests/test_obligations_do_not_mislead.py:218-224 and the file reads 2 passed in 1.59s EXIT=0 in logs/head-target-all_debug.sbatch.log.\nVERDICT done_when: The done_when names the failing ids, the head run as an all_debug job and the arm comparison; logs/head-target-all_debug.sbatch.log carries job 1326661 on all_debug with SLURM_JOB_ID unset, 2 passed in 1.59s and EXIT=0, and the base run in logs/base-target-at-23b9016.log carries the failing id test_a_live_run_reusing_a_retained_path_is_not_hintable.\nVERDICT write_paths: The declared fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround for this node; the delivered diff changes one file under tests/ and one under docs/evidence/fragments/queued-work-needs-no-workaround/, and nothing outside them.\nVERDICT manifest: Read the source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062920564292-qwnw-red-file-obligations-do-not-mislead/manifest.md: status complete, commits 57b1145f31 and 8de0d2cd35, changed_paths the two landed files, tests the named-file command, test_logs a malformed tail, and baseline_suite cut off mid-JSON at line 18 with no after_suite.\nVERDICT diff: Read both commits against base 23b901694b4bfec73d95be3a082d4c336d9a4101: 57b1145f31 adds seven fixture lines and the fragment, 8de0d2cd35 adds the all_debug record and the suite-arm paragraph, and no assertion or product source line changes.\nCALL_SITES: reckon/crew/obligations.py:4795 obligations(), reckon/crew/obligations.py:3969 _HeldWorktreeState.refresh_trees -> _tree_holds_unmerged_work, reckon/crew/obligations.py:3564 _held_registry_changes -> _tree_holds_unmerged_work, reckon/mcp_views.py:4669 obligations_module.obligations\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_obligations_do_not_mislead.py:218-224 leaves a commit in each retained tree so the file's only red case passes, and logs/head-target-all_debug.sbatch.log reads 2 passed with EXIT=0; the pass is not yet on the primary branch, which promotion alone can make true.\nSCORE evidence: 16\nJUSTIFICATION evidence: The done_when's measure is the named file at head as an all_debug job, and logs/head-target-all_debug.sbatch.log records job 1326661 with SLURM_JOB_ID unset and 2 passed in 1.59s EXIT=0, against logs/base-target-at-23b9016.log's 1 failed and 1 passed, with the 58-passed EXIT=0 pair in baseline_suite-1795011200835415707.log and after_suite-1795011243897865447.log adding no failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 23b901694b4bfec73d95be3a082d4c336d9a4101..8de0d2cd touches only tests/test_obligations_do_not_mislead.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-do-not-mislead.html, both inside the declared write paths, and it adds no assertion.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_obligations_do_not_mislead.py:271 asserts the derived run_id list equals the free tree's promoted run, and logs/negative-control-no-live-claims.log and logs/mutation-no-live-claims.log both redden it as the pair run-promoted-free, run-promoted-old when the live-claim exclusion is removed, while the base fixture reddens it as an empty list.\nSCORE fit: 20\nJUSTIFICATION fit: The seven added lines at tests/test_obligations_do_not_mislead.py:218-224 sit inside the existing fixture loop, reuse tests/helpers/git.py's git as _git, and carry a comment naming no plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no function, class or module; it reuses the existing _git helper and the file's own fixture idiom, and a search of tests/helpers and reckon/crew for a retained-worktree fixture found no owner to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-do-not-mislead.html:57 non-blocking: the fragment says logs/base-target-at-23b9016.log carries EXIT=1, but that log's last line is 1 failed, 1 passed in 1.70s and it holds no EXIT= line at all, so the citation attributes a status to a log that does not record one; the failure itself is still proven by that summary and the named failing id.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062920564292-qwnw-red-file-obligations-do-not-mislead/manifest.md:18 non-blocking: the delivered manifest is truncated mid-value at line 18, where baseline_suite ends with the opening of its completed value, so baseline_suite does not parse and after_suite, failure_attribution, artifacts, evidence_inputs, outside_scope and blockers are absent; the pair can only be recovered from the two arm logs.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-do-not-mislead.html:53 non-blocking: the all_debug job the fragment records ran at 57b1145f313836030ff15b1dcb116b5cea98af28, not at the delivered head 8de0d2cd355ac53ea4b4815354229e7d4f79c36d, so the done_when's passes at head is recorded at head's parent; the intervening commit touches only the evidence page, so no behavioural gap follows, but the run is one evidence-only commit short of the delivered head.",
+  "review_run_id": "r-20261118T142107816136-review-of-qwnw-red-file-obligations-do-not-mislead-8de0d2cd355a",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "8de0d2cd355ac53ea4b4815354229e7d4f79c36d",
+  "reviewed_run_id": "r-20261118T062920564292-qwnw-red-file-obligations-do-not-mislead",
+  "reviewer_run_id": "r-20261118T142107816136-review-of-qwnw-red-file-obligations-do-not-mislead-8de0d2cd355a",
+  "scores": {
+    "durability": 20,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:40:54.680292+00:00",
+  "total": 115
+}
