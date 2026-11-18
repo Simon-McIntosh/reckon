@@ -5,7 +5,6 @@ import fnmatch as fnmatch
 import hashlib as hashlib
 import inspect as inspect
 import json as json
-import copy as copy
 import math as math
 import os as os
 import re as re
@@ -1322,8 +1321,7 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
 # dict of its own to change. The record decoded from that text is memoised by
 # the repository's one memoising owner, ``file_memo``, keyed by the same stat
 # identity, so a listing that finds the identity unchanged decodes nothing and
-# pays no copy: the record is handed out as that owner's read-only view, and the
-# single-pointer reader copies it once for the callers that change what they read.
+# the hand-out copy that owner makes is what keeps callers apart.
 _POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
 
@@ -1487,28 +1485,27 @@ def _pointer_record(path: Path) -> Any:
     A listing is a pass, and a pass that finds every pointer's stat identity
     where the previous pass left it decodes none of them. The parse is memoised
     by ``file_memo``, the repository's one owner of parse-per-stat-identity, so
-    this listing shares its store with every other reader rather than keeping a
-    second cache beside it.
+    this listing shares its store and its hand-out rule with every other
+    reader rather than keeping a second cache beside it; the copy that owner
+    makes is what keeps a caller's change to a record it was given out of the
+    next listing.
 
-    The record comes back as that owner's read-only view, not a copy: an
-    unchanged pass costs one stat per pointer and neither a parse nor a copy,
-    which is what makes the second listing cheaper than the first rather than
-    merely decoding less of it. A caller that changes a pointer reads it through
-    :func:`read_pointer`, which takes the one mutable copy that reader's callers
-    need, and any other write through a handed-out record raises rather than
-    poisoning the memo every later listing reads.
+    The memo's key is the pointer's own signature, taken once here, so the
+    unchanged pass costs one stat per pointer and the text read underneath
+    happens only when that signature has moved.
     """
+    key = str(path)
     try:
-        with file_memo.read_only_region():
-            return file_memo.memoized(
-                _POINTER_RECORD_KIND, path, lambda: json.loads(_pointer_text(path))
-            )
+        signature = file_memo.file_signature(path)
     except OSError:
-        # A pointer that cannot be stat'ed or read keeps no text, so the next
-        # listing that finds it again reads whatever is on disk then.
         with _POINTER_TEXT_LOCK:
-            _POINTER_TEXT.pop(str(path), None)
+            _POINTER_TEXT.pop(key, None)
         raise
+    return file_memo.memoized_key(
+        _POINTER_RECORD_KIND,
+        (key, signature),
+        lambda: json.loads(_pointer_text(path)),
+    )
 
 
 #: The lease this node's station keeps under the node-local runtime root. Its
@@ -1659,23 +1656,18 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
-    # This reader's callers change what they read — a resume marks its own
-    # pointer, an admission pass rewrites one — so the copy is taken here, once
-    # for the one run asked about, rather than being charged to every pointer of
-    # every pass that only reads the listing.
-    record = copy.deepcopy(data)
-    if pid_belongs_to_the_station(record.get("pid")):
+    if pid_belongs_to_the_station(data.get("pid")):
         # Read as naming no process of the run: the station is not one, and a
         # reader that treats it as one signals or refuses on the node's own
         # station. An attempt record read as naming no process, pointing at
         # nothing the reading host issued, so the process table probe has no
         # pid of this host's to answer for.
-        record = {
+        data = {
             name: value
-            for name, value in record.items()
+            for name, value in data.items()
             if name not in ("pid", "pid_start_time")
         }
-    return record
+    return data
 
 
 def recorded_dispatch_overrides(record: Mapping[str, Any]) -> tuple[str, ...]:
@@ -1800,11 +1792,6 @@ def list_live(
     whatever pid the record carries and performs no host check of its own, so it
     may be used only where the pid's presence on this host is already
     established — ``dispatch`` probing the process it has just spawned, say.
-
-    Each record is that pass's read-only view of the memo the listing shares
-    with every other reader, so a pass costs no copy per pointer; a caller that
-    must change a record reads it through ``read_pointer``, which hands back the
-    caller's own copy.
     """
     records = _list_live_records(project=project, phase=phase)
     if project is not None and phase is None:
