@@ -459,7 +459,12 @@ def test_recovery_refuses_a_ledger_row_for_another_delivered_head(fleet, monkeyp
 def test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate(
     fleet, monkeypatch
 ):
-    from reckon.crew import recovery_repair_dispatch, resumption
+    from reckon.crew import (
+        recovery_repair_dispatch,
+        recovery_review_dispatch,
+        resumption,
+    )
+    from reckon.crew import review as reviews
 
     first = fleet.deliver("alpha", 1)
     fleet.deliver("beta", 2)
@@ -527,11 +532,50 @@ def test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate(
         )
         == head
     )
-    # Finishing this repair invokes its fresh gate, not another promotion/review.
+    # Compose the review through the real dispatcher without launching a worker.
+    requests = []
+
+    def compose(pointer, fields, **kwargs):
+        requests.append((pointer["run_id"], fields["head"]))
+        return {
+            "run_id": pointer["run_id"],
+            "dispatched": True,
+            "review_run_id": "review-" + pointer["run_id"],
+        }
+
+    monkeypatch.setattr(recovery_review_dispatch, "_dispatch_composed_review", compose)
     promoted_before = list(fleet.calls)
     result = pending_landing.finish_pending_landings()
+    assert result[0]["status"] == "awaiting-review", result
+    assert requests == [(pointer["run_id"], head)]
+    assert (
+        pending_landing._read(pending_landing._record_path(pointer["run_id"]))["head"]
+        == head
+    )
+    assert git(fleet.repo, "rev-parse", "HEAD") == primary
+    assert "REPAIRED = True" not in (fleet.repo / "sample.py").read_text()
+
+    review = reviews.parse_review(
+        "\n".join(f"SCORE {key}: 20" for key in reviews.REVIEW_DIMENSIONS)
+    )
+    review.update(
+        project=PROJECT,
+        reviewed_run_id=pointer["run_id"],
+        review_run_id="review-" + pointer["run_id"],
+        reviewed_base_sha=pointer["base_sha"],
+        reviewed_head_sha=head,
+        added_failure_count=0,
+        added_failure_ids=[],
+    )
+    reviews.store_review(review)
+
+    # A stored review releases the gated repair without another promotion.
+    result = pending_landing.finish_pending_landings()
     assert result[0]["status"] == "finished", result
+    assert requests == [(pointer["run_id"], head)]
     assert fleet.calls == promoted_before
+    assert not runs.pointer_path(pointer["run_id"]).exists()
+    assert not pending_landing._record_path(pointer["run_id"]).exists()
     assert git(fleet.repo, "ls-remote", "origin", "refs/heads/main").split()[0] == git(
         fleet.repo, "rev-parse", "HEAD"
     )
