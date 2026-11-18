@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:_fragment_href",
+    "reckon/evidence.py:compose_landed_record"
+  ],
+  "completed_at": "2026-11-18T08:42:00Z",
+  "dispatched_at": "2026-11-18T08:23:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: this node lands two fragment files where the dispatch permits one, and the second is neither named for the node nor reachable by the node-row href at reckon/evidence.py:866, which builds docs/evidence/fragments/<plan>/<node>.html from the node id \u2014 its section id borrows the node id while its filename does not; and because compose_landed_record at reckon/evidence.py:1664 appends a fragment whose node has no ledger row after the ledgered ones, the same base/head table is composed into the plan's cumulative record a second time."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz.html",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment and the manifest both assert the measured command ran on all_debug with SLURM_JOB_ID unset, but scoped-gate-1794978048727157807.log lines 1-4 record only revision, host, tree and command, the .scheduler sidecars beside both arms are empty, and no line of either log states the partition or the cleared variable \u2014 so one clause of the done_when is claimed rather than shown."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against bec47e4098: 16d859c902 adds the qwnw fragment (12 lines) and the un-prefixed fragment (11 lines), and f650f741 edits four lines, correcting the quoted base duration from 3.0s to 2.82s in both, which matches base-file-1794978112343749399.log's '2 passed in 2.82s'; no code, test, plan or figure change.",
+    "done_when": "the done_when wants the file green at head as an all_debug job with SLURM_JOB_ID unset, its output on shared storage, and both suite arms as inline JSON; the manifest records the head gate at bec47e4098 and both arms as a 0-failure pair, but the log headers carry no partition or SLURM_JOB_ID line and the arm commands name the relative .venv/bin/python rather than an absolute interpreter.",
+    "goal": "the goal is that tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py passes in full on the primary branch; the tree at f650f741 holds that file with its two cases at tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:214 and :246, and scoped-gate-1794978048727157807.log records '2 passed in 3.15s' at the merged head bec47e4098, so the file passes.",
+    "manifest": "read the reviewed manifest.md; status complete, checkpoint naming base 6699d025 and merged head bec47e4098, a literal pytest command on the tests line, test_logs naming scoped-gate and base-file, and baseline_suite/after_suite both completed with 0 failures at full 40-character revisions.",
+    "write_paths": "the declared scope is reckon, tests and the plan's fragment directory with this node's fragment dir; the diff bec47e4098..f650f741 lists exactly two files, both under docs/evidence/fragments/queued-work-needs-no-workaround/, so no path leaves the scope and neither product source nor tests is touched."
+  },
+  "justifications": {
+    "durability": "the change adds no assertion at all, so nothing fails if these fragments regress; the capability the fragments report is guarded by the pre-existing tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:217-221 cost comparison, which fails if review lookups grow with store size.",
+    "evidence": "scoped-gate-1794978048727157807.log ends '2 passed in 3.15s' with EXIT=0 at bec47e4098 and baseline_suite/after_suite logs read 58 passed each, but the done_when's SLURM_JOB_ID-unset and all_debug clauses appear in no log line and the gate revision is the diff's base, not its head f650f741.",
+    "fit": "the fragment follows the sibling shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html with a section id prefixed by the node id, but the second file at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz.html:1 is not named for the node it belongs to.",
+    "goal_fidelity": "the named file's two cases at tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:214 and :246 pass at the merged head recorded in scoped-gate-1794978048727157807.log, and 6d4444900a being an ancestor of base 6699d025 is why no repair was owed.",
+    "reuse": "the diff adds no function, class or module; it writes into the per-node fragments directory that reckon/evidence.py:1664 already composes, so no capability is forked and the search over reckon/ for a second fragment store found none.",
+    "scope_discipline": "git diff --stat bec47e4098..f650f741 lists only the two docs/evidence/fragments/queued-work-needs-no-workaround files, both inside the declared fragment directory, with no reckon/ or tests/ edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py passes in full on the primary branch; the tree at f650f741 carries the file with its two cases at tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:214 and :246, and scoped-gate-1794978048727157807.log records '2 passed in 3.15s' at the merged head bec47e4098, so the file passes and no repair was owed because 6d4444900a is an ancestor of the base.\nVERDICT done_when: the done_when wants the file green at head as an all_debug job with SLURM_JOB_ID unset, its output on shared storage, and both suite arms as inline JSON; scoped-gate-1794978048727157807.log lines 1-4 record revision bec47e4098, host 98dci4-clu-3141, an archived tree and the pytest command, ending '2 passed in 3.15s' and EXIT=0, and manifest.md records both arms at 58 passed and 0 failures, but no log line names the partition or the cleared SLURM_JOB_ID and each arm's recorded command names the relative .venv/bin/python.\nVERDICT write_paths: the declared scope is reckon, tests and the plan's fragment directory with this node's fragment dir; git diff --stat bec47e4098..f650f741 lists exactly the two files under docs/evidence/fragments/queued-work-needs-no-workaround/, so nothing leaves the scope and neither product source nor tests is touched.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044606081574-qwnw-red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz/manifest.md; status complete, checkpoint naming base 6699d025 and merged head bec47e4098, a literal pytest command on the tests line, test_logs naming scoped-gate and base-file logs, and baseline_suite/after_suite both completed with 0 failures at full 40-character revisions.\nVERDICT diff: read both commits against bec47e4098; 16d859c902 adds the qwnw fragment (12 lines) and the un-prefixed fragment (11 lines) and f650f741 edits four lines, correcting the quoted base duration from 3.0s to 2.82s in both files, matching base-file-1794978112343749399.log's '2 passed in 2.82s'.\nCALL_SITES: reckon/evidence.py:_fragment_href, reckon/evidence.py:compose_landed_record\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the named file passes at the merged head recorded in scoped-gate-1794978048727157807.log, and 6d4444900a being an ancestor of base 6699d025 explains why no cause reproduced.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1794978048727157807.log ends '2 passed in 3.15s' with EXIT=0 and both suite logs read 58 passed, but the done_when's all_debug/SLURM_JOB_ID clauses appear in no log line and the gate revision is the diff's base rather than its head f650f741.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff --stat bec47e4098..f650f741 lists only the two docs/evidence/fragments/queued-work-needs-no-workaround files, inside the declared fragment directory, but the second is a duplicate fragment the dispatch did not ask for.\nSCORE durability: 12\nJUSTIFICATION durability: the change adds no assertion, so nothing fails if these fragments regress; the capability they report is guarded by the pre-existing cost comparison at tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:217-221.\nSCORE fit: 15\nJUSTIFICATION fit: the fragment follows the sibling section shape with an id prefixed by the node id, while docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz.html:1 is not named for the node it belongs to.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and writes into the per-node fragments directory reckon/evidence.py:1664 already composes, so no capability is forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz.html:1 non-blocking: a second fragment per node is landed, ununreachable through the node-row href at reckon/evidence.py:866 and composed twice by compose_landed_record at reckon/evidence.py:1664.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz.html:10 non-blocking: the all_debug and SLURM_JOB_ID-unset clauses are asserted in prose while no log line or scheduler sidecar records either.",
+  "review_run_id": "r-20261118T053757827491-review-of-qwnw-red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz-f650f741fe65",
+  "reviewed_base_sha": "bec47e4098298bcbd4ab9e687d1259d80a190b3c",
+  "reviewed_head_sha": "f650f741fe651ab1324dbabdcd8e0a6a160b7d9d",
+  "reviewed_run_id": "r-20261118T044606081574-qwnw-red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T053757827491-review-of-qwnw-red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz-f650f741fe65"
+  },
+  "reviewer_run_id": "r-20261118T053757827491-review-of-qwnw-red-file-a-promotions-review-lookups-cost-the-same-at-any-store-siz-f650f741fe65",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:42:00+00:00",
+  "total": 93
+}
