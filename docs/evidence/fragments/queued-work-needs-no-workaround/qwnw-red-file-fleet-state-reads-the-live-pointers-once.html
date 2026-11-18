@@ -1,0 +1,56 @@
+<section id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-landing">
+  <h2>One fleet-state derivation decodes each live pointer once</h2>
+
+  <p><strong>What was wrong.</strong> A fleet-state derivation lists the
+  project's live directory once and publishes that listing for its own rows and
+  every duty kind it reaches. Two readers below it ask for one run by id and did
+  not answer from that listing: the review-dispatch fields read the reviewed
+  run's waiver through <code>review.recorded_suite_delta_waiver</code>, and the
+  delivery reading looked a run's promotion up through
+  <code>promotion_requests.read_promotion</code>'s pointer fallback. Both reach
+  <code>runs.read_pointer</code>, which decoded the run's document again — so one
+  sweep over 300 pointers decoded every document three times.</p>
+
+  <p><strong>What changed.</strong> <code>runs.published_pointers</code>
+  publishes a pass's listing beside the stat identity each record was read
+  under, and <code>runs.read_pointer</code> answers from it while the file still
+  holds that identity. A pointer written during the pass is decoded afresh, so a
+  caller that changes what it read writes over the record it was shown; a run
+  the population does not hold falls back to the direct read. The station-pid
+  rule the direct read applied is now one helper both routes take, and each
+  caller still receives a dict of its own.
+  <code>obligations.live_pointer_snapshot</code> opens the region around its
+  yield, so <code>obligations()</code>, the station's work-population pass and
+  <code>obligation_snapshot._derive_fleet_state</code> all publish.</p>
+
+  <h3 id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-measured">Measured</h3>
+
+  <table id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command; the gate log's last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm</td>
+        <td><code>23b901694b4b</code>, extraction</td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head arm (gate job on <code>all_debug</code>)</td>
+        <td><code>a6ce199ff387</code>, worktree</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-control">Negative control</h3>
+
+  <p>At the base revision the derivation's own listing is one, and the
+  decode counter reports 900 decodes for a fleet of 300 — the same failure the
+  file carried on the primary branch:</p>
+
+  <pre
+    id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-control-log">FAILED tests/test_fleet_state_reads_the_live_pointers_once.py::test_one_derivation_lists_the_live_directory_once - AssertionError: one derivation decoded 900 pointers for a fleet of 300
+assert 900 &lt;= 300
+1 failed, 1 passed in 68.99s (0:01:08)
+EXIT=1</pre>
+
+  <p>The log is
+  <code>~/.config/reckon/crew/runs/r-20261118T062954989225-qwnw-red-file-fleet-state-reads-the-live-pointers-once/base-arm-test-fleet-state.log</code>.</p>
+</section>
