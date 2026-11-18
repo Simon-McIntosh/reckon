@@ -54,13 +54,13 @@ head     6699d0257dd54f67be1f09ce02d9d6cc9ab117ed: 58 passed, EXIT=0</pre>
   so the product's claim-time attempt-marker write was removed from the head
   tree in a scratch copy and the named file re-run over it:</p>
 
-  <pre id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-mutation"># mutation: reckon/crew/dispatching/preparation.py loses the claim-time write
-#   of directory / ATTEMPT_RECORD_NAME, so the attempt record is written only
-#   at the supervisor gate
+<pre id="qwnw-red-file-a-sweep-launched-review-starts-its-worker-mutation"># revision: 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sweep_launched_review_starts_its_worker.py
+# mutation: reckon/crew/dispatching/preparation.py loses the claim-time attempt-marker write, so attempt.json is written only at the supervisor gate
 ..F.                                                                     [100%]
 FAILED tests/test_a_sweep_launched_review_starts_its_worker.py::test_a_launcher_that_ends_stops_after_its_attempt_record
 E       AssertionError: the run kept its claim and no attempt record, which is the shape that reads afterwards as a launch that never started
-1 failed, 3 passed in 2.24s
+1 failed, 3 passed in 1.88s
 EXIT=1</pre>
 
   <p>The mutating change is not a repository edit: the mutation lives only in
