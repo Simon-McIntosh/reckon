@@ -1,0 +1,27 @@
+<section id="red-file-the-drain-keeps-up-with-a-burst-log">
+  <h2>Base run of the named file on the primary branch</h2>
+
+  <p>The node's done-when is the file <code>tests/test_the_drain_keeps_up_with_a_burst.py</code>
+  passing in full as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+  unset, its output on shared storage. It was run at the branch head the node
+  started from, <code>f29efdc635a1b578bb4461ff90785d3be848646b</code>, before any
+  change was made, and it passed in full.</p>
+
+  <pre id="red-file-the-drain-keeps-up-with-a-burst-base-log">
+# gate log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054056150537-qwnw-red-file-the-drain-keeps-up-with-a-burst/scoped-gate-1794990782889463007.log
+# revision: f29efdc635a1b578bb4461ff90785d3be848646b
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-d0264a08ef30-jc9kzv/tree
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_drain_keeps_up_with_a_burst.py'
+..........................                                               [100%]
+26 passed in 2.86s
+EXIT=0</pre>
+
+  <p>The same file run in the worker's own worktree at the same revision, with
+  and without <code>SLURM_JOB_ID</code> in the environment, reads
+  <code>26 passed</code> in both cases.
+  <code>tests/test_the_drain_keeps_up_with_a_burst.py</code> records no failing id
+  at the base revision, so the negative control this node's evidence fence names
+  — the base run with its failing ids — has no ids to carry, and none is
+  recorded.</p>
+</section>
