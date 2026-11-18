@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="569">
+<meta name="plan-version" content="570">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1778,6 +1778,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062920564292-qwnw-red-file-obligations-do-not-mislead" data-who="reckon-build" data-when="2026-11-18T13:48:46Z">
     <div class="r-comment-body"><p>tests/test_obligations_do_not_mislead.py passes in full; the retained-tree case now leaves a commit in each retained tree so both are duties and only the live-claim rule drops the occupied one, base 1 failed / 1 passed (EXIT=1) against head 2 passed (EXIT=0) as job 1326661 on all_debug, and with live claims ignored the case fails naming run-promoted-old.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062913510841-qwnw-red-file-one-brief-an-agent-can-act-on" data-who="reckon-build" data-when="2026-11-18T13:48:04.578Z">
+    <div class="r-comment-body"><p>tests/test_one_brief_an_agent_can_act_on.py passes 11/11 at head f080b2a315 where base 23b90169 failed 1 of 11 — one cause, test wrong: the fixture placed its blocked run on plan-a#s2 and still expected that section to open the ready-section reach list, while readiness is `plan_ready and not blockers` so a section carrying a live run is never ready; a second releasing plan whose first section carries no run restores three genuinely ready sections and the written reach expectation now names them (plan-e#s1, plan-f#s1 at reach 1 by ref, plan-d#s1 at 0), no assertion deleted or weakened, product tree unchanged</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
