@@ -1,0 +1,78 @@
+<section id="qwnw-red-file-a-vanished-worktree-reads-as-no-referent-landing">
+  <h2>A vanished worktree reads as released, not withheld</h2>
+
+  <p><strong>What changed.</strong> One case in
+  <code>tests/test_a_vanished_worktree_reads_as_no_referent.py</code> still
+  expected the payload rule the product retired on 15 November. A commitless
+  promotion over a worktree whose directory had been removed asserted
+  <code>release.worktree_withheld == "tree is no longer available"</code>;
+  <code>_release_run_workspace</code> now answers
+  <code>worktree_released: true</code> with <code>worktree_absent: true</code>
+  and no withheld key, because a withheld release raises a duty naming a tree no
+  command can free — the sweep that duty offers answers that no record names a
+  worktree for the run. The case now asserts that rule: released, absent, and no
+  withheld key. The crash guard the file exists for is untouched — the returned
+  payload is still required to be JSON-serialisable, which is what raised when
+  the untracked measurement iterated <code>None</code> — and the cited-commit
+  case still refuses by name with no <code>TypeError</code> in the message.
+  No product code changed.</p>
+
+  <p><strong>Verdict: test wrong.</strong> The test file was written on 2 October
+  (<code>0b2abbfd0a</code>); the rule it asserts was replaced on 15 November by
+  <code>956c261790</code>, which is not an ancestor of it, so the file encodes a
+  payload the product had already retired. The same rule is asserted by
+  <code>tests/test_a_clean_landing_releases_its_worktree.py</code> and
+  <code>tests/test_a_land_refuses_a_head_behind_its_worktree.py</code>, which
+  read <code>worktree_absent is True</code>; the vanishing case was the one left
+  behind.</p>
+
+  <p><strong>Reproduction.</strong> At base
+  <code>018823953e18f9b55c468663ab0c2c421428bc2c</code>, over an extracted tree
+  under the run's scratch, the file reads 1 failed, 1 passed:</p>
+
+  <pre id="qwnw-red-file-a-vanished-worktree-reads-as-no-referent-base-red">FAILED tests/test_a_vanished_worktree_reads_as_no_referent.py::test_a_commitless_promotion_reads_a_vanished_worktree_as_no_change - KeyError: 'worktree_withheld'
+1 failed, 1 passed in 1.56s
+EXIT=1</pre>
+
+  <p>The failing id is the stale assertion, not the crash: the promotion returned
+  a parsed payload and removed its pointer before reaching it. At head
+  <code>3e0c35785abc9674a39d839ed224e04338a49cf7</code> the same file reads 2
+  passed.</p>
+
+  <table id="qwnw-red-file-a-vanished-worktree-reads-as-no-referent-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base</td>
+        <td><code>018823953e18f9b55c468663ab0c2c421428bc2c</code>, extracted tree</td>
+        <td>1 failed, 1 passed; <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head, an <code>all_debug</code> job</td>
+        <td><code>3e0c35785abc9674a39d839ed224e04338a49cf7</code></td>
+        <td>2 passed; <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base</td>
+        <td><code>018823953e18f9b55c468663ab0c2c421428bc2c</code></td>
+        <td id="qwnw-red-file-a-vanished-worktree-reads-as-no-referent-suite-base">58
+        passed, 0 failed; <code>EXIT=0</code>
+        (<code>baseline_suite-1795018525692485130.log</code>)</td></tr>
+      <tr><td>the declared suite, head</td>
+        <td><code>3e0c35785abc9674a39d839ed224e04338a49cf7</code></td>
+        <td id="qwnw-red-file-a-vanished-worktree-reads-as-no-referent-suite-head">58
+        passed, 0 failed; <code>EXIT=0</code>
+        (<code>after_suite-1795018600574355033.log</code>)</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm was also run by the composed scoped gate as an
+  <code>all_debug</code> job, reading
+  <code>scoped-gate-1795018623552083671.log</code> (2 passed,
+  <code>EXIT=0</code>, revision <code>3e0c35785abc9674a39d839ed224e04338a49cf7</code>);
+  the scratch arm above prints <code>module.__file__</code> and the resolved
+  working directory beside its revision.</p>
+
+  <p><strong>Why no product repair.</strong> Reporting the vanished tree as
+  withheld again would restore the duty <code>956c261790</code> removed and make
+  <code>crew_run_commands</code> print <code>withheld:</code> for a release that
+  freed everything it could, so the defect the case now encodes is the test's
+  expectation and not the product's behaviour.</p>
+</section>
