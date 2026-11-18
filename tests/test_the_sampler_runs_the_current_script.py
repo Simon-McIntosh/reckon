@@ -9,6 +9,7 @@ import signal
 import socket
 import subprocess
 import sys
+import textwrap
 import time
 from contextlib import suppress
 
@@ -42,13 +43,31 @@ def _rows(path):
 
 def _sampler_events(path):
     return [
-        (verb, int(pid), int(slot))
+        (verb, int(pid), float(slot))
         for verb, pid, slot in (line.split() for line in path.read_text().splitlines())
     ]
 
 
+def _emission_events(path, pid):
+    events = _sampler_events(path)
+    return (
+        events
+        if any(verb == "sample" and owner == pid for verb, owner, _ in events)
+        else []
+    )
+
+
+def _event_code(verb, pid):
+    return (
+        "event_slot = float(Path('/proc/uptime').read_text().split()[0]) / "
+        "int(os.environ['FLEET_SLEEP_SECONDS'])\n"
+        "with Path(os.environ['EVENTS']).open('a') as event_stream:\n"
+        f"    event_stream.write(f'{verb} {{{pid}}} {{event_slot}}\\n')\n"
+    )
+
+
 def _handover_counts(rows, events, first, replacement, earlier_count):
-    """Measure delivery against slots emitted by the samplers' shared kernel clock."""
+    """Compare the supervisor request and sampler emission on their shared slot clock."""
     before = [row for row in rows if int(row["sampler_pid"]) == first]
     after = [row for row in rows if int(row["sampler_pid"]) == replacement]
     assert before and after, "both sampler generations must publish a row"
@@ -57,18 +76,30 @@ def _handover_counts(rows, events, first, replacement, earlier_count):
     assert 1 <= delivery_rows <= 2, "first replacement row exceeds two series samples"
     stop_slots = [slot for verb, pid, slot in events if (verb, pid) == ("stop", first)]
     assert len(stop_slots) == 1, "the previous sampler must emit its stop slot"
-    first_slot = int(after[0]["slot"])
-    elapsed_slots = first_slot - stop_slots[0]
+    request_slots = [slot for verb, _, slot in events if verb == "request"]
+    assert len(request_slots) == 1, "the supervisor must record its re-execution slot"
+    emissions = [(pid, slot) for verb, pid, slot in events if verb == "sample"]
+    replacement_slots = [slot for pid, slot in emissions if pid == replacement]
+    assert replacement_slots, "the replacement must record its first emission slot"
+    request_slot = request_slots[0]
+    first_slot = replacement_slots[0]
+    elapsed_slots = first_slot - request_slot
     assert 0 <= elapsed_slots <= 2, (
         "first replacement sample exceeds two sampling slots"
     )
-    occupied = {int(row["slot"]) for row in rows}
-    missing = sorted(set(range(int(before[-1]["slot"]) + 1, first_slot)) - occupied)
+    incumbent_slots = [slot for pid, slot in emissions if pid == first]
+    assert incumbent_slots, "the incumbent must record its emission slots"
+    occupied = {int(slot) for _, slot in emissions}
+    missing = sorted(
+        set(range(int(incumbent_slots[-1]) + 1, int(first_slot))) - occupied
+    )
     assert len(missing) <= 2, "handover missed more than two sampling slots"
     return {
         "rows_before": len(before),
         "rows_after": len(after),
         "delivery_rows": delivery_rows,
+        "request_slot": request_slot,
+        "first_emission_slot": first_slot,
         "elapsed_slots": elapsed_slots,
         "missed_slots": missing,
     }
@@ -93,7 +124,8 @@ def _script(path, *, added):
         f"n._HEALTH_COLUMNS={columns!r}; "
         "values=['now','sample',os.environ['SAMPLER_PID'],str(slot)]"
         f"+{['present'] if added else []!r}; "
-        "n.append_node_reading(Path(os.environ['SERIES']), '\\t'.join(values))"
+        "n.append_node_reading(Path(os.environ['SERIES']), '\\t'.join(values))\n"
+        + _event_code("sample", 'os.environ["SAMPLER_PID"]')
     )
     path.write_text(
         "#!/bin/bash\n"
@@ -146,7 +178,8 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
         "if len(sys.argv) == 1:\n"
         "    while not Path(os.environ['ADVANCE']).exists(): time.sleep(.02)\n"
         "    os.environ['FLEET_HEALTH_SAMPLER'] = Path(os.environ['ADVANCE']).read_text()\n"
-        "    os.execv(sys.executable, [sys.executable, __file__, 'reexecuted'])\n"
+        + textwrap.indent(_event_code("request", "os.getpid()"), "    ")
+        + "    os.execv(sys.executable, [sys.executable, __file__, 'reexecuted'])\n"
         "Path(os.environ['RESULT']).write_text(json.dumps({'pid': pid}))\n"
         f"time.sleep({2 * HANG_SECONDS})\n"
     )
@@ -154,6 +187,7 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
     try:
         earlier = _wait(lambda: _rows(series))
         first = _sampler_events(events)[0][1]
+        _wait(lambda: _emission_events(events, first))
         replacement_script = (
             tmp_path / "replacement" if script_changes_path else sampler
         )
@@ -172,7 +206,7 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
         )
         assert replacement != first
         assert rows[: len(earlier)] == [dict(row, added="-") for row in earlier]
-        recorded_events = _sampler_events(events)
+        recorded_events = _wait(lambda: _emission_events(events, replacement))
         counts = _record_handover(
             tmp_path, rows, recorded_events, first, replacement, earlier
         )
@@ -181,7 +215,7 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
             if verb == "start":
                 active.add(pid)
                 assert len(active) == 1, "two samplers ran during the handover"
-            else:
+            elif verb == "stop":
                 active.remove(pid)
         assert active == {replacement}
         print(
@@ -193,7 +227,7 @@ def test_reexecution_replaces_the_script_and_keeps_earlier_samples(
         process.terminate()
         process.wait(timeout=HANG_SECONDS)
         # Only the session leaders recorded by this case own these groups.
-        pids = {pid for _, pid, _ in _sampler_events(events)}
+        pids = {pid for verb, pid, _ in _sampler_events(events) if verb == "start"}
         for pid in pids:
             with suppress(ProcessLookupError):
                 os.killpg(pid, signal.SIGTERM)
@@ -352,12 +386,14 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
     replacement = None
     try:
         earlier = _wait(lambda: _rows(tmp_path / "series.tsv"))
+        _wait(lambda: _emission_events(tmp_path / "events", old.pid))
         assert os.getpgid(old.pid) == os.getpgid(0)
         code = (
             "import os; from pathlib import Path; "
             "from reckon.crew import fleet_supervisor as s; "
-            "s._checkout_root=lambda: Path(os.environ['CHECKOUT']); "
-            "pid=s.start_health_sampler(); "
+            "s._checkout_root=lambda: Path(os.environ['CHECKOUT'])\n"
+            + _event_code("request", "os.getpid()")
+            + "pid=s.start_health_sampler(); "
             "Path(os.environ['RESULT']).write_text(str(pid))"
         )
         result = subprocess.run(
@@ -375,7 +411,7 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
         assert rows
         series_rows = _rows(tmp_path / "series.tsv")
         assert series_rows[: len(earlier)] == [dict(row, added="-") for row in earlier]
-        events = _sampler_events(tmp_path / "events")
+        events = _wait(lambda: _emission_events(tmp_path / "events", replacement))
         counts = _record_handover(
             tmp_path, series_rows, events, old.pid, replacement, earlier
         )
@@ -384,7 +420,9 @@ def test_a_manual_symlink_sampler_in_a_shared_group_is_replaced(tmp_path):
             "replacement signalled a peer in the same process group"
         )
         assert supervisor.process_cmdline(replacement)[1] == str(current)
-        assert [(verb, pid) for verb, pid, _ in events[:3]] == [
+        assert [
+            (verb, pid) for verb, pid, _ in events if verb in {"start", "stop"}
+        ] == [
             ("start", old.pid),
             ("stop", old.pid),
             ("start", replacement),
@@ -436,11 +474,21 @@ def test_handover_counts_accept_two_slots_and_two_missing_samples():
         {"sampler_pid": "11", "slot": "7"},
         {"sampler_pid": "22", "slot": "10"},
     ]
-    events = [("start", 11, 6), ("stop", 11, 8), ("start", 22, 9)]
+    events = [
+        ("start", 11, 6),
+        ("sample", 11, 6),
+        ("sample", 11, 7),
+        ("request", 33, 8),
+        ("stop", 11, 8),
+        ("start", 22, 9),
+        ("sample", 22, 10),
+    ]
     assert _handover_counts(rows, events, 11, 22, 1) == {
         "rows_before": 2,
         "rows_after": 1,
         "delivery_rows": 2,
+        "request_slot": 8,
+        "first_emission_slot": 10,
         "elapsed_slots": 2,
         "missed_slots": [8, 9],
     }
@@ -458,12 +506,75 @@ def test_handover_counts_refuse_excess_slots(violation):
         },
     ]
     if violation == "late_series":
-        rows[1:1] = [{"sampler_pid": "11", "slot": "8"}] * 2
-    events = [("start", 11, 6), ("stop", 11, 8), ("start", 22, 9)]
+        rows[1:1] = [
+            {"sampler_pid": "11", "slot": "8"},
+            {"sampler_pid": "11", "slot": "9"},
+        ]
+    events = [("start", 11, 6), ("request", 33, 8), ("stop", 11, 9.5)]
+    events.extend(
+        ("sample", int(row["sampler_pid"]), float(row["slot"])) for row in rows
+    )
     message = {
         "late_replacement": "first replacement sample exceeds two sampling slots",
         "missing_samples": "handover missed more than two sampling slots",
         "late_series": "first replacement row exceeds two series samples",
     }[violation]
+    with pytest.raises(AssertionError, match=message):
+        _handover_counts(rows, events, 11, 22, 1)
+
+
+def test_delivery_clock_starts_at_reexecution_even_when_stop_is_late():
+    rows = [
+        {"sampler_pid": "11", "slot": "6"},
+        {"sampler_pid": "11", "slot": "7"},
+        {"sampler_pid": "22", "slot": "10"},
+    ]
+    events = [
+        ("start", 11, 6),
+        ("sample", 11, 6),
+        ("request", 33, 6.01),
+        ("sample", 11, 7),
+        ("stop", 11, 8),
+        ("start", 22, 9),
+        ("sample", 22, 10),
+    ]
+    with pytest.raises(AssertionError, match="exceeds two sampling slots") as refusal:
+        _handover_counts(rows, events, 11, 22, 1)
+    print(f"request slot 6.01, emission slot 10: refused: {refusal.value}")
+
+
+@pytest.mark.parametrize("emission_slot", [8.25, 8.255])
+def test_delivery_clock_preserves_fractional_slots(emission_slot):
+    rows = [
+        {"sampler_pid": "11", "slot": "6"},
+        {"sampler_pid": "22", "slot": "8"},
+    ]
+    events = [
+        ("start", 11, 6),
+        ("sample", 11, 6),
+        ("request", 33, 6.25),
+        ("stop", 11, 7.5),
+        ("start", 22, 8),
+        ("sample", 22, emission_slot),
+    ]
+    if emission_slot > 8.25:
+        with pytest.raises(AssertionError, match="exceeds two sampling slots"):
+            _handover_counts(rows, events, 11, 22, 1)
+    else:
+        counts = _handover_counts(rows, events, 11, 22, 1)
+        assert counts["elapsed_slots"] == 2
+        assert counts["request_slot"] == 6.25
+        assert counts["first_emission_slot"] == emission_slot
+
+
+@pytest.mark.parametrize("missing", ["request", "sample"])
+def test_delivery_clock_requires_both_recorded_anchors(missing):
+    rows = [
+        {"sampler_pid": "11", "slot": "6"},
+        {"sampler_pid": "22", "slot": "8"},
+    ]
+    events = [("request", 33, 6.25), ("stop", 11, 7.5), ("sample", 22, 8.25)]
+    events = [event for event in events if event[0] != missing]
+    message = "re-execution slot" if missing == "request" else "first emission slot"
     with pytest.raises(AssertionError, match=message):
         _handover_counts(rows, events, 11, 22, 1)
