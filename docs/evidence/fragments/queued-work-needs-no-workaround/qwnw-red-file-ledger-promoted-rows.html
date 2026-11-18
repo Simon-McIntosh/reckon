@@ -92,6 +92,16 @@ was decoded from the payload alone — so once a row written since the append st
 routing key aged past the cutoff, the sweep raised <code>KeyError: 'project'</code> instead of
 retiring anything. It is the same defect this node repaired, one reader further out: a payload field
 the promotion never writes, read back as though the payload held it.</p>
+<p>Two further readers had the same cause and the review named them next. The velocity reading's
+sqlite fallback compared the <code>project</code> of a decoded payload and raised <code>KeyError</code>
+on a row written since the key left it; it now asserts against the runs column and answers the row's
+identity from it. The column-backfill migration derived the row's project from the payload the same
+way, so any later column addition would have left those rows' project column NULL and every
+filtered read blind to them; the backfill now carries the column it already holds across the
+rewrite. Both cases build their row through <code>RunStore.append</code> after the change, and both
+fail against the unrepaired code: the migration case reads <code>project == None</code> where it
+expects the project it filed the row under, and the fallback case raises the same
+<code>KeyError: 'project'</code>.</p>
 <pre id="qwnw-red-file-ledger-promoted-rows-retire-probe"># a row appended the way a promotion appends it: no project field in the record
 # before the repair: RESULT: KeyError: KeyError('project')
 # after the repair:  RESULT: retired=['r-promoted'] project_seen='sample'</pre>
@@ -105,5 +115,8 @@ reverted.</p>
 # 97 passed in 71.44s (0:01:11)  EXIT=0 at d4263fb8ee
 # the gate over the six files this node touches: 135 passed in 77.65s (0:01:17)  EXIT=0 at d4263fb8ee
 # tests/test_the_run_store_retires_old_runs.py -k filed_under: 1 passed  EXIT=0 at the repair head,
-#   and 1 failed with KeyError: 'project' on the same case with the repair reverted</pre>
+#   and 1 failed with KeyError: 'project' on the same case with the repair reverted
+# the two further readers' cases at the same head: 1 passed each, EXIT=0,
+#   and against the unrepaired code 1 failed each — project == None in the backfill case,
+#   KeyError: 'project' in the velocity fallback</pre>
 </section>
