@@ -46,6 +46,16 @@ EXIT=1</pre>
   instrument: the same test counts 21,042 resolutions against the old pass and
   passes below the bound with the shipped one.</p>
 
+  <p>At this node's own head, <code>31a2563b72b4af5b41f215cefad0735ce2a0c699</code>
+  — the base revision plus this record and nothing else — the same job form ran
+  the file again and printed <code>5 passed in 15.07s</code> with
+  <code>EXIT=0</code>, so the measure is met at head rather than only at base.
+  The project's declared census suite over this node's scope
+  (<code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>) reads
+  <code>58 passed</code> and <code>EXIT=0</code> in both arms, at
+  <code>e9dffe52</code> and at the head above, with no failing id in either.</p>
+
   <h3 id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-scaffolding">The composed gate verbs could not run in this worker's fence</h3>
 
   <p><code>reckon crew verify-gate --worker</code> and <code>reckon crew suite
