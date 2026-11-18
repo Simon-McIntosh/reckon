@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -230,9 +230,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s27" data-id="c-close-s27" data-who="reckon-build" data-when="2026-11-18T19:08:00Z">
-    <div class="r-comment-body"><p>§27 landed by direct merge (head <code>021c4d4d22</code>), on the lead's instruction. Landing, pointer retirement and review dispatch now read a run&#x27;s promotion from the run store, with the per-run file as a fallback for older rows; a promoted run&#x27;s pointer is retired with its worktree&#x27;s release, and no review is dispatched for a store-promoted run. Read-only against the live fleet before landing, three named promoted runs each read as promoted. Merged candidate gate: 71 passed in 79.61s (0:01:19).</p></div>
-</div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
     <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
 </div>
@@ -431,11 +428,17 @@
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired" data-who="reckon-build" data-when="2026-11-18T07:49:55Z">
     <div class="r-comment-body"><p>Retires ownerless proved-promoted pointers without creating pending journals; grouped members finish through integrated workspace, ledger receipt, section and waiter release before pointer removal. Three promoted pointers remain absent after repeated landing/station passes, while the unpromoted member keeps its identity/place and unreadable evidence keeps its pointer. Scoped/head suite: 62 passed; native base: 58 passed; declared negative control: 2 failed as required. Refreshed importers: 21 identical failures at base/head, zero added; all 18 prior added failures repaired.</p></div>
 </div>
+<div class="r-comment" data-section="s27" data-id="c-close-s27" data-who="reckon-build" data-when="2026-11-18T19:08:00Z">
+    <div class="r-comment-body"><p>§27 landed by direct merge (head <code>021c4d4d22</code>), on the lead's instruction. Landing, pointer retirement and review dispatch now read a run's promotion from the run store, with the per-run file as a fallback for older rows; a promoted run's pointer is retired with its worktree's release, and no review is dispatched for a store-promoted run. Read-only against the live fleet before landing, three named promoted runs each read as promoted. Merged candidate gate: 71 passed in 79.61s (0:01:19).</p></div>
+</div>
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261118T174349714001-review-of-promotion-evidence-is-read-from-the-run-store-98ddc7151923" data-who="reckon-build" data-when="2026-11-18T17:54:22Z">
     <div class="r-comment-body"><p>Independent review of base 6b27043e131b1840dd6905559f3ea8a29ec0b478 through head 98ddc7151923a680c765505ef89e80483b628f2e is stored as parsed, with all six scores, six checklist verdicts and two blocking importer findings; scoped suite delta is zero and separate importer delta is two.</p></div>
 </div>
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261118T183425785562-review-of-promotion-evidence-is-read-from-the-run-store-021c4d4d22d6" data-who="reckon-build" data-when="2026-11-18T18:49:43.584Z">
     <div class="r-comment-body"><p>none</p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261118T105211462356-promotion-evidence-is-read-from-the-run-store" data-who="reckon-build" data-when="2026-11-18T18:34:03Z">
+    <div class="r-comment-body"><p>Landing and recovery read store-first promotion evidence, retire clean integrated workspaces with their pointers, retain dirty workspaces as one obligation naming uncommitted paths, and refuse a new review of a store-promoted delivery while preserving standing-review launch handling and verified merge-repair reviews. On all_debug the scoped gate and head suite each pass 96 cases against 81 at base; 15 node cases pass, the declared base negative control fails twice, all three live run lookups read promoted, and the 319-file importer selection adds zero failure ids (92 failures and 10 errors in each arm).</p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-close-s28" data-who="reckon-build" data-when="2026-11-18T11:18:00Z">
     <div class="r-comment-body"><p>§28 landed by direct merge (head <code>ecb87b0893</code>), on the lead's instruction. A review request for a run whose head moved after its last review now returns a review of the new head and no longer raises, so the sweep that makes it completes for its other runs. Merged candidate gate: 9 passed in 6.00s.</p></div>
