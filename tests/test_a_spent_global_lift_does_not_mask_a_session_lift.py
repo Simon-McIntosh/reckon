@@ -334,7 +334,9 @@ def _dispatch(repo: Path, *, backend: str, session: str, node: str):
         "--no-watch",
     ]
     result = CliRunner().invoke(cli.main, arguments)
-    payload = json.loads(result.output.splitlines()[0])
+    # A launched dispatch prints a run notice on stderr while stdout carries
+    # the one document, so the payload is read from stdout alone.
+    payload = json.loads(result.stdout.splitlines()[0])
     return result, payload
 
 
