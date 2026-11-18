@@ -897,7 +897,21 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
         if _record_path(run_id).exists():
             continue
         marked = pointer.get("pending_landing_repair_attempt")
-        if pointer.get("pending_landing_repair") and marked_identity(pointer) != marked:
+        # An integrated delivery can retire a legacy unpaired mark. A phase
+        # rewrite does not start another attempt; the process and attempt
+        # fields still protect a worker that superseded the mark.
+        if (
+            pointer.get("pending_landing_repair")
+            and marked is not None
+            and (
+                not isinstance(marked, Mapping)
+                or any(
+                    pointer.get(field) != marked.get(field)
+                    for field in MARKED_FIELDS
+                    if field != "phase"
+                )
+            )
+        ):
             continue
         if (
             COMMAND_REPLY.get() is None
@@ -1001,10 +1015,12 @@ def finish_pending_landings(
     pointer; both are parameters so a test can drive the pass.
     """
     from reckon.crew import merge
+    from reckon.crew.resumption import release_judged_resume_holds
 
     moment = time.time() if now is None else now
     lander = land or merge.land
-    results: list[dict[str, Any]] = finish_landing_groups(only_run=only_run)
+    results: list[dict[str, Any]] = release_judged_resume_holds(only_run=only_run)
+    results.extend(finish_landing_groups(only_run=only_run))
     results.extend(retire_stuck_review_pointers(only_run=only_run))
     released = release_merged_promotions(only_run=only_run)
     results.extend(released)
@@ -1057,6 +1073,15 @@ def finish_pending_landings(
         settled = _settled_landing(run_id, head, project=project)
         if settled:
             results.append({"run_id": run_id, "status": settled, "head": head})
+            continue
+        from reckon.crew.resume import hold_reason
+
+        try:
+            held = hold_reason(runs.read_pointer(run_id), head)
+        except runs.CrewError:
+            held = ""
+        if held:
+            results.append({"run_id": run_id, "status": "held", "reason": held})
             continue
         if int(record.get("attempts") or 0) >= MAX_FINISH_ATTEMPTS and not record.get(
             "merge_conflict"
@@ -1133,6 +1158,7 @@ def finish_pending_landings(
             run_id in live
             and not (pointer or {}).get("pending_landing_repair")
             and not record.get("pointer")
+            and not _released_pending_delivery(pointer or {}, record, head)
         ):
             continue
         head = cited or _reviewed_head(row)
@@ -1333,3 +1359,24 @@ def finish_pending_landings(
             }
         )
     return results
+
+
+def _released_pending_delivery(
+    pointer: Mapping[str, Any], record: Mapping[str, Any], head: str
+) -> bool:
+    """A manual release can settle an unmarked journal's same delivered attempt."""
+    from reckon._timestamps import parse_utc
+    from reckon.crew import recovery
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+
+    released = parse_utc((pointer.get("delivery_hold") or {}).get("released_at"))
+    if released is None or released.timestamp() <= float(record.get("written_at") or 0):
+        return False
+    if _reviewed_run_is_busy(pointer):
+        return False
+    manifest = _fresh_manifest(pointer) or {}
+    if manifest.get("status") != "complete":
+        return False
+    current_head, _tree = recovery._review_head_and_tree(pointer)
+    return bool(head and recovery.same_revision(head, current_head))

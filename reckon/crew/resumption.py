@@ -1897,6 +1897,72 @@ def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
     advice_path.write_text(prompt_text.rstrip("\n") + "\n", encoding="utf-8")
 
 
+def release_judged_resume_holds(*, only_run: str = "") -> list[dict[str, Any]]:
+    """End resume deferrals only on evidence belonging to the resumed attempt.
+
+    Head-bearing holds are resume deferrals; explicit coordinator holds carry
+    no head. A live worker, an unchanged manifest generation, and a review
+    predating the attempt cannot settle that attempt. Compare the pointer again
+    under its write lock so a new resume or explicit hold keeps its authority.
+    """
+    from reckon.crew import resume
+    from reckon.crew.promotion_checks import _fresh_manifest
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+    from reckon.crew.recovery_review_acceptance import _record_is_complete
+    from reckon.crew.recovery_review_dispatch import _review_head_and_tree
+    from reckon.crew.recovery_review_subject import select_review_for_head
+
+    released = []
+    for pointer in runs.list_live():
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or (only_run and run_id != only_run):
+            continue
+        hold = resume.delivery_hold(pointer)
+        if not hold or not hold.get("head"):
+            continue
+        started = parse_utc(pointer.get("attempt_started_at")) or parse_utc(
+            (pointer.get("resume_superseded_head") or {}).get("at")
+        )
+        held_at = parse_utc(hold.get("at"))
+        if started is None or held_at is None or started < held_at:
+            continue
+        if _reviewed_run_is_busy(pointer) or launch_mark_holds(pointer):
+            continue
+        manifest = _fresh_manifest(pointer) or {}
+        status = str(manifest.get("status") or "")
+        # A generation is the precise ordering. Legacy pointers without one
+        # need a manifest written after the attempt's recorded start.
+        fresh = bool(manifest) and pointer.get("manifest_baseline_mtime_ns") is not None
+        if not fresh and pointer.get("manifest_path"):
+            try:
+                fresh = (
+                    Path(pointer["manifest_path"]).stat().st_mtime > started.timestamp()
+                )
+            except OSError:
+                fresh = False
+        reason = ""
+        if fresh and status in {"complete", "failed", "blocked"}:
+            reason = f"the resumed attempt declared {status} in its terminal manifest"
+        else:
+            head, tree = _review_head_and_tree(pointer)
+            review, _ = select_review_for_head(
+                str(pointer.get("project") or ""), run_id, head, tree=tree
+            )
+            judged_at = parse_utc((review or {}).get("timestamp"))
+            if _record_is_complete(review) and judged_at and judged_at >= started:
+                reason = "the resumed attempt was judged by its stored review"
+        if not reason:
+            continue
+        try:
+            receipt = resume.release_hold(
+                run_id, reason, by="resume-judgment", expected=pointer
+            )
+        except CrewError:
+            continue
+        released.append({**receipt, "status": "resume-hold-released"})
+    return released
+
+
 def _record_resume_supersedes_head(run_id: str) -> str:
     """Record the head a resume leaves behind, with the instant it was resumed.
 
