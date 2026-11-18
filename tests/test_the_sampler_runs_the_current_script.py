@@ -69,7 +69,7 @@ def _event_code(verb, pid):
 
 
 def _handover_counts(rows, events, first, replacement, earlier_count):
-    """Count occupied whole sampling instants from the published row timestamps."""
+    """Measure unrounded delivery and occupied whole sampling instants separately."""
     before = [row for row in rows if int(row["sampler_pid"]) == first]
     after = [row for row in rows if int(row["sampler_pid"]) == replacement]
     assert before and after, "both sampler generations must publish a row"
@@ -94,6 +94,8 @@ def _handover_counts(rows, events, first, replacement, earlier_count):
     )
     first_slot = float(after[0]["slot"])
     assert first_slot >= request_slot, "replacement row precedes re-execution"
+    elapsed_periods = first_slot - request_slot
+    assert elapsed_periods <= 2, "first replacement row exceeds two sampling periods"
     request_instant = math.floor(request_slot)
     first_instant = math.floor(first_slot)
     elapsed_instants = first_instant - request_instant
@@ -121,6 +123,7 @@ def _handover_counts(rows, events, first, replacement, earlier_count):
         "request_instant": request_instant,
         "first_row_instant": first_instant,
         "elapsed_instants": elapsed_instants,
+        "elapsed_periods": elapsed_periods,
         "missed_slots": missing,
         "max_consecutive_misses": longest,
         "first_post_request_pid": int(following[0]["sampler_pid"]),
@@ -506,6 +509,7 @@ def test_handover_counts_accept_two_slots_and_two_missing_samples():
         "request_instant": 8,
         "first_row_instant": 10,
         "elapsed_instants": 2,
+        "elapsed_periods": 2,
         "missed_slots": [8, 9],
         "max_consecutive_misses": 2,
         "first_post_request_pid": 22,
@@ -532,7 +536,7 @@ def test_handover_counts_refuse_excess_slots(violation):
     )
     events = [("request", 33, 8.25), ("stop", 11, 9.5)]
     message = {
-        "late_replacement": "first replacement row exceeds two whole sampling instants",
+        "late_replacement": "first replacement row exceeds two sampling periods",
         "missing_samples": "handover missed more than two consecutive sampling instants",
         "incumbent_after_request": "the first row after re-execution must come from the replacement",
     }[violation]
@@ -547,29 +551,42 @@ def test_delivery_clock_starts_at_reexecution_even_when_stop_is_late():
         {"sampler_pid": "22", "slot": "10"},
     ]
     events = [("request", 33, 6.01), ("stop", 11, 8)]
-    with pytest.raises(
-        AssertionError, match="exceeds two whole sampling instants"
-    ) as refusal:
+    with pytest.raises(AssertionError, match="exceeds two sampling periods") as refusal:
         _handover_counts(rows, events, 11, 22, 1)
     print(f"request instant 6, first row instant 10: refused: {refusal.value}")
 
 
-@pytest.mark.parametrize("row_slot", [8.25, 8.99, 9.0])
+@pytest.mark.parametrize("row_slot", [8.25, 8.255, 8.99, 9.0])
 def test_delivery_counts_whole_instants_from_series_rows(row_slot):
     rows = [
         {"sampler_pid": "11", "slot": "6"},
         {"sampler_pid": "22", "slot": str(row_slot)},
     ]
     events = [("request", 33, 6.25), ("stop", 11, 7.5), ("sample", 22, 90)]
-    if row_slot >= 9:
-        with pytest.raises(AssertionError, match="exceeds two whole sampling instants"):
+    if row_slot > 8.25:
+        with pytest.raises(AssertionError, match="exceeds two sampling periods"):
             _handover_counts(rows, events, 11, 22, 1)
     else:
         counts = _handover_counts(rows, events, 11, 22, 1)
         assert counts["elapsed_instants"] == 2
+        assert counts["elapsed_periods"] == 2
         assert counts["request_instant"] == 6
         assert counts["first_row_instant"] == 8
         assert counts["first_row_slot"] == row_slot
+
+
+def test_a_fractional_overrun_is_refused_within_two_whole_instants():
+    request_slot, row_slot = 6.25, 8.99
+    assert math.floor(row_slot) - math.floor(request_slot) == 2
+    assert row_slot - request_slot == pytest.approx(2.74)
+    rows = [
+        {"sampler_pid": "11", "slot": "6"},
+        {"sampler_pid": "22", "slot": str(row_slot)},
+    ]
+    events = [("request", 33, request_slot), ("stop", 11, 7.5)]
+    with pytest.raises(AssertionError, match="exceeds two sampling periods") as refusal:
+        _handover_counts(rows, events, 11, 22, 1)
+    print(f"2.74 periods within two floored instants: refused: {refusal.value}")
 
 
 @pytest.mark.parametrize("missing", ["request", "timestamp"])
