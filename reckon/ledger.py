@@ -2424,15 +2424,7 @@ def indexed_headers(
 def load_auxiliary(
     project: str, root: str | Path | None = None
 ) -> tuple[dict[str, Any], int]:
-    """Read mutable state from its store, importing the aggregate only once.
-
-    Creating a store is what makes it the answer to every later history read,
-    so a store created here would report a project's committed runs as though
-    they had never existed: no reader unions the aggregate's rows back in once
-    the store answers. The import below therefore completes the store from the
-    committed ledger before it returns, the same way a promotion's first row
-    does, and only when the store holds no run for the project.
-    """
+    """Read mutable state from its store, importing the aggregate only once."""
     from reckon import run_store
 
     result = []
@@ -2441,7 +2433,6 @@ def load_auxiliary(
             store.auxiliary(project, lambda: _load_aggregate(project, root))
         )
     )
-    _complete_store_from_ledger(project, root)
     return result[0]
 
 
@@ -2647,7 +2638,12 @@ def _load_file_history(
             fields=fields,
             activity_since=activity_since,
         )
-        if stored is not None:
+        # The store answers a project's history once it holds a row for that
+        # project. A store opened for the project's mutable state alone holds
+        # none, and no reader unions the aggregate back in afterwards, so an
+        # empty store must fall through to the committed ledger rather than
+        # answer that history as though nothing had ever been promoted.
+        if stored:
             data, version = _aggregate_headers(project, root)
             data["runs"] = sorted(stored, key=promotion_order_key)
             _report_damaged_run_records(project, ())
@@ -4263,7 +4259,11 @@ def read_records(
     selected_ids = None if run_ids is None else {str(run_id) for run_id in run_ids}
     from reckon import run_store
 
-    stored = run_store.store_path().exists()
+    # The store answers a project's history once it holds a row for that
+    # project. A store created for its mutable state alone holds none, and the
+    # committed ledger is still the copy every row of that history came from,
+    # so its existence cannot be what selects the fleet-wide figure population.
+    stored = bool(run_store.stored_run_rows(project, fields=("run_id",)))
     data, version = load(
         project,
         root,
