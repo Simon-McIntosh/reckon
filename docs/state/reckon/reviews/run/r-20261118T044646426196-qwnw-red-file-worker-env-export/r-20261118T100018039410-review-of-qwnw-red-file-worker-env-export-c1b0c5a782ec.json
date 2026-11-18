@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3576 _supervisor_spec composes the spec the repaired test builds",
+    "reckon/crew/dispatch_launch.py:4266 _supervisor_spawn_worker refuses a spec the run's pointer no longer names",
+    "reckon/crew/dispatch_launch.py:2523 launch_reservation_key derives the next attempt production passes"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:22:43Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_env_export.py",
+      "line": "135",
+      "severity": "non-blocking",
+      "text": "non-blocking: attempt_started_at is read back out of resumed.environment, the code under test's own output, and handed to the spec, and nothing asserts it: reckon/crew/dispatch_launch.py:4330 rebuilds the child's instant from _utc_now() and the superseded comparison at :4353 cannot fire once the spec's attempt exceeds the pointer's, so this half of the repair could be blanked without the file reddening and a regression in the resume's export of that instant would go uncaught."
+    },
+    {
+      "file": "tests/test_worker_env_export.py",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "non-blocking: the launched attempt is derived as read_pointer(...)['attempt'] + 1 while production derives it through launch_reservation_key (reckon/crew/dispatch_launch.py:2523), which takes the run directory's receipts first and consults the pointer only when there are none, so the test mirrors that rule instead of reusing its owner and keeps passing if production's numbering drifted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044646426196-qwnw-red-file-worker-env-export/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the head run to be a job on all_debug with SLURM_JOB_ID unset, but the recorded gate command carries no env -u SLURM_JOB_ID and the gate log names no partition, so the all_debug claim rests on the checkpoint line at manifest.md:6 and the unset clause on the base arm's command alone."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against base 97dec20bfb8603ab71c4e9deeefddab685e0a42e: a942f0a192 passes attempt and attempt_started_at to _supervisor_spec and deletes the RECKON_TEST_DROP_RESUME_EXPORT hook with its two now-unused imports, and c1b0c5a782 adds the 50-line evidence fragment; no production file is touched.",
+    "done_when": "The base arm at 97dec20bfb8603ab71c4e9deeefddab685e0a42e reads 1 failed, 2 passed, EXIT=1 and the head arm at a942f0a192768408f1f3cfc7f43b989be2ada07c reads 3 passed, EXIT=0; both suite arms are inline JSON carrying full 40-character revisions with 0 failures and completed true, and each log ends with a bare EXIT= line.",
+    "goal": "The node's goal is to make tests/test_worker_env_export.py pass in full on the primary branch; tests/test_worker_env_export.py:134-146 supplies the attempt its resumed spec launches and the head gate log records 3 passed, EXIT=0 at a942f0a192.",
+    "manifest": "Read; it names commits a942f0a192 and c1b0c5a782, both suite arms as inline JSON, the negative control at 97dec20b with its failing id, the scoped gate log, and rubric lines for correctness, evidence, scope, tests, lint and documentation whose figures the logs on disk corroborate.",
+    "write_paths": "The node declared reckon, tests, the plan's evidence-fragment directory and its own fragment and figure paths; git diff 97dec20b..c1b0c5a changes only tests/test_worker_env_export.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-env-export.html, both inside that grant."
+  },
+  "justifications": {
+    "durability": "The base arm at 97dec20b reinstates the regression, a spec composed without its launch attempt, and the file reddens on it, but the attempt_started_at half at tests/test_worker_env_export.py:135 is inert because reckon/crew/dispatch_launch.py:4330 rebuilds the child's instant from _utc_now(), so that half can be blanked without the file reddening.",
+    "evidence": "The base arm at 97dec20b (1 failed, 2 passed, EXIT=1) and the head arm at a942f0a (3 passed, EXIT=0) are both on disk with revision headers and closing EXIT= lines, but the done_when's all_debug and SLURM_JOB_ID-unset clauses are carried only by the manifest's prose, since the head log at line 4 names no partition and carries no env -u SLURM_JOB_ID.",
+    "fit": "tests/test_worker_env_export.py:130-147 keeps the file's compose-then-assert idiom beside _assert_attempt_environment at :81, and the diff removes the ambient-env hook together with its two now-unused imports.",
+    "goal_fidelity": "tests/test_worker_env_export.py:134-146 now names the attempt and instant its resumed spec launches, and the head gate log scoped-gate-1794994807734025461.log closes with EXIT=0 on 3 passed, so the node's stated deliverable is met with no product change.",
+    "reuse": "The search over tests/ and reckon/crew/dispatch_launch.py for the next-attempt rule found it owned by launch_reservation_key at reckon/crew/dispatch_launch.py:2523, which the test's pointer-plus-one at tests/test_worker_env_export.py:134 re-derives instead of calling.",
+    "scope_discipline": "git diff 97dec20b..c1b0c5a changes exactly tests/test_worker_env_export.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-env-export.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_worker_env_export.py pass in full on the primary branch; tests/test_worker_env_export.py:134-146 supplies the attempt its resumed spec launches and scoped-gate-1794994807734025461.log records 3 passed, EXIT=0 at a942f0a192.\nVERDICT done_when: the base arm at 97dec20bfb8603ab71c4e9deeefddab685e0a42e reads 1 failed, 2 passed, EXIT=1 and the head arm at a942f0a192768408f1f3cfc7f43b989be2ada07c reads 3 passed, EXIT=0, both suite arms recorded as inline JSON with full 40-character revisions and completed true, and each log ends with a bare EXIT= line; the done_when's all_debug and SLURM_JOB_ID-unset clauses are carried only by the manifest's prose.\nVERDICT write_paths: the node declared reckon, tests, the plan's evidence-fragment directory and its own fragment and figure paths; git diff 97dec20b..c1b0c5a changes only tests/test_worker_env_export.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worker-env-export.html, both inside that grant.\nVERDICT manifest: read; it names commits a942f0a192 and c1b0c5a782, both suite arms as inline JSON, the negative control at 97dec20b with its failing id, the scoped gate log, and rubric lines whose figures the logs on disk corroborate.\nVERDICT diff: read both commits against base 97dec20bfb8603ab71c4e9deeefddab685e0a42e; a942f0a192 passes attempt and attempt_started_at to _supervisor_spec and deletes the RECKON_TEST_DROP_RESUME_EXPORT hook with its two now-unused imports, and c1b0c5a782 adds the 50-line evidence fragment, with no production file touched.\nCALL_SITES: reckon/crew/dispatch_launch.py:3576 _supervisor_spec, reckon/crew/dispatch_launch.py:4266 _supervisor_spawn_worker, reckon/crew/dispatch_launch.py:2523 launch_reservation_key\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_worker_env_export.py:134-146 names the attempt its resumed spec launches, and the head gate log closes with EXIT=0 on 3 passed with no product change.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base arm at 97dec20b (1 failed, 2 passed, EXIT=1) and the head arm at a942f0a (3 passed, EXIT=0) are both on disk with revision headers and EXIT= lines, but the done_when's all_debug and SLURM_JOB_ID-unset clauses rest on the manifest's prose rather than on the head gate log's own header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 97dec20b..c1b0c5a changes exactly tests/test_worker_env_export.py and the node's evidence fragment, both inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the base arm at 97dec20b reinstates the regression and the file reddens on it, but the attempt_started_at half at tests/test_worker_env_export.py:135 is inert because reckon/crew/dispatch_launch.py:4330 rebuilds the child's instant from _utc_now().\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_worker_env_export.py:130-147 keeps the file's compose-then-assert idiom beside _assert_attempt_environment at :81 and removes the ambient-env hook with its unused imports.\nSCORE reuse: 16\nJUSTIFICATION reuse: no owner exists for a shared resume-spec composition, but the next-attempt rule is owned by launch_reservation_key at reckon/crew/dispatch_launch.py:2523 and tests/test_worker_env_export.py:134 re-derives it as pointer-plus-one.\nFINDING tests/test_worker_env_export.py:135 non-blocking: attempt_started_at is read back out of resumed.environment and handed to the spec with nothing asserting it, and reckon/crew/dispatch_launch.py:4330 rebuilds the child's instant from _utc_now() while the superseded comparison at :4353 cannot fire once the attempt exceeds the pointer's, so this half of the repair could be blanked without the file reddening.\nFINDING tests/test_worker_env_export.py:134 non-blocking: the launched attempt is derived as pointer-plus-one while production derives it through launch_reservation_key at reckon/crew/dispatch_launch.py:2523, so the test mirrors that rule instead of reusing its owner and keeps passing if production's numbering drifted.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044646426196-qwnw-red-file-worker-env-export/manifest.md:13 non-blocking: the done_when requires the head run on all_debug with SLURM_JOB_ID unset, but the recorded gate command carries no env -u SLURM_JOB_ID and the gate log names no partition, leaving both clauses to the checkpoint line at manifest.md:6.",
+  "review_run_id": "r-20261118T100018039410-review-of-qwnw-red-file-worker-env-export-c1b0c5a782ec",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "c1b0c5a782ec83bf12380437c8f7c93ce4e46fa2",
+  "reviewed_run_id": "r-20261118T044646426196-qwnw-red-file-worker-env-export",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:40:00.000000+00:00",
+  "total": 103
+}
