@@ -1301,6 +1301,10 @@ def _watch_verdict(
             "recovery": "",
             "lifting_condition": None,
             "next_action": row.get("next_action"),
+            # The authority the word was read under, carried beside it: the
+            # word itself is whatever the row earns today, which is the
+            # delivered one while a promotion's head is on no branch yet.
+            "promotion_recorded": True,
         }
 
     # The working bucket is keyed on a process that is genuinely still alive,
@@ -1603,6 +1607,10 @@ def _watch_verdict(
         "stall_pause_reason": stall_pause_reason,
         "stall_process_state": stall_process_state,
         "stall_quiet_seconds": quiet_seconds,
+        # The pointer's own word, taken without a committed ledger row behind
+        # it. The fold reads this to tell a reading worded by the run's own row
+        # from one the pointer alone supports.
+        "promotion_recorded": False,
     }
 
 
@@ -1813,6 +1821,7 @@ def _compute_watch_snapshot(
         **({"pointers": pointers} if pointers is not None else {}),
     )
     from reckon.crew.stage_receipts import observe_review_delivery
+
     observe_review_delivery(pointer, pointers=pointers)
     # Which repair records count as open is the reflex's own question, so it is
     # asked of the owner of that reading rather than answered here. The import
@@ -1891,6 +1900,13 @@ def _compute_watch_snapshot(
         # carries it under its own name rather than as a flattened display flag.
         "lineage": pointer.get("lineage"),
         "state": verdict["state"],
+        # Whether that word came from the run's own committed ledger row rather
+        # than from the pointer. The two are not the same fact: a promotion
+        # whose head is on no branch yet reads as delivered, so the fold cannot
+        # recognise a settled run from its word alone. Carried beside the word
+        # so a departure or a stale pointer reading can be judged against the
+        # authority that worded it.
+        "promotion_recorded": bool(verdict.get("promotion_recorded")),
         "delivery": row.get("delivery"),
         "classification": row["classification"],
         "process_alive": row["process_alive"],
@@ -2316,7 +2332,9 @@ def _fleet_counts(
         counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
-        counts["oldest_promotion_requested_at"] = delivery["oldest_promotion_requested_at"]
+        counts["oldest_promotion_requested_at"] = delivery[
+            "oldest_promotion_requested_at"
+        ]
     if reviewing:
         counts["reviewing"] = reviewing
     # A row's bucket is the word it is drawn with, read from the state this
@@ -2587,6 +2605,10 @@ def fleet_transitions(
     settles there: the completion is announced once, a later pointer
     reading cannot move it back to ``dispatched``, and the pointer's own
     disappearance — a gc reap included — emits nothing further for the run.
+    Settlement is read from the row, not from the word: a promotion whose
+    delivered head no branch carries yet is worded delivered and held exactly
+    the same way, moving only to the landed word the row itself earns once a
+    branch carries the head.
 
     An admission pass launches a queued request by releasing its pointer and
     publishing the launch under a new run id, so the request is absent for the
@@ -2667,12 +2689,18 @@ def fleet_transitions(
     else:
         recorded = {}
     for run_id in departures:
-        if str(known[run_id].get("state") or "") in FLEET_SETTLED_STATES:
+        if str(known[run_id].get("state") or "") in FLEET_SETTLED_STATES or (
+            _settled_by_ledger(known[run_id])
+        ):
             # The run already settled on its terminal ledger row: the landing
             # was announced once, so the pointer's later disappearance — a gc
             # reap included — is not news and emits nothing for the run. The
             # slot is still given up, so a genuine re-dispatch of the same id
             # is read as an arrival rather than suppressed by a stale memory.
+            # A promotion whose head no branch carries yet is settled the same
+            # way while its row exists: its word is the delivered one, so the
+            # row alone says the run is the ledger's to word and not the
+            # pointer's to withdraw.
             running.pop(run_id, None)
             continue
         # A departure is its own fact and inherits no clause or marker from the
@@ -2714,6 +2742,15 @@ def fleet_transitions(
             # cannot drive the row back — holding the promoted word is what
             # stops the row flapping between the two.
             continue
+        if _settled_by_ledger(known[run_id]) and not _is_ledger_word(state):
+            # The row worded this run, and the word it drew is not one that row
+            # can produce: the pointer a promotion left behind still reads its
+            # own phase. A promotion whose head no branch carries yet is worded
+            # delivered rather than promoted, so the flip it used to make was
+            # delivered to dispatched and back on every poll. Only a word the
+            # row itself earns — the landed one, once a branch carries the head
+            # — may move the row.
+            continue
         previous_recovery = str(
             known[run_id].get("recovery_classification") or previous
         )
@@ -2753,12 +2790,13 @@ def fleet_transitions(
         # ``dispatched`` while the pointer lingers.
         if run_id not in current:
             running.pop(run_id, None)
-        elif (
-            run_id in running
-            and str(running[run_id].get("state") or "") in FLEET_SETTLED_STATES
+        elif run_id in running and (
+            str(running[run_id].get("state") or "") in FLEET_SETTLED_STATES
         ):
             # Settled on its terminal ledger row: hold the promoted memory
-            # rather than adopting a later pointer reading.
+            # rather than adopting a later pointer reading. A delivered-but-
+            # unmerged promotion needs no hold of its own here: no transition
+            # of its word is folded at all unless the row itself earned it.
             pass
         elif not snapshot.get("manifest_rewritten") and not snapshot.get(
             "status_repaired"
@@ -2766,6 +2804,37 @@ def fleet_transitions(
             running[run_id] = dict(snapshot)
         events.append((dict(snapshot), previous, state, _transition_counts(running)))
     return events, running
+
+
+def _settled_by_ledger(snapshot: Mapping[str, Any]) -> bool:
+    """Whether a snapshot's word came from the run's own committed ledger row.
+
+    Promotion writes that row while the live pointer may still exist, and the
+    classifier words the run from the row rather than from the pointer. The word
+    is not always a settled one: a promotion whose delivered head no branch
+    carries yet reads as delivered, with the owed merge named in its detail, so
+    the word ``complete`` names a run that has landed and one that has not.
+    For the fold the row is still the run's settled memory — a later pointer
+    reading cannot re-word it, and its pointer's disappearance is not news. The
+    authority therefore has to travel beside the word; reading it off the word
+    would leave every delivered-but-unmerged promotion flapping against the
+    stale pointer it left behind.
+    """
+    return snapshot.get("promotion_recorded") is True
+
+
+def _is_ledger_word(state: str) -> bool:
+    """Whether a word is one a run holding a committed ledger row can read as.
+
+    The classifier words such a run from its row: landed as ``promoted`` or
+    ``recorded``, or delivered as ``complete`` while the promotion's head is on
+    no branch yet. A word outside that set is the pointer's own reading, which
+    the row outranks; the import is deferred because the classification module
+    is the one that imports this one.
+    """
+    from reckon.crew.recovery_classification import PROMOTED_UNMERGED_STATE
+
+    return state in FLEET_SETTLED_STATES or state == PROMOTED_UNMERGED_STATE
 
 
 def _awaits_its_admission(run_id: str, snapshot: Mapping[str, Any]) -> bool:
@@ -3041,6 +3110,7 @@ def _watch_transition(
         )
     )
     from reckon.crew.stage_receipts import note_delivery
+
     note_delivery(event)
     return event
 
@@ -3492,8 +3562,12 @@ def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any
     scoped["reviewing"] = total.get("reviewing", 0)
     scoped["blocked"] = total.get("blocked", 0)
     scoped["promotion_queued"] = total.get("promotion_queued", 0)
-    scoped["oldest_promotion_position"] = oldest_promotion.get("oldest_promotion_position")
-    scoped["oldest_promotion_requested_at"] = oldest_promotion.get("oldest_promotion_requested_at")
+    scoped["oldest_promotion_position"] = oldest_promotion.get(
+        "oldest_promotion_position"
+    )
+    scoped["oldest_promotion_requested_at"] = oldest_promotion.get(
+        "oldest_promotion_requested_at"
+    )
     scoped["unpromoted"] = total.get("unpromoted", 0)
     scoped["project_working"] = project_counts.get("working", 0)
     scoped["project_reviewing"] = project_counts.get("reviewing", 0)
@@ -4376,8 +4450,7 @@ def recover(
         for record in scoring:
             session = str(record.get("session") or "")
             if not any_session and (
-                not session
-                or not runs.follower_state(project, session).get("live")
+                not session or not runs.follower_state(project, session).get("live")
             ):
                 awaiting_coordinator.append(
                     {
