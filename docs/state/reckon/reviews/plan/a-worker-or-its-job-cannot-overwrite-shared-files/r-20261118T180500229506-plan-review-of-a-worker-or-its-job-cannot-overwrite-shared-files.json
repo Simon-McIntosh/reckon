@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T18:18:16Z",
+  "findings": [
+    {
+      "anchor": "plan.html:120",
+      "id": "reasoning-1",
+      "reason": "the deliverable's requirement \"never inferred from the position of an element in a list of options\" removes an inference that does not exist, and a worker following it would not know that carrying an absolute path, and naming the lookup failure, is what the measured failure needs.",
+      "text": "the Why claims the job's carried recipe had the option `--dev-bind` as its first element, but the product composes `fenced = [FENCE_BINARY, ...]` (`reckon/_worker_fence.py:1986`) and carries `\"argv\": list(fenced)` in the recipe, so a recipe built through `fence_argv` has `argv[0] == \"bwrap\"` and `argv[1] == \"--dev-bind\"` \u2014 measured on this tree; the real failure is that the program is a bare name resolved through PATH on the job node, which has no bwrap, so the prepare step's `execvp(prefix[0], ...)` raises before any naming message",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:122",
+      "id": "done_when-1",
+      "reason": "the control as written can pass while the measured defect still reproduces, so the gate cannot prove the guard fires.",
+      "text": "the negative control requires running \"the recipe whose first element is an option\" as a program, a recipe the product cannot produce (first element is the fence program, verified above), so the red arm must hand-build an argv the code never emits and it shows neither the base failure that was measured nor that the new naming message replaces a real silent refusal",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:122",
+      "id": "done_when-2",
+      "reason": "the two arms are redundant rather than wrong: the same property is proved by one recipe plus the absent-program case, so removing the split tightens the wording without changing what is delivered.",
+      "text": "\"the recipe as the product builds it for a GPU job and for a CPU job\" cannot distinguish two arms: `fence_argv` takes no partition or GPU input and the GPU/CPU difference lives in scheduler options, so both arms are byte-identical and neither can fail where the other passes",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "plan.html:24",
+      "id": "wiring-1",
+      "reason": "\u00a711 is done and `1ba2f962ce` is an ancestor of HEAD, so every node dispatched for \u00a712 starts from code containing that section and no declared wait would change order.",
+      "text": "`s12` appears in `plan-section-declarations` but in no `plan-section-depends-on` entry, although its Why rests on the prepare step \u00a711 landed and it declares \u00a711's two modules as its write paths",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "plan.html:13",
+      "id": "wiring-2",
+      "reason": "a cohort or cap sized from the plan's effort hours is short by the two sections' declared hours, and the scalar was exactly the section sum before those sections were added.",
+      "text": "plan-level `plan-effort-hours` is 10.0 while the declared sections sum to 12.0 (`s1` 0.25 through `s12` 1.0), and a scheduler that reads this scalar, `reckon/roadmap.py:525`, sizes remaining effort from it, so the plan now understates its own work by two hours after \u00a711 and \u00a712",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7022a7d5686f4b5554ae37dda51423b6eb0aafc3",
+  "plan_fingerprint": "bacd7971082edf6b0141014fa915eaf22e91ce4ecd544fc08965c3208befb2d7",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 23,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261118T180500229506-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "3e76c7378e2d7a2cf7ccfbdf41b3b13a2193e68c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a712's three write paths exist (`reckon/nested_launch.py`, `reckon/_worker_fence.py`, `tests/test_a_job_fence_starts_on_any_node.py`), and the \u00a711 it cites is present and landed (`1ba2f962ce` is an ancestor of HEAD).",
+    "done_when": "two findings \u2014 `plan.html:122` builds its negative control from a recipe whose first element is an option, a shape the product never composes, and its GPU-job and CPU-job arms are the same recipe because the fence composition takes no partition input.",
+    "evidence_paths": "pass \u2014 \u00a712's fleet evidence is job ids recorded in the node's own manifest under the run directory, not a node-local temporary path.",
+    "naming": "pass \u2014 \u00a712 carries no ticket, sprint or plan label into code; its PIDs, job ids and partition names are evidence rather than names.",
+    "reasoning": "a finding \u2014 the Why's stated mechanism (\"that first element was the option `--dev-bind` and not a program\") is contradicted by the product's own recipe, whose first element is the fence program carried as the bare name `bwrap`.",
+    "single_goal": "pass \u2014 \u00a712 names one deliverable, a fenced job's fence starting (or refusing by name the fence program) on any node.",
+    "wiring": "two findings \u2014 `plan.html:24` gives `s12` no `depends-on` edge although its Why rests on the \u00a711 landing and its write paths are \u00a711's files (no dispatch effect, \u00a711 is merged), and `plan.html:13` still declares 10.0 effort hours while the declared sections now sum to 12.0."
+  },
+  "section_digests": {
+    "_document": "e51ea2827a102e993c94a05d30897badcda6d1f0f7185366e8ab6ee177f7f2d8",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "2921806863fa66f192dc45d31056b040e9e07cc5f67e20df721264aafdecb087",
+    "s11": "a23ab44da2be981ee6a354e5c6393269b7bec3c26c755667911cf7cc88de1a44",
+    "s12": "3c0c79509e96ca14ad0ab49eedf9dfdbe6c1c5fa0161420aaae431f03b4bdd6a",
+    "s2": "672162d0e96a24a032f95b7ade817c96cf03b6d88f8f4c83f57f8e7b253409ce",
+    "s3": "9b6d5901be84127eaa75a84242d4374832a661d904144efdfaa597367a03eaac",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "4d339ca4c2860c39db4a36518f8045c9b620085666f9beffdd963261346af665",
+    "s7": "2099f1fb292d04b4514f50a5dac17e2c0480f9b2d27c3a83ba62c45c0c7e1afb",
+    "s8": "1b886461a44e82b5dcefddc891828d3bd8e080296db484cac33bf8e4d032637f",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:32:47.664947+00:00",
+  "total": null
+}
