@@ -2700,7 +2700,7 @@ def writer_sweep_status(project: str, writer: Any) -> dict[str, Any] | None:
     return read_sweep_status(project).get("writers", {}).get(_writer_key(kind, key))
 
 
-@operational_read
+@operational_read(live_reader=lambda: list_live())
 def sweep(
     project: str,
     *,

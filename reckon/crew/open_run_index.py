@@ -16,7 +16,7 @@ import re
 import sqlite3
 from collections.abc import Iterator, Mapping, Sequence
 from contextvars import ContextVar
-from functools import wraps
+from functools import partial, wraps
 from pathlib import Path
 from typing import Any
 
@@ -89,12 +89,17 @@ def read_scope(
             _VALIDATED.reset(validated_token)
 
 
-def operational_read(function):
+def operational_read(function=None, *, live_reader=None):
     """Keep an operational entry point inside the open-run read population."""
+    if function is None:
+        return partial(operational_read, live_reader=live_reader)
 
     @wraps(function)
     def bounded(*args, **kwargs):
-        with read_scope(record=kwargs.get("record"), live=kwargs.get("pointers")):
+        live = kwargs.get("pointers")
+        if live is None and pointers() is None and live_reader is not None:
+            live = live_reader()
+        with read_scope(record=kwargs.get("record"), live=live):
             return function(*args, **kwargs)
 
     return bounded

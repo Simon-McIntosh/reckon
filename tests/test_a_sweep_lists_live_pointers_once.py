@@ -323,6 +323,26 @@ def test_a_failed_scope_restores_the_outer_population(fleet):
     assert open_run_index.pointers() is None
 
 
+def test_an_entry_point_uses_its_reader_only_without_a_held_listing():
+    calls = []
+    supplied = [{"run_id": "r-supplied", "project": PROJECT}]
+
+    def listing():
+        calls.append("listed")
+        return supplied
+
+    @open_run_index.operational_read(live_reader=listing)
+    def read():
+        return open_run_index.pointers(project=PROJECT)
+
+    assert read() == tuple(supplied)
+    assert calls == ["listed"]
+    with open_run_index.read_scope(live=[]):
+        assert read() == ()
+    assert calls == ["listed"]
+    assert open_run_index.pointers() is None
+
+
 def test_a_sweep_reports_its_pointer_read_callers(fleet, monkeypatch):
     _home, originals = fleet
     callers = Counter()
