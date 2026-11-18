@@ -53,6 +53,21 @@ TERMINAL_UNPROMOTED_CLASSIFICATIONS = frozenset(
 )
 
 
+def _settled_in_ledger(pointer: Mapping[str, Any]) -> bool:
+    """Whether the run's own ledger row has already settled it.
+
+    Promotion writes the row before it removes the live pointer, so a pointer
+    outlives its landing for that window. The row's presence, not its commit
+    list, settles the run: a report-only completion records a row declaring no
+    change. The reading is the watcher's own, taken here rather than copied, so
+    a run reads settled in this report exactly where it reads settled there.
+    """
+
+    from . import recovery_watch
+
+    return recovery_watch._promote_record_holds(pointer)
+
+
 def _terminal_unpromoted(row: Mapping[str, Any]) -> bool:
     """Whether a classified row's work has stopped with nothing landed."""
 
@@ -91,6 +106,8 @@ def forgotten_runs(
 
     rows: list[dict[str, Any]] = []
     for pointer in pointers:
+        if _settled_in_ledger(pointer):
+            continue
         row = classify_pointer(pointer, now_seconds=now_seconds)
         if not _terminal_unpromoted(row):
             continue
