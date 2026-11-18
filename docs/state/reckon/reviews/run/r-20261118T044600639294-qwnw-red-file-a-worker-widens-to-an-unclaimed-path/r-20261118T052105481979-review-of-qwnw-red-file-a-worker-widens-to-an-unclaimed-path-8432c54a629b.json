@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "test_a_self_widen_to_a_peer_held_path_is_refused_naming_the_peer fails if the widen stops refusing a peer-held exclusive path (exit_code becomes 0), if the refusal stops naming the conflicting run, or if the pointer bytes change; the recorded base arm shows exactly this assertion reddening when the fixture names a path the sharing policy no longer fences, so the fixture change is load-bearing rather than cosmetic.",
+      "independence": "The three assertions compare the CLI result and the on-disk pointer bytes against values the test installed in a separate pointer file, not against a value handed back by the code under test; restoring the old PEER_HELD constant reddens them, which is the regression this change was added to prevent.",
+      "location": "tests/test_a_worker_widens_to_an_unclaimed_path.py:128-152"
+    },
+    {
+      "conditions_for_failure": "Nothing asserts on the constant itself: if DEFAULT_EXCLUSIVE_PATHS in reckon/crew/runs.py:2163 stopped keeping docs/plans/*.html exclusive, the refusal would stop firing and :140-142 would redden \u2014 the test would follow the product, not this literal.",
+      "limit": "The queued parameter's distinct rule (regard_waiting) is only exercised through the same refusal, and the mutation proves it centrally. No mutation log is recorded, so this review read the policy at reckon/crew/dispatch_claims.py:519-521 as corroboration instead.",
+      "location": "tests/test_a_worker_widens_to_an_unclaimed_path.py:30-33"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/claims.py:157 (widen passes regard_waiting=bool(source) into refuse_widen_scope_conflicts)",
+    "reckon/crew/dispatch_claims.py:2568 refuse_widen_scope_conflicts",
+    "reckon/crew/dispatch_claims.py:519 waiting_binds",
+    "reckon/crew/runs.py:2327 _claim_paths_share"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T07:58:21Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-worker-widens-to-an-unclaimed-path.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: The fragment landed under a name that is not the node's id, while the node's declared landing path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-widens-to-an-unclaimed-path.html (dispatch, and reckon/crew/dispatch_claims.py:1425 builds it as <node-id>.html); the closure overview resolves a node's fragment the same way at reckon/evidence.py:866 and returns an empty link when the file is absent, so this record is written but unreachable by the mechanism that owns it \u2014 rename the file to the declared path."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-worker-widens-to-an-unclaimed-path.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: The claim that forcing regard_waiting to False reddens only the queued parameter is asserted with no log to open \u2014 the run directory holds one red log (the base test-file arm) and the manifest's intelligence of the mutation is the note alone, so a reader cannot check it; the same paragraph also places the switch in reckon/crew/claims.py when it is defined at reckon/crew/dispatch_claims.py:432 and only passed in from claims.py:157."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read all three commits against 8a9d873: 06cb0def changes PEER_HELD in the test to docs/plans/sample.html with a four-line comment, 6c150f10 adds the 81-line fragment, 8432c54 revises that fragment by 17 additions and 7 deletions; no product file is touched, which matches the 'test wrong, not product' verdict.",
+    "done_when": "The done_when (prompt.txt:186) requires the file to pass in full at head, a verdict of product-wrong or test-wrong per cause, no assertion deleted or weakened, and an arm adding no failure; the manifest records verdict 'test wrong', the diff deletes no assertion, and the two armed-suite logs both read 58 passed, EXIT=0 \u2014 the run's own gate measures the file itself, which is the done_when's first clause.",
+    "goal": "The source node's goal, read from its prompt.txt:38, is that tests/test_a_worker_widens_to_an_unclaimed_path.py passes in full on the primary branch; at head 8432c54 the named file runs 6 passed, EXIT=0 in scoped-gate-1794978969449398004.log, which the merge to the primary branch has not yet done but the delivered tree satisfies.",
+    "manifest": "The source manifest.md records the three commits, both changed paths, the head gate at 6c150f10 (6 passed) and the base arm at 8a9d873 (2 failed, 4 passed), both as inline JSON with full 40-character revisions, plus the two files left failing in tests/test_fence_widening.py under outside_scope.",
+    "write_paths": "The declared paths (prompt.txt:103 and :247) grant reckon, tests, the plan's fragment directory and the fragment file qwnw-red-file-a-worker-widens-to-an-unclaimed-path.html; the diff is tests/test_a_worker_widens_to_an_unclaimed_path.py plus a fragment inside the granted directory but under a different basename than the granted file."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_widens_to_an_unclaimed_path.py:128 asserts refusal for both parameters, and reverting line 33 to the base spelling is exactly what the recorded base arm reddens on (2 failed of 6) \u2014 a load-bearing guard, though the diff itself adds no new assertion.",
+    "evidence": "scoped-gate-1794978969449398004.log records 6 passed at 6c150f10 with EXIT=0 and logs/negative-control-base-test-file.log records 2 failed, 4 passed, EXIT=1 at 8a9d873 with both failing ids, but no log records the done_when's 'all_debug with SLURM_JOB_ID unset' condition and no log backs the regard_waiting mutation the fragment reports.",
+    "fit": "tests/test_a_worker_widens_to_an_unclaimed_path.py:30-33 keeps the file's module-constant idiom and names the policy it obeys in a comment, and no new symbol is introduced.",
+    "goal_fidelity": "tests/test_a_worker_widens_to_an_unclaimed_path.py:33 now holds docs/plans/sample.html, and the head gate log records 6 passed / EXIT=0 at 6c150f10, so the named file passes in full as the goal states.",
+    "reuse": "The diff adds no definition; the one exclusive-artifact owner is reckon/crew/runs.py:2163 DEFAULT_EXCLUSIVE_PATHS, which the fixture restates as a literal instead of importing, so the test cannot follow the policy wherever it moves.",
+    "scope_discipline": "git diff 8a9d873..8432c54 touches only the test file and one fragment, yet the fragment landed at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-worker-widens-to-an-unclaimed-path.html rather than the declared docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-widens-to-an-unclaimed-path.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal, read from the reviewed run's prompt.txt:38, is that tests/test_a_worker_widens_to_an_unclaimed_path.py passes in full; at 8432c54 tests/test_a_worker_widens_to_an_unclaimed_path.py:33 names docs/plans/sample.html and the head gate records 6 passed, EXIT=0.\nVERDICT done_when: the done_when at prompt.txt:186 requires the file to pass in full at head with a per-cause verdict of product-wrong or test-wrong and no assertion deleted; the manifest records 'test wrong', the diff removes no assertion, and both armed-suite arms read 58 passed, EXIT=0.\nVERDICT write_paths: the declared paths at prompt.txt:247 grant reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround/ and .../qwnw-red-file-a-worker-widens-to-an-unclaimed-path.html; the diff's test edit is inside tests and its fragment is inside the granted directory but not the granted basename.\nVERDICT manifest: the source manifest.md records three commits, the head gate at 6c150f10 (6 passed) and the base arm at 8a9d873 (2 failed, 4 passed) with full 40-character revisions, and reports the two tests/test_fence_widening.py failures as outside its scope.\nVERDICT diff: read 06cb0def, 6c150f10 and 8432c54 against 8a9d873; four added lines in tests/test_a_worker_widens_to_an_unclaimed_path.py (PEER_HELD \u2192 docs/plans/sample.html) and a 91-line fragment, with no product file changed.\nCALL_SITES: reckon/crew/claims.py:157, reckon/crew/dispatch_claims.py:2568, reckon/crew/dispatch_claims.py:519, reckon/crew/runs.py:2327\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_worker_widens_to_an_unclaimed_path.py:33 plus the 6 passed / EXIT=0 head gate in scoped-gate-1794978969449398004.log show the named file passing in full.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/negative-control-base-test-file.log records 2 failed, 4 passed, EXIT=1 at 8a9d873 with both ids, but no log names the all_debug / SLURM_JOB_ID-unset condition and no log backs the regard_waiting mutation at red-file-a-worker-widens-to-an-unclaimed-path.html:39-47.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: the diff's fragment is red-file-a-worker-widens-to-an-unclaimed-path.html, not the granted qwnw-red-file-a-worker-widens-to-an-unclaimed-path.html, so a granted file was left unwritten and an ungranted basename appeared.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_worker_widens_to_an_unclaimed_path.py:128 reddens when line 33 is restored to reckon/crew/queue_admission.py, as the recorded base arm shows 2 failed of 6, though the diff adds no assertion of its own.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_worker_widens_to_an_unclaimed_path.py:30-33 states the rule in a comment above the constant and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and the capability owner it leans on is reckon/crew/runs.py:2163 DEFAULT_EXCLUSIVE_PATHS, which the fixture restates deliberately so the test does not follow the policy wherever it moves.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-worker-widens-to-an-unclaimed-path.html:1 blocking: the fragment's filename omits the qwnw- node id, so the declared landing path is unfilled and reckon/evidence.py:866 returns an empty link for this node.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-worker-widens-to-an-unclaimed-path.html:39 non-blocking: the regard_waiting mutation is reported with no log to open, and the switch it names lives in reckon/crew/dispatch_claims.py:432 rather than reckon/crew/claims.py.",
+  "review_method": "Read-only review of the plan section, the reviewed node's prompt and manifest, its three commits against 8a9d873cb9, and its recorded gate logs; one capability read outside the diff (reckon/crew/runs.py:2163-2380 and reckon/crew/dispatch_claims.py:2568); no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T052105481979-review-of-qwnw-red-file-a-worker-widens-to-an-unclaimed-path-8432c54a629b",
+  "reviewed_base_sha": "8a9d873cb91d05af20ae5c6530880c260e1c5dbe",
+  "reviewed_head_sha": "8432c54a629b5d5d51e6fca1cf8450015175d82d",
+  "reviewed_run_id": "r-20261118T044600639294-qwnw-red-file-a-worker-widens-to-an-unclaimed-path",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "source_commits": [
+    "06cb0def3aab1c031af9ce03113fdd4a4db27009",
+    "6c150f10eddbba7dffdf5877152fa9a35271ed2a",
+    "8432c54a629b5d5d51e6fca1cf8450015175d82d"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044600639294-qwnw-red-file-a-worker-widens-to-an-unclaimed-path/after_suite-1794979048134571153.log",
+      "observed_summary": "58 passed in 37.30s",
+      "revision": "6c150f10eddbba7dffdf5877152fa9a35271ed2a"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044600639294-qwnw-red-file-a-worker-widens-to-an-unclaimed-path/baseline_suite-1794979005901232872.log",
+      "observed_summary": "58 passed in 35.79s",
+      "revision": "8a9d873cb91d05af20ae5c6530880c260e1c5dbe"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:14:23.693134+00:00",
+  "total": 99
+}
