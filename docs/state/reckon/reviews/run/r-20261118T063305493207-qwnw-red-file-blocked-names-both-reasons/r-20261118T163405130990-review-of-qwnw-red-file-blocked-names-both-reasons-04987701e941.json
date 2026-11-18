@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3438",
+    "reckon/crew/recovery_memo.py:966"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T22:38:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "1434",
+      "severity": "non-blocking",
+      "text": "the held-row branch clears next_action before the new manifest_blocked test, so the combined row now reads blocked while handing the reader no command, although the classifier's own next_action for it is a read-and-resolve instruction ending 'once the lane clears' (tests/test_blocked_names_both_reasons.py:139), not a launch; the reason stated at 1432 names a launch that does not apply, and every other blocked row in the pane carries an act."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-blocked-names-both-reasons.html",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "the base and head arm logs are cited only by job id (1327127, 1327130) with no path and are not committed beside the head run, and the importer log headers carry an unsubstituted '<population>' placeholder (importer-base.log:4), so once the host run directory is swept the negative control the plan's done-when asks for cannot be opened from the record."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base 60ecc274f1bf7008b09057c6a5252423deb4cfe5; 21d2796076 is the 9-line product change at reckon/crew/recovery_watch.py:1434-1436, 5c09a1d4b1 and 04987701e9 are the 80-line evidence fragment, and nothing else changed.",
+    "done_when": "the done_when names the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a pre-repair base arm with its failing ids, importer arms as inline JSON carrying 40-character revisions, and clean ruff; the manifest records base job 1327127 (1 failed, 5 passed, EXIT=1) in negative-control-base.log and head job 1327130 (6 passed, EXIT=0) in head-arm.log, and sacct shows both ran on all_debug with exit 1:0 and 0:0.",
+    "goal": "the node goal is 'Make tests/test_blocked_names_both_reasons.py pass in full on the primary branch'; reckon/crew/recovery_watch.py:1435 (commit 21d2796076) keeps a manifest-reported block's word on a held row, and all six cases in tests/test_blocked_names_both_reasons.py pass at head.",
+    "manifest": "read; status complete, base 1 failed/5 passed with the id test_the_monitor_row_for_the_combined_case_also_names_the_refusal and the quote assert 'waiting' == 'blocked' at negative-control-base.log:19-26, head 6 passed EXIT=0 at head-arm.log:7-8, added_failure_count derived 0 from baseline_suite-1795018590856867721.log and after_suite-1795018665041294464.log (58 passed each), and the importer arms recorded as prose in artifacts rather than as the inline JSON the done_when asks for.",
+    "write_paths": "the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; both paths in the diff \u2014 reckon/crew/recovery_watch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-blocked-names-both-reasons.html \u2014 are inside that scope, and no path under tests/ changed."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion \u2014 its only lines are recovery_watch.py:1424-1436 \u2014 so the guard is the pre-existing tests/test_blocked_names_both_reasons.py:169, whose red at base the run records (negative-control-base.log:26 quotes assert 'waiting' == 'blocked'), and reinstating the removed 'and not manifest_blocked' at recovery_watch.py:1436 fails it; the opposite mis-paint is fenced only by tests/test_recovery_state_typing.py, outside this node's gate file.",
+    "evidence": "the gate result is recorded in the run's own logs (head-arm.log:7 '6 passed', negative-control-base.log:26 '1 failed, 5 passed') and reconfirmed by the scoped gate at 04987701 (scoped-gate-1795018561132296209.log:6 '6 passed'), but the importer logs name their population as '<population>' (importer-base.log:4, importer-head.log:4) and the head arm ran in the node's checkout while the base ran an extracted tree (importer-head.log:3 vs importer-base.log:3).",
+    "fit": "the added comparison at reckon/crew/recovery_watch.py:1435 matches the module's existing manifest_status idiom at line 1373 and adds no new name, but the comment at 1428-1433 keeps a 'hands no command' rationale written for the wait case while the branch now also covers a blocked row whose classifier command is a read (tests/test_blocked_names_both_reasons.py:139).",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1436 keeps the classification's blocked word when row['manifest_status'] is blocked, which is the condition tests/test_blocked_names_both_reasons.py:169 asserts.",
+    "reuse": "the change extends the existing _watch_verdict held-row branch at reckon/crew/recovery_watch.py:1434-1436 and adds no definition; it reads the classifier's row['manifest_status'] rather than re-deriving the verdict, and a search over the status comparators in reckon/crew/recovery_classification.py:1513-1614 and reckon/crew/recovery.py found no second mechanism to fork.",
+    "scope_discipline": "the diff's only two paths are reckon/crew/recovery_watch.py:1424-1436 and the evidence fragment the done_when names, and neither tests/ nor the plan was touched."
+  },
+  "node": "review-of-qwnw-red-file-blocked-names-both-reasons-04987701e941",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_blocked_names_both_reasons.py pass in full on the primary branch'; reckon/crew/recovery_watch.py:1435 (commit 21d2796076) keeps a manifest-reported block's word on a held row, and all six cases in tests/test_blocked_names_both_reasons.py pass at head.\nVERDICT done_when: the done_when names the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a pre-repair base arm with its failing ids, importer arms as inline JSON carrying 40-character revisions, and clean ruff; the manifest records base job 1327127 (1 failed, 5 passed, EXIT=1) in negative-control-base.log and head job 1327130 (6 passed, EXIT=0) in head-arm.log, and sacct shows both ran on all_debug with exit 1:0 and 0:0.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; both paths in the diff \u2014 reckon/crew/recovery_watch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-blocked-names-both-reasons.html \u2014 are inside that scope, and no path under tests/ changed.\nVERDICT manifest: read; status complete, base 1 failed/5 passed with the id test_the_monitor_row_for_the_combined_case_also_names_the_refusal and the quote assert 'waiting' == 'blocked' at negative-control-base.log:19-26, head 6 passed EXIT=0 at head-arm.log:7-8, added_failure_count derived 0 from baseline_suite-1795018590856867721.log and after_suite-1795018665041294464.log (58 passed each), and the importer arms recorded as prose in artifacts rather than as the inline JSON the done_when asks for.\nVERDICT diff: read commit by commit against base 60ecc274f1bf7008b09057c6a5252423deb4cfe5; 21d2796076 is the 9-line product change at reckon/crew/recovery_watch.py:1434-1436, 5c09a1d4b1 and 04987701e9 are the 80-line evidence fragment, and nothing else changed.\nCALL_SITES: reckon/crew/recovery_classification.py:3438, reckon/crew/recovery_memo.py:966\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1436 keeps the classification's blocked word when row['manifest_status'] is blocked, which is the condition tests/test_blocked_names_both_reasons.py:169 asserts.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate result is recorded in the run's own logs (head-arm.log:7 '6 passed', negative-control-base.log:26 '1 failed, 5 passed') and reconfirmed by the scoped gate at 04987701 (scoped-gate-1795018561132296209.log:6 '6 passed'), but the importer logs name their population as '<population>' (importer-base.log:4, importer-head.log:4) and the head arm ran in the node's checkout while the base ran an extracted tree (importer-head.log:3 vs importer-base.log:3).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's only two paths are reckon/crew/recovery_watch.py:1424-1436 and the evidence fragment the done_when names, and neither tests/ nor the plan was touched.\nSCORE durability: 18\nJUSTIFICATION durability: the diff adds no assertion \u2014 its only lines are recovery_watch.py:1424-1436 \u2014 so the guard is the pre-existing tests/test_blocked_names_both_reasons.py:169, whose red at base the run records (negative-control-base.log:26 quotes assert 'waiting' == 'blocked'), and reinstating the removed 'and not manifest_blocked' at recovery_watch.py:1436 fails it; the opposite mis-paint is fenced only by tests/test_recovery_state_typing.py, outside this node's gate file.\nSCORE fit: 17\nJUSTIFICATION fit: the added comparison at reckon/crew/recovery_watch.py:1435 matches the module's existing manifest_status idiom at line 1373 and adds no new name, but the comment at 1428-1433 keeps a 'hands no command' rationale written for the wait case while the branch now also covers a blocked row whose classifier command is a read (tests/test_blocked_names_both_reasons.py:139).\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing _watch_verdict held-row branch at reckon/crew/recovery_watch.py:1434-1436 and adds no definition; it reads the classifier's row['manifest_status'] rather than re-deriving the verdict, and a search over the status comparators in reckon/crew/recovery_classification.py:1513-1614 and reckon/crew/recovery.py found no second mechanism to fork.\nFINDING reckon/crew/recovery_watch.py:1434 non-blocking: the held-row branch clears next_action before the new manifest_blocked test, so the combined row now reads blocked while handing the reader no command, although the classifier's own next_action for it is a read-and-resolve instruction ending 'once the lane clears' (tests/test_blocked_names_both_reasons.py:139), not a launch; the reason stated at 1432 names a launch that does not apply, and every other blocked row in the pane carries an act.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-blocked-names-both-reasons.html:30 non-blocking: the base and head arm logs are cited only by job id (1327127, 1327130) with no path and are not committed beside the head run, and the importer log headers carry an unsubstituted '<population>' placeholder (importer-base.log:4), so once the host run directory is swept the negative control the plan's done-when asks for cannot be opened from the record.\n",
+  "review_run_id": "r-20261118T163405130990-review-of-qwnw-red-file-blocked-names-both-reasons-04987701e941",
+  "reviewed_base_sha": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "reviewed_head_sha": "04987701e941d90dc03c139d85eb77aec12946ee",
+  "reviewed_run_id": "r-20261118T063305493207-qwnw-red-file-blocked-names-both-reasons",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:10:00+00:00",
+  "total": 110
+}
