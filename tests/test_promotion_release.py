@@ -251,7 +251,7 @@ def test_a_non_ancestor_worktree_is_kept_and_named_in_the_result(
         outcome="divergent worktree stays",
         completed_at="2026-09-03T00:05:00Z",
         root=repository,
-        no_commit="testing worktree release policy; this commit is deliberately uncited",
+        commits=[git(worktree, "rev-parse", "HEAD")],
     )
 
     release = promoted["release"]
