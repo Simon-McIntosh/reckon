@@ -336,6 +336,10 @@ def test_the_supervisor_seam_retries_the_spawn(
     )
     spec = {
         "run_id": RUN_ID,
+        # The spec a supervisor receives always names the run directory it
+        # records into: the launcher writes it, and the seam reads it to place
+        # a step's scratch beside the run.
+        "run_directory": str(directory),
         "prompt_path": str(directory / "prompt.txt"),
         "log_path": str(directory / "stream.jsonl"),
         "stderr_path": str(directory / "stderr.log"),
