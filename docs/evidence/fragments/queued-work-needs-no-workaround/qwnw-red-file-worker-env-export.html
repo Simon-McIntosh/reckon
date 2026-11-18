@@ -1,0 +1,50 @@
+<section id="qwnw-red-file-worker-env-export-landing">
+  <h2>A worker environment test names the attempt its spec launches</h2>
+
+  <p><code>tests/test_worker_env_export.py</code> failed in full at
+  <code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code>:
+  <code>test_clive_dispatch_and_resume_carry_identity_and_additive_headers</code>
+  raised <code>_SupersededSupervisorError</code> from
+  <code>_supervisor_spawn_worker</code>. <strong>Verdict: the test was wrong.</strong>
+  The product rule is that a supervisor spec names the attempt it launches — the
+  spawn refuses a spec whose attempt the run's pointer no longer names — and every
+  other spec composition in the suite states <code>attempt</code> and
+  <code>attempt_started_at</code>. This one left both at their defaults, so the
+  resumed spawn carried the pointer's previous attempt identity and was refused as
+  superseded. No assertion was deleted or weakened: the test now builds its spec
+  with the attempt the resume continues and the launch instant the resume composed
+  onto the plan.</p>
+
+  <p>The file also held an environment-conditional rewrite of the resumed plan
+  (<code>RECKON_TEST_DROP_RESUME_EXPORT</code>) that read ambient state to distort
+  the object under test; nothing set it, and it is gone.</p>
+
+  <h3 id="qwnw-red-file-worker-env-export-arms">Measured</h3>
+
+  <table id="qwnw-red-file-worker-env-export-arm-table">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control — the file at base, scratch tree</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td>1 failed, 2 passed; failing id
+        <code>test_clive_dispatch_and_resume_carry_identity_and_additive_headers</code>;
+        <code>EXIT=1</code></td></tr>
+      <tr><td>head — the file at the run's head, <code>all_debug</code> job</td>
+        <td><code>a942f0a192768408f1f3cfc7f43b989be2ada07c</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base red log names the failure the head does not fail; its traceback
+  carries the guard's refusal, so the guarded thing happened rather than being
+  assumed. Logs live in the run directory:
+  <code>negative-control-base-97dec20b.log</code> and
+  <code>scoped-gate-1794994807734025461.log</code>.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> reports nothing on the changed
+  path at head, and <code>ruff format --check</code> reports the same two
+  pre-existing findings it reports for that file at the base revision — no new
+  finding.</p>
+</section>
