@@ -1,0 +1,140 @@
+# revision: b99d5f2c031a0af7252e0b8abbb4185822998851 (copy; 0fc41249269060cb453d791dae33745d346cd476 is the node head)
+# tree: /tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/mutate-fleet-health-2
+# cwd: /tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/mutate-fleet-health-2
+# mutation: line 145 of bin/fleet-health deleted — the D-state trigger condition
+# command: cd /tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/mutate-fleet-health-2 && PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/mutate-fleet-health-2 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py
+.F.F....FF.F...                                                          [100%]
+=================================== FAILURES ===================================
+______ test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns ______
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_dstate_trigger_writes_a_s0')
+
+    def test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns(
+        tmp_path: Path,
+    ) -> None:
+        # 60 node-wide D-state tasks against a threshold of 50; every other reading
+        # is below its threshold, so the D-state count is the only thing firing.
+        box = sandbox(tmp_path, dstate_procs=60, extra_env=BASE)
+        result = run_pass(box.env)
+        assert result.returncode == 0, result.stderr
+    
+        snaps = box.snapshots()
+>       assert len(snaps) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_fleet_health.py:215: AssertionError
+_____________________ test_dstate_threshold_is_overridable _____________________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_dstate_threshold_is_overr0')
+
+    def test_dstate_threshold_is_overridable(tmp_path: Path) -> None:
+        # Three D-state tasks fire only when the threshold is lowered by environment.
+        box = sandbox(tmp_path, dstate_procs=3, extra_env={**BASE, "FLEET_DSTATE_ALERT": "2"})
+        result = run_pass(box.env)
+        assert result.returncode == 0, result.stderr
+>       assert len(box.snapshots()) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+E        +    where [] = snapshots()
+E        +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd48b5c0>.snapshots
+
+tests/test_fleet_health.py:256: AssertionError
+_________ test_two_crossing_passes_within_the_bound_write_one_snapshot _________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_two_crossing_passes_withi0')
+
+    def test_two_crossing_passes_within_the_bound_write_one_snapshot(tmp_path: Path) -> None:
+        # The bound is kept far from the spacing so the case measures the rate
+        # limit and not the clock. The loop reads the second-resolution ``date +%s``
+        # and pays its own per-pass overhead, so an interval only just longer than
+        # the spacing lets a second pass cross the bound on rounding alone and
+        # write a table it should not. Both passes cross the D-state threshold, but
+        # they sit about a second apart inside a sixty-second bound, so only the
+        # first writes a snapshot however the seconds fall.
+        box = sandbox(
+            tmp_path,
+            dstate_procs=60,
+            extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "60", "FLEET_SLEEP_SECONDS": "1"},
+        )
+        result = run_passes(box.env, 2)
+        assert result.returncode == 0, result.stderr
+        assert len(box.samples()[0].read_text().splitlines()) >= 3, "both passes wrote a sample line"
+>       assert len(box.snapshots()) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+E        +    where [] = snapshots()
+E        +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd175e50>.snapshots
+
+tests/test_fleet_health.py:302: AssertionError
+_____________ test_a_pass_after_the_bound_writes_a_second_snapshot _____________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_a_pass_after_the_bound_wr0')
+
+    def test_a_pass_after_the_bound_writes_a_second_snapshot(tmp_path: Path) -> None:
+        # The mirror margin: a one-second bound against three seconds of spacing,
+        # so the second pass is past the bound even if the clock and the loop
+        # overhead run against the case. Each snapshot is named to the second, so
+        # the seconds that separate the passes also keep their names distinct.
+        box = sandbox(
+            tmp_path,
+            dstate_procs=60,
+            extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "1", "FLEET_SLEEP_SECONDS": "3"},
+        )
+        result = run_passes(box.env, 2)
+        assert result.returncode == 0, result.stderr
+>       assert len(box.snapshots()) == 2
+E       assert 0 == 2
+E        +  where 0 = len([])
+E        +    where [] = snapshots()
+E        +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd175c50>.snapshots
+
+tests/test_fleet_health.py:318: AssertionError
+___________ test_memory_kills_bypass_the_pressure_snapshot_interval ____________
+
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_memory_kills_bypass_the_p0')
+
+    def test_memory_kills_bypass_the_pressure_snapshot_interval(tmp_path: Path) -> None:
+        box = sandbox(tmp_path, dstate_procs=60, extra_env=BASE)
+        cg = Path(box.env["FLEET_CGROUP_DIR"])
+        (cg / "memory.events").write_text("oom_kill 3\n")
+        sleeper = box.root / "stubbin" / "sleep"
+        sleeper.write_text(
+            '#!/bin/bash\nprintf "oom_kill 5\\n" > "$FLEET_CGROUP_DIR/memory.events"\n'
+        )
+        sleeper.chmod(0o755)
+        result = run_passes(box.env, 2)
+        assert result.returncode == 0, result.stderr
+        assert [row["job_oom_kill"] for row in sample_rows(box)] == ["3", "5"]
+>       assert len(box.snapshots()) == 2, (
+            "the kill retains its own table inside the cooldown"
+        )
+E       AssertionError: the kill retains its own table inside the cooldown
+E       assert 1 == 2
+E        +  where 1 = len([PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_memory_kills_bypass_the_p0/state/health/100-98dci4-clu-3051-20261118T082347423464198Z.ps')])
+E        +    where [PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_memory_kills_bypass_the_p0/state/health/100-98dci4-clu-3051-20261118T082347423464198Z.ps')] = snapshots()
+E        +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd16d220>.snapshots
+
+tests/test_fleet_health.py:368: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_fleet_health.py::test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns - assert 0 == 1
+ +  where 0 = len([])
+FAILED tests/test_fleet_health.py::test_dstate_threshold_is_overridable - assert 0 == 1
+ +  where 0 = len([])
+ +    where [] = snapshots()
+ +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd48b5c0>.snapshots
+FAILED tests/test_fleet_health.py::test_two_crossing_passes_within_the_bound_write_one_snapshot - assert 0 == 1
+ +  where 0 = len([])
+ +    where [] = snapshots()
+ +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd175e50>.snapshots
+FAILED tests/test_fleet_health.py::test_a_pass_after_the_bound_writes_a_second_snapshot - assert 0 == 2
+ +  where 0 = len([])
+ +    where [] = snapshots()
+ +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd175c50>.snapshots
+FAILED tests/test_fleet_health.py::test_memory_kills_bypass_the_pressure_snapshot_interval - AssertionError: the kill retains its own table inside the cooldown
+assert 1 == 2
+ +  where 1 = len([PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_memory_kills_bypass_the_p0/state/health/100-98dci4-clu-3051-20261118T082347423464198Z.ps')])
+ +    where [PosixPath('/tmp/reckon-crew-scratch/r-20261118T054042395333-qwnw-red-file-fleet-health/pytest-of-mcintos/pytest-2/test_memory_kills_bypass_the_p0/state/health/100-98dci4-clu-3051-20261118T082347423464198Z.ps')] = snapshots()
+ +      where snapshots = <test_fleet_health.Sandbox object at 0x7fcefd16d220>.snapshots
+5 failed, 10 passed in 30.66s
+EXIT=1
