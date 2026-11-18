@@ -8,7 +8,13 @@ from datetime import UTC, datetime
 import pytest
 
 from reckon import ledger, run_store
-from reckon.crew import obligations, pending_landing, recovery_repair_dispatch, runs
+from reckon.crew import (
+    obligations,
+    open_run_index,
+    pending_landing,
+    recovery_repair_dispatch,
+    runs,
+)
 from reckon.crew.station import SweepBeat
 from tests.helpers.git import git
 from tests.helpers.landing_repository import PROJECT, _write_origin_and_checkout
@@ -59,8 +65,17 @@ def _promote(run, storage):
     run_id = pointer["run_id"]
     path = ledger.run_path(PROJECT, run_id, run["repo"])
     if storage == "store":
-        # Promotion's authoritative write, without its optional file projection.
-        ledger._index_append(PROJECT, run["row"])
+        aggregate = ledger.ledger_path(PROJECT, run["repo"])
+        aggregate.write_text(
+            json.dumps({"data": {"members": [], "runs": [], "holds": []}})
+        )
+        git(run["repo"], "add", str(aggregate))
+        git(run["repo"], "commit", "-qm", "test: record empty aggregate")
+        git(run["repo"], "rm", str(aggregate))
+        git(run["repo"], "commit", "-qm", "test: retire aggregate projection")
+        written = ledger.append_run(PROJECT, run["row"], root=run["repo"])
+        assert written["commit_paths"] == []
+        assert open_run_index.has_row(PROJECT, run_id, run["repo"])
         assert (
             run_store.stored_run_rows(PROJECT, run_ids=[run_id])[0]["run_id"] == run_id
         )
@@ -74,9 +89,7 @@ def _promote(run, storage):
 
 @pytest.mark.parametrize("storage", ["store", "legacy"])
 @pytest.mark.parametrize("route", ["landing", "station"])
-def test_a_promoted_run_releases_its_pointer_and_worktree(
-    promoted_run, storage, route
-):
+def test_a_promoted_run_releases_its_pointer_and_worktree(promoted_run, storage, route):
     run = promoted_run
     pointer = run["pointer"]
     run_id = pointer["run_id"]
@@ -152,11 +165,9 @@ def test_a_dirty_promoted_worktree_stays_as_an_obligation(promoted_run, storage)
     pointer = run["pointer"]
     assert runs.pointer_path(pointer["run_id"]).exists()
     items = obligations.obligations(PROJECT, "owner")["obligations"]
-    assert any(
-        item.get("run_id") == pointer["run_id"]
-        and "uncommitted" in item.get("reason", "")
-        for item in items
-    ), items
+    retained = [item for item in items if item.get("run_id") == pointer["run_id"]]
+    assert len(retained) == 1, retained
+    assert "uncommitted.txt" in retained[0].get("reason", ""), retained
 
 
 def test_absence_requires_both_readers_and_a_valid_legacy_row(promoted_run):

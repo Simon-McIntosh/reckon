@@ -1030,7 +1030,7 @@ EXPLAINED_STATES = frozenset(
 
 
 def _promote_record_holds(record: Mapping[str, Any]) -> bool:
-    """Whether this live pointer's completed run has a committed ledger row.
+    """Whether this live pointer's completed run has durable promotion evidence.
 
     Promotion appends the run's ledger row and then removes the live pointer,
     so for the length of that window the pointer still exists while the work
@@ -1040,14 +1040,13 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     ledger row settles the run even when it declares no repository change, so
     row presence, rather than its commit list, answers this question.
 
-    The row is read from the run's own repository, the root promotion wrote it
-    under. Promotion writes the per-run file before it touches the aggregate,
-    so a single stat answers whether the row was committed.
+    The authoritative run store is read before the legacy file in the run's
+    own repository, using the same evidence reader as pointer retirement.
     An unreadable or absent row answers False — the run then takes the word its
     pointer earns, which is the safe direction because the alternative promises
     a landing nothing recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -1058,29 +1057,22 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     repo = str(record.get("repo") or "")
     if not run_id or not project or not repo:
         return False
-    try:
-        return ledger_module.run_path(project, run_id, repo).is_file()
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return False
+    return _promoted_row(project, run_id, root=repo) is not None
 
 
 def _recorded_pointer_word(record: Mapping[str, Any]) -> str:
-    """Name a settled pointer's committed work or recorded completion.
+    """Name a settled pointer's promoted work or recorded completion.
 
     The row existence check already established settlement. A row that cannot
     be decoded cannot establish a code landing, so its safe word is recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
-    try:
-        path = ledger_module.run_path(
-            str(record.get("project") or ""),
-            str(record.get("run_id") or ""),
-            str(record.get("repo") or ""),
-        )
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return "recorded"
+    row = _promoted_row(
+        str(record.get("project") or ""),
+        str(record.get("run_id") or ""),
+        root=str(record.get("repo") or ""),
+    )
     return (
         "promoted"
         if isinstance(row, Mapping)

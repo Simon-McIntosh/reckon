@@ -627,13 +627,15 @@ def _promotion_evidence(
     return row
 
 
-def _promoted_row(project: str, run_id: str) -> Mapping[str, Any] | None:
+def _promoted_row(
+    project: str, run_id: str, *, root: str | Path | None = None
+) -> Mapping[str, Any] | None:
     """The run's promoted row, or None when absent or unreadable."""
     from reckon import ledger
     from reckon.crew import merge
 
     try:
-        return _promotion_evidence(project, run_id)
+        return _promotion_evidence(project, run_id, root=root)
     except (OSError, ValueError, RuntimeError, ledger.LedgerError, merge.MergeError):
         return None
 
