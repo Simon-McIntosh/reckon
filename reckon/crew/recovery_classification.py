@@ -1160,10 +1160,11 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
 
     checkout = claim_repository(record)
     try:
+        from reckon.crew.pending_landing import _promotion_evidence
+
         root = ledger._run_ledger_root(project, str(record.get("repo") or ""))
-        path = ledger.run_path(project, run_id, root)
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger.LedgerError):
+        row = _promotion_evidence(project, run_id, root=root)
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError, CrewError):
         return checkout, "", False
     if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
         return checkout, "", False
@@ -1974,7 +1975,9 @@ def classify_pointer(
             # Optional echoes can be absent from a later attempt's manifest.
             # Recheck a retained refusal against the issued tree and commits.
             reported_orientation = {**manifest_data, **issued_orientation}
-        _apply_orientation_check(orientation_record, None, reported=reported_orientation)
+        _apply_orientation_check(
+            orientation_record, None, reported=reported_orientation
+        )
         if recheck_without_echoes:
             orientation_record["orientation_check"]["echoes_absent"] = True
         memo["orientation_check"] = orientation_record.get("orientation_check")

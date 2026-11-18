@@ -3742,6 +3742,52 @@ def _attempt_ended_after(record: Mapping[str, Any], written_ns: int) -> bool:
     return written_ns >= int(launched.timestamp() * 1_000_000_000)
 
 
+def _promoted_delivery_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Refuse a settled promotion while allowing its verified merge repair."""
+    if record.get("subject") == "plan" or _is_review_run(record):
+        return None
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    if not run_id or not project:
+        return None
+    from reckon import ledger
+    from reckon.crew import merge, pending_landing
+
+    unreadable = False
+    try:
+        row = pending_landing._promotion_evidence(
+            project, run_id, root=str(record.get("repo") or "") or None
+        )
+    except (
+        OSError,
+        ValueError,
+        RuntimeError,
+        ledger.LedgerError,
+        merge.MergeError,
+    ) as exc:
+        unreadable = True
+        reason = f"promotion evidence is unreadable: {exc}; no review is composed"
+    else:
+        if row is None:
+            return None
+        repair_head = pending_landing.pending_repair_head(record)
+        promoted_head = pending_landing._reviewed_head(row)
+        if (
+            repair_head
+            and promoted_head
+            and not same_revision(repair_head, promoted_head)
+        ):
+            return None
+        reason = f"run {run_id!r} is promoted; no review is composed"
+    return {
+        "run_id": run_id,
+        "dispatched": False,
+        "refused": True,
+        "reason": reason,
+        "promotion_evidence_unreadable": unreadable,
+    }
+
+
 def _settled_delivery_refusal(
     record: Mapping[str, Any], *, dry_run: bool
 ) -> dict[str, Any] | None:
@@ -3840,6 +3886,9 @@ def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     dispatch itself records a refusal on the run it acted for; a reader that
     only reports must not write, so this form leaves the record untouched.
     """
+    promoted = _promoted_delivery_refusal(record)
+    if promoted is not None:
+        return promoted
     measured = _measurement_run_refusal(record, dry_run=True)
     if measured is not None:
         return measured
@@ -3910,6 +3959,19 @@ def dispatch_review_for_run(
             if runs.pointer_path(run_id).exists():
                 raise
         record = {**lifecycle, **record}
+    refusal = _promoted_delivery_refusal(lifecycle)
+    if refusal is not None:
+        if refusal.get("promotion_evidence_unreadable") and not dry_run:
+            # A standing review has its own launch lifecycle even when its
+            # source run's promotion evidence cannot be read. Keep a young
+            # launch in flight and release a stranded claim before refusing
+            # composition; neither outcome starts another review.
+            standing = _standing_review_report(
+                record, run_id=str(record.get("run_id") or "")
+            )
+            if standing is not None:
+                return standing
+        return refusal
     refusal = _measurement_run_refusal(lifecycle, dry_run=dry_run)
     if refusal is not None:
         return refusal
@@ -4723,9 +4785,7 @@ def _request_evidenced(record: Mapping[str, Any] | None) -> bool:
     return str(recorded.get("status") or "") in {"dispatched", "withdrawn"}
 
 
-def _is_review_subject(
-    run_id: str, record: Mapping[str, Any] | None
-) -> bool:
+def _is_review_subject(run_id: str, record: Mapping[str, Any] | None) -> bool:
     """Whether this run is itself a review, which owes no review of its own.
 
     The pointer answers when it is live; a run whose pointer is gone is read
@@ -4744,11 +4804,7 @@ def _is_review_subject(
     return False
 
 
-
-
-def _unrequested_reason(
-    record: Mapping[str, Any] | None, *, session: str
-) -> str:
+def _unrequested_reason(record: Mapping[str, Any] | None, *, session: str) -> str:
     """Why a delivered run's review was never requested, from its own record.
 
     Three readings, in the order that keeps the reason closest to the evidence:
@@ -4760,8 +4816,7 @@ def _unrequested_reason(
     """
     if not isinstance(record, Mapping) or not record:
         return (
-            "the run has no live pointer, so no sweep reaches it to ask for "
-            "its review"
+            "the run has no live pointer, so no sweep reaches it to ask for its review"
         )
     recorded = record.get(REVIEW_DISPATCH_FIELD)
     if isinstance(recorded, Mapping) and str(recorded.get("reason") or ""):
