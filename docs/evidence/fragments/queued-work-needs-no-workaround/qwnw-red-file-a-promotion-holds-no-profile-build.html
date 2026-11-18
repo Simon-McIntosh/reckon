@@ -70,7 +70,22 @@ EXIT=1</pre>
   the passing run the plan names for a file whose product rule already landed.</p>
 
   <p><strong>The composed gate</strong> — the scoped gate measured by
-  <code>crew verify-gate --worker</code> and the two suite arms:</p>
+  <code>crew verify-gate --worker</code> with the command the done-when names,
+  and the two suite arms:</p>
 
-  <pre id="qwnw-red-file-a-promotion-holds-no-profile-build-gate">pending gate measurement</pre>
+  <pre id="qwnw-red-file-a-promotion-holds-no-profile-build-gate"># module.__file__: &lt;scratch tree&gt;/reckon/crew/picker/lane_context.py
+# cwd: &lt;scratch tree&gt;
+....                                                                     [100%]
+4 passed
+EXIT=0
+
+baseline ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5: 58 passed, EXIT=0
+head     (the commit this fragment lands in):          58 passed, EXIT=0</pre>
+
+  <p>Both suite arms resolve the same two files
+  (<code>tests/test_staged_write_inventory.py</code>,
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>),
+  because this node adds no test file and deletes none; <code>ruff check</code>
+  and <code>ruff format --check</code> have no Python path to inspect among the
+  files this node changed.</p>
 </section>
