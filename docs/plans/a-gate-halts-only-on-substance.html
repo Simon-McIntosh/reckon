@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -207,6 +207,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20261117T234226485077" data-who="reckon-96" data-when="2026-11-18">
     <div class="r-comment-body"><p>Two further frictions nova reported on the same path are out of s9's scope. A gate log must end in a literal <code>EXIT=&lt;n&gt;</code> line (<code>reckon/crew/promotion_gate.py</code> near line 54); nova's lane launcher writes <code>EXIT_STATUS=</code> and <code>NOVA_LANE_EXIT_STATUS=</code>, and a launcher that also writes <code>EXIT=</code> meets the contract without a reckon change. A pre-existing failure declared on the run is already dropped from the added set at <code>reckon/crew/promotion_records.py</code> near line 1781. Either becomes its own section if it still blocks a landing after s9.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261118T001608433369-review-of-a-waived-review-lands-a-waived-run-03b003a26dad" data-who="reckon-build" data-when="2026-11-18T00:16:57.370Z">
+    <div class="r-comment-body"><p>Independent review of r-20261117T234307925423-a-waived-review-lands-a-waived-run at base 33b6d0d203e10c717008b966a7be7d466a1cf885 -&gt; head 03b003a26dad95379042cbff21f218c7d99323ee stores a parsed record scoring all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 19, durability 16, fit 18, reuse 19; total 106) with added_failure_count 0 and added_failure_ids [] derived from the run&#x27;s own arms (baseline_suite 58 passed / 0 failed, after_suite 62 passed / 0 failed, both EXIT=0), and four non-blocking findings: the unasserted refusal reason at the new test line 303; the callerless suite_delta_waiver seam at review.py:1315; the pointer-only waiver when a waived landing records status clean at review.py:1263; and the reviewer brief at recovery_review_subject.py:1505 that never names the waived form. No blocking findings.</p></div>
 </div>
 </section>
 </main>
