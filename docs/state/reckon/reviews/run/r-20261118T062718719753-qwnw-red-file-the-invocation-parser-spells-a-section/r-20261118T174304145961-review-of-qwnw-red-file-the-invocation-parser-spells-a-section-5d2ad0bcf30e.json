@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms, which the manifest records as inline JSON: logs/baseline-suite-arm.log at 250d9cf3 and logs/after-suite-arm.log at 5d2ad0bc each end 58 passed with EXIT=0 and carry no FAILED line (grep -c '^FAILED' returns 0 for both), so the two id sets are equal and empty and the change adds no failure",
+  "base_log_revision": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:1361 (plan_review.review_scope composes _normalise_sections, whose spellings resolve through reckon/_plan_html.py:92)",
+    "reckon/crew/plan_review.py:3404 (_units_named_in reads a finding's sections through _section_references and _SECTION_REFERENCE at :3281)",
+    "reckon/_store.py:1202 (the plan-write refusal counts deferred-work terms through reckon/doccheck.py:461)",
+    "reckon/crew/plan_review.py:5461 (the review payload normalises the traced units it records)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T17:45:12Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Measured table still records the head run and the scoped gate at 7e91f9b4 (:89-98) and never at the delivered merge head 5d2ad0bc, although logs/head-run.log was rewritten at 5d2ad0bc with 12 passed EXIT=0 and is cited only in the manifest's landing line, so the durable evidence artefact names a superseded revision for two of its five rows."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html",
+      "line": "147",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reader-gate citation is written reckon/crew/runs/.../logs/readers-gate-head.log, dropping the .config/reckon prefix so it resolves to no file from the repository root (reckon/crew/runs does not exist), and the log it names carries revision cae2f4c5, which is not an ancestor of the delivered head, while the merge-head rerun at logs/readers-gate-merge.log carries no revision or command header at all, so the 109-passed claim cannot be tied to the revision under review."
+    }
+  ],
+  "head_log_revision": "5d2ad0bcf30e5f5da1e4e38da63e64029b1d1ad4",
+  "increment_note": "the reviewed run was last reviewed at head 7510e677 (review r-20261118T153759137373); the only commit gained since is the merge 5d2ad0bc, whose first parent is 7510e677 and whose second is the primary branch c1d038a8, so the increment diff is 7510e677..5d2ad0bc and the run base 250d9cf3 is carried for context only",
+  "increment_reviewed": "7510e677b7e85d8eee72042b4d21181eac19e712..5d2ad0bcf30e5f5da1e4e38da63e64029b1d1ad4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production readers reached by the change: reckon/crew/recovery_review_subject.py:1361 composes review_scope, whose reckon/crew/plan_review.py:2507 normalises section spellings through _plan_html.section_record_id; reckon/crew/plan_review.py:3404 reads a finding's references through _section_references; reckon/_store.py:1202 counts deferred-work terms through doccheck.deferred_work_terms; and reckon/crew/plan_review.py:5461 normalises the traced units a review payload records.",
+    "diff": "read 7510e677..5d2ad0bc and the node's four files against 250d9cf3; the merge resolves reckon/crew/plan_review.py to the primary branch's text (deleting _SECTION_TOKEN, holding the reference grammar in _SECTION_REFERENCE_GRAMMAR at :3277), the census gains one level of module-level constant resolution at tests/test_the_invocation_parser_spells_a_section.py:125-160 and swaps _SECTION_TOKEN's expected site for crew/reports.py::_PLAN_SECTION_REFERENCE, and the fragment gains a 31-line merge section at :49-73.",
+    "done_when": "the done_when is the named file passing at head as an all_debug job with SLURM_JOB_ID unset, with a base control, an arm over the importing population and a negative control; logs/head-run.log (5d2ad0bc, 12 passed, EXIT=0), logs/base-run.log (250d9cf3, 1 failed 11 passed, EXIT=1, quoting the census assertion) and the importing arms are on disk, and the two suite arms read 58 passed EXIT=0 each.",
+    "goal": "the node's goal is that tests/test_the_invocation_parser_spells_a_section.py passes in full at head; logs/head-run.log carries 12 passed EXIT=0 at revision 5d2ad0bc with the tree, the imported reckon/_plan_html.py and the cwd on its header lines, an independent extraction of 5d2ad0bc re-read 12 passed, and reckon/crew/plan_review.py:2031 now delegates every section spelling to reckon/_plan_html.py:92 section_record_id so the module owns no number grammar.",
+    "manifest": "read; status complete, five commit ids, changed_paths naming the four files, the tests line naming the nine-file reader gate, baseline_suite and after_suite as inline JSON over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py at 58 passed EXIT=0 each, and a landing line naming the merge-head run at 5d2ad0bc.",
+    "write_paths": "the declared set is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and that fragment's own path; the increment's own hunks are reckon/crew/plan_review.py (the merge resolution), tests/test_the_invocation_parser_spells_a_section.py and the fragment, all inside it, while the other ~170 paths in 7510e677..5d2ad0bc arrive with the second parent c1d038a8."
+  },
+  "justifications": {
+    "durability": "reinstating the base literal r\"\u00a7\\s*(\\d+(?:[.-]\\d+)*)|...\" at reckon/crew/plan_review.py:3277 reddens the census assert at tests/test_the_invocation_parser_spells_a_section.py:172 (logs/base-run.log records exactly that failure at 250d9cf3), and dropping the added named-constant resolution at :125-160 reddens the expected-set comparison at :174 because _SECTION_REFERENCE_GRAMMAR carries no digit marker of its own.",
+    "evidence": "logs/head-run.log and logs/base-run.log record the gate and its control with revision, tree, imported module and EXIT line, but the fragment's Measured table at :89-98 still names 7e91f9b4 for the head run and the scoped gate, and the merge-head reader gate at logs/readers-gate-merge.log carries no header line at all.",
+    "fit": "the merge keeps the module's constant-then-compile idiom beside reckon/doccheck.py:429-432, and the census's named_grammars dict at tests/test_the_invocation_parser_spells_a_section.py:125 follows the ast.walk idiom already in that function; no new name is introduced outside the module-private spelling the file already uses.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2031-2045 leaves the module no number grammar of its own and delegates every spelling to reckon/_plan_html.py:92, and logs/head-run.log plus the re-read of an extraction of 5d2ad0bc both read 12 passed at the delivered head.",
+    "reuse": "the increment adds no production definition and removes this branch's duplicate _SECTION_TOKEN gate, so every reader still composes reckon/_plan_html.py:85 SECTION_NUMBER_PATTERN, the only section-number owner a search over reckon/ finds; the census extends the existing test rather than starting a second enumeration.",
+    "scope_discipline": "every node-authored hunk of 7510e677..5d2ad0bc lies inside reckon/, tests/ and the declared fragment path, and the remaining paths in that range come from the merge's second parent c1d038a8 rather than from this node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_the_invocation_parser_spells_a_section.py passes in full at head; logs/head-run.log carries 12 passed EXIT=0 at revision 5d2ad0bc with the tree, the imported reckon/_plan_html.py and the cwd on its header lines, an independent extraction of 5d2ad0bc re-read 12 passed, and reckon/crew/plan_review.py:2031 delegates every section spelling to reckon/_plan_html.py:92 so the module owns no number grammar.\nVERDICT done_when: the done_when is the named file passing at head as an all_debug job with SLURM_JOB_ID unset plus a base control, an arm over the importing population and a negative control; logs/head-run.log (5d2ad0bc, 12 passed, EXIT=0), logs/base-run.log (250d9cf3, 1 failed 11 passed, EXIT=1, quoting the census assertion) and the importing arms are on disk, and the two suite arms read 58 passed EXIT=0 each.\nVERDICT write_paths: the declared set is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and that fragment's own path; the increment's own hunks are reckon/crew/plan_review.py (the merge resolution), tests/test_the_invocation_parser_spells_a_section.py and the fragment, all inside it, while the other ~170 paths in 7510e677..5d2ad0bc arrive with the second parent c1d038a8.\nVERDICT manifest: read; status complete, five commit ids, changed_paths naming the four files, the tests line naming the nine-file reader gate, baseline_suite and after_suite as inline JSON over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py at 58 passed EXIT=0 each, and a landing line naming the merge-head run at 5d2ad0bc.\nVERDICT diff: read 7510e677..5d2ad0bc and the node's four files against 250d9cf3; the merge resolves reckon/crew/plan_review.py to the primary branch's text (deleting _SECTION_TOKEN, holding the reference grammar in _SECTION_REFERENCE_GRAMMAR placed at :3277), the census gains one level of module-level constant resolution at tests/test_the_invocation_parser_spells_a_section.py:125-160 and swaps _SECTION_TOKEN's expected site for crew/reports.py::_PLAN_SECTION_REFERENCE, and the fragment gains a 31-line merge section at :49-73.\nCALL_SITES: reckon/crew/recovery_review_subject.py:1361 (plan_review.review_scope composes _normalise_sections), reckon/crew/plan_review.py:3404 (_units_named_in reads through _section_references), reckon/_store.py:1202 (the plan-write refusal counts deferred-work terms through doccheck.deferred_work_terms), reckon/crew/plan_review.py:5461 (the review payload normalises the traced units it records)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2031-2045 leaves the module no number grammar of its own and delegates every spelling to reckon/_plan_html.py:92, and logs/head-run.log plus the re-read of an extraction of 5d2ad0bc both read 12 passed at the delivered head.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/head-run.log and logs/base-run.log record the gate and its control with revision, tree, module and EXIT lines, but the fragment's Measured table at :89-98 still names 7e91f9b4 for the head run and the scoped gate, and logs/readers-gate-merge.log carries no header line at all.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every node-authored hunk of 7510e677..5d2ad0bc lies inside reckon/, tests/ and the declared fragment path, and the other paths in that range arrive from the merge's second parent c1d038a8.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the base literal at reckon/crew/plan_review.py:3277 reddens the census assert at tests/test_the_invocation_parser_spells_a_section.py:172, which logs/base-run.log records at 250d9cf3, and dropping the named-constant resolution at :125-160 reddens the expected-set comparison at :174.\nSCORE fit: 19\nJUSTIFICATION fit: the merge keeps the constant-then-compile idiom of reckon/doccheck.py:429-432 and the two new interpolations at reckon/crew/plan_review.py:3277-3281, and the census's named_grammars dict at tests/test_the_invocation_parser_spells_a_section.py:125 follows the ast.walk idiom already in that function.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no production definition and removes this branch's duplicate _SECTION_TOKEN gate, so every reader still composes reckon/_plan_html.py:85 SECTION_NUMBER_PATTERN, the only section-number owner a search over reckon/ finds.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html:90 non-blocking: the Measured table still records the head run and the scoped gate at 7e91f9b4 (:89-98) and never at the delivered merge head 5d2ad0bc, although logs/head-run.log was rewritten at 5d2ad0bc with 12 passed EXIT=0 and is cited only in the manifest's landing line, so the durable evidence artefact names a superseded revision for two of its five rows.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-invocation-parser-spells-a-section.html:147 non-blocking: the reader-gate citation is written reckon/crew/runs/.../logs/readers-gate-head.log, dropping the .config/reckon prefix so it resolves to no file from the repository root (reckon/crew/runs does not exist), and the log it names carries revision cae2f4c5, which is not an ancestor of the delivered head, while the merge-head rerun at logs/readers-gate-merge.log carries no revision or command header at all, so the 109-passed claim cannot be tied to the revision under review.",
+  "review_run_id": "r-20261118T174304145961-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-5d2ad0bcf30e",
+  "reviewed_base_sha": "7510e677b7e85d8eee72042b4d21181eac19e712",
+  "reviewed_head_sha": "5d2ad0bcf30e5f5da1e4e38da63e64029b1d1ad4",
+  "reviewed_run_id": "r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T174304145961-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-5d2ad0bcf30e"
+  },
+  "reviewer_run_id": "r-20261118T174304145961-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-5d2ad0bcf30e",
+  "run_base_sha": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:18:09.878931+00:00",
+  "total": 108
+}
