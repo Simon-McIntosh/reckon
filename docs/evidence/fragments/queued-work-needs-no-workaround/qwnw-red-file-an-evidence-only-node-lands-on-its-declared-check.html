@@ -1,0 +1,82 @@
+<section id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-landing">
+  <h2>An evidence-only node lands on its declared check</h2>
+
+  <p><strong>Measure.</strong>
+  <code>tests/test_an_evidence_only_node_lands_on_its_declared_check.py</code>
+  passes in full at head: <strong>2 passed</strong>, <code>EXIT=0</code>, as a
+  job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset for the
+  runner. Its one failing case at the base revision read
+  <code>1 failed, 1 passed</code>, <code>EXIT=1</code>. Each gate log's first
+  lines name the revision, the tree and the command it ran; its last line is a
+  bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <h3 id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-cause">The cause, and its verdict</h3>
+
+  <p><strong>Test wrong — one cause.</strong> The landing case read the landed
+  record out of the completion command's own reply:</p>
+
+  <pre id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-repro"><code>record = json.loads(result.output)["record"]
+E   KeyError: 'record'
+tests/test_an_evidence_only_node_lands_on_its_declared_check.py:143: KeyError … the case count read
+the base log's own summary: 1 failed, 1 passed, EXIT=1</code></pre>
+
+  <p>The reply has not carried the record since the delivery batching landed:
+  it is a bounded summary naming the run, whether the pointer was removed, and
+  the path the whole receipt was written to. The rule the code now keeps is
+  that a completion answers with its bounded reply and records the full receipt
+  on disk, so the case reads the receipt there — the same shape every other
+  promotion case in this suite reads. The product was right about the landing:
+  the receipt the base run wrote held <code>gate: passed</code>, the declared
+  check as its <code>gate_check</code>, a negative control recorded as
+  <code>exempt</code> for <code>node-writes-no-test-path</code>, and
+  <code>promoted_revision</code> equal to the delivered head. Only the place the
+  case looked for those facts was wrong.</p>
+
+  <p><strong>No assertion was deleted or weakened.</strong> The three the case
+  carried are kept — the gate is <code>passed</code>, the negative control is
+  exempt, the promoted revision is the delivered head — and it now states the
+  two facts that make the landing <em>the declared check</em> rather than a
+  passing run: the landed row's <code>gate_check</code> names the check's own
+  command and its exit status, and the exemption names its reason. The check
+  delivered to the command moves into one helper the invocation and the
+  assertion share, so the comparison against the landed row is the same text
+  the promotion was handed.</p>
+
+  <h3 id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-arms">Arms</h3>
+
+  <table id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-arms-table">
+    <caption>Each log's first lines name the revision, tree and command; its
+    last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>selection</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the negative control</td>
+        <td>the node's test file</td>
+        <td id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-arms-base">1 failed, 1 passed, <code>EXIT=1</code> — the failing id is
+        <code>test_an_evidence_only_node_lands_on_its_declared_check</code></td></tr>
+      <tr><td>head, the gate</td>
+        <td>the node's test file, as an <code>all_debug</code> job</td>
+        <td id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-arms-head">2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head, the scoped gate</td>
+        <td>the declared suite pair, measured by <code>crew verify-gate --worker</code></td>
+        <td>58 passed, <code>EXIT=0</code>, 0 failures</td></tr>
+      <tr><td>base</td>
+        <td>the declared suite pair</td>
+        <td id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-arms-suite-base">58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head</td>
+        <td>the declared suite pair</td>
+        <td id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-arms-suite-head">58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The two suite arms read the same 58 passed at the base revision and at the
+  node's head, so the change adds no failure to either. The node changes no
+  module under <code>reckon/</code>: its only source change is the test file,
+  which nothing imports, so the population of files importing what it changed
+  is empty and there is no wider arm to take.</p>
+
+  <h3 id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-negative">Negative control</h3>
+
+  <p>The base revision's own run of the file fails exactly the id above. That
+  run is the control for this repair: the failure it raises is the one the
+  repair clears, and no other id in the file moves.</p>
+</section>
