@@ -16,7 +16,6 @@ synthetic config home, and assert the real crew directories are untouched.
 from __future__ import annotations
 
 import json
-import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,6 +24,7 @@ import pytest
 
 from reckon import crew, ledger
 from reckon.crew import promotion, recovery
+from tests.helpers.git import git as _git
 
 
 @pytest.fixture()
@@ -34,15 +34,6 @@ def home(tmp_path, monkeypatch):
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     return config_home
-
-
-def _git(repo: Path, *arguments: str) -> str:
-    return subprocess.run(
-        ["git", "-C", str(repo), *arguments],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
 
 
 def _landed_repository(home: Path, tmp_path: Path) -> tuple[Path, str]:
