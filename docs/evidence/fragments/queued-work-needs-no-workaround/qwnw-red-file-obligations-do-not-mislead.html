@@ -48,6 +48,20 @@ EXIT=1</code></pre>
   <p>Also with the base fixture (both trees clean and reachable) the derivation
   returns no held tree at all, which is why the base run's list is empty rather
   than carrying one wrong row.</p>
+
+  <h2 id="qwnw-red-file-obligations-do-not-mislead-all-debug">The named file as an all_debug job</h2>
+  <pre id="qwnw-red-file-obligations-do-not-mislead-all-debug-log"><code>job      1326661 (all_debug), SLURM_JOB_ID unset inside it
+revision 57b1145f313836030ff15b1dcb116b5cea98af28</code></pre>
+  <p>Log: <code>logs/head-target-all_debug.sbatch.log</code> under the run
+  directory; it ends <code>2 passed in 1.59s</code> and <code>EXIT=0</code>.
+  The base run of the same file, at 23b901694b4bfec73d95be3a082d4c336d9a4101,
+  is <code>logs/base-target-at-23b9016.log</code>: 1 failed, 1 passed,
+  <code>EXIT=1</code>, failing id
+  <code>test_a_live_run_reusing_a_retained_path_is_not_hintable</code>.</p>
+  <p>The declared suite arms over <code>tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code> read 58 passed
+  with <code>EXIT=0</code> at the base revision and 58 passed with
+  <code>EXIT=0</code> at head, so no failure is added.</p>
 </article>
 </body>
 </html>
