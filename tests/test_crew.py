@@ -3126,8 +3126,9 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     original_session = "019ff509-8a60-7723-94fd-65942a6d8faa"
     fresh_session = "019ff509-8a60-7723-94fd-65942a6d8fab"
     ledger.register_member("proj", "worker-a", harness="alpha", root=repo)
-    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
-    roster_before = roster_path.read_bytes()
+    # The roster is held in the run store, which is where every reader takes it
+    # from; the committed state path is the aggregate the store imports once.
+    roster_before = ledger.members("proj", repo)
     first = crew.dispatch(
         node=_node(),
         project="proj",
@@ -3193,7 +3194,7 @@ def test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first(
     assert fresh_record["session_model"] == "other-model"
     assert fresh_record["agent"] == fresh_agent
     assert crew.read_pointer(first["run_id"]) == original_record
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.members("proj", repo) == roster_before
 
 
 def test_observe_records_a_backends_headroom_when_it_reports_one(home, repo) -> None:
@@ -3427,6 +3428,34 @@ def _deliver_manifest(record: dict, status: str, **fields: str) -> None:
     Path(record["manifest_path"]).write_text("\n".join(lines) + "\n")
 
 
+def _let_the_worker_stop_when_it_wrote_its_verdict(record: dict) -> None:
+    """Place the run's stop outside the stall window the interim word needs.
+
+    A terminal status is provisional while its attempt is still inside the
+    window a working run is given: the attempt's own stream written inside the
+    stall window defers the word, because a worker that wrote ``blocked`` and
+    went on writing has not stopped. A case asserting what a stopped worker's
+    verdict reads therefore has to age both clocks the reading takes its quiet
+    time from — the attempt's start and the run's newest stream — so nothing in
+    the fixture claims the attempt is still producing output. The manifest stays
+    fresh: it is what the worker wrote as it stopped.
+    """
+    quiet = recovery.LOG_STALE_AFTER_SECONDS + 300
+    stopped = datetime.now(UTC) - timedelta(seconds=quiet)
+    started = stopped.isoformat(timespec="seconds").replace("+00:00", "Z")
+    pointer = crew.read_pointer(record["run_id"])
+    pointer["attempt_started_at"] = started
+    crew._write_json(crew.pointer_path(record["run_id"]), pointer)
+    # The attempt record carries the attempt's own clock too, and the later of
+    # the two records dates the attempt, so both move together.
+    attempt_path = runs.run_dir(record["run_id"]) / "attempt.json"
+    attempt = json.loads(attempt_path.read_text(encoding="utf-8"))
+    attempt["attempt_started_at"] = started
+    attempt_path.write_text(json.dumps(attempt), encoding="utf-8")
+    stamp = stopped.timestamp()
+    os.utime(record["log_path"], (stamp, stamp))
+
+
 def _predate_delivery(manifest: Path, dispatched_at: str) -> None:
     """Back-date a delivery to the attempt that wrote it.
 
@@ -3658,6 +3687,7 @@ def test_blocked_manifest_is_not_promotable(home, repo) -> None:
         "blocked",
         blockers="the schema choice needs direction",
     )
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
 
     row = crew.classify_pointer(crew.observe(record["run_id"]))
 
@@ -3676,6 +3706,7 @@ def test_failed_manifest_is_not_promotable(home, repo) -> None:
         manifest_path=str(manifest),
     )
     _deliver_manifest(record, "failed", blockers="the focused test failed")
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
 
     row = crew.classify_pointer(crew.observe(record["run_id"]))
 
@@ -3697,6 +3728,7 @@ def test_a_complete_manifest_emits_an_authorised_review_dispatch(
         manifest_path=str(manifest),
     )
     _deliver_manifest(record, "complete", commits="HEAD")
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
 
     row = crew.classify_pointer(crew.observe(record["run_id"]))
 
@@ -3745,6 +3777,7 @@ def test_crew_read_and_recovery_command_share_classification(home, repo) -> None
         manifest_path=str(manifest),
     )
     _deliver_manifest(record, "blocked", blockers="waiting for direction")
+    _let_the_worker_stop_when_it_wrote_its_verdict(record)
     crew.observe(record["run_id"])
 
     read_row = mcp._crew("proj", view="live")["runs"][0]
