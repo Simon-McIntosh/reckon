@@ -1424,8 +1424,16 @@ def _watch_verdict(
         # command: the release the classifier names would launch over the
         # admission pass's release path, and nothing on the row says a
         # coordinator's move is what ends the wait.
+        #
+        # A block the worker's own manifest reports keeps the word that block
+        # already earned. The lane's refusal gates *when* the blocker can be
+        # worked and never lifts it, so painting such a row as a wait would
+        # hide the reader's work behind a clock that answers a different
+        # question — the same reason the classification keeps the manifest's
+        # reason beside the refusal rather than in place of it.
         next_action = None
-        if stored_phase != "held":
+        manifest_blocked = str(row.get("manifest_status") or "") == "blocked"
+        if stored_phase != "held" and not manifest_blocked:
             state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
