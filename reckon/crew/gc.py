@@ -1517,6 +1517,9 @@ def _scratch_activity(path: Path, deadline: float) -> tuple[float, int]:
     def unreadable(error: OSError) -> None:
         raise error
 
+    metadata = path.lstat()
+    if stat.S_ISREG(metadata.st_mode):
+        return max(metadata.st_ctime, metadata.st_mtime), metadata.st_size
     latest = _scratch_ctime(path)
     size = 0
     for directory, directories, files in os.walk(
@@ -1535,8 +1538,12 @@ def _scratch_activity(path: Path, deadline: float) -> tuple[float, int]:
     return latest, size
 
 
-def _scratch_process_holders(root: Path) -> dict[str, list[int]]:
-    """Read process cwd and fd links once for every scratch child."""
+def _scratch_process_holders(root: Path, *, depth: int = 1) -> dict[str, list[int]]:
+    """Read cwd and fd holders grouped at the requested scratch depth.
+
+    Two path components distinguish an idle copy from a worker using another
+    entry in the same live run, without rescanning /proc for every copy.
+    """
     holders: dict[str, list[int]] = {}
     proc = Path("/proc")
     for entry in proc.iterdir():
@@ -1548,8 +1555,42 @@ def _scratch_process_holders(root: Path) -> dict[str, list[int]]:
             except (OSError, ValueError):
                 continue
             if relative.parts:
-                holders.setdefault(relative.parts[0], []).append(int(entry.name))
+                key = str(Path(*relative.parts[:depth]))
+                holders.setdefault(key, []).append(int(entry.name))
     return holders
+
+
+def _stale_live_scratch_entries(
+    directory: Path,
+    owner: Mapping[str, Any],
+    holders: Mapping[str, list[int]],
+    *,
+    stamp: float,
+    grace_seconds: float,
+    deadline: float,
+) -> list[dict[str, Any]]:
+    """Name inactive direct entries without licensing removal from a live run."""
+    entries = []
+    for child in directory.iterdir():
+        if time.monotonic() >= deadline:
+            raise TimeoutError("live scratch activity census exceeded its bound")
+        if child.is_symlink() or holders.get(str(Path(directory.name) / child.name)):
+            continue
+        latest, size = _scratch_activity(child, deadline)
+        age = max(0.0, stamp - latest)
+        if age >= grace_seconds:
+            entries.append(
+                {
+                    "path": str(child),
+                    "bytes": size,
+                    "inactivity_seconds": age,
+                    "run_id": directory.name,
+                    "project": str(owner.get("project") or ""),
+                    "session": str(owner.get("session") or ""),
+                    "reason": "inactive entry retained because its run is live",
+                }
+            )
+    return entries
 
 
 def scratch_root_pairs_with_state_home(
@@ -1610,8 +1651,17 @@ def garbage_collect_orphan_scratch(
         raise ValueError("scratch grace must be nonnegative")
     stamp = time.time() if now is None else now
     deadline = time.monotonic() + 5
-    live_ids = {str(row.get("run_id") or "") for row in list_live()}
-    holders = _scratch_process_holders(root)
+    live_runs = {str(row.get("run_id") or ""): row for row in list_live()}
+    live_ids = set(live_runs)
+    detailed_holders = (
+        _scratch_process_holders(root, depth=2) if inspect_activity else {}
+    )
+    holders: dict[str, list[int]] = {}
+    if inspect_activity:
+        for path, pids in detailed_holders.items():
+            holders.setdefault(Path(path).parts[0], []).extend(pids)
+    else:
+        holders = _scratch_process_holders(root)
     entries: list[dict[str, Any]] = []
     removed: list[str] = []
     bytes_freed = 0
@@ -1686,11 +1736,36 @@ def garbage_collect_orphan_scratch(
                 bytes_freed += entry["bytes"]
                 if record_removal is not None:
                     record_removal(entry)
+    stale_live_entries: list[dict[str, Any]] = []
+    live_entries_complete = True
+    if inspect_activity:
+        # Reclamation gets the census budget first. Live-run inspection only
+        # reports: even a completely inactive owned tree remains protected.
+        for entry in entries:
+            child = Path(entry["path"])
+            if child.name not in live_runs or entry["removed"] or child.is_symlink():
+                continue
+            try:
+                stale_live_entries.extend(
+                    _stale_live_scratch_entries(
+                        child,
+                        live_runs[child.name],
+                        detailed_holders,
+                        stamp=stamp,
+                        grace_seconds=grace_seconds,
+                        deadline=deadline,
+                    )
+                )
+            except (OSError, TimeoutError) as exc:
+                live_entries_complete = False
+                entry["live_entries_error"] = str(exc)
     return {
         "root": str(root),
         "entries": entries,
         "removed": removed,
         "bytes_freed": bytes_freed,
+        "stale_live_entries": stale_live_entries,
+        "live_entries_complete": live_entries_complete,
         "would_free_bytes": sum(
             row["bytes"]
             for row in entries

@@ -239,3 +239,68 @@ def test_sweep_refuses_a_symlink_root(scratch, tmp_path):
     report = supervisor.reclaim_unowned_scratch()
     assert "noncanonical root" in report["error"]
     assert scratch.root.is_symlink()
+
+
+def test_disk_pressure_names_stale_entries_retained_for_a_live_runs_owner(
+    scratch, monkeypatch, capsys
+):
+    now = scratch.now - 8000 + 11 * 3600
+    monkeypatch.setattr(gc.time, "time", lambda: now)
+    live = scratch.root / "live-run"
+    live.mkdir()
+    owner = pointer(scratch, live.name)
+    owner.write_text(
+        json.dumps(
+            {"run_id": live.name, "project": "fixture", "session": "owning-session"}
+        )
+    )
+    stale = live / "repository-copy"
+    stale.mkdir()
+    payload = stale / "repository-data"
+    with payload.open("wb") as stream:
+        stream.truncate(1_400_000_000)  # Sparse decoy: no large allocation or read.
+    recent = live / "recent-copy"
+    recent.mkdir()
+    (recent / "payload").write_bytes(b"recent")
+    os.utime(recent / "payload", (now - 60, now - 60))
+    held = live / "held-copy"
+    held.mkdir()
+    (held / "payload").write_bytes(b"held")
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import sys; print('ready',flush=True); sys.stdin.read()",
+        ],
+        cwd=held,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    )
+    try:
+        assert holder.stdout.readline() == b"ready\n"
+        monkeypatch.setenv(supervisor.NODE_DISK_ROOT_ENV, str(scratch.root))
+        monkeypatch.setattr(supervisor, "node_disk_reserve_bytes", lambda: 10**18)
+        assert supervisor.sample_node_disk() == 0
+        sample = json.loads((scratch.state / supervisor.NODE_DISK_RECORD).read_text())
+        retained = sample["crew_scratch"]["stale_live_entries"]
+        assert len(retained) == 1
+        row = retained[0]
+        assert row["path"] == str(stale)
+        assert row["bytes"] == 1_400_000_000
+        assert 11 * 3600 - 2 <= row["inactivity_seconds"] <= 11 * 3600 + 2
+        assert row["run_id"] == live.name
+        assert row["project"] == "fixture"
+        assert row["session"] == "owning-session"
+        pressure = supervisor.node_disk_pressure(sample)
+        assert pressure["stale_live_scratch"] == retained
+        for expected in [str(stale), "1400000000 bytes", "live-run", "owning-session"]:
+            assert expected in pressure["reason"]
+        assert "seconds inactive" in pressure["reason"]
+        assert payload.stat().st_size == 1_400_000_000
+        assert (held / "payload").read_bytes() == b"held"
+        assert (recent / "payload").read_bytes() == b"recent"
+        assert sample["crew_scratch"]["removed"] == []
+        assert not (scratch.state / "scratch-removals.jsonl").read_text()
+        assert len(capsys.readouterr().out.split()) == 4
+    finally:
+        holder.communicate(timeout=5)

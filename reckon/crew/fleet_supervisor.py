@@ -545,6 +545,15 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
     )
     if scratch.get("error") or scratch.get("withheld"):
         scratch_detail += f"; crew scratch census unavailable: {scratch.get('error') or scratch['withheld']}"
+    stale_live_entries = scratch.get("stale_live_entries", [])
+    for entry in stale_live_entries:
+        scratch_detail += (
+            f"; stale scratch retained for live run {entry['run_id']} "
+            f"(owner {entry['project']}/{entry['session']}): {entry['path']} "
+            f"({entry['bytes']} bytes, {entry['inactivity_seconds']:.0f} seconds inactive)"
+        )
+    if scratch.get("live_entries_complete") is False:
+        scratch_detail += "; live-run scratch census incomplete"
     return {
         "kind": "node-disk-reserve",
         "run_id": "",
@@ -556,6 +565,7 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         ),
         "next_command": "Review the named entries with their owners and free local disk space",
         "disk": dict(sample),
+        "stale_live_scratch": stale_live_entries,
     }
 
 
