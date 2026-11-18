@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="queued-work-needs-no-workaround">
+<meta name="plan-node" content="qwnw-red-file-forgotten-runs-are-reported">
+<title>qwnw-red-file-forgotten-runs-are-reported — base run red, head run green</title>
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="qwnw-red-file-forgotten-runs-are-reported-record">The file, red at base and green at head</h2>
+
+<p><code>tests/test_forgotten_runs_are_reported.py</code> failed in full at the
+base revision <code>ef0bce316448244cae55cedef8aca7e1dbc36988</code>: two of its
+five cases, both from one cause. The verdict is <strong>product wrong</strong>,
+not test wrong. The derivation
+<code>reckon/crew/forgotten_runs.py</code> documented its subject as
+terminal and <em>unpromoted</em>, and the watcher's own settlement reading was
+already there to say so, but the predicate the function applied was the terminal
+classification alone. A run whose ledger row promotion had already written — a
+row carrying commits, or the report-only row a completion declaring no change
+writes — stayed in the report for the whole window between the ledger write and
+the live pointer's removal, and a reader was told to act on work that had landed.
+An assertion was neither deleted nor weakened: the two cases already asserted the
+rule, and the product now keeps it.
+
+<h3 id="qwnw-red-file-forgotten-runs-are-reported-base">Base run — red, two failing ids</h3>
+
+<p>Job on <code>all_debug</code>, submitted from the fleet allocation with
+<code>SLURM_JOB_ID</code> removed, the archive of the base revision extracted to
+a node-local scratch, log on shared storage:
+<code>~/.config/reckon/crew/runs/r-20261118T062434381477-qwnw-red-file-forgotten-runs-are-reported/base-run-1794996510261231758.log</code>.</p>
+
+<pre>
+# revision: ef0bce316448244cae55cedef8aca7e1dbc36988
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_forgotten_runs_are_reported.py'
+FF...                                                                    [100%]
+=========================== short test summary info ============================
+FAILED tests/test_forgotten_runs_are_reported.py::test_the_view_lists_exactly_the_run_nobody_is_coming_back_to - AssertionError: the forgotten view must name exactly the terminal, unpromoted run whose session has had no follower and no dispatch; it named ['run-forgotten-complete', 'run-forgotten-promoted']
+FAILED tests/test_forgotten_runs_are_reported.py::test_a_run_whose_outcome_is_already_landed_is_not_forgotten - AssertionError: a run the ledger settled with commits is promoted, not forgotten; the view named ['run-forgotten-complete', 'run-forgotten-promoted']
+2 failed, 3 passed in 0.98s
+EXIT=1
+</pre>
+
+<p>The prompt: <code>it named ['run-forgotten-complete',
+'run-forgotten-promoted']</code> names the promoted pointer beside the forgotten
+one, which is exactly the pointer the report must not name.</p>
+
+<h3 id="qwnw-red-file-forgotten-runs-are-reported-head">Head run — green, five passed</h3>
+
+<p>The same command at the change's own revision, on the same partition, by the
+run's scoped gate:
+<code>~/.config/reckon/crew/runs/r-20261118T062434381477-qwnw-red-file-forgotten-runs-are-reported/scoped-gate-1794996476530871337.log</code>.</p>
+
+<pre>
+# revision: 6af42087e6e91f79ec47d80549650938f81143ad
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_forgotten_runs_are_reported.py'
+.....                                                                    [100%]
+5 passed in 0.65s
+EXIT=0
+</pre>
+
+<p>The arming of the same file is measured either way: the base arm names two
+failing ids, the head arm none.</p>
+
+</main>
+</body>
+</html>
