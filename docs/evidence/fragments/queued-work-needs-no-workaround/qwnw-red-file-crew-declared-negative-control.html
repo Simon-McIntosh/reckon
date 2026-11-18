@@ -1,0 +1,95 @@
+<section id="qwnw-red-file-crew-declared-negative-control-landing">
+  <h2>The negative-control contract's refusal case reads the rule the gate keeps</h2>
+
+  <p><strong>Cause, and its verdict: test wrong.</strong>
+  <code>tests/test_crew_declared_negative_control.py</code> held one case to the
+  retired wording rule. <code>test_promotion_refuses_a_log_that_does_not_name_the_declared_mutation</code>
+  delivered a red log reading <code>FAILED tests/test_other.py - AssertionError</code>
+  against a declaration of a mutation, and expected promotion to refuse, because
+  the log's text does not repeat the declaration. The gate stopped comparing
+  text with a declaration in <code>8901431b8a</code>: it now reads two facts
+  about the run the log captured — that the run failed (a terminal
+  <code>EXIT=&lt;n&gt;</code> line, or the runner's own <code>FAILED</code> ids
+  beside its summary) and that it names a failing test id the comparison arm
+  does not fail. That commit updated the two control tests that carried the
+  retired refusal and added a companion case, but left this file alone, so the
+  case was red on the primary branch.</p>
+
+  <p><strong>What changed.</strong> The case now states the fact its refusal
+  rests on. The delivered log names <code>tests/test_other.py::test_elsewhere</code>
+  and the manifest records a head arm
+  (<code>... after_suite</code>) whose <code>failure_ids</code> already holds
+  that id, so the control adds no failure and promotion refuses it. The
+  declaration the refusal carries was shortened to
+  <code>removing the declared mutation</code>, and the assertion that the
+  declaration reaches the reader is kept, beside a new assertion naming the
+  refusal's own reason (<code>adds no failure to the head arm's</code>). No
+  assertion is deleted or weakened. The manifest fixture grew an optional
+  <code>after_suite</code> record; it is written by
+  <code>json.dumps</code>, so the arm has the shape the gate parses.</p>
+
+  <p><strong>Why an arm is needed.</strong> <code>_baseline_suite_failure_ids</code>
+  reads a manifest that recorded no arm at all as an arm that failed nothing, so
+  an armless fixture admits every failing id its log names. The refusal is a
+  comparison, and a comparison needs the other side to be recorded: the fixture
+  now records that side; the product was not changed.</p>
+
+  <h3 id="qwnw-red-file-crew-declared-negative-control-measured">Measured</h3>
+
+  <table id="qwnw-red-file-crew-declared-negative-control-arms">
+    <caption>Every arm below ran as its own job on <code>all_debug</code> with
+    <code>SLURM_JOB_ID</code> unset in the measured command, writing to shared
+    storage. A log's first lines name the revision, host, tree and command; its
+    last line is a bare <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head</td>
+        <td><code>f5485722f28dd97426ad90c1e1b3105573443620</code></td>
+        <td>8 passed, <code>EXIT=0</code></td>
+        <td><code>scoped-gate-1795016522105701739.log</code></td></tr>
+      <tr><td>the named file, base</td>
+        <td><code>0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385</code></td>
+        <td>1 failed, 7 passed, <code>EXIT=1</code></td>
+        <td><code>logs/base-all-debug.log</code></td></tr>
+      <tr><td>baseline suite</td>
+        <td><code>0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td><code>baseline_suite-1795016383821310758.log</code></td></tr>
+      <tr><td>after suite</td>
+        <td><code>f5485722f28dd97426ad90c1e1b3105573443620</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td><code>after_suite-1795016427247803382.log</code></td></tr>
+      <tr><td>added failures</td><td>after against baseline</td>
+        <td>0</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <p>Both suite arms run the file list the node's declared write scope resolves
+  to, and both exit zero, so this change adds no failure against the base. No
+  product module is touched: the diff is the test file alone.</p>
+
+  <h3 id="qwnw-red-file-crew-declared-negative-control-control">Negative control</h3>
+
+  <p>The base run of the named file is red with one id the head run passes:
+  <code>tests/test_crew_declared_negative_control.py::test_promotion_refuses_a_log_that_does_not_name_the_declared_mutation</code>
+  reports <code>Failed: DID NOT RAISE CrewError</code> at
+  <code>0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385</code>, and the head run at
+  <code>f5485722</code> passes it. The red log is
+  <code>logs/base-all-debug.log</code>; it ends <code>EXIT=1</code> after
+  <code>1 failed, 7 passed</code>.</p>
+
+  <h3 id="qwnw-red-file-crew-declared-negative-control-outside">Outside scope</h3>
+
+  <p>The primary checkout at <code>/home/ITER/mcintos/Code/reckon</code> cannot
+  import <code>reckon.nested_launch</code> as an entry module:
+  <code>reckon/crew/reports.py</code> does
+  <code>from reckon.nested_launch import SCHEDULER_FENCE_NOTICE</code> before
+  that constant is bound, because <code>nested_launch</code> imports
+  <code>reckon.host</code>, which loads <code>reckon.crew.reports</code>. Every
+  <code>sbatch</code>, which resolves through the shim on
+  <code>PATH</code> into that checkout, therefore dies with an
+  <code>ImportError</code> and a partition gate submits no job at all. The
+  commands recorded here were submitted through this node's own
+  <code>reckon/host_shims</code>, where the constant does not exist yet and the
+  import closes.</p>
+</section>
