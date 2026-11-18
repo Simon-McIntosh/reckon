@@ -14,11 +14,14 @@ SLURM_JOB_ID=unset
 ....                                                                     [100%]
 4 passed in 4.35s
 EXIT=0</pre>
-<p><strong>Negative control.</strong> The guard was made not to fire: <code>Handler._refuse_stale_code</code> in <code>reckon/serve.py</code> was given an immediate <code>return False</code> and the file re-run. Three cases fail, including the repaired one, which then reaches the lazy import and dies on <code>ImportError</code> inside a 500 where it expects the 503 refusal, so the 503 is what the case measures. The mutation was reverted before the head gate above; the working tree carries only the test change.</p>
-<pre># NEGATIVE CONTROL — same command as the head gate, refusal disabled
+<p><strong>Negative control.</strong> The guard was made not to fire: <code>Handler._refuse_stale_code</code> in <code>reckon/serve.py</code> was given an immediate <code>return False</code> and the file re-run at the head. Three cases fail, including the repaired one, which then reaches the lazy import and dies on <code>ImportError</code> inside a 500 where it expects the 503 refusal, so the 503 is what the case measures. A first attempt disabled the guard from a pytest plugin instead of the source; that control was rejected rather than reported, because the lazy-import case starts its server as a subprocess with its own <code>PYTHONPATH</code> and the plugin did not reach it, so only two cases failed. The source mutation was reverted before the head gate above; the working tree carries only the test change and this fragment.</p>
+<pre># NEGATIVE CONTROL — revision 19bae56778, refusal disabled in the source
+# mutation: Handler._refuse_stale_code returns False before it reads the report
+# command: PYTHONPATH=&lt;worktree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_server_serves_one_code_version.py
+.FFF                                                                     [100%]
 FAILED tests/test_server_serves_one_code_version.py::test_executed_module_change_reexecs_after_refusal - assert 204 == 503
 FAILED tests/test_server_serves_one_code_version.py::test_requests_inside_report_window_compare_package_once - assert 0 == 1
-FAILED tests/test_server_serves_one_code_version.py::test_server_refuses_a_lazy_import_from_new_source - AssertionError: (500, {'error': 'distributed_project_state_invalid', 'detail': "cannot import name 'stale_code_probe' ..."})
-3 failed, 1 passed in 5.98s
+FAILED tests/test_server_serves_one_code_version.py::test_server_refuses_a_lazy_import_from_new_source - AssertionError: (500, {'error': 'distributed_project_state_invalid', 'detail': "cannot import name 'stale_code_probe' from 'reckon.crew.recovery_liveness'"})
+3 failed, 1 passed in 6.31s
 EXIT=1</pre>
 </section>
