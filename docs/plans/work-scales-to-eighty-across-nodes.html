@@ -20,12 +20,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="work-flows-to-the-lane">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;work-scales-to-eighty-across-nodes#s3&quot;],&quot;s3&quot;:[&quot;work-flows-to-the-lane#s71&quot;],&quot;s6&quot;:[&quot;work-scales-to-eighty-across-nodes#s1&quot;,&quot;work-scales-to-eighty-across-nodes#s2&quot;,&quot;work-scales-to-eighty-across-nodes#s3&quot;,&quot;work-scales-to-eighty-across-nodes#s4&quot;,&quot;work-scales-to-eighty-across-nodes#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>Work Scales To Eighty Across Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
-<meta name="plan-modified" content="2026-11-17">
+<meta name="plan-version" content="17">
+<meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
   <main class="plan-doc">
@@ -64,7 +64,7 @@
     <p><strong>Done when.</strong> A rehearsal places 20 workers on a compute node through the scheduler, and each delivers a manifest, passes its review and lands. The rehearsal reads the fleet node's memory before and during the run, and the readings differ by less than 2 GB. A test reads a worker on a compute node writing no file under the fleet node's local scratch. Negative control: at the base revision the rehearsal's workers run on the fleet node, and its memory rises by about 0.4 GB per worker; both are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s4.html</code>.</p>
 
     <h2 id="s5">§5 — The station's tick stays under 30 seconds at 230 live runs</h2>
-    <section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The station completes a tick in under 30 seconds with 230 live runs across the mounted projects, and its resident memory stays under 2 GB, so obligations and the monitor stay current at the target scale.</p>
     <p><strong>Done when.</strong> A measure against a crew home populated with 230 live runs, run on <code>all_debug</code>, records 20 consecutive tick durations and the station's resident memory after each, and every tick is under 30 seconds and every reading under 2 GB. Negative control: the same measure at the base revision records ticks over 30 seconds; both are logged to <code>docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html</code>.</p>
 
@@ -118,7 +118,7 @@
     <div class="r-comment-body"><p>A tick over the live fleet no longer re-reads every run's stream: the assistant-record and last-tool-call scans answer through the shared file memo while a stream is unchanged, so a quiet tick opened 874 run streams before and 0 after, and the measure's worst tick on all_debug fell from 8.997 s to 0.09 GB of resident memory with 20 readings under the 30 s and 2 GiB bounds. The section's own time control did not reproduce, so the record declares plan-verdict=qualified and says why.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261117T163320010872-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-b290e023ef9f" data-who="reckon-build" data-when="2026-11-17T16:36:10.411Z">
-    <div class="r-comment-body"><p>Reviewed r-20261115T200323420839 over 0f519315992f429fae018708f84eba960b99fb15..b290e023ef9fb78d2d34d0e2f42bab5827d3f27f: the 230-run tick bound holds at both arms (base max 15.410 s, head 6.856 s, 83-94 MB, 2 GiB bound), but the section&#x27;s base-revision time control did not reproduce and the record correctly declares itself qualified; the change&#x27;s own quiet-tick guard no longer reddens at the merged head when its file_memo memo is removed, because main&#x27;s _StreamScan answers the same fact, so three non-blocking findings are recorded and the reviewed change is sound but its durability evidence measures a pre-merge tree.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261115T200323420839 over 0f519315992f429fae018708f84eba960b99fb15..b290e023ef9fb78d2d34d0e2f42bab5827d3f27f: the 230-run tick bound holds at both arms (base max 15.410 s, head 6.856 s, 83-94 MB, 2 GiB bound), but the section's base-revision time control did not reproduce and the record correctly declares itself qualified; the change's own quiet-tick guard no longer reddens at the merged head when its file_memo memo is removed, because main's _StreamScan answers the same fact, so three non-blocking findings are recorded and the reviewed change is sound but its durability evidence measures a pre-merge tree.</p></div>
 </div>
 </section>
 </main>
