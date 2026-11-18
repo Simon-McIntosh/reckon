@@ -1,0 +1,38 @@
+<section id="qwnw-red-file-page-paints-from-the-index-red-file">
+<h2>Red file: the page paints from the index</h2>
+<p>On the assigned base revision <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code> the file is red in exactly one case, as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset at submission: <strong>1 failed, 17 passed</strong>, <code>EXIT=1</code>, <code>FAILED tests/test_page_paints_from_the_index.py::test_a_revalidation_keeps_the_derived_blocks_until_the_merge_replaces_them</code>. The head at <code>d3636f93402b9c66d68ea20dfbe16f287036ade0</code> reads <strong>18 passed</strong>, <code>EXIT=0</code> over the same file, so the file passes in full and not with its three browser cases skipped.</p>
+<pre># base arm, job 1326672 on all_debug, SLURM_JOB_ID unset
+# revision 23b901694b4bfec73d95be3a082d4c336d9a4101
+# tree &lt;run&gt;/scratch/base-tree (git archive of that revision)
+# cwd &lt;run&gt;/scratch/base-tree
+# module &lt;run&gt;/scratch/base-tree/reckon/__init__.py
+# command PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_page_paints_from_the_index.py
+........F.........                                                       [100%]
+E         At index 9 diff: 'review' != 'blockers'
+FAILED tests/test_page_paints_from_the_index.py::test_a_revalidation_keeps_the_derived_blocks_until_the_merge_replaces_them - AssertionError: assert ['sprints', '...ady_set', ...] == ['sprints', '...ady_set', ...]
+1 failed, 17 passed in 39.69s
+EXIT=1
+
+# head arm, job 1326666 on all_debug, SLURM_JOB_ID unset
+# revision d3636f93402b9c66d68ea20dfbe16f287036ade0
+# tree and cwd this node's worktree
+# module &lt;worktree&gt;/reckon/__init__.py
+# command PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_page_paints_from_the_index.py
+..................                                                       [100%]
+18 passed in 46.46s
+EXIT=0</pre>
+<p><strong>Cause, and verdict: test wrong.</strong> One cause. <code>docs/ui/state-loader.js</code> builds its kept-key set from what <code>derivedBlocks()</code> returns, and its own comment says a block added there is carried without a second edit. The <code>review</code> block joined the derived merge when the sprint surface began ranking a plan's served priority and its open findings, and the merge keeps an omitted review deliberately (<code>review: disc.review ?? state.review</code>). The case pinned that set as literals written out by hand, so it still named the set the loader had outgrown; the loader's <code>window.DERIVED_STATE_KEYS</code> is compared against that literal, and the first key after <code>resource_versions</code> decided the case. The product rule is intact, so no product source changed.</p>
+<p><strong>Repair</strong> (<code>d3636f93402b</code>): the literal gains <code>review</code> where the loader puts it, between <code>resource_versions</code> and <code>blockers</code>, keeping its stated purpose — a key dropped from the loader's list still fails the case. The discovery fixture now serves a review block carrying a finding and a priority, and the case asserts that the held review and the review an index-only revalidation keeps are both that served block, so the new key is checked against a value rather than passing on <code>None == None</code>. No assertion was deleted or weakened; two were added.</p>
+<p><strong>The guarded thing made to happen.</strong> A passing run does not show that the added checks bite, so the file was re-run against two mutations of a scratch extraction of the head; both turned the case red.</p>
+<pre># mutation 1: the revalidation's keep loop filtered to drop review
+#   for (const key of window.DERIVED_STATE_KEYS.filter(k =&gt; k !== "review"))
+#   -> 1 failed, 14 passed, 3 skipped, EXIT=1
+#   AssertionError: review was emptied by the revalidation's index instead of being
+#   kept until the merge: {'findings': [...], 'priority': [...]} -&gt; None
+# mutation 2: review removed from derivedBlocks
+#   -> 1 failed, 14 passed, 3 skipped, EXIT=1
+#   AssertionError: the keys comparison fails where review is missing</pre>
+<p><strong>Arms over the declared suite.</strong> The node changes one test file and no product source, so no test file imports the change and base and head arms name the same command over the same two declared files. Both read <strong>0 failures</strong> — <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>, baseline at <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code> and after at <code>d3636f93402b9c66d68ea20dfbe16f287036ade0</code>, each as its own job on <code>all_debug</code>, <code>EXIT=0</code>.</p>
+<p><code>ruff check</code> reports the file's one pre-existing finding at both revisions, and <code>ruff format --check</code> reports the file would be reformatted at both; the formatter's hunks sit on lines this change did not touch, so the changed path adds no finding.</p>
+<p><strong>Environment note for later readers.</strong> The worker fence exports <code>HOME</code> into a job as the run's <code>omp-home</code>, so <code>tests/spa_browser_harness.py</code> looks for Playwright's shell under that home, finds none, and skips its three browser cases — measured in job 1326617, where <code>installed_browser()</code> returned <code>None</code> while <code>chrome-headless-shell</code> was present under <code>/home/ITER/mcintos/.cache/ms-playwright/</code>. The harness's own <code>PLAYWRIGHT_BROWSERS_PATH</code> is the resolver's override for that root, so both arms above export it and all eighteen cases run rather than three skipping on a capability the machine has.</p>
+</section>
