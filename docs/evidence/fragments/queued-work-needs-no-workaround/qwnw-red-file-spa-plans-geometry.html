@@ -1,0 +1,107 @@
+<section id="qwnw-red-file-spa-plans-geometry-landing">
+  <h3>The plans index owns the window again, and the chip case reads the chip it picks</h3>
+  <p><code>tests/test_spa_plans_geometry.py</code> read <code>4 failed, 7 passed</code>
+  with <code>EXIT=1</code> at the base revision once a browser was present; without
+  one the same file reads <code>4 passed, 7 skipped</code>, because every one
+  of its rendered cases skips through <code>installed_browser_or_skip</code>.
+  That is why the file looked green on a compute node and red on the primary
+  branch: the seven rendered arms need a browser binary, and this node's run is
+  the first that resolved one
+  (<code>chrome-headless-shell 153.0.8010.12</code> from the operator's
+  Playwright cache) and ran them for real.</p>
+  <p>The base arm, quoted from
+  <code>logs/base-full.log</code> at
+  <code>f29efdc635a1b578bb4461ff90785d3be848646b</code>:</p>
+  <pre id="qwnw-red-file-spa-plans-geometry-repro">FAILED tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1280] - AssertionError: {'clientWidth': 1280, 'scrollWidth': 1280, 'indexWidth': 896, 'overflow': []}
+assert 896 == 1280 ± 3
+FAILED tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1440] - AssertionError: {'clientWidth': 1440, 'scrollWidth': 1440, 'indexWidth': 1008, 'overflow': []}
+FAILED tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1920] - AssertionError: {'clientWidth': 1920, 'scrollWidth': 1920, 'indexWidth': 1440, 'overflow': []}
+FAILED tests/test_spa_plans_geometry.py::test_rendered_status_chips_reduce_the_plan_feed - TypeError: Cannot read properties of undefined (reading 'click')
+4 failed, 7 passed in 327.12s (0:05:27)</pre>
+  <table id="qwnw-red-file-spa-plans-geometry-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>indexWidth</code> 896, 1008 and 1440 at viewports 1280,
+        1440 and 1920 — exactly the window minus the plans view's
+        <code>.r-list</code> column, whose width is
+        <code>clamp(300px, 30%, 480px)</code></td>
+        <td>product wrong</td>
+        <td>The artifact tabs' locked decision
+        <code>artifact-layout=full-width-index-drilling-to-reader</code> in
+        <code>docs/plans/artifact-feeds-and-reader.html</code>: one layout
+        serves seven surfaces, a full-width index drills into a full-width
+        reader, and <code>#plans</code> is one of the four artifact index
+        routes. The column belongs to the open plan, not to the index route.</td>
+      </tr>
+      <tr>
+        <td><code>statusOption</code> undefined: every advertised chip count
+        was 0 or not below the rendered row count, so the probe threw before
+        clicking anything</td>
+        <td>test wrong</td>
+        <td>The chips count the project's corpus (the heading reads "250 in
+        reckon") while the feed applies the hide-done filter and renders 73
+        rows; the rule under test — a status chip reduces the feed and All
+        restores it — is kept, and holds for <code>active</code>: 80
+        advertised, 53 rendered.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The product repair restores the mount condition,
+  <code>{selected &amp;&amp; kind === "plan" &amp;&amp; !readingMode &amp;&amp; ...}</code>,
+  in <code>docs/ui/shell.jsx</code>. Both arms of the conflict are older than
+  this node: <code>752b82f24f</code> and <code>18de79069f</code> (16 November)
+  mounted the column for the bare plans route after the shell decomposition
+  had left it unmounted, and the locked layout decision is from 3 September
+  with the artifact index built to it. This node names the decision as the
+  authority and returns the index to it; nothing in the reader route changes,
+  because a reader always carries a selection and still mounts the column.</p>
+  <p>The test repair reads the chip's effect instead of its advertisement:
+  the probe walks the status chips that have rows behind them, takes the first
+  that renders fewer rows than the unfiltered feed and more than none, and
+  clicks All back. Every assertion is unchanged — <code>baseline &gt;
+  statusCount &gt; 0</code>, <code>restored == baseline</code> and a non-empty
+  <code>statusLabel</code> — and no assertion was deleted or weakened.</p>
+  <p>Measured with the browser resolved at
+  <code>/home/ITER/mcintos/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell</code>,
+  as <code>all_debug</code> jobs:</p>
+  <table id="qwnw-red-file-spa-plans-geometry-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary</th><th>EXIT</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>f29efdc635a1b578bb4461ff90785d3be848646b</code></td>
+        <td><code>4 failed, 7 passed in 327.12s</code></td>
+        <td><code>1</code></td>
+      </tr>
+      <tr>
+        <td>head gate</td>
+        <td><code>8a820e480318d0ef20d182e815e42c5dfb9cf14c</code></td>
+        <td><code>11 passed in 286.63s</code></td>
+        <td><code>0</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The delivered suite selection this node's write scope resolves to reads
+  <code>58 passed</code> at <code>f29efdc635</code> and <code>58 passed</code>
+  at <code>8a820e4803</code>, both <code>EXIT=0</code>, so the change adds no
+  failure. The added-failure arm over the test files that render or read the
+  changed module — <code>tests/test_spa_artifact_index.py</code>,
+  <code>tests/test_shell_project_list_is_immediate.py</code>,
+  <code>tests/test_spa_composition.py</code> and
+  <code>tests/test_build.py</code> — reads <code>3 failed, 36 passed,
+  4 errors</code> at the base over a <code>git archive</code> extraction of
+  that revision and <code>2 failed, 37 passed, 4 errors</code> at the head
+  in this worktree. The head fails only the two ids the base already fails
+  (<code>test_sprint_surface_consumes_composed_review_without_a_review_fetch</code>,
+  <code>test_ready_lanes_replace_the_status_board_and_consume_served_readiness</code>),
+  so the change adds no failure. The base's third failure
+  (<code>test_release_tag_match_reports_when_no_release_tags_exist</code>, a
+  <code>git clone --shared</code> of the extraction) is an artefact of the
+  extraction arm, which carries no git metadata, and it passes at the head. The
+  four errors are identical in both arms: <code>uv build --offline</code> fails
+  at fixture setup in the worker sandbox before any test body runs.
+  <code>ruff check</code> and <code>ruff format --check</code> report
+  nothing on the changed paths.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-spa-plans-geometry.html">Red-file record: base arm with its failing ids, and the head arm</a></p>
+</section>
