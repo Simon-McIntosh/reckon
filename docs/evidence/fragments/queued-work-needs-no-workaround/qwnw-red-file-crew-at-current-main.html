@@ -1,0 +1,67 @@
+<section id="qwnw-red-file-crew-at-current-main-runs">
+<h3>tests/test_crew.py: the base red run and the head run that clears it</h3>
+<p>The file had been repaired once before and went red again on the primary
+run at 8c7ea625. The base run reads 5 failed, 186 passed and EXIT=1; the head
+run at 86c3a7204b reads 191 passed and EXIT=0. No assertion was deleted or
+weakened, and both causes are the fixture rather than the product.</p>
+
+<h4 id="qwnw-red-file-crew-at-current-main-causes">Causes and verdicts</h4>
+<table>
+<thead>
+<tr><th>Cause</th><th>Ids</th><th>Verdict</th><th>Rule the test now asserts</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>The fixture read the roster from the committed state path, which the run
+store imports once and no longer writes, so no file was there to compare.</td>
+<td><code>test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code></td>
+<td>test wrong</td>
+<td>The roster is read through <code>ledger.members</code>, the reader every
+other reader takes it from; a second dispatch still leaves it unchanged.</td>
+</tr>
+<tr>
+<td>Four cases delivered a terminal manifest and read it while the run's own
+stream had been written a second earlier, so the reading took the attempt for a
+worker still inside the stall window; the word was withdrawn and the row read
+<code>running</code>.</td>
+<td><code>test_blocked_manifest_is_not_promotable</code>,
+<code>test_failed_manifest_is_not_promotable</code>,
+<code>test_a_complete_manifest_emits_an_authorised_review_dispatch</code>,
+<code>test_crew_read_and_recovery_command_share_classification</code></td>
+<td>test wrong</td>
+<td>A stopped worker's verdict is read from a stopped worker: the fixture ages
+the attempt's start and its newest stream past the stall window before
+classifying, and the manifest itself stays fresh.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-crew-at-current-main-base">Base run, negative control</h4>
+<p>Revision 8c7ea625091640c12d6aa56bc8997803ae470037, 5 failed, 186 passed,
+EXIT=1. The five failing ids, in the run's own order:</p>
+<ul>
+<li><code>test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code>
+(FileNotFoundError on the roster path)</li>
+<li><code>test_blocked_manifest_is_not_promotable</code> (running vs blocked)</li>
+<li><code>test_failed_manifest_is_not_promotable</code> (running vs failed)</li>
+<li><code>test_a_complete_manifest_emits_an_authorised_review_dispatch</code>
+(running vs scoring)</li>
+<li><code>test_crew_read_and_recovery_command_share_classification</code>
+(running vs blocked)</li>
+</ul>
+<p>Log: <code>base-test_crew.log</code> in the run directory
+<code>~/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/</code>,
+whose header names the revision, the tree, the command, the working directory
+and the module as imported when it reports the run.</p>
+
+<h4 id="qwnw-red-file-crew-at-current-main-head">Head run, 191 passed, EXIT=0</h4>
+<p>Revision 86c3a7204bce052ae87a155b3749f3f06ac206b3, measured as a job on
+all_debug (host 98dci4-clu-3142) with SLURM_JOB_ID unset in the task, log
+<code>scoped-gate-1795030305859947793.log</code>.</p>
+
+<h4 id="qwnw-red-file-crew-at-current-main-suite">Armed suite arms</h4>
+<p>Both arms resolve the declared suite over their own tree and read
+<code>58 passed</code>, <code>EXIT=0</code>: baseline at 8c7ea625 from
+<code>baseline_suite-1795030392681577943.log</code> and head at 86c3a7204b from
+<code>after_suite-1795030467650039222.log</code>.</p>
+</section>
