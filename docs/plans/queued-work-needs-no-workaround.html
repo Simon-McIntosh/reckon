@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="570">
+<meta name="plan-version" content="571">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1781,6 +1781,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062913510841-qwnw-red-file-one-brief-an-agent-can-act-on" data-who="reckon-build" data-when="2026-11-18T13:48:04.578Z">
     <div class="r-comment-body"><p>tests/test_one_brief_an_agent_can_act_on.py passes 11/11 at head f080b2a315 where base 23b90169 failed 1 of 11 — one cause, test wrong: the fixture placed its blocked run on plan-a#s2 and still expected that section to open the ready-section reach list, while readiness is `plan_ready and not blockers` so a section carrying a live run is never ready; a second releasing plan whose first section carries no run restores three genuinely ready sections and the written reach expectation now names them (plan-e#s1, plan-f#s1 at reach 1 by ref, plan-d#s1 at 0), no assertion deleted or weakened, product tree unchanged</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063025989041-qwnw-red-file-dispatch-session-host" data-who="reckon-build" data-when="2026-11-18T14:33:51.763Z">
+    <div class="r-comment-body"><p>tests/test_dispatch_session_host.py passes in full on the primary branch (8 passed, EXIT=0) after one test-side repair: its red case named a session this process is not and modelled the host as a bare follower registration, so it now dispatches as the session the environment declares and the stub host publishes the follower it starts in the host census, with the delivered request line asserted whole; base arm 1 failed / 7 passed EXIT=1, suite arms 0 failures at both revisions, and the importing-population arm adds none (16 failed at base, 15 at head, the cleared id being this case).</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
