@@ -63,5 +63,43 @@ EXIT=1
 EXIT=0
 </pre>
 
+<h2 id="qwnw-red-file-the-run-store-retires-old-runs-repair">Repair round at ac1a9e2ec7b18cb43b445aebe44426497a2191fd — 19 passed</h2>
+
+<p>
+The review of the head's refresh found two things the first round left open. Making the membership
+comparison fire also made the reverse direction live: a project whose ledger documents are absent
+read as empty, the refresh rebuilt it from nothing and the rebuild deleted rows the cache still
+held, against the docstring's promise that no absent mount deletes a project's cached history. The
+refresh now skips a project <code>ledger._ledger_holds_content()</code> reports no documents for, and the new test
+below drives a populated store with its documents removed.
+</p>
+
+<p>
+The second was duplication: the branch added a second document-membership reader where
+<code>run_ids</code> already owned the committed-documents read; the reader is gone and
+<code>run_ids</code> now takes the document read as a parameter, matching the shape already on
+<code>main</code>.
+</p>
+
+<pre id="qwnw-red-file-the-run-store-retires-old-runs-repair-log"># revision: ac1a9e2ec7b18cb43b445aebe44426497a2191fd
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-the-run-store-retires-old-runs
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py
+19 passed in 4.49s
+EXIT=0
+</pre>
+
+<p>
+Negative control for the guard, at the same revision with <code>reckon/run_store.py</code> taken
+from before it: the populated store's rows are emptied against the empty committed set and the new
+test fails.
+</p>
+
+<pre id="qwnw-red-file-the-run-store-retires-old-runs-repair-guard-log"># revision: ac1a9e2ec7b18cb43b445aebe44426497a2191fd without the guard
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py::test_a_ledger_whose_documents_are_gone_keeps_its_cached_rows
+FAILED tests/test_the_run_store_retires_old_runs.py::test_a_ledger_whose_documents_are_gone_keeps_its_cached_rows - assert set() == {'r-finished-0', ...}
+1 failed in 0.56s
+EXIT=1
+</pre>
+
 </body>
 </html>
