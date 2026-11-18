@@ -1,0 +1,64 @@
+<section id="qwnw-red-file-dispatch-refuses-without-tmp-headroom-landing">
+  <h2>The dry-run headroom case names the section the CLI now requires</h2>
+
+  <p><strong>What was red.</strong> One of the file's three cases,
+  <code>test_dry_run_reports_the_same_named_refusal</code>, failed on the primary
+  branch at <code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>. It invoked
+  <code>crew dispatch --plan sample --node work --dry-run</code> with no
+  <code>--section</code>, so the command stopped at the whole-plan gate in
+  <code>reckon/crew_dispatch_commands.py:1749</code> — a usage error that returns
+  exit 2 — and never reached the scratch-headroom admission the case asserts:</p>
+
+  <pre><code>Error: --dry-run cannot queue a whole plan; name --section to preview one node
+assert 2 == 75
+ +  where 2 = &lt;Result SystemExit(2)&gt;.exit_code</code></pre>
+
+  <p><strong>Verdict: the test.</strong> The whole-plan refusal is a deliberate
+  product rule introduced with <code>74fd70f0e7</code> (<em>queue declared
+  sections with one dispatch</em>): a dry run previews one node, so it must name
+  <code>--section</code>, while a whole-plan dispatch is the batching path and
+  has no preview. The product still raises <code>TmpHeadroomError</code> on the
+  dry-run path and still answers it as <code>tmp-headroom-refusal</code> with
+  exit 75 (<code>reckon/crew_dispatch_commands.py:2330</code>); the case simply
+  could not reach that code, because the invocation it used is now refused one
+  gate earlier. The repair adds <code>--section s1</code> to that one
+  invocation. No assertion was deleted or weakened — exit 75, the
+  <code>tmp-headroom-refusal</code> error key, the free and floor byte figures,
+  the single probed root, and the empty scratch root are all still asserted.</p>
+
+  <h3 id="qwnw-red-file-dispatch-refuses-without-tmp-headroom-arms">Measured</h3>
+
+  <table id="qwnw-red-file-dispatch-refuses-without-tmp-headroom-table">
+    <caption>Each arm is a log whose first lines name the revision, tree, host and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. Both arms
+    ran as <code>all_debug</code> batch jobs with <code>SLURM_JOB_ID</code>
+    unset for the pytest process.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+<tr><td>negative control (base)</td>
+        <td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, extraction</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head</td>
+        <td><code>3bb6847427baa0d3d48fb19d3a6512602ea7351b</code>, worktree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate on this file</td>
+        <td><code>3bb6847427baa0d3d48fb19d3a6512602ea7351b</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm's single failure is
+  <code>tests/test_dispatch_refuses_without_tmp_headroom.py::test_dry_run_reports_the_same_named_refusal</code>,
+  and it is the only id the head arm does not fail.</p>
+
+  <h3 id="qwnw-red-file-dispatch-refuses-without-tmp-headroom-scope">Scope</h3>
+
+  <p>The change is two lines in one test file; no product module changed, so
+  there is no product rule to repair and no second cause to classify. Ruff
+  reports no new finding on the file: <code>ruff check</code> passes, and
+  <code>ruff format --check</code> reports the same pre-existing
+  <code>monkeypatch.setattr</code> wrapping at base and at head.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
