@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="queued-work-needs-no-workaround">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;descoped&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;descoped&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;],&quot;s4&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;]}">
   <title>A session spends a priority budget | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -73,7 +73,7 @@
 <p>Negative control: the cross-session case against the base revision admits the session with fewer live runs first, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html</code>.</p>
 
     <h2 id="s3">§3 — A run's priority carries to its review and its promotion</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> The priority a run held when it launched is inherited by the review composed for it and by its promotion request. Both queues order by it, ties falling back to their current order. A coordinator promotes a delivered run, so that its review and its promotion move ahead, by setting its priority through the same reprioritise verb, charged to the same session budget. The points return when the run lands or is discarded.</p>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
@@ -84,7 +84,7 @@
 <p>Negative control: the promotion-order case against the base revision drains in request order, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s3.html</code>.</p>
 
     <h2 id="s4">§4 — The queue reads as a queue, from the CLI, MCP and Python</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> One read answers "where does my work stand". It is served as <code>reckon crew view queue</code>, as the MCP <code>crew(view="queue")</code>, and as an importable function that returns the same document. It lists every queued and awaiting-upstream request and every pending review and promotion. Each row carries:</p>
 <ul>
   <li>its position in the order admission would launch it next;</li>
