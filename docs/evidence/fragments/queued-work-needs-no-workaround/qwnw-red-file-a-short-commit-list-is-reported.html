@@ -1,0 +1,22 @@
+<section id="qwnw-red-file-a-short-commit-list-is-reported-arms">
+<h2>The file's one red case, and the same case green</h2>
+<p>The named check ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in the test process, twice: once over an extraction of the base revision <code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code> (job 1327334) and once over the worktree at head <code>28da01615f85dee3e1ee8058b590679076b7a0fb</code> (job 1327331). The base arm failed one case and passed nine; the head arm passed all ten.</p>
+<p>The failing id at the base revision is <code>tests/test_a_short_commit_list_is_reported.py::test_a_shortfall_promotion_completes_and_reports_on_the_record</code>, with <code>KeyError: &#x27;commit_list_shortfall&#x27;</code>. One cause, verdict <strong>test wrong</strong>: the case read the promotion&#x27;s shortfall report and promoted row from the JSON that <code>crew complete --wait</code> prints, but that command answers with the durable completion receipt, which carries the run id and the path of the record it wrote; the promotion&#x27;s own result — the shortfall included — is the document at that path. The receipt shape is the command&#x27;s contract and is pinned separately by <code>tests/test_no_caller_waits_on_a_promotion.py::test_wait_returns_the_synchronous_outcome</code>, so the product was left unchanged and the case now reads the record the receipt names. Every assertion on the shortfall counts, on its missing revisions and on the promoted row is unchanged; the receipt&#x27;s run id is asserted too, so the record read is the one this run wrote.</p>
+<p>No assertion was deleted or weakened, and no product file changed. Logs: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063544471293-qwnw-red-file-a-short-commit-list-is-reported/logs/base-run.log</code> and <code>.../logs/head-run.log</code>.</p>
+<pre># base arm, job 1327334, all_debug, revision 9e1dc0dc3e2ce3b478d6d162b32e37d11653c246
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_short_commit_list_is_reported.py
+tests/test_a_short_commit_list_is_reported.py:328: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_a_short_commit_list_is_reported.py::test_a_shortfall_promotion_completes_and_reports_on_the_record - KeyError: &#x27;commit_list_shortfall&#x27;
+1 failed, 9 passed in 4.22s
+EXIT=1
+</pre>
+<pre># head arm, job 1327331, all_debug, revision 28da01615f85dee3e1ee8058b590679076b7a0fb
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_short_commit_list_is_reported.py
+# test-process SLURM_JOB_ID: unset
+..........                                                               [100%]
+10 passed in 2.98s
+EXIT=0
+</pre>
+<p>The red log above is the negative control this node declares in its manifest: the head arm exits zero, and the base run exits one with a failing id the head run does not fail.</p>
+</section>
