@@ -51,6 +51,7 @@ preparation_module = importlib.import_module("reckon.crew.dispatching.preparatio
 RUN_COUNT = 50
 RUNS = [f"r-refused-composition-{index:02d}" for index in range(RUN_COUNT)]
 REFUSAL = "the review lane refused the composed review"
+BUDGET_REFUSAL = "the lane's budget verdict holds no room for the review"
 CLAIM_REFUSAL = "the review is held by another run's claim on the same path"
 HOLDER = "r-holder-of-the-reviewed-path"
 
@@ -59,14 +60,26 @@ HOLDER = "r-holder-of-the-reviewed-path"
 def no_test_reads_another_tests_refusal() -> None:
     """The memory of refused compositions is process-wide, so it is emptied.
 
-    A revision that keeps no such memory has nothing to empty; the test that
-    follows still fails there on its own assertion rather than on this fixture.
+    The seam is named directly rather than probed for: a revision where the
+    memory is missing under a different name must fail here, because a fixture
+    that quietly did nothing would let every test below pass over a broken
+    exclusion.
     """
-    lock = getattr(reflex_dispatch, "_REFUSED_COMPOSITIONS_LOCK", None)
-    if lock is None:
-        return
-    with lock:
+    with reflex_dispatch._REFUSED_COMPOSITIONS_LOCK:
         reflex_dispatch._REFUSED_COMPOSITIONS.clear()
+
+
+def _age_remembered_refusals(seconds: float) -> None:
+    """Move every remembered refusal's composition back by ``seconds``."""
+    with reflex_dispatch._REFUSED_COMPOSITIONS_LOCK:
+        for run_id, (identity, report, composed_at) in tuple(
+            reflex_dispatch._REFUSED_COMPOSITIONS.items()
+        ):
+            reflex_dispatch._REFUSED_COMPOSITIONS[run_id] = (
+                identity,
+                report,
+                composed_at - seconds,
+            )
 
 
 @pytest.fixture()
