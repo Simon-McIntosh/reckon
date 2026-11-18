@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="603">
+<meta name="plan-version" content="604">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1880,6 +1880,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T161101011039-review-of-qwnw-red-file-budget-a8c082cabe91" data-who="reckon-build" data-when="2026-11-18T18:49:51.017Z">
     <div class="r-comment-body"><p>review of r-20261118T063300161303-qwnw-red-file-budget at head a8c082cabe9168fb8a6f22b438d8f5d7e8126d0f — parsed record with goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20; the landed test-side repair reaches the direct dispatch path at reckon/crew_dispatch_commands.py:1740 and tests/test_budget.py passes in full, 70 passed at EXIT=0, added_failure_count 0, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063300161303-qwnw-red-file-budget" data-who="reckon-build" data-when="2026-11-18T15:16:56.064Z">
+    <div class="r-comment-body"><p>tests/test_budget.py passes in full — 70 passed, EXIT=0 at 3868e1a917 on all_debug with SLURM_JOB_ID unset; one cause, verdict test wrong: a plan naming with no section is a whole-plan queue, so the case never reached the node&#x27;s budget pre-flight and answered refused/EXIT=1; it now names --section s1 with no assertion changed; base 60ecc274f1 ran 69 passed 1 failed (tests/test_budget.py::test_cli_dispatch_reports_a_hold_on_its_own_exit_code)</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
