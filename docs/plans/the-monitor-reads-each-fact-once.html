@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="488">
+<meta name="plan-version" content="489">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -1848,6 +1848,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s94" data-id="c-run-r-20261118T112138074440-a-sweep-lists-live-pointers-once" data-who="reckon-build" data-when="2026-11-18T13:15:26Z">
     <div class="r-comment-body"><p>A sweep shares its held live listing across acknowledgement, review, waiver, delivery and worktree checks: 520 decodes for 200 pointers (ceiling 600) versus 85040 at base, with identical actions/classifications; the next sweep sees the new pointer in 523 decodes for 201. Scoped suite 65 passed; matched 661/662-file importer arms add 0 failing ids; lint and format add 0 findings.</p></div>
+</div>
+<div class="r-comment" data-section="s96" data-id="c-run-r-20261118T200331029792-review-of-an-unchanged-live-listing-decodes-nothing-19e85cef66b1" data-who="reckon-build" data-when="2026-11-18T20:09:22.658Z">
+    <div class="r-comment-body"><p>Reviewed r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing at 96e3c4b8a3957e2624866e0dc773042892239333..19e85cef66b1599f2d175f34bd62b4f1639651a8: the decoded-record cache at reckon/crew/runs.py:1482 meets the goal and is read through both readers, the gate asserts the done_when with a base red control quoted, scope is the two declared files; scores goal_fidelity 20, evidence 16, scope_discipline 19, durability 19, fit 16, reuse 5 (total 95), three non-blocking findings — the file_memo capability is duplicated, the unchanged listing still pays a deepcopy per record (measured 1.7-2.0x the decode it replaces), and one assertion compares two listings to each other.</p></div>
 </div>
 </section>
 </main>
