@@ -181,7 +181,11 @@ def test_a_repair_mark_cannot_release_a_newer_attempt(cohort: dict) -> None:
     member = cohort["members"]["clean"]
     pointer = {**member["pointer"], "attempt": 1}
     run_id = pointer["run_id"]
-    marked = pending_landing.mark_pending_landing_repair(run_id, pointer)
+    marked = {
+        **pointer,
+        "pending_landing_repair": True,
+        "pending_landing_repair_attempt": pending_landing.pointer_attempt(pointer),
+    }
     marked["attempt"] = 2
     runs._write_json(runs.pointer_path(run_id), marked)
     before = runs.pointer_path(run_id).read_bytes()

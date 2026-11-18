@@ -165,22 +165,20 @@ def test_local_ancestry_keeps_a_pending_push(delivery):
 
 
 @pytest.mark.parametrize("route", ["direct", "pending-pass"])
-def test_unlanded_conflict_still_marks_and_resumes(delivery, route):
-    repository, _worker, _pointer, head, primary, resumed = delivery
+def test_unlanded_promoted_conflict_is_a_record_obligation(delivery, route):
+    repository, _worker, _pointer, head, _primary, resumed = delivery
     conflict = merge._run(repository, "merge-tree", "--write-tree", "main", head)
     assert conflict.returncode == 1
     assert "result.txt" in conflict.stdout
     assert not merge._is_ancestor(repository, head, "main")
     assert not promotion.discard_recorded(RUN_ID)
 
-    _repair(delivery, route)
+    receipt = _repair(delivery, route)
 
-    live = runs.read_pointer(RUN_ID)
-    assert live["pending_landing_repair"] is True
-    assert live["merge_conflict"]["status"] == "resumed"
-    assert len(resumed) == 1
-    assert head in resumed[0][1]["advice"]
-    assert primary in resumed[0][1]["advice"]
+    assert not runs.pointer_path(RUN_ID).exists()
+    assert resumed == []
+    assert str(pending_landing._record_path(RUN_ID)) in str(receipt)
+    assert "promoted" in str(receipt)
     assert pending_landing._record_path(RUN_ID).is_file()
 
 
@@ -232,7 +230,13 @@ def test_settled_landing_releases_only_the_marked_attempt(
     delivery, monkeypatch, newer_attempt, route
 ):
     repository, _worker, pointer, head, _primary, resumed = delivery
-    marked = pending_landing.mark_pending_landing_repair(RUN_ID, pointer)
+    # Seed a legacy mark directly; promoted recovery must never write it anew.
+    marked = {
+        **pointer,
+        "pending_landing_repair": True,
+        "pending_landing_repair_attempt": pending_landing.pointer_attempt(pointer),
+    }
+    runs._write_json(runs.pointer_path(RUN_ID), marked)
     if newer_attempt:
         marked["attempt"] += 1
         runs._write_json(runs.pointer_path(RUN_ID), marked)

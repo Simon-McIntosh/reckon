@@ -1,22 +1,7 @@
-"""A --land promotion whose merge never ran hands its head to the landing pass.
+"""A promoted head is landed using journal ownership without rewriting its pointer.
 
-On 9 November a ``crew complete --land`` committed its promotion, 7b71afeb13,
-which wrote the ledger row as passed and the plan comment, and then the
-pointer-removal guard raised ``run ... changed while promotion ran``: a resume
-had started the same run again between the ledger write and the merge, so the
-pointer's attempt and phase had moved. The merge never ran, the row read
-landed, and the reviewed head stayed off the primary branch.
-
-The pending-landing pass already finishes a promoted run whose head is not on
-the branch. What it could not see was this state: it reads a run's pointer only
-when the record carries a merge conflict, so a marked pointer whose merge never
-ran was skipped. The promotion now keeps the pointer it could not remove and
-marks it ``pending_landing_repair``, and the pass reads a live pointer to tell a
-marked one from one a newer attempt owns.
-
-A temporary repository with a bare remote as ``origin`` and a temporary crew
-home are synthesised per test, and the real pointer directory is asserted
-untouched, because an isolated read does not prove an isolated write.
+The journal captures the retained attempt separately from the reviewed pointer.
+A later attempt keeps its pointer while the reviewed head reaches the branch.
 """
 
 from __future__ import annotations
@@ -182,13 +167,9 @@ def test_a_promotion_that_could_not_hand_over_is_finished_by_the_next_pass(
     assert "changed while promotion ran" in str(error.value)
 
     kept = read_pointer(RUN_ID)
-    assert kept.get("pending_landing_repair") is True
-    assert kept.get("pending_landing_repair_attempt") == {
-        "attempt": 4,
-        "phase": "running",
-        "pid": None,
-        "pid_start_time": None,
-    }
+    assert not kept.get("pending_landing_repair")
+    journal = pending_landing._read(pending_landing._record_path(RUN_ID))
+    assert journal["retained_attempt"] == pending_landing.marked_identity(kept)
     assert pointer_path(RUN_ID).exists()
 
     results = pending_landing.finish_pending_landings()
@@ -198,9 +179,10 @@ def test_a_promotion_that_could_not_hand_over_is_finished_by_the_next_pass(
     assert not pointer_path(RUN_ID).exists()
     assert not list(pending_landing.pending_dir().glob("*.json"))
     assert _on_branch(remote, head), "the reviewed head never reached the branch"
+    assert _git(remote, "show", "main:feature.txt") == "feature"
 
 
-def _landed_and_marked(
+def _promoted_with_retained_attempt(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> tuple[Path, Path, str]:
     """Promote under a simulated resume, leaving the promoted head promoted but unmerged."""
@@ -214,22 +196,23 @@ def _landed_and_marked(
     return repo, remote, head
 
 
-def _bump_attempt(attempt: int, *, retarget_mark: bool = False) -> None:
-    """Move the marked pointer to a newer attempt, keeping or retargeting its mark."""
+def _bump_attempt(attempt: int, *, retarget_recorded_attempt: bool = False) -> None:
+    """Advance the live attempt, optionally retargeting the journal's ownership."""
     current = read_pointer(RUN_ID)
     current["attempt"] = attempt
     current["phase"] = "running"
-    if retarget_mark:
-        current["pending_landing_repair_attempt"] = pending_landing.pointer_attempt(
-            current
-        )
+    if retarget_recorded_attempt:
+        path = pending_landing._record_path(RUN_ID)
+        journal = pending_landing._read(path)
+        journal["retained_attempt"] = pending_landing.pointer_attempt(current)
+        _write_json(path, journal)
     _write_json(pointer_path(RUN_ID), current)
 
 
 def test_a_newer_attempt_keeps_its_pointer_when_the_landing_finishes(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _repo, remote, head = _landed_and_marked(home, monkeypatch)
+    _repo, remote, head = _promoted_with_retained_attempt(home, monkeypatch)
     _bump_attempt(5)
     releases: list[Any] = []
     monkeypatch.setattr(
@@ -250,9 +233,9 @@ def test_a_newer_attempt_keeps_its_pointer_when_the_landing_finishes(
 def test_without_the_recorded_attempt_the_newer_pointer_is_lost(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Negative control: a mark naming the pointer it is read from releases it."""
-    _landed_and_marked(home, monkeypatch)
-    _bump_attempt(5, retarget_mark=True)
+    """A journal deliberately retargeted to a newer attempt releases that attempt."""
+    _promoted_with_retained_attempt(home, monkeypatch)
+    _bump_attempt(5, retarget_recorded_attempt=True)
 
     results = pending_landing.finish_pending_landings()
 

@@ -408,13 +408,10 @@ def _retire_a_pointer_whose_attempt_ended(
     )
 
 
-def _keep_pointer_for_pending_landing(run_id: str) -> bool:
-    """Mark the live pointer a promotion could not remove, or report failure.
-
-    The mark is the only thing that distinguishes this pointer from one a newer
-    attempt owns: the landing pass leaves an unmarked live pointer alone, so
-    without it the reviewed head stays off the branch beside a passed row.
-    """
+def _keep_pointer_for_pending_landing(
+    run_id: str, record: Mapping[str, Any], *, reviewed_head: str = ""
+) -> bool:
+    """Keep handover ownership in the journal without rewriting the live attempt."""
     from reckon.crew import pending_landing
 
     with _pointer_lock(run_id):
@@ -422,11 +419,20 @@ def _keep_pointer_for_pending_landing(run_id: str) -> bool:
             current = read_pointer(run_id)
         except CrewError:
             return False
-        if current.get("pending_landing_repair"):
-            return True
+        _record_a_raced_landing(run_id, record, reviewed_head=reviewed_head)
+        path = pending_landing._record_path(run_id)
+        journal = pending_landing._read(path)
+        if journal is None:
+            return False
+        journal.setdefault("pointer", dict(record))
+        journal.setdefault(
+            "retained_attempt",
+            current.get("pending_landing_repair_attempt")
+            or pending_landing.marked_identity(current),
+        )
         try:
-            pending_landing.mark_pending_landing_repair(run_id, current)
-        except (OSError, CrewError):
+            _write_json(path, journal)
+        except OSError:
             return False
         return True
 
@@ -551,32 +557,13 @@ def _remove_promoted_pointer_or_defer(
     finishing_another_writers_row: bool = False,
     reviewed_head: str = "",
 ) -> bool:
-    """Remove the promoted pointer, or keep it marked for the pass that can.
+    """Retire the promoted attempt or keep its landing ownership on the journal.
 
-    The ledger row and plan comment are committed before this runs, so a
-    pointer that moved under the promotion leaves a promoted run whose head was
-    never merged: a second recovery would duplicate what the pending-landing
-    pass already does, so the pointer is kept and marked instead. A review run
-    has no head to merge, and its worker writes the pointer itself while it
-    runs: retiring it under a live worker deletes a file the process still owns,
-    and retiring it after the pointer moved leaves nothing that says the run was
-    promoted, so the acceptance sweep files a promotion the ledger already
-    records. Both are kept and marked, and the sweep retires the mark once
-    nothing owns the pointer.
-
-    ``finishing_another_writers_row`` says the row was another writer's when
-    this promotion reached it, so the run is promoted either way. The pointer
-    this promotion read is then retired rather than read as a newer attempt's,
-    and the merge it owes — ``reviewed_head``, resolved before promotion wrote
-    anything — is recorded for the landing pass so a caller that does not land
-    still finishes it. A pointer another attempt owns is left exactly as it is:
-    marking it would send that attempt into the repair-only branch with no
-    record of its own to finish.
-
-    A pointer a later launch moved to its own attempt needs no landing repair
-    once the attempt it belongs to has ended: that launch recorded its own end,
-    so the promotion finishes cleanup by removing the pointer rather than
-    parking the run behind a mark nothing will come back for.
+    The ledger row precedes retirement, so a pointer that moved during promotion
+    can still owe a merge. Its retained attempt is captured on the pending
+    record without writing the live pointer. Later attempts keep their own
+    pointers while that journal finishes the reviewed head. Reviews have no
+    merge to finish and keep their separate process-aware retirement path.
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
@@ -605,12 +592,14 @@ def _remove_promoted_pointer_or_defer(
                 return True
             if retired == _RACED_POINTER_ANOTHER_ATTEMPT:
                 return False
-        if not _keep_pointer_for_pending_landing(run_id):
+        if not _keep_pointer_for_pending_landing(
+            run_id, record, reviewed_head=reviewed_head
+        ):
             raise CrewError(
                 f"run {run_id!r} changed while promotion ran"
                 f"{_newer_attempt_named(run_id, record)}"
                 f"{_launching_process_named(run_id, record)} and its pointer "
-                "could not be marked for the landing pass: its promotion is "
+                "could not be recorded for the landing pass: its promotion is "
                 "recorded, and the merge of its reviewed head is left to the "
                 "landing record this promotion wrote"
             ) from exc
@@ -620,7 +609,7 @@ def _remove_promoted_pointer_or_defer(
             f"run {run_id!r} changed while promotion ran"
             f"{_newer_attempt_named(run_id, record)}"
             f"{_launching_process_named(run_id, record)}; its promotion is "
-            "recorded and its pointer is kept, marked pending_landing_repair, so "
+            "recorded and its pointer is kept with its attempt on the landing record, so "
             "the next landing pass finishes the merge of its reviewed head"
         ) from exc
 

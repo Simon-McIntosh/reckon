@@ -366,10 +366,8 @@ def _settled_landing(
             pointer = runs.read_pointer(run_id)
         except runs.CrewError:
             pointer = None
-        if (
-            pointer is not None
-            and pointer.get("pending_landing_repair")
-            and _release_marked_pointer(run_id, pointer)
+        if pointer is not None and _release_journal_pointer(
+            run_id, pointer, _read(_record_path(run_id)) or {}
         ):
             merge.release_landed_worktrees(
                 repository,
@@ -490,6 +488,23 @@ def _release_marked_pointer(run_id: str, marked: Mapping[str, Any]) -> bool:
     recorded = marked.get("pending_landing_repair_attempt")
     return (
         retire_pointer_if(run_id, lambda current: marked_identity(current) == recorded)
+        == POINTER_RETIRED
+    )
+
+
+def _release_journal_pointer(
+    run_id: str, pointer: Mapping[str, Any], record: Mapping[str, Any]
+) -> bool:
+    """Retire only the attempt captured by the journal or an existing legacy mark."""
+    expected = record.get("retained_attempt") or pointer.get(
+        "pending_landing_repair_attempt"
+    )
+    if not isinstance(expected, Mapping):
+        return False
+    return (
+        retire_pointer_if(
+            run_id, lambda current: marked_identity(current) == dict(expected)
+        )
         == POINTER_RETIRED
     )
 
@@ -1412,8 +1427,8 @@ def finish_pending_landings(
                     )
                     == POINTER_RETIRED
                 )
-            elif pointer.get("pending_landing_repair"):
-                retired = _release_marked_pointer(run_id, pointer)
+            else:
+                retired = _release_journal_pointer(run_id, pointer, record)
         if retired:
             merge.release_landed_worktrees(
                 repository, str(landed["commit"]), head=head, projects=[project]
