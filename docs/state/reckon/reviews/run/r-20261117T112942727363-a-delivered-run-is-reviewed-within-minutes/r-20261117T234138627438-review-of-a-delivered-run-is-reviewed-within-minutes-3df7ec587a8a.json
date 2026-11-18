@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/resumption.py:3017-3019 resumption.sweep imports and calls recovery_review_dispatch.review_request_census",
+    "reckon/crew/station_obligations.py:96 record_sweep_report persists report[\"reviews\"][\"failed\"] per session",
+    "reckon/crew/station_obligations.py:202 _with_sweep_failures renders each persisted failure as a duty row",
+    "reckon/crew/recovery_review_dispatch.py:4762 review_request_census is the census the fragment's paragraphs describe"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T23:42:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html",
+      "line": 112,
+      "severity": "blocking",
+      "text": "The live-census paragraph states '9 delivered runs owe an obligation, each with its reason', but the log it names (live-census-20261117T2145Z.log) carries 8 entries in its obligations array (grep -c '\"age_seconds\"' = 8, and the parsed JSON's len(obligations) = 8); 9 is counts.unrequested, one of which is younger than the 600 s deadline and so owes nothing yet. The example reasons are also not the log's: the eight entries give 'the run has no live pointer', 'the resumed attempt has not delivered', 'the run is a measurement run', 'the review reflex recorded skipped' and 'the review reflex recorded lane-paused', while the text names 'a review the resume superseded', which appears in no obligation. A reader checking the receipt the paragraph itself names finds a different count and different reasons, which is the same defect class the increment's gate and negative-control paragraphs were rewritten to clear."
+    },
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html",
+      "line": 74,
+      "severity": "non-blocking",
+      "text": "No test asserts that a figure in this fragment equals a summary line in the log it names, which is why the gate paragraph could cite '68 passed in 47.3 s at f4a8ef887b' through a promotion gate and the census paragraph could keep 9 against a log of 8; the fragment's numbers are guarded by review reading alone."
+    },
+    {
+      "file": "manifest.md",
+      "line": 36,
+      "severity": "non-blocking",
+      "text": "The artifacts line repeats '9 obligations' beside the same 2145Z census whose obligations array holds 8, so the manifest carries the fragment's unreceipted figure as well and will repeat it into the landed record."
+    }
+  ],
+  "justifications": {
+    "durability": "The increment adds no assertion (it is prose), and nothing in tests/test_a_delivered_run_is_reviewed_within_minutes.py reads the fragment, so reinstating the 9-obligation figure leaves every test green; the durability of this change rests on review reading alone.",
+    "evidence": "after_suite-head.log:1-6 (68 passed in 47.21s at 06a1e99f75, EXIT=0) and baseline_suite-head.log:1-6 (58 passed in 42.35s at 0c9f4fc8cd, EXIT=0) back the gate paragraph, but the same fragment's census paragraph at line 112 quotes 9 obligations against 8 in live-census-20261117T2145Z.log.",
+    "fit": "The rewritten paragraphs at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:74-96 follow the fragment's own idiom of naming the log beside each figure and spell the revision in the same six-hex form the surrounding text uses.",
+    "goal_fidelity": "The increment repairs the fragment's evidence trail at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:74-96 without altering the census it describes at reckon/crew/recovery_review_dispatch.py:4762.",
+    "reuse": "The increment adds no function, class or module; a search over reckon/crew for a reader that reconciles evidence-fragment figures with log summaries found none (reckon/evidence.py owns fragment creation, not figure checking), so no repository owner was forked or duplicated.",
+    "scope_discipline": "Every path in 8bf50b476f..3df7ec587a is the one declared evidence fragment, and the fragment header keeps its plan-verifies meta at line 10, so nothing outside the declared scope moved."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261117T234138627438-review-of-a-delivered-run-is-reviewed-within-minutes-3df7ec587a8a",
+  "reviewed_base_sha": "8bf50b476f99d6aa2553cb2c3b118778b4924b7c",
+  "reviewed_head_sha": "3df7ec587a8a0ec609137bcd7fa9e49f9bda2ec9",
+  "reviewed_run_id": "r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes",
+  "scores": {
+    "durability": 11,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:00:43.275931+00:00",
+  "total": 99,
+  "verdicts": {
+    "diff": "Read commit by commit: 06a1e99f75 rewrites the gate paragraph to quote after_suite-head.log (68 passed in 52.82s at 8bf50b476f's predecessor figure) and the negative-control paragraph to quote negative-control.log at 8bf50b476f, and 3df7ec587a corrects the head arm's figure to the summary after_suite-head.log actually carries (68 passed in 47.21s at 06a1e99f75); both commits touch the one evidence fragment and nothing else.",
+    "done_when": "The source done_when asks for a held-tick case at 120 s, a withheld-precondition obligation at ten minutes, a negative control in which the held tick reddens the first case, and the fleet census of delivered, request and launch instants; tests/test_a_delivered_run_is_reviewed_within_minutes.py:129 and :209 carry the two cases, negative-control.log:1-6 records the red arm (3 failed, 7 passed, EXIT=1, 8bf50b476f), and the fleet half is the fragment's census paragraph at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:98-115, whose obligation count does not match its log.",
+    "goal": "The source node's goal is that a delivered run's review is requested within 120 s of delivery being recorded, with the request-to-launch interval recorded apart and an obligation after ten minutes naming its reason (\u00a78 Deliverable); the increment reviewed here is the evidence repair 8bf50b47..3df7ec58, which changes only the fragment and leaves the delivered behaviour at reckon/crew/recovery_review_dispatch.py:4762 review_request_census (request_lag_seconds and launch_lag_seconds apart) and reckon/crew/resumption.py:3019 intact.",
+    "manifest": "Read the manifest of r-20261117T112942727363 at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes/manifest.md: status complete, eleven commits, after_suite 06a1e99f75 68 passed EXIT=0 and baseline_suite 0c9f4fc8cd 58 passed EXIT=0 both pointing at logs whose headers agree, negative_control_log negative-control.log (rerun at 00:25:28Z and now carrying '# revision: 8bf50b476f' on line 1), and an artifacts line that says 9 obligations where the log it cites holds 8.",
+    "write_paths": "The node declared five write paths; the increment 8bf50b476f..3df7ec587a touches exactly one of them, docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html (13 insertions, 9 deletions), and the full node diff 0c9f4fc8cd..3df7ec587a stays inside all five with docs/figures/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes unused."
+  }
+}
