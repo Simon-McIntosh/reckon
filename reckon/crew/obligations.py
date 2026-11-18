@@ -27,7 +27,7 @@ import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -4546,6 +4546,139 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+def _unlanded_source_items(project: str) -> list[dict[str, Any]]:
+    """Attribute staged or serving source absent from primary to a run's commit.
+
+    Inspect both the index and disk: a staged copy can differ even when disk
+    matches HEAD. Search a run's unmerged history, since its reviewed head may
+    have advanced past the copy a refused landing left in this checkout.
+    """
+    from reckon.crew import merge
+    from reckon.crew.dispatch_sections import project_mount_repository
+    from reckon.path_classes import path_class
+
+    repository = project_mount_repository(project)
+    if repository is None:
+        return []
+    names: set[str] = set()
+    for options in (("--cached",), ()):
+        changed = run_git(
+            repository,
+            "diff",
+            *options,
+            "--name-only",
+            "-z",
+            "HEAD",
+            env=INDEX_LAG_GIT_ENV,
+        )
+        if changed.returncode:
+            return []
+        names.update(
+            os.fsdecode(name)
+            for name in changed.stdout.split(b"\0")
+            if name and path_class(os.fsdecode(name)) == "source"
+        )
+    if not names:
+        return []
+    paths = sorted(names)
+    index = merge._checkout_index(repository, paths)
+    blobs: dict[str, set[str]] = {}
+    for name in paths:
+        primary = run_git(
+            repository,
+            "rev-list",
+            "--objects",
+            "HEAD",
+            "--",
+            name,
+            env=INDEX_LAG_GIT_ENV,
+        )
+        if primary.returncode:
+            continue
+        known = {
+            line.split(b" ", 1)[0].decode() for line in primary.stdout.splitlines()
+        }
+        candidates = {
+            entry.split(" ")[1] for entry in index.get(name, "").split("\0") if entry
+        }
+        value = merge._checkout_path(repository / name)
+        if value is not None and value[1] is not None:
+            content = os.fsencode(value[1]) if isinstance(value[1], str) else value[1]
+            hashed = run_git(
+                repository,
+                "hash-object",
+                "--stdin",
+                input=content,
+                env=INDEX_LAG_GIT_ENV,
+            )
+            if hashed.returncode == 0:
+                candidates.add(hashed.stdout.decode().strip())
+        if candidates - known:
+            blobs[name] = candidates - known
+    if not blobs:
+        return []
+    records = {
+        str(row.get("run_id") or ""): dict(row)
+        for row in _run_file_rows(project, repository)
+    }
+    for pointer in _live_pointers(project):
+        run_id = str(pointer.get("run_id") or "")
+        records[run_id] = {**records.get(run_id, {}), **pointer}
+    items = []
+    for run_id, row in records.items():
+        if not run_id:
+            continue
+        heads = list(row.get("commits") or [])
+        heads.extend(str(row.get(key) or "") for key in ("head", "reviewed_head"))
+        worktree = str(row.get("worktree") or "")
+        if worktree:
+            with suppress(merge.MergeError):
+                heads.append(merge._rev_parse(Path(worktree), "HEAD"))
+        matched: dict[str, str] = {}
+        for head in dict.fromkeys(heads):
+            if not re.fullmatch(r"[0-9a-f]{40,64}", head):
+                continue
+            history = run_git(
+                repository,
+                "rev-list",
+                head,
+                "^HEAD",
+                "--",
+                *blobs,
+                env=INDEX_LAG_GIT_ENV,
+            )
+            if history.returncode:
+                continue
+            for revision in history.stdout.decode().splitlines():
+                for name, candidates in blobs.items():
+                    if (
+                        name not in matched
+                        and merge._blob_id(repository, revision, name) in candidates
+                    ):
+                        matched[name] = revision
+        if matched:
+            items.append(
+                {
+                    "kind": "unlanded-source",
+                    "run_id": run_id,
+                    "run_ids": [run_id],
+                    "age_seconds": 0,
+                    "paths": sorted(matched),
+                    "head": next(iter(matched.values())),
+                    "reason": (
+                        f"the checkout's staged or serving source at {', '.join(sorted(matched))} "
+                        f"matches unlanded commits of run {run_id}; no commit on the primary "
+                        "branch carries that content, so a refused landing may be serving source"
+                    ),
+                    "next_command": "inspect the index and working-tree diff before recovering these paths: "
+                    + shlex.join(
+                        ["git", "-C", str(repository), "diff", "HEAD", "--", *matched]
+                    ),
+                }
+            )
+    return items
+
+
 def _node_disk_notice(project: str) -> dict[str, Any] | None:
     """The project's fleet disk pressure, from the sampler on that node."""
     from reckon.crew.fleet_supervisor import node_disk_obligation
@@ -5007,6 +5140,7 @@ def _obligations_view(
     index_lag = _index_lag_notice(project, now=now)
     if index_lag is not None:
         items.append(index_lag)
+    items.extend(_unlanded_source_items(project))
     acknowledgements = _acknowledgements_in_force(project, now=now)
     items, acknowledged = _partition_acknowledged(items, acknowledgements)
     items.sort(

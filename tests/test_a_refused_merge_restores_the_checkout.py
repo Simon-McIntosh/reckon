@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
+import json
 import os
 from pathlib import Path
 
@@ -59,7 +61,10 @@ def digest(repo):
         "executable.py",
         "peer.txt",
     ]
-    index = git(repo, "ls-files", "--stage", "--", *paths)
+    index = (
+        git(repo, "ls-files", "--stage", "--", *paths),
+        git(repo, "ls-files", "-v", "--", *paths),
+    )
     worktree = []
     for name in paths:
         path = repo / name
@@ -90,13 +95,16 @@ def land(repo, head, **kwargs):
     )
 
 
-def test_a_refused_ref_update_restores_the_index_and_worktree(checkout, tmp_path):
+@pytest.mark.parametrize("flag", [None, "--assume-unchanged", "--skip-worktree"])
+def test_a_refused_ref_update_restores_the_index_and_worktree(checkout, tmp_path, flag):
     repo = checkout
     head = delivered(repo, tmp_path, "first", "first delivery\n")
     other = delivered(repo, tmp_path, "second", "second delivery\n")
     (repo / "peer.txt").write_text("peer staged\n")
     git(repo, "add", "peer.txt")
     (repo / "peer.txt").write_text("peer unstaged\n")
+    if flag:
+        git(repo, "update-index", flag, "source.py")
     before = digest(repo)
     base = git(repo, "rev-parse", "HEAD")
     hook = repo / ".git" / "hooks" / "reference-transaction"
@@ -127,3 +135,189 @@ def test_a_refused_ref_update_restores_the_index_and_worktree(checkout, tmp_path
     assert (repo / "source.py").read_text() == "second delivery\n"
     assert (repo / "peer.txt").read_text() == "peer unstaged\n"
     assert git(repo, "show", ":peer.txt") == "peer staged"
+
+
+def test_an_exception_after_unpacking_also_restores_the_checkout(
+    checkout, tmp_path, monkeypatch
+):
+    repo = checkout
+    head = delivered(repo, tmp_path, "worker", "delivered source\n")
+    hook = repo / ".git" / "hooks" / "reference-transaction"
+    hook.write_text(
+        '#!/bin/sh\nif [ "$1" = prepared ] && grep -q " refs/heads/main$"; then exit 1; fi\n'
+    )
+    hook.chmod(0o755)
+    before = digest(repo)
+    original = merge._run
+
+    def interrupted(repository, *args, **kwargs):
+        result = original(repository, *args, **kwargs)
+        if args[:2] == ("merge", "--ff-only"):
+            assert result.returncode != 0
+            raise OSError("transport of git result interrupted")
+        return result
+
+    monkeypatch.setattr(merge, "_run", interrupted)
+    with pytest.raises(merge.MergeError, match="restored"):
+        land(repo, head)
+    assert digest(repo) == before
+
+
+@pytest.mark.parametrize("directory_first", [True, False])
+def test_a_refusal_restores_file_directory_replacements(
+    checkout, tmp_path, directory_first
+):
+    repo = checkout
+    if directory_first:
+        (repo / "source.py").unlink()
+        (repo / "source.py").mkdir()
+        (repo / "source.py" / "child.py").write_text("child\n")
+        git(repo, "add", "source.py")
+        git(repo, "commit", "-qm", "test: seed a directory")
+    worker = tmp_path / "worker"
+    git(repo, "worktree", "add", "--detach", str(worker), "HEAD")
+    if directory_first:
+        (worker / "source.py" / "child.py").unlink()
+        (worker / "source.py").rmdir()
+        (worker / "source.py").write_text("file\n")
+    else:
+        (worker / "source.py").unlink()
+        (worker / "source.py").mkdir()
+        (worker / "source.py" / "child.py").write_text("child\n")
+    git(worker, "add", "source.py")
+    git(worker, "commit", "-qm", "test: replace a checkout entry")
+    head = git(worker, "rev-parse", "HEAD")
+    paths = merge.landed_paths(repo, "HEAD", head)
+    files = {name: merge._checkout_path(repo / name) for name in paths}
+    index = merge._checkout_index(repo, paths)
+    hook = repo / ".git" / "hooks" / "reference-transaction"
+    hook.write_text(
+        '#!/bin/sh\nif [ "$1" = prepared ] && grep -q " refs/heads/main$"; then exit 1; fi\n'
+    )
+    hook.chmod(0o755)
+    with pytest.raises(merge.MergeError, match="restored"):
+        land(repo, head)
+    assert {name: merge._checkout_path(repo / name) for name in paths} == files
+    assert merge._checkout_index(repo, paths) == index
+
+
+@pytest.mark.parametrize(
+    "point", ["verification", "conflict", "candidate", "index-lock"]
+)
+def test_checks_refuse_before_writing_and_leave_the_next_delivery_free(
+    checkout, tmp_path, point
+):
+    repo = checkout
+    head = delivered(repo, tmp_path, "first", "first delivery\n")
+    options = {}
+    lock = None
+    if point == "verification":
+
+        def refuse(*args):
+            raise merge.MergeError("verification refused")
+
+        options["verify"] = refuse
+    elif point == "candidate":
+        options["candidate"] = head
+    elif point == "conflict":
+        (repo / "source.py").write_text("primary delivery\n")
+        git(repo, "add", "source.py")
+        git(repo, "commit", "-qm", "test: advance primary")
+    elif point == "index-lock":
+        lock = repo / ".git" / "index.lock"
+        lock.write_text("live writer\n")
+    other = delivered(repo, tmp_path, "second", "second delivery\n")
+    (repo / "peer.txt").write_text("peer edit\n")
+    before = digest(repo)
+    with pytest.raises(merge.MergeError):
+        land(repo, head, **options)
+    assert digest(repo) == before
+    if lock is not None:
+        lock.unlink()
+    assert land(repo, other)["pushed"] is True
+    assert (repo / "peer.txt").read_text() == "peer edit\n"
+
+
+def test_a_successful_landing_keeps_its_files_and_the_push(checkout, tmp_path):
+    repo = checkout
+    head = delivered(repo, tmp_path, "first", "delivered source\n")
+    base = git(repo, "rev-parse", "HEAD")
+    report = land(repo, head)
+    assert report["base"] == base
+    assert git(repo, "rev-parse", "HEAD^@").split() == [base, head]
+    assert git(repo, "rev-parse", "origin/main") == report["commit"]
+    assert (repo / "source.py").read_text() == "delivered source\n"
+    assert (repo / "added.py").read_bytes() == b"\x00binary\xff\n"
+    assert (repo / "link.py").is_symlink()
+    assert (repo / "executable.py").stat().st_mode & 0o111
+    assert not (repo / "removed.py").exists()
+
+
+@pytest.mark.parametrize("staged", [True, False])
+def test_source_residue_names_the_run_and_its_older_head(
+    checkout, tmp_path, monkeypatch, staged
+):
+    obligations = importlib.import_module("reckon.crew.obligations")
+    repo = checkout
+    older = delivered(repo, tmp_path, "worker", "older source\n")
+    worker = tmp_path / "worker"
+    (worker / "source.py").write_text("newer source\n")
+    git(worker, "add", "source.py")
+    git(worker, "commit", "-qm", "test: revise delivered source")
+    newer = git(worker, "rev-parse", "HEAD")
+    (repo / "docs").mkdir()
+    home = Path(os.environ["RECKON_HOME"])
+    (home / "mounts.json").write_text(json.dumps({"project": str(repo / "docs")}))
+    pointer = {
+        "run_id": "run-source",
+        "project": "project",
+        "session": "owner",
+        "worktree": str(worker),
+        "head": newer,
+    }
+    monkeypatch.setattr(obligations, "_live_pointers", lambda project: [pointer])
+    monkeypatch.setattr(obligations, "_run_file_rows", lambda *args: [])
+    assert obligations._unlanded_source_items("project") == []
+    (repo / "source.py").write_text(git(repo, "show", f"{older}:source.py") + "\n")
+    if staged:
+        git(repo, "add", "source.py")
+        # Index and serving source are independently checked.
+        (repo / "source.py").write_text("base\n")
+    before = digest(repo)
+    notices = obligations._unlanded_source_items("project")
+    assert len(notices) == 1, notices
+    notice = notices[0]
+    assert notice["kind"] == "unlanded-source"
+    assert notice["run_id"] == "run-source"
+    assert notice["paths"] == ["source.py"]
+    assert notice["head"] == older
+    assert older != newer
+    assert "run-source" in notice["reason"]
+    assert "source.py" in notice["next_command"]
+    assert digest(repo) == before
+
+
+def test_a_primary_history_copy_and_unattributed_edit_raise_no_residue_duty(
+    checkout, tmp_path, monkeypatch
+):
+    obligations = importlib.import_module("reckon.crew.obligations")
+    repo = checkout
+    old_content = (repo / "source.py").read_text()
+    head = delivered(repo, tmp_path, "worker", "delivered source\n")
+    land(repo, head)
+    (repo / "docs").mkdir()
+    home = Path(os.environ["RECKON_HOME"])
+    (home / "mounts.json").write_text(json.dumps({"project": str(repo / "docs")}))
+    monkeypatch.setattr(
+        obligations,
+        "_run_file_rows",
+        lambda *args: [
+            {"run_id": "run-source", "commits": [head]},
+        ],
+    )
+    monkeypatch.setattr(obligations, "_live_pointers", lambda project: [])
+    (repo / "source.py").write_text(old_content)
+    git(repo, "add", "source.py")
+    assert obligations._unlanded_source_items("project") == []
+    (repo / "source.py").write_text("independent peer edit\n")
+    assert obligations._unlanded_source_items("project") == []

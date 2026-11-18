@@ -11,9 +11,10 @@ reload while that tree is dirty.
 This module builds the merge out of objects instead. ``git merge-tree
 --write-tree`` computes the merged tree without reading or writing the index or
 the working tree, and ``git commit-tree`` turns that tree into a commit. The
-checkout is touched only by the final ``git merge --ff-only``, which either
-completes in one step or leaves it exactly as it was, so a held lock or a moved
-HEAD costs a retry rather than a repair.
+checkout is touched only by the final ``git merge --ff-only``. Its checkout
+delta is snapshotted because a refused ref transaction can follow git's index
+write; an incomplete fast-forward restores that delta before reporting its
+refusal, so a held lock or a moved HEAD costs a retry rather than a repair.
 
 Nothing here sets a plan, a sprint or a project index; it moves one branch and
 pushes it. Identity is a module-local concern: an actor, if one arrives later,
@@ -41,6 +42,7 @@ from __future__ import annotations
 import contextlib
 import os
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -1372,6 +1374,175 @@ def _push_and_confirm(repo: Path, remote: str, commit: str, branch: str) -> str:
     return remote_head
 
 
+def _checkout_path(path: Path) -> tuple[int, bytes | str | None] | None:
+    """Read a checkout entry without following a symlink or a missing parent."""
+    try:
+        mode = path.lstat().st_mode
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+    if stat.S_ISLNK(mode):
+        return mode, os.readlink(path)
+    if stat.S_ISDIR(mode):
+        return mode, None
+    if stat.S_ISREG(mode):
+        return mode, path.read_bytes()
+    raise MergeError(f"cannot snapshot the checkout entry {path}")
+
+
+def _checkout_index(repo: Path, paths: list[str]) -> dict[str, str]:
+    """Read the index records only for paths this fast-forward can touch."""
+    result = _run(
+        repo,
+        "ls-files",
+        "--stage",
+        "-z",
+        "--",
+        *paths,
+        extra_env={"GIT_OPTIONAL_LOCKS": "0"},
+    )
+    if result.returncode:
+        raise MergeError("cannot snapshot the index: " + _result_text(result))
+    entries: dict[str, str] = {}
+    for record in result.stdout.split("\0"):
+        if record:
+            name = record.split("\t", 1)[1]
+            entries[name] = entries.get(name, "") + record + "\0"
+    return entries
+
+
+def _checkout_flags(repo: Path, paths: list[str]) -> dict[str, str]:
+    """Read assume-unchanged and skip-worktree bits that an index write clears."""
+    result = _run(
+        repo,
+        "ls-files",
+        "-v",
+        "-z",
+        "--",
+        *paths,
+        extra_env={"GIT_OPTIONAL_LOCKS": "0"},
+    )
+    if result.returncode:
+        raise MergeError("cannot snapshot index flags: " + _result_text(result))
+    return {record[2:]: record[0] for record in result.stdout.split("\0") if record}
+
+
+def _restore_checkout(
+    repo: Path,
+    paths: list[str],
+    index: dict[str, str],
+    files: dict[str, tuple[int, bytes | str | None] | None],
+    flags: dict[str, str],
+) -> None:
+    """Restore this attempt's entries, leaving every other index path alone."""
+    current = _checkout_index(repo, paths)
+    changed = [name for name in paths if current.get(name) != index.get(name)]
+    if changed:
+        # Clearing each stage first also handles an absent entry and an index
+        # with conflict stages. The object format owns the zero oid's width.
+        zero = "0" * len(_rev_parse(repo, "HEAD"))
+        records = "".join(f"0 {zero}\t{name}\0" for name in changed)
+        records += "".join(index.get(name, "") for name in changed)
+        restored = _run(repo, "update-index", "-z", "--index-info", input=records)
+        if restored.returncode:
+            raise MergeError("cannot restore the index: " + _result_text(restored))
+    # Remove leaves first so a file/directory replacement can be reversed
+    # without removing any unlisted child or a third party's directory contents.
+    changed_files = [
+        name for name in paths if _checkout_path(repo / name) != files[name]
+    ]
+    for name in sorted(changed_files, key=lambda name: name.count("/"), reverse=True):
+        path = repo / name
+        value = _checkout_path(path)
+        if value is not None:
+            if stat.S_ISDIR(value[0]):
+                path.rmdir()
+            else:
+                path.unlink()
+    for name in sorted(changed_files, key=lambda name: name.count("/")):
+        value = files[name]
+        if value is None:
+            continue
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        mode, content = value
+        if stat.S_ISLNK(mode):
+            path.symlink_to(content)
+        elif stat.S_ISDIR(mode):
+            path.mkdir(exist_ok=True)
+        else:
+            path.write_bytes(content)
+        if not stat.S_ISLNK(mode):
+            path.chmod(stat.S_IMODE(mode))
+
+    if changed:
+        # Restored cache entries need fresh stat data before their trust bits
+        # are reinstated. Refresh changes no blob, even for unrelated edits.
+        refreshed = _run(
+            repo,
+            "update-index",
+            "--refresh",
+            "--ignore-submodules",
+            "--unmerged",
+            "--ignore-missing",
+        )
+        if refreshed.returncode not in (0, 1):
+            raise MergeError(
+                "cannot refresh the restored index: " + _result_text(refreshed)
+            )
+        for option, selected in (
+            (
+                "--assume-unchanged",
+                [name for name in changed if flags.get(name, "").islower()],
+            ),
+            (
+                "--skip-worktree",
+                [name for name in changed if flags.get(name, "").upper() == "S"],
+            ),
+        ):
+            if selected:
+                restored = _run(repo, "update-index", option, "--", *selected)
+                if restored.returncode:
+                    raise MergeError(
+                        "cannot restore index flags: " + _result_text(restored)
+                    )
+
+
+def _fast_forward(
+    repo: Path, base: str, commit: str
+) -> subprocess.CompletedProcess[str]:
+    """Undo checkout writes if git stages the tree but refuses the ref update.
+
+    The ref transaction can refuse after unpacking the tree and writing the
+    index. Snapshot just the merged delta, so a refusal cannot strand serving
+    source or disturb an unrelated writer's staged and unstaged work. A moved
+    HEAD belongs to a completed landing or another writer and is never undone.
+    """
+    paths = landed_paths(repo, base, commit)
+    if not paths:
+        return _run(repo, "merge", "--ff-only", commit)
+    index = _checkout_index(repo, paths)
+    flags = _checkout_flags(repo, paths)
+    files = {name: _checkout_path(repo / name) for name in paths}
+    try:
+        result = _run(repo, "merge", "--ff-only", commit)
+    except BaseException as exc:
+        if _rev_parse(repo, "HEAD") == base:
+            _restore_checkout(repo, paths, index, files, flags)
+            if not isinstance(exc, Exception):
+                raise
+            raise MergeError(
+                f"fast-forward raised {exc}; restored the checkout's index and "
+                "working tree at the merge paths"
+            ) from exc
+        raise
+    if result.returncode and _rev_parse(repo, "HEAD") == base:
+        _restore_checkout(repo, paths, index, files, flags)
+        result.stderr += (
+            "\nrestored the checkout's index and working tree at the merge paths"
+        )
+    return result
+
+
 def land_merge(
     repo: str | Path,
     *,
@@ -1481,7 +1652,7 @@ def land_merge(
 
                     _copy_objects(repo, commit, objects, parents=[base, head_sha])
 
-            return _run(repo, "merge", "--ff-only", commit)
+            return _fast_forward(repo, base, commit)
 
         remaining = attempts
         while remaining > 0:
