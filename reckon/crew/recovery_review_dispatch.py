@@ -3765,7 +3765,7 @@ def _file_identity(path: Path) -> tuple[Any, ...]:
 
 def _lane_admission_identity(
     config: Mapping[str, Any] | None,
-) -> tuple[tuple[str, ...], ...]:
+) -> tuple[tuple[Any, ...], ...]:
     """The identities of the lane documents the configured lanes publish.
 
     A lane publishes its own admission in the JSON its ``lane_document`` names —
