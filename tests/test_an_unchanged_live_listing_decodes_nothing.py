@@ -2,10 +2,11 @@
 
 Every monitor pass lists the live directory, and each listing used to decode
 every pointer it returned even though ``_pointer_text`` already re-read only
-the pointers whose stat identity had moved. The record decoded from a cached
-text is now kept beside it under the same identity, so a listing whose
-population has not moved costs no decode at all, while a pointer that changed,
-appeared or vanished is decoded or dropped once.
+the pointers whose stat identity had moved. The record decoded from that text
+is now memoised by ``reckon.file_memo`` — the repository's one owner of
+parse-per-stat-identity — so a listing whose population has not moved costs no
+decode at all, while a pointer that changed, appeared or vanished is decoded or
+dropped once.
 
 The counters come from a stand-in installed as the listing's own ``json``
 module, so they count the module's decodes rather than the test's own reads of
@@ -20,6 +21,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import file_memo
 from reckon._store import write_json_atomically
 from reckon.crew import runs
 
@@ -93,7 +95,7 @@ def test_an_unchanged_listing_decodes_nothing_and_keeps_its_records_apart(
     assert not decodes.texts, (
         f"an unchanged listing decoded {len(decodes.texts)} pointers"
     )
-    assert second == first
+    assert second == _listed_by_the_files(live)
 
     # A caller's change to a record it was handed reaches neither the kept
     # record nor the next listing.
@@ -116,3 +118,17 @@ def test_an_unchanged_listing_decodes_nothing_and_keeps_its_records_apart(
     kept = next(row for row in third if row["run_id"] == "r-000")
     assert kept["phase"] == "working"
     assert kept["dispatch_options"] == {"overrides": ["--set", "model=default"]}
+
+
+def test_the_pointer_records_are_kept_by_the_one_shared_memo(live, decodes):
+    """The record store is ``file_memo``'s, not a second cache beside it."""
+    runs._list_live_records(project="p")
+    decodes.texts.clear()
+
+    file_memo.clear()
+
+    assert len(runs._list_live_records(project="p")) == POINTERS
+    assert len(decodes.texts) == POINTERS, (
+        "the records survived a clear of the shared memo, so the listing keeps "
+        "a parse cache of its own"
+    )

@@ -1,6 +1,5 @@
 # ruff: noqa: I001, PLC0414
 from __future__ import annotations
-import copy as copy
 import fcntl as fcntl
 import fnmatch as fnmatch
 import hashlib as hashlib
@@ -35,6 +34,7 @@ from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
 from pathlib import Path as Path
 from typing import Any as Any, NoReturn as NoReturn, Self as Self
 from reckon import __version__ as __version__
+from reckon import file_memo as file_memo
 from reckon._store import (
     _config_home as _config_home,
     _docs_dir_for_project as _docs_dir_for_project,
@@ -1317,16 +1317,16 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
 # by every follower on the node. A pointer whose inode, size and timestamps are
 # unchanged holds the bytes last read, so its text is kept per process keyed by
 # that identity and the file is opened again only when the identity moves. The
-# text is kept so the bytes a caller sees do not change under it, and the
-# record decoded from that text is kept beside it, so a pass that finds the
-# identity unchanged hands out a copy of the record already held rather than
-# decoding the pointer again. The copy, not the kept object, is what a caller
-# receives, so a caller that mutates what it was given changes nothing the next
-# listing returns.
-_POINTER_TEXT: dict[
-    str, tuple[tuple[int, int, int, int], str, dict[str, Any] | None]
-] = {}
+# text, not the parsed object, is kept here, so every caller still receives a
+# dict of its own to change. The record decoded from that text is memoised by
+# the repository's one memoising owner, ``file_memo``, keyed by the same stat
+# identity, so a listing that finds the identity unchanged decodes nothing and
+# the hand-out copy that owner makes is what keeps callers apart.
+_POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
+
+#: The memo kind under which ``file_memo`` keeps a live pointer's decoded record.
+_POINTER_RECORD_KIND = "live_pointer_record"
 
 
 _JSON_WHITESPACE = " \t\r\n"
@@ -1475,7 +1475,7 @@ def _pointer_text(path: Path) -> str:
         except ValueError:
             reduced = text
     with _POINTER_TEXT_LOCK:
-        _POINTER_TEXT[key] = (identity, reduced, None)
+        _POINTER_TEXT[key] = (identity, reduced)
     return reduced
 
 
@@ -1483,34 +1483,29 @@ def _pointer_record(path: Path) -> Any:
     """A pointer's decoded record, decoded only when its identity has moved.
 
     A listing is a pass, and a pass that finds every pointer's stat identity
-    where the previous pass left it decodes none of them: the record decoded
-    from that text is kept beside it, under the same identity, and handed out
-    as a copy so a caller's change to what it was given reaches neither the
-    kept record nor the next listing.
+    where the previous pass left it decodes none of them. The parse is memoised
+    by ``file_memo``, the repository's one owner of parse-per-stat-identity, so
+    this listing shares its store and its hand-out rule with every other
+    reader rather than keeping a second cache beside it; the copy that owner
+    makes is what keeps a caller's change to a record it was given out of the
+    next listing.
 
-    The record is kept at the identity the text is kept under, so a pointer
-    rewritten between the stat and the read is cached with the bytes that were
-    actually decoded rather than a mix of two versions.
+    The memo's key is the pointer's own signature, taken once here, so the
+    unchanged pass costs one stat per pointer and the text read underneath
+    happens only when that signature has moved.
     """
     key = str(path)
     try:
-        info = path.stat()
-    except FileNotFoundError:
+        signature = file_memo.file_signature(path)
+    except OSError:
         with _POINTER_TEXT_LOCK:
             _POINTER_TEXT.pop(key, None)
         raise
-    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
-    with _POINTER_TEXT_LOCK:
-        kept = _POINTER_TEXT.get(key)
-    if kept is not None and kept[0] == identity and kept[2] is not None:
-        return copy.deepcopy(kept[2])
-    data = json.loads(_pointer_text(path))
-    if isinstance(data, dict):
-        with _POINTER_TEXT_LOCK:
-            entry = _POINTER_TEXT.get(key)
-            if entry is not None:
-                _POINTER_TEXT[key] = (entry[0], entry[1], data)
-    return copy.deepcopy(data)
+    return file_memo.memoized_key(
+        _POINTER_RECORD_KIND,
+        (key, signature),
+        lambda: json.loads(_pointer_text(path)),
+    )
 
 
 #: The lease this node's station keeps under the node-local runtime root. Its
