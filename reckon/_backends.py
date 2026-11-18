@@ -3695,10 +3695,6 @@ class _StreamCursor:
             and _stream_head_intact(path, self.head)
         )
 
-    def as_resume(self) -> dict[str, Any]:
-        """The caller-carried resume shape this cursor answers for."""
-        return {"offset": self.offset, "head": self.head}
-
 
 @dataclass
 class _ParsedStream:
