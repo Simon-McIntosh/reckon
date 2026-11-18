@@ -106,18 +106,30 @@ def test_classify_followup_resolves_the_named_section(
         assert verdict.reason == base_reason
 
 
-def test_widened_census_reports_seven_core_composed_expressions():
+def test_widened_census_reports_every_core_composed_expression():
     """Every section-spelling frame under reckon/ composes the shared core.
 
     The frame search is widened past expressions whose context names a
     section: a section matched inside a command or a reference (a section sign
     in the pattern, or an invocation frame) is a section-spelling expression
-    too, and it must compose the core like the rest.
+    too, and it must compose the core like the rest. A prose detector that
+    names a section in the phrase it matches is one of those expressions: it
+    spells the number as well, so it composes the core rather than reading a
+    second copy of the grammar. The set below is the whole population, so a
+    reader that appears without the core fails here by name.
     """
     root = Path(_plan_html.__file__).parent
     sites = set()
     for path in root.rglob("*.py"):
         tree = ast.parse(path.read_text())
+        named_grammars = {
+            node.targets[0].id: ast.unparse(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and isinstance(node.value, (ast.Constant, ast.JoinedStr))
+        }
         parents = {
             child: node
             for node in ast.walk(tree)
@@ -144,6 +156,8 @@ def test_widened_census_reports_seven_core_composed_expressions():
                     operand = ast.unparse(current.targets[0])
             context = owner or operand
             pattern = ast.unparse(call.args[0])
+            if len(call.args) == 1 and isinstance(call.args[0], ast.Name):
+                pattern = named_grammars.get(call.args[0].id, pattern)
             if not any(
                 marker in pattern
                 for marker in [r"\d", "[0-9]", "[1-9]", "SECTION_NUMBER"]
@@ -160,6 +174,9 @@ def test_widened_census_reports_seven_core_composed_expressions():
     assert sites == {
         ("_plan_html.py", "_SECTION_IDENTITY"),
         ("_store.py", "_require_new_section_contracts"),
+        ("crew/plan_review.py", "_SECTION_REFERENCE"),
+        ("crew/reports.py", "_PLAN_SECTION_REFERENCE"),
+        ("doccheck.py", "_DEFERRED_WORK_TERM"),
         ("doccheck.py", "_NUMBERED_SECTION_ID"),
         ("evidence.py", "_section_key"),
         ("followup_pointers.py", "_INVOCATION_RE"),
