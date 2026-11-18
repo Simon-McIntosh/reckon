@@ -2424,7 +2424,15 @@ def indexed_headers(
 def load_auxiliary(
     project: str, root: str | Path | None = None
 ) -> tuple[dict[str, Any], int]:
-    """Read mutable state from its store, importing the aggregate only once."""
+    """Read mutable state from its store, importing the aggregate only once.
+
+    Creating a store is what makes it the answer to every later history read,
+    so a store created here would report a project's committed runs as though
+    they had never existed: no reader unions the aggregate's rows back in once
+    the store answers. The import below therefore completes the store from the
+    committed ledger before it returns, the same way a promotion's first row
+    does, and only when the store holds no run for the project.
+    """
     from reckon import run_store
 
     result = []
@@ -2433,6 +2441,7 @@ def load_auxiliary(
             store.auxiliary(project, lambda: _load_aggregate(project, root))
         )
     )
+    _complete_store_from_ledger(project, root)
     return result[0]
 
 
