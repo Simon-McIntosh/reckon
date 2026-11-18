@@ -174,7 +174,12 @@ def test_set_section_declarations_rejects_unknown_classification(setup):
     )
 
     assert result["ok"] is False
-    assert result["error"] == "schema_validation"
+    assert result["error"] == "op_error"
+    assert result["detail"] == (
+        "section declaration must be one of "
+        "['implementable', 'deferred', 'descoped', 'done']; got 'queued'"
+    )
+    assert result["refused_op_index"] == 0
     reread = mcp_module._read_plan(project, "plan-a")
     assert "section_declarations" not in reread["data"]
     assert reread["version"] == 0
