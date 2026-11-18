@@ -3888,7 +3888,7 @@ def _resume_superseded_refusal(
     }
 
 
-@operational_read(live_reader=lambda: list_live())
+@operational_read(live_reader=lambda: list_live(project=None))
 def dispatch_review_for_run(
     record: Mapping[str, Any],
     *,
