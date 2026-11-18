@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -295,6 +296,36 @@ def test_source_residue_names_the_run_and_its_older_head(
     assert "run-source" in notice["reason"]
     assert "source.py" in notice["next_command"]
     assert digest(repo) == before
+
+    # The published sweep and a direct read must carry the same source duty.
+    from reckon.crew import obligation_snapshot
+
+    monkeypatch.setattr(obligations, "_classified_rows", lambda project: [])
+    monkeypatch.setattr(obligations, "_held_worktrees", lambda *args, **kwargs: [])
+    monkeypatch.setattr(obligations, "_sub_floor_items", lambda *args, **kwargs: [])
+    direct = obligations.obligations("project", "owner")
+    projected = obligation_snapshot.payload_for(
+        obligation_snapshot.FleetState(
+            project="project",
+            now=datetime.now(UTC),
+            config={},
+            grace=0,
+            floors={},
+            rows=[],
+            pointers={},
+            acknowledged={},
+            reviews_in_flight={},
+            sub_floor={},
+            held_worktrees={},
+            unreconciled={},
+            findings=[],
+            unlanded_source=notices,
+        ),
+        "owner",
+    )
+    assert [
+        row for row in direct["obligations"] if row["kind"] == "unlanded-source"
+    ] == [row for row in projected["obligations"] if row["kind"] == "unlanded-source"]
 
 
 def test_a_primary_history_copy_and_unattributed_edit_raise_no_residue_duty(
