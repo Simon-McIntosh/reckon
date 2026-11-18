@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -170,6 +170,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261118T002127213819-review-of-the-sampler-runs-the-current-script-5312b01ff58b" data-who="reckon-build" data-when="2026-11-18T00:27:53Z">
     <div class="r-comment-body"><p>Independent incremental review of 9cc306b9d7de49e82efb90c85e4027624e3e75bc..5312b01ff58b358d5d427194fb6a711451010c83 finds no defects; six dimensions 20/20 and zero added failing IDs.</p></div>
 </div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261118T004303865181-review-of-unowned-scratch-is-reclaimed-7b14a9c608ee" data-who="reckon-build" data-when="2026-11-18T00:49:28Z">
+    <div class="r-comment-body"><p>Independent exact-revision review stored parsed with six scores, two blocking findings, and zero added failure IDs from the source run own completed suite arms; broader importer delta and live observation remain recorded separately.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
 </div>
@@ -263,8 +266,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111352964502-the-admission-service-holds-steady-memory" data-who="reckon-build" data-when="2026-11-17T13:01:27Z">
     <div class="r-comment-body"><p>Each section verdict now reads only its own plan's runs: readiness._ledger_run_rows calls ledger.load(project, plan=slug) and caches under (project, plan), so the store narrows in SQL before any row is decoded. On a copy of the live crew home, 100 consecutive admission passes at 13b1d2bdc8 held resident at 1304825856 B after the hundredth against 1304825856 B after the tenth (growth_ratio 1.0, within_twenty_percent true, under_four_gib true, peak_resident_bytes 2045972480 in 656.0 s), decoding 441.9 run_store rows per pass where the base revision decoded 21148.7 on the same input over three passes, at a resident peak of 4619415552 B against the head's 2009300992 B.</p></div>
 </div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261118T004303865181-review-of-unowned-scratch-is-reclaimed-7b14a9c608ee" data-who="reckon-build" data-when="2026-11-18T00:49:28Z">
-    <div class="r-comment-body"><p>Independent exact-revision review stored parsed with six scores, two blocking findings, and zero added failure IDs from the source run own completed suite arms; broader importer delta and live observation remain recorded separately.</p></div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261118T010152259555-review-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f" data-who="reckon-build" data-when="2026-11-18T01:02:49.200Z">
+    <div class="r-comment-body"><p>Reviewed r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory at 4b7aa8a071ed10e619d95fdacdaa5e644d04b548..a876883a0c7f3796d592ba53cd201e4e1e56e898 and stored a parsed record scoring goal_fidelity 5, evidence 6, scope_discipline 16, durability 6, fit 15, reuse 11 (total 59), with one blocking finding: the batch&#x27;s live-set trim drops every pointer&#x27;s node mapping, so the held-node check no longer sees a live hold and queues a node another run holds.</p></div>
 </div>
 </section>
 </main>
