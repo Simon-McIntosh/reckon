@@ -19,8 +19,9 @@ decision, so the patched reader participates. No assertion was removed or
 weakened: the same test still requires that the acceptance covers the edit and
 that replacing the reader leaves the unit uncovered. A mutation that made the
 decision ignore the acceptance (<code>for identity in set():</code> in place of
-the <code>_accepted_edit_units</code> loop) failed both acceptance cases, so the
-guard is load-bearing and the assertions can fail.</p>
+the <code>_accepted_edit_units</code> loop) failed five cases, both acceptance
+cases among them, in the mutation run recorded below, so the guard is
+load-bearing and the assertions can fail.</p>
 <h3 id="qwnw-red-file-an-edit-that-answers-a-review-is-covered-control-base">Base
 run, one failing id</h3>
 <pre># revision: 60ecc274f1bf7008b09057c6a5252423deb4cfe5
@@ -44,4 +45,28 @@ EXIT=0</pre>
 <p>This is <code>head-run-final.log</code> in the run directory, quoted verbatim.
 The repairing commits after it change only this fragment, so the figures still
 describe the code the check reads.</p>
+<h3 id="qwnw-red-file-an-edit-that-answers-a-review-is-covered-control-mutation">Mutation
+run, the guard shown load-bearing</h3>
+<p>The claim that a decision ignoring the acceptance fails the acceptance
+cases is a measurement, not an assertion: <code>mutation-run.log</code> in the
+run directory holds it. The arm replaced the acceptance loop with an empty
+set, ran the node's test file, then restored the file from a backup and
+confirmed the worktree matched its head again. Quoted below are the log's
+header, its failing ids and its receipt; the pytest failure reports between
+them are elided, since the ids and the summary carry the measurement. The two
+acceptance cases among the five failures are the ones the verdict cites.</p>
+<pre># revision: 024b19b844173bd151d408a0efcf30f803b033a6
+# host: 98dci4-clu-3144.iter.org
+# mutated line: 1387
+# was: for identity in _accepted_edit_units(record, digests) &amp; outstanding:
+# now: for identity in set():
+...
+FAILED tests/test_an_edit_that_answers_a_review_is_covered.py::test_accepting_the_edit_covers_the_units_it_names - AssertionError: the accepted edit is covered
+FAILED tests/test_an_edit_that_answers_a_review_is_covered.py::test_a_later_edit_uncovered_again - AssertionError: assert 's5' not in {'s5'}
+FAILED tests/test_an_edit_that_answers_a_review_is_covered.py::test_ignoring_the_acceptance_leaves_the_section_uncovered - AssertionError: the acceptance covers the edit
+FAILED tests/test_an_edit_that_answers_a_review_is_covered.py::test_the_review_verb_records_the_acceptance - AssertionError: assert {'s5'} == set()
+FAILED tests/test_an_edit_that_answers_a_review_is_covered.py::test_a_dry_run_reports_the_acceptance_and_writes_nothing - AssertionError: assert {'s5'} == set()
+5 failed, 4 passed in 2.66s
+# restore: 0 (0 means the worktree matches HEAD again)
+EXIT=1</pre>
 </section>
