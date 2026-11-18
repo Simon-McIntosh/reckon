@@ -897,7 +897,21 @@ def release_merged_promotions(*, only_run: str = "") -> list[dict[str, Any]]:
         if _record_path(run_id).exists():
             continue
         marked = pointer.get("pending_landing_repair_attempt")
-        if pointer.get("pending_landing_repair") and marked_identity(pointer) != marked:
+        # An integrated delivery can retire a legacy unpaired mark. A phase
+        # rewrite does not start another attempt; the process and attempt
+        # fields still protect a worker that superseded the mark.
+        if (
+            pointer.get("pending_landing_repair")
+            and marked is not None
+            and (
+                not isinstance(marked, Mapping)
+                or any(
+                    pointer.get(field) != marked.get(field)
+                    for field in MARKED_FIELDS
+                    if field != "phase"
+                )
+            )
+        ):
             continue
         if (
             COMMAND_REPLY.get() is None

@@ -11,6 +11,7 @@ import pytest
 
 from reckon import ledger
 from reckon.crew import pending_landing, queue_landing, resume, runs
+from tests.helpers.git import git
 from tests.test_a_coordinator_holds_a_delivered_run import (
     RUN,
     _store_review,
@@ -225,3 +226,133 @@ def test_manual_release_attempts_pending_landing_on_the_next_pass(
 
     assert attempts == [member["head"]], result
     assert any(row["status"] == "finished" for row in result), result
+
+
+def test_one_pass_judges_a_mixed_cohort(delivery, tmp_path) -> None:
+    pointer = runs.read_pointer(RUN)
+    delivery_tree = tmp_path / "delivery-tree"
+    git(
+        delivery["repo"],
+        "worktree",
+        "add",
+        "--detach",
+        str(delivery_tree),
+        delivery["head"],
+    )
+    pointer["worktree"] = str(delivery_tree)
+    runs._write_json(runs.pointer_path(RUN), pointer)
+    manifest, baseline = _begin_resume()
+    _deliver(manifest, baseline)
+    _store_review(base=delivery["base"], head=delivery["head"])
+    original = runs.read_pointer(RUN)
+    for name, running in (("running", True), ("explicit", False)):
+        run_id = f"r-cohort-{name}"
+        directory = runs.run_dir(run_id)
+        directory.mkdir(parents=True)
+        member_manifest = directory / "manifest.md"
+        member_manifest.write_text(manifest.read_text())
+        pointer = {
+            **original,
+            "run_id": run_id,
+            "manifest_path": str(member_manifest),
+            "node": {**original["node"], "id": name},
+        }
+        if running:
+            pointer["pid"] = os.getpid()
+            member_manifest.write_text(
+                member_manifest.read_text().replace(
+                    "status: complete", "status: in-progress"
+                )
+            )
+        else:
+            pointer.pop("delivery_hold")
+        runs._write_json(runs.pointer_path(run_id), pointer)
+        if not running:
+            resume.hold_delivery(run_id, "the coordinator owns this decision")
+
+    repository = delivery["repo"]
+    origin = tmp_path / "origin.git"
+    git(tmp_path, "init", "--bare", "-q", str(origin))
+    git(repository, "remote", "add", "origin", str(origin))
+    git(repository, "push", "-q", "origin", "main")
+    tree = tmp_path / "integrated-tree"
+    git(repository, "worktree", "add", "--detach", str(tree), delivery["head"])
+    promoted_id = "r-cohort-integrated"
+    directory = runs.run_dir(promoted_id)
+    directory.mkdir(parents=True)
+    promoted_manifest = directory / "manifest.md"
+    promoted_manifest.write_text(f'status: complete\ncommits: ["{delivery["head"]}"]\n')
+    promoted = {
+        "run_id": promoted_id,
+        "project": original["project"],
+        "repo": str(repository),
+        "worktree": str(tree),
+        "manifest_path": str(promoted_manifest),
+        "base_sha": delivery["base"],
+        "phase": "complete",
+        "role": "implement",
+        "launch": "in-harness",
+        "node": {"id": "integrated", "write_paths": []},
+    }
+    runs._write_json(runs.pointer_path(promoted_id), promoted)
+    (repository / "docs" / "state" / original["project"] / "runs").mkdir()
+    ledger.write_run_file(
+        original["project"],
+        {
+            **promoted,
+            "commits": [delivery["head"]],
+            "promoted_revision": delivery["head"],
+            "gate": "passed",
+        },
+        repository,
+    )
+    resume.hold_delivery(
+        promoted_id, "a resume deferred this head", head=delivery["head"]
+    )
+
+    base_tree = tmp_path / "base-tree"
+    git(repository, "worktree", "add", "--detach", str(base_tree), delivery["base"])
+    try:
+        result = queue_landing.land_once()
+    finally:
+        git(repository, "worktree", "remove", str(base_tree))
+
+    assert result["landed"] == [RUN], result
+    assert resume.delivery_hold(runs.read_pointer(RUN)) is None
+    for name in ("running", "explicit"):
+        assert resume.delivery_hold(runs.read_pointer(f"r-cohort-{name}")) is not None
+    assert not runs.pointer_path(promoted_id).exists(), result
+    assert not tree.exists(), result
+    row = json.loads(
+        ledger.run_path(original["project"], promoted_id, repository).read_text()
+    )
+    assert row["release"]["worktree_released"] is True
+
+
+@pytest.mark.parametrize("mark", ["missing", "matching", "phase-rewritten"])
+def test_a_marked_integrated_run_without_a_journal_records_its_release(
+    cohort, mark
+) -> None:
+    member = cohort["members"]["clean"]
+    run_id = member["pointer"]["run_id"]
+    pointer = runs.read_pointer(run_id)
+    pointer.update(attempt=1, phase="complete", pending_landing_repair=True)
+    if mark != "missing":
+        pointer["pending_landing_repair_attempt"] = {
+            **pending_landing.marked_identity(pointer),
+            "phase": "blocked" if mark == "phase-rewritten" else "complete",
+        }
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    resume.hold_delivery(run_id, "a resume deferred this delivery", head=member["head"])
+    assert not pending_landing._record_path(run_id).exists()
+    assert resume.delivery_hold(runs.read_pointer(run_id)) is not None
+
+    result = pending_landing.finish_pending_landings(only_run=run_id)
+
+    assert not runs.pointer_path(run_id).exists(), result
+    assert not member["tree"].exists(), result
+    row = json.loads(
+        ledger.run_path(MERGED_PROJECT, run_id, cohort["repo"]).read_text()
+    )
+    assert row["release"]["worktree_released"] is True
+    assert row["release"].get("worktree_absent") is not True
