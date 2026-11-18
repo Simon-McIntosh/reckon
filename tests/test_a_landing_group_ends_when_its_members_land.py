@@ -220,6 +220,67 @@ def test_a_landing_mark_cannot_write_a_promoted_pointer(group):
     assert not runs.pointer_path("r-first").exists()
 
 
+@pytest.mark.parametrize("writer", ["mark", "dispatch"])
+@pytest.mark.parametrize("cause", ["invalid-json", "read-failure", "missing-mount"])
+def test_unproved_promotion_absence_refuses_a_pointer_write(
+    group, monkeypatch, writer, cause
+):
+    from pathlib import Path
+
+    from reckon.crew import resumption
+
+    member = group.members["r-first"]
+    pointer = dict(member["pointer"])
+    promote(group, "r-first")
+    row_path = ledger.run_path(group.project, "r-first", group.repo)
+    assert json.loads(row_path.read_text())["promoted_revision"] == member["head"]
+    if cause == "invalid-json":
+        row_path.write_text("{unreadable")
+    elif cause == "read-failure":
+        read_text = Path.read_text
+
+        def unreadable(path, *args, **kwargs):
+            if path == row_path:
+                raise OSError("ledger read unavailable")
+            return read_text(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", unreadable)
+    else:
+        pointer["project"] = "unmounted-fixture"
+    assert pending_landing._promoted_row(pointer["project"], "r-first") is None
+    assert not pending_landing._promoted_row_absent(pointer["project"], "r-first")
+    resumed = []
+    monkeypatch.setattr(resumption, "_resume", lambda *a, **kw: resumed.append(a))
+    pending_landing.write_pending(
+        "r-first", pointer["project"], pointer=pointer, head=member["head"]
+    )
+    if writer == "mark":
+        with pytest.raises(runs.CrewError, match=r"absence.*unproved"):
+            pending_landing.mark_pending_landing_repair("r-first", pointer)
+    else:
+        receipt = recovery_repair_dispatch.dispatch_merge_repair(
+            pointer,
+            head=member["head"],
+            primary=git(group.repo, "rev-parse", "HEAD"),
+            paths=["first"],
+            promoted=True,
+        )
+        assert receipt["status"] == "refused", receipt
+        assert "absence" in receipt["reason"] and "unproved" in receipt["reason"]
+        stored = json.loads((runs.run_dir("r-first") / "merge-repair.json").read_text())
+        assert stored == receipt
+    assert not runs.pointer_path("r-first").exists()
+    assert resumed == []
+
+
+def test_proved_promotion_absence_permits_a_landing_mark(group):
+    pointer = group.members["r-first"]["pointer"]
+    assert pending_landing._promoted_row_absent(group.project, "r-first")
+    marked = pending_landing.mark_pending_landing_repair("r-first", pointer)
+    assert runs.read_pointer("r-first") == marked
+    assert marked["pending_landing_repair"] is True
+
+
 def test_only_the_remaining_publisher_receives_candidate_evidence(group, monkeypatch):
     from reckon.crew.landing_measure import Measurement
 
