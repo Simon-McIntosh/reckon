@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/admission/landing.py:50",
+    "reckon/crew/queue_landing.py:1891",
+    "reckon/crew/queue_landing.py:1820",
+    "reckon/crew/promotion_requests.py:request_promotion"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:37:42Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-queue-landing.html",
+      "line": "30",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites baseline_suite-1794995006270553058.log, which does not exist in the run directory (the arm is ...559), and names after_suite-1794995049169977900.log, an arm the manifest replaced, so a reader following the citation opens nothing and cannot check the claim that neither arm carries a failure."
+    },
+    {
+      "file": "tests/test_queue_landing.py",
+      "line": "362",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares options[\"run_id\"] against the RUN constant the test itself passed to _land, so it holds for any implementation that echoes its argument and survives the run id being reverted; the independent assertions at :364, :365, :485 and :497 carry the case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 97dec20bfb; 29feee366b rewrites the shim case as the request-reading case and routes the accepted-delivery case through a PromotionService drain, 3da263b01e adds the 31-line evidence fragment, and ea198df5e6 edits one sentence of it; no product file is touched.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job, a base run with its failing ids beside it, each cause carrying a product-or-test verdict, both suite arms as inline JSON with full 40-character revisions, ruff clean, and a single bounded manifest write; the worker's manifest records each of these and the four logs I read corroborate the summaries it quotes.",
+    "goal": "the node's goal is that tests/test_queue_landing.py passes in full on the primary branch; at the reviewed head ea198df5e6 the named file reads \"9 passed\" and EXIT=0 in scoped-gate-1794995524282325555.log, and the change that delivers it is confined to tests/test_queue_landing.py, so the file passes because its two stale cases were rewritten to the promotion-request rule rather than because product code changed.",
+    "manifest": "read in full; it names the gate command \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_landing.py\", cites scoped-gate-1794995524282325555.log at 9 passed EXIT=0, the negative control at 2 failed 7 passed EXIT=1, both suite arms as inline JSON with full revisions and zero failures, two causes each marked test wrong, and three full commit ids.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the delivered paths are tests/test_queue_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-queue-landing.html, both inside that scope, with the declared single-file name qwnw-red-file-queue-landing.html unused and the fragment named red-file-queue-landing.html instead, which the declared directory covers."
+  },
+  "justifications": {
+    "durability": "restoring the inline land would redden tests/test_queue_landing.py:356 and :485, but the assertion at :362 compares the run id the test handed to _land against the request it wrote and would survive that input being reverted.",
+    "evidence": "the gate log names revision ea198df5e6, its command and an EXIT=0 receipt, and the added-failure pair derived from baseline_suite-1794995791465148417.log and after_suite-1794995834385613265.log is (0, []), with the citation slip at red-file-queue-landing.html:30 costing the evidence score.",
+    "fit": "tests/test_queue_landing.py:350 keeps the file's fixture-and-monkeypatch idiom and drops the now-unused CliRunner and cli_module imports.",
+    "goal_fidelity": "tests/test_queue_landing.py:356 asserts the request the landing pass now writes, and the named file reads 9 passed EXIT=0 at ea198df5e6 in scoped-gate-1794995524282325555.log.",
+    "reuse": "the diff adds no definition of its own and drives promotion through the existing owner at reckon/crew/promotion_requests.py PromotionService rather than stubbing it.",
+    "scope_discipline": "both changed paths, tests/test_queue_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-queue-landing.html, sit inside the declared write paths and no product module appears in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_queue_landing.py passes in full on the primary branch; at the reviewed head ea198df5e6 the named file reads \"9 passed\" and EXIT=0 in scoped-gate-1794995524282325555.log, and the change that delivers it is confined to tests/test_queue_landing.py, so the file passes because its two stale cases were rewritten to the promotion-request rule rather than because product code changed.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job, a base run with its failing ids beside it, each cause carrying a product-or-test verdict, both suite arms as inline JSON with full 40-character revisions, ruff clean, and a single bounded manifest write; the worker's manifest records each of these and the four logs I read corroborate the summaries it quotes.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the delivered paths are tests/test_queue_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-queue-landing.html, both inside that scope, with the declared single-file name qwnw-red-file-queue-landing.html unused and the fragment named red-file-queue-landing.html instead, which the declared directory covers.\nVERDICT manifest: read in full; it names the gate command \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_landing.py\", cites scoped-gate-1794995524282325555.log at 9 passed EXIT=0, the negative control at 2 failed 7 passed EXIT=1, both suite arms as inline JSON with full revisions and zero failures, two causes each marked test wrong, and three full commit ids.\nVERDICT diff: read commit by commit against base 97dec20bfb; 29feee366b rewrites the shim case as the request-reading case and routes the accepted-delivery case through a PromotionService drain, 3da263b01e adds the 31-line evidence fragment, and ea198df5e6 edits one sentence of it; no product file is touched.\nCALL_SITES: reckon/crew/admission/landing.py:50, reckon/crew/queue_landing.py:1891, reckon/crew/queue_landing.py:1820, reckon/crew/promotion_requests.py:request_promotion\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_queue_landing.py:356 asserts the request the landing pass now writes, and the named file reads 9 passed EXIT=0 at ea198df5e6 in scoped-gate-1794995524282325555.log.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate log names revision ea198df5e6, its command and an EXIT=0 receipt, and the added-failure pair derived from baseline_suite-1794995791465148417.log and after_suite-1794995834385613265.log is (0, []), with the citation slip at red-file-queue-landing.html:30 costing the evidence score.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both changed paths, tests/test_queue_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-queue-landing.html, sit inside the declared write paths and no product module appears in the diff.\nSCORE durability: 17\nJUSTIFICATION durability: restoring the inline land would redden tests/test_queue_landing.py:356 and :485, but the assertion at :362 compares the run id the test handed to _land against the request it wrote and would survive that input being reverted.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_queue_landing.py:350 keeps the file's fixture-and-monkeypatch idiom and drops the now-unused CliRunner and cli_module imports.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition of its own and drives promotion through the existing owner at reckon/crew/promotion_requests.py PromotionService rather than stubbing it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-queue-landing.html:30 non-blocking: the fragment cites baseline_suite-1794995006270553058.log, which does not exist in the run directory (the arm is ...559), and names after_suite-1794995049169977900.log, an arm the manifest replaced, so a reader following the citation opens nothing and cannot check the claim that neither arm carries a failure.\nFINDING tests/test_queue_landing.py:362 non-blocking: the assertion compares options[\"run_id\"] against the RUN constant the test itself passed to _land, so it holds for any implementation that echoes its argument and survives the run id being reverted; the independent assertions at :364, :365, :485 and :497 carry the case.",
+  "review_run_id": "r-20261118T100348958248-review-of-qwnw-red-file-queue-landing-ea198df5e6fa",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "ea198df5e6fa7cc2c4b2ba535cc2b9904a9b1e52",
+  "reviewed_run_id": "r-20261118T054346153569-qwnw-red-file-queue-landing",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:55:59.776926+00:00",
+  "total": 108
+}
