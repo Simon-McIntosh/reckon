@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="523">
+<meta name="plan-version" content="524">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1639,7 +1639,10 @@
     <div class="r-comment-body"><p>qwnw-red-file-resume-sweep-needs-an-observed-death: parked_on_declared_wait now requires the run's own worker record, so an absent record no longer excuses a live pointer pid or an unobserved worker and the sweep's observed-end gate refuses instead; tests/test_resume_sweep_needs_an_observed_death.py goes from 2 failed/1 passed at base 97dec20bfb8603ab71c4e9deeefddab685e0a42e to 3 passed EXIT=0 at head eb04e06b81e9da778a4b3cf0d55eee7f4ec1638b, the 54-file importer arm adds no failure (10 failed/465 passed/1 skipped at both revisions), and both suite arms exit 0.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T120540729543-review-of-qwnw-red-file-the-pane-counts-reviews-under-r-de473081cd2d" data-who="reckon-build" data-when="2026-11-18T13:42:06.227Z">
-    <div class="r-comment-body"><p>review of r-20261118T062658839785-qwnw-red-file-the-pane-counts-reviews-under-r at base 250d9cf3e68ee9d9119f29956780bde9fe480a10 and head de473081cd2d3e899fe14e58678457c3d730cfac is stored parsed at review-records/ with scores goal_fidelity 18, evidence 15, scope_discipline 20, durability 16, fit 19, reuse 20 (total 108), added_failure_count 0 with no ids derived from the run&#x27;s own suite pair (both at 0 failures), and two non-blocking findings — the test&#x27;s expected cell width is derived from the module&#x27;s own STAT_DIGITS, and no arm log records the all_debug partition the done_when names</p></div>
+    <div class="r-comment-body"><p>review of r-20261118T062658839785-qwnw-red-file-the-pane-counts-reviews-under-r at base 250d9cf3e68ee9d9119f29956780bde9fe480a10 and head de473081cd2d3e899fe14e58678457c3d730cfac is stored parsed at review-records/ with scores goal_fidelity 18, evidence 15, scope_discipline 20, durability 16, fit 19, reuse 20 (total 108), added_failure_count 0 with no ids derived from the run's own suite pair (both at 0 failures), and two non-blocking findings — the test's expected cell width is derived from the module's own STAT_DIGITS, and no arm log records the all_debug partition the done_when names</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062556320234-qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record" data-who="reckon-build" data-when="2026-11-18T10:26:09.383Z">
+    <div class="r-comment-body"><p>Repaired two product causes in crew complete&#x27;s --land refusal. The live-pointer guard now runs over every named run before the per-run reply path, which had been writing a completion record under crew/reports for a landing refused for a missing pointer, and the refusal therefore no longer passes through that path&#x27;s 240-character detail cut, which had been truncating the pending record&#x27;s path out of the answer. Measure: tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py goes from 2 failed, 2 passed at base 2f00851c42f247cba1c81c80ed0cf7b41045de76 to 4 passed at head a120c5e59798b71039180c991bcd03c2dbab6ae9, each arm its own all_debug job with SLURM_JOB_ID unset; an 11-file arm over the landing path drops 9 base failure ids to 7 with no failure added.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
