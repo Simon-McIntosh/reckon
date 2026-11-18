@@ -1,0 +1,85 @@
+<section id="qwnw-red-file-dispatch-lane-disagreement-landing">
+  <h2>A dispatch lane-disagreement case registers the member it dispatches to</h2>
+
+  <p><strong>What changed.</strong> One case in
+  <code>tests/test_dispatch_lane_disagreement.py</code> was red on the primary
+  branch, and the failure was in the test rather than the product. The case is
+  about a dispatch that names a backend while the roster member it dispatches to
+  declares no harness: the caller's backend must route. Its helper appended the
+  member to the payload <code>ledger.load</code> returned and wrote it back with
+  <code>ledger.write</code>. That call writes the run aggregate, and the roster
+  it carries is a reader's projection — <code>write</code> ignores it, so the
+  member was never stored.</p>
+
+  <p>The dispatch therefore refused at its first gate, before the routing the
+  case measures. Quoting the base run: <code>detail</code> reads
+  <code>"project 'proj' has no crew member 'worker'; register it with `crew
+  member add` before dispatching to it"</code> and the assertion that failed was
+  the exit status, not the lane. A probe over the same helper showed the store
+  answering an empty roster after the write
+  (<code>MEMBERS-AFTER-WRITE []</code>), which is the instrument check that the
+  absence was real rather than an empty read of a populated roster.</p>
+
+  <p>The helper now reads the roster's own store with
+  <code>ledger.load_auxiliary</code> and writes it with
+  <code>ledger.write_members</code>, which is the writer paired with that
+  version. It is also the only roster writer that admits a member declaring no
+  harness: <code>ledger.register_member</code> refuses an empty harness, so the
+  state under test cannot be reached through the registration path the other
+  cases use. No assertion was deleted, weakened or reworded — the case's
+  <code>requested_backend</code>, <code>backend</code> and
+  <code>agent.backend</code> expectations are the ones it carried.</p>
+
+  <p><strong>Verdict: test wrong, product correct.</strong> The product already
+  keeps the rule the case asserts: a member whose harness is empty is not a
+  disagreement, and the caller's named backend stands
+  (<code>requested_backend = requested_backend or member_harness</code> in
+  <code>reckon/crew/dispatch_plan.py</code>), while a declared harness that
+  differs from the requested backend still refuses as D15 — the case beside it
+  proves that refusal fires.</p>
+
+  <h3 id="qwnw-red-file-dispatch-lane-disagreement-arms">Measured</h3>
+
+  <table id="qwnw-red-file-dispatch-lane-disagreement-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. The two
+    file arms are one <code>all_debug</code> job (1326821) with
+    <code>SLURM_JOB_ID</code> stripped from the pytest environment; the gate and
+    suite arms were measured by <code>crew verify-gate --worker</code> and
+    <code>crew suite run</code> on the same partition.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the file, head arm</td>
+        <td><code>ef17c381be982aa4674c880b278de3cb76bdf150</code>, worktree</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the file, base arm</td>
+        <td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, extraction</td>
+        <td>1 failed, 6 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the worker gate, head</td>
+        <td><code>ef17c381be982aa4674c880b278de3cb76bdf150</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the suite, base arm</td>
+        <td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the suite, after arm</td>
+        <td><code>ef17c381be982aa4674c880b278de3cb76bdf150</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the delta</td>
+        <td>base arms against head arms</td>
+        <td>0 added failures; the file's one failure fixed</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-dispatch-lane-disagreement-control">Negative control</h3>
+
+  <p>The base-arm log records the failing id
+  <code>tests/test_dispatch_lane_disagreement.py::test_flight_override_routes_when_member_declares_no_harness</code>
+  with <code>1 failed, 6 passed</code> and <code>EXIT=1</code>; the head arm of
+  the same command records <code>7 passed</code> and <code>EXIT=0</code>. The
+  base-arm run imported
+  <code>/tmp/reckon-crew-scratch/r-20261118T063037107612-qwnw-red-file-dispatch-lane-disagreement/lane-disagreement-base-2/reckon/__init__.py</code>
+  from <code>cwd</code> at that same extraction, so the red run is the base
+  tree's own code rather than the worktree's. Logs live in the run directory
+  beside the manifest: <code>lane-disagreement-base.log</code> and
+  <code>lane-disagreement-head.log</code>.</p>
+</section>
