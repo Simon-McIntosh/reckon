@@ -16,7 +16,7 @@ own run directory and worktree — and the test reads the record back.
 The declared negative control drops the primary arm's masks, and its
 empty-listing assertion must then fail. Running this file directly reproduces
 that red log: its first line is the declared mutation, verbatim, and what
-follows is the observed non-empty listing.
+follows is the partner listing the assertion saw, which is no longer empty.
 """
 
 from __future__ import annotations
@@ -128,7 +128,11 @@ class Arm:
         self.worktree.mkdir(exist_ok=True)
         self.partner_worktree = root / f"{partner_name}-worktree"
         self.partner_worktree.mkdir(exist_ok=True)
-        self.stub = root / "stub.sh"
+        # The stub sits in the arm's own worktree, not beside it. A worktree
+        # beneath the node's worker scratch root is mounted over ``/tmp`` by
+        # the fence, so a stub beside it would be gone at the path the launch
+        # was handed — while a granted root is re-bound at its own path.
+        self.stub = self.worktree / "stub.sh"
         self.stub.write_text(_STUB)
         self.stub.chmod(0o755)
         self.results = self.run / "results.txt"
