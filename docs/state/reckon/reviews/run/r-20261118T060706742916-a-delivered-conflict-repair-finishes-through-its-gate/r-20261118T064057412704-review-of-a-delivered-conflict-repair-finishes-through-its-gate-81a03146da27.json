@@ -1,0 +1,102 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "The dispatcher makes zero or multiple composition calls.",
+      "line": 556
+    },
+    {
+      "fails_if": "The real dispatcher requests a review of another run.",
+      "line": 557
+    },
+    {
+      "fails_if": "The real dispatcher uses the original head rather than the repaired git commit.",
+      "line": 558
+    },
+    {
+      "fails_if": "A second landing pass composes another review instead of consuming the stored one.",
+      "line": 583
+    }
+  ],
+  "assertion_independence": "Mock returns only dispatched=True; none of the new expectations read that supplied value. Run identity comes from the delivered pointer and repaired head comes from git commit output; the actual request arguments are constructed by the real dispatcher.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T06:43:48Z",
+  "evidence_caveats": [
+    "Test-only change has no production caller; the named runtime paths are exercised by the test, not callers of it.",
+    "External worker launch remains stubbed at composition; review storage and pending-landing transitions are real.",
+    "Source worker normalized scheduler-notice placement and retained raw .asreceived captures; no suites were rerun for this read-only review."
+  ],
+  "failure_delta_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060706742916-a-delivered-conflict-repair-finishes-through-its-gate/after_suite-1794983837596224315.log",
+      "revision": "81a03146da27aec7acbffdaa77f3f9ea4fdafd18",
+      "summary": "77 passed in 94.42s (0:01:34)"
+    },
+    "baseline_suite": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_concurrent_edits_land_unattended.py::test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060706742916-a-delivered-conflict-repair-finishes-through-its-gate/baseline_suite-1794983730428040151.log",
+      "revision": "c54a15a657da7d5abd88ee0d0a54b940c650a11f",
+      "summary": "1 failed, 76 passed in 98.21s (0:01:38)"
+    },
+    "parent_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060706742916-a-delivered-conflict-repair-finishes-through-its-gate/after_suite-1794982657648990072.log",
+      "revision": "d09c2786cb097582470b9c4733bd9c192fa7218b",
+      "summary": "77 passed in 93.82s (0:01:33)"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read 81a03146da27aec7acbffdaa77f3f9ea4fdafd18 against previously reviewed d09c2786cb097582470b9c4733bd9c192fa7218b; it replaces the local compose definition with unittest.mock.Mock and preserves the run/head and single-request checks, with the earlier two commits read only as context.",
+    "done_when": "The source run's scoped-gate-1794983743708925683.log records 19 passed and after_suite-1794983837596224315.log records 77 passed at 81a03146da27aec7acbffdaa77f3f9ea4fdafd18; the parent arm records 77 passed and the documented historical control exposes awaiting-review.",
+    "goal": "Live docs/plans/delivered-work-lands-without-a-coordinator.html section 25 permits the automatically requested review contract, and the incremental Mock replacement at tests/test_concurrent_edits_land_unattended.py:551 preserves it while answering the prior recorder-duplication finding.",
+    "manifest": "The source manifest names the incremental commit, parent revision, passing gate captures and failing clone-control capture, explicitly distinguishing the original base pointer failure from the adjusted awaiting-review control.",
+    "write_paths": "The source manifest declares tests/test_concurrent_edits_land_unattended.py and it is the only path changed by the incremental commit 81a03146da27aec7acbffdaa77f3f9ea4fdafd18."
+  },
+  "justifications": {
+    "durability": "tests/test_concurrent_edits_land_unattended.py:556-558 fails if dispatch is omitted, repeated, targets another run or uses the pre-repair head, and :583 fails if the stored review causes a second dispatch; the expectations use observed git and run identities rather than the Mock return value.",
+    "evidence": "Source after_suite-1794983837596224315.log identifies the reviewed head and records 77 passed with EXIT=0, its parent arm also records 77 passed, and reuse-negative.log records the reinstated recorder duplication failing while reuse-head.log passes.",
+    "fit": "tests/test_concurrent_edits_land_unattended.py:12 imports standard unittest.mock.Mock and :551-558 uses its ordinary call assertions with descriptive names consistent with surrounding monkeypatch-based tests.",
+    "goal_fidelity": "tests/test_concurrent_edits_land_unattended.py:551 preserves the allowed review-before-landing behavior and answers the prior duplication finding without changing the existing product contract.",
+    "reuse": "tests/test_concurrent_edits_land_unattended.py:551 replaces the duplicated recorder capability found and opened at tests/test_a_repaired_head_is_reviewed_and_landed.py:131 with standard-library Mock, adds no definition, and continues using the existing production dispatcher and review store.",
+    "scope_discipline": "Commit 81a03146da27aec7acbffdaa77f3f9ea4fdafd18 changes only declared tests/test_concurrent_edits_land_unattended.py to remove the duplicated test recorder and retain its assertions."
+  },
+  "production_context_examined": [
+    "reckon/crew/pending_landing.py:1379",
+    "reckon/crew/pending_landing.py:692",
+    "reckon/crew/recovery_review_dispatch.py:3908",
+    "reckon/crew/recovery_review_dispatch.py:3303"
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Live docs/plans/delivered-work-lands-without-a-coordinator.html section 25 permits the automatically requested review contract, and the incremental Mock replacement at tests/test_concurrent_edits_land_unattended.py:551 preserves it while answering the prior recorder-duplication finding.\nVERDICT done_when: The source run's scoped-gate-1794983743708925683.log records 19 passed and after_suite-1794983837596224315.log records 77 passed at 81a03146da27aec7acbffdaa77f3f9ea4fdafd18; the parent arm records 77 passed and the documented historical control exposes awaiting-review.\nVERDICT write_paths: The source manifest declares tests/test_concurrent_edits_land_unattended.py and it is the only path changed by the incremental commit 81a03146da27aec7acbffdaa77f3f9ea4fdafd18.\nVERDICT manifest: The source manifest names the incremental commit, parent revision, passing gate captures and failing clone-control capture, explicitly distinguishing the original base pointer failure from the adjusted awaiting-review control.\nVERDICT diff: Read 81a03146da27aec7acbffdaa77f3f9ea4fdafd18 against previously reviewed d09c2786cb097582470b9c4733bd9c192fa7218b; it replaces the local compose definition with unittest.mock.Mock and preserves the run/head and single-request checks, with the earlier two commits read only as context.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_concurrent_edits_land_unattended.py:551 preserves the allowed review-before-landing behavior and answers the prior duplication finding without changing the existing product contract.\nSCORE evidence: 20\nJUSTIFICATION evidence: Source after_suite-1794983837596224315.log identifies the reviewed head and records 77 passed with EXIT=0, its parent arm also records 77 passed, and reuse-negative.log records the reinstated recorder duplication failing while reuse-head.log passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Commit 81a03146da27aec7acbffdaa77f3f9ea4fdafd18 changes only declared tests/test_concurrent_edits_land_unattended.py to remove the duplicated test recorder and retain its assertions.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_concurrent_edits_land_unattended.py:556-558 fails if dispatch is omitted, repeated, targets another run or uses the pre-repair head, and :583 fails if the stored review causes a second dispatch; the expectations use observed git and run identities rather than the Mock return value.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_concurrent_edits_land_unattended.py:12 imports standard unittest.mock.Mock and :551-558 uses its ordinary call assertions with descriptive names consistent with surrounding monkeypatch-based tests.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_concurrent_edits_land_unattended.py:551 replaces the duplicated recorder capability found and opened at tests/test_a_repaired_head_is_reviewed_and_landed.py:131 with standard-library Mock, adds no definition, and continues using the existing production dispatcher and review store.\n",
+  "review_run_id": "r-20261118T064057412704-review-of-a-delivered-conflict-repair-finishes-through-its-gate-81a03146da27",
+  "reviewed_base_sha": "d09c2786cb097582470b9c4733bd9c192fa7218b",
+  "reviewed_head_sha": "81a03146da27aec7acbffdaa77f3f9ea4fdafd18",
+  "reviewed_run_id": "r-20261118T060706742916-a-delivered-conflict-repair-finishes-through-its-gate",
+  "scope_note": "Incremental re-review of 81a03146da27aec7acbffdaa77f3f9ea4fdafd18 only; earlier c54a15a657da7d5abd88ee0d0a54b940c650a11f..d09c2786cb097582470b9c4733bd9c192fa7218b review remains in its revision-specific record.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T06:49:27.157582+00:00",
+  "total": 120
+}
