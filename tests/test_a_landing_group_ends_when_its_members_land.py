@@ -174,7 +174,7 @@ def test_landed_members_leave_the_candidate_and_the_group_retires(group, monkeyp
         "test: integrate remaining delivery",
         group.members["r-third"]["head"],
     )
-    rows = pending_landing.finish_landing_groups()
+    rows = pending_landing.finish_landing_groups(only_run="r-first")
     assert {row["run_id"] for row in rows} == set(group.members)
     assert {row["status"] for row in rows} == {"finished"}
     assert not pending_landing.group_path("r-first").exists()
@@ -334,3 +334,81 @@ def test_the_landing_pass_exposes_one_record_obligation(group, monkeypatch):
     assert str(path) in result["obligations"][0]["guard"]
     assert "promoted" in result["obligations"][0]["guard"]
     assert not runs.pointer_path("r-first").exists()
+
+
+@pytest.mark.parametrize("conflicted", [False, True], ids=["ready", "still-conflicted"])
+def test_a_delivered_promoted_repair_lands_without_rewriting_its_pointer(
+    group, monkeypatch, conflicted
+):
+    from reckon.crew import merge
+
+    pending_landing.group_path("r-first").unlink()
+    member = group.members["r-first"]
+    pointer = {**member["pointer"], "attempt": 2}
+    pointer.pop("landing_group")
+    promote(group, "r-first")
+    pending_landing.write_pending(
+        "r-first", group.project, pointer=pointer, head=member["head"]
+    )
+    path = pending_landing._record_path("r-first")
+    record = pending_landing._read(path)
+    record["merge_conflict"] = {
+        "head": member["head"],
+        "main_revision": "unmerged",
+        "paths": ["first"],
+    }
+    runs._write_json(path, record)
+    runs._write_json(runs.pointer_path("r-first"), pointer)
+    original = runs.pointer_path("r-first").read_bytes()
+    monkeypatch.setattr(
+        pending_landing, "_delivered_repair", lambda *args: member["head"]
+    )
+    monkeypatch.setattr(pending_landing, "_repair_review_wait", lambda *args: None)
+    monkeypatch.setattr(
+        queue_landing, "_merge_conflicts", lambda *args: ["first"] if conflicted else []
+    )
+    released = []
+    monkeypatch.setattr(
+        merge,
+        "release_landed_worktrees",
+        lambda *args, **kwargs: released.append(kwargs["head"]),
+    )
+
+    def land(repository, **kwargs):
+        assert runs.pointer_path("r-first").read_bytes() == original
+        return {"commit": member["head"]}
+
+    rows = pending_landing.finish_pending_landings(only_run="r-first", land=land)
+    if conflicted:
+        assert rows[0]["status"] == "record-obligation"
+        assert rows[0]["record"] == str(path)
+        assert runs.pointer_path("r-first").read_bytes() == original
+        assert released == []
+        return
+    assert rows[0]["status"] == "finished"
+    assert released == [member["head"]]
+    assert not runs.pointer_path("r-first").exists()
+    assert not path.exists()
+
+
+def test_a_failed_release_check_keeps_the_pointer_and_group(group, monkeypatch):
+    from reckon.crew import promotion
+
+    member = group.members["r-first"]
+    git(group.repo, "merge", "--ff-only", member["head"])
+    promote(group, "r-first")
+    pointer = member["pointer"]
+    runs._write_json(runs.pointer_path("r-first"), pointer)
+    monkeypatch.setattr(
+        promotion,
+        "_record_release_on_ledger",
+        lambda **kwargs: (
+            {"worktree_released": True, "landing_check": {"ok": False}},
+            {"run_id": "r-first"},
+        ),
+    )
+    rows = pending_landing.finish_landing_groups()
+    assert rows[0]["status"] == "group-refused"
+    assert "outcome could not be recorded" in rows[0]["error"]
+    assert runs.read_pointer("r-first") == pointer
+    assert pending_landing.group_path("r-first").exists()
