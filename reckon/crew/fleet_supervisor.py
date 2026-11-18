@@ -91,7 +91,7 @@ if TYPE_CHECKING:
     from reckon import served_code
 
 from reckon import service
-from reckon._store import write_json_atomically
+from reckon._store import _fsync_directory, write_json_atomically
 from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
@@ -518,6 +518,44 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         or "unavailable"
     )
     qualifier = "" if sample.get("entries_complete") else " (census incomplete)"
+    scratch = sample.get("crew_scratch", {})
+    scratch_groups: dict[str, list[str]] = {
+        "live": [],
+        "unowned": [],
+        "held": [],
+        "unreadable": [],
+    }
+    for entry in scratch.get("entries", []):
+        if entry.get("removed"):
+            continue
+        withheld = entry.get("withheld", "")
+        if "live pointer" in withheld:
+            group = "live"
+        elif "held by process" in withheld:
+            group = "held"
+        elif "unreadable" in withheld or "not a real directory" in withheld:
+            group = "unreadable"
+        else:
+            group = "unowned"
+        scratch_groups[group].append(entry["path"])
+    scratch_detail = "".join(
+        f"; {group} crew scratch: {', '.join(paths)}"
+        for group, paths in scratch_groups.items()
+        if paths
+    )
+    if scratch.get("error") or scratch.get("withheld"):
+        scratch_detail += f"; crew scratch census unavailable: {scratch.get('error') or scratch['withheld']}"
+    stale_live_entries = scratch.get("stale_live_entries", [])
+    for entry in stale_live_entries:
+        scratch_detail += (
+            f"; stale scratch retained for live run {entry['run_id']} "
+            f"(owner {entry['project']}/{entry['session']}): {entry['path']} "
+            f"({entry['bytes']} bytes, {entry['inactivity_seconds']:.0f} seconds inactive)"
+        )
+    if scratch.get("live_entries_complete") is False:
+        scratch_detail += "; live-run scratch census incomplete"
+    if scratch.get("entries_complete") is False:
+        scratch_detail += "; crew scratch census incomplete"
     return {
         "kind": "node-disk-reserve",
         "run_id": "",
@@ -525,19 +563,121 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         "reason": (
             f"Fleet node {sample['node']} mount {sample['mount']} has "
             f"{sample['free_bytes']} free bytes below its {sample['reserve_bytes']} "
-            f"byte reserve. Largest entries by owner{qualifier}: {largest}"
+            f"byte reserve. Largest entries by owner{qualifier}: {largest}{scratch_detail}"
         ),
         "next_command": "Review the named entries with their owners and free local disk space",
         "disk": dict(sample),
+        "stale_live_scratch": stale_live_entries,
     }
+
+
+def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Durably journal removal intents and reconcile interrupted operations.
+
+    A pending receipt survives even a partial audit-log write. Deletion starts
+    only after both that receipt and the intent log row are flushed to disk;
+    completion retires the pending receipt only after its log row is durable.
+    """
+    from reckon import flight
+    from reckon.crew.dispatch_launch import worker_scratch_root
+    from reckon.crew.gc import garbage_collect_orphan_scratch
+    from reckon.crew.node import CrewError
+
+    grace = flight.resolve().config["session_scratch"]["orphan_grace_seconds"]
+    directory = state_directory(environ)
+    path = directory / "scratch-removals.jsonl"
+    pending = directory / "scratch-removal-intents" / _short_hostname()
+    reconciled: list[dict[str, Any]] = []
+
+    def append(row: dict[str, Any]) -> None:
+        # Separate an interrupted partial write from the next complete row.
+        stream.seek(0, os.SEEK_END)
+        size = stream.tell()
+        prefix = b""
+        if size:
+            stream.seek(-1, os.SEEK_END)
+            if stream.read(1) != b"\n":
+                prefix = b"\n"
+        payload = prefix + (json.dumps(row, sort_keys=True) + "\n").encode()
+        if stream.write(payload) != len(payload):
+            raise OSError("short scratch audit write")
+        stream.flush()
+        os.fsync(stream.fileno())
+        _fsync_directory(directory)
+
+    def record(entry: dict[str, Any]) -> None:
+        identity = str(entry.get("removal_id") or "")
+        if re.fullmatch(r"[a-f0-9]{32}", identity) is None:
+            raise ValueError("scratch removal intent has no valid identity")
+        receipt = pending / f"{identity}.json"
+        row = {**entry, "utc": datetime.now(UTC).isoformat(), "node": _short_hostname()}
+        if row["state"] == "intent":
+            write_json_atomically(receipt, row, fsync_directory=True)
+        append(row)
+        if row["state"] != "intent":
+            receipt.unlink()
+            _fsync_directory(pending)
+        log(
+            f"crew scratch removal {row['state']}: {json.dumps(row, sort_keys=True)}",
+            file=sys.stderr,
+        )
+
+    def read_intent(receipt: Path) -> dict[str, Any]:
+        if receipt.is_symlink():
+            raise ValueError("scratch removal intent is a symlink")
+        row = json.loads(receipt.read_text())
+        required = {"path", "bytes", "ctime_age_seconds", "reason", "removal_id"}
+        if not isinstance(row, dict) or not required <= row.keys():
+            raise ValueError("scratch removal intent is unreadable")
+        if row["removal_id"] != receipt.stem:
+            raise ValueError("scratch removal intent identity differs from its file")
+        if Path(row["path"]).parent != worker_scratch_root().absolute():
+            raise ValueError("scratch removal intent belongs to another root")
+        return row
+
+    try:
+        pending.mkdir(parents=True, exist_ok=True)
+        _fsync_directory(pending.parent)
+        _fsync_directory(directory)
+        with path.open("a+b") as stream:
+            for number, receipt in enumerate(pending.glob("*.json")):
+                if number >= 32:
+                    break
+                row = read_intent(receipt)
+                target = Path(row["path"])
+                exists = target.exists() or target.is_symlink()
+                row.update(
+                    state="interrupted" if exists else "complete",
+                    removed=not exists,
+                    reconciled=True,
+                    outcome="path still present; retained"
+                    if exists
+                    else "path absent after interrupted removal",
+                )
+                record(row)
+                reconciled.append(row)
+            report = garbage_collect_orphan_scratch(
+                apply=True,
+                grace_seconds=grace,
+                inspect_activity=True,
+                record_removal=record,
+                cursor_path=directory / f"scratch-sweep-{_short_hostname()}.json",
+            )
+            report["reconciled_removals"] = reconciled
+            return report
+    except (OSError, ValueError, RuntimeError, CrewError) as exc:
+        log(f"crew scratch sweep unavailable: {exc}", file=sys.stderr)
+        return {"error": str(exc), "reconciled_removals": reconciled}
 
 
 def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
     """Publish one local disk reading and emit the health series' four fields."""
     environ = os.environ if environ is None else environ
     mount = Path(environ.get(NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
+    scratch = reclaim_unowned_scratch(environ)
     try:
         sample = node_disk_snapshot(mount, reserve_bytes=node_disk_reserve_bytes())
+        sample["crew_scratch"] = scratch
         sample["job_id"] = environ.get("SLURM_JOB_ID", "")
         write_json_atomically(state_directory(environ) / NODE_DISK_RECORD, sample)
     except OSError as exc:
@@ -4020,7 +4160,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return sample_interpreter_permissions()
     if arguments == ["sample-test-processes"]:
         sample = sample_fleet_tests()
-        print(f"{sample['tree_count']}\t{sample['rss_bytes']}\t" + json.dumps(sample["trees"]))
+        print(
+            f"{sample['tree_count']}\t{sample['rss_bytes']}\t"
+            + json.dumps(sample["trees"])
+        )
         return 0
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a

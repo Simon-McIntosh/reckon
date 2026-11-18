@@ -167,10 +167,18 @@ def test_flight_defaults_and_host_override(tmp_path):
     default = flight.resolve(host_path=empty, catalogue_path=empty).config[
         "session_scratch"
     ]
-    assert default == {"max_bytes": 2 * 1024**3, "disk_share": 0.5}
+    assert default == {
+        "max_bytes": 2 * 1024**3,
+        "disk_share": 0.5,
+        "orphan_grace_seconds": 7200,
+    }
     host.write_text("session_scratch:\n  max_bytes: 8192\n  disk_share: 0.25\n")
     config = flight.resolve(host_path=host, catalogue_path=empty).config
-    assert config["session_scratch"] == {"max_bytes": 8192, "disk_share": 0.25}
+    assert config["session_scratch"] == {
+        "max_bytes": 8192,
+        "disk_share": 0.25,
+        "orphan_grace_seconds": 7200,
+    }
     with pytest.raises(flight.FlightConfigError):
         flight.resolve(
             host_path=empty,
