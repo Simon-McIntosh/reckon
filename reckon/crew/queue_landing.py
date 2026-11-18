@@ -2185,6 +2185,17 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
     # exists to stay off that cost.
     history: dict[str, list[dict[str, Any]]] = {}
     for pointer in live:
+        from reckon.crew.pending_landing import (
+            POINTER_RETIRED,
+            group_path,
+            retire_promoted_pointer,
+        )
+
+        if retire_promoted_pointer(pointer) == POINTER_RETIRED:
+            continue
+        group_id = str(pointer.get("landing_group") or "")
+        if group_id and group_path(group_id).exists():
+            continue
         if pointer.get("promotion_status") in {
             "promotion-requested",
             "promotion-running",
@@ -2653,6 +2664,7 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
             continue
         if accepted:
             from reckon.crew.stage_receipts import record_stage
+
             record_stage(run_id, "landing")
             landed.append(run_id)
             try:

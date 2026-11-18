@@ -445,6 +445,82 @@ def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool])
         return POINTER_RETIRED
 
 
+def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
+    """Retire a proved promotion with no journal, group or live workspace owner.
+
+    Retirement never creates merge work. Journals keep their cited head, and
+    existing workspaces finish through the integrated release path so its
+    safety checks, receipts and section waiters precede pointer removal.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    project = str(pointer.get("project") or "")
+    if not run_id or not project or pointer.get("landing_group"):
+        return POINTER_HELD
+
+    def promoted(current: Mapping[str, Any]) -> bool:
+        if dict(current) != pointer or _record_path(run_id).exists():
+            return False
+        workspace = str(current.get("worktree") or "")
+        if workspace and Path(workspace).exists():
+            return False
+        row = _promoted_row(project, run_id)
+        if row is None or row.get("run_id") != run_id:
+            return False
+        return bool(row.get("promoted_revision") or row.get("promoted_by"))
+
+    return retire_pointer_if(run_id, promoted)
+
+
+def retire_promoted_pointers(
+    *, project: str | None = None, session: str | None = None, only_run: str = ""
+) -> list[dict[str, Any]]:
+    """Release integrated group members, then retire ownerless promoted pointers."""
+    from reckon.node_exclusive_lock import LockHeld, exclusive_lock
+
+    retired = []
+    live = runs.list_live() if project is None else runs.list_live(project=project)
+    selected = [
+        pointer
+        for pointer in live
+        if (not only_run or pointer.get("run_id") == only_run)
+        and (session is None or pointer.get("session") == session)
+    ]
+    groups = {
+        str(pointer["landing_group"])
+        for pointer in selected
+        if pointer.get("landing_group")
+    }
+    for group_id in sorted(groups):
+        path = group_path(group_id)
+        try:
+            with exclusive_lock(path.with_suffix(".lock"), blocking=False):
+                group = _read(path)
+                if group is not None:
+                    present = {
+                        run_id
+                        for run_id in group["members"]
+                        if runs.pointer_path(run_id).exists()
+                    }
+                    retire_integrated_group_members(group)
+                    retired.extend(
+                        {"run_id": run_id, "status": "retired-promoted-pointer"}
+                        for run_id in sorted(present)
+                        if not runs.pointer_path(run_id).exists()
+                    )
+        except LockHeld:
+            continue
+        except (runs.CrewError, OSError, ValueError) as exc:
+            retired.append(
+                {"run_id": group_id, "status": "group-refused", "error": str(exc)}
+            )
+    retired.extend(
+        {"run_id": str(pointer["run_id"]), "status": "retired-promoted-pointer"}
+        for pointer in selected
+        if retire_promoted_pointer(pointer) == POINTER_RETIRED
+    )
+    return retired
+
+
 def promoted_pointer_write_refusal(run_id: str, pointer: Mapping[str, Any]) -> str:
     """Name the journal requiring intervention rather than recreate a promoted run."""
     project = str(pointer.get("project") or "")
@@ -1147,7 +1223,7 @@ def finish_pending_landings(
     handled = {row["run_id"] for row in released}
     directory = pending_dir()
     if not directory.is_dir():
-        return results
+        return results + retire_promoted_pointers(only_run=only_run)
     live = (
         set(live_run_ids)
         if live_run_ids is not None
@@ -1485,7 +1561,9 @@ def finish_pending_landings(
                 "commit": str((landed or {}).get("commit") or ""),
             }
         )
-    return results
+    handled = {row["run_id"] for row in results}
+    retired_pointers = retire_promoted_pointers(only_run=only_run)
+    return results + [row for row in retired_pointers if row["run_id"] not in handled]
 
 
 def _released_pending_delivery(
