@@ -1,0 +1,22 @@
+<section id="qwnw-red-file-picker-route-keeps-availability-refusal-negative-control">
+<h2>Picker-route availability test: base red, head green</h2>
+<p>The named file failed one case on the primary branch and passes in full after a test repair; no product source changed. One cause, <strong>test wrong</strong>: the launch notice a live dispatch writes for its identity (<code>reckon: created run …</code>, added by <code>50d9f85f1a</code>) goes to stderr on purpose so that stdout stays the command's single JSON document, and Click 8.2 onward mixes both streams in <code>Result.output</code>, which this case parsed. The case now parses <code>Result.stdout</code>; no assertion was deleted or weakened, and the two assertions the case makes on the parsed document are unchanged.</p>
+<p>Base arm at <code>c61cd5f4766676317d1d85959c2983f55f74b41c</code> on all_debug: <code>1 failed, 6 passed</code>, EXIT=1, failing id <code>tests/test_picker_route_keeps_availability_refusal.py::test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched</code>. The decode it failed on opened with the notice:</p>
+<pre>s = 'reckon: created run r-20261118T132840145229-candidate\n{"admitted_from": null, "agent": {"backend": "alpha", "effort"...'
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</pre>
+<p>Head arm at <code>324186ff3f80b448530c5efd31fb529605301e42</code>, same partition, <code>SLURM_JOB_ID</code> unset in the step environment: <code>7 passed</code>, EXIT=0.</p>
+<pre># revision: c61cd5f4766676317d1d85959c2983f55f74b41c
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_picker_route_keeps_availability_refusal.py'
+....F..
+FAILED tests/test_picker_route_keeps_availability_refusal.py::test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 6 passed in 1.43s
+EXIT=1</pre>
+<pre># revision: 324186ff3f80b448530c5efd31fb529605301e42
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_picker_route_keeps_availability_refusal.py'
+.......
+7 passed in 1.38s
+EXIT=0</pre>
+<p>The suite arms over the run's scoped test pair read <code>0 failed</code> at both <code>c61cd5f4…</code> and <code>324186ff…</code>, so the repair adds no failure against the base.</p>
+</section>
