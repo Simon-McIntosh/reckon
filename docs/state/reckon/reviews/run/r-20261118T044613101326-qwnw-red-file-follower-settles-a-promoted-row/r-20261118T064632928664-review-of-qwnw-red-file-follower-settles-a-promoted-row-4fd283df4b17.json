@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: baseline_suite-1794983456701801224.log at 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed reads 58 passed with EXIT=0 and declares completed true, failure_count 0, failure_ids []; after_suite-1794983498886933463.log at 4fd283df4b17d3fc0c57e1d885ebc96bb7876275 reads 58 passed with EXIT=0 and declares the same, so the set difference is empty.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:4165",
+    "reckon/crew/station.py:1349",
+    "reckon/crew/runs.py:4615",
+    "reckon/crew/recovery_watch.py:2037",
+    "reckon/crew/recovery_watch.py:3713",
+    "reckon/crew/runs.py:4190"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T07:16:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2837",
+      "severity": "non-blocking",
+      "text": "non-blocking: _is_ledger_word re-derives the classifier's word vocabulary from two constants and omits the other words classify_pointer can put on a rowed run - blocked (reckon/crew/recovery_classification.py:3479) and promotion-queued (:3493) - so the continue at :2745 would swallow such a transition with nothing failing, and a word the classifier gains later is silently swallowed rather than refused."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2332",
+      "severity": "non-blocking",
+      "text": "non-blocking: the diff also reflows lines in functions the goal does not reach (_fleet_counts at :2332, _scoped_watch_event at :3562, recover at :4450) and inserts blank lines after deferred imports at :1821 and :3110, enlarging the repair with formatter churn a reader cannot tell from behaviour."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-settles-a-promoted-row.html",
+      "line": "84",
+      "severity": "non-blocking",
+      "text": "non-blocking: both collateral-arm records carry the literal placeholder <448 test files> in their command field (:84 and :90), so the arm's recorded command cannot be re-run from the record and a reader must rebuild the list from collateral-arm.sh."
+    }
+  ],
+  "findings_count": 3,
+  "item_verdicts": {
+    "diff": "read commit by commit against bec47e4098: d49b396f5b adds promotion_recorded at reckon/crew/recovery_watch.py:1307 and :1613, carries it at :1909, and adds _settled_by_ledger (:2809) and _is_ledger_word (:2826) which the fold uses at :2693 and :2745; 4fd283df4b adds the evidence fragment; the test's three changed expectations are word-only (tests/test_follower_settles_a_promoted_row.py:106, :121, :125) with no assertion removed.",
+    "done_when": "the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, a verdict for each cause, no assertion deleted or weakened, an arm over the importing test files recorded as inline JSON at full 40-character revisions, and a base red log; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-settles-a-promoted-row.html:18-30 holds the base reproduction, :34-50 the two product-wrong verdicts, :60-67 the head and base file receipts, and :72-97 the arm pair as inline JSON with full revisions.",
+    "goal": "the node goal is to make tests/test_follower_settles_a_promoted_row.py pass in full on the primary branch; the file passes at the reviewed head in scoped-gate-1794983528866526812.log (revision 4fd283df4b17, 3 passed, EXIT=0), and the repair that made it pass is reckon/crew/recovery_watch.py:2745 and :2693 rather than a relaxation of the test.",
+    "manifest": "read; it reports status complete, the named file 3 passed at head 4fd283df4b17 in scoped-gate-1794983528866526812.log, the base negative control at 6699d025 as 2 failed / 1 passed with its two failing ids, and baseline_suite/after_suite as 58 passed EXIT=0 with full revisions; I confirmed every one of those log headers and tails on disk.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path; the diff touches reckon/crew/recovery_watch.py, tests/test_follower_settles_a_promoted_row.py and that fragment file, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_follower_settles_a_promoted_row.py:121 reddens on reinstating the flap (deleting the clause at reckon/crew/recovery_watch.py:2745 or the promotion_recorded flag at :1307) and :141 reddens on reinstating the withdrawal (deleting the _settled_by_ledger clause at :2693), because complete is not in FLEET_SETTLED_STATES at :2218.",
+    "evidence": "scoped-gate-1794983528866526812.log records 3 passed EXIT=0 at 4fd283df4b17 and negative-control-base-follower-settles.log records 2 failed / 1 passed EXIT=1 at 6699d025, but the cited head gate log does not itself show the all_debug and SLURM_JOB_ID-unset condition the done_when names; that condition appears only in the run's recorded sbatch launches.",
+    "fit": "the two helpers at reckon/crew/recovery_watch.py:2809 and :2826 follow the module's private-helper idiom with a docstring each and a deferred import, and no added name carries a plan or run identifier.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:2745 holds a rowed run to a word its row can produce and :2693 keeps its departure silent, which is what tests/test_follower_settles_a_promoted_row.py:121 and :141 assert, so the file passes on the rule the code now keeps.",
+    "reuse": "_is_ledger_word composes the existing FLEET_SETTLED_STATES (reckon/crew/recovery_watch.py:2218) and PROMOTED_UNMERGED_STATE (reckon/crew/recovery_classification.py:35), and a search of reckon/crew for a settled-by-ledger reading found only _promote_record_holds (reckon/crew/recovery_watch.py:1032, a pointer-side row check) and ticker.SETTLED_STATES (a session-event vocabulary), neither owning this snapshot-side authority.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, but reckon/crew/recovery_watch.py:2332, :3562 and :4450 carry formatter-only reflows of functions the goal does not reach."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_follower_settles_a_promoted_row.py pass in full on the primary branch; the file passes at the reviewed head in scoped-gate-1794983528866526812.log (revision 4fd283df4b17, 3 passed, EXIT=0), and the repair that made it pass is reckon/crew/recovery_watch.py:2745 and :2693 rather than a relaxation of the test.\nVERDICT done_when: the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, a verdict for each cause, no assertion deleted or weakened, an arm over the importing test files recorded as inline JSON at full 40-character revisions, and a base red log; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-settles-a-promoted-row.html:18-30 holds the base reproduction, :34-50 the two product-wrong verdicts, :60-67 the head and base file receipts, and :72-97 the arm pair as inline JSON with full revisions.\nVERDICT write_paths: the manifest declares reckon, tests and the fragment path; the diff touches reckon/crew/recovery_watch.py, tests/test_follower_settles_a_promoted_row.py and the fragment file, all inside the fence.\nVERDICT manifest: read; it reports status complete, the named file 3 passed at head 4fd283df4b17 in scoped-gate-1794983528866526812.log, the base negative control at 6699d025 as 2 failed / 1 passed with its two failing ids, and both suite arms as 58 passed EXIT=0 with full revisions, each confirmed against the log headers and tails on disk.\nVERDICT diff: read commit by commit against bec47e4098; d49b396f5b adds promotion_recorded at reckon/crew/recovery_watch.py:1307 and :1613, carries it at :1909, and adds _settled_by_ledger (:2809) and _is_ledger_word (:2826) used at :2693 and :2745; 4fd283df4b adds the evidence fragment; the test's three changed expectations are word-only at tests/test_follower_settles_a_promoted_row.py:106, :121 and :125, and no assertion was removed.\nCALL_SITES: reckon/crew/recovery_watch.py:4165, reckon/crew/station.py:1349, reckon/crew/runs.py:4615, reckon/crew/recovery_watch.py:2037, reckon/crew/recovery_watch.py:3713, reckon/crew/runs.py:4190\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2745 holds a rowed run to a word its row can produce and :2693 keeps its departure silent, which is what tests/test_follower_settles_a_promoted_row.py:121 and :141 assert.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1794983528866526812.log records 3 passed EXIT=0 at 4fd283df4b17 and negative-control-base-follower-settles.log records 2 failed / 1 passed EXIT=1 at 6699d025, while the all_debug and SLURM_JOB_ID-unset condition is visible only in the run's sbatch launches, not in the cited head log.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every diff path is inside the fence, but reckon/crew/recovery_watch.py:2332, :3562 and :4450 carry formatter-only reflows of functions the goal does not reach.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_follower_settles_a_promoted_row.py:121 reddens if the clause at reckon/crew/recovery_watch.py:2745 or the promotion_recorded flag at :1307 is removed, and :141 reddens if the _settled_by_ledger clause at :2693 is removed.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:2809 and :2826 follow the module's private-helper idiom with a docstring each and a deferred import, and no added name carries a plan or run identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: _is_ledger_word composes FLEET_SETTLED_STATES (reckon/crew/recovery_watch.py:2218) and PROMOTED_UNMERGED_STATE (reckon/crew/recovery_classification.py:35) rather than restating them, and no snapshot-side settled-by-ledger predicate exists to extend.\nFINDING reckon/crew/recovery_watch.py:2837 non-blocking: _is_ledger_word omits the words classify_pointer can still put on a rowed run (blocked, promotion-queued), so the continue at :2745 would swallow such a transition with nothing failing.\nFINDING reckon/crew/recovery_watch.py:2332 non-blocking: formatter-only reflows at :2332, :3562 and :4450 touch functions the goal does not reach and enlarge the diff.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-follower-settles-a-promoted-row.html:84 non-blocking: both collateral-arm command fields carry the literal placeholder <448 test files>, so the recorded command cannot be re-run.",
+  "review_node": "review-of-qwnw-red-file-follower-settles-a-promoted-row-4fd283df4b17",
+  "review_run_id": "r-20261118T064632928664-review-of-qwnw-red-file-follower-settles-a-promoted-row-4fd283df4b17",
+  "reviewed_base_sha": "bec47e4098298bcbd4ab9e687d1259d80a190b3c",
+  "reviewed_head_sha": "4fd283df4b17d3fc0c57e1d885ebc96bb7876275",
+  "reviewed_run_id": "r-20261118T044613101326-qwnw-red-file-follower-settles-a-promoted-row",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T064632928664-review-of-qwnw-red-file-follower-settles-a-promoted-row-4fd283df4b17"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T07:42:01.837101+00:00",
+  "total": 109
+}
