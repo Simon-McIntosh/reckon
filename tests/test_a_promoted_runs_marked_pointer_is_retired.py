@@ -7,9 +7,13 @@ from datetime import UTC, datetime
 
 import pytest
 
-from reckon import ledger
+from reckon import _store, ledger
 from reckon.crew import pending_landing, plan_review, queue_landing, runs, station
 from tests.helpers.git import git
+from tests.helpers.landing_repository import PLAN
+from tests.test_a_merged_promoted_run_is_released import (
+    cohort as workspace_cohort,  # noqa: F401 - shared workspace and waiter fixture
+)
 
 PROJECT = "proj"
 
@@ -63,6 +67,12 @@ def cohort(tmp_path, monkeypatch):
                 "write_paths": ["seed.txt"],
             },
         }
+        if name in {"orphan", "unreadable"}:
+            pointer.pop("worktree")
+        if name in {"journal", "grouped"}:
+            tree = tmp_path / name
+            git(repo, "worktree", "add", "--detach", str(tree), head)
+            pointer["worktree"] = str(tree)
         if name == "unpromoted":
             pointer["worktree"] = str(unlanded_tree)
             manifest.write_text(
@@ -170,3 +180,64 @@ def test_station_sweep_retires_before_any_pointer_rewrite(cohort, monkeypatch):
     _station_sweep()
     assert not writes, "\n".join(writes)
     assert not runs.pointer_path(pointers["orphan"]["run_id"]).exists()
+
+
+def test_retiring_an_orphan_never_creates_a_landing_journal(cohort):
+    _repo, _head, pointers = cohort
+    pointer = runs.read_pointer(pointers["orphan"]["run_id"])
+    path = pending_landing._record_path(pointer["run_id"])
+    assert not path.exists()
+
+    assert (
+        pending_landing.retire_promoted_pointer(pointer)
+        == pending_landing.POINTER_RETIRED
+    )
+
+    assert not runs.pointer_path(pointer["run_id"]).exists()
+    assert not path.exists(), "retirement must not revive a finished landing"
+
+
+def test_station_releases_group_workspace_receipt_and_section_waiter(workspace_cohort):
+    repo = workspace_cohort["repo"]
+    clean = workspace_cohort["members"]["clean"]
+    waiting = workspace_cohort["members"]["unmerged"]
+    pointer = {**clean["pointer"], "landing_group": clean["pointer"]["run_id"]}
+    run_id = pointer["run_id"]
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    waiting_pointer = {**waiting["pointer"], "landing_group": run_id}
+    runs._write_json(runs.pointer_path(waiting_pointer["run_id"]), waiting_pointer)
+    members = {
+        run_id: {"pointer": pointer, "head": clean["head"], "options": {}},
+        waiting_pointer["run_id"]: {
+            "pointer": waiting_pointer,
+            "head": waiting["head"],
+            "options": {},
+        },
+    }
+    pending_landing.save_group(
+        {
+            "run_id": run_id,
+            "members": members,
+            "request": {
+                "run_id": run_id,
+                "options": {"members": list(members.values())},
+            },
+        }
+    )
+    assert clean["tree"].exists()
+    assert runs.read_pointer("r-waiter")["phase"] == "awaiting-upstream"
+    beat = station.SweepBeat(sweep=lambda *args, **kwargs: {}, start=lambda run: run())
+
+    assert beat.request(PROJECT, "owner", moment=datetime.now(UTC), changed=True)
+
+    assert not runs.pointer_path(run_id).exists()
+    assert not clean["tree"].exists(), "group retirement must release the workspace"
+    row = json.loads(ledger.run_path(PROJECT, run_id, repo).read_text())
+    assert row["release"]["worktree_released"] is True
+    state, _version = _store.read_plan(PROJECT, PLAN, repo)
+    assert state["section_declarations"]["s1"] == "done"
+    assert runs.read_pointer("r-waiter")["phase"] == "queued"
+    group = pending_landing._read(pending_landing.group_path(run_id))
+    assert list(group["members"]) == [waiting_pointer["run_id"]]
+    assert runs.pointer_path(waiting_pointer["run_id"]).exists()
+    assert waiting["tree"].exists()
