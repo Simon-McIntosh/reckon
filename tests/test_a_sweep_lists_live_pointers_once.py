@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import traceback
 from collections import Counter
 from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime
@@ -108,12 +109,19 @@ def _pointer(home: Path, run_id: str, *, phase="complete", status="complete"):
 
 
 @contextmanager
-def _counter(monkeypatch):
+def _counter(monkeypatch, *, callers=None):
     reads = Counter()
     read = runs._pointer_text
 
     def counted(path):
         reads[path.name] += 1
+        if callers is not None:
+            frames = tuple(
+                f"{Path(frame.filename).name}:{frame.lineno}:{frame.name}"
+                for frame in traceback.extract_stack()[:-1]
+                if "/reckon/crew/" in frame.filename
+            )
+            callers[frames] += 1
         return read(path)
 
     with monkeypatch.context() as patch:
@@ -306,3 +314,17 @@ def test_a_failed_scope_restores_the_outer_population(fleet):
             fail_in_scope()
         assert open_run_index.pointers(project=PROJECT) is held
     assert open_run_index.pointers() is None
+
+
+def test_a_sweep_reports_its_pointer_read_callers(fleet, monkeypatch):
+    _home, originals = fleet
+    callers = Counter()
+    with _counter(monkeypatch, callers=callers) as reads:
+        report = _sweep()
+    assert len(originals) == POPULATION
+    assert sum(callers.values()) == reads.total()
+    assert reads.total() >= POPULATION
+    assert len(report["reviews"]["refused"]) == 140
+    print(f"CALLER_TOTAL pointer_decodes={reads.total()} population={POPULATION}")
+    for frames, count in callers.most_common():
+        print("CALLER " + json.dumps({"count": count, "stack": list(frames)}))
