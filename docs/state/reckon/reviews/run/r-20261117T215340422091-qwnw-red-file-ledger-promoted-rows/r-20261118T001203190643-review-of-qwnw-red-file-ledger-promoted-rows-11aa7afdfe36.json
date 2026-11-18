@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assistant": "review-of-qwnw-red-file-ledger-promoted-rows-11aa7afdfe36",
+  "base_log_revision": "f4403247ef233a2efb644c2deceb8165611da16c",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/gc.py:_retire_run_store",
+    "reckon/run_store.py:RunStore.retire",
+    "reckon/velocity.py:_read_store_records",
+    "reckon/ledger.py:2542 stored_run_rows reader",
+    "reckon/mcp_views.py:1934 stored_run_rows reader",
+    "reckon/crew/open_run_index.py:309 stored_run_rows reader",
+    "reckon/budget.py:544 RunStore open"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:13:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "2129",
+      "severity": "blocking",
+      "text": "blocking: `released()` reads `record[\"project\"]` on the record `RunStore.retire` builds at reckon/run_store.py:1547 from `_decoded_record(payload)`, and reckon/run_store.py:966 `_split_durable` no longer writes `project` into that payload, so the retention sweep raises KeyError once any row written after this change is older than the cutoff; reproduced at head with a probe that appends one row through RunStore.append and calls retire(can_retire=lambda record: record[\"project\"]), which prints \"RESULT: KeyError: 'project'\"."
+    },
+    {
+      "file": "reckon/velocity.py",
+      "line": "1052",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sqlite fallback decodes a stored payload and asserts `row[\"project\"] == project`, which the same payload change leaves unset, so the velocity reading raises AssertionError on any post-change row it reaches; the fallback fires only for promotions absent from the committed documents and the store, which makes it rarer than the gc path but the same defect."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": "1353",
+      "severity": "non-blocking",
+      "text": "non-blocking: the column-backfill migration calls `_query_values(..., record ...)` without `project=`, so it still derives the project from a payload that rows written after this change no longer carry; a future column addition re-runs this branch over those rows and would leave their project column NULL, hiding them from every project-filtered read."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": "1784",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_run_project` re-implements the archive-aware project-column read added as `_row_projects` at :1856 in the same file, leaving two queries that must be kept in step while `_row_projects().get(run_id)` already answers the one-row case."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T215340422091-qwnw-red-file-ledger-promoted-rows/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: `negative_control_note` says the base arm names \"every id the done-when names\", but logs/base-ledger.log fails test_complete_command_assumes_utc_for_a_naive_completion_stamp and not test_explicit_promotion_stamp_reaches_every_duration_consumer, so the red population measured at f4403247ef is not the eight ids the done_when states at a80ca2b63f."
+    }
+  ],
+  "head_log_revision": "11aa7afdfe366dd61e988972a9cfdc6dea05d19b",
+  "item_verdicts": {
+    "diff": "read the fifteen commits against f4403247ef one by one: two reverts (805cbc1079, 5367499a5a) leave no net trace, the product change is reckon/run_store.py in 72e6d48ecf and 9ed78406f6, four test files follow it, 7c0619ebc8/970872de95/11aa7afdfe write the fragment, and the merge 54c887213f imports other nodes' work unchanged.",
+    "done_when": "the done_when asks tests/test_ledger.py to pass in full at head as an all_debug job with SLURM_JOB_ID unset, and logs/head-gate.log names \"# job: 1324389 on all_debug\" with an `env -u SLURM_JOB_ID` command over a six-file set including that file, reading \"135 passed\" EXIT=0, so the measure is met even though the red population the node measured in logs/base-ledger.log carries seven of the eight done_when ids plus test_complete_command_assumes_utc_for_a_naive_completion_stamp instead of test_explicit_promotion_stamp_reaches_every_duration_consumer.",
+    "goal": "the node goal is \"Make tests/test_ledger.py pass in full on the primary branch\"; logs/head-full.log at d4263fb8ee reads \"97 passed in 71.44s\" EXIT=0 against logs/base-ledger.log at f4403247ef reading \"8 failed, 89 passed\" EXIT=1 over the same file.",
+    "manifest": "manifest.md states status complete, the fifteen commits, the six-file gate command with its 135-passed result, both suite arms at 58 passed EXIT=0, and a negative_control_log at logs/base-ledger.log whose 8 failing ids it describes at line 15 as \"every id the done-when names\", a claim the log contradicts.",
+    "write_paths": "the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every path the node's own thirteen commits touch \u2014 reckon/run_store.py, six files under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html \u2014 is inside them."
+  },
+  "justifications": {
+    "durability": "the injection regression is guarded by tests/test_ledger.py:3325 `assert \"project\" not in durable` and by the eight ids red in logs/base-ledger.log, but nothing in the gate or the suite runs reckon/crew/gc.py:2129, which reads the very field the change removed from the payload.",
+    "evidence": "logs/head-gate.log asserts the done_when's job and SLURM_JOB_ID conditions and reads 135 passed EXIT=0, but manifest.md:15 misdescribes the red population in logs/base-ledger.log.",
+    "fit": "reckon/run_store.py:929 and :966 follow the module's private-helper idiom, but :1784 `_run_project` reuses the name of a different capability at reckon/capabilities.py:227 and a second column reader at :1856.",
+    "goal_fidelity": "logs/head-full.log reads \"97 passed in 71.44s\" EXIT=0 at d4263fb8ee, which is the delivered head's code state, so the named file passes in full.",
+    "reuse": "a search over reckon/run_record.py, reckon/ledger.py, reckon/capabilities.py and reckon/run_store.py found no owner for reading a row's project column, so the helpers extend rather than fork a capability, though :1784 and :1856 overlap each other.",
+    "scope_discipline": "every commit in the range touches only reckon/run_store.py, files under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_ledger.py pass in full on the primary branch\"; logs/head-full.log at d4263fb8ee reads \"97 passed in 71.44s\" EXIT=0 against logs/base-ledger.log at f4403247ef reading \"8 failed, 89 passed\" EXIT=1 over the same file.\nVERDICT done_when: the done_when asks tests/test_ledger.py to pass in full at head as an all_debug job with SLURM_JOB_ID unset, and logs/head-gate.log names \"# job: 1324389 on all_debug\" with an `env -u SLURM_JOB_ID` command over a six-file set including that file, reading \"135 passed\" EXIT=0, so the measure is met even though the red population the node measured in logs/base-ledger.log carries seven of the eight done_when ids plus test_complete_command_assumes_utc_for_a_naive_completion_stamp instead of test_explicit_promotion_stamp_reaches_every_duration_consumer.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every path the node's own thirteen commits touch \u2014 reckon/run_store.py, six files under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html \u2014 is inside them.\nVERDICT manifest: manifest.md states status complete, the fifteen commits, the six-file gate command with its 135-passed result, both suite arms at 58 passed EXIT=0, and a negative_control_log at logs/base-ledger.log whose 8 failing ids it describes at line 15 as \"every id the done-when names\", a claim the log contradicts.\nVERDICT diff: read the fifteen commits against f4403247ef one by one: two reverts (805cbc1079, 5367499a5a) leave no net trace, the product change is reckon/run_store.py in 72e6d48ecf and 9ed78406f6, four test files follow it, 7c0619ebc8/970872de95/11aa7afdfe write the fragment, and the merge 54c887213f imports other nodes' work unchanged.\nCALL_SITES: reckon/crew/gc.py:_retire_run_store, reckon/run_store.py:RunStore.retire, reckon/velocity.py:_read_store_records, reckon/ledger.py:2542, reckon/mcp_views.py:1934, reckon/crew/open_run_index.py:309, reckon/budget.py:544\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: logs/head-full.log reads \"97 passed in 71.44s\" EXIT=0 at d4263fb8ee, which is the delivered head's code state, so the named file passes in full.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-gate.log asserts the done_when's job and SLURM_JOB_ID conditions and reads 135 passed EXIT=0, but manifest.md:15 misdescribes the red population in logs/base-ledger.log.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every commit in the range touches only reckon/run_store.py, files under tests/ and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-promoted-rows.html, all inside the declared write paths.\nSCORE durability: 11\nJUSTIFICATION durability: the injection regression is guarded by tests/test_ledger.py:3325 `assert \"project\" not in durable` and by the eight ids red in logs/base-ledger.log, but nothing in the gate or the suite runs reckon/crew/gc.py:2129, which reads the very field the change removed from the payload.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/run_store.py:929 and :966 follow the module's private-helper idiom, but :1784 `_run_project` reuses the name of a different capability at reckon/capabilities.py:227 and a second column reader at :1856.\nSCORE reuse: 17\nJUSTIFICATION reuse: a search over reckon/run_record.py, reckon/ledger.py, reckon/capabilities.py and reckon/run_store.py found no owner for reading a row's project column, so the helpers extend rather than fork a capability, though :1784 and :1856 overlap each other.\nFINDING reckon/crew/gc.py:2129 blocking: `released()` reads `record[\"project\"]` on the record `RunStore.retire` builds at reckon/run_store.py:1547 from `_decoded_record(payload)`, and reckon/run_store.py:966 `_split_durable` no longer writes `project` into that payload, so the retention sweep raises KeyError once any row written after this change is older than the cutoff.\nFINDING reckon/velocity.py:1052 non-blocking: the sqlite fallback decodes a stored payload and asserts `row[\"project\"] == project`, which the same payload change leaves unset, so the velocity reading raises AssertionError on any post-change row it reaches.\nFINDING reckon/run_store.py:1353 non-blocking: the column-backfill migration calls `_query_values` without `project=` and still derives the project from a payload that rows written after this change no longer carry, so a future column addition would null their project column and hide them from every project-filtered read.\nFINDING reckon/run_store.py:1784 non-blocking: `_run_project` re-implements the archive-aware project-column read added as `_row_projects` at :1856 in the same file, leaving two queries to keep in step while `_row_projects().get(run_id)` already answers the one-row case.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T215340422091-qwnw-red-file-ledger-promoted-rows/manifest.md:15 non-blocking: `negative_control_note` says the base arm names \"every id the done-when names\", but logs/base-ledger.log fails test_complete_command_assumes_utc_for_a_naive_completion_stamp and not test_explicit_promotion_stamp_reaches_every_duration_consumer.",
+  "review_run_id": "r-20261118T001203190643-review-of-qwnw-red-file-ledger-promoted-rows-11aa7afdfe36",
+  "reviewed_base_sha": "f4403247ef233a2efb644c2deceb8165611da16c",
+  "reviewed_head_sha": "11aa7afdfe366dd61e988972a9cfdc6dea05d19b",
+  "reviewed_run_id": "r-20261117T215340422091-qwnw-red-file-ledger-promoted-rows",
+  "scores": {
+    "durability": 11,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T01:05:00.000Z",
+  "total": 93
+}
