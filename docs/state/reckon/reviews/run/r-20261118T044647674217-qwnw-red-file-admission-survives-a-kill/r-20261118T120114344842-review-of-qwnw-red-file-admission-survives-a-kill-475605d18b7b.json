@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:2751",
+    "reckon/mcp.py:1344",
+    "reckon/evidence.py:1657",
+    "reckon/crew/reports.py:2830",
+    "reckon/doccheck.py:2128"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:02:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the prose says the quoted gate was measured at this run's delivered head, but the block below quotes scoped-gate-1794994432625277780.log at d693eaaf, one docs-only commit before the delivered head 475605d1, so the fragment names a head no cited log carries."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the heading asserts a partitioned job on all_debug while neither the quoted block nor any cited log names a partition or a job id, so the claim is asserted rather than shown; the repair edited this very heading and left the claim standing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044647674217-qwnw-red-file-admission-survives-a-kill/run-negative-control.sh",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head probe is handed the hardcoded constant BASEH=d693eaaf from line 7 instead of the HEAD it computes at line 6, so the expectation and the value under test come from the same hand and the check cannot redden on a fragment quoting any wrong head other than the base sha."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from 97dec20bfb8603ab71c4e9deeefddab685e0a42e to 475605d18b7b17efc224869dfd4cca1329829811: d693eaaf7f adds the 30-line fragment and 475605d1 rewrites the head block's revision, tree and timing to d693eaaf, so the two commits touch the one declared fragment path and nothing else.",
+    "done_when": "the done_when asks for the named file in full at head as an all_debug job with SLURM_JOB_ID unset, both arms recorded as inline JSON at full 40-character revisions, and the base run logged beside the head run; the manifest carries both arms (58 passed, EXIT=0, full shas) and the fragment carries both runs, but scoped-gate-1794994432625277780.log names no partition, no job id and no unset SLURM_JOB_ID, and its revision is d693eaaf rather than the delivered head 475605d1.",
+    "goal": "the goal is to make tests/test_admission_survives_a_kill.py pass in full on the primary branch; base-admission-file-run.log records 12 passed EXIT=0 at base 97dec20bfb8603ab71c4e9deeefddab685e0a42e and scoped-gate-1794994432625277780.log records 12 passed EXIT=0 at d693eaaf7f23aee9d22790a7d433d8a02001b979, so the named file is green and the delivered diff is the evidence fragment alone.",
+    "manifest": "read; it records commits d693eaaf7f and 475605d18b, both suite arms as inline JSON at full 40-character revisions with 0 failures, the head gate log, the negative-control log, status complete, and one rubric line per dimension.",
+    "write_paths": "the declared paths include docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file itself; the diff's only path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:1, is inside them and no reckon/ or tests/ path changed."
+  },
+  "justifications": {
+    "durability": "nothing in the repository fails if the fragment's claims drift, and the only guard is the run-local probe driven by run-negative-control.sh:20, which hands it a hardcoded expected head.",
+    "evidence": "the manifest's arms are 58 passed EXIT=0 at full 40-character revisions, but the done_when's all_debug and SLURM_JOB_ID-unset clauses are shown nowhere in scoped-gate-1794994432625277780.log, and that gate ran at d693eaaf rather than the delivered head 475605d1.",
+    "fit": "the fragment follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html, and audit_fragment_ids over 218 sibling fragments reports 0 duplicate ids where a re-introduced duplicate reports 1.",
+    "goal_fidelity": "the named file reads 12 passed EXIT=0 at 97dec20 in base-admission-file-run.log and at d693eaaf in scoped-gate-1794994432625277780.log, and the diff carries no product or test line.",
+    "reuse": "the diff adds no definition; the capability search for fragment composition and id auditing in reckon/ found reckon/evidence.py:1657 compose_landed_record and reckon/doccheck.py:2128 audit_fragment_ids, whose readers this change feeds rather than forks.",
+    "scope_discipline": "the diff's single path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html is inside the node's declared write paths and no other path changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_admission_survives_a_kill.py pass in full on the primary branch; base-admission-file-run.log records 12 passed EXIT=0 at base 97dec20bfb8603ab71c4e9deeefddab685e0a42e and scoped-gate-1794994432625277780.log records 12 passed EXIT=0 at d693eaaf7f23aee9d22790a7d433d8a02001b979, so the named file is green and the delivered diff is the evidence fragment alone.\nVERDICT done_when: the done_when asks for the named file in full at head as an all_debug job with SLURM_JOB_ID unset, both arms recorded as inline JSON at full 40-character revisions, and the base run logged beside the head run; the manifest carries both arms (58 passed, EXIT=0, full shas) and the fragment carries both runs, but scoped-gate-1794994432625277780.log names no partition, no job id and no unset SLURM_JOB_ID, and its revision is d693eaaf rather than the delivered head 475605d1.\nVERDICT write_paths: the declared paths include docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file itself; the diff's only path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:1, is inside them and no reckon/ or tests/ path changed.\nVERDICT manifest: read; it records commits d693eaaf7f and 475605d18b, both suite arms as inline JSON at full 40-character revisions with 0 failures, the head gate log, the negative-control log, status complete, and one rubric line per dimension.\nVERDICT diff: read commit by commit from 97dec20bfb8603ab71c4e9deeefddab685e0a42e to 475605d18b7b17efc224869dfd4cca1329829811: d693eaaf7f adds the 30-line fragment and 475605d1 rewrites the head block's revision, tree and timing to d693eaaf, so the two commits touch the one declared fragment path and nothing else.\nCALL_SITES: reckon/serve.py:2751, reckon/mcp.py:1344, reckon/evidence.py:1657, reckon/crew/reports.py:2830, reckon/doccheck.py:2128\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the named file reads 12 passed EXIT=0 at 97dec20 in base-admission-file-run.log and at d693eaaf in scoped-gate-1794994432625277780.log, and the diff carries no product or test line.\nSCORE evidence: 14\nJUSTIFICATION evidence: the manifest's arms are 58 passed EXIT=0 at full 40-character revisions, but the done_when's all_debug and SLURM_JOB_ID-unset clauses are shown nowhere in scoped-gate-1794994432625277780.log, and that gate ran at d693eaaf rather than the delivered head 475605d1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's single path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html is inside the node's declared write paths and no other path changed.\nSCORE durability: 13\nJUSTIFICATION durability: nothing in the repository fails if the fragment's claims drift, and the only guard is the run-local probe driven by run-negative-control.sh:20, which hands it a hardcoded expected head.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html, and audit_fragment_ids over 218 sibling fragments reports 0 duplicate ids where a re-introduced duplicate reports 1.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; the capability search for fragment composition and id auditing in reckon/ found reckon/evidence.py:1657 compose_landed_record and reckon/doccheck.py:2128 audit_fragment_ids, whose readers this change feeds rather than forks.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:21 non-blocking: the prose says the quoted gate was measured at this run's delivered head, but the block below quotes scoped-gate-1794994432625277780.log at d693eaaf, one docs-only commit before the delivered head 475605d1, so the fragment names a head no cited log carries.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:20 non-blocking: the heading asserts a partitioned job on all_debug while neither the quoted block nor any cited log names a partition or a job id, so the claim is asserted rather than shown; the repair edited this very heading and left the claim standing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044647674217-qwnw-red-file-admission-survives-a-kill/run-negative-control.sh:20 non-blocking: the head probe is handed the hardcoded constant BASEH=d693eaaf from line 7 instead of the HEAD it computes at line 6, so the expectation and the value under test come from the same hand and the check cannot redden on a fragment quoting any wrong head other than the base sha.\n",
+  "review_run_id": "r-20261118T120114344842-review-of-qwnw-red-file-admission-survives-a-kill-475605d18b7b",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "475605d18b7b17efc224869dfd4cca1329829811",
+  "reviewed_run_id": "r-20261118T044647674217-qwnw-red-file-admission-survives-a-kill",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261118T120114344842-review-of-qwnw-red-file-admission-survives-a-kill-475605d18b7b",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T12:23:15.935791+00:00",
+  "total": 105
+}
