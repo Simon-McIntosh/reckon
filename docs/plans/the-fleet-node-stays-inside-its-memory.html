@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -257,6 +257,12 @@
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261117T081959314526-control-passes-profile-without-live-writes" data-who="reckon-build" data-when="2026-11-17T11:58:09Z">
     <div class="r-comment-body"><p>Added a copied-home profiler and repaired refused single-tick propagation while testing the existing positive finished marker. Four passes exit 0: one/eight-entry dispatch, admission and station peak at RSS 5.891/6.712/15.846/31.649 GB and traced 1.861/1.851/3.348/6.648 GB; JSON decoding is the largest sampled allocation site. Station completes in 2512.22s with its finished marker and equal copied-source inventory, exceeding the original 1800s target under the authorised longer replay. Repair gate passes 80 tests, importer delta adds zero failing IDs, and bypassing the real-home guard fails five controls; original-live-home equality is not required while peers write.</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261118T010152259555-review-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f" data-who="reckon-build" data-when="2026-11-18T01:02:49.200Z">
+    <div class="r-comment-body"><p>Reviewed r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory at 4b7aa8a071ed10e619d95fdacdaa5e644d04b548..a876883a0c7f3796d592ba53cd201e4e1e56e898 and stored a parsed record scoring goal_fidelity 5, evidence 6, scope_discipline 16, durability 6, fit 15, reuse 11 (total 59), with one blocking finding: the batch's live-set trim drops every pointer's node mapping, so the held-node check no longer sees a live hold and queues a node another run holds.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261118T032304900420-review-of-a-batch-dispatch-holds-bounded-memory-13635ea8a9b6" data-who="reckon-build" data-when="2026-11-18T03:28:53.966Z">
+    <div class="r-comment-body"><p>Reviewed a876883a0c7f3796d592ba53cd201e4e1e56e898..13635ea8a9b6a2d4931ce73efe449e6be9d37d3a, the two commits the run gained since its a876883a0c review: the blocking finding (the live-set trim dropping every pointer&#x27;s node identity) is repaired and guarded by a test that reddens on the reverted trim, the held-row filter is now shared, pre-node-column rows are read again, and three non-blocking findings are recorded; scores 12/15/18/15/17/18, added failures 0.</p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-17T15:44:00Z">
     <div class="r-comment-body"><p>§9 landed through the crew's own promotion after its review (landing commit <code>cda8859a2c</code>). The per-pass ledger read is bounded: resident memory held at 82 MB after the hundredth pass against 80 MB after the tenth on a copied home, with one decision digest across all passes equal to the base's; on a copy of the live stores the peak fell from 4.6 GB to 2.0 GB. The six-hour live-fleet reading the section asks for is still to be recorded.</p></div>
 </div>
@@ -265,9 +271,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111352964502-the-admission-service-holds-steady-memory" data-who="reckon-build" data-when="2026-11-17T13:01:27Z">
     <div class="r-comment-body"><p>Each section verdict now reads only its own plan's runs: readiness._ledger_run_rows calls ledger.load(project, plan=slug) and caches under (project, plan), so the store narrows in SQL before any row is decoded. On a copy of the live crew home, 100 consecutive admission passes at 13b1d2bdc8 held resident at 1304825856 B after the hundredth against 1304825856 B after the tenth (growth_ratio 1.0, within_twenty_percent true, under_four_gib true, peak_resident_bytes 2045972480 in 656.0 s), decoding 441.9 run_store rows per pass where the base revision decoded 21148.7 on the same input over three passes, at a resident peak of 4619415552 B against the head's 2009300992 B.</p></div>
-</div>
-<div class="r-comment" data-section="s8" data-id="c-run-r-20261118T010152259555-review-of-a-batch-dispatch-holds-bounded-memory-a876883a0c7f" data-who="reckon-build" data-when="2026-11-18T01:02:49.200Z">
-    <div class="r-comment-body"><p>Reviewed r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory at 4b7aa8a071ed10e619d95fdacdaa5e644d04b548..a876883a0c7f3796d592ba53cd201e4e1e56e898 and stored a parsed record scoring goal_fidelity 5, evidence 6, scope_discipline 16, durability 6, fit 15, reuse 11 (total 59), with one blocking finding: the batch&#x27;s live-set trim drops every pointer&#x27;s node mapping, so the held-node check no longer sees a live hold and queues a node another run holds.</p></div>
 </div>
 </section>
 </main>
