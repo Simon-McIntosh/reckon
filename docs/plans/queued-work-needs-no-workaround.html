@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="441">
+<meta name="plan-version" content="442">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1394,6 +1394,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T053407252938-review-of-qwnw-red-file-code-reload-never-cuts-off-a-promotion-a3b37ecf551b" data-who="reckon-build" data-when="2026-11-18T08:05:13.079Z">
     <div class="r-comment-body"><p>review of run r-20261118T044609684406-qwnw-red-file-code-reload-never-cuts-off-a-promotion at base 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed and head a3b37ecf551b6485aaf2abfc19465ddd1dc1d013, scores goal_fidelity 18 evidence 12 scope_discipline 19 durability 15 fit 18 reuse 18, three non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044609684406-qwnw-red-file-code-reload-never-cuts-off-a-promotion" data-who="reckon-build" data-when="2026-11-18T04:50:21.665Z">
+    <div class="r-comment-body"><p>Repaired tests/test_code_reload_never_cuts_off_a_promotion.py, whose two loop cases never let the reload window come due: the fixture now writes the pass schedule with a deadline already past and places the pass boundary inside tmp_path, so the loop reaches its drain instead of spinning on a coalesced stamp; base 6699d025 ran 2 failed and 1 passed in 60.35s with the two loop cases timing out, and head a3b37ecf runs 3 passed in 1.36s as an all_debug job. Cause verdict: test wrong.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
