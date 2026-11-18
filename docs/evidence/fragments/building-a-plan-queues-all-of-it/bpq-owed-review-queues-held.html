@@ -24,8 +24,8 @@
       answering the finding releases it without a plan edit.</td></tr>
       <tr><td>Composition eligibility</td><td>Editing, terminal and already
       covered plans compose no new review.</td></tr>
-      <tr><td>Focused gate at <code>b05e55c636d711b371df1e7a9ba98e058a32346f</code></td>
-      <td>149 passed in 31.28s; <code>EXIT=0</code>, including CLI preview and launch parity.</td></tr>
+      <tr><td>Focused gate at <code>cbf666c0ab7f98d81580eb559f1b836eb0c7c7f9</code></td>
+      <td>197 passed in 56.29s; <code>EXIT=0</code>, including CLI preview and launch parity.</td></tr>
       <tr><td>Required suite at base
       <code>bc316766333df704e7a671de195467dc836ab4b1</code></td>
       <td>55 passed in 20.86s; <code>EXIT=0</code>.</td></tr>
@@ -57,16 +57,30 @@
   manifest paths, configured roles and specification levels, so their assertions
   reach review evaluation. CLI parity assertions read stdout independently of
   stderr progress.</p>
-  <p id="bpq-owed-review-queues-held-merge-repair">Merge repair at
-  <code>4a23200b5472aa0f75771dff8644ff28a223aab1</code> retains both
-  the review-debt queue helper and the local-lane reserve helper from primary
-  <code>d447311185a91f35959e517a02ac9948f4eb533f</code>. Both helpers
-  match their owning parents; the node-filtered run lookup is also retained.
-  The fresh focused gate reports 147 passed and 2 failed in 28.45s
-  (<code>EXIT=1</code>); the three reservation/run-lookup test files report
-  12 passed in 1.02s (<code>EXIT=0</code>). The fresh original-base dispatch
-  control reports 1 failed in 1.44s (<code>EXIT=1</code>), with the required
-  review-gate refusal. The manifest carries the failure disposition and
-  final-head suite receipt. The merge is committed; a passing gate remains
-  outstanding.</p>
+  <p id="bpq-owed-review-queues-held-merge-repair">Current primary
+  <code>14327953c585f5848bbba9f778689a8756e7a848</code> was merged at
+  <code>0821b1fd60d1fd6fc35c4bf34678f2399826ecad</code>, retaining
+  review queueing, conditional lane reservations and both CLI acceptance
+  signals. The queue fixture retains its role configuration and manifest path.
+  Both previously failing obligations-view cases pass after this merge,
+  without a change to the classification code.</p>
+  <p id="bpq-owed-review-queues-held-guard-composition">The existing measurement
+  guard now runs before review debt can store a request for a completed
+  section. The control at the merge head failed with the review hold where
+  the measurement refusal was required; its regression now requires that
+  refusal and no live request. Pending admission setups are charged against
+  free reservation seats so concurrent setups cannot each spend one seat.
+  The reservation control observed 10 occupants against a cap of 8; the
+  repaired admission cases and the one-seat and two-seat regressions pass.
+  Completion-refusal assertions now open the command's persisted receipt and
+  require the exact added failure identifiers.</p>
+  <p id="bpq-owed-review-queues-held-current-measure">The extended
+  <code>all_debug</code> gate at
+  <code>cbf666c0ab7f98d81580eb559f1b836eb0c7c7f9</code> reports
+  197 passed in 56.29s (<code>EXIT=0</code>). The refreshed original-base
+  suite reports 55 passed in 21.05s (<code>EXIT=0</code>), and its dispatch
+  refusal control reports 1 failed in 1.74s (<code>EXIT=1</code>) as required.
+  The manifest records the exact final delivery head and its after-suite
+  receipt. This already-promoted run continues through its pending landing
+  by merge alone.</p>
 </section>
