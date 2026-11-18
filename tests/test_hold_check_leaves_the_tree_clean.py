@@ -1,13 +1,14 @@
-"""A hold check commits the aggregate it rewrites, so no session inherits it dirty.
+"""A hold check writes only the run store, so no session inherits the tree dirty.
 
-``record_hold_checks`` writes the whole aggregate, which carries run rows
-beside the holds, and the transition it records exists nowhere else. Every
-case here drives the hold path against a throwaway git repository and reads
-what git records: the tree is clean when the call returns, and the commit the
-call made carries the hold without changing a run row. Every test is
-hermetic — ``RECKON_HOME`` moves the crew home into a temp tree and the
-repository is built under ``tmp_path``, so nothing here touches this
-workstation's own state.
+``record_hold_checks`` records the transition in the run store and touches no
+committed path: the aggregate beside the run records keeps the bytes it had,
+no run record is rewritten on its account, and HEAD does not move. Every case
+here drives the hold path against a throwaway git repository and reads what
+git and the store record: the tree is clean when the call returns, HEAD is
+where it was, and the transition exists in the store. Every test is
+hermetic — ``RECKON_HOME`` and ``RECKON_RUN_STORE`` move the crew home and its
+store into a temp tree and the repository is built under ``tmp_path``, so
+nothing here touches this workstation's own state.
 """
 
 from __future__ import annotations
@@ -31,10 +32,16 @@ RETIRED_KEY = "follow_on_paths"
 
 @pytest.fixture()
 def home(tmp_path, monkeypatch):
-    """Point the crew home at a temp tree, leaving this workstation's alone."""
+    """Point the crew home and its run store at a temp tree.
+
+    The store holds the roster and the budget holds, so it is the file a hold
+    check writes; naming it explicitly keeps a case off this workstation's own
+    store whatever the config home resolves to.
+    """
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("RECKON_RUN_STORE", str(config_home / "run_store.db"))
     return config_home
 
 
@@ -79,10 +86,10 @@ def retired_record(repository: Path) -> Path:
     """The committed tree, plus one run record still carrying the retired key.
 
     The record is one of the aggregate's own ``runs`` rows, seeded with its own
-    file beside it. ``record_hold_checks`` hands the run-file writer only the
-    aggregate's rows, so a record held solely as a file is never visited and a
-    case built on one would pass on a tree that never rewrote anything. Two
-    roster members are seeded so a case can retire one.
+    file beside it, so a committing write has both copies to reconcile: the
+    writer hands the run-file writer only the aggregate's rows. Two roster
+    members are seeded so a case can retire one, and a hold check is given a
+    record it must leave alone.
     """
     path = repository / LEDGER_PATH
     envelope = json.loads(path.read_text(encoding="utf-8"))
@@ -110,49 +117,55 @@ def _committed_ledger(repository: Path) -> dict:
     return envelope["data"]
 
 
-def _commit_pending(repository: Path, message: str) -> None:
-    """Commit whatever the fixture has left in the tree, so the next write's
-    own commit is the only thing the following assertion reads."""
-    if _git(repository, "status", "--porcelain"):
-        _git(repository, "add", "--", "docs")
-        _git(repository, "commit", "-q", "-m", message)
+def _store_holds(repository: Path) -> list[dict]:
+    return ledger.holds(PROJECT, repository)
+
+
+def _head(repository: Path) -> str:
+    return _git(repository, "rev-parse", "HEAD")
 
 
 def test_closing_a_hold_leaves_the_tree_clean_and_changes_no_run_row(
     home, repository
 ) -> None:
-    ledger.record_hold_checks(
+    aggregate_before = _committed_ledger(repository)
+    head_before = _head(repository)
+
+    opened = ledger.record_hold_checks(
         PROJECT,
         [{"backend": "alpha", "held": True}],
         checked_at=OPENED_AT,
         root=repository,
     )
-    _commit_pending(repository, "chore: fixture records the open hold")
-    opened = _committed_ledger(repository)
-    assert [item["run_id"] for item in opened["runs"]] == ["r-one"]
-    assert [item["closed_at"] for item in opened["holds"]] == [None]
+    assert [item["action"] for item in opened["outcomes"]] == ["opened"]
+    assert [item["closed_at"] for item in _store_holds(repository)] == [None]
 
-    ledger.record_hold_checks(
+    closed = ledger.record_hold_checks(
         PROJECT,
         [{"backend": "alpha", "held": False}],
         checked_at=CLOSED_AT,
         root=repository,
     )
+    assert [item["action"] for item in closed["outcomes"]] == ["closed"]
 
     assert _git(repository, "status", "--porcelain") == ""
+    assert _head(repository) == head_before
     committed = _committed_ledger(repository)
-    assert committed["runs"] == opened["runs"]
-    assert [item["closed_at"] for item in committed["holds"]] == [CLOSED_AT]
-    assert (
-        _git(repository, "log", "-1", "--format=%s") == f"chore(holds): close {HOLD_ID}"
-    )
+    assert committed == aggregate_before
+    assert [item["run_id"] for item in committed["runs"]] == ["r-one"]
+    stored = _store_holds(repository)
+    assert [(item["hold_id"], item["closed_at"]) for item in stored] == [
+        (HOLD_ID, CLOSED_AT)
+    ]
+    assert [item["held_seconds"] for item in stored] == [600]
 
 
 def test_opening_a_hold_leaves_the_tree_clean_and_changes_no_run_row(
     home, repository
 ) -> None:
-    runs_before = _committed_ledger(repository)["runs"]
-    assert [item["run_id"] for item in runs_before] == ["r-one"]
+    aggregate_before = _committed_ledger(repository)
+    assert [item["run_id"] for item in aggregate_before["runs"]] == ["r-one"]
+    head_before = _head(repository)
 
     result = ledger.record_hold_checks(
         PROJECT,
@@ -163,16 +176,16 @@ def test_opening_a_hold_leaves_the_tree_clean_and_changes_no_run_row(
 
     assert [item["action"] for item in result["outcomes"]] == ["opened"]
     assert _git(repository, "status", "--porcelain") == ""
+    assert _head(repository) == head_before
     committed = _committed_ledger(repository)
-    assert committed["runs"] == runs_before
-    assert [item["hold_id"] for item in committed["holds"]] == [HOLD_ID]
-    assert (
-        _git(repository, "log", "-1", "--format=%s") == f"chore(holds): open {HOLD_ID}"
-    )
+    assert committed == aggregate_before
+    stored = _store_holds(repository)
+    assert [item["hold_id"] for item in stored] == [HOLD_ID]
+    assert [item["opened_at"] for item in stored] == [OPENED_AT]
 
 
 def test_a_hold_check_makes_no_commit_while_a_merge_is_in_progress(
-    home, repository, capsys
+    home, repository
 ) -> None:
     _git(repository, "checkout", "-q", "-b", "side")
     (repository / "side.txt").write_text("side\n", encoding="utf-8")
@@ -181,7 +194,8 @@ def test_a_hold_check_makes_no_commit_while_a_merge_is_in_progress(
     _git(repository, "checkout", "-q", "main")
     _git(repository, "merge", "--no-commit", "--no-ff", "-q", "side")
     assert (repository / ".git" / "MERGE_HEAD").exists()
-    head_during_merge = _git(repository, "rev-parse", "HEAD")
+    head_during_merge = _head(repository)
+    status_during_merge = _git(repository, "status", "--porcelain")
 
     ledger.record_hold_checks(
         PROJECT,
@@ -190,14 +204,20 @@ def test_a_hold_check_makes_no_commit_while_a_merge_is_in_progress(
         root=repository,
     )
 
-    assert _git(repository, "rev-parse", "HEAD") == head_during_merge
+    assert _head(repository) == head_during_merge
     assert (repository / ".git" / "MERGE_HEAD").exists()
-    assert "merge in progress" in capsys.readouterr().err
-    assert LEDGER_PATH.as_posix() in _git(repository, "status", "--porcelain")
-    assert [item["hold_id"] for item in ledger.holds(PROJECT, repository)] == [HOLD_ID]
+    assert _git(repository, "status", "--porcelain") == status_during_merge
+    assert [item["hold_id"] for item in _store_holds(repository)] == [HOLD_ID]
 
 
-def test_opening_a_hold_commits_the_run_record_it_rewrote(home, retired_record) -> None:
+def test_opening_a_hold_leaves_the_run_record_it_could_rewrite_alone(
+    home, retired_record
+) -> None:
+    head_before = _head(retired_record)
+    record_path = retired_record / RUN_RECORD_PATH
+    record_before = record_path.read_bytes()
+    aggregate_before = _committed_ledger(retired_record)
+
     result = ledger.record_hold_checks(
         PROJECT,
         [{"backend": "alpha", "held": True}],
@@ -207,15 +227,16 @@ def test_opening_a_hold_commits_the_run_record_it_rewrote(home, retired_record) 
 
     assert [item["action"] for item in result["outcomes"]] == ["opened"]
     assert _git(retired_record, "status", "--porcelain") == ""
-    committed_files = _git(
-        retired_record, "show", "--name-only", "--format="
-    ).splitlines()
-    assert RUN_RECORD_PATH.as_posix() in committed_files
-    rewritten = json.loads(
-        _git(retired_record, "show", f"HEAD:{RUN_RECORD_PATH.as_posix()}")
-    )
-    assert RETIRED_KEY not in rewritten
-    assert rewritten["outside_scope_paths"] == []
+    assert _head(retired_record) == head_before
+    assert record_path.read_bytes() == record_before
+    assert RETIRED_KEY in json.loads(record_path.read_text(encoding="utf-8"))
+    assert _committed_ledger(retired_record) == aggregate_before
+    # The reader still maps the retired key on the way in, so a record left as
+    # it was on disk answers the question the renamed field asks.
+    data, _version = ledger.load_aggregate(PROJECT, retired_record)
+    row = next(item for item in data["runs"] if item["run_id"] == "r-one")
+    assert row["outside_scope_paths"] == []
+    assert RETIRED_KEY not in row
 
 
 def test_a_committing_write_commits_the_run_record_it_rewrote(
@@ -258,7 +279,7 @@ def test_a_hold_check_that_changes_no_hold_commits_nothing(
         checked_at=OPENED_AT,
         root=retired_record,
     )
-    head = _git(retired_record, "rev-parse", "HEAD")
+    head = _head(retired_record)
 
     result = ledger.record_hold_checks(
         PROJECT,
@@ -268,5 +289,5 @@ def test_a_hold_check_that_changes_no_hold_commits_nothing(
     )
 
     assert [item["action"] for item in result["outcomes"]] == ["unchanged"]
-    assert _git(retired_record, "rev-parse", "HEAD") == head
+    assert _head(retired_record) == head
     assert _git(retired_record, "status", "--porcelain") == ""
