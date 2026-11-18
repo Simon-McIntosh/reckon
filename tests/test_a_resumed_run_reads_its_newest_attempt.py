@@ -11,7 +11,13 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    recovery_review_dispatch,
+    runs,
+)
+from reckon.crew.dispatch_sessions import _apply_orientation_check
 from reckon.crew.obligations import obligations
 from reckon.crew.ticker import PANE_STATES
 
@@ -112,9 +118,32 @@ def run(tmp_path: Path, home: Path) -> dict:
     return pointer
 
 
-def _finish_resume(pointer: dict) -> None:
+def _finish_resume(pointer: dict, *, commit_count: int = 1) -> None:
     directory = Path(pointer["manifest_path"]).parent
     now = time.time()
+    commits = [pointer["delivered_head"]]
+    if commit_count == 2:
+        tree = Path(pointer["worktree"])
+        (tree / "reckon" / "result.py").write_text(
+            "delivered = True\nreviewed = False\n"
+        )
+        _git(tree, "add", "reckon/result.py")
+        _git(tree, "commit", "-m", "fix: complete result\n\nFinish the delivered work.")
+        commits.append(_git(tree, "rev-parse", "HEAD"))
+    stream = directory / "resume-2.jsonl"
+    stream.write_text(
+        json.dumps({"type": "result", "result": "The manifest reports completion."})
+        + "\n"
+    )
+    os.utime(stream, (now - 60, now - 60))
+    pointer.update(
+        attempt=2,
+        attempt_kind="resume",
+        resumed_turn=2,
+        attempt_started_at=_at(now - 300),
+        manifest_baseline_mtime_ns=Path(pointer["manifest_path"]).stat().st_mtime_ns,
+        log_path=str(stream),
+    )
     (directory / "attempt.json").write_text(
         json.dumps(
             {
@@ -137,9 +166,10 @@ def _finish_resume(pointer: dict) -> None:
     )
     manifest = Path(pointer["manifest_path"])
     manifest.write_text(
-        f"status: complete\ncommits: {json.dumps([pointer['delivered_head']])}\nblockers: none\n"
+        f"status: complete\ncommits: {json.dumps(commits)}\nblockers: none\n"
     )
     os.utime(manifest, (now - 90, now - 90))
+    runs._write_json(runs.pointer_path(pointer["run_id"]), pointer)
 
 
 def test_the_latest_complete_manifest_outranks_earlier_help(run: dict) -> None:
@@ -180,3 +210,115 @@ def test_a_delivered_resume_replaces_the_help_obligation(run: dict) -> None:
 
     assert not any(item["kind"] in {"needs-help", "blocked"} for item in latest), latest
     assert any(item["kind"] == "review-missing" for item in latest), latest
+
+
+@pytest.mark.parametrize("commit_count", [1, 2])
+@pytest.mark.parametrize("fresh_final", [False, True])
+def test_a_resume_stream_replaces_the_persisted_blocked_reading(
+    run: dict, monkeypatch: pytest.MonkeyPatch, commit_count: int, fresh_final: bool
+) -> None:
+    runs._write_json(runs.pointer_path(run["run_id"]), run)
+    before = recovery.classify_pointer(run)
+    assert before["recovery_classification"] == "needs-help", before
+    memo_path = Path(run["manifest_path"]).parent / "classification.json"
+    assert json.loads(memo_path.read_text())["manifest"]["data"]["status"] == "blocked"
+    calls = []
+
+    def compose(record, fields, **kwargs):
+        calls.append((record, fields))
+        return {"dispatched": True, "run_id": record["run_id"]}
+
+    monkeypatch.setattr(recovery_review_dispatch, "_dispatch_composed_review", compose)
+    refused = recovery_review_dispatch.dispatch_review_for_run(run)
+    assert refused["reason"] == "the run is not awaiting review (blocked)", refused
+    assert calls == []
+
+    _finish_resume(run, commit_count=commit_count)
+    if fresh_final:
+        Path(run["final_message_path"]).write_text("The resumed work completed.\n")
+    assert runs.read_pointer(run["run_id"])["phase"] == "blocked"
+    assert Path(run["log_path"]).name == "resume-2.jsonl"
+
+    after = recovery.classify_pointer(run)
+    assert after["classification"] == "scoring", after
+    report = recovery_review_dispatch.dispatch_review_for_run(run)
+    assert report["dispatched"] is True, report
+    assert len(calls) == 1
+    assert calls[0][1]["head"] == _git(Path(run["worktree"]), "rev-parse", "HEAD")
+
+    run["phase"] = "complete"
+    runs._write_json(runs.pointer_path(run["run_id"]), run)
+    later = time.time() + 900
+    monkeypatch.setattr(recovery_classification, "_utc_seconds", lambda: later)
+    repaired = recovery_review_dispatch.dispatch_review_for_run(run)
+    assert repaired["dispatched"] is True, repaired
+    assert len(calls) == 2
+
+
+def _record_an_unavailable_worktree(pointer: dict) -> None:
+    tree = Path(pointer["worktree"])
+    parked = tree.with_name("unavailable-repository")
+    tree.rename(parked)
+    try:
+        _apply_orientation_check(
+            pointer,
+            None,
+            reported={
+                "status": "complete",
+                "orientation_worktree": pointer["worktree"],
+                "orientation_base_sha": pointer["base_sha"],
+                "orientation_write_paths": pointer["node"]["write_paths"],
+            },
+        )
+    finally:
+        parked.rename(tree)
+    assert pointer["orientation_check"]["matched"] is False
+    assert "unavailable" in pointer["orientation_check"]["detail"]
+    pointer["orientation_check"]["checked_at"] = _at(
+        Path(pointer["manifest_path"]).stat().st_mtime
+    )
+
+
+def test_a_completed_resume_rechecks_a_stored_worktree_refusal(
+    run: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _record_an_unavailable_worktree(run)
+    _finish_resume(run)
+    calls = []
+
+    def compose(record, fields, **kwargs):
+        calls.append(fields)
+        return {"dispatched": True}
+
+    monkeypatch.setattr(recovery_review_dispatch, "_dispatch_composed_review", compose)
+    report = recovery_review_dispatch.dispatch_review_for_run(run)
+
+    assert report["dispatched"] is True, report
+    assert len(calls) == 1
+    row = recovery.classify_pointer(run)
+    assert row["classification"] == "scoring", row
+    assert row["orientation_check"]["matched"] is True
+    snapshot = recovery._watch_snapshot(run, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] in PANE_STATES["delivered"], snapshot
+
+    run["phase"] = "complete"
+    Path(run["final_message_path"]).write_text("The resumed work completed.\n")
+    runs._write_json(runs.pointer_path(run["run_id"]), run)
+    later = time.time() + 900
+    monkeypatch.setattr(recovery_classification, "_utc_seconds", lambda: later)
+    assert recovery_review_dispatch.dispatch_review_for_run(run)["dispatched"] is True
+
+
+def test_a_current_scope_violation_keeps_the_worktree_refusal(run: dict) -> None:
+    _record_an_unavailable_worktree(run)
+    _finish_resume(run)
+    tree = Path(run["worktree"])
+    (tree / "outside.py").write_text("ungranted = True\n")
+    _git(tree, "add", "outside.py")
+    _git(tree, "commit", "-m", "test: write outside scope\n\nExercise the refusal.")
+
+    row = recovery.classify_pointer(run)
+
+    assert row["classification"] == "blocked", row
+    assert row["orientation_check"]["matched"] is False
+    assert "outside.py" in row["detail"], row
