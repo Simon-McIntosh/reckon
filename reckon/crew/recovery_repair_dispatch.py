@@ -72,6 +72,15 @@ def dispatch_merge_repair(
         )
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
+    refusal = pending_landing.promoted_pointer_write_refusal(run_id, record)
+    if refusal:
+        receipt.update(
+            status="refused",
+            reason=refusal,
+            record=str(pending_landing._record_path(run_id)),
+        )
+        runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
+        return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
     other_side = merge._run(
         Path(str(record.get("repo") or "")),

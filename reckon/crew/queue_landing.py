@@ -1952,6 +1952,8 @@ def land_once() -> dict[str, Any]:
                     "awaiting-merge-repair",
                     "repair-gate-refused",
                     "review-refused",
+                    "record-obligation",
+                    "group-refused",
                 }
                 or row["run_id"] in named
             ):
@@ -2060,7 +2062,7 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     """Prove one combined candidate with the union of its members' own gates."""
     from reckon.crew import merge
 
-    leader = str(group["run_id"])
+    leader = next(iter(group["members"]))
     members = [
         group["members"][leader],
         *(
@@ -2155,7 +2157,7 @@ def measure_landing_group(group: dict[str, Any]) -> str:
     # Completion's publication check reads the leader's command and candidate.
     # All other commands' receipts remain on the durable group itself.
     _record_suite_evidence(
-        str(group["run_id"]),
+        leader,
         landing_measure.Measurement.from_dict(records[0]),
         promoted=True,
     )

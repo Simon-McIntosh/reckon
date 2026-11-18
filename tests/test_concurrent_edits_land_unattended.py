@@ -653,6 +653,19 @@ def test_a_primary_conflict_after_queueing_returns_its_member_for_repair(
         if member["pointer"]["run_id"].startswith("r-" + conflicting_name + "-")
     )
     run_id = member["pointer"]["run_id"]
+    if after_promotion:
+        assert seen == []
+        assert not runs.pointer_path(run_id).exists()
+        receipt = json.loads((runs.run_dir(run_id) / "merge-repair.json").read_text())
+        assert receipt["status"] == "refused"
+        assert "promoted" in receipt["reason"]
+        group_path = pending_landing.group_path(fleet.members[0]["pointer"]["run_id"])
+        assert str(group_path) in receipt["reason"]
+        assert group_path.exists()
+        assert pending_landing.finish_landing_groups()[0]["status"] == "group-refused"
+        assert seen == []
+        assert git(fleet.repo, "rev-parse", "HEAD") == primary
+        return
     assert [item[0] for item in seen] == [run_id]
     pointer = runs.read_pointer(run_id)
     repair = pointer["merge_conflict"]
