@@ -1411,13 +1411,16 @@ def _index_record_written_document(
             runs_stamp = json.dumps(_file_identity(runs_directory))
             with connection:
                 connection.execute(
-                    "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?)",
+                    "INSERT OR REPLACE INTO records "
+                    "(name, stamp, activity, payload, picker, plan) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
                     (
                         target.stem,
                         json.dumps(stamp),
                         run_activity_seconds(record),
                         json.dumps(dict(record), sort_keys=True, separators=(",", ":")),
                         json.dumps(picker_record(record), separators=(",", ":")),
+                        row_plan(record),
                     ),
                 )
                 if generation is not None:
@@ -3652,6 +3655,27 @@ def register_member(
     return entry
 
 
+def _complete_store_from_ledger(project: str, root: str | Path | None) -> None:
+    """Import a project's committed history before its first stored row exists.
+
+    Every reader answers from the store once it holds a row, so a store created
+    by one append would answer that run's history as though the runs committed
+    before it never existed: the aggregate and the run documents are the copies
+    the store is built from, and a read no longer unions them. The import is
+    therefore part of creating the project's first row rather than a repair a
+    caller must remember, and it happens once per project — a store that already
+    holds a row for the project is left exactly as it is, so an ordinary append
+    still writes one row, and a project with nothing committed imports nothing.
+    """
+    from reckon import run_store
+
+    if not _ledger_holds_content(project, root):
+        return
+    if run_store.stored_run_rows(project, fields=("run_id",)):
+        return
+    run_store.import_ledger(project, root=root)
+
+
 def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """Record one run in the store, refusing when the store will not take it.
 
@@ -3878,6 +3902,7 @@ def append_run(
 
     stored_record = dict(record)
     stored_record.pop("store_write", None)
+    _complete_store_from_ledger(project, ledger_root)
     if git_state == "retired":
         store_outcome = _index_append(project, stored_record)
         from reckon.crew import open_run_index
