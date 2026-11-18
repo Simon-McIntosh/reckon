@@ -120,6 +120,16 @@ def test_the_same_order_and_reasons_come_from_every_surface(
     assert set(sessions) == {SESSION_A, SESSION_B}
     assert sessions[SESSION_A]["in_use"] == 3
     assert rows["r-a-raised"]["waited_seconds"] is not None
+    print(
+        f"MEASURE: order={_order(documents['function'])} surfaces={sorted(documents)}"
+    )
+    print(
+        "MEASURE: "
+        + " ".join(
+            f"{name}(budget={row['budget']},in_use={row['in_use']},free={row['free']})"
+            for name, row in sorted(sessions.items())
+        )
+    )
 
 
 def test_a_pass_launches_the_request_the_view_places_first(queue_home) -> None:
@@ -143,3 +153,8 @@ def test_a_pass_launches_the_request_the_view_places_first(queue_home) -> None:
     )
 
     assert result["launched"] == [first["run_id"]], result
+    print(
+        f"MEASURE: viewed_first=({first['run_id']}, place {first['position']}, "
+        f"priority {first['priority']}, reason {first['reason']!r}) "
+        f"launched={result['launched']}"
+    )
