@@ -1,8 +1,8 @@
 <section id="qwnw-red-file-read-verbs-retire-behind-crew-view-record">
 <h2>Read verbs behind the crew view: the records case was red</h2>
 <p>The named file ran red at the base revision <code>d233bdfbcd5975eff8abc4985b9a2753bc00cc19</code> with one failing case, <code>test_crew_view_gives_the_retired_verbs_answer[records]</code>: the successor view answered <code>"runs": []</code> where the retired read answered the two committed rows.</p>
-<p>The cause was the product, not the test. The comparison's base document is composed through <code>ledger.read_records</code>, <code>ledger.holds</code> and <code>ledger.members</code>. Reading the mutable state opens the project's run store for the first time; from that moment the store is what every history read answers from, so a store created empty reported the runs committed before it as though they had never been promoted. Reproduced outside the test with a fresh store: <code>read_records</code> answered 2 rows, then <code>holds()</code> created the store, then <code>read_records</code> answered 0 rows.</p>
-<p>The repair completes the store from the committed ledger on that first auxiliary read, the same way a promotion's first row already does, and only when the store holds no run for the project. The same reproduction after the repair reads 2, 0-store, 2.</p>
+<p>The cause was the product, not the test. The comparison's base document is composed through <code>ledger.read_records</code>, <code>ledger.holds</code> and <code>ledger.members</code>. Reading the mutable state opens the project's run store for the first time; from that moment every history read was answered from the store, which held no run at all, so the rows committed before it disappeared. Reproduced outside the case with a fresh store: <code>read_records</code> answered 2 rows, <code>holds()</code> created the store, and <code>read_records</code> then answered 0 rows.</p>
+<p>The repair keys the store on holding a row for the project rather than on the store file existing: <code>_load_file_history</code> falls through to the committed ledger until the store holds a row, and <code>read_records</code> selects the fleet-wide figure population by the same test. Auxiliary reads are unchanged, so they still decode only the roster and holds. After the repair the same reproduction reads 2 rows, creates the store, and reads 2 rows again.</p>
 <pre># base revision d233bdfbcd5975eff8abc4985b9a2753bc00cc19 (negative control)
 # command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_read_verbs_retire_behind_crew_view.py
 ..F.............                                                         [100%]
@@ -10,10 +10,10 @@ FAILED tests/test_read_verbs_retire_behind_crew_view.py::test_crew_view_gives_th
 1 failed, 15 passed in 2.17s
 EXIT=1
 
-# head revision fdd5b17d9046dbcc21cb7d2abcd688960813234b, job 1326357 on all_debug, SLURM_JOB_ID unset for the run
+# head revision 9cc92a03bfb3a9ebec1801fbeb15c76e13af7974, job 1326419 on all_debug, SLURM_JOB_ID unset for the run
 # command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_read_verbs_retire_behind_crew_view.py
 ................                                                         [100%]
-16 passed in 3.44s
+16 passed in 2.89s
 EXIT=0</pre>
 <p>Full logs on the run's disk: <code>logs/base-gate.log</code> and <code>logs/head-gate.log</code> under the run directory.</p>
 </section>
