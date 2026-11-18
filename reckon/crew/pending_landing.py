@@ -1320,7 +1320,9 @@ def finish_pending_landings(
         if row is None:
             age = moment - float(record.get("written_at") or moment)
             if run_id not in live:
-                if age > UNPROMOTED_RECORD_SECONDS:
+                if age > UNPROMOTED_RECORD_SECONDS and _promoted_row_absent(
+                    project, run_id
+                ):
                     clear_pending(run_id)
                     results.append({"run_id": run_id, "status": "dropped-unpromoted"})
                 continue

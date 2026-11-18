@@ -195,3 +195,12 @@ def test_a_stored_row_precedes_an_unreadable_legacy_projection(promoted_run):
         pending_landing._promoted_row(PROJECT, run_id)["promoted_revision"]
         == run["row"]["promoted_revision"]
     )
+
+
+def test_unreadable_promotion_evidence_keeps_an_orphaned_journal(promoted_run):
+    run_id = promoted_run["pointer"]["run_id"]
+    pending_landing.write_pending(run_id, PROJECT, now=1000.0)
+    runs.pointer_path(run_id).unlink()
+    run_store.store_path().write_text("unreadable database")
+    pending_landing.finish_pending_landings(only_run=run_id, now=1000000.0)
+    assert pending_landing._record_path(run_id).is_file()
