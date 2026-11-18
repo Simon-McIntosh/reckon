@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:4877",
+    "reckon/mcp.py:2978",
+    "reckon/crew_run_commands.py:725"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:26:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-forgotten-runs-are-reported.html",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "the file drops the qwnw- node prefix, so reckon/evidence.py:866 derives docs/evidence/fragments/<plan>/qwnw-red-file-forgotten-runs-are-reported.html, finds no such file, and the node's fragment is left unlinked from the overview while 177 sibling red-file fragments in that directory carry the qwnw- prefix"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-forgotten-runs-are-reported.html",
+      "line": 41,
+      "severity": "non-blocking",
+      "text": "the base log's <pre> splices the receipt: the FAILURES section between the progress line at :40 and the summary at :41 and roughly 18k teardown lines between :44 and :45 are dropped unmarked, and the log's own first line is omitted, so a reader cannot tell the quote is an excerpt rather than the log"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal (prompt.txt:38 of the reviewed run) is to make tests/test_forgotten_runs_are_reported.py pass in full on the primary branch, and reckon/crew/forgotten_runs.py:56-68 adds a settlement reading called at :109 ahead of classification, supplying the \"unpromoted\" half of the predicate the module documents at :1-15 and tests/test_forgotten_runs_are_reported.py:254 asserts.\nVERDICT done_when: the done_when asks for the named file passing in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, and head-run-1794997209890628594.log at revision c7b664dbccf803f4d51b63492555925b48b78ea0 records host 98dci4-clu-3141, the literal pytest invocation, \"5 passed\" and EXIT=0, while base-run-1794996510261231758.log at ef0bce316448244cae55cedef8aca7e1dbc36988 records \"2 failed, 3 passed\" and EXIT=1, so the gate measures the stated figure on both sides.\nVERDICT write_paths: the reviewed node declared reckon, tests, the directory docs/evidence/fragments/queued-work-needs-no-workaround and the specific file qwnw-red-file-forgotten-runs-are-reported.html; both delivered paths sit inside those grants, but the specifically named file is absent and the fragment lands as red-file-forgotten-runs-are-reported.html instead.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062434381477-qwnw-red-file-forgotten-runs-are-reported/manifest.md; it names both commits, states the named-file gate red at base with ids test_the_view_lists_exactly_the_run_nobody_is_coming_back_to and test_a_run_whose_outcome_is_already_landed_is_not_forgotten and green at head, and records both suite arms as inline JSON carrying full 40-character revisions, 0 failures, completed true and exit_status 0.\nVERDICT diff: read commit by commit over ef0bce316448244cae55cedef8aca7e1dbc36988..c7b664dbccf803f4d51b63492555925b48b78ea0; 6af42087e6e91f79ec47d80549650938f81143ad adds 17 lines to reckon/crew/forgotten_runs.py (the helper at :56-68 and the guard clause at :109-110) and c7b664dbccf803f4d51b63492555925b48b78ea0 adds only the 72-line evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4877, reckon/mcp.py:2978, reckon/crew_run_commands.py:725\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/forgotten_runs.py:109 skips a pointer whose ledger row already exists, which is the \"terminal and unpromoted\" subject the module documents at :1-15, so the landed change delivers the goal rather than narrowing the test.\nSCORE evidence: 19\nJUSTIFICATION evidence: head-run-1794997209890628594.log at c7b664dbcc0 records \"5 passed\" and EXIT=0 and base-run-1794996510261231758.log at ef0bce316448 records \"2 failed, 3 passed\" and EXIT=1, with baseline_suite-1794997033043493255.log and after_suite-1794997122364198520.log each \"58 passed\" at a full-length revision; one of two points off because the base receipt opens with an srun worker-fence line before its command header.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff is exactly reckon/crew/forgotten_runs.py and the fragment, both inside the declared grants, but the specifically declared path qwnw-red-file-forgotten-runs-are-reported.html is undelivered while red-file-forgotten-runs-are-reported.html is (docs/evidence/fragments/queued-work-needs-no-workaround/red-file-forgotten-runs-are-reported.html:7).\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_forgotten_runs_are_reported.py:269 independently writes the ledger row through ledger.write_run_file at :159 and asserts the settled id is absent from the derivation's own output, and the base arm of head-run/base-run pair proves both guards redden at ef0bce316448 with the regression reinstated (ids test_the_view_lists_exactly_the_run_nobody_is_coming_back_to and test_a_run_whose_outcome_is_already_landed_is_not_forgotten).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/forgotten_runs.py:66 keeps the module's relative-import and function-local-import idiom used across reckon/crew, but the new helper reaches a private name in another module (recovery_watch._promote_record_holds at :68) rather than the re-export reckon/crew/recovery.py:413 already carries.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/ for a settlement reading found one owner, recovery_watch._promote_record_holds at reckon/crew/recovery_watch.py:1032 (used by the watcher at :1292 and re-exported at reckon/crew/recovery.py:413), and reckon/crew/forgotten_runs.py:68 wraps that owner instead of stat-ing a ledger path a second time.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-forgotten-runs-are-reported.html:7 non-blocking: the file drops the qwnw- node prefix, so reckon/evidence.py:866 derives docs/evidence/fragments/<plan>/qwnw-red-file-forgotten-runs-are-reported.html, finds no such file, and the node's fragment is left unlinked from the overview while 177 sibling red-file fragments in that directory carry the prefix.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-forgotten-runs-are-reported.html:41 non-blocking: the base log's <pre> splices the receipt \u2014 the FAILURES section between the progress line at :40 and the summary at :41 and roughly 18k teardown lines between :44 and :45 are dropped unmarked, and the log's own first line is omitted \u2014 so a reader cannot tell the quote is an excerpt rather than the log.",
+  "review_method": "Read-only source, diff and recorded-log review; no suite rerun, no mutation experiment.",
+  "review_run_id": "r-20261118T102343408998-review-of-qwnw-red-file-forgotten-runs-are-reported-c7b664dbccf8",
+  "reviewed_base_sha": "ef0bce316448244cae55cedef8aca7e1dbc36988",
+  "reviewed_head_sha": "c7b664dbccf803f4d51b63492555925b48b78ea0",
+  "reviewed_run_id": "r-20261118T062434381477-qwnw-red-file-forgotten-runs-are-reported",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "source_commits": [
+    "6af42087e6e91f79ec47d80549650938f81143ad",
+    "c7b664dbccf803f4d51b63492555925b48b78ea0"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:57:32.595594+00:00",
+  "total": 114
+}
