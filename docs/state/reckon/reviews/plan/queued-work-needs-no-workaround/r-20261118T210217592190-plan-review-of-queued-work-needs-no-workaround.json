@@ -1,0 +1,103 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T21:50:07Z",
+  "findings": [
+    {
+      "anchor": "\u2026/plan.html:341",
+      "id": "done_when-1",
+      "reason": "the fixture can reach the state only by writing the stored record through `record_sweep_report` (the shape tests/test_a_duty_clears_when_its_run_ends.py:96 uses), and a worker reading the case as a property of a sweep will hunt for a sweep that produces it and find none.",
+      "text": "the first case (\"the first session's sweep reports a failure for a run the second session owns\") and the second (\"a failure for a run whose pointer names no session gives neither session a row\") name a sweep report the base cannot emit: `dispatch_awaiting_reviews` skips every pointer whose `session` differs from the sweeping session (`if sweeping and str(pointer.get(\"session\") or \"\") != sweeping: continue`, recovery_review_acceptance.py:1590-1597), the resume pass applies the same filter (resumption.py:2767), the station sweeps each session separately with `session=` (station.py:460-461), and `_sessions_to_sweep` groups only pointers that carry a session (station.py:846-856)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "\u2026/plan.html:341",
+      "id": "done_when-2",
+      "reason": "the node's gate would have to invent the field it asserts on, and the section gives no measurement by which a reviewer can tell an intended addition from an accidental one.",
+      "text": "the second case also asks that a sessionless run's row \"is still listed by the project's fleet read\", and that read holds per-run classification snapshots keyed by run id (station_store.py:1460-1478, `fleet:<project>`), carrying no sweep-failure row, so the clause names a publication surface the section neither identifies nor bounds",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "\u2026/plan.html:341",
+      "id": "single_goal-1",
+      "reason": "one verdict cannot pass a node that fixes the row's owner while adding sweeping powers no session's stop hook for a sessionless run; splitting the clause lets each be gated on its own measure.",
+      "text": "the acknowledgement rule is a second mechanism under the same node: it is about the lifetime of a deferral record, not about which session a row is raised for, and its own premise (an error-text change) is examined separately below",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "\u2026/plan.html:341",
+      "id": "reasoning-1",
+      "reason": "a false cause is what a worker reads before choosing where to look, and it points at run selection rather than the retained `sweep-failures:<project>` record (station_obligations.py:93-95, 176-201).",
+      "text": "the Why states \"a session's review sweep covers runs of other sessions in its project, so the row follows the sweeper and not the owner\", but a session sweep is scoped to its own runs on both passes (recovery_review_acceptance.py:1590-1597; resumption.py:2767; station.py:460-461), so a live sweep cannot raise another session's failure: the row appears under a session that no longer owns the run only because the stored record outlived an ownership change, or because a caller sweeping without a session wrote it (resumption.py:2729-2735 allows a whole-fleet sweep)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "\u2026/plan.html:341",
+      "id": "reasoning-2",
+      "reason": "the third deliverable adds a lifetime rule with no defect behind it, and a worker cannot write \"returns when the error text changes\" against a record that has no such field.",
+      "text": "\"An acknowledgement of a sweep failure holds while the failure's error text is unchanged, whichever session's sweep reports it again\" describes an error-text coupling the base does not have: acknowledgements are read per run id with an `until`/`until_condition` (obligations.py:1846-1917, `_partition_acknowledged` keys on `item[\"run_id\"]`), and nothing in that record carries the failure's error text, so at the base an acknowledgement is neither held nor released by the text \u2014 the reported three acknowledgements in an hour are the symptom of the row being raised again, not of text churn",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "befca7dd62193c57a0fd088c66a3bb610ebe1014",
+  "plan_fingerprint": "8bd69e7a5fc436d786f71b3e1488dfd3ee8b61a6179a882f787e5ff9c8865871",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 607,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261118T210217592190-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "14bfc105409461b9bc3ddf34db8d4a835b3bfd1f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the section cites only that fragment path and no module, so there is no anchor that can fail to resolve; the store and obligations modules its prose describes exist in this tree (reckon/crew/station_obligations.py, reckon/crew/obligation_snapshot.py).",
+    "done_when": "a finding \u2014 two of \u00a731's three cases name a sweep report the base cannot emit, and a third asserts a fleet-read field that read does not carry (plan.html:341).",
+    "evidence_paths": "pass \u2014 the failing-run log is `docs/evidence/fragments/queued-work-needs-no-workaround/s31.html`, beside the sibling fragments already in that directory, and both arms are named to run on `rigel`.",
+    "naming": "pass \u2014 the session ids and run ids appear only as the reported evidence, and no label or tracker name is asked to reach a symbol.",
+    "reasoning": "a finding \u2014 the Why's stated mechanism is contradicted by the base, and the acknowledgement clause describes a coupling the base does not have (plan.html:341).",
+    "single_goal": "a finding \u2014 the section carries an owner-keyed row, a sessionless-run escape and an acknowledgement-lifetime rule, which are three endpoints (plan.html:341).",
+    "wiring": "pass \u2014 s31 is declared implementable in plan-section-declarations (plan.html:23) and plan-section-depends-on names only s24, so s31 needs and declares no dependency."
+  },
+  "section_digests": {
+    "_document": "f1aecff039024775d5640c918c821fada6adaee7b0dd90a955a5394d3c89e882",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "04f04dd8812de5d9c7b9410b01df1ecca1b5d54a6033156ef6c0e016e94d83a8",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s26": "86ee010dedc3babeebe536a7600e36d642ff7e96b15d2ca37ba6543b3da2caa0",
+    "s27": "77553fb962d6e701c89758fbdc77af812395fd33dff4a7bb97d3449f9a7a549a",
+    "s28": "7456663a1516834f96910a588c2bfef971ac8759485a26e01d93ff834ae5b664",
+    "s29": "686297f9ec76495ef83e0a8d37508cdd135e76797ea84024eaec7dc24e571e08",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s30": "6b2330c549684f55894c7eeec6454c27341b1abe4b6cafad0b7a63b290fd6025",
+    "s31": "848c2c788588c554df778192bf0b0d967123b96110b58223986e61493801c7d4",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T21:59:42.932784+00:00",
+  "total": null
+}
