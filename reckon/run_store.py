@@ -1715,7 +1715,9 @@ class RunStore:
                     "SELECT run_id FROM runs WHERE project = ?", (name,)
                 )
             } | self._archived_ids(name)
-            if indexed != ledger.run_ids(name, root):
+            if not ledger._ledger_holds_content(name, root):
+                continue
+            if indexed != ledger.run_ids(name, root, use_index=False):
                 data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
                 stale |= indexed
@@ -1728,10 +1730,13 @@ class RunStore:
             for run_id, record in self._indexed_records(include_archive=True).items()
             if run_id not in stale
         }
-        for rows in changed.values():
+        for name, rows in changed.items():
             for row in rows:
                 run_id, payload, detail = _split_durable(row)
-                records[run_id] = {**payload, **detail}
+                # A run file carries no project: the file it sits in is the
+                # project. The answer declares it here because a rebuild whose
+                # write was refused has no column to read it back from.
+                records[run_id] = {"project": name, **payload, **detail}
         try:
             with self._conn:
                 for name, rows in changed.items():
@@ -1835,7 +1840,10 @@ class RunStore:
             record = records.get(run_id)
             if record is None:
                 return None
-            return _durable_record(self._row_projects().get(run_id) or "", record)
+            return _durable_record(
+                self._row_projects().get(run_id) or str(record.get("project") or ""),
+                record,
+            )
         row = self._conn.execute(
             'SELECT "payload", "project" FROM "runs" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
@@ -1889,7 +1897,7 @@ class RunStore:
             return {
                 run_id: _durable_record(project, record)
                 for run_id, record in records.items()
-                if owners.get(run_id) == project
+                if (owners.get(run_id) or record.get("project")) == project
             }
         rows = self._conn.execute(
             'SELECT "run_id", "payload" FROM "runs" WHERE "project" = ?', (project,)
