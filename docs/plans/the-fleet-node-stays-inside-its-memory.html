@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -137,9 +137,6 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s12" data-id="c-s12-not-landed-0034" data-who="reckon-build" data-when="2026-11-18T00:34:00Z">
-    <div class="r-comment-body"><p>§12 is delivered and not landed: head <code>5312b01ff5</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
@@ -151,6 +148,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261117T111120978029-a-service-over-its-limit-restarts-alone" data-who="reckon-build" data-when="2026-11-17T11:36:33Z">
     <div class="r-comment-body"><p>Optional memory_limit_bytes now applies per-process RLIMIT_AS before service exec with fail-closed refusal and existing isolated restart backoff; 70 scoped checks passed (1 dedicated-allocation check skipped), a 768 MiB service restarted in a 2 GiB all_debug job with peer PID unchanged and oom_kill 0→0, while the unbounded control killed both stand-ins and raised oom_kill 0→2; importer comparison added zero failure IDs. Aggregate child-tree memory is not bounded.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-not-landed-0034" data-who="reckon-build" data-when="2026-11-18T00:34:00Z">
+    <div class="r-comment-body"><p>§12 is delivered and not landed: head <code>5312b01ff5</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-sampler-replaced-by-hand" data-who="reckon-build" data-when="2026-11-17T21:58:00Z">
     <div class="r-comment-body"><p>The sampler was replaced by hand at 21:50 UTC on 17 November on the lead's decision, by another session: the loop started on 16 November was stopped and the current script started in its place. Verified at 21:57 UTC: the series rows carry 33 columns and the disk sample is republished each minute. The live-fleet measures of §2 to §5 therefore run from 21:50 UTC on 17 November, not from each section's landing. The replacement is not a child of the supervisor, so §12 is still needed for the handover to happen without a hand restart.</p></div>
@@ -262,6 +262,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T111352964502-the-admission-service-holds-steady-memory" data-who="reckon-build" data-when="2026-11-17T13:01:27Z">
     <div class="r-comment-body"><p>Each section verdict now reads only its own plan's runs: readiness._ledger_run_rows calls ledger.load(project, plan=slug) and caches under (project, plan), so the store narrows in SQL before any row is decoded. On a copy of the live crew home, 100 consecutive admission passes at 13b1d2bdc8 held resident at 1304825856 B after the hundredth against 1304825856 B after the tenth (growth_ratio 1.0, within_twenty_percent true, under_four_gib true, peak_resident_bytes 2045972480 in 656.0 s), decoding 441.9 run_store rows per pass where the base revision decoded 21148.7 on the same input over three passes, at a resident peak of 4619415552 B against the head's 2009300992 B.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261118T004303865181-review-of-unowned-scratch-is-reclaimed-7b14a9c608ee" data-who="reckon-build" data-when="2026-11-18T00:49:28Z">
+    <div class="r-comment-body"><p>Independent exact-revision review stored parsed with six scores, two blocking findings, and zero added failure IDs from the source run own completed suite arms; broader importer delta and live observation remain recorded separately.</p></div>
 </div>
 </section>
 </main>
