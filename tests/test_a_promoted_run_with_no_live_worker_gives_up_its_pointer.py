@@ -145,10 +145,14 @@ def cohort(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
             repo,
         )
         delivered[name] = {"pointer": pointer, "tree": tree, "head": head}
-    if (tmp_path / "worktrees" / "stale-turn").is_dir():
+    for name in ("stale-turn", "unnamed-attempt"):
+        if not (tmp_path / "worktrees" / name).is_dir():
+            continue
         # A resumed turn whose stream holds an answer and whose last record is
-        # not the result line a finished turn writes.
-        stream = runs.run_dir("r-stale-turn") / "resume-1.jsonl"
+        # not the result line a finished turn writes. It reads as a turn in
+        # progress on both runs; one records a dead process and is released,
+        # the other records none and is kept.
+        stream = runs.run_dir(f"r-{name}") / "resume-1.jsonl"
         stream.write_text(
             "\n".join(
                 [
@@ -218,9 +222,9 @@ def test_a_promoted_run_with_no_live_worker_gives_up_its_pointer(
         assert row["release"]["worktree_released"] is True, name
     for name, reason in (
         ("live-attempt", "live"),
-        ("unnamed-attempt", "cannot be established"),
+        ("unnamed-attempt", "turn in progress"),
         ("dirty", "uncommitted"),
-        ("beyond", "cannot be released"),
+        ("beyond", "unintegrated"),
     ):
         run_id = f"r-{name}"
         assert runs.pointer_path(run_id).exists(), name
