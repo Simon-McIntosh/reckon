@@ -1,0 +1,61 @@
+<section id="qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion-landing">
+  <h2>A promotion's copy-deletion check carries out the promotion it measures</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py</code>
+  drove its two cases through <code>crew complete --gate not-run</code> and then
+  asserted on a promotion that never ran. <code>crew complete</code> now records
+  a durable promotion request for the fleet's admission service and returns;
+  promotion happens in the caller's process only when <code>--wait</code> asks
+  for it. Without the flag the command exits 0 having queued a request, the
+  worktree is never released and no trash entry appears, so both cases ended red
+  for a reason with nothing to do with the deletion they measure.</p>
+
+  <p><strong>Verdict: the test was wrong.</strong> The product already keeps the
+  rule the file asserts. The release path wraps its worktree release in
+  <code>deferring_worktree_copy_deletion()</code>
+  (<code>reckon/crew/promotion.py</code>), so the registered path is vacated by
+  one rename and the moved-aside copy is left to the sweep; and
+  <code>--wait</code> is the documented way to carry a promotion out in one
+  call. The repair adds <code>--wait</code> to the fixture's invocation; no
+  assertion, no fixture and no product line changed.</p>
+
+  <h3 id="qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion-arms">
+    <caption>Every log names its revision, tree and command in its first lines
+    and ends with a bare <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code>, extraction</td>
+        <td>2 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head, all_debug job with <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>c4e92cde3a5956b74791e3e658f5fa9fa0f0be60</code></td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite arm, base</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite arm, after</td>
+        <td><code>c4e92cde3a5956b74791e3e658f5fa9fa0f0be60</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>mutation control: the deferral disabled</td>
+        <td>head tree, <code>_DEFER_COPY_DELETION</code> forced false</td>
+        <td>2 failed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base run's failing ids are
+  <code>test_a_promotion_returns_before_its_copy_is_deleted</code> and
+  <code>test_a_second_promotion_is_not_held_by_the_firsts_copy_deletion</code>.
+  The first reported <em>the released tree stayed at its path</em>; the second
+  reported <em>the promotion never moved its worktree copy aside</em>.</p>
+
+  <p>The mutation control shows the file still reaches the behaviour it asserts
+  rather than passing because nothing observable slipped: with
+  <code>_DEFER_COPY_DELETION</code> forced false, the first case reported
+  <em>the promotion waited on its copy's deletion: 30.4s against 0.5s without
+  injected delay</em> and the second reported
+  <em>the second promotion waited 30.2s for the first's deletion</em> — 2 failed,
+  <code>EXIT=1</code>.</p>
+</section>
