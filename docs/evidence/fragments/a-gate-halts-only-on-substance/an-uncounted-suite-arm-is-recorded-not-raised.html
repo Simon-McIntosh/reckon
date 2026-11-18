@@ -1,0 +1,53 @@
+<section id="an-uncounted-suite-arm-is-recorded-not-raised-landing">
+  <h2>An arm that never counted is unmeasured, not malformed</h2>
+
+  <p><strong>What this node changed.</strong> A run gated on a GPU records suite
+  arms that abort inside their backend compilation at base and head alike, so
+  neither reaches a pytest summary: each arm carries <code>completed</code>
+  false and a null <code>failure_count</code>. Promotion judged the pair and
+  then called <code>int()</code> on that null, so a completion whose waiver was
+  already recorded and whose waived-count review was already filed raised
+  <code>TypeError</code> out of
+  <code>ledger.normalized_suite_observation</code> instead of landing.</p>
+
+  <p>An arm that never reached a summary states exactly what it observed — that
+  no count exists — so the record now says so. The ledger's normalised arm
+  carries <code>completed: false</code>, <code>failure_count: null</code>,
+  <code>unmeasured: true</code> and the waiver's own reason as
+  <code>unmeasured_reason</code>. A pair the completion waived is therefore
+  written as two unmeasured arms beside the waiver that permitted it, which
+  keeps "measured zero" and "never measured" apart in the row. A counted pair
+  normalises to the shape it carried before this change, key for key.</p>
+
+  <p><strong>The refusal is reachable.</strong> With no waiver the same
+  completion refuses rather than raising, and its detail names the arms that
+  never counted and the option that would record them:
+  <code>baseline_suite and after_suite never reached a pytest summary, so no
+  failure count exists to compare: re-measure the arm, or state why it cannot
+  count with --waive-suite-delta '&lt;why&gt;'</code>. The refusal's fields are
+  the four an uncounted arm is missing and nothing else, so a waiver of the
+  pair covers exactly those fields.</p>
+
+  <p><strong>The control is the raise itself.</strong> The check declares that
+  at the base revision a waived completion over arms with null counts raises
+  <code>TypeError</code> from <code>normalized_suite_observation</code>, and the
+  captured log shows it: the same test file carried into a checkout of the base revision
+  fails the landing case with
+  <code>TypeError: int() argument must be a string, a bytes-like object or a
+  real number, not 'NoneType'</code> at <code>ledger.py:563</code>, and fails the
+  no-waiver case because the refusal there says nothing about a summary it never
+  reached. The counted case passes at both revisions, which is the third arm's
+  claim: nothing measured changed.</p>
+
+  <table id="an-uncounted-suite-arm-is-recorded-not-raised-arms">
+    <caption>Each arm is a log under the run directory whose header names its
+    revision and command and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>b9e6511c</code>, the two suite files that exist there</td><td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after</td><td><code>38ad4591</code>, those two plus this node's file</td><td>61 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared control</td><td><code>b9e6511c</code> plus this node's file, with no production change</td><td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+</section>

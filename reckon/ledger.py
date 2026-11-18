@@ -551,19 +551,74 @@ def suite_observation_missing_fields(
     return missing
 
 
-def normalized_suite_observation(observation: Mapping[str, Any]) -> dict[str, Any]:
-    """Return the stable ledger shape of a validated suite observation."""
-    return {
+def suite_observation_is_uncounted(observation: Any) -> bool:
+    """Whether an arm never reached a count.
+
+    An arm whose program aborted before pytest printed its summary, or whose
+    summary carried no count, states exactly what it observed: no failure
+    count exists for an arm that never reached a summary, so ``completed`` is
+    false or the count is not a number. Such an arm is unmeasured rather than
+    malformed — it is the shape a gated run records when its suite cannot run
+    on the CPU it was armed for — and the difference from a measured zero is
+    the point.
+    """
+    if not isinstance(observation, Mapping):
+        return False
+    if observation.get("completed") is not True:
+        return True
+    failure_count = observation.get("failure_count")
+    return isinstance(failure_count, bool) or not isinstance(failure_count, int)
+
+
+def normalized_suite_observation(
+    observation: Mapping[str, Any],
+    *,
+    unmeasured_reason: str = "",
+) -> dict[str, Any]:
+    """Return the stable ledger shape of a validated suite observation.
+
+    An arm that never reached a count is recorded as unmeasured instead of
+    raising: its count is null, ``unmeasured`` is true, and the reason the
+    caller was given travels with it. A completion that waived its suite pair
+    for exactly this reason therefore lands, and the row says the arm measured
+    no count rather than that the arm passed.
+    """
+    shared = {
         "revision": str(observation.get("revision") or "").strip(),
         "command": str(observation.get("command") or "").strip(),
-        "exit_status": int(observation["exit_status"]),
         "log_path": str(observation.get("log_path") or "").strip() or None,
         "log_digest": str(observation.get("log_digest") or "").strip() or None,
+        "failure_ids": sorted(
+            {str(item).strip() for item in observation.get("failure_ids") or ()}
+        ),
+    }
+    if suite_observation_is_uncounted(observation):
+        exit_status = observation.get("exit_status")
+        return {
+            "revision": shared["revision"],
+            "command": shared["command"],
+            "exit_status": (
+                int(exit_status)
+                if isinstance(exit_status, int) and not isinstance(exit_status, bool)
+                else None
+            ),
+            "log_path": shared["log_path"],
+            "log_digest": shared["log_digest"],
+            "completed": False,
+            "failure_count": None,
+            "failure_ids": shared["failure_ids"],
+            "unmeasured": True,
+            "unmeasured_reason": str(unmeasured_reason).strip() or None,
+        }
+    return {
+        "revision": shared["revision"],
+        "command": shared["command"],
+        "exit_status": int(observation["exit_status"]),
+        "log_path": shared["log_path"],
+        "log_digest": shared["log_digest"],
         "completed": True,
         "failure_count": int(observation["failure_count"]),
-        "failure_ids": sorted(
-            {str(item).strip() for item in observation["failure_ids"]}
-        ),
+        "failure_ids": shared["failure_ids"],
     }
 
 
