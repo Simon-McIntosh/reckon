@@ -1,0 +1,121 @@
+<section id="qwnw-red-file-an-unchanged-run-needs-no-suite-pair-negative-control">
+  <h2>An unchanged run needs no suite pair: two stale assertions, no product rule lost</h2>
+
+  <p><strong>What this node did.</strong> The node test file was red on the
+  primary branch at <code>3006761c5a82f33fd3ca146373231e809ac00a46</code>: six of
+  its seven cases failed. Two product changes had moved the rules the assertions
+  read, and neither lost the behaviour the file exists to guard. Each cause is
+  listed with its verdict below.</p>
+
+  <table id="qwnw-red-file-an-unchanged-run-needs-no-suite-pair-causes">
+    <thead>
+      <tr>
+        <th>Cause</th>
+        <th>Commit that moved the rule</th>
+        <th>Verdict</th>
+        <th>Assertion change</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A single-run completion answers with a compact receipt that carries
+        <code>record_path</code> instead of the promotion outcome.</td>
+        <td><code>ba811581d3</code> "confirm delivered runs together with bounded
+        replies" (17 Nov)</td>
+        <td>test wrong: the compact reply is the documented shape, and its own
+        test file holds it.</td>
+        <td>The record is read from <code>record_path</code>: the suite delta of
+        the declining run, and the refusal detail of the three contradicted
+        manifests.</td>
+      </tr>
+      <tr>
+        <td>A commitless run whose worktree sits past its base is refused by the
+        commitless guard, before any suite pair is asked for.</td>
+        <td><code>e7e46bfc5f</code> "keep the commitless guard over a stated
+        reason" (15 Nov)</td>
+        <td>test wrong: the guard is stricter than, and precedes, the pair
+        requirement and refuses for a reason naming the head and the
+        base the run was dispatched against.</td>
+        <td>The two moved-worktree cases assert the receipt's own detail names
+        <code>worktree is at &lt;head[:12]&gt; rather than its base
+        &lt;base[:12]&gt;</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No assertion was deleted and the exit-code and pointer-retained claims are
+  unchanged in every case. Falsifiability was checked by mutation: routing the
+  detail back to the command's printed text fails four cases, and perturbing the
+  quoted head prefix fails the two moved-worktree cases.</p>
+
+  <h3 id="qwnw-red-file-an-unchanged-run-head">Head run</h3>
+  <pre id="qwnw-red-file-an-unchanged-run-head-log">
+# revision: 713780ca2788330f72ba131cbc21aeb080ce94b7
+# host: 98dci4-clu-3141.iter.org (partition all_debug)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_unchanged_run_needs_no_suite_pair.py
+7 passed in 1.90s
+EXIT=0
+</pre>
+
+  <p>The head run is the scoped gate submitted on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset, its log on shared storage at
+  <code>scoped-gate-1794992204586208097.log</code>.</p>
+
+  <h3 id="qwnw-red-file-an-unchanged-run-base">Negative control</h3>
+
+  <p>The base revision's own copy of the test file was run from an extracted base
+  tree, so the run can borrow neither the head's file nor its source. The header
+  proves the file that ran is the base blob rather than the repaired one.</p>
+
+  <pre id="qwnw-red-file-an-unchanged-run-base-log">
+# revision: 3006761c5a82f33fd3ca146373231e809ac00a46
+# tree: /tmp/reckon-crew-scratch/.../unchanged-run-negctl-uFGfOh (extracted from 3006761c5a82f33fd3ca146373231e809ac00a46), run from that tree
+# test file blob at 3006761c5a82f33fd3ca146373231e809ac00a46: a17b42937c1a827af9fa27b14ddcae1170a0939a
+# test file on disk (git hash-object): a17b42937c1a827af9fa27b14ddcae1170a0939a
+# command: env PYTHONPATH=/tmp/.../unchanged-run-negctl-uFGfOh /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_unchanged_run_needs_no_suite_pair.py
+FFFFFF.                                                                  [100%]
+6 failed, 1 passed in 1.98s
+EXIT=1
+</pre>
+
+  <p>The six failing ids at that revision:</p>
+  <ul id="qwnw-red-file-an-unchanged-run-failing-ids">
+    <li><code>test_decline_only_run_promotes_with_unchanged_suite_delta</code></li>
+    <li><code>test_run_with_a_commit_past_base_is_still_refused</code></li>
+    <li><code>test_empty_manifest_with_a_reclaimed_worktree_is_still_refused</code></li>
+    <li><code>test_empty_manifest_with_an_untracked_deliverable_is_still_refused</code></li>
+    <li><code>test_empty_manifest_with_a_moved_worktree_is_still_refused</code></li>
+    <li><code>test_empty_manifest_with_no_recorded_base_is_still_refused</code></li>
+  </ul>
+
+  <h3 id="qwnw-red-file-an-unchanged-run-suite-arms">Suite arms</h3>
+
+  <p>Both arms ran the command the node's declared scope resolves to, on
+  <code>all_debug</code>, and add no failure against the base.</p>
+
+  <table id="qwnw-red-file-an-unchanged-run-suite-arm-rows">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Summary</th><th>Exit</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>baseline_suite</td>
+        <td><code>3006761c5a82f33fd3ca146373231e809ac00a46</code></td>
+        <td>58 passed in 35.45s</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>after_suite</td>
+        <td><code>713780ca2788330f72ba131cbc21aeb080ce94b7</code></td>
+        <td>58 passed in 35.46s</td>
+        <td>0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No test file imports the node test file, so the arm over what the change can
+  reach is the node test file itself. Its two arms carry full revisions: base
+  <code>3006761c5a82f33fd3ca146373231e809ac00a46</code> with 6 failed and 1
+  passed, head <code>713780ca2788330f72ba131cbc21aeb080ce94b7</code> with 7
+  passed.</p>
+</section>
