@@ -591,6 +591,23 @@ class QueueFull(CrewError):  # noqa: N818 - named as the refusal states it, besi
 # launched, dropped or discarded request has returned them.
 PRIORITY_HOLDING_PHASES: tuple[str, ...] = ("queued", "awaiting-upstream", "held")
 
+# The phases a run's pointer carries once its worker delivered and nothing but
+# a promotion remains. ``complete`` is the run that has just delivered; the
+# promotion phases are the same run once a request for it is queued, because
+# requesting rewrites the pointer's phase, and a coordinator reprioritising a
+# delivered run usually does it while that request waits. A run's points return
+# at launch, so a delivered run holds them again only when a coordinator spent
+# the points there: the marker below is what ``crew queue reprioritise`` writes
+# when it raises a delivered run, and the mark, never the phase alone, is what
+# charges the session. Landing retires the pointer, which returns the points the
+# same way every other departure does.
+DELIVERED_POINTER_PHASES: tuple[str, ...] = (
+    "complete",
+    "promotion-requested",
+    "promotion-waiting",
+)
+PRIORITY_DELIVERED_MARK = "priority_held_while_delivered"
+
 
 class PriorityBudgetExceeded(CrewError):  # noqa: N818 - named as the refusal states it, beside QueueFull
     """A session's unlaunched priority points would pass its declared budget.
@@ -648,30 +665,59 @@ def _stored_priority(pointer: Mapping[str, Any]) -> int:
     return _override(pointer) or 0
 
 
+def _holds_priority(pointer: Mapping[str, Any]) -> bool:
+    """Whether this pointer's points are still charged to its session.
+
+    A registered holder is a request that has not launched. A delivered run is
+    the one non-launched case the marker above opens, because its points came
+    back at launch and were spent there again by a reprioritise.
+    """
+    phase = str(pointer.get("phase") or "")
+    if phase in PRIORITY_HOLDING_PHASES:
+        return True
+    return phase in DELIVERED_POINTER_PHASES and bool(
+        pointer.get(PRIORITY_DELIVERED_MARK)
+    )
+
+
 def session_priority_in_use(
     session: str,
     *,
     live: Sequence[Mapping[str, Any]] | None = None,
     exclude_run_id: str = "",
+    exclude_run_ids: Iterable[str] = (),
 ) -> tuple[int, list[dict[str, Any]]]:
     """The priority points a session holds on its unlaunched requests.
 
     Returns the total and the requests holding those points.
 
     The figures are read from the live pointers rather than a running tally, so
-    a request removed by any route — launch, drop, discard — returns its points
-    with no second bookkeeping step to get wrong. A request the caller is about
-    to rewrite is excluded by run id so its own points are not counted twice.
+    a request removed by any route — launch, drop, discard, landing — returns
+    its points with no second bookkeeping step to get wrong. A request the
+    caller is about to rewrite is excluded by run id so its own points are not
+    counted twice. A delivered run is charged only where a reprioritise placed
+    points on it, which is what the marker records: its launch returned the
+    points it was dispatched with, so a delivered run still holds them only
+    because a coordinator spent them there.
+
+    More than one request may be excluded, because one raise can be written
+    under two names. A delivered run and the review composed for it are one
+    charge: the raise is stored on the run so a reader sees what the
+    coordinator asked for, and on the review because the review is the record
+    admission ranks. The caller excludes both, so the session is charged once
+    however many records carry the same points.
     """
     pointers = list_live() if live is None else live
+    excluded = {str(exclude_run_id)} if exclude_run_id else set()
+    excluded.update(str(run_id) for run_id in exclude_run_ids)
     holders: list[dict[str, Any]] = []
     total = 0
     for pointer in pointers:
         if str(pointer.get("session") or "") != str(session or ""):
             continue
-        if str(pointer.get("phase") or "") not in PRIORITY_HOLDING_PHASES:
+        if not _holds_priority(pointer):
             continue
-        if exclude_run_id and str(pointer.get("run_id") or "") == exclude_run_id:
+        if excluded and str(pointer.get("run_id") or "") in excluded:
             continue
         points = _stored_priority(pointer)
         if points <= 0:
@@ -690,6 +736,7 @@ def require_priority_budget(
     *,
     live: Sequence[Mapping[str, Any]] | None = None,
     exclude_run_id: str = "",
+    exclude_run_ids: Iterable[str] = (),
 ) -> None:
     """Refuse a priority that would take a session past its declared budget.
 
@@ -701,7 +748,10 @@ def require_priority_budget(
     if budget is None or asked <= 0:
         return
     in_use, holders = session_priority_in_use(
-        session, live=live, exclude_run_id=exclude_run_id
+        session,
+        live=live,
+        exclude_run_id=exclude_run_id,
+        exclude_run_ids=exclude_run_ids,
     )
     if in_use + asked > budget:
         raise PriorityBudgetExceeded(

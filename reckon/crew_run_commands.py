@@ -3156,20 +3156,25 @@ def crew_queue_edit(
 
 
 @crew_queue.command(name="reprioritise")
-@click.option("--run", "run_id", required=True, help="Queued request to re-rank.")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    help="Queued request or delivered run to re-rank.",
+)
 @click.option(
     "--priority",
     type=int,
     required=True,
     help="Explicit priority override; higher sorts ahead of the roadmap key.",
 )
-@click.option("--reason", default="", help="Why the request is being re-ranked.")
+@click.option("--reason", default="", help="Why the request or run is being re-ranked.")
 @click.option(
     "--project", default=None, help="Project owning the request; cross-checks it."
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_queue_reprioritise(run_id, priority, reason, project, pretty):
-    """Store an explicit priority override on a waiting request."""
+    """Store an explicit priority override on a waiting request or delivered run."""
     _accept_a_matching_project(run_id, project)
     from reckon.crew import queue_edit as queue_edit_module
     from reckon.crew.node import CrewError
