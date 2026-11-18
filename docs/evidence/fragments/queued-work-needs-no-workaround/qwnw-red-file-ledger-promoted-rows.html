@@ -85,8 +85,25 @@ of two runs, one with a stream and one without, scored by the same backfill a pr
 is left unmeasured, some row is underivable, each states a reason, and one reason is a missing
 stream. Every assertion is kept.</li>
 </ul>
-<pre id="qwnw-red-file-ledger-promoted-rows-head-run"># revision: d4263fb8ee09e352825e673d098e6ec0faa94ee0 (on the merge 54c887213f)
+<h4 id="qwnw-red-file-ledger-promoted-rows-review">The review finding: the sweep's gate</h4>
+<p>The review named one blocking defect: the retention sweep's gate reads
+<code>record["project"]</code> on the record <code>RunStore.retire</code> hands it, and that record
+was decoded from the payload alone — so once a row written since the append stopped injecting the
+routing key aged past the cutoff, the sweep raised <code>KeyError: 'project'</code> instead of
+retiring anything. It is the same defect this node repaired, one reader further out: a payload field
+the promotion never writes, read back as though the payload held it.</p>
+<pre id="qwnw-red-file-ledger-promoted-rows-retire-probe"># a row appended the way a promotion appends it: no project field in the record
+# before the repair: RESULT: KeyError: KeyError('project')
+# after the repair:  RESULT: retired=['r-promoted'] project_seen='sample'</pre>
+<p>The repair declares the project from the runs column onto the record the gate inspects, which is
+the answer <code>get_run</code>, <code>durable_rows</code> and the equality reference already give.
+A case in <code>tests/test_the_run_store_retires_old_runs.py</code> asks the gate for that identity
+over a record that carries none, and fails with the same <code>KeyError</code> when the fix is
+reverted.</p>
+<pre id="qwnw-red-file-ledger-promoted-rows-head-run"># revision: 3cf9c5830ef3efb6b23e6779b60842aa96c4a678 (the repair sits on 54c887213f)
 # command: pytest -p no:cacheprovider -q tests/test_ledger.py
-# 97 passed in 71.44s (0:01:11)  EXIT=0
-# the gate over the six files this node touches: 135 passed in 77.65s (0:01:17)  EXIT=0</pre>
+# 97 passed in 71.44s (0:01:11)  EXIT=0 at d4263fb8ee
+# the gate over the six files this node touches: 135 passed in 77.65s (0:01:17)  EXIT=0 at d4263fb8ee
+# tests/test_the_run_store_retires_old_runs.py -k filed_under: 1 passed  EXIT=0 at the repair head,
+#   and 1 failed with KeyError: 'project' on the same case with the repair reverted</pre>
 </section>
