@@ -1345,12 +1345,21 @@ class RunStore:
             for row in rows:
                 # The one per-row decode a backfill performs, named so a check
                 # can count the rows a migration rewrote.
-                record = _legacy_payload(dict(zip(names, row[:-1], strict=True)))
+                held = dict(zip(names, row[:-1], strict=True))
+                record = _legacy_payload(held)
                 self._conn.execute(
                     update,
                     (
                         json.dumps(record, sort_keys=True, separators=(",", ":")),
-                        *_query_values(record, json.loads(row[-1] or "{}")),
+                        *_query_values(
+                            record,
+                            json.loads(row[-1] or "{}"),
+                            # The row already states the project it is filed
+                            # under; a payload written since the append stopped
+                            # injecting one does not, so the column is carried
+                            # across unchanged rather than re-derived.
+                            project=held.get("project"),
+                        ),
                         None,
                         record["run_id"],
                     ),
@@ -1778,7 +1787,7 @@ class RunStore:
             record = records.get(run_id)
             if record is None:
                 return None
-            return _durable_record(self._run_project(run_id) or "", record)
+            return _durable_record(self._row_projects().get(run_id) or "", record)
         row = self._conn.execute(
             'SELECT "payload", "project" FROM "runs" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
@@ -1791,20 +1800,6 @@ class RunStore:
             if row is None:
                 return None
         return _answer_identity(_decoded_record(row[0]), str(row[1] or ""))
-
-    def _run_project(self, run_id: str) -> str | None:
-        """The project column of one row, archived rows included."""
-        row = self._conn.execute(
-            'SELECT "project" FROM "runs" WHERE "run_id" = ?', (run_id,)
-        ).fetchone()
-        if row is not None:
-            return str(row[0])
-        if not self._attach_archive():
-            return None
-        archived = self._conn.execute(
-            "SELECT project FROM archive.runs WHERE run_id = ?", (run_id,)
-        ).fetchone()
-        return str(archived[0]) if archived is not None else None
 
     def get_detail(self, run_id: str) -> dict[str, Any] | None:
         """Return one run's wide detail as a dict, or None when absent.
