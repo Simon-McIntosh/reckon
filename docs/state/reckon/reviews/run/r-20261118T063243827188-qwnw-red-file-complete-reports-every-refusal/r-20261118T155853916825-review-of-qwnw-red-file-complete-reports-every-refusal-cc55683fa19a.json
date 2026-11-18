@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063243827188-qwnw-red-file-complete-reports-every-refusal/head-test_complete_reports_every_refusal.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063243827188-qwnw-red-file-complete-reports-every-refusal/base-test_complete_reports_every_refusal.log"
+  },
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T17:40:30Z",
+  "findings": [
+    {
+      "file": "tests/test_complete_reports_every_refusal.py",
+      "line": 267,
+      "severity": "non-blocking",
+      "text": "assert receipt[\"run_id\"] == run_id compares the receipt with the run id the test itself passed in, so both sides move together and the assertion holds whatever the product does; the guard against a regression is the phase assertion on line 266."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-complete-reports-every-refusal.html",
+      "line": 46,
+      "severity": "non-blocking",
+      "text": "the head arm row names no head sha, writing \"the run's head, as the manifest's after_suite.revision names it\" instead, so the fragment alone cannot be told which revision passed and the base row beside it carries only an abbreviated sha."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063243827188-qwnw-red-file-complete-reports-every-refusal/manifest.md",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "the artifacts line says both arms ran as /usr/bin/sbatch --wait --partition=all_debug, but the run directory holds no scheduler receipt for the job that ran gate-arms.sh (the two *.log.scheduler sidecars are 0 bytes and belong to the shim attempts recorded in retry_failures), so the job property the done_when names is asserted rather than recorded."
+    }
+  ],
+  "notes": "added_failure_count is 0 because the log the reviewed manifest's after_suite names carries '4 passed' and EXIT=0 with no FAILED id, while the baseline log carries the single failing id tests/test_complete_reports_every_refusal.py::test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes and EXIT=1. The derivation reads the log_path values in the reviewed manifest's baseline_suite and after_suite entries (base-test_complete_reports_every_refusal.log and head-test_complete_reports_every_refusal.log); crew's own captures baseline_suite-1795016885020370985.log and after_suite-1795016885873512485.log are 0 bytes because the sbatch shim failed, which the reviewed manifest records under retry_failures with a scaffolding attribution. Instrument positive control: the base log shows 4 collected tests and '1 failed, 3 passed', so the counter is shown seeing a non-zero population before the head arm's zero is reported.",
+  "project": "reckon",
+  "review_run_id": "r-20261118T155853916825-review-of-qwnw-red-file-complete-reports-every-refusal-cc55683fa19a",
+  "reviewed_base_sha": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385",
+  "reviewed_head_sha": "cc55683fa19a2db200219f0bdd2b3715bfcc72db",
+  "reviewed_run_id": "r-20261118T063243827188-qwnw-red-file-complete-reports-every-refusal",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:05:27.859997+00:00",
+  "total": 107,
+  "verdicts": {
+    "diff": "read commit by commit: b90c8109b6 renames and rewrites the dry-run test's assertions against the four refusals and the promotion-requested receipt, cc55683fa1 adds only the evidence fragment recording those two causes and both arms.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a cause list with verdicts, no weakened assertion and both arms as inline JSON; the manifest records the green head arm and its log, the two causes with verdicts, and both arms at full 40-character revisions, but the arm over test files importing the change is unmeasured and the done_when's ruff claim carries no log.",
+    "goal": "the node's goal is to make tests/test_complete_reports_every_refusal.py pass in full on the primary branch; the head arm's log records 4 passed EXIT=0 at cc55683fa19a, against 1 failed / 3 passed EXIT=1 at base 0d0e1c9410b1.",
+    "manifest": "read in full; it records status complete, both arms as inline JSON at full revisions with log paths, the two causes with verdicts, a negative_control_log at the base log, and a checkpoint naming the green head run.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two delivered paths, tests/test_complete_reports_every_refusal.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-complete-reports-every-refusal.html, both sit inside them."
+  }
+}
