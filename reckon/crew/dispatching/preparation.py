@@ -365,6 +365,7 @@ def _queue_a_held_request(
             backlog=backlog,
         ),
         max_requests=flight.queue_max_requests(config),
+        priority_budget=flight.queue_priority_budget(config),
     )
     held = LaneHeld(lane_allowance)
     held.queued = {
@@ -912,6 +913,7 @@ def dispatch(
                             backlog=backlog,
                         ),
                         max_requests=flight.queue_max_requests(config),
+                        priority_budget=flight.queue_priority_budget(config),
                     )
                     held = LaneHeld(
                         {
@@ -1150,6 +1152,7 @@ def dispatch(
             refs=validated_refs,
             wait_projects=wait_projects,
             max_requests=flight.queue_max_requests(config),
+            priority_budget=flight.queue_priority_budget(config),
         )
         hold = queue_admission.section_hold(
             waiting,
@@ -1234,6 +1237,7 @@ def dispatch(
             backend=backend,
             lane_allowance=lane_allowance,
             max_requests=flight.queue_max_requests(config),
+            priority_budget=flight.queue_priority_budget(config),
         )
         if existing_phase == "queued":
             _arrange_dispatch_follower(

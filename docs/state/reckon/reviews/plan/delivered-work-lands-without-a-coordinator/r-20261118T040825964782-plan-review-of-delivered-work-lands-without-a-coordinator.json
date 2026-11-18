@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T04:09:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:185",
+      "id": "reasoning-1",
+      "reason": "the plan fixes the wrong modules for the behaviour it declares, and a worker following it edits code the hold never passes through while the deferral at `queue_landing.py:2261` keeps firing.",
+      "text": "s22's \"Write paths: reckon/crew/pending_landing.py, reckon/crew/resumption.py, reckon/crew/recovery_classification.py\" omits both modules the described behaviour actually lives in: the hold is written, read and released in `reckon/crew/resume.py` (`hold_delivery` :155, `release_hold` :191, `hold_reason` :95, where a `released_at`-stamped hold still returns its reason because `hold_reason` never reads the release), and the pass that defers a held run is `reckon/crew/pending_landing.py`'s sibling `reckon/crew/queue_landing.py:2261` (`delivery_hold_reason` \u2192 `skipped.append({\"status\": \"held\"})`), so a node fenced to the named paths cannot make the release reach the lander",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:185",
+      "id": "done_when-1",
+      "reason": "one of the deliverable's two release routes carries no arm, so the section's measure cannot show that route exists.",
+      "text": "s22's deliverable releases a resume's hold \"when that attempt is judged, by review or by the run's own terminal manifest\", but every arm measures only the review route (a reviewed-clean attempt, an attempt still running, a coordinator's own verb, \u00a718's promoted run, and a manual release), so an implementation that releases the hold only when a review lands passes the whole case while the manifest route stays unimplemented",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:184",
+      "id": "single_goal-1",
+      "reason": "the queue-wide clause is a separate endpoint that, kept inside s22, is neither reviewed on its own nor measured on its own.",
+      "text": "s22 carries two rules of different reach: a run whose resume hold is judged is released (run-scoped, \u00a722's title), and \"A promoted run whose head is on the primary branch is retired as \u00a718 states whatever hold it carries\" (a rule that a hold never blocks \u00a718's release at all, whatever set it), so one verdict cannot close both and the fourth fixture proves only the second",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:183",
+      "id": "reasoning-2",
+      "reason": "if the retained pointers came from \u00a718's own refusal conditions rather than a hold, releasing resume holds leaves the costly symptom exactly where it was.",
+      "text": "s22's Why names the hold as the cause of the seven promoted runs keeping their live pointers, but the evidence it gives for those seven is \"which only a discard retired\", \"20 MB of stored matches\" and a monitor pass of 252 s \u2192 69 s, none of which shows those runs carried holds, while \u00a718's own `done` record (`plan.html:159`) names two other conditions under which nothing of such a run is removed (an unclean worktree, an unresolvable commit) that the same figures equally explain",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:191",
+      "id": "done_when-2",
+      "reason": "an arm whose later attempt asks for help after a complete first attempt separates the declared newest-attempt rule from \"complete always wins\", which otherwise passes and would report a run as delivered while its live attempt waits for help.",
+      "text": "s23's deliverable is \"a run's state is read from its newest attempt\", but its single two-attempt fixture only tests help-request-then-complete, which an implementation that ranks a complete manifest above every later attempt also passes; the reverse ordering (a first attempt complete, a resumed attempt asking for help) is untested, so the plan's own rule and the cheaper rule are indistinguishable to this gate",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "70dfed4952c63933f85074042fe4ba940ab16559f96c01253e9870951d5d74f1",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 50,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261118T040825964782-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "83e852ef23eccc3a699563b8550c37a485e4c8f2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a718 resolves at `plan.html:157`, and `reckon/crew/pending_landing.py`, `reckon/crew/resumption.py` and `reckon/crew/recovery_classification.py` all exist at the review revision `1c1aab83`; the two test files s22 and s23 name are deliverables, which is the house convention elsewhere in this plan.",
+    "done_when": "two findings \u2014 s22's `plan.html:185` arms cover a reviewed-clean attempt but never the deliverable's second judgment route (the run's own terminal manifest), and s23's `plan.html:191` single fixture is passed by an implementation in which a complete manifest always outranks any later attempt.",
+    "evidence_paths": "pass \u2014 s22 and s23 send their gate evidence to named test files (`plan.html:185`, `plan.html:191`), not to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 both new sections name a behaviour (\"a hold set for a resume\", \"a resumed run that finishes complete\") and carry no plan label, stage name or ticket number into the symbols or test names they propose.",
+    "reasoning": "two findings \u2014 s22's `plan.html:185` write paths name three modules the hold mechanism never passes through, and s22's `plan.html:183` attributes the seven retained pointers to a hold that its own figures do not show they carried.",
+    "single_goal": "a finding \u2014 s22 at `plan.html:184` joins ending a resume's hold to a queue-wide rule that a hold never blocks \u00a718's release, so its gate proves neither rule alone.",
+    "wiring": "pass \u2014 `plan.html:24` lists `s22` and `s23` as upstream of `s10`, and each section presupposes only already-declared `done` sections (s22 the release at `plan.html:157`, s23 the classifier repairs), so neither has an unmet dependency; neither key has an entry of its own, which is a record gap that reorders nothing."
+  },
+  "section_digests": {
+    "_document": "4c275ee61a3e2fc4e761a29fe740161d366bb41f140d31328b0f05a557096e32",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s18": "952c184917351117b3f92f50b109c64b6edc963dc57f74f8d0e96e260b672454",
+    "s19": "fd99cdb85821b8f1cc753d60d3461ddda1e36227553a34ad710f3c4edbcb65dd",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s20": "73a59983728fec7eb3a28f9305c1846bab53db81049cdf361b7332b51458b9ab",
+    "s21": "c95db350871319247d9fa4cc2afa9694a54554ea9e31d2e9da533f29a2f8331f",
+    "s22": "af8c57fe3c0c211e820c487af5729bf215453da9640ec5c8b23d71e3f7418e41",
+    "s23": "3739019144c6377f7bee7906410475d1c3b4b1cb8c6cc230ed6a6ba1fb090517",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T04:16:26.094882+00:00",
+  "total": null
+}

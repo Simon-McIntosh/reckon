@@ -12,6 +12,16 @@ and how many worker identity files the claims directory held.
 
 Every figure is reported beside the population it was computed over, so an
 empty result reads as empty rather than as a clean number.
+
+Both admission instruments are bounded -- the crew-home verdict log to its last
+mebibyte and the admit service's log to its last four -- so a four-hour window
+with a busy queue outruns either. A census run after such a window reads a copy
+taken while the window was open, by pointing ``--spool-to`` at a spool file and
+repeating the command through the window; ``--admission-log`` reads a pass
+record from somewhere else entirely, such as a preserved snapshot:
+
+    python scripts/lane_window_census.py --window START/END --spool-to /run/spool.jsonl
+    python scripts/lane_window_census.py --window START/END --admission-log SNAPSHOT
 """
 
 from __future__ import annotations
@@ -33,6 +43,22 @@ CREW_HOME = Path(
 ADMISSION_LOG = CREW_HOME / "admission-verdicts.jsonl"
 CLAIMS_DIR = CREW_HOME / "claims"
 RUN_DIRS = (CREW_HOME / "runs", CREW_HOME / "archive" / "runs")
+
+# The admit service prints the same pass record the crew-home verdict log keeps,
+# and its own log is bounded larger than that log is, so it is the default
+# companion source when a window is copied to a spool while it is open. The home
+# is taken from the layout of the crew home rather than from ``~``, because a
+# run's environment may point HOME at its own sandbox while the crew home it
+# reads is the operator's.
+_LAYOUT_HOME = CREW_HOME.parents[2] if len(CREW_HOME.parents) > 2 else CREW_HOME
+SERVICE_LOG = (
+    _LAYOUT_HOME
+    / ".local"
+    / "state"
+    / "fleet"
+    / "services"
+    / ("reckon-admit-local.log")
+)
 
 WINDOW = ("2026-11-14T21:00:00+00:00", "2026-11-15T01:00:00+00:00")
 BASELINE = ("2026-11-07T00:00:00+00:00", "2026-11-12T00:00:00+00:00")
@@ -291,71 +317,211 @@ def claimed_path(detail: str) -> str:
     return ""
 
 
-def admission_span() -> tuple[dt.datetime, dt.datetime] | None:
-    """The instants the admission log's first and last pass were written at."""
-    if not ADMISSION_LOG.exists():
-        return None
-    stamps = []
-    for line in ADMISSION_LOG.read_text().splitlines():
-        if not line.strip():
-            continue
+def run_owned(path_text: str) -> bool:
+    """Whether a crew-home path lies inside one run's own directory.
+
+    The crew home holds paths every run writes into and paths exactly one run
+    owns, and a claim holds a request on the second kind while it must not on
+    the first. Reported beside the broad crew-home reading rather than replacing
+    it, so the figure the earlier census quoted still reconciles.
+    """
+    path = Path(path_text).expanduser()
+    for name in ("runs", "archive/runs"):
         try:
-            stamps.append(parse_instant(json.loads(line)["at"]))
+            relative = path.relative_to(CREW_HOME / name)
+        except ValueError:
+            continue
+        return bool(relative.parts)
+    return False
+
+
+def enclosing_root(path_text: str) -> Path:
+    """The repository root a path outside the crew home belongs to, or its parent."""
+    path = Path(path_text).expanduser()
+    for parent in (path, *path.parents):
+        if (parent / ".git").exists():
+            return parent
+    return path.parent
+
+
+def claim_reading(path_text: str) -> dict:
+    """One claimed path with the root it lies under and how that root is shared."""
+    path = Path(path_text).expanduser()
+    text = str(path)
+    shared = shared_root(text)
+    return {
+        "path": text,
+        "root": str(CREW_HOME if shared else enclosing_root(text)),
+        "shared_root": shared,
+        "run_owned": run_owned(text),
+    }
+
+
+def read_passes(paths) -> tuple[list[dict], list[dict]]:
+    """Every pass the named sources hold, with each source's own coverage.
+
+    The pass record is the same JSON object in the crew-home verdict log and in
+    the admit service's stdout log, so either answers the census. Sources are
+    merged on the pass's own instant and lane, which keeps a spooled copy from
+    double-counting a pass its source still holds.
+    """
+    seen: dict[tuple, dict] = {}
+    coverage = []
+    for raw in paths:
+        path = Path(raw).expanduser()
+        count = 0
+        stamps = []
+        if path.is_file():
+            for raw_line in path.read_text(errors="replace").splitlines():
+                text = raw_line.strip()
+                if not text.startswith("{"):
+                    continue
+                try:
+                    row = json.loads(text)
+                    stamps.append(parse_instant(row["at"]))
+                except (ValueError, KeyError, TypeError):
+                    continue
+                count += 1
+                seen.setdefault((row["at"], row.get("lane")), row)
+        coverage.append(
+            {
+                "path": str(path),
+                "passes_read": count,
+                "span": [min(stamps).isoformat(), max(stamps).isoformat()]
+                if stamps
+                else None,
+            }
+        )
+    rows = sorted(seen.values(), key=lambda row: row["at"])
+    return rows, coverage
+
+
+def spool_passes(spool_path: Path, sources, *, overlap_seconds: float = 300.0) -> dict:
+    """Append to the spool every pass a source holds that the spool does not.
+
+    Both instruments are bounded: the crew-home verdict log keeps its last
+    mebibyte and the admit service's log its last four, and a four-hour window
+    with a busy queue outruns either. A census run after the window therefore
+    reads a copy taken while the window was open. Copies are keyed on the pass's
+    instant and lane, so a source rewritten in place can neither duplicate a
+    pass already taken nor hand an older one back over the edge of the overlap.
+    """
+    spool_path.parent.mkdir(parents=True, exist_ok=True)
+    held, _coverage = read_passes([spool_path])
+    keys = {(row["at"], row.get("lane")) for row in held}
+    newest = max((parse_instant(row["at"]) for row in held), default=None)
+    appended = 0
+    with spool_path.open("a", encoding="utf-8") as sink:
+        for raw in sources:
+            path = Path(raw).expanduser()
+            if not path.is_file():
+                continue
+            for raw_line in path.read_text(errors="replace").splitlines():
+                text = raw_line.strip()
+                if not text.startswith("{"):
+                    continue
+                try:
+                    row = json.loads(text)
+                    when = parse_instant(row["at"])
+                except (ValueError, KeyError, TypeError):
+                    continue
+                key = (row["at"], row.get("lane"))
+                if key in keys:
+                    continue
+                if newest is not None and when < newest - dt.timedelta(
+                    seconds=overlap_seconds
+                ):
+                    continue
+                sink.write(json.dumps(row, sort_keys=True) + "\n")
+                keys.add(key)
+                appended += 1
+    total, _coverage = read_passes([spool_path])
+    return {
+        "spool": str(spool_path),
+        "appended": appended,
+        "passes_held": len(total),
+        "span": [
+            min((row["at"] for row in total), default=None),
+            max((row["at"] for row in total), default=None),
+        ],
+    }
+
+
+def admission_holds(passes: list[dict], start: dt.datetime, end: dt.datetime) -> dict:
+    """Admit passes in the window, and every claim a hold named, with its root.
+
+    The sources are capped to the passes they still hold, so a window they do
+    not cover reports that it was not measured rather than reporting zero. Each
+    held claim is reported by path beside its root, so a share of the crew home
+    that no run owns reads differently from a path one run owns.
+    """
+    stamps = []
+    for row in passes:
+        try:
+            stamps.append(parse_instant(row["at"]))
         except (ValueError, KeyError, TypeError):
             continue
     if not stamps:
-        return None
-    return min(stamps), max(stamps)
-
-
-def admission_holds(start: dt.datetime, end: dt.datetime, span) -> dict:
-    """Admit passes in the window, and those holding a request on a shared-root claim.
-
-    The log is capped to the passes it still holds, so a window the log does
-    not cover reports that it was not measured rather than reporting zero.
-    """
-    if span is None:
         return {
             "passes": None,
             "passes_holding_shared_claim": None,
             "shared_claim_pointers": None,
-            "note": f"the admission log is not at {ADMISSION_LOG}",
+            "held_claim_paths": [],
+            "note": "no admission source held a pass",
         }
+    span = (min(stamps), max(stamps))
     if end <= span[0] or start >= span[1]:
         return {
             "passes": None,
             "passes_holding_shared_claim": None,
             "shared_claim_pointers": None,
-            "note": "the window lies outside the passes the admission log still holds",
+            "held_claim_paths": [],
+            "note": "the window lies outside the passes the admission sources still hold",
             "log_span": [span[0].isoformat(), span[1].isoformat()],
         }
-    passes = 0
+    inside = 0
     holding = 0
     pointers = 0
-    for line in ADMISSION_LOG.read_text().splitlines():
-        if not line.strip():
-            continue
+    unnamed = 0
+    claims: dict[str, dict] = {}
+    for row in passes:
         try:
-            row = json.loads(line)
             when = parse_instant(row["at"])
         except (ValueError, KeyError, TypeError):
             continue
         if not (start <= when < end):
             continue
-        passes += 1
-        shared = sum(
-            1
-            for pointer in row.get("pointers") or []
-            if pointer.get("verdict") == "held-on-claim"
-            and shared_root(claimed_path(pointer.get("detail") or ""))
-        )
+        inside += 1
+        shared = 0
+        for pointer in row.get("pointers") or []:
+            if pointer.get("verdict") != "held-on-claim":
+                continue
+            path = claimed_path(pointer.get("detail") or "")
+            if not path:
+                unnamed += 1
+                continue
+            entry = claims.get(path)
+            if entry is None:
+                entry = claims[path] = {
+                    **claim_reading(path),
+                    "pointers": 0,
+                    "passes": 0,
+                }
+            entry["pointers"] += 1
+            entry["passes"] += 1
+            if entry["shared_root"]:
+                shared += 1
         pointers += shared
         if shared:
             holding += 1
     return {
-        "passes": passes,
+        "passes": inside,
         "passes_holding_shared_claim": holding,
         "shared_claim_pointers": pointers,
+        "held_claim_paths": sorted(
+            claims.values(), key=lambda entry: (-entry["passes"], entry["path"])
+        ),
+        "unnamed_claim_pointers": unnamed,
     }
 
 
@@ -365,13 +531,19 @@ def identity_files(as_of: dt.datetime) -> dict:
     An identity file is written once, when its process first publishes it, so a
     file's modification time places it at the moment it appeared. Counting by
     that stamp reports the directory as it stood at the window's end rather
-    than as it stands when this census runs.
+    than as it stands when this census runs -- but only for a file that is
+    still there. Maintenance removes an ended run's identity, so a census run
+    long after the window reads what survived rather than what stood, and says
+    so instead of reporting that reading as the instant's.
     """
+    now = dt.datetime.now(dt.UTC)
+    live = abs((now - as_of).total_seconds()) <= 3600.0
     if not CLAIMS_DIR.is_dir():
         return {
             "identity_files": None,
             "claims_entries": None,
             "as_of": as_of.isoformat(),
+            "reads_live_state": live,
         }
     names = os.listdir(CLAIMS_DIR)
     identities = 0
@@ -386,11 +558,19 @@ def identity_files(as_of: dt.datetime) -> dict:
         entries += 1
         if IDENTITY_FILE.match(name):
             identities += 1
-    return {
+    reading = {
         "identity_files": identities,
         "claims_entries": entries,
         "as_of": as_of.isoformat(),
+        "reads_live_state": live,
     }
+    if not live:
+        reading["note"] = (
+            "the claims directory is a live state and maintenance removes an "
+            "ended run's identity, so this counts what survived to the census "
+            "rather than what stood at the window's end"
+        )
+    return reading
 
 
 def dispatches(runs: list[dict], start: dt.datetime, end: dt.datetime) -> dict:
@@ -411,13 +591,13 @@ def dispatches(runs: list[dict], start: dt.datetime, end: dt.datetime) -> dict:
     return {"dispatched": count, "distinct_project_nodes": len(sections)}
 
 
-def census(start: dt.datetime, end: dt.datetime, runs, spans, stamps, span) -> dict:
+def census(start: dt.datetime, end: dt.datetime, runs, spans, stamps, passes) -> dict:
     return {
         "window": [start.isoformat(), end.isoformat()],
         "dispatches": dispatches(runs, start, end),
         "working_workers": concurrency(spans, start, end),
         "completion_to_promotion": promotion_latency(runs, stamps, start, end),
-        "admit_holds": admission_holds(start, end, span),
+        "admit_holds": admission_holds(passes, start, end),
         "identity_files": identity_files(end),
     }
 
@@ -435,7 +615,42 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="report 11 November 13:00 to 15:00 UTC, which must read below 12 working workers",
     )
+    parser.add_argument(
+        "--admission-log",
+        action="append",
+        default=[],
+        help=(
+            "a pass record to read the admission figures from; repeatable, and "
+            "read instead of the crew-home verdict log when given"
+        ),
+    )
+    parser.add_argument(
+        "--spool-to",
+        help=(
+            "append every pass the sources hold that this file does not, then "
+            "census the sources and the spool together"
+        ),
+    )
+    parser.add_argument(
+        "--spool-from",
+        action="append",
+        default=[],
+        help=(
+            "an extra source for --spool-to; the admit service's own log unless "
+            "one is named"
+        ),
+    )
+    parser.add_argument(
+        "--spool-only",
+        action="store_true",
+        help=(
+            "take one copy into --spool-to and stop, without reading the ledger; "
+            "this is the tick a repeated copy through an open window runs"
+        ),
+    )
     args = parser.parse_args(argv)
+    if args.spool_only and not args.spool_to:
+        parser.error("--spool-only needs --spool-to")
 
     chosen = []
     if args.window:
@@ -450,22 +665,31 @@ def main(argv: list[str]) -> int:
     runs, source_counts = load_runs()
     spans = worker_spans(runs)
     stamps = landing_stamps()
-    span = admission_span()
+
+    sources = [str(path) for path in args.admission_log] or [str(ADMISSION_LOG)]
+    spooled = None
+    if args.spool_to:
+        extras = args.spool_from or [str(SERVICE_LOG)]
+        spooled = spool_passes(Path(args.spool_to), [*sources, *extras])
+        sources = [*sources, *extras, str(args.spool_to)]
+    if args.spool_only:
+        print(json.dumps(spooled, sort_keys=True))
+        return 0
+    passes, coverage = read_passes(sources)
     report = {
         "read": {
             "admission_log": str(ADMISSION_LOG),
+            "admission_sources": coverage,
             "claims_dir": str(CLAIMS_DIR),
             "landing_records": len(stamps),
             **source_counts,
-            "admission_log_span": [span[0].isoformat(), span[1].isoformat()]
-            if span
-            else None,
+            "spooled": spooled,
             "worker_spans": len(spans),
         },
         "run_at": dt.datetime.now(dt.UTC).isoformat(),
     }
     for name, (start, end) in chosen:
-        report[name] = census(start, end, runs, spans, stamps, span)
+        report[name] = census(start, end, runs, spans, stamps, passes)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 

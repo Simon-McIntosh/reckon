@@ -91,10 +91,11 @@ if TYPE_CHECKING:
     from reckon import served_code
 
 from reckon import service
-from reckon._store import write_json_atomically
+from reckon._store import _fsync_directory, write_json_atomically
 from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
+from reckon.node_exclusive_lock import exclusive_lock
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -431,9 +432,10 @@ def node_disk_reading_obligation(error: NodeDiskSampleError) -> dict[str, Any]:
     return {
         "kind": error.kind,
         "run_id": "",
+        "service": "fleet-health",
         "age_seconds": 0,
-        "reason": str(error),
-        "next_command": "Restore current fleet disk samples before admitting new launches",
+        "reason": f"{error}. Service fleet-health owes the published disk sample",
+        "next_command": "Restore current disk publication from service fleet-health",
     }
 
 
@@ -518,6 +520,44 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         or "unavailable"
     )
     qualifier = "" if sample.get("entries_complete") else " (census incomplete)"
+    scratch = sample.get("crew_scratch", {})
+    scratch_groups: dict[str, list[str]] = {
+        "live": [],
+        "unowned": [],
+        "held": [],
+        "unreadable": [],
+    }
+    for entry in scratch.get("entries", []):
+        if entry.get("removed"):
+            continue
+        withheld = entry.get("withheld", "")
+        if "live pointer" in withheld:
+            group = "live"
+        elif "held by process" in withheld:
+            group = "held"
+        elif "unreadable" in withheld or "not a real directory" in withheld:
+            group = "unreadable"
+        else:
+            group = "unowned"
+        scratch_groups[group].append(entry["path"])
+    scratch_detail = "".join(
+        f"; {group} crew scratch: {', '.join(paths)}"
+        for group, paths in scratch_groups.items()
+        if paths
+    )
+    if scratch.get("error") or scratch.get("withheld"):
+        scratch_detail += f"; crew scratch census unavailable: {scratch.get('error') or scratch['withheld']}"
+    stale_live_entries = scratch.get("stale_live_entries", [])
+    for entry in stale_live_entries:
+        scratch_detail += (
+            f"; stale scratch retained for live run {entry['run_id']} "
+            f"(owner {entry['project']}/{entry['session']}): {entry['path']} "
+            f"({entry['bytes']} bytes, {entry['inactivity_seconds']:.0f} seconds inactive)"
+        )
+    if scratch.get("live_entries_complete") is False:
+        scratch_detail += "; live-run scratch census incomplete"
+    if scratch.get("entries_complete") is False:
+        scratch_detail += "; crew scratch census incomplete"
     return {
         "kind": "node-disk-reserve",
         "run_id": "",
@@ -525,19 +565,121 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         "reason": (
             f"Fleet node {sample['node']} mount {sample['mount']} has "
             f"{sample['free_bytes']} free bytes below its {sample['reserve_bytes']} "
-            f"byte reserve. Largest entries by owner{qualifier}: {largest}"
+            f"byte reserve. Largest entries by owner{qualifier}: {largest}{scratch_detail}"
         ),
         "next_command": "Review the named entries with their owners and free local disk space",
         "disk": dict(sample),
+        "stale_live_scratch": stale_live_entries,
     }
+
+
+def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Durably journal removal intents and reconcile interrupted operations.
+
+    A pending receipt survives even a partial audit-log write. Deletion starts
+    only after both that receipt and the intent log row are flushed to disk;
+    completion retires the pending receipt only after its log row is durable.
+    """
+    from reckon import flight
+    from reckon.crew.dispatch_launch import worker_scratch_root
+    from reckon.crew.gc import garbage_collect_orphan_scratch
+    from reckon.crew.node import CrewError
+
+    grace = flight.resolve().config["session_scratch"]["orphan_grace_seconds"]
+    directory = state_directory(environ)
+    path = directory / "scratch-removals.jsonl"
+    pending = directory / "scratch-removal-intents" / _short_hostname()
+    reconciled: list[dict[str, Any]] = []
+
+    def append(row: dict[str, Any]) -> None:
+        # Separate an interrupted partial write from the next complete row.
+        stream.seek(0, os.SEEK_END)
+        size = stream.tell()
+        prefix = b""
+        if size:
+            stream.seek(-1, os.SEEK_END)
+            if stream.read(1) != b"\n":
+                prefix = b"\n"
+        payload = prefix + (json.dumps(row, sort_keys=True) + "\n").encode()
+        if stream.write(payload) != len(payload):
+            raise OSError("short scratch audit write")
+        stream.flush()
+        os.fsync(stream.fileno())
+        _fsync_directory(directory)
+
+    def record(entry: dict[str, Any]) -> None:
+        identity = str(entry.get("removal_id") or "")
+        if re.fullmatch(r"[a-f0-9]{32}", identity) is None:
+            raise ValueError("scratch removal intent has no valid identity")
+        receipt = pending / f"{identity}.json"
+        row = {**entry, "utc": datetime.now(UTC).isoformat(), "node": _short_hostname()}
+        if row["state"] == "intent":
+            write_json_atomically(receipt, row, fsync_directory=True)
+        append(row)
+        if row["state"] != "intent":
+            receipt.unlink()
+            _fsync_directory(pending)
+        log(
+            f"crew scratch removal {row['state']}: {json.dumps(row, sort_keys=True)}",
+            file=sys.stderr,
+        )
+
+    def read_intent(receipt: Path) -> dict[str, Any]:
+        if receipt.is_symlink():
+            raise ValueError("scratch removal intent is a symlink")
+        row = json.loads(receipt.read_text())
+        required = {"path", "bytes", "ctime_age_seconds", "reason", "removal_id"}
+        if not isinstance(row, dict) or not required <= row.keys():
+            raise ValueError("scratch removal intent is unreadable")
+        if row["removal_id"] != receipt.stem:
+            raise ValueError("scratch removal intent identity differs from its file")
+        if Path(row["path"]).parent != worker_scratch_root().absolute():
+            raise ValueError("scratch removal intent belongs to another root")
+        return row
+
+    try:
+        pending.mkdir(parents=True, exist_ok=True)
+        _fsync_directory(pending.parent)
+        _fsync_directory(directory)
+        with path.open("a+b") as stream:
+            for number, receipt in enumerate(pending.glob("*.json")):
+                if number >= 32:
+                    break
+                row = read_intent(receipt)
+                target = Path(row["path"])
+                exists = target.exists() or target.is_symlink()
+                row.update(
+                    state="interrupted" if exists else "complete",
+                    removed=not exists,
+                    reconciled=True,
+                    outcome="path still present; retained"
+                    if exists
+                    else "path absent after interrupted removal",
+                )
+                record(row)
+                reconciled.append(row)
+            report = garbage_collect_orphan_scratch(
+                apply=True,
+                grace_seconds=grace,
+                inspect_activity=True,
+                record_removal=record,
+                cursor_path=directory / f"scratch-sweep-{_short_hostname()}.json",
+            )
+            report["reconciled_removals"] = reconciled
+            return report
+    except (OSError, ValueError, RuntimeError, CrewError) as exc:
+        log(f"crew scratch sweep unavailable: {exc}", file=sys.stderr)
+        return {"error": str(exc), "reconciled_removals": reconciled}
 
 
 def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
     """Publish one local disk reading and emit the health series' four fields."""
     environ = os.environ if environ is None else environ
     mount = Path(environ.get(NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
+    scratch = reclaim_unowned_scratch(environ)
     try:
         sample = node_disk_snapshot(mount, reserve_bytes=node_disk_reserve_bytes())
+        sample["crew_scratch"] = scratch
         sample["job_id"] = environ.get("SLURM_JOB_ID", "")
         write_json_atomically(state_directory(environ) / NODE_DISK_RECORD, sample)
     except OSError as exc:
@@ -576,6 +718,8 @@ def published_node_disk_sample(
     target = f"Fleet node {fleet['node']} disk sample {path}"
     try:
         sample = json.loads(path.read_text())
+    except FileNotFoundError as exc:
+        raise NodeDiskSampleError("missing", f"{target} is missing") from exc
     except (OSError, ValueError) as exc:
         raise NodeDiskSampleError(
             "unreadable", f"{target} is unreadable: {exc}"
@@ -1465,32 +1609,138 @@ def apply_task_ceiling(environ: Mapping[str, str] | None = None) -> int:
 
 
 def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None:
-    """Start the node sampler as this batch step's own child, and return its pid.
-
-    The sampler holds a lock in the runtime directory, so a reload that calls
-    this again starts a copy that exits at once rather than a second sampler.
-    It leads its own session, so it ends with the allocation and with nothing
-    else.
-    """
+    """Replace the runtime's sampler with a child running the current script."""
     environ = os.environ if environ is None else environ
     name = environ.get(HEALTH_SAMPLER_ENV, DEFAULT_HEALTH_SAMPLER)
     if not name:
         return None
-    sampler = shutil.which(name, path=environ.get("PATH"))
+    checkout_script = _checkout_root() / "bin" / DEFAULT_HEALTH_SAMPLER
+    sampler = (
+        str(checkout_script)
+        if name == DEFAULT_HEALTH_SAMPLER and checkout_script.is_file()
+        else shutil.which(name, path=environ.get("PATH"))
+    )
     if sampler is None:
         log(f"no node sampler: {name} is not on PATH")
         return None
-    sampler_environment = {**environ, "RECKON_SHIM_PYTHON": sys.executable}
-    process = subprocess.Popen(
-        [sampler],
-        env=sampler_environment,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=None,
-        start_new_session=True,
-    )
+    runtime = Path(environ.get("XDG_RUNTIME_DIR") or runtime_directory(environ))
+    runtime.mkdir(parents=True, exist_ok=True)
+    with exclusive_lock(runtime / "fleet-health.handover.lock"):
+        if not _stop_health_sampler(runtime):
+            return None
+        sampler_environment = {
+            **environ,
+            "XDG_RUNTIME_DIR": str(runtime),
+            "RECKON_SHIM_PYTHON": sys.executable,
+        }
+        process = subprocess.Popen(
+            [sampler],
+            env=sampler_environment,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=None,
+            start_new_session=True,
+        )
     log(f"node sampler {sampler} started as pid {process.pid}")
     return process.pid
+
+
+def _health_sampler_processes(runtime: Path) -> dict[int, list[str]]:
+    """Processes sharing the exclusive sampler lock through descriptor 9."""
+    try:
+        inode = (runtime / "fleet-health.lock").stat()
+    except FileNotFoundError:
+        return {}
+    holders = {}
+    for pid, argv in all_process_cmdlines().items():
+        proc = Path(f"/proc/{pid}")
+        try:
+            if proc.stat().st_uid != os.getuid():
+                continue
+            held = (proc / "fd/9").stat()
+            if (held.st_dev, held.st_ino) != (inode.st_dev, inode.st_ino):
+                continue
+            info = (proc / "fdinfo/9").read_text()
+        except OSError:
+            continue
+        for line in info.splitlines():
+            if not line.startswith("lock:"):
+                continue
+            record = line.partition(":")[2].strip()
+            if record.split()[1:4] == [
+                "FLOCK",
+                "ADVISORY",
+                "WRITE",
+            ] and lock_holders_in(record, inode.st_dev, inode.st_ino):
+                holders[pid] = argv
+                break
+    return holders
+
+
+def _stop_health_sampler(runtime: Path) -> bool:
+    """Stop the lock-owning shell and its tree without assuming its launch path.
+
+    The held descriptor identifies the sampler independently of its script's
+    current location or parent. Descriptor inheritance identifies its children;
+    only the root shell is an incumbent. Signals target enumerated processes,
+    because a manually launched sampler can share its group with other work.
+    """
+    from reckon.crew.process_liveness import _process_start_time, _process_stat_fields
+    from reckon.crew.process_signal import _running_descendants, _signal_one
+
+    if not lock_held("fleet-health", runtime):
+        return True
+    holders = _health_sampler_processes(runtime)
+    candidates = []
+    for pid, argv in holders.items():
+        if len(argv) < 2 or Path(argv[0]).name not in {"bash", "sh", "dash"}:
+            continue
+        if argv[1].startswith("-"):
+            continue
+        fields = _process_stat_fields(pid)
+        if len(fields) > 1 and int(fields[1]) not in holders:
+            candidates.append(pid)
+    if len(candidates) != 1:
+        log(
+            f"sampler replacement refused: lock held with {len(candidates)} identified owners"
+        )
+        return False
+    pid = candidates[0]
+    targets = {}
+    for target in _running_descendants(pid):
+        try:
+            if Path(f"/proc/{target}").stat().st_uid != os.getuid():
+                continue
+        except OSError:
+            continue
+        started = _process_start_time(target)
+        if started is not None:
+            targets[target] = started
+    shown = {target: process_cmdline(target) for target in targets}
+    log(
+        f"replacing sampler pid {pid}; targets {shown}; its parent and peers are outside this tree"
+    )
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for target, started in targets.items():
+            if _process_start_time(target) == started:
+                _signal_one(
+                    target, sig, reason="fleet-health-replace", allow_group=False
+                )
+        deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
+        while time.monotonic() < deadline:
+            with suppress(ChildProcessError):
+                os.waitpid(pid, os.WNOHANG)
+            live = any(
+                _process_start_time(target) == started and process_cmdline(target)
+                for target, started in targets.items()
+            )
+            if not lock_held("fleet-health", runtime) and not live:
+                return True
+            time.sleep(SERVICE_POLL_SECONDS)
+    log(
+        f"sampler replacement refused: pid {pid} still owns its runtime or live children"
+    )
+    return False
 
 
 def config_directory(environ: Mapping[str, str] | None = None) -> Path:
@@ -4020,7 +4270,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return sample_interpreter_permissions()
     if arguments == ["sample-test-processes"]:
         sample = sample_fleet_tests()
-        print(f"{sample['tree_count']}\t{sample['rss_bytes']}\t" + json.dumps(sample["trees"]))
+        print(
+            f"{sample['tree_count']}\t{sample['rss_bytes']}\t"
+            + json.dumps(sample["trees"])
+        )
         return 0
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a

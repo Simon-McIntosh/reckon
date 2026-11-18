@@ -1336,6 +1336,18 @@ def _queue_dispatch_batch(
 )
 @click.option("--urgency", default="", help="Reason this dispatch is time-sensitive.")
 @click.option(
+    "--priority",
+    type=click.IntRange(min=0),
+    default=0,
+    show_default=True,
+    help=(
+        "Points this request spends from the session's priority budget while "
+        "it waits. Higher launches first, below a delivered review and any "
+        "request past the ageing bound. Refused when the session's unlaunched "
+        "points would exceed queue.priority_budget."
+    ),
+)
+@click.option(
     "--assess",
     "assessments",
     multiple=True,
@@ -1649,6 +1661,7 @@ def crew_dispatch(
     comment,
     due,
     urgency,
+    priority,
     assessments,
     spec_level,
     negative_control,
@@ -2831,6 +2844,18 @@ def _review_options(callback):
         click.option("--portfolio", "portfolio", is_flag=True),
         click.option("--session", default=""),
         click.option(
+            "--priority",
+            type=click.IntRange(min=0),
+            default=0,
+            show_default=True,
+            help=(
+                "Points this review spends from the session's priority budget "
+                "to sort ahead of unraised work while it waits, below a "
+                "delivered review and any request past the priority-0 ageing "
+                "bound."
+            ),
+        ),
+        click.option(
             "--rubric",
             type=click.Choice(["design", "content", "currency"]),
             default="design",
@@ -2893,6 +2918,7 @@ def crew_review(
     answer,
     acted,
     declined,
+    priority=0,
     review_run="",
     note="",
     accept_edits="",
@@ -2931,6 +2957,7 @@ def crew_review(
         note=note,
         accept_edits=accept_edits,
         review_sections=review_sections,
+        priority=priority,
     )
 
 
@@ -2954,6 +2981,7 @@ def _run_review(
     note="",
     accept_edits="",
     review_sections=(),
+    priority=0,
 ):
     """Compose and dispatch one review, or answer a plan finding.
 
@@ -3284,7 +3312,9 @@ def _run_review(
             from reckon.crew.dispatch import LaneHeld, LanePaused
 
             try:
-                result = plan_review.dispatch_code_review(subject, dry_run=dry_run)
+                result = plan_review.dispatch_code_review(
+                    subject, dry_run=dry_run, priority=priority
+                )
             except (LaneHeld, LanePaused) as exc:
                 # A hold reaches this branch as a raised exception rather than a
                 # returned report, because the code-review dispatch has no
@@ -3328,7 +3358,9 @@ def _run_review(
                 plan=plan_slug,
                 local=local,
             )
-            result = plan_review.dispatch_portfolio_review(subject, dry_run=dry_run)
+            result = plan_review.dispatch_portfolio_review(
+                subject, dry_run=dry_run, priority=priority
+            )
             _emit(result, pretty)
             if result.get("refused") or result.get("error"):
                 raise click.exceptions.Exit(1)
@@ -3339,6 +3371,12 @@ def _run_review(
         # The composed brief and the sidecar are written inside this block, so
         # the scope the command named narrows both: a reviewer reads the sections
         # it was asked about, and the record it delivers covers exactly those.
+        if priority > 0:
+            # The review's points ride the subject onto the composed request,
+            # the same field a dispatch carries, so a review the lane holds is
+            # ordered by the priority. The budget is charged when the request is
+            # stored, against the session's other unlaunched work.
+            subject = {**subject, "priority": int(priority)}
         with plan_review.reviewing_sections(sections):
             result = recovery.dispatch_review_for_run(subject, dry_run=dry_run)
             if dry_run:

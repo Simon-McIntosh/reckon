@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Evidence — a review never runs in harness</title>
+</head>
+<body>
+<section id="qwnw-red-file-a-review-never-runs-in-harness-landing">
+  <h2>A test file red on the primary branch passes: a review never runs in harness</h2>
+
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-cause">Cause and verdict</h3>
+  <p>One cause, and it is the product. A run pointer whose stored phase is still one of the
+  pre-spawn labels (<code>starting</code>, <code>launching</code>, <code>launcher</code>,
+  <code>dispatching</code>) and whose manifest carries a terminal verdict was classified
+  <code>running</code>. <code>classify_pointer</code> read the launcher's stale label, so the
+  delivered-manifest arm below it was never reached, and <code>dispatch_review_for_run</code>
+  refused with <code>the run is not awaiting review (running)</code> before any lane was chosen.
+  The tests build a scoring run exactly that way, so all three dispatch arms read the refusal
+  instead of the lane they assert.</p>
+  <p>The product rule the gate broke is already written on <code>_observed_phase</code>: a worker
+  cannot report an outcome before it has run, so a delivered manifest is the launch evidence a
+  pre-spawn label failed to record. The pre-spawn gate now consults that same evidence; the
+  running reading for a pointer with no delivered manifest and the stranded-launch reading are
+  unchanged. No test assertion was edited, deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-negative">Negative control — the base run</h3>
+  <p>Revision <code>69fab1372f</code>, the worktree's head as this node was dispatched,
+  <code>EXIT=1</code>, 3 failed and 1 passed:</p>
+  <pre id="qwnw-red-file-a-review-never-runs-in-harness-base-ids">FAILED tests/test_a_review_never_runs_in_harness.py::test_a_review_whose_only_lane_is_in_harness_is_held_with_a_reason - KeyError: 'awaiting_lane'
+FAILED tests/test_a_review_never_runs_in_harness.py::test_a_review_never_lands_on_the_owning_runs_in_harness_backend - assert False is True
+FAILED tests/test_a_review_never_runs_in_harness.py::test_a_spawnable_lane_is_still_composed_when_one_exists - assert False is True
+3 failed, 1 passed</pre>
+  <p>The three ids are the whole failure set of the header's measured revision; no fourth test of
+  this file was red or erroring.</p>
+
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-head">Head run</h3>
+  <p>The gate file at the run's head reads <span id="qwnw-red-file-a-review-never-runs-in-harness-head-result">4 passed, EXIT=0</span>.</p>
+
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-importing">Arm over the tests that import the changed module</h3>
+  <p>216 test files name <code>recovery_classification</code> or <code>classify_pointer</code>.
+  At base: 118 failing or erroring ids (105 failed, 13 errors, 1675 passed). At head: 102 ids
+  (89 failed, 13 errors, 1691 passed). No id fails at head that does not fail at base; 16 base
+  ids pass at head.</p>
+
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-suite">Armed suite arms</h3>
+  <p>The armed command over the node's write scope resolves, in this project, to the two declared
+  census tests. Base arm <code>69fab1372f</code>: 58 passed, <code>EXIT=0</code>. Head arm:
+  58 passed, <code>EXIT=0</code>.</p>
+
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-merge">Merge rounds</h3>
+  <p>Three rounds, all in <code>reckon/crew/recovery_classification.py</code>, all over the same
+  pre-spawn gate: against <code>50b1f03078</code> (merge commit <code>efdc002727</code>), against
+  <code>1f07f8e7</code> (<code>3580a09ef0</code>), and against <code>dfa56e38</code>
+  (<code>ac4c22f2</code>).</p>
+  <p>Each round the primary branch converged on this change's reading from its own side, and it has
+  now arrived at it in full: the gate reads the label against the launch's spawn evidence
+  (<code>_spawn_evidence</code>: a pid, a worker record, a stream, a launch log, a folded
+  budget), a process recorded dead, a manifest present, a terminal verdict already recorded, and a
+  stranded launch. A pointer waits to start only while none of those hold. This change's first
+  commit added the manifest clause; the primary branch's own work now states the same rule more
+  generally, so the resolved gate takes its version and no rule is stated twice.</p>
+  <p>The comment beside the gate is the primary branch's, and it gives the reason this change
+  wrote: a manifest is the worker's own record, written only by a worker that was spawned, so a
+  pointer carrying one is not a request awaiting a worker however its label reads. The tests in
+  <code>tests/test_a_review_never_runs_in_harness.py</code> build exactly that record, and pass at
+  every merged head.</p>
+  <p>Two ids fail at the merged heads that pass at the base <code>69fab1372f</code>:
+  <code>test_a_classification_read_creates_no_run_directory.py</code>'s two tests. They fail
+  identically in scratch trees holding only <code>50b1f03078</code> and only
+  <code>1f07f8e7</code>, so the primary branch carries them and this change does not: main's
+  liveness path writes <code>launcher-host-observation.json</code> and
+  <code>classification.json</code> into a run directory during a classification read
+  (<code>reckon/crew/recovery_liveness.py:1499</code>), which the test's "a read leaves the home
+  unchanged" assertion refuses. Reported as outside this node's change.</p>
+
+  <h3 id="qwnw-red-file-a-review-never-runs-in-harness-lint">Lint</h3>
+  <p><code>ruff format --check</code> reports the changed file already formatted.
+  <p><code>ruff check</code> reports one <code>SIM102</code>, which the same file carries at
+  <code>69fab1372f</code>, <code>1f07f8e7</code> and <code>dfa56e38</code>; the change adds
+  none.</p>
+</section>
+</body>
+</html>

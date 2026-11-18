@@ -1043,13 +1043,19 @@ def capture_project(
         with sqlite3.connect(f"file:{database}?mode=ro", uri=True) as connection:
             for rid in missing:
                 hit = connection.execute(
-                    "SELECT r.payload,d.detail FROM runs r LEFT JOIN run_details d USING(run_id) WHERE r.run_id=?",
+                    "SELECT r.payload,d.detail,r.project FROM runs r "
+                    "LEFT JOIN run_details d USING(run_id) WHERE r.run_id=?",
                     (rid,),
                 ).fetchone()
                 if hit:
                     row = json.loads(hit[0])
                     row.update(json.loads(hit[1] or "{}"))
-                    assert row["project"] == project
+                    # The project a row is filed under is the runs column, not
+                    # a field of the record: a promotion writes a record that
+                    # names none, and the column is what every filtered read
+                    # answers from. The fallback answers the same identity.
+                    assert str(hit[2] or "") == project
+                    row.setdefault("project", project)
                     records[rid] = row
                     sources[rid] = "sqlite_fallback_for_reachable_promotion"
                     recovered.append(rid)

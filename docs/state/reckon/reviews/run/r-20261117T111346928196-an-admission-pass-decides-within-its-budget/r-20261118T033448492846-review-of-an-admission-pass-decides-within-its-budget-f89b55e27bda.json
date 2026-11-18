@@ -1,0 +1,367 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "len(runs.list_live()) == LIVE_POINTERS",
+      "fails_if": "Reinstating repeated parsing can exceed the cold parse ceiling or make the warm count nonzero; returning existing seeded phases with no work can still satisfy phase presence, and any elapsed time below 900 seconds satisfies the timing assertion even when the 20-second contract is violated.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 210,
+      "test": "test_one_pass_decides_its_launches_within_its_budget"
+    },
+    {
+      "assertion": "cold_parses <= plan_files",
+      "fails_if": "More cold parses than plan files fails; a broken or bypassed instrument observing zero passes, so a known-present positive control is missing.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 229,
+      "test": "test_one_pass_decides_its_launches_within_its_budget"
+    },
+    {
+      "assertion": "warm_parses == 0",
+      "fails_if": "A repeat pass invokes the semantic parser; a zero-observing instrument also passes, so this assertion alone is not evidence of a working counter.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 230,
+      "test": "test_one_pass_decides_its_launches_within_its_budget"
+    },
+    {
+      "assertion": "elapsed < HANG_GUARD_SECONDS",
+      "fails_if": "Only total measured elapsed >= 900 seconds fails; reinstating a 21- or 100-second pass does not fail.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 232,
+      "test": "test_one_pass_decides_its_launches_within_its_budget"
+    },
+    {
+      "assertion": "all((phases.get(f'r-{index}') for index in range(PLANS)))",
+      "fails_if": "A request's seeded phase disappears or becomes empty; an early return preserving seeded phases still passes.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 238,
+      "test": "test_one_pass_decides_its_launches_within_its_budget"
+    },
+    {
+      "assertion": "float(result.get('release_seconds') or 0.0) > 0.0",
+      "fails_if": "Release time is zero or absent; positive elapsed without processing all requests still passes.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 239,
+      "test": "test_one_pass_decides_its_launches_within_its_budget"
+    },
+    {
+      "assertion": "not _decisions(result)['launched']",
+      "fails_if": "A request launches under the no-slot case; suppressing all launches still passes.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 240,
+      "test": "test_one_pass_decides_its_launches_within_its_budget"
+    },
+    {
+      "assertion": "_decisions(reused) == _decisions(swept_again)",
+      "fails_if": "Dropping all derived waits releases the 78 waiting requests and violates declared phase expectations; refusing all release leaves r-0/r-1 waiting; asymmetric reuse changes decisions or phase equality.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 340,
+      "test": "test_the_decisions_are_the_ones_the_fixture_declares"
+    },
+    {
+      "assertion": "reused_phases == swept_again_phases",
+      "fails_if": "Dropping all derived waits releases the 78 waiting requests and violates declared phase expectations; refusing all release leaves r-0/r-1 waiting; asymmetric reuse changes decisions or phase equality.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 341,
+      "test": "test_the_decisions_are_the_ones_the_fixture_declares"
+    },
+    {
+      "assertion": "swept_again_phases == _declared_phases()",
+      "fails_if": "Dropping all derived waits releases the 78 waiting requests and violates declared phase expectations; refusing all release leaves r-0/r-1 waiting; asymmetric reuse changes decisions or phase equality.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 342,
+      "test": "test_the_decisions_are_the_ones_the_fixture_declares"
+    },
+    {
+      "assertion": "reused_phases == _declared_phases()",
+      "fails_if": "Dropping all derived waits releases the 78 waiting requests and violates declared phase expectations; refusing all release leaves r-0/r-1 waiting; asymmetric reuse changes decisions or phase equality.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 343,
+      "test": "test_the_decisions_are_the_ones_the_fixture_declares"
+    },
+    {
+      "assertion": "_decisions(result) == BASE_DECISIONS[case]",
+      "fails_if": "Changing release phases or verdicts relative to the frozen base decisions fails; globally suppressing successful launches is not detected because both reference cases record none.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 380,
+      "test": "test_the_decisions_match_the_ones_recorded_at_the_base_revision"
+    },
+    {
+      "assertion": "_requests_only(_phases()) == _declared_phases()",
+      "fails_if": "Changing release phases or verdicts relative to the frozen base decisions fails; globally suppressing successful launches is not detected because both reference cases record none.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 381,
+      "test": "test_the_decisions_match_the_ones_recorded_at_the_base_revision"
+    },
+    {
+      "assertion": "tick.get('ran') is True",
+      "fails_if": "Removing document identity from reuse accepts the pre-edit release and leaves r-0 queued instead of awaiting-upstream after the edit.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 403,
+      "test": "test_a_plan_edit_between_the_stages_sweeps_the_wait_stage_again"
+    },
+    {
+      "assertion": "_requests_only(_phases())['r-0'] == 'queued'",
+      "fails_if": "Removing document identity from reuse accepts the pre-edit release and leaves r-0 queued instead of awaiting-upstream after the edit.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 407,
+      "test": "test_a_plan_edit_between_the_stages_sweeps_the_wait_stage_again"
+    },
+    {
+      "assertion": "_requests_only(_phases())['r-0'] == 'awaiting-upstream'",
+      "fails_if": "Removing document identity from reuse accepts the pre-edit release and leaves r-0 queued instead of awaiting-upstream after the edit.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 418,
+      "test": "test_a_plan_edit_between_the_stages_sweeps_the_wait_stage_again"
+    },
+    {
+      "assertion": "tick.get('ran') is True",
+      "fails_if": "Removing the before/after document stability check stamps the raced sweep stable or accepts it; the stable-false assertion or final awaiting-upstream phase fails.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 450,
+      "test": "test_a_plan_edited_inside_the_sweep_sweeps_the_wait_stage_again"
+    },
+    {
+      "assertion": "tick['swept']['stable'] is False",
+      "fails_if": "Removing the before/after document stability check stamps the raced sweep stable or accepts it; the stable-false assertion or final awaiting-upstream phase fails.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 451,
+      "test": "test_a_plan_edited_inside_the_sweep_sweeps_the_wait_stage_again"
+    },
+    {
+      "assertion": "_requests_only(_phases())['r-0'] == 'awaiting-upstream'",
+      "fails_if": "Removing the before/after document stability check stamps the raced sweep stable or accepts it; the stable-false assertion or final awaiting-upstream phase fails.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 456,
+      "test": "test_a_plan_edited_inside_the_sweep_sweeps_the_wait_stage_again"
+    },
+    {
+      "assertion": "head == [str(ref) for ref in parsed]",
+      "fails_if": "The added wrapper returns edges different from the existing semantic owner; restoring the scanner can fail on authored attribute forms, while a defect within their shared owner can affect both sides.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 468,
+      "test": "test_the_head_depends_on_edges_agree_with_the_parsed_state"
+    },
+    {
+      "assertion": "checked > PLANS",
+      "fails_if": "Restoring the handwritten metadata reader loses long/spaced/escaped edges against the semantic owner; restoring the head-only inventory shortcut loses the deep declaration. Underlying-parser defects shared by both canonical calls are outside these wrapper equality assertions.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 470,
+      "test": "test_the_head_depends_on_edges_agree_with_the_parsed_state"
+    },
+    {
+      "assertion": "read == parsed",
+      "fails_if": "The added wrapper returns edges different from the existing semantic owner; restoring the scanner can fail on authored attribute forms, while a defect within their shared owner can affect both sides.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 512,
+      "test": "test_the_head_depends_on_edges_agree_with_the_parsed_state"
+    },
+    {
+      "assertion": "read",
+      "fails_if": "The wrapper returns an empty result for a known edge-bearing document; this is an explicit non-empty control for edge extraction.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 513,
+      "test": "test_the_head_depends_on_edges_agree_with_the_parsed_state"
+    },
+    {
+      "assertion": "deep.stat().st_size > 32 * 1024",
+      "fails_if": "Restoring the handwritten metadata reader loses long/spaced/escaped edges against the semantic owner; restoring the head-only inventory shortcut loses the deep declaration. Underlying-parser defects shared by both canonical calls are outside these wrapper equality assertions.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 533,
+      "test": "test_the_head_depends_on_edges_agree_with_the_parsed_state"
+    },
+    {
+      "assertion": "row is not None",
+      "fails_if": "Restoring the handwritten metadata reader loses long/spaced/escaped edges against the semantic owner; restoring the head-only inventory shortcut loses the deep declaration. Underlying-parser defects shared by both canonical calls are outside these wrapper equality assertions.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 537,
+      "test": "test_the_head_depends_on_edges_agree_with_the_parsed_state"
+    },
+    {
+      "assertion": "row['section_declarations'] == {'s1': 'implementable'}",
+      "fails_if": "Restoring the handwritten metadata reader loses long/spaced/escaped edges against the semantic owner; restoring the head-only inventory shortcut loses the deep declaration. Underlying-parser defects shared by both canonical calls are outside these wrapper equality assertions.",
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": 538,
+      "test": "test_the_head_depends_on_edges_agree_with_the_parsed_state"
+    },
+    {
+      "assertion": "receipt.get('release', {}).get('ran') is False",
+      "fails_if": "The release interval unexpectedly runs, wait reads record no positive duration, named durations fail reconciliation, or removing the heaviest read remains within the sum tolerance; these assert an observed stage and a deliberately damaged receipt.",
+      "file": "tests/test_an_admission_receipt_names_its_reads.py",
+      "line": 284,
+      "test": "_drive_a_launch_pass"
+    },
+    {
+      "assertion": "any((float(row['seconds']) > 0.0 for row in wait_rows))",
+      "fails_if": "The release interval unexpectedly runs, wait reads record no positive duration, named durations fail reconciliation, or removing the heaviest read remains within the sum tolerance; these assert an observed stage and a deliberately damaged receipt.",
+      "file": "tests/test_an_admission_receipt_names_its_reads.py",
+      "line": 298,
+      "test": "test_a_receipt_with_one_read_omitted_fails_the_sum_check"
+    },
+    {
+      "assertion": "sums_within(stage_time, rows)",
+      "fails_if": "The release interval unexpectedly runs, wait reads record no positive duration, named durations fail reconciliation, or removing the heaviest read remains within the sum tolerance; these assert an observed stage and a deliberately damaged receipt.",
+      "file": "tests/test_an_admission_receipt_names_its_reads.py",
+      "line": 309,
+      "test": "test_a_receipt_with_one_read_omitted_fails_the_sum_check"
+    },
+    {
+      "assertion": "not sums_within(stage_time, remaining)",
+      "fails_if": "The release interval unexpectedly runs, wait reads record no positive duration, named durations fail reconciliation, or removing the heaviest read remains within the sum tolerance; these assert an observed stage and a deliberately damaged receipt.",
+      "file": "tests/test_an_admission_receipt_names_its_reads.py",
+      "line": 316,
+      "test": "test_a_receipt_with_one_read_omitted_fails_the_sum_check"
+    }
+  ],
+  "assertion_independence": "No literal input-echo assertion identified. Canonical-reader equality intentionally checks wrappers against the existing owner; frozen decisions and declared phases supply expectations independent of the head's decisions. Limits of the zero counter and seeded-phase checks are explicit findings.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/service.py:426 -> selection.admit_once",
+    "reckon/crew/admission/service.py:491 -> selection.admit_once",
+    "reckon/crew/admission/selection.py:140 -> release.swept_state",
+    "reckon/crew/admission/release.py:540 -> wait_refs.derive_wait_refs",
+    "reckon/crew/admission/readiness.py:1009 -> wait_refs.derive_wait_refs",
+    "reckon/crew/plan_review.py:6681 -> plan_depends_on"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-an-admission-pass-decides-within-its-budget-f89b55e27bda",
+      "recorded_at": "2026-11-18T04:16:32.459869+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-18T03:39:40Z",
+  "evidence_limits": [
+    "Suite delta applies to the recorded arms; the head arm adds the new test file and this is not an exhaustive importer census.",
+    "No suite or mutation rerun was performed during this bounded read-only review.",
+    "The 101.47921030689031-second negative control used the earlier 9000-paragraph fixture; final HEAD uses 2000 paragraphs and a 900-second ceiling.",
+    "Ten live post-landing receipts remain a post-landing obligation; none is claimed by this review.",
+    "The source manifest landing line and earlier 1.12-second performance quotation describe a superseded head-only reader."
+  ],
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "an-admission-pass-decides-within-its-budget",
+      "recorded_at": "2026-11-18T04:17:11.604750+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "id": "f741548b13c",
+      "line": "232",
+      "severity": "blocking",
+      "text": "blocking: The required elapsed < 20 assertion has become elapsed < 900 over two passes, and PARAGRAPHS fell from 9000 to 2000; parse-count bounds permit a 21- or 100-second pass to remain green, and the recorded 101.479-second base refusal therefore does not validate the final same-home performance gate; restore the authorized timing measure and matched base/head evidence before landing."
+    },
+    {
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "id": "fd06015fcea",
+      "line": "274",
+      "severity": "non-blocking",
+      "text": "non-blocking: The two-slot reference case expects launched=[] and two refused verdicts, so a change that prevents every otherwise-valid launch can survive this equivalence test; fold a successful-launch positive control into node an-admission-pass-decides-within-its-budget."
+    },
+    {
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "id": "fdb73551045",
+      "line": "229",
+      "severity": "non-blocking",
+      "text": "non-blocking: cold_parses <= plan_files and warm_parses == 0 both accept an instrument that observes zero parses, while line 238 checks phases seeded before execution and cannot prove requests were judged; fold a known-present cold-parse assertion into node an-admission-pass-decides-within-its-budget."
+    },
+    {
+      "file": "reckon/crew/admission/release.py",
+      "id": "f63adcf45eb",
+      "line": "405",
+      "severity": "non-blocking",
+      "text": "non-blocking: _swept_documents duplicates readiness.py:49's capability of fingerprinting documents for verdict-cache invalidation without extending it, adding a second traversal and identity policy; fold a shared owner with the stronger per-file identity into node an-admission-pass-decides-within-its-budget."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f3e4af712c0",
+      "line": "6677",
+      "severity": "non-blocking",
+      "text": "non-blocking: The added comment says edges are read without parsing the body, but plan_depends_on calls the whole-document semantic reader at line 6567; fold a memoized-semantic-read explanation and an updated source manifest landing line into node an-admission-pass-decides-within-its-budget."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read the cumulative diff and the six worker commits through f89b55e27bda5e2ec3812afcc543d82ee31fcafd; plan_review.plan_depends_on now delegates to the semantic owner and selection.admit_once conditionally reuses the release sweep, but the final commit weakens the required performance assertion.",
+    "done_when": "The live docs/plans/dispatch-admission-and-landing-take-seconds.html section s10 and the source run's node.done_when require a timed 20-second pass and same-home base comparison; logs/after_suite.log records 66 passing cases but the final test measures parse counts on a smaller home and no final-head 20-second receipt.",
+    "goal": "The source run's goal is a 20-second admission pass at 240 pointers and 80 requests with unchanged decisions; tests/test_an_admission_pass_decides_within_its_budget.py:29-32 replaces that bound with a 900-second hang guard, so the delivered head does not establish the goal.",
+    "manifest": "The source run's manifest.md names six deliverable commits and completed baseline/head logs, but its landing line still describes the deleted head-only reader and quotes a 1.12-second result from an earlier head rather than the revision reviewed.",
+    "write_paths": "The source pointer's node.write_paths declares the admission modules, plan_review.py and two test files; all six worker-authored commits stay there, while the other paths in a290999a7dd5aaf099d00cfdf918eb1fde02a878..f89b55e27bda5e2ec3812afcc543d82ee31fcafd are inherited primary-branch landings rather than this worker's edits."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_decides_within_its_budget.py:416 and :456 would fail when document-change invalidation is removed and :538 would fail with the deleted head shortcut restored, but :232 tolerates a slow pass and :274 expects no launches even with two slots.",
+    "evidence": "The source run's logs/baseline_suite.log and logs/after_suite.log independently record 60 and 66 passing cases with EXIT=0 and zero added failure IDs, while its logs/negative-control-base-pass.log measures a different 9000-paragraph home from the final test's 2000 paragraphs at line 50.",
+    "fit": "reckon/crew/plan_review.py:6567 now wraps the repository's semantic reader and the added production names describe their mechanism, but its comment at :6677 still claims metadata avoids body parsing although the helper calls read_state_file.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:137-147 avoids a repeated stable sweep and plan_review.py:6567 delegates metadata to its semantic owner, but tests/test_an_admission_pass_decides_within_its_budget.py:232 no longer establishes the required 20 seconds.",
+    "reuse": "reckon/crew/admission/release.py:405 independently implements document-change fingerprinting already owned by readiness.py:49 rather than extending that owner, whereas plan_review.py:6567 and wait_refs.py:245 correctly wrap _plan_html.read_state_file.",
+    "scope_discipline": "The six worker-authored commits listed in the source manifest change only reckon/crew/admission/{release,selection,service,wait_refs}.py, reckon/crew/plan_review.py and the two declared test files; inherited landings explain the larger base-to-head diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source run's goal is a 20-second admission pass at 240 pointers and 80 requests with unchanged decisions; tests/test_an_admission_pass_decides_within_its_budget.py:29-32 replaces that bound with a 900-second hang guard, so the delivered head does not establish the goal.\nVERDICT done_when: The live docs/plans/dispatch-admission-and-landing-take-seconds.html section s10 and the source run's node.done_when require a timed 20-second pass and same-home base comparison; logs/after_suite.log records 66 passing cases but the final test measures parse counts on a smaller home and no final-head 20-second receipt.\nVERDICT write_paths: The source pointer's node.write_paths declares the admission modules, plan_review.py and two test files; all six worker-authored commits stay there, while the other paths in a290999a7dd5aaf099d00cfdf918eb1fde02a878..f89b55e27bda5e2ec3812afcc543d82ee31fcafd are inherited primary-branch landings rather than this worker's edits.\nVERDICT manifest: The source run's manifest.md names six deliverable commits and completed baseline/head logs, but its landing line still describes the deleted head-only reader and quotes a 1.12-second result from an earlier head rather than the revision reviewed.\nVERDICT diff: Read the cumulative diff and the six worker commits through f89b55e27bda5e2ec3812afcc543d82ee31fcafd; plan_review.plan_depends_on now delegates to the semantic owner and selection.admit_once conditionally reuses the release sweep, but the final commit weakens the required performance assertion.\nCALL_SITES: reckon/crew/admission/service.py:426 -> selection.admit_once, reckon/crew/admission/service.py:491 -> selection.admit_once, reckon/crew/admission/selection.py:140 -> release.swept_state, reckon/crew/admission/release.py:540 -> wait_refs.derive_wait_refs, reckon/crew/admission/readiness.py:1009 -> wait_refs.derive_wait_refs, reckon/crew/plan_review.py:6681 -> plan_depends_on\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/admission/selection.py:137-147 avoids a repeated stable sweep and plan_review.py:6567 delegates metadata to its semantic owner, but tests/test_an_admission_pass_decides_within_its_budget.py:232 no longer establishes the required 20 seconds.\nSCORE evidence: 10\nJUSTIFICATION evidence: The source run's logs/baseline_suite.log and logs/after_suite.log independently record 60 and 66 passing cases with EXIT=0 and zero added failure IDs, while its logs/negative-control-base-pass.log measures a different 9000-paragraph home from the final test's 2000 paragraphs at line 50.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The six worker-authored commits listed in the source manifest change only reckon/crew/admission/{release,selection,service,wait_refs}.py, reckon/crew/plan_review.py and the two declared test files; inherited landings explain the larger base-to-head diff.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_an_admission_pass_decides_within_its_budget.py:416 and :456 would fail when document-change invalidation is removed and :538 would fail with the deleted head shortcut restored, but :232 tolerates a slow pass and :274 expects no launches even with two slots.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/plan_review.py:6567 now wraps the repository's semantic reader and the added production names describe their mechanism, but its comment at :6677 still claims metadata avoids body parsing although the helper calls read_state_file.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/admission/release.py:405 independently implements document-change fingerprinting already owned by readiness.py:49 rather than extending that owner, whereas plan_review.py:6567 and wait_refs.py:245 correctly wrap _plan_html.read_state_file.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:232 blocking: The required elapsed < 20 assertion has become elapsed < 900 over two passes, and PARAGRAPHS fell from 9000 to 2000; parse-count bounds permit a 21- or 100-second pass to remain green, and the recorded 101.479-second base refusal therefore does not validate the final same-home performance gate; restore the authorized timing measure and matched base/head evidence before landing.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:274 non-blocking: The two-slot reference case expects launched=[] and two refused verdicts, so a change that prevents every otherwise-valid launch can survive this equivalence test; fold a successful-launch positive control into node an-admission-pass-decides-within-its-budget.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:229 non-blocking: cold_parses <= plan_files and warm_parses == 0 both accept an instrument that observes zero parses, while line 238 checks phases seeded before execution and cannot prove requests were judged; fold a known-present cold-parse assertion into node an-admission-pass-decides-within-its-budget.\nFINDING reckon/crew/admission/release.py:405 non-blocking: _swept_documents duplicates readiness.py:49's capability of fingerprinting documents for verdict-cache invalidation without extending it, adding a second traversal and identity policy; fold a shared owner with the stronger per-file identity into node an-admission-pass-decides-within-its-budget.\nFINDING reckon/crew/plan_review.py:6677 non-blocking: The added comment says edges are read without parsing the body, but plan_depends_on calls the whole-document semantic reader at line 6567; fold a memoized-semantic-read explanation and an updated source manifest landing line into node an-admission-pass-decides-within-its-budget.\n",
+  "reuse_search": {
+    "capabilities": [
+      "semantic-state reading and caching",
+      "document-change invalidation",
+      "release-sweep identity",
+      "fixture building and decision projection"
+    ],
+    "judgement": "Semantic helpers wrap the existing memoized owner; new document fingerprinting duplicates the readiness capability with a separate per-file policy. Population/stability composition has no identical prior owner found in admission. Test helpers compose existing admission fixtures rather than fork production logic.",
+    "owners_opened": [
+      "reckon/_plan_html.py:1748-1775",
+      "reckon/crew/admission/readiness.py:49-84"
+    ]
+  },
+  "review_run_id": "r-20261118T033448492846-review-of-an-admission-pass-decides-within-its-budget-f89b55e27bda",
+  "reviewed_base_sha": "a290999a7dd5aaf099d00cfdf918eb1fde02a878",
+  "reviewed_head_sha": "f89b55e27bda5e2ec3812afcc543d82ee31fcafd",
+  "reviewed_run_id": "r-20261117T111346928196-an-admission-pass-decides-within-its-budget",
+  "reviewed_worker_commits": [
+    "2ad4707fd7265240e79f0c5f977ea337725c014b",
+    "29fd41eb4cb1795e476c1ccfed664b38e895738d",
+    "e1ed853197901e5afe3a7dac0a4a26b144253824",
+    "6f4a096aa36eb3873a0fd1c687dbeeef44105fcf",
+    "59b148f2273a4ed8a74e6bd988470bba86b2cc22",
+    "f89b55e27bda5e2ec3812afcc543d82ee31fcafd"
+  ],
+  "scope_provenance": "The first worker commit has parent 91edbf4e03783efb724f7a3079df6a37b6a2bff2; other changes from base to that parent were existing primary-branch landings, not six worker commits.",
+  "scores": {
+    "durability": 12,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_pass_decides_within_its_budget.py tests/test_an_admission_receipt_names_its_reads.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/after_suite.log",
+      "revision": "f89b55e27bda5e2ec3812afcc543d82ee31fcafd",
+      "sha256": "dbb30e0ec37f2223a5551b73d2f22122400cca3047b4f7f0b59449ba04c538e0",
+      "summary": "66 passed in 131.47s (0:02:11)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_receipt_names_its_reads.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/baseline_suite.log",
+      "revision": "a290999a7dd5aaf099d00cfdf918eb1fde02a878",
+      "sha256": "b238f2d9da75185997871bd30fb38f4e58a20e81183bd707cb55ec37546d7757",
+      "summary": "60 passed in 54.14s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T03:48:31.165953+00:00",
+  "total": 76
+}

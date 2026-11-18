@@ -1853,6 +1853,7 @@ class FleetState:
     merged_sections: dict[str, list[dict[str, Any]]] = dataclass_field(
         default_factory=dict
     )
+    unlanded_source: list[dict[str, Any]] = dataclass_field(default_factory=list)
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
@@ -1943,6 +1944,7 @@ def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetSt
                 merged_sections=merged_section_items_by_session(
                     project, list(pointers.values()), now=instant
                 ),
+                unlanded_source=module._unlanded_source_items(project),
             )
     state.findings = list(skipped_records)
     return state
@@ -2166,6 +2168,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     index_lag = module._index_lag_notice(state.project, now=state.now)
     if index_lag is not None:
         items.append(index_lag)
+    items.extend(state.unlanded_source)
     items.extend(_unreadable_record_items(state.findings))
     items, acknowledged = module._partition_acknowledged(items, state.acknowledged)
     items.sort(

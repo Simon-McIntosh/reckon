@@ -1110,6 +1110,11 @@ slots:
     range: SessionScratchConfig
     inlined: true
 
+  orphan_grace_seconds:
+    description: Minimum inactivity in seconds before an unowned crew scratch tree can be removed. Live run pointers and processes holding the tree always protect it. Defaults to two hours.
+    range: integer
+    minimum_value: 1
+
   max_bytes:
     description: Allocated file bytes above which a session owes scratch cleanup.
     range: integer
@@ -1232,6 +1237,18 @@ slots:
     range: integer
     minimum_value: 0
 
+  priority_budget:
+    description: >-
+      The priority points one session may place on its unlaunched requests at
+      once. A submission through crew dispatch, a batch entry or crew review,
+      and a later crew queue reprioritise, spends them; points return when the
+      request launches, is dropped or is discarded. A submission or change that
+      would push the session's unlaunched points past this figure is refused,
+      naming the points in use and the requests holding them. Absent means
+      priority is uncounted.
+    range: integer
+    minimum_value: 0
+
   weight:
     description: Positive share of local queue admissions for one project.
     range: float
@@ -1315,6 +1332,7 @@ classes:
       - max_requests
       - project_weights
       - repick_after_seconds
+      - priority_budget
 
   ProjectWeight:
     description: One project's share of local queue admissions.
@@ -1652,6 +1670,7 @@ classes:
     slots:
       - max_bytes
       - disk_share
+      - orphan_grace_seconds
 
   SummaryConfig:
     description: When and how workers report.

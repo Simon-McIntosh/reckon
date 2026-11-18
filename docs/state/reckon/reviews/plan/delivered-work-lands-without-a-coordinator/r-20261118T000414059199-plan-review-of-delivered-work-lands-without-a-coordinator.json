@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:06:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261118T000414059199-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:178",
+      "id": "single_goal-1",
+      "reason": "the invariant either belongs in its own section with its own evidence and done-when, or \u00a721 must be scoped to group members, and a node handed both will prove neither arm cleanly.",
+      "text": "\u00a721's deliverable joins a group-scoped rule (a member whose head is an ancestor is finished, left out of the candidate, and the group retires when all members are finished) to a queue-wide invariant (\"a pointer is never written for a run whose ledger row records it promoted, by a group or by any other pending-landing record; a record that would do so is an obligation naming the record\"), and the section's own evidence records only the group case, so the second deliverable has no recorded defect behind it, reaches \u00a76's and \u00a716's non-group records, and needs its own obligation and clearance rule \u2014 one node cannot be closed on one verdict for both",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261118T000414059199-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:179",
+      "id": "done_when-1",
+      "reason": "the first member's pointer-not-written and the group's non-retirement are the arms the declared negative control falsifies, so dropping or re-pointing the vacuous arm leaves the node's endpoint unchanged.",
+      "text": "the second fixture (head on the primary branch with a live pointer) is asserted to be \"released\", which is exactly \u00a718's already-`done` deliverable and therefore passes at the base revision, so that arm of the case cannot fail and contributes nothing to the section's measure",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261118T000414059199-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:24",
+      "id": "wiring-1",
+      "reason": "both upstream sections are declared `done`, so no batch order or gate changes and only the record of the relationship is incomplete.",
+      "text": "`plan-section-depends-on` carries keys for `s8` and `s10` only, so `s21`'s own upstream \u2014 \u00a77, whose group and stored member pointers its first paragraph takes as given, and \u00a718, whose release its done-what restates \u2014 is unrecorded while `s10` already lists `s21` as its upstream",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/delivered-work-lands-without-a-coordinator/r-20261118T000414059199-plan-review-of-delivered-work-lands-without-a-coordinator/plan.html:177",
+      "id": "reasoning-1",
+      "reason": "the group record exists in the tree (`reckon/crew/pending_landing.py` stores `group[\"members\"][\u2026][\"pointer\"]`), so the citation is imprecise rather than the deliverable misdirected, and amending the sentence to cite \u00a77's landed record changes no endpoint and no gate.",
+      "text": "\u00a721's Why says \"\u00a77 publishes compatible reviewed heads together as a group and keeps each member's pointer in the group's record\", but \u00a77's authored deliverable (`plan.html:92`) declares no group, no group record and no stored member pointers; the behaviour survives in \u00a77's landing comment (`plan.html:372`) alone, so a reader checking \u00a721's premise against the section it cites finds nothing",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fbcfda5a3167aacec33fe5d26fa7eec928b6a814",
+  "plan_fingerprint": "671e289c510fe9c1606cb3f0af19611c583e233dd5ae38fe87ac1c821ce1b149",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261118T000414059199-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "0575f18c8f97976faf2b8aacd10a7e9ec6bd2eb8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `#s7`, `#s18` and `#s10` resolve in the snapshot, `/reckon/research/why-delivered-work-sits-unlanded.html` exists at `docs/research/why-delivered-work-sits-unlanded.html`, and both cited modules (`reckon/crew/pending_landing.py`, `reckon/crew/recovery_repair_dispatch.py`) resolve; the cited test file is the section's own new deliverable.",
+    "done_when": "a finding \u2014 \u00a721's middle fixture (\"one whose head is on the primary branch with a live pointer \u2026 the second is released\") restates \u00a718's landed release, so that arm holds at the base revision and measures nothing of \u00a721.",
+    "evidence_paths": "pass \u2014 the two done-when cases run in a temporary crew home and a temporary repository, and \u00a721 names no scratchpad or node-local path for its evidence.",
+    "naming": "pass \u2014 \u00a721's symbols-in-prose carry no plan label, stage name, ticket number or version tag; \"group\", \"member\", \"pointer\" and \"ledger row\" are mechanism names.",
+    "reasoning": "a finding \u2014 \u00a721's Why credits \u00a77 with publishing groups and keeping each member's pointer in the group's record, but \u00a77's authored deliverable states no group and no stored pointer copies.",
+    "single_goal": "a finding \u2014 \u00a721 carries two deliverables under one verdict: a landing group's member completion and retirement, and a universal ban on any pending-landing record writing a pointer for a promoted run.",
+    "wiring": "a finding \u2014 \u00a721 has no entry of its own in `plan-section-depends-on` although its endpoint presupposes \u00a77's landing group and \u00a718's release, while `s10` lists `s21` as its upstream."
+  },
+  "section_digests": {
+    "_document": "a24cfda023527954060ab1692671a5e9f1f4cb0fb5941e3c1f7beb3b0206b2b9",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s18": "952c184917351117b3f92f50b109c64b6edc963dc57f74f8d0e96e260b672454",
+    "s19": "fd99cdb85821b8f1cc753d60d3461ddda1e36227553a34ad710f3c4edbcb65dd",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s20": "73a59983728fec7eb3a28f9305c1846bab53db81049cdf361b7332b51458b9ab",
+    "s21": "c95db350871319247d9fa4cc2afa9694a54554ea9e31d2e9da533f29a2f8331f",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:11:20.265905+00:00",
+  "total": null
+}

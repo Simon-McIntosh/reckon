@@ -191,6 +191,7 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
     def classify(index: int):
         seen: set[Path] = set()
         appended: dict[Path, list[dict]] = {}
+        owed: dict[Path, list[dict]] = {}
         iterations = 0
         try:
             barrier.wait(timeout=5)
@@ -208,6 +209,9 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                     with stream.open("a", encoding="utf-8") as handle:
                         handle.write(line)
                     appended.setdefault(stream, []).extend(
+                        _backends.parse_events([line])[0]
+                    )
+                    owed.setdefault(stream, []).extend(
                         _backends.parse_events([line])[0]
                     )
                 events, malformed = _backends.cached_stream_events(stream)
@@ -235,18 +239,26 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
                 # this worker appended to it, from wherever the read that lost
                 # them stopped. Both are compared exactly against records the
                 # test wrote, so an answer carrying a stale record, a repeat of
-                # a record it did not append, or missing one it did fails.
+                # a record it did not append, or missing one it did fails. The
+                # answer must also reach every record this worker is owed since
+                # its last answer: a resumed read that starts one record late
+                # drops one, and a suffix comparison alone would accept that.
                 gained = appended.get(stream, [])
-                assert (events, malformed) == (whole, whole_malformed) or any(
-                    (events, malformed) == (gained[start:], 0)
-                    for start in range(len(gained))
+                outstanding = len(owed.get(stream, ()))
+                assert (events, malformed) == (whole, whole_malformed) or (
+                    len(events) <= len(gained)
+                    and malformed == 0
+                    and gained[len(gained) - len(events) :] == events
+                    and len(events) >= outstanding
                 ), (
                     "the cache answered for records other than the stream's",
                     stream.name,
                     len(events),
                     len(whole),
                     len(gained),
+                    outstanding,
                 )
+                owed[stream] = []
                 assert bounds == expected_bounds
                 observed = _backends.observe_log(
                     backend_name="cache", backend={"command": "claude"}, log_path=stream

@@ -1308,6 +1308,88 @@ def _run_review_tier(
     )
 
 
+def _review_is_owed(
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    classification: str,
+    review: Mapping[str, Any] | None,
+    review_tier: str,
+    stale_head: str = "",
+    role: str | None = None,
+) -> bool:
+    """Whether a promotion of this run is refused for want of a review.
+
+    One expression, read by the gate that raises the refusal and by the dry run
+    that reports it, so the report and the refusal cannot disagree about which
+    runs owe a review: a second copy of this condition is the same defect with
+    a longer fuse, because nothing fails when the copies drift.
+
+    The obligation follows the delivery and the tier, not the role name — a
+    deployed run whose changes include runtime source has produced work a
+    reviewer must read, whatever role carried it — except for the review role
+    itself, whose own deliverable is the review it wrote for another run. An
+    unmeasured or unknown tier is read as the fuller review, so a caller that
+    could not resolve one never opens a lighter path by silence.
+    """
+    from reckon.crew.recovery import REVIEW_ROLE, _pointer_role
+
+    if role is None:
+        role = _pointer_role(record)
+    delivered = _release_terminal_manifest(record)
+    review_required = (
+        classification == "scoring"
+        or (classification == "promotable" and bool(stale_head))
+        or delivered
+    )
+    tier = str(review_tier or review_tiers.FULL)
+    return bool(
+        verdict == "passed"
+        and review_required
+        and role != REVIEW_ROLE
+        and tier != review_tiers.NONE
+        and not (review and review.get("status") == "parsed")
+    )
+
+
+def _reviews_the_dry_run_owes(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    classification: str,
+    review: Mapping[str, Any] | None,
+    review_tier: str,
+    promoted_head: str,
+    stale_head: str = "",
+) -> list[dict[str, Any]]:
+    """The review a promotion of this run would refuse for want of, as a fact.
+
+    A dry run's ``would_file_reviews`` answers a different question — which
+    delivered records a filing would move into the store — so a run owing a
+    review nobody has written yet read as no review being needed. The entry
+    names the run, the tier that decided the review is owed and the head it must
+    read, so a coordinator can dispatch that review without a second query.
+    """
+    if not _review_is_owed(
+        record,
+        verdict=verdict,
+        classification=classification,
+        review=review,
+        review_tier=review_tier,
+        stale_head=stale_head,
+    ):
+        return []
+    entry: dict[str, Any] = {
+        "run_id": run_id,
+        "tier": str(review_tier or review_tiers.FULL),
+        "head": str(promoted_head or ""),
+    }
+    if stale_head:
+        entry["stale_head"] = str(stale_head)
+    return [entry]
+
+
 def _require_review_waiver(
     run_id: str,
     record: Mapping[str, Any],
@@ -1362,7 +1444,6 @@ def _require_review_waiver(
     — which only this gate makes — is what separates them.
     """
     from reckon.crew.recovery import (
-        REVIEW_ROLE,
         _pointer_role,
         _review_dispatch_action,
     )
@@ -1370,21 +1451,14 @@ def _require_review_waiver(
     role = _pointer_role(record)
     reason = str(waiver_reason).strip()
     delivered = _release_terminal_manifest(record)
-    review_required = (
-        classification == "scoring"
-        or (classification == "promotable" and bool(stale_head))
-        or delivered
-    )
-    # The tier, not the role, decides whether the run changed work a reviewer
-    # owes. An unmeasured or unknown tier is treated as the fuller review, so a
-    # caller that could not resolve one never opens a lighter path by silence.
-    tier = str(review_tier or review_tiers.FULL)
-    unreviewed = (
-        verdict == "passed"
-        and review_required
-        and role != REVIEW_ROLE
-        and tier != review_tiers.NONE
-        and not (review and review.get("status") == "parsed")
+    unreviewed = _review_is_owed(
+        record,
+        verdict=verdict,
+        classification=classification,
+        review=review,
+        review_tier=review_tier,
+        stale_head=stale_head,
+        role=role,
     )
     if unreviewed:
         if reason:

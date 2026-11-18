@@ -276,6 +276,8 @@ def role_cadence(
 
 def priorities_first(
     order: Sequence[Mapping[str, Any]],
+    *,
+    now: datetime | None = None,
 ) -> list[Mapping[str, Any]]:
     """Hoist explicitly reprioritised requests ahead of the rest of the lane.
 
@@ -289,7 +291,9 @@ def priorities_first(
 
     A delivered review keeps its place at the head: it is what lets a run that
     has already finished land, and it is dispatched ahead of implementation
-    however long that has waited.
+    however long that has waited. A request past the ageing bound keeps its
+    place too, because ageing sits above priority on purpose: a request that
+    has waited that long launches whatever points another carries.
 
     Which requests are raised and which are reviews is read from the readers
     that already own those definitions (:func:`reckon.crew.queue_order._override`
@@ -298,21 +302,35 @@ def priorities_first(
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
+    moment = now
+
+    def _aged(pointer: Mapping[str, Any]) -> bool:
+        if moment is None:
+            return False
+        queued_at = parse_utc(pointer.get("queued_at"))
+        return (
+            moment is not None
+            and queued_at is not None
+            and (moment - queued_at).total_seconds()
+            >= queue_order.STARVATION_AGE_SECONDS
+        )
+
     raised = sorted(
         (
             pointer
             for pointer in order
-            if queue_order._override(pointer) is not None
+            if queue_order._priority(pointer) > 0
             and not _is_review_run(pointer)
+            and not _aged(pointer)
         ),
-        key=lambda pointer: -queue_order._override(pointer),
+        key=lambda pointer: -queue_order._priority(pointer),
     )
     if not raised:
         return list(order)
     hoisted = {id(pointer) for pointer in raised}
     rest = [pointer for pointer in order if id(pointer) not in hoisted]
     lead = 0
-    while lead < len(rest) and _is_review_run(rest[lead]):
+    while lead < len(rest) and (_is_review_run(rest[lead]) or _aged(rest[lead])):
         lead += 1
     return rest[:lead] + raised + rest[lead:]
 
@@ -341,7 +359,7 @@ def fair_share_admission_order(
     weights = _fair_use_weights(queued, config_for=config_for)
     if weights is not None:
         order = weighted_project_order(order, weights)
-    return priorities_first(order)
+    return priorities_first(order, now=now)
 
 
 def awaits_a_lane_slot(pointer: Mapping[str, Any]) -> bool:
@@ -422,7 +440,7 @@ def queued_placements(
     order = role_share_order(order)
     if weights is not None:
         order = weighted_project_order(order, weights)
-    order = priorities_first(order)
+    order = priorities_first(order, now=moment)
     from reckon.crew.recovery_review_delivery import _is_review_run
 
     for position, pointer in enumerate(order, 1):
@@ -431,13 +449,13 @@ def queued_placements(
         session_rank[session] = session_rank.get(session, 0) + 1
         project_rank[project] = project_rank.get(project, 0) + 1
         reason = reasons[str(pointer.get("run_id") or "")]
-        override = queue_order._override(pointer)
+        points = queue_order._priority(pointer)
         if (
-            override is not None
+            points > 0
             and not _is_review_run(pointer)
-            and not reason.startswith("priority override")
+            and not reason.startswith("priority")
         ):
-            reason = f"priority override {override}"
+            reason = queue_order.priority_reason(pointer)
         if weights is not None:
             reason = f"weighted fair use ({project}: {weights[project]:g}); {reason}"
         placements[str(pointer.get("run_id") or "")] = {

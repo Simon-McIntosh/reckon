@@ -1950,7 +1950,26 @@ def classify_pointer(
 
         if memo_fresh and isinstance(memo.get("orientation_check"), Mapping):
             orientation_record["orientation_check"] = memo["orientation_check"]
-        _apply_orientation_check(orientation_record, None, reported=manifest_data)
+        reported_orientation = manifest_data
+        prior_orientation = orientation_record.get("orientation_check")
+        issued_orientation = {
+            "orientation_worktree": str(record.get("worktree") or ""),
+            "orientation_base_sha": str(record.get("base_sha") or ""),
+            "orientation_write_paths": (record.get("node") or {}).get("write_paths")
+            or [],
+        }
+        recheck_without_echoes = (
+            isinstance(prior_orientation, Mapping)
+            and prior_orientation.get("matched") is False
+            and not any(manifest_data.get(name) for name in issued_orientation)
+        )
+        if recheck_without_echoes:
+            # Optional echoes can be absent from a later attempt's manifest.
+            # Recheck a retained refusal against the issued tree and commits.
+            reported_orientation = {**manifest_data, **issued_orientation}
+        _apply_orientation_check(orientation_record, None, reported=reported_orientation)
+        if recheck_without_echoes:
+            orientation_record["orientation_check"]["echoes_absent"] = True
         memo["orientation_check"] = orientation_record.get("orientation_check")
     orientation_check = orientation_record.get("orientation_check")
 
@@ -1982,9 +2001,12 @@ def classify_pointer(
     # exactly as the drain view and the stop hook judge it.
     stuck = _stuck_verdict_for(record) if phase else None
 
-    # A pre-spawn launch past its bound with its holder gone is not waiting to
-    # start: the liveness arms read it as a failed launch, which the admission
-    # pass then releases or returns to the queue.
+    # A pre-spawn launch whose phase says it has not started is not waiting to
+    # start on that label alone: the pre-spawn reading needs a launch that has
+    # spawned nothing, and the liveness arms read the rest — a launch whose
+    # worker has come and gone from that worker's own liveness and output, which
+    # is a failed launch the admission pass then releases or returns to the
+    # queue.
     #
     # The pre-spawn phrase is the launcher's label and a stale one, so it cannot
     # be trusted alone. A run that reached its worker carries a pid, a worker

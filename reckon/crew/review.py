@@ -1207,7 +1207,137 @@ def claims_verdict_refusals(record: Mapping[str, Any]) -> list[str]:
     return refusals
 
 
-def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
+#: The value ``added_failure_count`` carries when a review files a waived count.
+#: A run whose suite delta was waived produced no pair of arms to difference, so
+#: its review states that no count exists rather than the number zero: zero is a
+#: measured clean pair, and a reader cannot tell the two apart once the count is
+#: an integer. The waived form is accepted only against a run that carries the
+#: suite-delta waiver, which is what keeps an absent count from passing as one.
+WAIVED_ADDED_FAILURE_COUNT = "waived"
+
+#: The committed ``suite_delta.status`` values a recorded waiver may appear
+#: under. Two spellings write one fact: a pair whose added failure or whose arms
+#: were waived records ``waived``, and a matched pair that ``crew complete
+#: --waive-suite-delta`` was given a reason for records ``clean`` with that
+#: reason in ``waiver_reason``, because there the status names what the evidence
+#: found rather than how it was accepted. A reader that knew only the first
+#: spelling made the waiver invisible once the run's pointer was gone, so a
+#: review of a run that landed clean-with-reason was refused its waived count.
+WAIVER_ROW_STATUSES = ("waived", "clean")
+
+
+def _recorded_waiver_reason(value: object, *, statuses: Sequence[str] = ()) -> str:
+    """The reason a recorded suite-delta waiver carries, or "".
+
+    ``statuses``, when given, admits only those ``status`` values. The two
+    spellings a record may use differ in status rather than in where the reason
+    lives: a pair whose addition or arms were waived records ``waived``, and a
+    matched pair that ``crew complete --waive-suite-delta`` was given a reason
+    for records ``clean`` with that reason beside it, because the status names
+    what the evidence found rather than how it was accepted. Both carry
+    ``waiver_reason``, and a record carrying neither form yields nothing.
+    """
+    if not isinstance(value, Mapping):
+        return ""
+    if statuses and str(value.get("status") or "") not in statuses:
+        return ""
+    return str(value.get("waiver_reason") or value.get("reason") or "").strip()
+
+
+def recorded_suite_delta_waiver(reviewed_run_id: object, project: object = "") -> str:
+    """The reason a run's suite delta stands waived, or "" when it does not.
+
+    One reader for every place a waived review count is judged, so filing, the
+    delivery check, a repair and a later audit all answer from the same record.
+    Two sources hold it and both are read: the live pointer, which carries the
+    waiver from the ``crew complete --waive-suite-delta`` attempt that recorded
+    it until the run's promotion writes its row, and the committed row, which is
+    what a stored review is judged against once the pointer is gone. A run
+    carrying neither has no waiver, and a review may not read one into it.
+    """
+    run_id = str(reviewed_run_id or "").strip()
+    if not run_id:
+        return ""
+    from reckon.crew import runs as runs_module
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except Exception:  # noqa: BLE001 - an unread pointer is a run with no waiver
+        pointer = {}
+    reason = _recorded_waiver_reason(pointer.get("suite_delta_waiver"))
+    if reason:
+        return reason
+    reason = _recorded_waiver_reason(
+        pointer.get("suite_delta"), statuses=WAIVER_ROW_STATUSES
+    )
+    if reason:
+        return reason
+    named_project = str(pointer.get("project") or project or "").strip()
+    if not named_project:
+        return ""
+    from reckon import run_store
+
+    try:
+        rows = run_store.stored_run_rows(named_project, run_ids=[run_id])
+    except Exception:  # noqa: BLE001 - an unread store is no waiver either
+        return ""
+    for row in rows or ():
+        reason = _recorded_waiver_reason(
+            row.get("suite_delta"), statuses=WAIVER_ROW_STATUSES
+        )
+        if reason:
+            return reason
+    return ""
+
+
+def waived_failure_count_refusals(
+    record: Mapping[str, Any], *, suite_delta_waiver: bool | None = None
+) -> list[str]:
+    """The refusals a review's ``added_failure_count`` form earns, if any.
+
+    The waived form is accepted only for a run whose suite delta is waived: the
+    count exists to show that a delivered head is no redder than its base, and a
+    run that produced no comparable pair owes that absence to a written reason
+    before a review may state it instead of a number. ``suite_delta_waiver`` is
+    the caller's own reading of the run; ``None`` resolves it from the run's
+    record here, which reads the live pointer beside the committed row.
+
+    A record naming an integer is judged only for agreement with its ids, so the
+    measured form is exactly as it was. A null or missing count is refused as it
+    always was: an absent count is never read as zero.
+    """
+    count = record.get("added_failure_count")
+    if count != WAIVED_ADDED_FAILURE_COUNT:
+        refusals: list[str] = []
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            refusals.append("missing or invalid added_failure_count")
+        return refusals
+    refusals = []
+    reason = record.get("added_failure_waiver")
+    if not isinstance(reason, str) or not reason.strip():
+        refusals.append(
+            "missing added_failure_waiver: a waived added_failure_count must "
+            "state why the reviewed run has no count to file"
+        )
+    if suite_delta_waiver is None:
+        suite_delta_waiver = bool(
+            recorded_suite_delta_waiver(
+                record.get("reviewed_run_id"), record.get("project")
+            )
+        )
+    if not suite_delta_waiver:
+        refusals.append(
+            "added_failure_count is waived but the reviewed run records no "
+            "suite-delta waiver: only a run whose suite delta is waived with "
+            "`crew complete --waive-suite-delta '<why>'` may file a waived "
+            "count"
+        )
+    return refusals
+
+
+def review_record_refusals(
+    record: Mapping[str, Any], *, suite_delta_waiver: bool | None = None
+) -> list[str]:
     """Check the current review delivery contract and the store's refusals."""
     required = (
         "project",
@@ -1237,11 +1367,18 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     elif rubric == CLAIMS_RUBRIC:
         refusals.extend(claims_verdict_refusals(record))
     count = record.get("added_failure_count")
-    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
-        refusals.append("missing or invalid added_failure_count")
+    refusals.extend(
+        waived_failure_count_refusals(record, suite_delta_waiver=suite_delta_waiver)
+    )
     ids = record.get("added_failure_ids")
     if not isinstance(ids, list) or not all(isinstance(item, str) for item in ids):
         refusals.append("missing or invalid added_failure_ids")
+    elif count == WAIVED_ADDED_FAILURE_COUNT and ids:
+        # A waived count names no failure, so a list beside it claims failures
+        # the record also says it cannot count.
+        refusals.append(
+            "added_failure_ids must be empty when added_failure_count is waived"
+        )
     elif isinstance(count, int) and count != len(ids):
         refusals.append("added_failure_count differs from added_failure_ids")
     if not isinstance(record.get("findings"), list):
@@ -3216,7 +3353,15 @@ def annotate_added_failures(
     ``base_directory`` and ``head_directory`` are the working directories the
     two arms' own records name, and every id on the count's two sides is reduced
     against the arm that printed it.
+
+    A waived count is returned unchanged: the record says there was no pair to
+    difference, so deriving one here would replace the reviewer's stated reason
+    with a count taken from logs the run's own waiver says cannot support it —
+    and a reader would then judge the record by a count the reviewer never
+    filed.
     """
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        return dict(record)
     result = dict(record)
     count, added_ids = added_failures_from_gate_logs(
         base_text,
@@ -3535,6 +3680,14 @@ def store_review(
     brief_refusal = review_brief_head_refusal(record)
     if brief_refusal:
         raise ValueError(brief_refusal)
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        # A waived count is filed only against a run that carries the
+        # suite-delta waiver, and the run's own record is where that is read.
+        # The refusal is the delivery check's, so a record the store refuses and
+        # one ``crew check --review`` refuses cannot be two different records.
+        count_refusals = waived_failure_count_refusals(record)
+        if count_refusals:
+            raise ValueError("; ".join(count_refusals))
     base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
     if base_carried or head_carried:
         record = dict(record)
@@ -3742,6 +3895,7 @@ def file_delivered_run_review_report(
             continue
         try:
             from reckon.crew.stage_receipts import review_file_instant
+
             with review_file_instant(source):
                 filed.append(store_review(body))
         except (ValueError, OSError) as exc:
@@ -4279,6 +4433,16 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
         block[REVIEWED_BASE_KEY] = base_sha
     if head_carried:
         block[REVIEWED_HEAD_KEY] = head_sha
+    # A waived count is the one added-failure reading the block carries: it is
+    # not a figure, so it has no place among the scores, and the reason it rests
+    # on is the whole of its evidence. The row therefore keeps both, so a reader
+    # of the durable record alone learns that no count exists and why rather than
+    # finding an absent count it cannot tell from an unscored review.
+    if record.get("added_failure_count") == WAIVED_ADDED_FAILURE_COUNT:
+        block["added_failure_count"] = WAIVED_ADDED_FAILURE_COUNT
+        waiver_reason = str(record.get("added_failure_waiver") or "").strip()
+        if waiver_reason:
+            block["added_failure_waiver"] = waiver_reason
     return block
 
 
@@ -4337,6 +4501,7 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
 
     review_records.record_written(path, record)
     from reckon.crew.stage_receipts import note_review_record
+
     note_review_record(record)
 
 

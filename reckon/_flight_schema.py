@@ -275,6 +275,7 @@ class QueueConfig(ConfiguredBaseModel):
     max_requests: int | None = Field(default=None, description="""Maximum queued non-review requests in one project. The runtime default is 500 when no layer sets this value.""", ge=1)
     project_weights: dict[str, Union[float, ProjectWeight]] | None = Field(default=None, description="""Positive fair-use weight for each project sharing the local queue. Projects without a declared weight have equal weight of one.""")
     repick_after_seconds: int | None = Field(default=None, description="""How long a route the router chose may stand before the request is picked again at launch. A request released sooner keeps the route it was given, so a brief wait costs no second pick. The runtime default is 60 when no layer sets this value.""", ge=0)
+    priority_budget: int | None = Field(default=None, description="""The priority points one session may place on its unlaunched requests at once. A submission through crew dispatch, a batch entry or crew review, and a later crew queue reprioritise, spends them; points return when the request launches, is dropped or is discarded. A submission or change that would push the session's unlaunched points past this figure is refused, naming the points in use and the requests holding them. Absent means priority is uncounted.""", ge=0)
 
 
 class ProjectWeight(ConfiguredBaseModel):
@@ -751,6 +752,7 @@ class SessionScratchConfig(ConfiguredBaseModel):
     """
     max_bytes: int | None = Field(default=None, description="""Allocated file bytes above which a session owes scratch cleanup.""", ge=1)
     disk_share: float | None = Field(default=None, description="""Fraction of the local disk available to all session scratch; new sessions refuse at this share.""", ge=0.001, le=1)
+    orphan_grace_seconds: int | None = Field(default=None, description="""Minimum inactivity in seconds before an unowned crew scratch tree can be removed. Live run pointers and processes holding the tree always protect it. Defaults to two hours.""", ge=1)
 
 
 class SummaryConfig(ConfiguredBaseModel):

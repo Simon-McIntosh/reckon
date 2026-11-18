@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>No steady reader reads a whole stream</title>
+</head>
+<body>
+<main class="plan-doc">
+<h1 id="no-steady-reader-reads-a-whole-stream-title">No steady reader reads a whole stream</h1>
+
+<section data-reckon="section" id="no-steady-reader-reads-a-whole-stream-why">
+<h2>What was wrong</h2>
+<p>Three production readers asked the events cache for the whole stream, so each paid a whole read for
+every stream the 32&nbsp;MB byte bound had evicted: <code>_latest_attempt_capacity_refusal</code>
+(needs the latest terminal event), <code>_admission_refusal</code> (folds three flags across the
+stream) and <code>observe_log</code>'s fallback. The per-stream summary already held a resume cursor
+and folded observations; it held nothing these three could answer from, so the cursor never reached the
+census's 42.7&nbsp;% row.</p>
+</section>
+
+<section data-reckon="section" id="no-steady-reader-reads-a-whole-stream-fix">
+<h2>What changed</h2>
+<p>Each reader states its question as a fold from a seed over the records in order, and
+<code>_backends.cached_stream_fold</code> keeps that state in the per-stream summary: the whole stream
+is read once, and every later tick folds only the bytes gained. The observation fold is keyed by the
+records — backend settings and receipt — and not by the caller's elapsed time; a new elapsed reading is
+applied to the folded state, so a tick that passes a tick-later clock misses no fold. What a fold carries
+for the rate is the inputs a result stated — its spans, model usage and token counters — and not the
+rate a previous caller's clock computed from them: a stream whose result reports no span is rated
+against the clock of the read that asks, whether that read folded the result or nothing at all.</p>
+<p>The rewrite check keeps the base revision's 8&nbsp;KiB opening sample and adds a 512&nbsp;byte
+boundary sample of the bytes immediately before the offset. The boundary is the guard a growth read
+pays, because an offset is an index into a sequence and stays valid only while the bytes before it do.
+A stream rewritten in place to a larger size with its opening byte-for-byte intact is otherwise
+indistinguishable from an append by stat and by the opening digest alike, and it is exactly the case
+where the recorded offset no longer names the records it named.</p>
+</section>
+
+<section data-reckon="section" id="no-steady-reader-reads-a-whole-stream-measure">
+<h2>Measure</h2>
+<table>
+  <thead><tr><th>Forty 2&nbsp;MB streams (83,957,120&nbsp;B), second pass after a 500&nbsp;byte append</th><th>base <code>5b784ef</code></th><th>head</th></tr></thead>
+  <tbody>
+    <tr><td>Bytes read from the streams</td><td>85,307,840</td><td>60,960</td></tr>
+    <tr><td>Bytes per stream</td><td>2,132,696</td><td>1,524</td></tr>
+    <tr><td>Answers equal a fresh whole parse</td><td>yes</td><td>yes</td></tr>
+  </tbody>
+</table>
+<p>1,524&nbsp;B = 500&nbsp;B append + 512&nbsp;B boundary sample verified before the read + 512&nbsp;B
+boundary sample recorded for the offset the read reached. The opening sample is not re-read on a growth
+read — it is carried from the version it was taken at, which the boundary has just certified. The
+instrument counts every byte handed back by <code>Path.open</code> over the tracked stream paths; it is
+asserted to see the first pass's whole reads and, on the second pass, at least the 20,000 appended
+bytes.</p>
+</section>
+
+<section data-reckon="section" id="no-steady-reader-reads-a-whole-stream-controls">
+<h2>Controls</h2>
+<ul>
+  <li>Base revision: the same test reads 85,307,840&nbsp;B on the second pass and fails.</li>
+  <li>The reviewed head: the parity arm compares each tick's answer to a whole
+  <code>observe_stream</code> read of the same records, and fails there with the wall rate
+  <code>None</code> against the whole read's 0.0 — the fold had baked in a rate computed without a
+  clock.</li>
+  <li>The reviewed head: a stream rewritten in place with its opening untouched fails the same file's
+  rewrite test, because the offset the cursor held named bytes that no longer exist in that place.</li>
+  <li>A growth read that drops the first appended record fails
+  <code>tests/test_watch_stream_parse_is_cached.py</code>, whose resumed-answer check now requires an
+  answer to reach every appended record it is owed rather than merely be a suffix of them.</li>
+</ul>
+<p>Logs: <code>logs/negative-control-base-revision.log</code>,
+<code>logs/negative-control-resume-drops-first-appended-record.log</code> and
+<code>logs/negative-control-parity-and-boundary-at-reviewed-head.log</code> under the run directory
+<code>r-20261117T233254668441-no-steady-reader-reads-a-whole-stream</code>.</p>
+</section>
+</main>
+</body>
+</html>

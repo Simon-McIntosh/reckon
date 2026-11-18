@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:_queue_a_held_request",
+    "reckon/crew/dispatching/requests.py:queue_requests",
+    "reckon/crew/dispatch_batch.py:_queue_batch",
+    "reckon/crew/queue_edit.py:reprioritise",
+    "reckon/crew/plan_review.py:dispatch_code_review",
+    "reckon/crew/recovery_review_dispatch.py:_composed_review_options",
+    "reckon/crew/admission/ordering.py:fair_share_admission_order",
+    "reckon/crew/promotion_requests.py:_promotion_request"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:32:14Z",
+  "findings": [
+    {
+      "file": "docs/_shared/flight.schema.json",
+      "line": "2712",
+      "severity": "non-blocking",
+      "text": "non-blocking: the generated flight schema is regenerated outside the node's declared write paths, so a reader comparing the diff to the declaration sees a file the scope did not name."
+    },
+    {
+      "file": "tests/test_a_priority_is_budgeted_and_orders_the_queue.py",
+      "line": "398",
+      "severity": "non-blocking",
+      "text": "non-blocking: the cross-session assertion passes its two pointers already in the order it asserts, so a stable sort that preserved input order would satisfy it; the discriminating power rests on the separately recorded base arm rather than on the assertion."
+    },
+    {
+      "file": "tests/test_a_priority_is_budgeted_and_orders_the_queue.py",
+      "line": "182",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"after the first launches, the second is accepted\" case returns the points by rewriting the pointer's phase to running, so the launch path's own phase transition is not what the assertion exercises."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest carries no test_logs field, so a reader cannot open the focused gate's log from the record and must rely on the transcribed result in s2.html."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read the node's commits against base 95e5303; the product change is 895cf057 (the budget and the lane ordering), repaired by d319d0d3 (one points reader, a session's points counted across projects) and 522df516 (the queued timestamp only where a request is aged), with tests added in f8aa2b2d and 0e35e058, and dc200d85 and 7967827 are merges of primary main.",
+    "done_when": "done_when names four temporary-repository cases plus a cross-session negative control; tests/test_a_priority_is_budgeted_and_orders_the_queue.py:110, :126, :163, :369 and :401 assert the four, and s2.html records the base arm ordering ['idle', 'busy'] against the landed ['busy', 'idle'].",
+    "goal": "the node's goal is \"each session holds a priority budget and spends it at submission or later\"; reckon/crew/runs.py:686 require_priority_budget enforces the bound and reckon/crew/queue_edit.py:598 applies the same check to a later change.",
+    "manifest": "read and complete; it names the node's 13 commits plus the merge, records the focused file at 7967827dca as 14 passed, and carries both suite arms and the population delta, but it carries no test_logs field.",
+    "write_paths": "the declared scope is reckon, tests, the plan's fragment directory, skills and reckon/crew/runs.py; every path the node's own commits touch is inside it except the generated docs/_shared/flight.schema.json."
+  },
+  "justifications": {
+    "durability": "tests/test_a_priority_is_budgeted_and_orders_the_queue.py:273 fails with _stored_priority returning 0 when d319d0d3 is reverted, as the recorded negative control shows, though the launch-returns-points case at :182 rewrites the pointer's phase rather than launching.",
+    "evidence": "the four done_when cases and the base-arm negative control are measured and recorded in docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html, but the focused gate's own log is not on disk and the manifest records no test_logs.",
+    "fit": "the new symbols name mechanisms (PriorityBudgetExceeded, PRIORITY_HOLDING_PHASES, priority_reason) and follow reckon/crew/queue_order.py:244's idiom, but reckon/crew/runs.py:647 imports the private _override; a name from another module rather than an exported entry point.",
+    "goal_fidelity": "reckon/crew/runs.py:651 session_priority_in_use reads the session's unlaunched points from the pointers across every project, and reckon/crew/queue_edit.py:598 charges a later change through the same bound.",
+    "reuse": "the repair at reckon/crew/runs.py:647 delegates the points definition to queue_order._override, the one reader the repository already owns, which reckon/crew/promotion_requests.py:32 also imports, so no second owner of a pointer's priority remains.",
+    "scope_discipline": "every node commit is inside the declared paths except the regenerated docs/_shared/flight.schema.json:2712, which the changed schema forces and which the manifest's scope_note acknowledges."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"each session holds a priority budget and spends it at submission or later\"; reckon/crew/runs.py:686 require_priority_budget enforces the bound and reckon/crew/queue_edit.py:598 applies the same check to a later change.\nVERDICT done_when: done_when names four temporary-repository cases plus a cross-session negative control; tests/test_a_priority_is_budgeted_and_orders_the_queue.py:110, :126, :163, :369 and :401 assert the four, and s2.html records the base arm ordering ['idle', 'busy'] against the landed ['busy', 'idle'].\nVERDICT write_paths: the declared scope is reckon, tests, the plan's fragment directory, skills and reckon/crew/runs.py; every path the node's own commits touch is inside it except the generated docs/_shared/flight.schema.json.\nVERDICT manifest: read and complete; it names the node's 13 commits plus the merge, records the focused file at 7967827dca as 14 passed, and carries both suite arms and the population delta, but it carries no test_logs field.\nVERDICT diff: read the node's commits against base 95e5303; the product change is 895cf057 (the budget and the lane ordering), repaired by d319d0d3 (one points reader, a session's points counted across projects) and 522df516 (the queued timestamp only where a request is aged), with tests added in f8aa2b2d and 0e35e058, and dc200d85 and 7967827 are merges of primary main.\nCALL_SITES: reckon/crew/dispatching/preparation.py:_queue_a_held_request, reckon/crew/dispatching/requests.py:queue_requests, reckon/crew/dispatch_batch.py:_queue_batch, reckon/crew/queue_edit.py:reprioritise, reckon/crew/plan_review.py:dispatch_code_review, reckon/crew/recovery_review_dispatch.py:_composed_review_options, reckon/crew/admission/ordering.py:fair_share_admission_order, reckon/crew/promotion_requests.py:_promotion_request\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:651 session_priority_in_use reads the session's unlaunched points from the pointers across every project, and reckon/crew/queue_edit.py:598 charges a later change through the same bound.\nSCORE evidence: 15\nJUSTIFICATION evidence: the four done_when cases and the base-arm negative control are measured and recorded in docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html, but the focused gate's own log is not on disk and the manifest records no test_logs.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every node commit is inside the declared paths except the regenerated docs/_shared/flight.schema.json:2712, which the changed schema forces and which the manifest's scope_note acknowledges.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_priority_is_budgeted_and_orders_the_queue.py:273 fails with _stored_priority returning 0 when d319d0d3 is reverted, as the recorded negative control shows, though the launch-returns-points case at :182 rewrites the pointer's phase rather than launching.\nSCORE fit: 16\nJUSTIFICATION fit: the new symbols name mechanisms (PriorityBudgetExceeded, PRIORITY_HOLDING_PHASES, priority_reason) and follow reckon/crew/queue_order.py:244's idiom, but reckon/crew/runs.py:647 imports the private _override; a name from another module rather than an exported entry point.\nSCORE reuse: 18\nJUSTIFICATION reuse: the repair at reckon/crew/runs.py:647 delegates the points definition to queue_order._override, the one reader the repository already owns, which reckon/crew/promotion_requests.py:32 also imports, so no second owner of a pointer's priority remains.\nFINDING docs/_shared/flight.schema.json:2712 non-blocking: the generated flight schema is regenerated outside the node's declared write paths, so a reader comparing the diff to the declaration sees a file the scope did not name.\nFINDING tests/test_a_priority_is_budgeted_and_orders_the_queue.py:398 non-blocking: the cross-session assertion passes its two pointers already in the order it asserts, so a stable sort that preserved input order would satisfy it; the discriminating power rests on the separately recorded base arm rather than on the assertion.\nFINDING tests/test_a_priority_is_budgeted_and_orders_the_queue.py:182 non-blocking: the \"after the first launches, the second is accepted\" case returns the points by rewriting the pointer's phase to running, so the launch path's own phase transition is not what the assertion exercises.\nFINDING manifest.md:21 non-blocking: the manifest carries no test_logs field, so a reader cannot open the focused gate's log from the record and must rely on the transcribed result in s2.html.",
+  "review_run_id": "r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39",
+  "reviewed_base_sha": "95e530385ef505438d4a89a7f978a941e6a68663",
+  "reviewed_head_sha": "7967827dca397c70b8fb81753a1f5274365c843f",
+  "reviewed_run_id": "r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:44:08.116085+00:00",
+  "total": 101
+}

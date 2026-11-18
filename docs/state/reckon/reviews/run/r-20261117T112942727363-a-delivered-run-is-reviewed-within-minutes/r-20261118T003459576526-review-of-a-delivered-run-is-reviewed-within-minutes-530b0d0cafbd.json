@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/resumption.py:3019 the review pass inside resumption.sweep calls review_request_census on every non-dry-run tick and reads only obligations and deadline_seconds, so late_requests is computed and dropped",
+    "reckon/evidence.py:1664 evidence_record_plan composes a plan's cumulative evidence record from docs/evidence/fragments/<plan>/*.html, so the changed census paragraph reaches a reader through it",
+    "reckon/evidence.py:866 the fragment path the composer reads for a node's evidence"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-18T00:35:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-delivered-run-is-reviewed-within-minutes",
+      "recorded_at": "2026-11-18T03:23:50.422111+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html",
+      "line": 111,
+      "severity": "blocking",
+      "text": "The rewritten sentence reads 'the median request landed inside the window, and one of the five did not', but the log it names in the same paragraph (live-census-20261117T2145Z.log: counts requested 5, request_lag_seconds p50 96.674459, p90 and max 917.087791, and a row at request_lag_seconds 197.951593) holds two requests outside 120 s, not one: 197.951593 s and 917.087791 s are both counted in the five samples. The repair replaced the false universal with a false count in the same sentence, so the cumulative evidence record still states a population its own log contradicts; the reading the code now computes (late_requests) would report both, and the paragraph should read 'two of the five' and name the 197.951593 s request beside the 917.1 s one."
+    },
+    {
+      "file": "tests/test_a_delivered_run_is_reviewed_within_minutes.py",
+      "line": 371,
+      "severity": "non-blocking",
+      "text": "The two quantile assertions compare the census's p50 and max against the lags the test itself wrote into the receipts (5 and 917 at line 354), so they move with their own input and stay green under the regression they sit beside: negative-control-dimension-durability.log records that with 6b14ecef07 reverted only the late_requests and request_window_seconds lookups fail, while 371-372 still pass. The guard for the added reading is lines 373-375, and the duplicated quantile expectations restate the earlier case at line 342 rather than protecting the new field."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 3019,
+      "severity": "non-blocking",
+      "text": "The only production caller of review_request_census reads census['obligations'] and census['deadline_seconds'] and drops the rest, so late_requests reaches no duty row, log or surface; the fragment at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:113 says the census reports such a run apart, which is true of the returned dict and only readable by a test or a direct caller, not by a coordinator reading the pane."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_delivered_run_is_reviewed_within_minutes.py:374 reddens when the reading is removed (negative-control-dimension-durability.log records FAILED ... KeyError: 'late_requests' and 'request_window_seconds' with EXIT=1), but reverting 530b0d0caf's paragraph leaves every test green because no test reads that fragment, and lines 371-372 restate their own input.",
+    "evidence": "after_suite-530b0d0cafbd095cd5d130f406b55cc6845e4dae.log:1-8 records the three gate files at the head revision with '69 passed in 54.70s' EXIT=0 and baseline_suite-head.log records '58 passed in 42.35s' EXIT=0 at 0c9f4fc8, so the zero added-failure reading is taken from the arms, while the cumulative record at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:111 still contradicts the log it names.",
+    "fit": "The comment-before-constant and docstring idiom at reckon/crew/recovery_review_dispatch.py:4613-4620 matches REVIEW_REQUEST_DEADLINE_SECONDS directly above it, but both gained commit subjects (git show 6b14ecef07, 530b0d0caf) carry no conventional type prefix in a history that uses feat(crew):/fix(crew):/docs(evidence):.",
+    "goal_fidelity": "The gained reading supplies the 'told apart' half of the goal at reckon/crew/recovery_review_dispatch.py:4868, where a request slower than the window is now a named entry rather than an inference from quantiles, and the deliverable the goal states is otherwise untouched by this delta.",
+    "reuse": "A capability search over reckon/ for an owner of a review-request window found only unrelated 120 s constants (reckon/crew/recovery_vocabulary.py:56 LAUNCH_WINDOW_SECONDS, reckon/crew/obligation_snapshot.py:54 FRESHNESS_WINDOW_SECONDS), and the quantile still delegates to run_time_profile._percentile at reckon/crew/recovery_review_dispatch.py:4624, so the delta forks nothing.",
+    "scope_discipline": "git show --stat on 6b14ecef07 and 530b0d0caf lists only reckon/crew/recovery_review_dispatch.py, tests/test_a_delivered_run_is_reviewed_within_minutes.py and the declared evidence fragment, so the gained delta stays inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T003459576526-review-of-a-delivered-run-is-reviewed-within-minutes-530b0d0cafbd",
+  "reviewed_base_sha": "eddc1538a52d74991ee89102c041a37633493ef2",
+  "reviewed_head_sha": "530b0d0cafbd095cd5d130f406b55cc6845e4dae",
+  "reviewed_run_id": "r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:58:00+00:00",
+  "total": 104,
+  "verdicts": {
+    "diff": "Read commit by commit over eddc1538a5..530b0d0caf: 6b14ecef07 adds REVIEW_REQUEST_WINDOW_SECONDS and the late_requests reading at reckon/crew/recovery_review_dispatch.py:4613-4620 and 4868-4910 plus one case at tests/test_a_delivered_run_is_reviewed_within_minutes.py:348-379, and 530b0d0caf rewrites six lines of the census paragraph at docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html:109-116; no other path moved.",
+    "done_when": "The done_when names the census over the fleet's delivered runs plus a held-tick case inside 120 s and an obligation at ten minutes; after_suite-530b0d0cafbd095cd5d130f406b55cc6845e4dae.log:1-8 records the three gate files at the head revision with '69 passed in 54.70s' EXIT=0, baseline_suite-head.log records '58 passed in 42.35s' EXIT=0 at 0c9f4fc8, and negative-control-dimension-durability.log shows the gained case failing as KeyError: 'late_requests' when 6b14ecef07 is reverted.",
+    "goal": "The node goal is that a delivered run's review is requested within 120 s with request-to-launch recorded apart and an obligation past ten minutes (docs/plans/dispatch-admission-and-landing-take-seconds.html \u00a78); the gained delta leaves reckon/crew/recovery_review_dispatch.py:4768 review_request_census as the reader of that split and gives its window a named reading, so the goal stands and the delta corrects the record of what it measured.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes/manifest.md: status complete, commits ending 530b0d0caf, after_suite and baseline_suite both exit_status 0 with completed true and failure_count 0, negative_control_log naming a red run of '3 failed, 7 passed in 2.45s' EXIT=1, and a checkpoint naming the durability repair this delta lands.",
+    "write_paths": "The declared write paths include reckon/crew/recovery_review_dispatch.py, tests/test_a_delivered_run_is_reviewed_within_minutes.py and docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html; both gained commits touch only those three paths."
+  }
+}

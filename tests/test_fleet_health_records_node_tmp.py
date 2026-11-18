@@ -176,7 +176,7 @@ def test_admission_reads_the_local_disk_and_holds_only_below_reserve(
     monkeypatch.setenv("FLEET_NODE_TMP_ROOT", str(large / "missing"))
     assert service.node_disk_admission_hold()["kind"] == "node-disk-unreadable"
     (disk_state / "record.json").write_text(json.dumps({"node": "another-host"}))
-    assert service.node_disk_admission_hold()["kind"] == "node-disk-unreadable"
+    assert service.node_disk_admission_hold()["kind"] == "node-disk-missing"
 
 
 @pytest.mark.parametrize("named", [False, True])
@@ -333,7 +333,11 @@ def test_remote_admission_refuses_unavailable_samples(
     hold = service.node_disk_admission_hold()
     assert hold is not None, "a known remote fleet needs a current disk reading"
     expected = (
-        "node-disk-stale" if condition.startswith("expired") else "node-disk-unreadable"
+        "node-disk-missing"
+        if condition == "missing"
+        else "node-disk-stale"
+        if condition.startswith("expired")
+        else "node-disk-unreadable"
     )
     assert hold["kind"] == expected
     assert hold["kind"] != "node-disk-reserve"
@@ -420,7 +424,7 @@ def test_both_obligation_readers_record_unavailable_disk_readings(
         sample = supervisor.node_disk_snapshot(large, reserve_bytes=100 * 4096)
         sample["utc"] = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
         (disk_state / supervisor.NODE_DISK_RECORD).write_text(json.dumps(sample))
-    kind = "node-disk-stale" if state == "expired" else "node-disk-unreadable"
+    kind = "node-disk-stale" if state == "expired" else "node-disk-missing"
     direct = obligations.obligations("fixture", "fixture-session")
     published = obligation_snapshot.payload_for(
         obligation_snapshot.fleet_state("fixture"), "fixture-session"
@@ -478,7 +482,7 @@ def test_remote_queued_launch_waits_until_a_fresh_sample_arrives(
     monkeypatch.setattr(queue_admission, "_launch_queued", launch)
     missing = queue_admission.admit_once(run_id=pointer["run_id"], config_for=resolve)
     assert missing["held"] == [pointer["run_id"]]
-    assert missing["obligations"][0]["kind"] == "node-disk-unreadable"
+    assert missing["obligations"][0]["kind"] == "node-disk-missing"
     assert launched == []
     assert runs.read_pointer(pointer["run_id"])["phase"] == "queued"
 

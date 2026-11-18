@@ -33,6 +33,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
+from reckon._store import write_atomically
 from reckon.crew.fleet_supervisor import (
     CATCH_ALL_FLEET,
     FLEET_NAME_ENV,
@@ -930,10 +931,7 @@ def append_node_reading(path: Path, values: str = "") -> None:
             with path.open() as stream:
                 header = stream.readline().rstrip("\r\n").split("\t")
             if header != _HEALTH_COLUMNS:
-                archived = path.with_suffix(
-                    "." + datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ") + ".tsv"
-                )
-                path.rename(archived)
+                _widen_health_series(path, header)
         with path.open("a", encoding="utf-8", newline="") as stream:
             writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
             if not stream.tell():
@@ -945,6 +943,28 @@ def append_node_reading(path: Path, values: str = "") -> None:
                 writer.writerow(row)
             stream.flush()
             os.fsync(stream.fileno())
+
+
+def _widen_health_series(path: Path, header: list[str]) -> None:
+    """Replace a series atomically under its writer lock, retaining each row."""
+    if (
+        not header
+        or len(set(header)) != len(header)
+        or not set(header) <= set(_HEALTH_COLUMNS)
+    ):
+        raise FleetNodeError(f"health series has unrecognised columns: {path}")
+
+    def render(target):
+        with path.open(encoding="utf-8", newline="") as source:
+            reader = csv.DictReader(source, delimiter="\t")
+            writer = csv.writer(target, delimiter="\t", lineterminator="\n")
+            writer.writerow(_HEALTH_COLUMNS)
+            for row in reader:
+                if None in row or any(value is None for value in row.values()):
+                    raise FleetNodeError(f"health series has a malformed row: {path}")
+                writer.writerow(row.get(column, "-") for column in _HEALTH_COLUMNS)
+
+    write_atomically(path, render, fsync_directory=True)
 
 
 if __name__ == "__main__":

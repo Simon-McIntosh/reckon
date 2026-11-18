@@ -1,0 +1,178 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "self_referential": "No added assertion echoes a test-supplied expected input as its sole regression guard: :562 compares an observed durable intent identity with the persisted retained identity and :604 checks persisted fields for consistency; neither alone proves retention, which :554-555 and :596-597 establish independently.",
+    "tests/test_unowned_scratch_is_reclaimed.py:222": "Restoring the old timing/reason fails the literal post-intent refusal string; adjacent physical-survival assertions remain the safety evidence.",
+    "tests/test_unowned_scratch_is_reclaimed.py:540,542,545,546": "Setup controls fail if the injected writer is not open then closed, mutates root ctime, or creates a pointer; these establish that root metadata and holder/pointer guards cannot explain retention.",
+    "tests/test_unowned_scratch_is_reclaimed.py:553-556": "Skipping intent fails the nonempty publication assertion; restoring the pre-intent-only walk deletes the tree and fails the empty removal list and exact payload bytes, while replacing the root changes the independently saved ctime.",
+    "tests/test_unowned_scratch_is_reclaimed.py:561-564": "Omitting retained journaling, using a different removal identity, losing the descendant reason or leaving the pending receipt fails the literal state sequence, correlation, cause substring or independent directory enumeration.",
+    "tests/test_unowned_scratch_is_reclaimed.py:596-597": "Moving the walk back before acknowledgement means neither injected exception is raised during the final check, so removal occurs and independently saved tree contents disappear; swallowing a post-intent exception also causes these assertions to fail.",
+    "tests/test_unowned_scratch_is_reclaimed.py:602-605": "Missing intent/retained rows, a wrong unreadable reason, inconsistent cause fields or an unretired receipt fails the journal-state, literal cause, consistency or physical pending-file check."
+  },
+  "call_sites": [
+    "bin/fleet-health:129 sample-node-disk invocation",
+    "reckon/crew/fleet_supervisor.py:4155 sample-node-disk CLI branch",
+    "reckon/crew/fleet_supervisor.py:677 sample_node_disk calls reclaim_unowned_scratch",
+    "reckon/crew/fleet_supervisor.py:659 reclaim_unowned_scratch calls garbage_collect_orphan_scratch with inspect_activity=True",
+    "reckon/crew/gc.py:1464 garbage_collect calls garbage_collect_orphan_scratch with inspect_activity default False"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T04:34:28Z",
+  "findings": [],
+  "importer_evidence": {
+    "added_failure_ids": [],
+    "baseline": {
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_gate_names_its_arms.py::test_a_mismatch_waiver_lands_with_its_reason_and_the_held_arms",
+        "tests/test_a_gate_names_its_arms.py::test_a_waiver_never_covers_a_failure_the_held_arms_add",
+        "tests/test_a_gate_names_its_arms.py::test_declared_gpu_arms_land_and_the_row_names_them",
+        "tests/test_a_gate_names_its_arms.py::test_the_same_arms_undeclared_are_refused_naming_the_mismatch",
+        "tests/test_a_released_worktree_takes_its_index.py::test_the_runless_sweep_removes_an_index_whose_checkout_is_gone",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_an_admission_pass_fills_free_slots.py::test_the_admit_service_stops_after_its_launches_finish",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_concurrent_edits_land_unattended.py::test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_promotion",
+        "tests/test_the_retention_sweep_runs_on_its_own.py::test_the_pass_reads_each_ledger_through_its_index",
+        "tests/test_the_run_store_retires_old_runs.py::test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_fields",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/importer_base-1794961519987247408.log",
+      "revision": "61fb9eb5113fcd38b18158ffad554f208e0ad77c",
+      "summary": "22 failed, 1123 passed, 9 skipped, 1 warning in 223.58s (0:03:43)"
+    },
+    "head": {
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_gate_names_its_arms.py::test_a_mismatch_waiver_lands_with_its_reason_and_the_held_arms",
+        "tests/test_a_gate_names_its_arms.py::test_a_waiver_never_covers_a_failure_the_held_arms_add",
+        "tests/test_a_gate_names_its_arms.py::test_declared_gpu_arms_land_and_the_row_names_them",
+        "tests/test_a_gate_names_its_arms.py::test_the_same_arms_undeclared_are_refused_naming_the_mismatch",
+        "tests/test_a_released_worktree_takes_its_index.py::test_the_runless_sweep_removes_an_index_whose_checkout_is_gone",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_an_admission_pass_fills_free_slots.py::test_the_admit_service_stops_after_its_launches_finish",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_concurrent_edits_land_unattended.py::test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface",
+        "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_promotion",
+        "tests/test_the_retention_sweep_runs_on_its_own.py::test_the_pass_reads_each_ledger_through_its_index",
+        "tests/test_the_run_store_retires_old_runs.py::test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_fields",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/importer-post-intent-activity-1794975925235828654-receipt.log",
+      "revision": "9c13eabdcc278a1b8a3679238132e6260a783e5c",
+      "summary": "22 failed, 1147 passed, 9 skipped in 249.04s (0:04:09)"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified five exact-head production call sites; the default-False manual GC path remains unaffected by the moved activity-only block.",
+    "diff": "Read commit 9c13eabdcc278a1b8a3679238132e6260a783e5c against 49e735191c789aa23791614fb56a9fed1e5ae199; its two-path diff moves the final activity walk and adds four parameterized regression cases.",
+    "done_when": "Source prompt.txt:190 and live plan \u00a713 require the protected-entry cases, a failing ownership mutation and no added importer failures on all_debug; recorded arms cover these, while the separate 24-hour post-landing observation remains pending.",
+    "goal": "Source prompt.txt:38 requires removal of inactive unowned scratch with a record; reckon/crew/gc.py:1744-1775 now rechecks descendants after intent acknowledgement and retains refreshed or unreadable trees.",
+    "manifest": "Source manifest.md names committed head 9c13eabdcc278a1b8a3679238132e6260a783e5c, a failing pre-repair reproduction, passing exact-head receipts and zero added importer failures, with integration and live observation explicitly remaining.",
+    "write_paths": "Source manifest.md:3 grants reckon/crew/gc.py and tests/test_unowned_scratch_is_reclaimed.py; the incremental diff changes only these two paths."
+  },
+  "justifications": {
+    "durability": "tests/test_unowned_scratch_is_reclaimed.py:554-564 fails if the activity walk returns before publication again, while :596-605 fails if post-intent OSError or TimeoutError licenses deletion or loses the retained journal row.",
+    "evidence": "Source baseline_suite-1794962920344185848-receipt.log and after-suite-post-intent-activity-1794975924539656346-receipt.log record 70 and 94 passes with EXIT=0, and the ownership mutation fails four cases; live plan \u00a713's 24-hour observation remains unmeasured.",
+    "fit": "reckon/crew/gc.py:1748-1773 extends the existing refusal and retained-entry idiom with mechanism-based names, and the new tests reuse the existing isolated scratch fixture.",
+    "goal_fidelity": "reckon/crew/gc.py:1744-1775 performs the final fail-closed activity walk after durable publication, with no further journal write before removal on the successful path.",
+    "reuse": "Capability searches for descendant recency and unreadable activity found the owner reckon/crew/gc.py:_scratch_activity at :1512; the repair calls that owner at :1752 and adds no production definition or parallel implementation.",
+    "scope_discipline": "The incremental commit changes only reckon/crew/gc.py and tests/test_unowned_scratch_is_reclaimed.py, both explicitly granted in source manifest.md:3 and directly required by the recorded finding."
+  },
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "failure_ids": [
+      "tests/test_unowned_scratch_is_reclaimed.py::test_disk_pressure_names_stale_entries_retained_for_a_live_runs_owner",
+      "tests/test_unowned_scratch_is_reclaimed.py::test_disk_sampler_runs_sweep_and_pressure_separates_live_and_unowned",
+      "tests/test_unowned_scratch_is_reclaimed.py::test_pass_removes_only_two_old_unowned_entries_and_records_each",
+      "tests/test_unowned_scratch_is_reclaimed.py::test_pointer_appearing_during_intent_publication_prevents_deletion"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/negative-post-intent-activity.log",
+    "parser_positive_control": "The identical anchored FAILED-id parser sees four known-present failures in the ownership mutation before reporting zero in either completed suite arm.",
+    "summary": "4 failed, 20 passed in 1.40s"
+  },
+  "outside_scope": {
+    "integration": "Merged-head verification is a separately dispatched node.",
+    "remaining_observation": "The plan-required 24-hour live observation follows landing and belongs to the coordinator; this read-only review does not claim it completed."
+  },
+  "previous_findings": {
+    "post_intent_descendant_activity": "Addressed: final descendant walk follows durable intent and claim recheck, catches unreadability/timeouts and journals retained outcomes; added closed-writer controls preserve root ctime and leave no pointer or open writer."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires removal of inactive unowned scratch with a record; reckon/crew/gc.py:1744-1775 now rechecks descendants after intent acknowledgement and retains refreshed or unreadable trees.\nVERDICT done_when: Source prompt.txt:190 and live plan \u00a713 require the protected-entry cases, a failing ownership mutation and no added importer failures on all_debug; recorded arms cover these, while the separate 24-hour post-landing observation remains pending.\nVERDICT write_paths: Source manifest.md:3 grants reckon/crew/gc.py and tests/test_unowned_scratch_is_reclaimed.py; the incremental diff changes only these two paths.\nVERDICT manifest: Source manifest.md names committed head 9c13eabdcc278a1b8a3679238132e6260a783e5c, a failing pre-repair reproduction, passing exact-head receipts and zero added importer failures, with integration and live observation explicitly remaining.\nVERDICT diff: Read commit 9c13eabdcc278a1b8a3679238132e6260a783e5c against 49e735191c789aa23791614fb56a9fed1e5ae199; its two-path diff moves the final activity walk and adds four parameterized regression cases.\nCALL_SITES: bin/fleet-health:129 sample-node-disk invocation, reckon/crew/fleet_supervisor.py:4155 sample-node-disk CLI branch, reckon/crew/fleet_supervisor.py:677 sample_node_disk calls reclaim_unowned_scratch, reckon/crew/fleet_supervisor.py:659 reclaim_unowned_scratch calls garbage_collect_orphan_scratch with inspect_activity=True, reckon/crew/gc.py:1464 garbage_collect calls garbage_collect_orphan_scratch with inspect_activity default False\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1744-1775 performs the final fail-closed activity walk after durable publication, with no further journal write before removal on the successful path.\nSCORE evidence: 18\nJUSTIFICATION evidence: Source baseline_suite-1794962920344185848-receipt.log and after-suite-post-intent-activity-1794975924539656346-receipt.log record 70 and 94 passes with EXIT=0, and the ownership mutation fails four cases; live plan \u00a713's 24-hour observation remains unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The incremental commit changes only reckon/crew/gc.py and tests/test_unowned_scratch_is_reclaimed.py, both explicitly granted in source manifest.md:3 and directly required by the recorded finding.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_unowned_scratch_is_reclaimed.py:554-564 fails if the activity walk returns before publication again, while :596-605 fails if post-intent OSError or TimeoutError licenses deletion or loses the retained journal row.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/gc.py:1748-1773 extends the existing refusal and retained-entry idiom with mechanism-based names, and the new tests reuse the existing isolated scratch fixture.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for descendant recency and unreadable activity found the owner reckon/crew/gc.py:_scratch_activity at :1512; the repair calls that owner at :1752 and adds no production definition or parallel implementation.\n",
+  "reproduction_evidence": {
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/post-intent-activity-reproduction.log",
+    "provenance": "Source manifest artifacts identify this as the pre-repair reproduction at 49e735191c789aa23791614fb56a9fed1e5ae199; log directly records failed refusal assertion and EXIT=1.",
+    "quote": ">       assert report[\"removed\"] == []\nE       AssertionError: assert [<scratch>/landing-written-after-intent] == []",
+    "summary": "1 failed in 0.98s"
+  },
+  "review_run_id": "r-20261118T043259833944-review-of-unowned-scratch-is-reclaimed-9c13eabdcc27",
+  "reviewed_base_sha": "49e735191c789aa23791614fb56a9fed1e5ae199",
+  "reviewed_commits": [
+    "9c13eabdcc278a1b8a3679238132e6260a783e5c"
+  ],
+  "reviewed_head_sha": "9c13eabdcc278a1b8a3679238132e6260a783e5c",
+  "reviewed_paths": [
+    "reckon/crew/gc.py",
+    "tests/test_unowned_scratch_is_reclaimed.py"
+  ],
+  "reviewed_run_id": "r-20261118T001329090851-unowned-scratch-is-reclaimed",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_session_scratch_uses_bounded_node_tmp.py tests/test_unowned_scratch_is_reclaimed.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/after-suite-post-intent-activity-1794975924539656346-receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "9c13eabdcc278a1b8a3679238132e6260a783e5c",
+      "summary": "94 passed in 43.81s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_session_scratch_uses_bounded_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/baseline_suite-1794962920344185848-receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "61fb9eb5113fcd38b18158ffad554f208e0ad77c",
+      "summary": "70 passed in 41.78s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T04:41:35.979084+00:00",
+  "total": 118
+}

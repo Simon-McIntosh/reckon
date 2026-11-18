@@ -6,9 +6,11 @@ import re
 import shlex
 import shutil
 import socket
+import stat
 import sys
 import tempfile
 import time
+import uuid
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import TextIO
 
@@ -1498,6 +1500,8 @@ _UNATTRIBUTED_SIZE_LIMIT = 200_000
 
 
 SCRATCH_GRACE_SECONDS = 2 * 60 * 60
+SCRATCH_ACTIVITY_SECONDS = 5.0
+SCRATCH_PASS_SECONDS = 5.0
 
 
 def _scratch_ctime(path: Path) -> float:
@@ -1505,8 +1509,44 @@ def _scratch_ctime(path: Path) -> float:
     return path.stat().st_ctime
 
 
-def _scratch_process_holders(root: Path) -> dict[str, list[int]]:
-    """Read process cwd and fd links once for every scratch child."""
+def _scratch_activity(path: Path, deadline: float) -> tuple[float, int]:
+    """Read the newest mutation and logical bytes without following symlinks.
+
+    Directory ctime alone misses writes to existing descendants. Both ctime
+    and mtime matter: extraction can preserve old mtimes, while a future mtime
+    must conservatively keep a tree. A partial walk never licenses removal.
+    """
+
+    def unreadable(error: OSError) -> None:
+        raise error
+
+    metadata = path.lstat()
+    if stat.S_ISREG(metadata.st_mode):
+        return max(metadata.st_ctime, metadata.st_mtime), metadata.st_size
+    latest = _scratch_ctime(path)
+    size = 0
+    for directory, directories, files in os.walk(
+        path, followlinks=False, onerror=unreadable
+    ):
+        for entry in [
+            Path(directory),
+            *(Path(directory) / name for name in directories + files),
+        ]:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("scratch activity census exceeded its bound")
+            metadata = entry.lstat()
+            latest = max(latest, metadata.st_ctime, metadata.st_mtime)
+            if stat.S_ISREG(metadata.st_mode):
+                size += metadata.st_size
+    return latest, size
+
+
+def _scratch_process_holders(root: Path, *, depth: int = 1) -> dict[str, list[int]]:
+    """Read cwd and fd holders grouped at the requested scratch depth.
+
+    Two path components distinguish an idle copy from a worker using another
+    entry in the same live run, without rescanning /proc for every copy.
+    """
     holders: dict[str, list[int]] = {}
     proc = Path("/proc")
     for entry in proc.iterdir():
@@ -1518,8 +1558,56 @@ def _scratch_process_holders(root: Path) -> dict[str, list[int]]:
             except (OSError, ValueError):
                 continue
             if relative.parts:
-                holders.setdefault(relative.parts[0], []).append(int(entry.name))
+                key = str(Path(*relative.parts[:depth]))
+                holders.setdefault(key, []).append(int(entry.name))
     return holders
+
+
+def _stale_live_scratch_entries(
+    directory: Path,
+    owner: Mapping[str, Any],
+    holders: Mapping[str, list[int]],
+    *,
+    stamp: float,
+    grace_seconds: float,
+    after: str = "",
+    advance: Callable[[str], None] | None = None,
+    pass_deadline: float = float("inf"),
+) -> tuple[list[dict[str, Any]], bool]:
+    """Inspect live children fairly without licensing their removal."""
+    entries = []
+    children = sorted(directory.iterdir())
+    split = bisect.bisect_right([child.name for child in children], after)
+    children = children[split:] + children[:split]
+    complete = True
+    for child in children:
+        if time.monotonic() >= pass_deadline:
+            return entries, False
+        if advance is not None:
+            advance(child.name)
+        if child.is_symlink() or holders.get(str(Path(directory.name) / child.name)):
+            continue
+        try:
+            latest, size = _scratch_activity(
+                child, time.monotonic() + SCRATCH_ACTIVITY_SECONDS
+            )
+        except (OSError, TimeoutError):
+            complete = False
+            continue
+        age = max(0.0, stamp - latest)
+        if age >= grace_seconds:
+            entries.append(
+                {
+                    "path": str(child),
+                    "bytes": size,
+                    "inactivity_seconds": age,
+                    "run_id": directory.name,
+                    "project": str(owner.get("project") or ""),
+                    "session": str(owner.get("session") or ""),
+                    "reason": "inactive entry retained because its run is live",
+                }
+            )
+    return entries, complete
 
 
 def scratch_root_pairs_with_state_home(
@@ -1547,13 +1635,23 @@ def scratch_root_pairs_with_state_home(
 
 
 def garbage_collect_orphan_scratch(
-    *, apply: bool = False, now: float | None = None
+    *,
+    apply: bool = False,
+    now: float | None = None,
+    grace_seconds: float = SCRATCH_GRACE_SECONDS,
+    inspect_activity: bool = False,
+    record_removal: Callable[[dict[str, Any]], None] | None = None,
+    cursor_path: Path | None = None,
 ) -> dict[str, Any]:
-    """Report aged, unclaimed scratch; remove it only after rechecking claims.
+    """Recheck one candidate at a time, recording intent before any deletion.
 
-    The configured root is the only permitted target. Directory ctime is used
-    because extracted archives can carry arbitrarily old file mtimes.
+    Each activity walk gets its own five-second bound. An automatic pass also
+    has a five-second scheduling budget, checked between candidates, and saves
+    its position before a walk: even an interrupted pass resumes beyond a tree
+    that consumed its time. The recorder must durably acknowledge an intent
+    before returning; a failed completion leaves that intent recoverable.
     """
+    from reckon._store import write_json_atomically
     from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
 
     root = worker_scratch_root()
@@ -1571,13 +1669,120 @@ def garbage_collect_orphan_scratch(
         return {"root": str(root), "entries": [], "removed": [], "bytes_freed": 0}
     if not root.is_dir() or not Path("/proc").is_dir():
         raise CrewError(f"scratch sweep cannot safely inspect {root} and /proc")
+    if grace_seconds < 0:
+        raise ValueError("scratch grace must be nonnegative")
     stamp = time.time() if now is None else now
-    live_ids = {str(row.get("run_id") or "") for row in list_live()}
-    holders = _scratch_process_holders(root)
+    live_runs = {str(row.get("run_id") or ""): row for row in list_live()}
+    detailed_holders = (
+        _scratch_process_holders(root, depth=2) if inspect_activity else {}
+    )
+    holders: dict[str, list[int]] = {}
+    if inspect_activity:
+        for path, pids in detailed_holders.items():
+            holders.setdefault(Path(path).parts[0], []).extend(pids)
+    else:
+        holders = _scratch_process_holders(root)
+    cursor: dict[str, Any] = {"after": "", "live": {}}
+    if cursor_path is not None:
+        with contextlib.suppress(FileNotFoundError):
+            cursor = json.loads(cursor_path.read_text())
+        if (
+            not isinstance(cursor, dict)
+            or not isinstance(cursor.get("after"), str)
+            or not isinstance(cursor.get("live"), dict)
+            or not all(isinstance(value, str) for value in cursor["live"].values())
+        ):
+            raise CrewError("scratch sweep cursor is unreadable")
+        cursor["live"] = {
+            name: after for name, after in cursor["live"].items() if name in live_runs
+        }
+
+    def advance(name: str, child: str | None = None) -> None:
+        if cursor_path is None:
+            return
+        if child is None:
+            cursor["after"] = name
+        else:
+            cursor["live"][name] = child
+        write_json_atomically(cursor_path, cursor, fsync_directory=True)
+
+    children = sorted(root.iterdir())
+    split = bisect.bisect_right([child.name for child in children], cursor["after"])
+    children = children[split:] + children[:split]
+    pass_deadline = (
+        time.monotonic() + SCRATCH_PASS_SECONDS
+        if cursor_path is not None
+        else float("inf")
+    )
     entries: list[dict[str, Any]] = []
     removed: list[str] = []
+    stale_live_entries: list[dict[str, Any]] = []
     bytes_freed = 0
-    for child in sorted(root.iterdir()):
+    entries_complete = True
+    live_entries_complete = True
+
+    def refusal(child: Path) -> str:
+        current_holders = _scratch_process_holders(root)
+        if pointer_path(child.name).exists():
+            return "live pointer appeared during sweep"
+        if current_holders.get(child.name):
+            return f"held by process {current_holders[child.name]}"
+        if child.is_symlink() or child.resolve().parent != root:
+            return "path left configured scratch root"
+        if stamp - _scratch_ctime(child) < grace_seconds:
+            return "ctime refreshed during sweep"
+        return ""
+
+    def remove(entry: dict[str, Any]) -> None:
+        child = Path(entry["path"])
+        entry["withheld"] = refusal(child)
+        if entry["withheld"]:
+            return
+        entry["reason"] = "no live run or process; inactivity grace elapsed"
+        entry["removal_id"] = uuid.uuid4().hex
+        if record_removal is not None:
+            record_removal({**entry, "state": "intent"})
+        # Publication can block on storage. Claims and every descendant must
+        # be checked after its acknowledgement, with no further writes between
+        # a successful activity walk and removal.
+        entry["withheld"] = refusal(child)
+        if not entry["withheld"] and inspect_activity:
+            before = (entry["ctime_age_seconds"], entry["bytes"])
+            try:
+                latest, size = _scratch_activity(
+                    child, time.monotonic() + SCRATCH_ACTIVITY_SECONDS
+                )
+            except (OSError, TimeoutError) as exc:
+                entry["withheld"] = f"activity unreadable after intent: {exc}"
+            else:
+                age = max(0.0, stamp - latest)
+                entry["bytes"] = size
+                entry["ctime_age_seconds"] = age
+                if stamp - latest < grace_seconds:
+                    entry["withheld"] = "descendant refreshed after intent"
+                elif (age, size) != before:
+                    entry["withheld"] = "descendant activity changed after intent"
+        if entry["withheld"]:
+            if record_removal is not None:
+                record_removal(
+                    {
+                        **entry,
+                        "state": "retained",
+                        "reason": entry["withheld"],
+                    }
+                )
+            return
+        shutil.rmtree(child)
+        entry["removed"] = True
+        removed.append(str(child))
+        if record_removal is not None:
+            record_removal({**entry, "state": "complete"})
+
+    for child in children:
+        if time.monotonic() >= pass_deadline:
+            entries_complete = False
+            break
+        advance(child.name)
         if child.is_symlink() or not child.is_dir():
             entries.append(
                 {
@@ -1588,15 +1793,25 @@ def garbage_collect_orphan_scratch(
                 }
             )
             continue
-        size = tree_size_bytes(child)
+        size = None if inspect_activity else tree_size_bytes(child)
         age = max(0.0, stamp - _scratch_ctime(child))
         reason = ""
-        if child.name in live_ids:
+        if child.name in live_runs:
             reason = "live pointer"
-        elif age < SCRATCH_GRACE_SECONDS:
-            reason = f"ctime within {SCRATCH_GRACE_SECONDS} second grace"
         elif holders.get(child.name):
             reason = f"held by process {holders[child.name]}"
+        elif age < grace_seconds:
+            reason = f"ctime within {grace_seconds} second grace"
+        elif inspect_activity:
+            try:
+                latest, size = _scratch_activity(
+                    child, time.monotonic() + SCRATCH_ACTIVITY_SECONDS
+                )
+                age = max(0.0, stamp - latest)
+                if age < grace_seconds:
+                    reason = "descendant touched within grace"
+            except (OSError, TimeoutError) as exc:
+                reason = f"activity unreadable: {exc}"
         entry: dict[str, Any] = {
             "path": str(child),
             "bytes": size,
@@ -1605,33 +1820,40 @@ def garbage_collect_orphan_scratch(
             "withheld": reason,
         }
         entries.append(entry)
-    if apply:
-        # A second /proc pass catches holders that appeared during sizing,
-        # without rescanning all processes separately for every directory.
-        current_holders = _scratch_process_holders(root)
-        for entry in entries:
-            if entry["withheld"]:
-                continue
-            child = Path(entry["path"])
-            if pointer_path(child.name).exists():
-                entry["withheld"] = "live pointer appeared during sweep"
-            elif current_holders.get(child.name):
-                entry["withheld"] = f"held by process {current_holders[child.name]}"
-            elif child.is_symlink() or child.resolve().parent != root:
-                entry["withheld"] = "path left configured scratch root"
-            elif stamp - _scratch_ctime(child) < SCRATCH_GRACE_SECONDS:
-                entry["withheld"] = "ctime refreshed during sweep"
-            else:
-                shutil.rmtree(child)
-                entry["removed"] = True
-                removed.append(str(child))
+        if apply and not reason:
+            remove(entry)
+            if entry["removed"]:
                 bytes_freed += entry["bytes"]
+        if inspect_activity and child.name in live_runs:
+            try:
+                live_entries, complete = _stale_live_scratch_entries(
+                    child,
+                    live_runs[child.name],
+                    detailed_holders,
+                    stamp=stamp,
+                    grace_seconds=grace_seconds,
+                    after=cursor["live"].get(child.name, ""),
+                    advance=lambda name, owner=child.name: advance(owner, name),
+                    pass_deadline=pass_deadline,
+                )
+                stale_live_entries.extend(live_entries)
+                live_entries_complete = live_entries_complete and complete
+            except (OSError, TimeoutError) as exc:
+                live_entries_complete = False
+                entry["live_entries_error"] = str(exc)
     return {
         "root": str(root),
         "entries": entries,
         "removed": removed,
         "bytes_freed": bytes_freed,
-        "would_free_bytes": sum(row["bytes"] for row in entries if not row["withheld"]),
+        "entries_complete": entries_complete,
+        "stale_live_entries": stale_live_entries,
+        "live_entries_complete": live_entries_complete,
+        "would_free_bytes": sum(
+            row["bytes"]
+            for row in entries
+            if not row["withheld"] and row["bytes"] is not None
+        ),
     }
 
 

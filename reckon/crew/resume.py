@@ -189,7 +189,11 @@ def hold_delivery(
 
 
 def release_hold(
-    run_id: str, reason: str, *, by: str = DEFAULT_HOLDER
+    run_id: str,
+    reason: str,
+    *,
+    by: str = DEFAULT_HOLDER,
+    expected: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Release a hold, recording why the deferral ended.
 
@@ -205,6 +209,8 @@ def release_hold(
         )
 
     def mutation(record: dict[str, Any]) -> dict[str, Any]:
+        if expected is not None and record != dict(expected):
+            raise CrewError(f"run {run_id!r} changed before its hold could be released")
         hold = delivery_hold(record)
         if hold is None:
             raise CrewError(f"run {run_id!r} carries no hold to release")

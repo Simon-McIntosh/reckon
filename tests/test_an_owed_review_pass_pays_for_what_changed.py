@@ -24,12 +24,12 @@ def _stamp(seconds):
 
 
 def _insert(store, row):
-    identity, durable, detail = run_store._split_durable(PROJECT, row)
+    identity, durable, detail = run_store._split_durable(row)
     store._conn.execute(
         run_store._RUNS_INSERT,
         (
             identity,
-            *run_store._query_values(durable, detail),
+            *run_store._query_values(durable, detail, project=PROJECT),
             None,
             json.dumps(durable),
         ),

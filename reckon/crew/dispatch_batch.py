@@ -593,6 +593,15 @@ def _entry_node(
         raise BatchEntryRefusedError(
             f"entry {index + 1} allow_unreviewed_plan must be true or false"
         )
+    # A priority is a whole number of points, so a batch file that spells it
+    # "3" is refused rather than read as no priority at all: the string would
+    # otherwise store a request nobody prioritised while the entry says it did.
+    priority = entry.get("priority", 0)
+    if isinstance(priority, bool) or not isinstance(priority, int) or priority < 0:
+        raise BatchEntryRefusedError(
+            f"entry {index + 1} priority must be a whole number of points, "
+            f"zero or more, not {entry.get('priority')!r}"
+        )
     project = str(entry.get("project") or "").strip()
     plan = str(entry.get("plan") or "").strip()
     section = str(entry.get("section") or "").strip()

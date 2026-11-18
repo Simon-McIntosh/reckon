@@ -174,12 +174,12 @@ def _fill_store(repository: Path) -> str:
     # one transaction so per-row filesystem syncs cannot exhaust its timeout.
     with run_store.RunStore() as store, store._conn:
         for record in records:
-            identity, durable, detail = run_store._split_durable(PROJECT, record)
+            identity, durable, detail = run_store._split_durable(record)
             store._conn.execute(
                 run_store._RUNS_INSERT,
                 (
                     identity,
-                    *(durable.get(key) for key in run_store.QUERY_KEYS),
+                    *run_store._query_values(durable, detail, project=PROJECT),
                     None,
                     json.dumps(durable),
                 ),

@@ -43,12 +43,12 @@ def population(tmp_path_factory):
     with run_store.RunStore(path) as store:
         with store._conn:
             for row in records:
-                identity, durable, detail = run_store._split_durable("example", row)
+                identity, durable, detail = run_store._split_durable(row)
                 store._conn.execute(
                     run_store._RUNS_INSERT,
                     (
                         identity,
-                        *run_store._query_values(durable, detail),
+                        *run_store._query_values(durable, detail, project="example"),
                         None,
                         json.dumps(durable),
                     ),

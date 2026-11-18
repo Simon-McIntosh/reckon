@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-evidence-for" content="reckon:dispatch-admission-and-landing-take-seconds">
+  <meta name="plan-verifies" content="reckon:dispatch-admission-and-landing-take-seconds#s8">
+  <meta name="plan-recorded-at" content="2026-11-17">
+  <meta name="plan-verdict" content="passed">
+  <title>A delivered run's request is read apart from its launch</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-delivered-run-is-reviewed-within-minutes-landing"
+         data-node="a-delivered-run-is-reviewed-within-minutes"
+         data-reckon="landed" data-when="2026-11-17">
+  <h2>Two intervals, not one: the request a crew makes and the launch it waits for</h2>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-defect"><strong>The defect.</strong>
+  A delivered run cannot land until it is reviewed, and the request that starts
+  the review is made by the crew. The stage receipts already dated each handoff,
+  but nothing read them as the two intervals the measure turns on: the delivery
+  to the request, and the request to the launch. Read as one figure, a late
+  request and a slow launch are indistinguishable, and a run whose request was
+  never made at all appears only as a review that is missing.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-what-landed"><strong>What landed.</strong>
+  <code>reckon/crew/recovery_review_dispatch.py</code> reads the first instant of
+  each of the four stages from the run's own receipts
+  (<code>review_stage_instants</code>) and reports them as
+  <code>review_request_census</code>: one row per delivered run with
+  <code>request_lag_seconds</code> and <code>launch_lag_seconds</code> kept
+  apart, the median and 90th percentile of each, and an
+  <code>obligations</code> list holding every delivered run with no request after
+  <code>REVIEW_REQUEST_DEADLINE_SECONDS</code> (600 s), each carrying the reason
+  its own record gives — the reflex's recorded dispatch, the refusal its dispatch
+  rule would return, or the session no armed follower serves.
+  <code>reckon/crew/resumption.py</code> runs that reading on the pass that makes
+  the requests and carries the obligations on the sweep's report, so a sweep
+  that could not request a review says which run and why. The obligation is also
+  written into the review pass's owed rows, which is the record the station
+  keeps per session and renders as a duty: the reason a coordinator is shown is
+  the reason the census found, not a second account of it. The percentile the
+  census quotes is the run-time profile's own rule, and a request receipted
+  before the delivery it belongs to is counted with the unrecorded requests
+  rather than quoted as a zero-length interval or mistaken for a request nobody
+  made.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-harness"><strong>The harness.</strong>
+  <code>tests/test_a_delivered_run_is_reviewed_within_minutes.py</code> builds the
+  fixture repository and a temporary crew home, delivers a scoring run by the
+  watcher's own writer, and holds a stand-in station tick in its refresh stage
+  while the follower's sweep requests the review. It asserts the sweep's own
+  report names the run as dispatched, the review's pointer exists, and the
+  receipt's request instant is no later than <strong>120 s</strong> after the
+  delivery's — then reads the same instants back through the census, records the
+  review's admission and start the way the fleet's own writer does, and asserts
+  the request-to-launch interval against those receipts, so a stage the census
+  stops mapping leaves that interval unknown and reddens the case. The second
+  case withholds the request's precondition — its session has no armed follower
+  — and reads no obligation at 599 s and one at 601 s whose reason names that
+  session. A third case reads a recorded refusal as the reason rather than as no
+  dispatch at all. The census itself is measured against a two-run sample of
+  known size, so the median names the near lag and the 90th percentile the far
+  one; an out-of-order receipt pair, a reviewer whose id carries no prefix but
+  whose pointer says it is one, the review's inherited priority, and the duty
+  row the obligation reaches are each a case of their own.</p>
+
+<p id="a-delivered-run-is-reviewed-within-minutes-gate"><strong>Gate.</strong>
+  The armed suite arms are the receipt for every figure here, and each figure
+  below is that log's own summary line. The head arm — this node's test file
+  beside the two importer files — reads <strong>68 passed in 47.21s</strong> at
+  revision <code>06a1e99f75</code> (<code>after_suite-head.log</code>, last line
+  <code>EXIT=0</code>). The base arm reads <strong>58 passed in 42.35s</strong>
+  at revision <code>0c9f4fc8cd</code> over the two importer files alone
+  (<code>baseline_suite-head.log</code>, <code>EXIT=0</code>): the node's test
+  file does not exist at the base revision, which is why the two commands
+  differ. Both report <strong>0 failures</strong>, and both are recorded in the
+  manifest's <code>after_suite</code> and <code>baseline_suite</code> fields
+  with their own commands, revisions and log paths.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-negative-control"><strong>Negative control.</strong>
+  With the sweep's review pass made to wait for the tick — the pass gated on a
+  marker the held tick never writes — the in-window case fails
+  (<code>FAILED tests/test_a_delivered_run_is_reviewed_within_minutes.py::test_a_delivered_run_is_requested_inside_the_window_while_a_tick_is_held</code>,
+  <strong>3 failed, 7 passed in 2.45s</strong> at revision
+  <code>8bf50b476f</code>, <code>EXIT=1</code>), beside the case that
+  reads the inherited priority and the case that follows the obligation to the
+  duty row, both of which depend on the same pass. So the cases measure the
+  request's independence rather than restating it. The log is named on the
+  manifest's <code>negative_control_log</code> line.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-census"><strong>The live census.</strong>
+  Taken over the live crew home at 2026-11-17T21:45Z, of the fleet before this
+  change lands. The log is <code>live-census-20261117T2145Z.log</code> in the
+  run's directory; its first line reads <code>receipt files: 39 delivered
+  runs: 31</code>, and its fields are pasted here as it writes them:
+  <code>counts</code> = <code>{"delivered": 23, "launched": 4,
+  "request_unrecorded": 9, "requested": 5, "unrequested": 9}</code>;
+  <code>request_lag_seconds</code> = <code>{"p50": 96.674459, "p90": 917.087791,
+  "max": 917.087791}</code>; <code>launch_lag_seconds</code> =
+  <code>{"p50": 124.142871, "p90": 147.50823, "max": 147.50823}</code>;
+  <code>deadline_seconds</code> 600; <code>obligations</code> 8 entries;
+  <code>request_unrecorded</code> 9 entries. Two of the five requested runs are
+  outside the 120 s window: 197.951593
+  (<code>r-20261117T160244730423-a-live-pointer-carries-no-clone-report</code>)
+  and 917.087791, the sample's own max. The rows the log prints carry
+  <code>request_lag_seconds</code> 96.674459, 197.951593 and 86.610988, and
+  <code>launch_lag_seconds</code> 130.764802 and 124.142871. The census returns
+  the runs outside its 120 s window as <code>late_requests</code>; that reading
+  is asserted by the node's late-request case and travels on the sweep's report,
+  not on a pane row.</p>
+
+  <p id="a-delivered-run-is-reviewed-within-minutes-priority"><strong>What is not here.</strong>
+  The request's priority is inherited from the run it reviews by
+  <code>a-session-spends-a-priority-budget</code> §3, which owns the ordering the
+  inheritance reaches; this node's census reads the receipts it will write and
+  does not restate the rule.</p>
+</article>
+
+</body>
+</html>

@@ -3575,6 +3575,34 @@ def _refuse_an_unfileable_review_record(
         raise click.exceptions.Exit(1)
 
 
+def _record_suite_delta_waiver(
+    run_id: str, pointer: dict[str, Any], reason: str
+) -> dict[str, Any]:
+    """Keep a stated suite-delta waiver on the run it was given for.
+
+    A review may file a waived failure count only against a run that carries
+    this waiver, and the review is judged before the landing that evaluates the
+    suite delta. So the waiver is recorded on the run when the promotion is
+    asked for, including a request the promotion then refuses: the review of a
+    run whose arms cannot be compared is what the landing waits on, and the
+    reviewer needs the waiver in hand before the landing that would record it
+    can succeed.
+
+    It records the reason and nothing else. The delta itself is still judged at
+    the landing by its own owner, so this record opens no path through the
+    suite guard: it only lets a review state that there was no pair to count.
+    """
+    from reckon.crew import runs as runs_module
+
+    recorded = {"reason": str(reason).strip(), "recorded_at": time.time()}
+    previous = pointer.get("suite_delta_waiver")
+    if isinstance(previous, Mapping) and previous.get("reason") == recorded["reason"]:
+        return pointer
+    return runs_module._mutate_pointer(
+        run_id, lambda record: {**record, "suite_delta_waiver": recorded}
+    )
+
+
 @crew.command(name="complete")
 @click.option(
     "--run",
@@ -3963,6 +3991,8 @@ def crew_complete(
         pointer = runs_module.read_pointer(run_id)
     except crew_module.CrewError:
         pointer = {}
+    if waive_suite_delta and not dry_run and pointer:
+        pointer = _record_suite_delta_waiver(run_id, pointer, waive_suite_delta)
     if accepted_paths and not dry_run:
         from reckon.crew.claims import widen_claim
 

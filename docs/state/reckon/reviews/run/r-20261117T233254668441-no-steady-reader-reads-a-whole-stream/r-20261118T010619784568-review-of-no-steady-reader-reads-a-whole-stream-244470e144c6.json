@@ -1,0 +1,102 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:268",
+    "reckon/crew/dispatch_sessions.py:948",
+    "reckon/crew/dispatch_sessions.py:1223",
+    "reckon/crew/recovery_stream.py:600",
+    "reckon/crew/recovery_stream.py:832",
+    "reckon/crew/promotion_checks.py:179",
+    "reckon/crew/resumption.py:710",
+    "reckon/crew/resumption.py:980"
+  ],
+  "completed_at": "2026-11-18T01:14:48Z",
+  "dispatched_at": "2026-11-18T01:06:53Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the duplicated bounded-sample digest is a small consolidation inside one module; it changes no reader's answer and the s12 cutover is the next change to this path",
+      "recorded_at": "2026-11-18T03:31:38.930467+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the oracle shares observe_stream with production, but tests/test_backend_observation.py's throughput assertions cover the rate-input extraction it would miss",
+      "recorded_at": "2026-11-18T03:32:20.533932+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the assertion establishes the in-place rewrite's precondition; the rewrite case's own refusal is asserted in the same test",
+      "recorded_at": "2026-11-18T03:33:50.382961+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "one extra 512-byte read per stream on a whole read is negligible beside the 85 MB per pass this section removed",
+      "recorded_at": "2026-11-18T03:34:07.224523+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "4683",
+      "severity": "non-blocking",
+      "text": "non-blocking: stream_boundary_fingerprint and _stream_boundary_intact (:4652) re-implement the bounded-sample digest-and-verify pair the module already owns at stream_head_fingerprint (:4605) and _stream_head_intact (:4624) \u2014 the same open, seek, read and sha256 compare, differing only in where the window starts and one offset assertion \u2014 so the one guard now has two copies that can drift apart."
+    },
+    {
+      "file": "tests/test_no_steady_reader_reads_a_whole_stream.py",
+      "line": "315",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parity oracle's observation comes from _backends.observe_stream, the same whole-read path this repair changed when it moved the rate inputs into carried state, so a key dropped from the rate_inputs extraction at reckon/_backends.py:2500 moves both sides together and this arm stays green; only tests/test_backend_observation.py's throughput assertions would see it."
+    },
+    {
+      "file": "tests/test_no_steady_reader_reads_a_whole_stream.py",
+      "line": "466",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the file's bytes with the prefix the test itself wrote, so it holds whatever the reader does \u2014 it establishes the in-place rewrite's precondition rather than guarding a regression in the change."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "4196",
+      "severity": "non-blocking",
+      "text": "non-blocking: on a whole read the boundary digest is computed twice, once by _cached_stream_entry at :3889 and again here, so the first pass pays a second 512-byte read per stream for a record it already holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read both gained commits \u2014 04bf44fe97 moves the claude fold to rate inputs at reckon/_backends.py:2449 and :2556, replaces the opening re-read on a growth read with a 512-byte boundary sample verified before the offset (reckon/_backends.py:4652, :4683, :3727), and rewrites the parity oracle and adds the in-place-rewrite case at tests/test_no_steady_reader_reads_a_whole_stream.py:268 and :391 \u2014 and 244470e144 re-derives the fragment's and the RCA's 1,524 B arithmetic as 500 + 512 + 512 and records both controls.",
+    "done_when": "the gate the worker ran, scoped-gate-1794963569187205569.log, reads 63 passed and EXIT=0 at 244470e144 and asserts the done_when's quantitative bound at tests/test_no_steady_reader_reads_a_whole_stream.py:367 (spent <= 40 x 2,000 B) with the instrument shown seeing the first pass's whole reads at :342 and the appended bytes at :368, and I re-ran that one file at the reviewed head in a scratch tree, which printed second_pass_bytes=60960 per_stream=1524 against bound=80000 and passed 2 tests; the done_when's ruff clause and its live bound under 20 MB/min have no receipt in the manifest.",
+    "goal": "the source node's goal is that no steady reader reads a whole stream \u2014 the capacity check, the admission scan and observe_log answer from state the summary already holds \u2014 and the commits gained since the prior review at 02a13f1b92 repair the elapsed-clock break that review recorded, with reckon/_backends.py:2449 folding the inputs a rate is computed from instead of the rate, :2556 rating them at the clock of the read that asks, and :4290 re-rating a freshly built fold, so the head answers what a whole read answers and the second pass still costs 1,524 B per stream.",
+    "manifest": "read the source run's manifest.md, which records status complete, the six commits from 42ec5eacaf to 244470e144, the scoped gate at 63 passed, the suite arms at 61 passed for 5b784ef and 63 passed for 244470e144, and three negative-control logs, and which records no ruff result.",
+    "write_paths": "the declared list names eight paths, and the gained diff touches four of them \u2014 reckon/_backends.py, tests/test_no_steady_reader_reads_a_whole_stream.py, docs/research/monitor-storage-load-rca.html and docs/evidence/fragments/the-monitor-reads-each-fact-once/no-steady-reader-reads-a-whole-stream.html \u2014 with no path outside the list and no figure at head."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-parity-and-boundary-at-reviewed-head.log shows the reverted carried-rate at 02a13f1b92 answering wall_tokens_per_second None against the whole read's 0.0 and the in-place rewrite failing there too, so both guards redden on the defect they were added for, but the parity oracle at tests/test_no_steady_reader_reads_a_whole_stream.py:315 runs through the same whole-read extraction the repair changed.",
+    "evidence": "the retained gate log is -q and carries no byte figure, so the 60,960 B the fragment quotes at docs/evidence/fragments/the-monitor-reads-each-fact-once/no-steady-reader-reads-a-whole-stream.html:44 is corroborated only by my re-run at the reviewed head, and the done_when's ruff clause and live bound have no receipt.",
+    "fit": "stream_boundary_fingerprint at reckon/_backends.py:4683 sits beside the module's own stream_head_fingerprint at :4605 with the same record shape and refusal wording, and the two new extended methods at :3964 and :4015 follow the fold-store idiom.",
+    "goal_fidelity": "reckon/_backends.py:4290 re-rates the held fold at the caller's clock on every read and :3727 verifies the bytes before the cursor's offset, so the three readers answer what a whole read answers while reading only growth.",
+    "reuse": "stream_boundary_fingerprint and _stream_boundary_intact at reckon/_backends.py:4683 and :4652 duplicate the sample-and-digest capability stream_head_fingerprint and _stream_head_intact at :4605 and :4624 already own, differing only in the window's start.",
+    "scope_discipline": "the two gained commits touch only the four declared paths reckon/_backends.py, tests/test_no_steady_reader_reads_a_whole_stream.py, docs/research/monitor-storage-load-rca.html and the node's fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that no steady reader reads a whole stream \u2014 the capacity check, the admission scan and observe_log answer from state the summary already holds \u2014 and the commits gained since the prior review at 02a13f1b92 repair the elapsed-clock break that review recorded, with reckon/_backends.py:2449 folding the inputs a rate is computed from instead of the rate, :2556 rating them at the clock of the read that asks, and :4290 re-rating a freshly built fold, so the head answers what a whole read answers and the second pass still costs 1,524 B per stream.\nVERDICT done_when: the gate the worker ran, scoped-gate-1794963569187205569.log, reads 63 passed and EXIT=0 at 244470e144 and asserts the done_when's quantitative bound at tests/test_no_steady_reader_reads_a_whole_stream.py:367 (spent <= 40 x 2,000 B) with the instrument shown seeing the first pass's whole reads at :342 and the appended bytes at :368, and I re-ran that one file at the reviewed head in a scratch tree, which printed second_pass_bytes=60960 per_stream=1524 against bound=80000 and passed 2 tests; the done_when's ruff clause and its live bound under 20 MB/min have no receipt in the manifest.\nVERDICT write_paths: the declared list names eight paths, and the gained diff touches four of them \u2014 reckon/_backends.py, tests/test_no_steady_reader_reads_a_whole_stream.py, docs/research/monitor-storage-load-rca.html and docs/evidence/fragments/the-monitor-reads-each-fact-once/no-steady-reader-reads-a-whole-stream.html \u2014 with no path outside the list and no figure at head.\nVERDICT manifest: read the source run's manifest.md, which records status complete, the six commits from 42ec5eacaf to 244470e144, the scoped gate at 63 passed, the suite arms at 61 passed for 5b784ef and 63 passed for 244470e144, and three negative-control logs, and which records no ruff result.\nVERDICT diff: read both gained commits \u2014 04bf44fe97 moves the claude fold to rate inputs at reckon/_backends.py:2449 and :2556, replaces the opening re-read on a growth read with a 512-byte boundary sample verified before the offset (reckon/_backends.py:4652, :4683, :3727), and rewrites the parity oracle and adds the in-place-rewrite case at tests/test_no_steady_reader_reads_a_whole_stream.py:268 and :391 \u2014 and 244470e144 re-derives the fragment's and the RCA's 1,524 B arithmetic as 500 + 512 + 512 and records both controls.\nCALL_SITES: reckon/crew/dispatch_sessions.py:268, reckon/crew/dispatch_sessions.py:948, reckon/crew/dispatch_sessions.py:1223, reckon/crew/recovery_stream.py:600, reckon/crew/recovery_stream.py:832, reckon/crew/promotion_checks.py:179, reckon/crew/resumption.py:710, reckon/crew/resumption.py:980\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:4290 re-rates the held fold at the caller's clock on every read and :3727 verifies the bytes before the cursor's offset, so the three readers answer what a whole read answers while reading only growth.\nSCORE evidence: 15\nJUSTIFICATION evidence: the retained gate log is -q and carries no byte figure, so the 60,960 B the fragment quotes at docs/evidence/fragments/the-monitor-reads-each-fact-once/no-steady-reader-reads-a-whole-stream.html:44 is corroborated only by my re-run at the reviewed head, and the done_when's ruff clause and live bound have no receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two gained commits touch only the four declared paths reckon/_backends.py, tests/test_no_steady_reader_reads_a_whole_stream.py, docs/research/monitor-storage-load-rca.html and the node's fragment.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control-parity-and-boundary-at-reviewed-head.log shows the reverted carried-rate at 02a13f1b92 answering wall_tokens_per_second None against the whole read's 0.0 and the in-place rewrite failing there too, so both guards redden on the defect they were added for, but the parity oracle at tests/test_no_steady_reader_reads_a_whole_stream.py:315 runs through the same whole-read extraction the repair changed.\nSCORE fit: 18\nJUSTIFICATION fit: stream_boundary_fingerprint at reckon/_backends.py:4683 sits beside the module's own stream_head_fingerprint at :4605 with the same record shape and refusal wording, and the two new extended methods at :3964 and :4015 follow the fold-store idiom.\nSCORE reuse: 5\nJUSTIFICATION reuse: stream_boundary_fingerprint and _stream_boundary_intact at reckon/_backends.py:4683 and :4652 duplicate the sample-and-digest capability stream_head_fingerprint and _stream_head_intact at :4605 and :4624 already own, differing only in the window's start.\nFINDING reckon/_backends.py:4683 non-blocking: stream_boundary_fingerprint and _stream_boundary_intact (:4652) re-implement the bounded-sample digest-and-verify pair the module already owns at stream_head_fingerprint (:4605) and _stream_head_intact (:4624) \u2014 the same open, seek, read and sha256 compare, differing only in where the window starts and one offset assertion \u2014 so the one guard now has two copies that can drift apart.\nFINDING tests/test_no_steady_reader_reads_a_whole_stream.py:315 non-blocking: the parity oracle's observation comes from _backends.observe_stream, the same whole-read path this repair changed when it moved the rate inputs into carried state, so a key dropped from the rate_inputs extraction at reckon/_backends.py:2500 moves both sides together and this arm stays green; only tests/test_backend_observation.py's throughput assertions would see it.\nFINDING tests/test_no_steady_reader_reads_a_whole_stream.py:466 non-blocking: the assertion compares the file's bytes with the prefix the test itself wrote, so it holds whatever the reader does \u2014 it establishes the in-place rewrite's precondition rather than guarding a regression in the change.\nFINDING reckon/_backends.py:4196 non-blocking: on a whole read the boundary digest is computed twice, once by _cached_stream_entry at :3889 and again here, so the first pass pays a second 512-byte read per stream for a record it already holds.\n",
+  "review_run_id": "r-20261118T010619784568-review-of-no-steady-reader-reads-a-whole-stream-244470e144c6",
+  "reviewed_base_sha": "02a13f1b92ea944bf7aecc707f626871ad8f2a32",
+  "reviewed_head_sha": "244470e144c65c017718fef95338e1a6d16ea60c",
+  "reviewed_run_id": "r-20261117T233254668441-no-steady-reader-reads-a-whole-stream",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T01:14:48Z",
+  "total": 92
+}
