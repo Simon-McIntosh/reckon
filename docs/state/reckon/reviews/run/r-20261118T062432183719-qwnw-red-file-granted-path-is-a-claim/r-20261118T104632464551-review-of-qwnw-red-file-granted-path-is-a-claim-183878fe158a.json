@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms in its manifest: baseline_suite records 58 passed EXIT=0 at ef0bce316448 (suite-base.log, no FAILED line) and after_suite records 58 passed EXIT=0 at 183878fe15 (suite-base-head.log, no FAILED line), so the set difference of failing test ids is empty (0); the base-revision red run of tests/test_granted_path_is_a_claim.py is the declared negative control (gate-base.log, EXIT=1, 2 failed / 2 passed), not an added failure against the head.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/node.py:441",
+    "reckon/crew/runs.py:2163",
+    "reckon/crew/runs.py:2374",
+    "reckon/crew/crew_dispatch_commands.py:107"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:23:27Z",
+  "findings": [
+    {
+      "file": "tests/test_granted_path_is_a_claim.py",
+      "line": "182",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new block repeats _refused_dry_run (tests/test_granted_path_is_a_claim.py:148-153) \u2014 same CliRunner invoke over _dispatch_arguments and the same exit-2 assertion \u2014 so the refusal path now has two spellings in one file, and the next change to what a refused dry run asserts must be made in both."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-gate block is titled \"the same job at the delivered head\" while its revision line reads 71274bf488, which is the test commit and not the delivered head 183878fe15, so a reader comparing the fragment against the promoted revision finds a run at a revision that is not the head it names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against ef0bce31 \u2014 71274bf488 rewrites the module docstring, moves EXCLUSIVE to tests/test_granted_path_is_a_claim.py:38 and makes test_a_granted_landing_collision_is_reported assert the refusal at :191-193 while keeping every report assertion at :194-201, and 183878fe15 adds the 49-line evidence fragment; nothing else changed.",
+    "done_when": "the done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, a base run with each cause given a product-wrong or test-wrong verdict, an arm over the same-subject test files recording no added failure with both arms as inline JSON at full revisions, the base failing ids in the fragment, ruff clean on the changed paths, plain full commit ids, and a manifest written in one bounded write; all of it is recorded and readable on disk except the ruff clause, which the manifest asserts rather than logs, and which I measured as unchanged between the two blobs (one pre-existing finding and one unformatted file on each arm).",
+    "goal": "the node goal is to make tests/test_granted_path_is_a_claim.py pass in full on the primary branch; the delivered head reads 4 passed over that file with no product line changed, so the file's two expectations now match the claim rules kept at reckon/crew/runs.py:2164 and :2374-2385.",
+    "manifest": "read on disk in the reviewed run's directory; it records status complete, the two commits, 4 passed at head against 2 failed at base, baseline_suite and after_suite as 58 passed EXIT=0 at ef0bce31 and at 183878fe15, and a negative_control_log naming a readable red log whose last line is EXIT=1.",
+    "write_paths": "the declared paths are reckon, tests, the queued-work-needs-no-workaround fragments directory, the node's fragment file and a figures directory; the two commits touch only tests/test_granted_path_is_a_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_granted_path_is_a_claim.py:191 reddens if the product reverts to admitting a live claim on a granted landing path \u2014 gate-base.log shows exactly that at ef0bce31 with \"assert 2 == 0\" \u2014 and :212 reddens if a caller-named artifact stops being refused with exit 7.",
+    "evidence": "the manifest's baseline_suite and after_suite are both contradicted by nothing: suite-base.log and suite-base-head.log each end \"58 passed\" at EXIT=0 at the revisions the arms record, and the negative control gate-base.log ends 2 failed with the two ids the repair addresses.",
+    "fit": "the module docstring and the inline comments at tests/test_granted_path_is_a_claim.py:36-38 and :187-190 state the rule and its reason in the file's own idiom, while the fragment's heading at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html:37 calls 71274bf488 the delivered head.",
+    "goal_fidelity": "tests/test_granted_path_is_a_claim.py:179-201 now asserts the refusal a live claim on a granted landing path produces, and gate-head.log plus the 183878fe15 scoped-gate log both read 4 passed EXIT=0, so the file the goal names passes in full.",
+    "reuse": "tests/test_granted_path_is_a_claim.py:182 inlines the invoke-and-assert-exit-2 body that the file's own _refused_dry_run, tests/test_granted_path_is_a_claim.py:148, already owns, and no added definition forks a capability outside the file.",
+    "scope_discipline": "commit 71274bf488 touches only tests/test_granted_path_is_a_claim.py and 183878fe15 only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html, both declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_granted_path_is_a_claim.py pass in full on the primary branch; the delivered head reads 4 passed over that file with no product line changed, so the file's two expectations now match the claim rules kept at reckon/crew/runs.py:2164 and :2374-2385.\nVERDICT done_when: the done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, a base run with each cause given a product-wrong or test-wrong verdict, an arm over the same-subject test files recording no added failure with both arms as inline JSON at full revisions, the base failing ids in the fragment, ruff clean on the changed paths, plain full commit ids, and a manifest written in one bounded write; all of it is recorded and readable on disk except the ruff clause, which the manifest asserts rather than logs, and which I measured as unchanged between the two blobs (one pre-existing finding and one unformatted file on each arm).\nVERDICT write_paths: the declared paths are reckon, tests, the queued-work-needs-no-workaround fragments directory, the node's fragment file and a figures directory; the two commits touch only tests/test_granted_path_is_a_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html, both inside that scope.\nVERDICT manifest: read on disk in the reviewed run's directory; it records status complete, the two commits, 4 passed at head against 2 failed at base, baseline_suite and after_suite as 58 passed EXIT=0 at ef0bce31 and at 183878fe15, and a negative_control_log naming a readable red log whose last line is EXIT=1.\nVERDICT diff: read commit by commit against ef0bce31 \u2014 71274bf488 rewrites the module docstring, moves EXCLUSIVE to tests/test_granted_path_is_a_claim.py:38 and makes test_a_granted_landing_collision_is_reported assert the refusal at :191-193 while keeping every report assertion at :194-201, and 183878fe15 adds the 49-line evidence fragment; nothing else changed.\nCALL_SITES: reckon/crew/node.py:441, reckon/crew/runs.py:2163, reckon/crew/runs.py:2374, reckon/crew/crew_dispatch_commands.py:107\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_granted_path_is_a_claim.py:179-201 now asserts the refusal a live claim on a granted landing path produces, and gate-head.log plus the 183878fe15 scoped-gate log both read 4 passed EXIT=0, so the file the goal names passes in full.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite are both contradicted by nothing: suite-base.log and suite-base-head.log each end \"58 passed\" at EXIT=0 at the revisions the arms record, and the negative control gate-base.log ends 2 failed with the two ids the repair addresses.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 71274bf488 touches only tests/test_granted_path_is_a_claim.py and 183878fe15 only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html, both declared.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_granted_path_is_a_claim.py:191 reddens if the product reverts to admitting a live claim on a granted landing path \u2014 gate-base.log shows exactly that at ef0bce31 with \"assert 2 == 0\" \u2014 and :212 reddens if a caller-named artifact stops being refused with exit 7.\nSCORE fit: 18\nJUSTIFICATION fit: the module docstring and the inline comments at tests/test_granted_path_is_a_claim.py:36-38 and :187-190 state the rule and its reason in the file's own idiom, while the fragment's heading at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html:37 calls 71274bf488 the delivered head.\nSCORE reuse: 16\nJUSTIFICATION reuse: tests/test_granted_path_is_a_claim.py:182 inlines the invoke-and-assert-exit-2 body that the file's own _refused_dry_run, tests/test_granted_path_is_a_claim.py:148, already owns, and no added definition forks a capability outside the file.\nFINDING tests/test_granted_path_is_a_claim.py:182 non-blocking: the new block repeats _refused_dry_run (tests/test_granted_path_is_a_claim.py:148-153) \u2014 same CliRunner invoke over _dispatch_arguments and the same exit-2 assertion \u2014 so the refusal path now has two spellings in one file, and the next change to what a refused dry run asserts must be made in both.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-granted-path-is-a-claim.html:37 non-blocking: the head-gate block is titled \"the same job at the delivered head\" while its revision line reads 71274bf488, which is the test commit and not the delivered head 183878fe15, so a reader comparing the fragment against the promoted revision finds a run at a revision that is not the head it names.",
+  "review_node": "review-of-qwnw-red-file-granted-path-is-a-claim-183878fe158a",
+  "review_run_id": "r-20261118T104632464551-review-of-qwnw-red-file-granted-path-is-a-claim-183878fe158a",
+  "reviewed_base_sha": "ef0bce316448244cae55cedef8aca7e1dbc36988",
+  "reviewed_head_sha": "183878fe158a01dfa0073a8279b94a729ceaa3f6",
+  "reviewed_run_id": "r-20261118T062432183719-qwnw-red-file-granted-path-is-a-claim",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T104632464551-review-of-qwnw-red-file-granted-path-is-a-claim-183878fe158a"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T12:35:29.135634+00:00",
+  "total": 109
+}
