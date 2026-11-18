@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s93">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-18">
-  <meta name="evidence-commit" content="5f8c0a43a3">
+  <meta name="evidence-commit" content="b07869472e">
   <title>Lane reference rates refresh from the rows that changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -33,9 +33,23 @@
   only the rows whose newest stamp reaches past the previous bucket's end,
   folds them in, and drops the rows the new window's start has passed. A run id
   identifies a row, so a boundary row returned again by the narrow bound
-  replaces its entry rather than counting twice. A project the process holds no
+  replaces its entry rather than counting twice. The retained state is pruned
+  to the bucket's window before it is stored, so a process's memory and its
+  per-bucket walk are bounded by the population the window can hold, not by its
+  uptime.
+  A project the process holds no
   previous bucket for, including one whose bucket was skipped, still reads its
   window once, and a failed narrow read widens to that same window read.</p>
+
+  <p><strong>The repair.</strong> A review found the first version folded the
+  new rows in but never removed the ones the window's start had passed: only
+  the answer was filtered, so the retained set grew with process uptime. The
+  roll now prunes the stored contributions to the window, and two checks hold
+  it — the roll's retained count equals the window's population with the aged
+  rows' ids gone, and twelve idle buckets roll forward with each answer equal
+  to the whole-window read and the retained count never above the window's.
+  Against the pre-repair module both checks fail with 2005 retained against
+  2002 in the window.</p>
 
   <p><strong>The measure.</strong> In a temporary crew home holding 2,000
   promoted rows across three lanes, the opening bucket decoded 2,000 rows and
