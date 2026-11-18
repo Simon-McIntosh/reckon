@@ -718,8 +718,14 @@ def _reviewed_run_pointer(reviewed_run_id: str) -> Mapping[str, Any] | None:
     if not reviewed_run_id:
         return None
     from reckon.crew.node import CrewError
+    from reckon.crew.open_run_index import pointers
     from reckon.crew.runs import read_pointer
 
+    snapshot = pointers()
+    if snapshot is not None:
+        return next(
+            (row for row in snapshot if row.get("run_id") == reviewed_run_id), None
+        )
     try:
         return read_pointer(reviewed_run_id)
     except (CrewError, OSError, ValueError):
