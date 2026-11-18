@@ -4670,9 +4670,20 @@ def _unlanded_source_items(project: str) -> list[dict[str, Any]]:
                         f"matches unlanded commits of run {run_id}; no commit on the primary "
                         "branch carries that content, so a refused landing may be serving source"
                     ),
-                    "next_command": "inspect the index and working-tree diff before recovering these paths: "
-                    + shlex.join(
-                        ["git", "-C", str(repository), "diff", "HEAD", "--", *matched]
+                    "next_command": " && ".join(
+                        shlex.join(
+                            [
+                                "git",
+                                "-C",
+                                str(repository),
+                                "diff",
+                                *options,
+                                "HEAD",
+                                "--",
+                                *matched,
+                            ]
+                        )
+                        for options in (("--cached",), ())
                     ),
                 }
             )

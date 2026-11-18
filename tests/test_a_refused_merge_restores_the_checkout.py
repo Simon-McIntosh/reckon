@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 import os
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -309,6 +310,13 @@ def test_source_residue_names_the_run_and_its_older_head(
     assert older != newer
     assert "run-source" in notice["reason"]
     assert "source.py" in notice["next_command"]
+    inspection = subprocess.run(
+        ["sh", "-c", notice["next_command"]],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    assert "older source" in inspection.stdout
     assert digest(repo) == before
 
     # The published sweep and a direct read must carry the same source duty.
