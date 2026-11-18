@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import math
 import re
-from functools import lru_cache
 from pathlib import Path
 from statistics import median
 from typing import Any, Mapping, Sequence
@@ -151,37 +150,43 @@ def _positive_rate(value: Any) -> float | None:
     return rate if math.isfinite(rate) and rate > 0 else None
 
 
-@lru_cache(maxsize=16)
-def _lane_reference_rates(
-    project: str, window_bucket: int
-) -> dict[tuple[str, str], tuple[float, ...]]:
-    """Every backend and model's recent committed rates, from one ledger read.
+#: One rate entry per run: its completion instant and its measured rate.
+_LaneRateEntry = tuple[float, float]
+_LaneRateContributions = dict[tuple[str, str], dict[Any, _LaneRateEntry]]
 
-    The rate a run is judged against is a per-lane median, but reading the
-    ledger is the cost. Keying that read on the lane as well made each lane and
-    model pay for its own decode of the whole ledger in every five-minute
-    bucket, and the station classifies runs of several lanes and several
-    projects on every tick, so one read per project and bucket now answers
-    every lane.
+_BUCKET_SECONDS = 300
+_REFERENCE_WINDOW_SECONDS = 7 * 86400
 
-    The read is bounded by the window it judges against rather than by the
-    ledger's length, because a station that pays a whole-history decode once
-    per bucket runs out of memory on a long history. ``activity_since`` filters
-    on the index's own activity scalar, so a warm index fetches only the rows
-    whose newest stamp is no older than the window's start. Every row that
-    completed inside the window has a completion stamp inside it too, and that
-    stamp is one of the stamps the activity scalar takes the maximum over, so
-    the bound admits a superset of the rows this function can use.
+#: Each project's last answered bucket and the contributions that answered it.
+#: A bucket roll then reads only the rows whose newest stamp reaches past the
+#: previous bucket's end, and drops the rows that aged out of the window,
+#: instead of decoding the window again. A project this process has not seen
+#: yet reads its window once. The population a project's window can hold is the
+#: bound on memory, and the projects kept are capped like the read cache was.
+_LANE_RATE_BUCKETS: dict[str, tuple[int, _LaneRateContributions]] = {}
+_LANE_RATE_BUCKETS_LIMIT = 16
+
+
+def _lane_rate_contributions(
+    project: str, *, activity_since: float
+) -> _LaneRateContributions | None:
+    """The usable rows a bounded ledger read returns, keyed by lane and run.
+
+    ``activity_since`` filters on the index's own activity scalar, which is the
+    newest of a row's dispatch, launch and completion stamps, so a bound at a
+    bucket's end admits every row that completed after it and any row that was
+    touched after it. The completion instant is kept beside the rate because
+    the caller drops a row when the window's start passes it. None means the
+    read failed, which the caller treats as a reason to widen the read once. If
+    the failure was a genuine defect, the fallback returns None too.
     """
     from reckon import ledger as ledger_module
 
-    end = window_bucket * 300
-    start = end - 7 * 86400
     try:
-        rows = ledger_module.load(project, activity_since=start)[0]["runs"]
+        rows = ledger_module.load(project, activity_since=activity_since)[0]["runs"]
     except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
-        return {}
-    rates: dict[tuple[str, str], list[float]] = {}
+        return None
+    contributions: _LaneRateContributions = {}
     for row in rows:
         if not isinstance(row, Mapping):
             continue
@@ -189,7 +194,7 @@ def _lane_reference_rates(
         if not isinstance(agent, Mapping):
             continue
         completed = parse_utc(str(row.get("completed_at") or ""))
-        if completed is None or not start <= completed.timestamp() <= end:
+        if completed is None:
             continue
         throughput = row.get("throughput")
         if not isinstance(throughput, Mapping):
@@ -198,8 +203,90 @@ def _lane_reference_rates(
         if rate is None:
             continue
         lane = (str(row.get("backend") or ""), str(agent.get("model") or ""))
-        rates.setdefault(lane, []).append(rate)
-    return {lane: tuple(values) for lane, values in rates.items()}
+        stamp, rate_value = completed.timestamp(), rate
+        # A row is identified by its run id so a row the next bucket's read
+        # returns again replaces its entry rather than counting twice. A row
+        # without one — an imported or hand-built fixture — is identified by
+        # the facts a lane's median sees, so distinct rows still count apart.
+        identity: Any = str(row.get("run_id") or "") or (
+            "",
+            stamp,
+            rate_value,
+        )
+        contributions.setdefault(lane, {})[identity] = (stamp, rate_value)
+    return contributions
+
+
+def _lane_reference_rates(
+    project: str, window_bucket: int
+) -> dict[tuple[str, str], tuple[float, ...]]:
+    """Every backend and model's recent committed rates, from one ledger read.
+
+    The rate a run is judged against is a per-lane median, but reading the
+    ledger is the cost. One read per project answers every lane, and the read
+    is bounded by the window it judges against rather than by the ledger's
+    length, because a station that pays a whole window every five minutes on a
+    long history runs out of memory.
+
+    Between two consecutive buckets the window changes only by the rows that
+    completed since the previous bucket and the rows that aged out of it, so a
+    bucket roll reads the rows whose newest stamp reaches past the previous
+    bucket's end and folds them into the previous bucket's contributions. A
+    project with no previous bucket, or one that skipped a bucket, still reads
+    its window once. Whatever the path, every lane's median is the median over
+    exactly the rows completed inside the window.
+    """
+    end = window_bucket * _BUCKET_SECONDS
+    start = end - _REFERENCE_WINDOW_SECONDS
+    previous = _LANE_RATE_BUCKETS.get(project)
+    if previous is not None and previous[0] == window_bucket:
+        return _lane_rates_from(previous[1], start, end)
+    contributions: _LaneRateContributions | None = None
+    if previous is not None and previous[0] == window_bucket - 1:
+        contributions = {lane: dict(entries) for lane, entries in previous[1].items()}
+        added = _lane_rate_contributions(
+            project, activity_since=previous[0] * _BUCKET_SECONDS
+        )
+        if added is None:
+            contributions = None
+        else:
+            for lane, entries in added.items():
+                contributions.setdefault(lane, {}).update(entries)
+    if contributions is None:
+        contributions = _lane_rate_contributions(project, activity_since=start)
+    if contributions is None:
+        _LANE_RATE_BUCKETS.pop(project, None)
+        return {}
+    _LANE_RATE_BUCKETS.pop(project, None)
+    _LANE_RATE_BUCKETS[project] = (window_bucket, contributions)
+    while len(_LANE_RATE_BUCKETS) > _LANE_RATE_BUCKETS_LIMIT:
+        _LANE_RATE_BUCKETS.pop(next(iter(_LANE_RATE_BUCKETS)))
+    return _lane_rates_from(contributions, start, end)
+
+
+def _lane_rates_from(
+    contributions: _LaneRateContributions, start: float, end: float
+) -> dict[tuple[str, str], tuple[float, ...]]:
+    """The window's rates by lane, in the order the ledger read would give."""
+    rates: dict[tuple[str, str], tuple[float, ...]] = {}
+    for lane, entries in contributions.items():
+        kept = [
+            (completed, run_id, rate)
+            for run_id, (completed, rate) in entries.items()
+            if start <= completed <= end
+        ]
+        if kept:
+            kept.sort()
+            rates[lane] = tuple(rate for _completed, _run_id, rate in kept)
+    return rates
+
+
+def _clear_lane_reference_rates() -> None:
+    """Forget every project's bucket, so the next read widens to its window."""
+    _LANE_RATE_BUCKETS.clear()
+
+
+_lane_reference_rates.cache_clear = _clear_lane_reference_rates  # type: ignore[attr-defined]
 
 
 def _historical_reference_rate(
