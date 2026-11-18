@@ -1,0 +1,13 @@
+<section id="qwnw-red-file-passed-verdict-needs-exit-zero-landing">
+<h2>The tests read the record the receipt names</h2>
+<p><strong>Cause — test wrong, one cause behind all seven failures.</strong> <code>crew complete</code> answers with a bounded receipt: a refusal's <code>detail</code> is cut at 240 characters in the reply, and a passing run's reply carries <code>record_path</code> rather than the promotion <code>record</code>. The file asserted substrings in the reply and read <code>record</code> from it, so every refusal whose actionable clause fell past the cut failed its substring assertion and both passing cases raised <code>KeyError: 'record'</code> on a promotion that had in fact succeeded. The product's repro:</p>
+<pre>json.loads(receipt)["detail"] length = 240, ending "…two contradictory readings of one ru"
+json.loads(receipt)["record"] -&gt; KeyError, keys were ok/record_path/run_id</pre>
+<p>The record the receipt names carries the full refusal, and a passing run's record carries the <code>record</code> the reply used to carry. The file now reads that record through two helpers, <code>_completion_record</code> and <code>_refusal_detail</code>. No assertion was deleted, weakened or moved to a different fact: each still names the same clause of the same refusal, now read where the verb wrote it in full. Nothing under <code>reckon/</code> changed — the bounded receipt is the rule the code now keeps, and the test was written against the reply it no longer returns.</p>
+<h2>Measures</h2>
+<ul>
+<li>Base arm, <code>3006761c5a82f33fd3ca146373231e809ac00a46</code>: 7 failed, 3 passed, <code>EXIT=1</code> (log beside this fragment at <code>red-file-passed-verdict-needs-exit-zero.html</code>).</li>
+<li>Head arm: 10 passed, <code>EXIT=0</code>, as an all_debug job with <code>SLURM_JOB_ID</code> unset, its log on shared storage under the run directory.</li>
+<li>Declared suite arms through <code>crew suite run</code>: baseline and head both completed with 0 failures; each arm's revision, command and log are the arms recorded in the manifest.</li>
+</ul>
+</section>
