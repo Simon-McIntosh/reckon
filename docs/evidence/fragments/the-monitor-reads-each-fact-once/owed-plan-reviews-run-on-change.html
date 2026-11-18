@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s100">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-18">
+  <title>Owed plan reviews run on change | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="owed-plan-reviews-run-on-change-landing" data-node="owed-plan-reviews-run-on-change" data-reckon="landed" data-when="2026-11-18">
+  <h2>Owed plan reviews run on change</h2>
+
+  <p id="owed-plan-reviews-run-on-change-what"><strong>What landed.</strong> The sweep no longer runs the owed-plan-review pass every tick. <code>reckon.crew.plan_review</code> now keeps a footprint of what the pass reads — each plan registered for the project with its edit identity, the review store's record count and a digest of its record names, the run store's stamp, the ledger's write generation, and the identity of every live authoring run — and <code>owed_plan_review_pass_due</code> answers on that footprint: the pass is owed when there is no record of a previous pass, when any part of the footprint differs from the record, or when sixty seconds have passed since it. <code>reckon.crew.resumption.sweep</code> consults that answer and calls <code>compose_owed_plan_reviews</code> only when it is due, then records the pass in <code>plan-review-reflex/&lt;project&gt;.pass.json</code>. The record is written after the pass rather than before it, because the pass answers notes into the records it reads and a footprint taken first would make the next sweep run it again.</p>
+
+  <p id="owed-plan-reviews-run-on-change-why-change"><strong>Why change and interval, not either alone.</strong> A footprint alone would starve a pass whose inputs the reader cannot see; the interval alone would spend a full pass every minute on a quiet project. Both are measured below: the quiet sweeps cost one pass, each input that moves costs exactly one more, and the interval costs one pass in between.</p>
+
+  <p id="owed-plan-reviews-run-on-change-dry-run"><strong>Dry runs weigh and record nothing.</strong> A preview sweep still composes the reviews a reader asks for, but it writes no pass record, so previewing a project cannot spend the interval a real pass was owed.</p>
+
+  <h3 id="owed-plan-reviews-run-on-change-measure">The measure</h3>
+
+  <p id="owed-plan-reviews-run-on-change-measure-quiet">Thirty one-second sweeps over an untouched project run the pass <strong>once</strong>, on the first, and the other twenty-nine run none.</p>
+
+  <p id="owed-plan-reviews-run-on-change-measure-inputs">Each of the three inputs costs exactly one pass when it moves: a plan edited on disk, a review record created in the store, and an authoring run appended to the store. A sweep between two of them runs none, so the change is what the gate answers rather than a pass riding along with the previous one.</p>
+
+  <p id="owed-plan-reviews-run-on-change-measure-interval">With nothing changing, the clock alone asks for one more pass: sweeps one to fifty-nine run none, the sweep at sixty seconds runs exactly one, and the sweep after it runs none again — so the interval costs one pass a minute rather than one a sweep.</p>
+
+  <p id="owed-plan-reviews-run-on-change-measure-parity">The gate is measured against the behaviour it replaces in the same test file: a gated arm and an ungated arm sweep ten times over the same project, and every review the ungated arm composes is composed by the gated arm inside the interval, while the passes the two arms share agree on what they composed and what they skipped, compared after the recorded ages are normalised.</p>
+
+  <h3 id="owed-plan-reviews-run-on-change-negative">The negative control</h3>
+
+  <p id="owed-plan-reviews-run-on-change-negative-line">At base <code>6efac997fd</code> the same test file fails all five cases; the first reports <em>the quiet sweeps ran the pass 30 times: [1, 1, …]</em>, which is the behaviour this node removes. The log is <code>logs/negative-control-base.log</code> under the run directory, ending <code>EXIT=1</code>.</p>
+
+  <h3 id="owed-plan-reviews-run-on-change-arms">Matched arms</h3>
+
+  <p id="owed-plan-reviews-run-on-change-arms-line">Two matched arms ran on the <code>all_debug</code> partition, each in a checkout of its own revision — the base arm in a git checkout of <code>6efac997fd</code>&#39;s content and the head arm in this node&#39;s worktree — and each log opens with its revision, tree, imported module and literal command and ends in its own <code>EXIT=</code> line. The population is every test file that imports <code>resumption</code> or <code>plan_review</code>: 205 files at base, 206 at head. The base arm ran those files as its own job at base — <strong>1768 passed, 31 failed</strong> — and the head arm ran its 206 as its own job at the head — <strong>1773 passed, 31 failed</strong>. The two failure id lists are identical, file for file; the five extra passes are the node&#39;s own cases, so the change adds no failure against base. The declared suite, also on <code>all_debug</code>, ran <strong>58 passed</strong> at base and <strong>63 passed</strong> at head: <code>logs/importers-base.log</code>, <code>logs/importers-head.log</code>, <code>logs/baseline-suite.log</code> and <code>logs/after-suite.log</code> under the run directory.</p>
+
+  <p id="owed-plan-reviews-run-on-change-arms-composed">The composed <code>crew verify-gate --worker</code> and <code>crew suite run</code> calls were made first and each failed before reaching code under test: the submitted task re-entered the worker fence and could not bind mount its node tmp, leaving an empty log with no <code>EXIT=</code> receipt (<code>scoped-gate-1795041688245589077.log</code>, <code>after_suite-1795041742835604414.log</code>, <code>baseline_suite-1795041742835604414.log</code>). The arms above are the same commands resolved over each arm&#39;s own tree and submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code> on the <code>all_debug</code> partition, which is why their files are named for what they ran rather than for the composed calls that produced no receipt.</p>
+</article>
+
+</body>
+</html>
