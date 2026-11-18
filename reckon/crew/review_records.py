@@ -23,7 +23,7 @@ import hashlib
 import json
 import os
 import stat
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
 from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -579,6 +579,16 @@ def collect_read_failures() -> Iterator[list[dict[str, str]]]:
         _READ_FAILURES.reset(token)
 
 
+def _remember_failure(target: list[dict[str, str]], path: str, error: str) -> None:
+    """Add one unreadable path, keeping the list one entry per path."""
+    entry = {"path": path, "error": error}
+    for index, existing in enumerate(target):
+        if existing["path"] == entry["path"]:
+            target[index] = entry
+            return
+    target.append(entry)
+
+
 def _note_skipped_record(
     path: Path, error: Exception, *, into: list[dict[str, str]] | None = None
 ) -> None:
@@ -591,12 +601,49 @@ def _note_skipped_record(
     target = _READ_FAILURES.get() if into is None else into
     if target is None:
         return
-    entry = {"path": str(path), "error": f"{type(error).__name__}: {error}"}
-    for index, existing in enumerate(target):
-        if existing["path"] == entry["path"]:
-            target[index] = entry
-            return
-    target.append(entry)
+    _remember_failure(target, str(path), f"{type(error).__name__}: {error}")
+
+
+def report_read_failures(entries: Iterable[tuple[str, str]]) -> None:
+    """Report skips an earlier read made, to the region reading now.
+
+    A derived reading is what publishes a record it could not use, but a memo
+    that answers a later reading without touching the file would drop that
+    finding on every reading after the first: the second derivation would then
+    publish fewer duties than the snapshot beside it, and the same failure the
+    first one named would vanish from the view. The caller that holds the skip
+    therefore hands it back here, and it lands in the region this reading
+    opened. With no region open the replay names nobody and is dropped, which
+    is the rule a read itself follows.
+    """
+    target = _READ_FAILURES.get()
+    if target is None:
+        return
+    for path, error in entries:
+        if not path:
+            continue
+        _remember_failure(target, path, str(error))
+
+
+def memoised_read[T](kind: str, key: Hashable, compute: Callable[[], T]) -> T:
+    """Answer one record read from the shared memo, replaying what it reported.
+
+    ``compute`` performs a read of the review store, and every record it could
+    not use is reported to the region that read ran inside. Caching the answer
+    alone would keep the record and lose the finding, so the skips travel with
+    the cached answer and are replayed to the caller's region: a reading that
+    answers from the memo says what the helper's own reading said about the
+    same bytes.
+    """
+
+    def read() -> tuple[T, tuple[tuple[str, str], ...]]:
+        with collect_read_failures() as skipped:
+            value = compute()
+        return value, tuple((entry["path"], entry["error"]) for entry in skipped)
+
+    value, skipped = file_memo.memoized_key(kind, key, read)
+    report_read_failures(skipped)
+    return value
 
 
 def _note_malformed_record(
