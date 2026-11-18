@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own armed arms on disk: baseline_suite-1794979467568533134.log at 8a9d873cb91d05af20ae5c6530880c260e1c5dbe records '58 passed in 34.90s' EXIT=0 with failure_count 0, and after_suite-1794979509732784292.log at e0efe674cfe2b1aa39d4d94a55bbf4a1b7fe0255 records '58 passed in 38.10s' EXIT=0 with failure_count 0, so the set difference is empty (0).",
+  "call_sites": [
+    "reckon/crew/admission/selection.py:39 (admit_once, the pass the changed tests drive through reckon.crew.queue_admission)",
+    "reckon/crew/admission/holds.py:273 (_queued_requests_overlap calls runs._claim_paths_share)",
+    "reckon/crew/runs.py:2327 (_claim_paths_share decides whether the fixture's declared path is shared)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T07:33:30Z",
+  "findings": [
+    {
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": "182",
+      "severity": "non-blocking",
+      "text": "non-blocking: _queue_writing only calls _queue and replaces node[\"write_paths\"], a capability the imported owner already provides at tests/test_a_queued_run_is_admitted.py:483 as _queued_request(write_paths=...), so this adds a second wrapper over one queue constructor instead of extending the existing one."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 6699d0257d: b3555a7ee2 changes the two claim fixtures to a plan document through the new _queue_writing and edits the module docstring, 1737a4cea7 adds the evidence fragment, e0efe674cf edits only that fragment to name the 1737a4cea7 head receipt, and no product source changed. The receipt an e0efe674cf run and a 1737a4cea7 run of the same test file each report 5 passed, and the file itself is identical at both revisions.",
+    "done_when": "the done_when names the file passing in full as an all_debug job with SLURM_JOB_ID unset, a cause-with-verdict list, an arm over the affected test files, a base negative control and ruff on the changed paths; logs/head-run-file.log carries 'env -u SLURM_JOB_ID' and slurm_job_id 1324997 with '5 passed', logs/base-run-file.log carries '2 failed, 3 passed' EXIT=1 with both failing ids, the manifest states one cause with verdict 'test wrong', the two arms are 58 passed at each revision, and ruff check plus ruff format --check read clean on the changed test file when I ran them.",
+    "goal": "the reviewed run's dispatch-detail.json states the node goal as 'Make tests/test_a_request_that_cannot_launch_costs_nothing.py pass in full on the primary branch'; logs/head-run-file.log at e0efe674cf records '5 passed in 4.42s' EXIT=0 over that file, so the stated deliverable is met.",
+    "manifest": "read; it reports status complete, head '5 passed EXIT=0' against base '2 failed / 3 passed EXIT=1', the scoped census gate '58 passed' and four log paths, each of which I opened and found carrying the revision, the command and an EXIT line it claims.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the delivered diff 6699d0257d..e0efe674cf touches only tests/test_a_request_that_cannot_launch_costs_nothing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-request-that-cannot-launch-costs-nothing.html, both inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating the regression \u2014 the fixtures declaring claimed.txt and {alpha,beta,gamma}.txt \u2014 is exactly the base arm, and logs/base-run-file.log shows both changed tests red on it, so the assertions added over the fixture change would redden; no assertion was deleted or relaxed.",
+    "evidence": "logs/base-run-file.log records the two failing ids at 8a9d873cb9 and logs/head-run-file.log the passing run at e0efe674cf, and the base revision is an ancestor of the reviewed base 6699d0257d with no change to that file, reckon/crew/admission/ or reckon/crew/runs.py between them; the manifest's own ruff clause carries no log, though I re-ran both ruff commands on the changed file and they pass.",
+    "fit": "the new constant and helper at tests/test_a_request_that_cannot_launch_costs_nothing.py:56,182 follow the file's existing fixture idiom and its docstrings cite the product rule at reckon/crew/runs.py:2163 in the same prose register as the module docstring.",
+    "goal_fidelity": "logs/head-run-file.log at e0efe674cf records '5 passed in 4.42s' EXIT=0 for the named file, so the deliverable the goal states is met in full.",
+    "reuse": "tests/test_a_queued_run_is_admitted.py:483 already owns _queued_request(write_paths=...), which wraps _queue the same way, and the diff adds a second wrapper at tests/test_a_request_that_cannot_launch_costs_nothing.py:182 instead of importing it.",
+    "scope_discipline": "git diff --stat 6699d0257d..e0efe674cf lists only tests/test_a_request_that_cannot_launch_costs_nothing.py and the evidence fragment, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed run's dispatch-detail.json states 'Make tests/test_a_request_that_cannot_launch_costs_nothing.py pass in full on the primary branch'; logs/head-run-file.log at e0efe674cf records '5 passed in 4.42s' EXIT=0 over that file.\nVERDICT done_when: the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a cause with a verdict, an arm over the affected test files, a base negative control and clean ruff on the changed paths; logs/head-run-file.log and logs/base-run-file.log carry the two running arms, the manifest states one cause with verdict 'test wrong', baseline_suite-1794979467568533134.log and after_suite-1794979509732784292.log each read '58 passed' with EXIT=0, and the changed test file reads clean under both ruff commands.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every path in the diff 6699d0257d..e0efe674cf (the test file and the fragment qwnw-red-file-a-request-that-cannot-launch-costs-nothing.html) is inside them.\nVERDICT manifest: read at the reviewed run's manifest.md; it reports status complete, the manifest's own head and base file runs, the 58-passed arms and four log paths, all of which I opened and found carrying the revisions and EXIT lines it claims.\nVERDICT diff: read commit by commit against 6699d0257d \u2014 b3555a7ee2 moves the two claim fixtures to a plan document, 1737a4cea7 adds the evidence fragment and e0efe674cf edits only that fragment's head receipt; no product source is touched and no assertion is removed.\nCALL_SITES: reckon/crew/admission/selection.py:39, reckon/crew/admission/holds.py:273, reckon/crew/runs.py:2327\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: logs/head-run-file.log at e0efe674cf reads '5 passed in 4.42s' EXIT=0 for tests/test_a_request_that_cannot_launch_costs_nothing.py, which is the goal's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-run-file.log records the two failing ids at 8a9d873cb9 and logs/head-run-file.log the passing run at e0efe674cf, with 8a9d873cb9 an ancestor of the reviewed base that touches neither the file nor reckon/crew/admission/ nor reckon/crew/runs.py; the manifest records no ruff run, though both ruff commands pass on the changed file.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 6699d0257d..e0efe674cf lists only tests/test_a_request_that_cannot_launch_costs_nothing.py and the evidence fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression is the base arm itself, and logs/base-run-file.log shows both changed tests red on it, so the assertions guarding the fixture change are shown to fire rather than merely green.\nSCORE fit: 16\nJUSTIFICATION fit: the constant and helper at tests/test_a_request_that_cannot_launch_costs_nothing.py:182 follow the surrounding fixture idiom and cite reckon/crew/runs.py:2163 in prose of the same register as the module docstring.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_queued_run_is_admitted.py:483 already owns _queued_request(write_paths=...), so tests/test_a_request_that_cannot_launch_costs_nothing.py:182 duplicates a capability the imported module provides.\nFINDING tests/test_a_request_that_cannot_launch_costs_nothing.py:182 non-blocking: _queue_writing only calls _queue and replaces node[\"write_paths\"], a capability the imported owner already provides at tests/test_a_queued_run_is_admitted.py:483 as _queued_request(write_paths=...), so this adds a second wrapper over one queue constructor instead of extending the existing one.\n",
+  "review_node": "review-of-qwnw-red-file-a-request-that-cannot-launch-costs-nothing-e0efe674cfe2",
+  "review_run_id": "r-20261118T054623995800-review-of-qwnw-red-file-a-request-that-cannot-launch-costs-nothing-e0efe674cfe2",
+  "reviewed_base_sha": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed",
+  "reviewed_head_sha": "e0efe674cfe2b1aa39d4d94a55bbf4a1b7fe0255",
+  "reviewed_run_id": "r-20261118T044521970238-qwnw-red-file-a-request-that-cannot-launch-costs-nothing",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T07:53:58.487029+00:00",
+  "total": 95
+}
