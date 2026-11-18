@@ -44,9 +44,13 @@
     <caption>Each arm is a log whose first lines name the revision, tree and
     command and whose last line reads <code>EXIT=&lt;code&gt;</code>. The two
     file arms are one <code>all_debug</code> job (1326821) with
-    <code>SLURM_JOB_ID</code> stripped from the pytest environment; the gate and
-    suite arms were measured by <code>crew verify-gate --worker</code> and
-    <code>crew suite run</code> on the same partition.</caption>
+    <code>SLURM_JOB_ID</code> stripped from the pytest environment; the gate was
+    <code>crew verify-gate --worker --command</code> for this file and the two
+    suite arms were one further <code>all_debug</code> job, all with
+    <code>SLURM_JOB_ID</code> stripped. The suite's base arm runs in a clone
+    checked out at the base revision rather than an extraction, because one of
+    its tests reads <code>git ls-tree HEAD</code> of its own checkout and an
+    extraction of a revision carries no repository.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>the file, head arm</td>
@@ -56,13 +60,13 @@
         <td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, extraction</td>
         <td>1 failed, 6 passed, <code>EXIT=1</code></td></tr>
       <tr><td>the worker gate, head</td>
-        <td><code>ef17c381be982aa4674c880b278de3cb76bdf150</code>, extraction</td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
+        <td><code>41f815ef558b962dc5ec170ced957f02787812c0</code>, extraction</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the suite, base arm</td>
-        <td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, extraction</td>
+        <td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, clone</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the suite, after arm</td>
-        <td><code>ef17c381be982aa4674c880b278de3cb76bdf150</code>, extraction</td>
+        <td><code>41f815ef558b962dc5ec170ced957f02787812c0</code>, worktree</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the delta</td>
         <td>base arms against head arms</td>
