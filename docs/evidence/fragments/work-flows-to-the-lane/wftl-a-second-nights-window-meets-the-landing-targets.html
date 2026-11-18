@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s67">
+  <meta name="plan-recorded-at" content="2026-11-18">
+  <meta name="plan-verdict" content="partial">
+  <title>A second night's window meets the landing targets | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1 id="wftl-a-second-nights-window-meets-the-landing-targets-title">A second night's window meets the landing targets</h1>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-summary"><strong>Two of the gate's four figures are met.</strong>
+  In the four hours from 23:00 UTC on 17 November to 03:00 UTC on 18 November the lane carried a
+  time-weighted mean of <strong>2.42</strong> working workers against a bound of 12, a completed
+  implement run waited a median of <strong>49.1 minutes</strong> (2,947.2 s) to be promoted against a
+  bound of 20, <strong>none</strong> of the window's <strong>618</strong> admit passes held a request on
+  a claim under a shared root — no claim path held anything — and the claims directory held
+  <strong>0</strong> worker identity files against a bound of 100. The two figures §68 and §69 address
+  hold; the mean and the promotion latency do not. This is a measurement, and the numbers are what the
+  instruments returned.</p>
+
+  <h2 id="wftl-a-second-nights-window-meets-the-landing-targets-window">The window, and why it is this one</h2>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-window-why">§67 asks for a four-hour
+  window that starts after §68, §69 and §70 land. All three are recorded <code>done</code> in the plan
+  before this node was dispatched at 2026-11-17T22:10:33Z, and this node's dispatch names the only
+  further condition: the window begins after 2026-11-17T22:00Z. The window therefore runs
+  <strong>2026-11-17T23:00:00Z to 2026-11-18T03:00:00Z</strong> — the first hour-aligned four-hour
+  stretch that both starts after 22:00Z and closes before the node's deadline, which it then had 3
+  hours and 7 minutes to measure within. Nothing in it reaches back over a repair, and nothing in it
+  was read before the window closed.</p>
+
+  <h2 id="wftl-a-second-nights-window-meets-the-landing-targets-figures">The four figures against their targets</h2>
+
+  <table id="wftl-a-second-nights-window-meets-the-landing-targets-table">
+   <thead>
+    <tr><th>figure</th><th>target</th><th>measured</th><th>population</th><th>verdict</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>time-weighted mean working workers</td><td>&ge; 12</td>
+        <td><strong>2.42</strong> (peak 9)</td>
+        <td>51 worker spans overlapping the window; 45 requests dispatched in it over 42 distinct project nodes; median span 9.77 minutes</td>
+        <td>not met</td></tr>
+    <tr><td>median completion to promotion, implement runs</td><td>&le; 20 min</td>
+        <td><strong>49.1 min</strong> (2,947.2 s; p90 72.7 min)</td>
+        <td>cohort of 7 implement runs completed in the window: 4 with a landing record, 3 with none</td>
+        <td>not met</td></tr>
+    <tr><td>admit passes holding a request on a claim under a shared root</td><td>none</td>
+        <td><strong>0</strong> of 618 passes (0 claim pointers)</td>
+        <td>618 admit passes in the window; every claim path that held a request is listed below, and there are none</td>
+        <td>met</td></tr>
+    <tr><td>worker identity files at the window's end</td><td>&lt; 100</td>
+        <td><strong>0</strong></td>
+        <td>claims directory read live at 03:00:00Z: 176 entries, none an <code>exec-*.identity</code></td>
+        <td>met</td></tr>
+   </tbody>
+  </table>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-mean-reading"><strong>Reading the mean.</strong>
+  The figure is low because the lane carried less work than it did during §9's window, not because the
+  counter lost workers: the same script over that window returns a mean of 23.55 today (below), and this
+  window's own dispatch count — 45 requests over four hours, a median worker life of 9.77 minutes —
+  arithmetically bounds the mean near <em>45 &times; 9.77 / 240 = 1.8</em>, with the 2.42 measured the
+  residual of longer implement runs sitting inside the hour. The lane was fed steadily; it was fed a
+  third of what it was fed on 14 November, and each worker lived a fraction as long.</p>
+
+  <h2 id="wftl-a-second-nights-window-meets-the-landing-targets-claims">Every claim that held a request, by path</h2>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-claims-intro">§67 asks for the total
+  number of admission passes and the root of every claim that held a request, which §9's census did not
+  report. The census now prints both: <strong>618</strong> passes in the window, and the
+  <code>held_claim_paths</code> list — <strong>empty</strong> here, with
+  <code>unnamed_claim_pointers: 0</code>, so the absence is a count of zero and not an unparsed hold.
+  The two committed outputs below carry the whole report rather than a summary of it
+  (<code>wftl-a-second-nights-window-meets-the-landing-targets.census.json</code> and
+  <code>…census-s9window.json</code>).</p>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-claims-check">A zero needs the check
+  that the reading can see a claim when one is there. Run over §9's window, against the pass snapshot
+  that run kept (<code>admission-verdicts.snapshot.jsonl</code>, 93 passes spanning
+  2026-11-14T20:03Z to 2026-11-15T03:09Z), the same code reads <strong>5 of 8</strong> passes holding a
+  shared-root claim over 6 pointers and names both paths with their roots:</p>
+
+  <table id="wftl-a-second-nights-window-meets-the-landing-targets-claims-check-table">
+   <thead>
+    <tr><th>claimed path (§9's window)</th><th>root</th><th>passes</th></tr>
+   </thead>
+   <tbody>
+    <tr><td><code>…/crew/runs/r-20261114T121904732821-diiid-edge-current-refusal/review-records/r-20261114T121904732821-diiid-edge-current-refusal.figure.json</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew</code></td><td>5</td></tr>
+    <tr><td><code>…/crew/runs/r-20261114T150759286619-wave4-codex-anchored-the-crew-does-its-own-bo-s18/review-records/r-20261114T150759286619-wave4-codex-anchored-the-crew-does-its-own-bo-s18.json</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew</code></td><td>1</td></tr>
+   </tbody>
+  </table>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-claims-check-reading">Both are files
+  inside one run's own directory, which §69's deliverable permits; each entry carries
+  <code>run_owned: true</code> beside <code>shared_root: true</code>, so a reader sees the §67 reading
+  and the §69 reading on the same row. This window held no claim of either kind, and no hold named a
+  crew-home directory — the case §69 was written to stop.</p>
+
+  <h2 id="wftl-a-second-nights-window-meets-the-landing-targets-comparison">The same script over other windows</h2>
+
+  <table id="wftl-a-second-nights-window-meets-the-landing-targets-comparison-table">
+   <thead>
+    <tr><th>window (UTC)</th><th>mean workers</th><th>median promotion</th><th>admit passes / shared holds</th><th>identity files</th></tr>
+   </thead>
+   <tbody>
+    <tr><td>2026-11-17 23:00&ndash;2026-11-18 03:00 (this node)</td><td>2.42</td><td>49.1 min over 4 of 7</td><td>618 / 0</td><td>0 (live)</td></tr>
+    <tr><td>2026-11-17 19:00&ndash;23:00 (the four hours before)</td><td>3.63</td><td>52.1 min over 10 of 12</td><td>439 / 0</td><td>0</td></tr>
+    <tr><td>2026-11-14 21:00&ndash;2026-11-15 01:00 (§9's window)</td><td>23.55</td><td>92.5 min over 39</td><td>8 / 5</td><td>not readable today; 27,854 recorded at its close</td></tr>
+    <tr><td>2026-11-07 00:00&ndash;2026-11-12 00:00 (baseline)</td><td>4.34</td><td>58.8 min over 15 of 506</td><td>not readable</td><td>not readable today</td></tr>
+    <tr><td>2026-11-11 13:00&ndash;15:00 (the script's own negative control)</td><td>6.83</td><td>no cohort</td><td>not readable</td><td>not readable today</td></tr>
+   </tbody>
+  </table>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-comparison-reading">Run over §9's window
+  the script still returns a mean of <strong>23.55</strong> and a median of <strong>92.5</strong>
+  minutes — §9's own recorded figures to the digit — so a low column in this window is a reading of the
+  lane and not a counter that stopped. Its specified negative control still reads
+  <strong>6.83</strong> working workers, below the bound of 12, over its own window. The three figures
+  the §67 gate calls the latter three are unmet there: the median is 92.5 minutes against 20, 5 of 8
+  passes held a shared-root claim, and the identity figure §9's own census took at that window's close
+  was 27,854 against 100.</p>
+
+  <h2 id="wftl-a-second-nights-window-meets-the-landing-targets-instrument">What the instrument cannot read, stated</h2>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-instrument-passlog">Neither admission
+  instrument retains a four-hour window. The crew-home verdict log is trimmed to its last mebibyte —
+  1,047,468 bytes holding 115 passes when read at 22:18Z, about one hour at the pass rate this fleet was writing —
+  and the admit service's own log is trimmed to its last four mebibytes, which had already lost
+  23:00&ndash;03:00 by the time this census ran: at 03:03Z it began at 2026-11-17T21:21:19Z. The window
+  was therefore measured from a spool: the census's <code>--spool-to</code> mode copies every pass the
+  sources hold that the spool does not, keyed on the pass's own instant and lane, and it ran every
+  90 seconds from 22:26Z to 00:25Z, when the copy loop's service was reaped, and again at 03:03Z. The spool holds <strong>1,183</strong> passes
+  spanning 2026-11-17T18:19:51Z to 2026-11-18T03:03:16Z, of which <strong>618</strong> fall inside the
+  window; the largest interval between consecutive passes inside the window is <strong>409 s</strong>
+  (23:33:39Z to 23:40:28Z, a lull with nothing queued), and every 15-minute bucket in the window holds
+  between 17 and 61 passes, so the gap between the last scheduled copy at 00:25Z and the closing copy
+  at 03:03Z lost no pass either source still held. The spool is 10.5 MB and lives in the run directory,
+  not the repository.</p>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-instrument-identities">The identity figure
+  is a reading of a live directory, and the census now says which it is: a window whose close lies
+  within an hour of the run reports <code>reads_live_state: true</code> (this window does), while a
+  later run over an older window reports <code>false</code> and counts only what survived, because
+  maintenance removes an ended run's identity. That is why §9's window reads 0 today and read 27,854
+  when its own census ran. On this window the directory was read live: 176 entries, none an identity.
+  The 176 entries also show the directory was listed rather than skipped, and with 150 synthetic
+  identities placed in a temporary claims directory the same code reports 150 against the bound of 100,
+  so the zero is an absence rather than a blind filter.</p>
+
+  <figure id="wftl-a-second-nights-window-meets-the-landing-targets-figure">
+   <img src="/reckon/figures/work-flows-to-the-lane/wftl-a-second-nights-window-meets-the-landing-targets/working-workers.svg"
+        alt="Working workers per minute through the window: a line that stays between 0 and 9 and never reaches the bound of 12">
+   <figcaption>Working workers per minute through 2026-11-17T23:00Z to 2026-11-18T03:00Z, drawn from
+   the same ledger spans the mean is computed over, with the bound of 12 and the measured mean of 2.42
+   marked.</figcaption>
+  </figure>
+
+  <h2 id="wftl-a-second-nights-window-meets-the-landing-targets-verdict">Verdict</h2>
+
+  <p id="wftl-a-second-nights-window-meets-the-landing-targets-verdict-text">Two of the section's four
+  figures hold: no admission pass held a request on a shared-root claim, and the claims directory held
+  no identity file at the window's close. The mean of 2.42 and the median promotion of 49.1 minutes do
+  not. The first is the lane's load, which this node measures and cannot move; the second is §70's
+  subject, and 3 of the window's 7 implement runs completed with no landing record at all — a gap the
+  latency figure counts beside its median rather than folding into it, so 49.1 minutes is the median of
+  the four runs that were promoted and not a statement about the three that were not.</p>
+ </main>
+</body>
+</html>
