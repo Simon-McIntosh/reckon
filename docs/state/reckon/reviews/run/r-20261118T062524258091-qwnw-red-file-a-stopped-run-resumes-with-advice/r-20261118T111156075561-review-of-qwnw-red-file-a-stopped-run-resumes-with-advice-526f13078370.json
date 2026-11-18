@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite-1794999557497925996.log at 2f00851c42 is 58 passed / EXIT=0 and after_suite-1794999600314348520.log at 526f130783 is 58 passed / EXIT=0, so the head adds no failing id; the head gate scoped-gate-1794999956736985515.log is 7 passed / EXIT=0 at 526f130783 and the base negative control negative-control-base.log is 2 failed / EXIT=1",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:49:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the head run was \"submitted to all_debug with SLURM_JOB_ID unset\", while the log it quotes (scoped-gate-1794999323073559801.log) and the head-revision log the manifest cites (scoped-gate-1794999956736985515.log) record only revision, host, tree and command \u2014 so the done_when's scheduler clause is prose no cited artefact can confirm."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the section is titled \"Head run\" but quotes c4824882e5ac, one commit behind the reviewed head 526f130783; the head-revision run exists (scoped-gate-1794999956736985515.log, cited only in the manifest), so a reader comparing the fragment against the promoted head sees a run at a different revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all three commits (2d5b8c99, c4824882, 526f130783); the test change is eleven lines in the fixture \u2014 the stub moved from pytest's tmp tree to the run directory, the shebang changed to Path(sys.executable).resolve(), and two explanatory comments added; the rest is the 28-line evidence fragment. No assertion in the file changed.",
+    "done_when": "done_when names the file, an all_debug job with SLURM_JOB_ID unset, an importer arm against the same base and a negative control; the manifest records a 7-passed/EXIT=0 run at 526f130783 (scoped-gate-1794999956736985515.log), both arms as inline JSON with full revisions (58 passed, EXIT=0 at 2f00851c42 and at 526f130783), and a base red run (negative-control-base.log, EXIT=1, 2 failed) \u2014 but no cited log records the partition or SLURM_JOB_ID, so the scheduler clause is claimed rather than measured.",
+    "goal": "the node's goal is \"Make tests/test_a_stopped_run_resumes_with_advice.py pass in full on the primary branch\"; tests/test_a_stopped_run_resumes_with_advice.py:92-100 moves the fixture's stub into the run directory and names the resolved interpreter, and I ran the reviewed head tree myself (7 passed, EXIT=0), with no product module in the diff.",
+    "manifest": "read the reviewed run's manifest.md at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062524258091-qwnw-red-file-a-stopped-run-resumes-with-advice/manifest.md; it states status complete, three commits ending at 526f130783, the head gate log and a base negative control, and the two suite arms as inline JSON, with no blockers and no outside_scope items.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the figure directory; both paths in the diff \u2014 tests/test_a_stopped_run_resumes_with_advice.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html \u2014 sit inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the fixture's regression in a scratch copy of the reviewed head (stub back at tmp_path) reddens test_a_stopped_tree_records_its_exit_and_resumes_with_advice and test_a_legacy_stopped_run_with_no_exit_resumes_on_its_launch_host, 2 failed / 5 passed, and the check tests/test_a_stopped_run_resumes_with_advice.py:230 compares the ADVICE constant passed to crew_resume against what the stub process itself recorded, not against a value the test echoes back.",
+    "evidence": "the manifest records both suite arms as complete inline JSON and the head gate log scoped-gate-1794999956736985515.log ends EXIT=0 with 7 passed, but that log's header carries only revision/tree/command, so the all_debug and SLURM_JOB_ID-unset clause the done_when names is not in the artefact it cites.",
+    "fit": "tests/test_a_stopped_run_resumes_with_advice.py:85-99 keeps the fixture's existing shape and explains the fence rule in a comment, matching the file's idiom; no symbol is renamed and no forbidden name is introduced.",
+    "goal_fidelity": "tests/test_a_stopped_run_resumes_with_advice.py:88-97 is the whole fixture change, and the reviewed head tree returns 7 passed, EXIT=0, with no runtime module touched by the diff.",
+    "reuse": "the search over tests/ for an existing owner of \"a stub a fenced worker can execute\" found only repeated local shebang stubs (tests/test_a_run_whose_host_is_gone_can_resume.py:50, tests/test_each_run_owns_its_harness_home.py:264) and no shared helper or resolved-interpreter utility, so the change extends no owner and forks nothing.",
+    "scope_discipline": "the diff's two paths \u2014 tests/test_a_stopped_run_resumes_with_advice.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html \u2014 are both inside the manifest's declared write paths, and nothing else changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_a_stopped_run_resumes_with_advice.py pass in full on the primary branch\"; tests/test_a_stopped_run_resumes_with_advice.py:92-100 moves the fixture's stub into the run directory and names the resolved interpreter, and I ran the reviewed head tree myself (7 passed, EXIT=0), with no product module in the diff.\nVERDICT done_when: done_when names the file, an all_debug job with SLURM_JOB_ID unset, an importer arm against the same base and a negative control; the manifest records a 7-passed/EXIT=0 run at 526f130783 (scoped-gate-1794999956736985515.log), both arms as inline JSON with full revisions (58 passed, EXIT=0 at 2f00851c42 and at 526f130783), and a base red run (negative-control-base.log, EXIT=1, 2 failed) \u2014 but no cited log records the partition or SLURM_JOB_ID, so the scheduler clause is claimed rather than measured.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the figure directory; both paths in the diff \u2014 tests/test_a_stopped_run_resumes_with_advice.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html \u2014 sit inside them.\nVERDICT manifest: read the reviewed run's manifest.md at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062524258091-qwnw-red-file-a-stopped-run-resumes-with-advice/manifest.md; it states status complete, three commits ending at 526f130783, the head gate log and a base negative control, and the two suite arms as inline JSON, with no blockers and no outside_scope items.\nVERDICT diff: read all three commits (2d5b8c99, c4824882, 526f130783); the test change is eleven lines in the fixture \u2014 the stub moved from pytest's tmp tree to the run directory, the shebang changed to Path(sys.executable).resolve(), and two explanatory comments added; the rest is the 28-line evidence fragment. No assertion in the file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_stopped_run_resumes_with_advice.py:88-97 is the whole fixture change, and the reviewed head tree returns 7 passed, EXIT=0, with no runtime module touched by the diff.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records both suite arms as complete inline JSON and the head gate log scoped-gate-1794999956736985515.log ends EXIT=0 with 7 passed, but that log's header carries only revision/tree/command, so the all_debug and SLURM_JOB_ID-unset clause the done_when names is not in the artefact it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths \u2014 tests/test_a_stopped_run_resumes_with_advice.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html \u2014 are both inside the manifest's declared write paths, and nothing else changed.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the fixture's regression in a scratch copy of the reviewed head (stub back at tmp_path) reddens test_a_stopped_tree_records_its_exit_and_resumes_with_advice and test_a_legacy_stopped_run_with_no_exit_resumes_on_its_launch_host, 2 failed / 5 passed, and the check tests/test_a_stopped_run_resumes_with_advice.py:230 compares the ADVICE constant passed to crew_resume against what the stub process itself recorded, not against a value the test echoes back.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_stopped_run_resumes_with_advice.py:85-99 keeps the fixture's existing shape and explains the fence rule in a comment, matching the file's idiom; no symbol is renamed and no forbidden name is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over tests/ for an existing owner of \"a stub a fenced worker can execute\" found only repeated local shebang stubs (tests/test_a_run_whose_host_is_gone_can_resume.py:50, tests/test_each_run_owns_its_harness_home.py:264) and no shared helper or resolved-interpreter utility, so the change extends no owner and forks nothing.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html:22 non-blocking: the fragment states the head run was \"submitted to all_debug with SLURM_JOB_ID unset\", while the log it quotes (scoped-gate-1794999323073559801.log) and the head-revision log the manifest cites (scoped-gate-1794999956736985515.log) record only revision, host, tree and command \u2014 so the done_when's scheduler clause is prose no cited artefact can confirm.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-run-resumes-with-advice.html:23 non-blocking: the section is titled \"Head run\" but quotes c4824882e5ac, one commit behind the reviewed head 526f130783; the head-revision run exists (scoped-gate-1794999956736985515.log, cited only in the manifest), so a reader comparing the fragment against the promoted head sees a run at a different revision.",
+  "review_run_id": "r-20261118T111156075561-review-of-qwnw-red-file-a-stopped-run-resumes-with-advice-526f13078370",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "526f130783706ec2b64562300a3f4c63f5a59279",
+  "reviewed_run_id": "r-20261118T062524258091-qwnw-red-file-a-stopped-run-resumes-with-advice",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:21:34.757438+00:00",
+  "total": 112
+}
