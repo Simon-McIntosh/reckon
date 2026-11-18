@@ -5,9 +5,14 @@
   cases in <code>tests/test_a_worker_widens_to_an_unclaimed_path.py</code>
   failed, both parametrised cases of
   <code>test_a_self_widen_to_a_peer_held_path_is_refused_naming_the_peer</code>.
-  The widen succeeded and added the peer's path, which the running case below
-  quotes in full. The fixture had written its peer's claim on
-  <code>reckon/crew/queue_admission.py</code>.</p>
+  The widen succeeded and added the peer's path. The fixture had written its
+  peer's claim on <code>reckon/crew/queue_admission.py</code>.</p>
+
+  <p id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-reproduction">The
+  reproduction, as the base arm's runner printed it (the
+  <code>takes_effect</code> sentence is shortened at its pid):</p>
+  <pre id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-payload"><code>AssertionError: {"added": ["reckon/crew/queue_admission.py"], "folded_disposition": null, "grants": [{"path": "reckon/crew/claims.py", "reason": "", "source": "dispatch"}, {"path": "reckon/crew/queue_admission.py", "reason": "the repair reads this peer's module", "source": "worker"}], "manifest_status": "", "node": "self-widen", "ok": true, "phase": "working", "run_id": "r-20261027T130000000000-self-widen", "self_widen": true, "session_id": "s-self-widen", "takes_effect": "the run's worker is alive as pid ...", "write_paths": ["reckon/crew/claims.py", "reckon/crew/queue_admission.py"]}
+assert 0 != 0</code></pre>
 
   <p><strong>Verdict: the test, not the product.</strong> Path claims were
   reserved for the artifacts git cannot reconcile in
@@ -44,7 +49,9 @@
   <h3 id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-measured">Measured</h3>
 
   <p>Every arm is a log whose first lines name the revision, the tree and the
-  command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+  command, and whose last line reads <code>EXIT=&lt;code&gt;</code>. The head
+  revision named is the code head these arms measured; the record's own
+  commits carry this document and change no code.</p>
 
   <table id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-arms">
     <caption>The named file, the project's armed suite, and the negative
@@ -55,13 +62,13 @@
         <td><code>8a9d873cb91d05af20ae5c6530880c260e1c5dbe</code>, extraction</td>
         <td>2 failed, 4 passed, <code>EXIT=1</code></td></tr>
       <tr><td>the named file, head gate</td>
-        <td><code>06cb0def3aab1c031af9ce03113fdd4a4db27009</code>, gate tree</td>
+        <td><code>6c150f10eddbba7dffdf5877152fa9a35271ed2a</code>, gate tree</td>
         <td>6 passed, <code>EXIT=0</code></td></tr>
       <tr><td>armed suite, base</td>
         <td><code>8a9d873cb91d05af20ae5c6530880c260e1c5dbe</code>, gate tree</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>armed suite, after</td>
-        <td><code>06cb0def3aab1c031af9ce03113fdd4a4db27009</code>, gate tree</td>
+        <td><code>6c150f10eddbba7dffdf5877152fa9a35271ed2a</code>, gate tree</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>delta</td><td>after arm against base arm</td>
         <td>0 added failures</td></tr>
@@ -77,5 +84,8 @@ FAILED tests/test_a_worker_widens_to_an_unclaimed_path.py::test_a_self_widen_to_
   <code>tests/test_fence_widening.py::test_a_peer_held_path_refuses_without_changing_pointer_bytes</code>
   fails at head with <code>DID NOT RAISE ScopeConflict</code> for the same
   cause: its holder declares <code>reckon/crew/node.py</code>, a source path.
-  It is another node's file and was not edited here.</p>
+  <code>tests/test_fence_widening.py::test_a_free_path_reaches_the_promoted_ledger</code>
+  fails there too, its widen adding
+  <code>reckon/crew/dispatch.py</code>. Both are another node's file and were
+  not edited here.</p>
 </section>
