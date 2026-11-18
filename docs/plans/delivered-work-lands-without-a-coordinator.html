@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -218,9 +218,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s26" data-id="c-close-s26" data-who="reckon-build" data-when="2026-11-18T10:38:00Z">
-    <div class="r-comment-body"><p>§26 landed by direct merge (head <code>a0b748025e</code>), on the lead's instruction. A live pointer of a run whose promoted row is proved present is retired by the landing pass and the station sweep and is not written again; a promoted group member is released through the ordinary integrated-member release, and a cleared landing journal is not recreated. The minute writer was the review sweep&#x27;s observe. Merged candidate gate: 56 passed in 48.24s.</p></div>
-</div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
     <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
 </div>
@@ -404,11 +401,17 @@
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261118T064057412704-review-of-a-delivered-conflict-repair-finishes-through-its-gate-81a03146da27" data-who="reckon-build" data-when="2026-11-18T06:48:50Z">
     <div class="r-comment-body"><p>Incremental independent review d09c2786cb097582470b9c4733bd9c192fa7218b..81a03146da27aec7acbffdaa77f3f9ea4fdafd18: all six dimensions 20/20, no findings, zero added source gate failure IDs; both granted records pass filing checks.</p></div>
 </div>
+<div class="r-comment" data-section="s26" data-id="c-close-s26" data-who="reckon-build" data-when="2026-11-18T10:38:00Z">
+    <div class="r-comment-body"><p>§26 landed by direct merge (head <code>a0b748025e</code>), on the lead's instruction. A live pointer of a run whose promoted row is proved present is retired by the landing pass and the station sweep and is not written again; a promoted group member is released through the ordinary integrated-member release, and a cleared landing journal is not recreated. The minute writer was the review sweep's observe. Merged candidate gate: 56 passed in 48.24s.</p></div>
+</div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261118T072855461582-review-of-a-promoted-runs-marked-pointer-is-retired-938b4d62c42f" data-who="reckon-build" data-when="2026-11-18T07:36:09Z">
     <div class="r-comment-body"><p>Parsed independent review of bf04be8120c77494d77ff646f075107963038273..938b4d62c42f1f9a5bb987f9f8ea1013b4021818; all six scores 16/12/20/17/20/20; two blocking findings; native suite delta 0, separate importer delta 18.</p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261118T103208713695-review-of-a-promoted-runs-marked-pointer-is-retired-a0b748025ea3" data-who="reckon-build" data-when="2026-11-18T10:37:25Z">
     <div class="r-comment-body"><p>Reviewed 938b4d62c42f1f9a5bb987f9f8ea1013b4021818..a0b748025ea333f372e2d6ede5e8d42159d5b6c9; six dimensions 20 each, no findings, both earlier blocking findings answered, zero added native and importer failures.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261118T064718515149-a-promoted-runs-marked-pointer-is-retired" data-who="reckon-build" data-when="2026-11-18T07:49:55Z">
+    <div class="r-comment-body"><p>Retires ownerless proved-promoted pointers without creating pending journals; grouped members finish through integrated workspace, ledger receipt, section and waiter release before pointer removal. Three promoted pointers remain absent after repeated landing/station passes, while the unpromoted member keeps its identity/place and unreadable evidence keeps its pointer. Scoped/head suite: 62 passed; native base: 58 passed; declared negative control: 2 failed as required. Refreshed importers: 21 identical failures at base/head, zero added; all 18 prior added failures repaired.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§3 landed (head <code>e44a9454d7</code>, review 120 of 120, no added failures). A repeated completion call now re-evaluates a parked request and dates the check, and a request parked for more than 30 minutes is an obligation naming its condition. The worker's replay showed the base drain already promotes a repaired request when a slot is free, so the section's first case was already met; the congested case is §12.</p></div>
