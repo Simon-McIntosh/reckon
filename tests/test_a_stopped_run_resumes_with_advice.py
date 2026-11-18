@@ -84,7 +84,12 @@ def fixture(tmp_path, monkeypatch):
     )
     directory = runs.run_dir(run_id)
     directory.mkdir(parents=True)
-    binary = tmp_path / "bin" / "codex"
+    # The resumed worker is fenced, and a fenced worker's /tmp is its own
+    # scratch: a stub under pytest's temporary tree reads as absent inside the
+    # fence and the launch dies before the stub runs. The run directory is a
+    # grant of the resumed attempt's fence, so the stub lives there beside the
+    # receipt it writes.
+    binary = directory / "bin" / "codex"
     binary.parent.mkdir()
     received = directory / "received.json"
     binary.write_text(
