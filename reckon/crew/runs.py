@@ -1,5 +1,6 @@
 # ruff: noqa: I001, PLC0414
 from __future__ import annotations
+import copy as copy
 import fcntl as fcntl
 import fnmatch as fnmatch
 import hashlib as hashlib
@@ -1318,7 +1319,15 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
 # that identity and the file is opened again only when the identity moves. The
 # text, not the parsed object, is kept, so every caller still receives a dict
 # of its own to change.
-_POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
+#
+# The same identity keeps the record decoded from that text: a listing that
+# finds the identity unchanged hands out a copy of the record it already holds
+# rather than decoding the pointer again. The copy, not the kept object, is
+# what a caller receives, so a caller that mutates what it was given changes
+# nothing the next listing returns.
+_POINTER_TEXT: dict[
+    str, tuple[tuple[int, int, int, int], str, dict[str, Any] | None]
+] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
 
 
@@ -1468,8 +1477,42 @@ def _pointer_text(path: Path) -> str:
         except ValueError:
             reduced = text
     with _POINTER_TEXT_LOCK:
-        _POINTER_TEXT[key] = (identity, reduced)
+        _POINTER_TEXT[key] = (identity, reduced, None)
     return reduced
+
+
+def _pointer_record(path: Path) -> Any:
+    """A pointer's decoded record, decoded only when its identity has moved.
+
+    A listing is a pass, and a pass that finds every pointer's stat identity
+    where the previous pass left it decodes none of them: the record decoded
+    from that text is kept beside it, under the same identity, and handed out
+    as a copy so a caller's change to what it was given reaches neither the
+    kept record nor the next listing.
+
+    The record is kept at the identity the text is kept under, so a pointer
+    rewritten between the stat and the read is cached with the bytes that were
+    actually decoded rather than a mix of two versions.
+    """
+    key = str(path)
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        with _POINTER_TEXT_LOCK:
+            _POINTER_TEXT.pop(key, None)
+        raise
+    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    with _POINTER_TEXT_LOCK:
+        kept = _POINTER_TEXT.get(key)
+    if kept is not None and kept[0] == identity and kept[2] is not None:
+        return copy.deepcopy(kept[2])
+    data = json.loads(_pointer_text(path))
+    if isinstance(data, dict):
+        with _POINTER_TEXT_LOCK:
+            entry = _POINTER_TEXT.get(key)
+            if entry is not None:
+                _POINTER_TEXT[key] = (entry[0], entry[1], data)
+    return copy.deepcopy(data)
 
 
 #: The lease this node's station keeps under the node-local runtime root. Its
@@ -1611,11 +1654,9 @@ def read_pointer(run_id: str) -> dict[str, Any]:
     """
     path = pointer_path(run_id)
     try:
-        text = _pointer_text(path)
+        data = _pointer_record(path)
     except FileNotFoundError:
         raise CrewError(f"no live run {run_id!r} (looked in {path})") from None
-    try:
-        data = json.loads(text)
     except ValueError as exc:
         raise CrewError(
             f"live pointer for {run_id!r} is not valid JSON — {exc}"
@@ -1668,7 +1709,7 @@ def _list_live_records(
             del _POINTER_TEXT[key]
     for path in paths:
         try:
-            data = json.loads(_pointer_text(path))
+            data = _pointer_record(path)
         except FileNotFoundError:
             continue
         except ValueError:
