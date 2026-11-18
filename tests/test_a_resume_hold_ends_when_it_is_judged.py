@@ -14,6 +14,8 @@ from reckon.crew import pending_landing, queue_landing, resume, runs
 from tests.test_a_coordinator_holds_a_delivered_run import (
     RUN,
     _store_review,
+)
+from tests.test_a_coordinator_holds_a_delivered_run import (
     delivery as delivery_fixture,
 )
 from tests.test_a_merged_promoted_run_is_released import (
@@ -22,7 +24,6 @@ from tests.test_a_merged_promoted_run_is_released import (
 from tests.test_a_merged_promoted_run_is_released import (
     cohort as cohort_fixture,
 )
-
 
 delivery = delivery_fixture
 cohort = cohort_fixture
@@ -119,8 +120,33 @@ def test_a_running_resume_keeps_its_hold_even_with_a_fresh_verdict(delivery) -> 
     manifest, baseline = _begin_resume()
     _deliver(manifest, baseline)
     pointer = runs.read_pointer(RUN)
-    pointer["process_alive"] = True
+    pointer["pid"] = os.getpid()
     runs._write_json(runs.pointer_path(RUN), pointer)
+    assert runs.record_process_alive(pointer) is True
+
+    pending_landing.finish_pending_landings()
+
+    assert resume.delivery_hold(runs.read_pointer(RUN)) is not None
+
+
+def test_a_pointer_changed_after_judgment_keeps_its_hold(delivery) -> None:
+    from reckon.crew.node import CrewError
+
+    _begin_resume()
+    judged = runs.read_pointer(RUN)
+    changed = {**judged, "attempt": 3}
+    runs._write_json(runs.pointer_path(RUN), changed)
+
+    with pytest.raises(CrewError, match="changed before its hold"):
+        resume.release_hold(RUN, "the attempt was judged", expected=judged)
+
+    assert runs.read_pointer(RUN) == changed
+    assert not _recorded_hold(RUN).get("released_at")
+
+
+def test_a_review_of_another_head_cannot_release_the_resume(delivery) -> None:
+    _begin_resume()
+    _store_review(base=delivery["base"], head=delivery["base"])
 
     pending_landing.finish_pending_landings()
 
@@ -157,6 +183,19 @@ def test_a_promoted_landed_run_retires_whatever_hold_it_carries(
     assert row["release"]["worktree_released"] is True
 
 
+@pytest.mark.parametrize("name", ["dirty", "unresolved"])
+def test_a_hold_does_not_bypass_workspace_evidence(cohort, name) -> None:
+    member = cohort["members"][name]
+    run_id = member["pointer"]["run_id"]
+    resume.hold_delivery(run_id, "await judgment", head=member["head"])
+
+    result = pending_landing.finish_pending_landings(only_run=run_id)
+
+    assert runs.pointer_path(run_id).exists()
+    assert member["tree"].exists()
+    assert any(row["status"] == "release-refused" for row in result), result
+
+
 @pytest.mark.parametrize("snapshot", [False, True])
 def test_manual_release_attempts_pending_landing_on_the_next_pass(
     cohort, snapshot
@@ -171,13 +210,17 @@ def test_manual_release_attempts_pending_landing_on_the_next_pass(
         head=member["head"],
         pointer=pointer if snapshot else None,
     )
-    resume.release_hold(run_id, "the decision arrived")
     attempts = []
 
     def land(repository, *, head, **kwargs):
         attempts.append(head)
         return {"commit": head}
 
+    held = pending_landing.finish_pending_landings(only_run=run_id, land=land)
+    assert not attempts, held
+    assert any(row["status"] == "held" for row in held), held
+
+    resume.release_hold(run_id, "the decision arrived")
     result = pending_landing.finish_pending_landings(only_run=run_id, land=land)
 
     assert attempts == [member["head"]], result
