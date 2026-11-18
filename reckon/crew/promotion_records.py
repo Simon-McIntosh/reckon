@@ -1686,10 +1686,26 @@ def _evaluate_suite_delta(
                 "after_suite": after if isinstance(after, Mapping) else None,
             },
         }
+        uncounted = [
+            name
+            for name, observation in (
+                ("baseline_suite", baseline),
+                ("after_suite", after),
+            )
+            if ledger.suite_observation_is_uncounted(observation)
+        ]
         detail = (
             "armed promotion requires complete baseline and after suite evidence; "
             "missing " + ", ".join(missing)
         )
+        if uncounted:
+            refusal["uncounted_arms"] = uncounted
+            detail += (
+                ". " + " and ".join(uncounted) + " never reached a pytest summary, "
+                "so no failure count exists to compare: re-measure the arm, or "
+                "state why it cannot count with --waive-suite-delta '<why>', "
+                "which records the arm as unmeasured rather than as a passing one"
+            )
         if any(field.endswith(".command_matches_suite_command") for field in missing):
             detail += (
                 ". An arm that ran a different command states that command and "
@@ -1722,8 +1738,12 @@ def _evaluate_suite_delta(
             detail,
             missing_fields=missing,
         )
-    normalized_baseline = ledger.normalized_suite_observation(baseline)
-    normalized_after = ledger.normalized_suite_observation(after)
+    normalized_baseline = ledger.normalized_suite_observation(
+        baseline, unmeasured_reason=waiver
+    )
+    normalized_after = ledger.normalized_suite_observation(
+        after, unmeasured_reason=waiver
+    )
     # What an arm waiver held, in the normalised shape the row records. The
     # committed row is the durable copy: promotion deletes the pointer this
     # waiver was written to.
