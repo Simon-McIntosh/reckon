@@ -453,6 +453,9 @@ class SweepBeat:
     ) -> None:
         while True:
             try:
+                from reckon.crew.pending_landing import retire_promoted_pointers
+
+                retire_promoted_pointers(project=project, session=session)
                 report = self.sweep(
                     project, session=session, now=moment, writer=dict(SWEEP_WRITER)
                 )

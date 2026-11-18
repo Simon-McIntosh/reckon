@@ -160,6 +160,9 @@ def retire_integrated_group_members(group: dict[str, Any]) -> dict[str, Any] | N
 
     for run_id, member in list(group["members"].items()):
         pointer = member["pointer"]
+        row = _promoted_row(str(pointer["project"]), run_id)
+        if row is None or row.get("run_id") != run_id:
+            continue
         primary = queue_landing._primary_revision(pointer)
         if not merge._is_ancestor(
             Path(str(pointer["repo"])), str(member["head"]), primary
@@ -443,6 +446,57 @@ def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool])
         except OSError:
             return POINTER_HELD
         return POINTER_RETIRED
+
+
+def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
+    """Retire a proved promotion, keeping its merge journal independent of liveness.
+
+    A repair mark, group membership or a rewritten phase does not undo a
+    promotion. The row must name this run; an unreadable row proves nothing.
+    The pointer lock serialises retirement with the observers that replace it.
+    Pending journals and group snapshots remain the owners of unmerged work.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    project = str(pointer.get("project") or "")
+    if not run_id or not project:
+        return POINTER_HELD
+
+    def promoted(current: Mapping[str, Any]) -> bool:
+        if dict(current) != pointer:
+            return False
+        row = _promoted_row(project, run_id)
+        if row is None or row.get("run_id") != run_id:
+            return False
+        if not row.get("promoted_revision") and not row.get("promoted_by"):
+            return False
+        head = _reviewed_head(row)
+        if (
+            head
+            and not current.get("landing_group")
+            and not _record_path(run_id).exists()
+        ):
+            write_pending(run_id, project, pointer=current, head=head)
+            if _read(_record_path(run_id)) is None:
+                return False
+        return True
+
+    return retire_pointer_if(run_id, promoted)
+
+
+def retire_promoted_pointers(
+    *, project: str | None = None, session: str | None = None, only_run: str = ""
+) -> list[dict[str, Any]]:
+    """Retire proved rows before a pass can rewrite their leftover pointers."""
+    retired = []
+    for pointer in runs.list_live(project=project):
+        run_id = str(pointer.get("run_id") or "")
+        if only_run and only_run != run_id:
+            continue
+        if session is not None and pointer.get("session") != session:
+            continue
+        if retire_promoted_pointer(pointer) == POINTER_RETIRED:
+            retired.append({"run_id": run_id, "status": "retired-promoted-pointer"})
+    return retired
 
 
 def promoted_pointer_write_refusal(run_id: str, pointer: Mapping[str, Any]) -> str:
@@ -1139,6 +1193,7 @@ def finish_pending_landings(
 
     moment = time.time() if now is None else now
     lander = land or merge.land
+    retired = retire_promoted_pointers(only_run=only_run)
     results: list[dict[str, Any]] = release_judged_resume_holds(only_run=only_run)
     results.extend(finish_landing_groups(only_run=only_run))
     results.extend(retire_stuck_review_pointers(only_run=only_run))
@@ -1147,7 +1202,7 @@ def finish_pending_landings(
     handled = {row["run_id"] for row in released}
     directory = pending_dir()
     if not directory.is_dir():
-        return results
+        return results + retired
     live = (
         set(live_run_ids)
         if live_run_ids is not None
@@ -1485,7 +1540,8 @@ def finish_pending_landings(
                 "commit": str((landed or {}).get("commit") or ""),
             }
         )
-    return results
+    handled = {row["run_id"] for row in results}
+    return results + [row for row in retired if row["run_id"] not in handled]
 
 
 def _released_pending_delivery(
