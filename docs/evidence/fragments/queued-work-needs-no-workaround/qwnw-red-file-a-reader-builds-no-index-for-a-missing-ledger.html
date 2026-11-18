@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger-negative-control">
+<h2>Empty ledger: the base run's two failures and the head run's pass</h2>
+<p>The base run of <code>tests/test_a_reader_builds_no_index_for_a_missing_ledger.py</code>
+at <code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code> failed two of its four
+cases. Both failed on the same stale expectation: the empty-ledger cases asserted
+<code>ledger.load</code>'s answer as exactly the three aggregate collections, while
+the reader overlays its own <code>auxiliary_version</code> on that roster. The
+no-index half of each case never ran, so the file's own subject was unproven.</p>
+<pre># revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76 (base test file)
+# command: PYTHONPATH=&lt;worktree&gt; &lt;worktree&gt;/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_reader_builds_no_index_for_a_missing_ledger.py
+FF..                                                                     [100%]</pre>
+<p>Failing ids, both on <code>data == {"members": [], "runs": [], "holds": []}</code>
+with <code>{'auxiliary_version': 0}</code> present on the left:</p>
+<pre>FAILED tests/test_a_reader_builds_no_index_for_a_missing_ledger.py::test_a_project_with_no_ledger_and_no_runs_directory_builds_no_index
+FAILED tests/test_a_reader_builds_no_index_for_a_missing_ledger.py::test_a_project_with_an_empty_runs_directory_builds_no_index
+2 failed, 2 passed in 0.33s
+EXIT=1</pre>
+<p>The head run passed all four as a job on <code>all_debug</code>, revision
+<code>2324ca9a132ae90500013b0197aca1040d2e5a69</code>:</p>
+<pre># revision: 2324ca9a132ae90500013b0197aca1040d2e5a69
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_reader_builds_no_index_for_a_missing_ledger.py'
+....                                                                     [100%]
+4 passed in 0.36s
+EXIT=0</pre>
+</section>
+
+<section id="qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger-verdict">
+<h2>Verdict: the reader is right, the expectation was stale</h2>
+<p>The no-index rule is product behaviour and was already in place:
+<code>_ledger_holds_content</code> gates the index path on an aggregate file or at
+least one run document, so a ledger holding neither never enters
+<code>_indexed_data</code> and publishes no cache file. A probe over both empty
+showing cases with <code>RECKON_PICK_CACHE</code> pointed at a temporary root read
+<code>{'members': [], 'runs': [], 'holds': [], 'auxiliary_version': 0}</code> at
+version 0 and listed no <code>ledger-*.sqlite</code> under that root — the
+instrument sees something present when it is present, since the two content cases
+of the same file do publish one index.</p>
+<p>The stale half was the test: the reader's <code>auxiliary_version</code> overlay
+is a deliberate product field that
+<code>tests/test_members_and_holds_live_in_the_store.py</code> and
+<code>tests/test_the_export_rebuilds_the_store.py</code> assert, so the empty-ledger
+cases now name the rule the reader keeps — exact equality including
+<code>auxiliary_version: 0</code> at version 0. The expectation gained a key rather
+than losing one, and no assertion in the file was removed or loosened.</p>
+</section>
