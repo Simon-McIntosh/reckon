@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;delivered-work-lands-without-a-coordinator#s2&quot;],&quot;s7&quot;:[&quot;work-flows-to-the-lane#s77&quot;],&quot;s8&quot;:[&quot;delivered-work-lands-without-a-coordinator#s13&quot;],&quot;s10&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s7&quot;],&quot;s9&quot;:[&quot;dispatch-admission-and-landing-take-seconds#s2&quot;,&quot;dispatch-admission-and-landing-take-seconds#s3&quot;,&quot;dispatch-admission-and-landing-take-seconds#s4&quot;,&quot;dispatch-admission-and-landing-take-seconds#s5&quot;,&quot;dispatch-admission-and-landing-take-seconds#s6&quot;,&quot;dispatch-admission-and-landing-take-seconds#s7&quot;,&quot;dispatch-admission-and-landing-take-seconds#s8&quot;,&quot;dispatch-admission-and-landing-take-seconds#s10&quot;]}">
   <title>Dispatch, Admission And Landing Take Seconds | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -89,7 +89,7 @@
     <p><strong>Done when.</strong> A test runs one pass over a temporary crew home of 240 pointers and 80 requests and finds one receipt whose per-read times sum to each stage's time within 5 %, each read named. Negative control: a receipt with one read omitted fails the sum check. Ten consecutive receipts from the live service after landing are recorded in the evidence with their largest read named. The temporary-home run is on <code>rigel</code>; importers add no failure against the base, on <code>all_debug</code>. Write paths: <code>reckon/crew/admission/service.py</code> and <code>tests/test_an_admission_receipt_names_its_reads.py</code>.</p>
 
     <h2 id="s8">§8 — The review of a delivered run is requested inside its window</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="2.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> A delivered run cannot land until it is reviewed, and the review is requested by the crew. <code>the-monitor-reads-each-fact-once</code> §28 gave that request a window of 120 s that a slow refresh must not hold, and is landed. Over the last 50 delivered runs of 16 November the launch still followed delivery by a median of 17.5 minutes and a 90th percentile of 96.9, and 9 had no review launched. The cause is not established: the request may be late, or made on time and then waiting for a lane slot or a worker. Coordinators dispatched reviews by hand all day.</p>
     <p><strong>Deliverable.</strong> For every delivered run, the review is requested within 120 s of the delivery being recorded, and the time from request to launch is recorded apart from it, so a late request and a slow launch are told apart. A delivered run with no review requested after ten minutes is an obligation naming the reason. A review request takes the priority of the run it reviews.</p>
     <p><strong>Done when.</strong> The stage receipts of <code>delivered-work-lands-without-a-coordinator</code> §13 give, for each of the last 50 delivered runs on the live fleet, the delivery, request and launch instants: the request follows delivery within 120 s at the 90th percentile, and every run without a request carries an obligation with its reason. A test delivers a run in a temporary crew home while a stand-in tick is held for ten minutes and finds the review requested within 120 s on a controlled clock, with the run's priority; a second case withholds the review's precondition and finds the obligation at ten minutes. Negative control: with the request made to wait for the tick, the first case fails. If the census shows requests on time and launches late, the section records that split and the launch delay becomes a section of its own. The census runs on <code>rigel</code>; the test on <code>all_debug</code>; importers add no failure against the base. Write paths: <code>reckon/crew/recovery_review_dispatch.py</code>, <code>reckon/crew/resumption.py</code> and <code>tests/test_a_delivered_run_is_reviewed_within_minutes.py</code>.</p>
@@ -118,12 +118,6 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-18T03:56:00Z">
-    <div class="r-comment-body"><p>§8 landed by direct merge (head <code>b18ce72b5c</code>), on the lead's instruction. For every delivered run the review is requested within 120 s of the delivery being recorded, with request-to-launch time recorded apart, and a delivered run with no review requested after ten minutes is an obligation a coordinator reads. The priority deliverable and the live census figures are as its record states. Merged candidate gate: 11 passed in 10.48s.</p></div>
-</div>
-<div class="r-comment" data-section="s8" data-id="c-s8-not-landed-0354" data-who="reckon-build" data-when="2026-11-18T03:54:00Z">
-    <div class="r-comment-body"><p>§8 is delivered and not landed: head <code>b18ce72b5c</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261117T210318326359-review-of-an-admission-pass-decides-within-its-budget-29fd41eb4cb1" data-who="reckon-build" data-when="2026-11-17T21:10:54Z">
     <div class="r-comment-body"><p>Independent parsed review of a290999a7dd5aaf099d00cfdf918eb1fde02a878..29fd41eb4cb1795e476c1ccfed664b38e895738d: six dimensions scored 13/12/20/10/15/20; three blocking and one non-blocking finding; zero added gate failures.</p></div>
 </div>
@@ -205,6 +199,9 @@
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261117T111344100542-an-admission-receipt-names-its-reads" data-who="reckon-build" data-when="2026-11-17T13:01:20Z">
     <div class="r-comment-body"><p>An admission pass's receipt now carries, inside its release and wait stages, each read it made with its count and its seconds — release 99.9 %, wait 97.1-97.3 % of each stage's own time on a temporary crew home of 240 pointers and 80 requests, every read named, and the same receipt with its heaviest read omitted fails the 5 % sum check.</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-s8-not-landed-0354" data-who="reckon-build" data-when="2026-11-18T03:54:00Z">
+    <div class="r-comment-body"><p>§8 is delivered and not landed: head <code>b18ce72b5c</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-s8-not-landed-2301" data-who="reckon-build" data-when="2026-11-17T23:01:00Z">
     <div class="r-comment-body"><p>§8 is delivered and not landed: head <code>789d5c7262</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
 </div>
@@ -224,7 +221,10 @@
     <div class="r-comment-body"><p>Independent parsed review of 3df7ec587a8a0ec609137bcd7fa9e49f9bda2ec9..eddc1538a52d74991ee89102c041a37633493ef2 stored for run r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes: six dimensions scored 17/15/20/9/15/20, one non-blocking finding (the census paragraph's 'requests were made inside the window' against its own log's 917.1 s maximum), zero added failures derived from the run's completed baseline and head gate logs; the gained delta is one prose commit on the declared evidence fragment and nothing else moved.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261118T003459576526-review-of-a-delivered-run-is-reviewed-within-minutes-530b0d0cafbd" data-who="reckon-build" data-when="2026-11-18T00:35:28.504Z">
-    <div class="r-comment-body"><p>Independent review of r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes at eddc1538a5..530b0d0caf; six dimensions scored goal_fidelity 18 / evidence 14 / scope_discipline 20 / durability 16 / fit 16 / reuse 20, three findings (one blocking: the census paragraph&#x27;s &quot;one of the five did not&quot; against its own log&#x27;s second out-of-window request at 197.951593 s; two non-blocking), zero added failures read from the run&#x27;s own completed baseline and head arm logs.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes at eddc1538a5..530b0d0caf; six dimensions scored goal_fidelity 18 / evidence 14 / scope_discipline 20 / durability 16 / fit 16 / reuse 20, three findings (one blocking: the census paragraph's "one of the five did not" against its own log's second out-of-window request at 197.951593 s; two non-blocking), zero added failures read from the run's own completed baseline and head arm logs.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261118T034228949276-review-of-a-delivered-run-is-reviewed-within-minutes-b18ce72b5c75" data-who="reckon-build" data-when="2026-11-18T03:45:19.709Z">
+    <div class="r-comment-body"><p>Review of r-20261117T112942727363 at b18ce72b5c against 530b0d0caf: no blocking finding — the paragraph that contradicted its own census log now names both requests over the 120 s window and its figures reconcile with live-census-20261117T2145Z.log; scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 10, fit 13, reuse 20; three non-blocking findings (the added late_requests report field carries no test, a comment opposite it still says only obligations ride the report, and the eight obligations&#x27; reasons were dropped from the evidence paragraph), added_failure_count 0.</p></div>
 </div>
 </section>
   </main>
