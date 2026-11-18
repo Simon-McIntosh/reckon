@@ -1,0 +1,41 @@
+<section id="qwnw-red-file-effort-routing-contract-one-cause">
+<h2>One cause: a test read a ledger the repository stopped tracking</h2>
+<p>The file was red on the primary branch at <code>fb3ec9a1a4047cb40052991176938311bb70a449</code> for one reason, not seven. Six cases passed; <code>test_documented_filter_runs_against_the_committed_ledger</code> asserted that <code>docs/state/reckon/crew.json</code> is a file in the working tree. Ledger retirement (<code>60c4622f55</code>, 17 November) deleted that document from git and added <code>/docs/state/*/crew.json</code> to <code>.gitignore</code>, so the path exists in history but never in a checkout. The verdict is <strong>test wrong</strong>: it encoded the rule that the ledger is a tracked working-tree document, which the product no longer keeps.</p>
+<p>The repair reads the ledger from the newest committed revision that still carries the path, resolved from the repository's own history, so the documented filter still runs over real committed runs rather than a fixture. No assertion was deleted or weakened: the file-existence check became the stronger claim that a revision carrying the ledger resolves, that it carries runs at all, that the lane's <code>exact</code> rows select at least one run, and that <code>open</code> selects none. The negative control below shows the reader refusing a history that never carried the ledger.</p>
+<pre># revision: fb3ec9a1a4047cb40052991176938311bb70a449
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-effort-routing-contract
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_effort_routing_contract.py
+......F                                                                  [100%]
+=================================== FAILURES ===================================
+________ test_documented_filter_runs_against_the_committed_ledger _________
+
+    def test_documented_filter_runs_against_the_committed_ledger() -&gt; None:
+        """The documented filter runs from the committed ledger and returns a pass
+        count and a run count, without asserting they equal the snapshot."""
+&gt;       assert COMMITTED_LEDGER.is_file()
+E       AssertionError: assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-effort-routing-contract/docs/state/reckon/crew.json').is_file
+
+tests/test_effort_routing_contract.py:105: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_effort_routing_contract.py::test_documented_filter_runs_against_the_committed_ledger
+1 failed, 6 passed in 1.15s
+EXIT=1
+</pre>
+</section>
+<section id="qwnw-red-file-effort-routing-contract-negative-control">
+<h2>Negative control: the reader refuses a history without the ledger</h2>
+<p>A throwaway probe built a temporary repository whose entire history never carried <code>docs/state/reckon/crew.json</code> and called the test's own reader. It refused rather than answering from an empty document, so the passing head run is not the reader succeeding at nothing.</p>
+<pre>REFUSED: no revision in this history carried docs/state/reckon/crew.json
+EXIT=0</pre>
+</section>
+<section id="qwnw-red-file-effort-routing-contract-head">
+<h2>Head: the whole file passes</h2>
+<pre># revision: b1fa27e774e068fdd4f06f4f8fe3a0108c3f50e2
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-effort-routing-contract
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_effort_routing_contract.py
+.......                                                                  [100%]
+7 passed in 4.28s
+EXIT=0</pre>
+</section>
