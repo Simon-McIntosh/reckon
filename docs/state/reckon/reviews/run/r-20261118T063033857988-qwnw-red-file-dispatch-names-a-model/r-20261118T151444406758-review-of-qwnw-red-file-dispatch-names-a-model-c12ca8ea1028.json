@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two armed-suite gate logs: baseline_suite at 94359be6ce0d3f31fd31f0ac4d4b7437f2835832 (arm-census-base.log) exit 0 with '58 passed' and failure_ids [], after_suite at c12ca8ea1028cbde0a028ecbd864100861073556 (arm-census-head.log) exit 0 with '58 passed' and failure_ids []; the census pair is a different population, and the node's own deltas are the base arm's one failing id, repaired at head, plus identical 32-passed importer arms on either side.",
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1579 writes 'reckon: created run <id>' to stderr, the notice that displaced the document in result.output",
+    "reckon/crew_dispatch_commands.py:303-305 emits the command's single JSON document on stdout, the stdout the repaired helper reads"
+  ],
+  "completed_at": "2026-11-18T23:40:00.000Z",
+  "dispatched_at": "2026-11-18T22:01:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "The node-file arm's head row states revision 582b926ed5, but the log it summarizes (arm-head.log) records '# revision: c12ca8ea1028cbde0a028ecbd864100861073556' and '12 passed'; the intervening commits touch only this fragment so the measurement transfers, yet the record's table does not match the log a promoter reads."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html",
+      "line": 77,
+      "severity": "non-blocking",
+      "text": "The census arm's head row states revision 582b926ed5 while arm-census-head.log, which the manifest's after_suite cites, records '# revision: c12ca8ea1028cbde0a028ecbd864100861073556' and '58 passed'; both revisions report 58 but the row names the wrong one."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html",
+      "line": 39,
+      "severity": "non-blocking",
+      "text": "The fragment states 'Each arm is its own sbatch --wait job on all_debug', but no log names a partition or job id: the arm headers carry revision, host, tree, command, module and cwd only, and the .scheduler sidecars beside each log are empty; the SLURM_JOB_ID-unset half is recorded (each arm command line is 'env -u SLURM_JOB_ID ...'), the all_debug half rests on prose."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read all three commits against 94359be6: 582b926ed5 edits only payload() in tests/test_dispatch_names_a_model.py (5 added, 2 deleted) to decode result.stdout and print both streams in the failure message; 6eb64321e4 adds the 92-line evidence fragment; c12ca8ea adds 15 lines recording the census pair's two arms; no product module changes.",
+    "done_when": "The done_when requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a product-or-test verdict per cause, no assertion deleted or weakened, and an importer arm adding no failure with both arms as inline JSON; the manifest supplies the test-wrong verdict, the base red with its decoded string, the head green and 32-passed importer arms, but those arms are prose plus logs rather than inline JSON and no log records the partition.",
+    "goal": "The node goal is 'Make tests/test_dispatch_names_a_model.py pass in full on the primary branch'; arm-head.log records 12 passed EXIT=0 at the reviewed head c12ca8ea over that file, against arm-base.log's '1 failed, 11 passed' at 94359be6, so the named file is green in full at head.",
+    "manifest": "Read in full: status complete, three commits, the gate command and its EXIT=0 log, base arm EXIT=1 naming test_live_pointer_records_lane_and_model_key with the decoded 'reckon: created run r-20261118T145023886016-model-test', head arm 12 passed at c12ca8ea, and baseline_suite/after_suite as inline JSON at 40-character revisions with completed true and failure_ids [].",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-dispatch-names-a-model.html, and the figures path; the delivered diff is exactly tests/test_dispatch_names_a_model.py (+5 -2) and that fragment (+107 -0), all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_names_a_model.py::test_live_pointer_records_lane_and_model_key reddens if payload() is reverted to result.output, which arm-base.log shows as JSONDecodeError on 'reckon: created run ...' under the locked click 8.4.2 (uv.lock:307), though pyproject.toml:26 admits click 8.0 where Result.output does not fold stderr.",
+    "evidence": "The gate result is recorded at the reviewed head (arm-head.log, 12 passed, EXIT=0) with the base arm as its negative control, but the done_when's all_debug clause appears in no log and the importer arms are prose rather than the inline JSON the measure names.",
+    "fit": "The repair reads result.stdout.splitlines()[0] exactly as the sibling tests/test_routing_picker_key.py:64 does, keeps both streams in its failure message, and states the stream contract in the helper's comment at tests/test_dispatch_names_a_model.py:174-177.",
+    "goal_fidelity": "arm-head.log records '12 passed in 1.52s' EXIT=0 at c12ca8ea over tests/test_dispatch_names_a_model.py, the file the goal names, against '1 failed, 11 passed' at 94359be6.",
+    "reuse": "The diff adds no definition: it edits the existing payload() helper in place, and a search of tests/ for an owner of decoding a dispatch document from a CliRunner result found only per-file idioms (tests/test_routing_picker_key.py:64), so the repair joins the existing idiom rather than forking an owner.",
+    "scope_discipline": "The diff 94359be6..c12ca8ea touches only tests/test_dispatch_names_a_model.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html, both declared, and changes no product module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_dispatch_names_a_model.py pass in full on the primary branch'; arm-head.log records 12 passed EXIT=0 at the reviewed head c12ca8ea over that file, against arm-base.log's '1 failed, 11 passed' at 94359be6.\nVERDICT done_when: the done_when requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a product-or-test verdict per cause, no assertion deleted or weakened, and an importer arm adding no failure with both arms as inline JSON; the manifest supplies the test-wrong verdict, the base red with its decoded string and the head green, but the importer arms are prose plus logs rather than inline JSON and no log records the partition.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-dispatch-names-a-model.html, and the figures path; the delivered diff is exactly tests/test_dispatch_names_a_model.py (+5 -2) and that fragment (+107 -0), all inside them.\nVERDICT manifest: read in full; status complete, three commits, the gate command and its EXIT=0 log, the base arm's red naming test_live_pointer_records_lane_and_model_key with the decoded notice, the head arm 12 passed at c12ca8ea, and baseline_suite/after_suite as inline JSON with 40-character revisions, completed true and failure_ids [].\nVERDICT diff: read all three commits against 94359be6; 582b926ed5 edits only payload() to decode result.stdout (5 added, 2 deleted), 6eb64321e4 adds the 92-line fragment and c12ca8ea adds 15 lines recording the census pair's two arms; no product module changes.\nCALL_SITES: reckon/crew/dispatching/preparation.py:1579, reckon/crew_dispatch_commands.py:303\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: arm-head.log records '12 passed in 1.52s' EXIT=0 at c12ca8ea over tests/test_dispatch_names_a_model.py, the file the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate result is recorded at the reviewed head (arm-head.log, 12 passed, EXIT=0) with the base arm as negative control, but the done_when's all_debug clause appears in no log and the importer arms are prose rather than the inline JSON the measure names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_dispatch_names_a_model.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html, both declared.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_names_a_model.py::test_live_pointer_records_lane_and_model_key reddens if payload() is reverted to result.output, shown by arm-base.log, though pyproject.toml:26 admits click 8.0 where that fold does not happen.\nSCORE fit: 18\nJUSTIFICATION fit: the repair reads result.stdout.splitlines()[0] as tests/test_routing_picker_key.py:64 does and keeps both streams in its failure message at tests/test_dispatch_names_a_model.py:176.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, editing the existing payload() helper in place, and a search of tests/ for an owner of decoding a dispatch document from a CliRunner result found only per-file idioms.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html:57 non-blocking: the node-file arm's head row states 582b926ed5 while arm-head.log records c12ca8ea1028 and 12 passed.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html:77 non-blocking: the census head row states 582b926ed5 while arm-census-head.log, the manifest's after_suite log, records c12ca8ea1028 and '58 passed'.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-names-a-model.html:39 non-blocking: the 'sbatch --wait job on all_debug' claim is carried by no log - arm headers name host 98dci4-clu-3141 but no partition or job id, and the .scheduler sidecars are empty - so the done_when's all_debug clause rests on prose while its SLURM_JOB_ID-unset half is recorded.",
+  "review_run_id": "r-20261118T151444406758-review-of-qwnw-red-file-dispatch-names-a-model-c12ca8ea1028",
+  "reviewed_base_sha": "94359be6ce0d3f31fd31f0ac4d4b7437f2835832",
+  "reviewed_head_sha": "c12ca8ea1028cbde0a028ecbd864100861073556",
+  "reviewed_run_id": "r-20261118T063033857988-qwnw-red-file-dispatch-names-a-model",
+  "reviewer_run_id": "r-20261118T151444406758-review-of-qwnw-red-file-dispatch-names-a-model-c12ca8ea1028",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:40:00.000000+00:00",
+  "total": 111
+}
