@@ -89,6 +89,8 @@ def test_pass_removes_only_two_old_unowned_entries_and_records_each(scratch):
         assert set(report["removed"]) == {str(orphan), str(ended)}
         assert not orphan.exists() and not ended.exists()
         assert all(contents(path) == before for path, before in survivor_bytes.items())
+        live_row = next(row for row in report["entries"] if row["path"] == str(live))
+        assert live_row["bytes"] is None  # An unmeasured live tree is not empty.
         rows = [
             json.loads(line)
             for line in (scratch.state / "scratch-removals.jsonl")
@@ -220,3 +222,20 @@ def test_symlinks_never_remove_their_target(scratch, tmp_path):
     (scratch.root / "linked").symlink_to(outside, target_is_directory=True)
     assert supervisor.reclaim_unowned_scratch()["removed"] == []
     assert (outside / "payload").read_bytes() == b"protected"
+
+
+def test_unwritable_removal_record_refuses_cleanup(scratch):
+    path = entry(scratch, "landing-needs-a-record")
+    scratch.state.mkdir()
+    (scratch.state / "scratch-removals.jsonl").mkdir()
+    report = supervisor.reclaim_unowned_scratch()
+    assert report["error"]
+    assert path.is_dir()
+
+
+def test_sweep_refuses_a_symlink_root(scratch, tmp_path):
+    scratch.root.rmdir()
+    scratch.root.symlink_to(tmp_path, target_is_directory=True)
+    report = supervisor.reclaim_unowned_scratch()
+    assert "noncanonical root" in report["error"]
+    assert scratch.root.is_symlink()

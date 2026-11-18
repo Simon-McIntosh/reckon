@@ -519,16 +519,24 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
     )
     qualifier = "" if sample.get("entries_complete") else " (census incomplete)"
     scratch = sample.get("crew_scratch", {})
-    scratch_groups: dict[str, list[str]] = {"live": [], "unowned": [], "held": []}
+    scratch_groups: dict[str, list[str]] = {
+        "live": [],
+        "unowned": [],
+        "held": [],
+        "unreadable": [],
+    }
     for entry in scratch.get("entries", []):
         if entry.get("removed"):
             continue
         withheld = entry.get("withheld", "")
-        group = (
-            "live"
-            if "live pointer" in withheld
-            else ("held" if "held by process" in withheld else "unowned")
-        )
+        if "live pointer" in withheld:
+            group = "live"
+        elif "held by process" in withheld:
+            group = "held"
+        elif "unreadable" in withheld or "not a real directory" in withheld:
+            group = "unreadable"
+        else:
+            group = "unowned"
         scratch_groups[group].append(entry["path"])
     scratch_detail = "".join(
         f"; {group} crew scratch: {', '.join(paths)}"
@@ -564,25 +572,26 @@ def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[st
     grace = flight.resolve().config["session_scratch"]["orphan_grace_seconds"]
 
     def record(entry: dict[str, Any]) -> None:
-        path = state_directory(environ) / "scratch-removals.jsonl"
-        path.parent.mkdir(parents=True, exist_ok=True)
         row = {"utc": datetime.now(UTC).isoformat(), **entry}
-        with path.open("a") as stream:
-            stream.write(json.dumps(row, sort_keys=True) + "\n")
-            stream.flush()
-            os.fsync(stream.fileno())
+        stream.write(json.dumps(row, sort_keys=True) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
         log(
             f"reclaimed crew scratch: {json.dumps(row, sort_keys=True)}",
             file=sys.stderr,
         )
 
     try:
-        return garbage_collect_orphan_scratch(
-            apply=True,
-            grace_seconds=grace,
-            inspect_activity=True,
-            record_removal=record,
-        )
+        path = state_directory(environ) / "scratch-removals.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Refuse removal before touching a tree if its audit sink cannot open.
+        with path.open("a") as stream:
+            return garbage_collect_orphan_scratch(
+                apply=True,
+                grace_seconds=grace,
+                inspect_activity=True,
+                record_removal=record,
+            )
     except (OSError, ValueError, RuntimeError, CrewError) as exc:
         log(f"crew scratch sweep unavailable: {exc}", file=sys.stderr)
         return {"error": str(exc)}

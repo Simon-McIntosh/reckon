@@ -1626,15 +1626,15 @@ def garbage_collect_orphan_scratch(
                 }
             )
             continue
-        size = 0 if inspect_activity else tree_size_bytes(child)
+        size = None if inspect_activity else tree_size_bytes(child)
         age = max(0.0, stamp - _scratch_ctime(child))
         reason = ""
         if child.name in live_ids:
             reason = "live pointer"
-        elif age < grace_seconds:
-            reason = f"ctime within {grace_seconds} second grace"
         elif holders.get(child.name):
             reason = f"held by process {holders[child.name]}"
+        elif age < grace_seconds:
+            reason = f"ctime within {grace_seconds} second grace"
         elif inspect_activity:
             try:
                 latest, size = _scratch_activity(child, deadline)
@@ -1691,7 +1691,11 @@ def garbage_collect_orphan_scratch(
         "entries": entries,
         "removed": removed,
         "bytes_freed": bytes_freed,
-        "would_free_bytes": sum(row["bytes"] for row in entries if not row["withheld"]),
+        "would_free_bytes": sum(
+            row["bytes"]
+            for row in entries
+            if not row["withheld"] and row["bytes"] is not None
+        ),
     }
 
 
