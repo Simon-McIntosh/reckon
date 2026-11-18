@@ -164,6 +164,19 @@ def _authored_pointer(slug: str) -> dict:
     }
 
 
+def _forget_change_detection():
+    """Forget what each pass remembers between ticks.
+
+    The two memories are named through ``getattr`` so that the same test runs
+    against a revision that keeps neither: what it asserts is then the reads
+    that remain, which is exactly the comparison the negative control makes.
+    """
+    for name in ("_PLAN_LISTINGS", "_RECORD_SUMMARIES"):
+        held = getattr(plan_review, name, None)
+        if isinstance(held, dict):
+            held.clear()
+
+
 def _scenario(root, monkeypatch, *, incremental):
     """Four passes over one project, with a changed review and a changed plan."""
     population = _build(root)
@@ -172,8 +185,7 @@ def _scenario(root, monkeypatch, *, incremental):
     dispatched = _stand_in(monkeypatch)
     counts = _instrument(monkeypatch)
     file_memo.clear()
-    plan_review._PLAN_LISTINGS.clear()
-    plan_review._RECORD_SUMMARIES.clear()
+    _forget_change_detection()
     pointers = [_authored_pointer("topic-00")]
     reports = []
     seen = []
@@ -182,8 +194,7 @@ def _scenario(root, monkeypatch, *, incremental):
         if not incremental:
             # The same pass with no memory of the last one: it re-reads the tree
             # and the store rather than answering from what it decoded before.
-            plan_review._PLAN_LISTINGS.clear()
-            plan_review._RECORD_SUMMARIES.clear()
+            _forget_change_detection()
         counts["records"] = 0
         counts["plans"] = set()
         counts["directories"] = 0
@@ -217,12 +228,10 @@ def _scenario(root, monkeypatch, *, incremental):
 @pytest.fixture(autouse=True)
 def _forget_memos():
     file_memo.clear()
-    plan_review._PLAN_LISTINGS.clear()
-    plan_review._RECORD_SUMMARIES.clear()
+    _forget_change_detection()
     yield
     file_memo.clear()
-    plan_review._PLAN_LISTINGS.clear()
-    plan_review._RECORD_SUMMARIES.clear()
+    _forget_change_detection()
 
 
 def test_an_owed_review_pass_reads_only_what_changed(tmp_path, monkeypatch):
