@@ -1317,14 +1317,12 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
 # by every follower on the node. A pointer whose inode, size and timestamps are
 # unchanged holds the bytes last read, so its text is kept per process keyed by
 # that identity and the file is opened again only when the identity moves. The
-# text, not the parsed object, is kept, so every caller still receives a dict
-# of its own to change.
-#
-# The same identity keeps the record decoded from that text: a listing that
-# finds the identity unchanged hands out a copy of the record it already holds
-# rather than decoding the pointer again. The copy, not the kept object, is
-# what a caller receives, so a caller that mutates what it was given changes
-# nothing the next listing returns.
+# text is kept so the bytes a caller sees do not change under it, and the
+# record decoded from that text is kept beside it, so a pass that finds the
+# identity unchanged hands out a copy of the record already held rather than
+# decoding the pointer again. The copy, not the kept object, is what a caller
+# receives, so a caller that mutates what it was given changes nothing the next
+# listing returns.
 _POINTER_TEXT: dict[
     str, tuple[tuple[int, int, int, int], str, dict[str, Any] | None]
 ] = {}
