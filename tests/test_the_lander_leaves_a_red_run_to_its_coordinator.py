@@ -411,22 +411,58 @@ def test_a_review_that_added_a_failure_is_not_promoted(
     assert NEW_FAILURE in guard, guard
 
 
-def test_a_finding_with_no_disposition_is_not_promoted(
+def test_a_blocking_finding_with_no_disposition_is_not_promoted(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The reviewer raised a non-blocking finding and nobody has answered it."""
+    """The reviewer raised a blocking finding and nobody has answered it.
+
+    A blocking finding withholds the landing, so the pass refuses the run before
+    it measures anything and leaves it to its coordinator. The refusal a code
+    review's blocking finding meets is the review-acceptance gate, which reads
+    the stored record as not accepted; the red-suite guard's own blocking arm
+    stands behind it and this case cannot reach it.
+    """
     _accept(
         base=str(delivery["base"]),
         head=str(delivery["head"]),
-        findings=("non-blocking: the helper re-derives a value it could cache",),
+        findings=("blocking: the helper re-derives a value it could cache",),
     )
 
     result = _refusal(delivery)
 
     guard = result["obligations"][0]["guard"]
-    assert guard.startswith("red-suite:"), guard
-    assert "no disposition" in guard, guard
-    assert "non-blocking" in guard, guard
+    assert guard == "review acceptance: a blocking finding or an incomplete record", (
+        guard
+    )
+    landing = runs.read_pointer(RUN)["admission_landing"]
+    assert landing["status"] == "refused", landing
+    assert landing["guard"] == guard, landing
+
+
+def test_a_non_blocking_finding_with_no_disposition_is_deferred(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unanswered non-blocking finding is carried forward, not a refusal.
+
+    The landing rule holds back only the findings that withhold the landing; one
+    the reviewer declared non-blocking is deferred instead, so the run lands and
+    the finding stays open work named with the run it landed over.
+    """
+    head = str(delivery["head"])
+    _accept(
+        base=str(delivery["base"]),
+        head=head,
+        findings=("non-blocking: the helper re-derives a value it could cache",),
+    )
+
+    result = _promoted(delivery, monkeypatch)
+
+    assert result["obligations"] == [], result
+    stored = review_dispositions.stored_record_for_disposition(
+        PROJECT, RUN, reviewed_head_sha=head
+    )
+    assert stored is not None
+    assert finding_disposition(stored, 0) == f"deferred:{RUN}"
 
 
 def test_an_unreadable_after_suite_is_not_promoted(
@@ -536,7 +572,7 @@ def _undisposed_finding(delivery: dict) -> None:
     _accept(
         base=str(delivery["base"]),
         head=str(delivery["head"]),
-        findings=("non-blocking: the case is not exercised by any test",),
+        findings=("blocking: the case is not exercised by any test",),
     )
 
 
@@ -572,7 +608,14 @@ def _remove_the_added_failure_check(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(queue_landing, "_review_added_failure_guard", lambda review: "")
 
 
-def _remove_the_undisposed_finding_check(monkeypatch: pytest.MonkeyPatch) -> None:
+def _remove_the_finding_guards(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Both arms that decline an undisposed finding, in the order they fire.
+
+    The review-acceptance gate refuses a blocking finding before the red-suite
+    guard behind it reads the same record, so removing either alone leaves the
+    case refused and would show nothing about either.
+    """
+    monkeypatch.setattr(queue_landing, "_review_accepts_promotion", lambda review: True)
     monkeypatch.setattr(queue_landing, "_undisposed_finding_guard", lambda review: "")
 
 
@@ -595,7 +638,7 @@ def _compare_failure_ids_alone(monkeypatch: pytest.MonkeyPatch) -> None:
     [
         (_red_suite_arms, _remove_the_suite_check),
         (_review_added_failure, _remove_the_added_failure_check),
-        (_undisposed_finding, _remove_the_undisposed_finding_check),
+        (_undisposed_finding, _remove_the_finding_guards),
         (_unreadable_arm, _read_every_arm_as_clean),
         (_red_base_covered, _compare_failure_ids_alone),
     ],
