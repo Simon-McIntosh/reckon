@@ -974,6 +974,53 @@ def _commits_a_presentation_covers(
     return covered
 
 
+def _unresolved_presentation_refusal(
+    run_id: str, tree: Path, unresolved: Sequence[str]
+) -> CrewError:
+    """The one refusal a presentation naming no object is reported with."""
+    return CrewError(
+        f"run {run_id!r} presents "
+        + ", ".join(repr(entry) for entry in unresolved)
+        + " as a commit, but that identifier does not resolve to a "
+        f"commit object in the run repository ({tree}). The presented "
+        "list is what the boundary check and the ledger resolve, so a "
+        "value that names nothing is not evidence and is reported "
+        "rather than dropped from the comparison. Cite the commit the "
+        "run actually wrote, or leave the value out of the presentation"
+    )
+
+
+def require_resolvable_presentation(
+    run_id: str,
+    record: Mapping[str, Any],
+    presented: Iterable[str],
+) -> None:
+    """Refuse a presented commit that resolves to no object in the run's tree.
+
+    A presentation is what the out-of-scope boundary check and the ledger
+    resolve, so a presented value that names nothing is a defective citation
+    and not a count short of the manifest's. The presentation is judged where
+    it is read: ``crew complete`` queues a promotion rather than running one,
+    so a guard that runs only on the drain refuses a request already written,
+    on the service's turn instead of the caller's. Measured at the request
+    boundary: a passing completion presenting one commit that resolves and a
+    forty-character value that resolves nowhere, against a run whose pointer
+    names a readable repository, answered ``{"ok": true, "phase":
+    "promotion-requested"}`` and queued the value the boundary check cannot
+    resolve.
+
+    The refusal stays silent when the run's tree cannot be read, so a citation
+    is never refused for a store nobody was able to ask about.
+    """
+    cited = [str(entry).strip() for entry in presented if str(entry).strip()]
+    tree = _run_commit_directory(record) if cited else None
+    if tree is None:
+        return
+    unresolved = [entry for entry in cited if _commit_canonical_id(tree, entry) is None]
+    if unresolved:
+        raise _unresolved_presentation_refusal(run_id, tree, unresolved)
+
+
 def _require_gate_evidence(
     run_id: str,
     record: Mapping[str, Any],
@@ -1111,16 +1158,7 @@ def _require_gate_evidence(
         # that only begins with an absence word is still not a declaration, so
         # `nonesuch` is refused here as the citation attempt it looks like.
         if unresolved_presented and not declared_absent:
-            raise CrewError(
-                f"run {run_id!r} presents "
-                + ", ".join(repr(entry) for entry in unresolved_presented)
-                + " as a commit, but that identifier does not resolve to a "
-                f"commit object in the run repository ({tree}). The presented "
-                "list is what the boundary check and the ledger resolve, so a "
-                "value that names nothing is not evidence and is reported "
-                "rather than dropped from the comparison. Cite the commit the "
-                "run actually wrote, or leave the value out of the presentation"
-            )
+            raise _unresolved_presentation_refusal(run_id, tree, unresolved_presented)
         resolving_declared = {
             canonical
             for candidate in declared

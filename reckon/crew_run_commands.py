@@ -3527,6 +3527,34 @@ def _complete_many(run_ids, parameters):
     _emit_crew_result(reply, parameters.get("pretty", False))
 
 
+def _refuse_a_presentation_that_names_nothing(run_id, gate, commits, no_commit) -> None:
+    """Refuse a queued promotion presenting a commit that resolves to nothing.
+
+    A queued promotion answers with its request receipt before any promotion
+    runs, so a guard behind the request reports a presentation naming nothing
+    on the drain's turn, with the request already recorded. Judging the
+    presentation here, on the command that queues it, keeps the refusal on the
+    caller's turn. A gate that did not pass and a run that declares no commit
+    to register present nothing to resolve, and a run whose tree cannot be read
+    is unmeasured rather than refused.
+    """
+    from reckon.crew import promotion_evidence
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    if str(gate).strip().lower() != "passed" or str(no_commit).strip():
+        return
+    if not [str(sha).strip() for sha in commits if str(sha).strip()]:
+        return
+    try:
+        record = runs_module.read_pointer(run_id)
+    except CrewError:
+        # A pointer that is gone names no tree to ask. The promotion that
+        # reports the vanished run is the caller's next step, not this one.
+        return
+    promotion_evidence.require_resolvable_presentation(run_id, record, commits)
+
+
 def _refuse_an_unfileable_review_record(
     run_id: str, *, accepted: "Iterable[str]" = (), pretty: bool = False
 ) -> None:
@@ -3964,6 +3992,15 @@ def crew_complete(
     )
     driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
+        from reckon.crew.node import CrewError
+
+        # Judged ahead of the queued request for the same reason the review
+        # record above is: this path answers with its request receipt before
+        # any promotion runs, so this guard runs on the caller's turn.
+        try:
+            _refuse_a_presentation_that_names_nothing(run_id, gate, commits, no_commit)
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
         # The drain forwards every stored option as a keyword, so the snapshot
         # carries only names this command declares: a name bound here by an
         # import or a local reaches the drain as an unknown keyword and the
