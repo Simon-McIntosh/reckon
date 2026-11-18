@@ -16,9 +16,11 @@
   record out of the completion command's own reply:</p>
 
   <pre id="qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-repro"><code>record = json.loads(result.output)["record"]
-E   KeyError: 'record'
-tests/test_an_evidence_only_node_lands_on_its_declared_check.py:143: KeyError … the case count read
-the base log's own summary: 1 failed, 1 passed, EXIT=1</code></pre>
+E       KeyError: 'record'
+
+tests/test_an_evidence_only_node_lands_on_its_declared_check.py:143: KeyError
+FAILED tests/test_an_evidence_only_node_lands_on_its_declared_check.py::test_an_evidence_only_node_lands_on_its_declared_check - KeyError: 'record'
+1 failed, 1 passed in 2.13s</code></pre>
 
   <p>The reply has not carried the record since the delivery batching landed:
   it is a bounded summary naming the run, whether the pointer was removed, and
