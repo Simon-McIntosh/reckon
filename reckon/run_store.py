@@ -1121,6 +1121,10 @@ class RunStore:
         if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
             self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
         self._archive_attached = False
+        # The committed state each project's membership was last judged at.
+        # Reading membership costs a stat per run file, so a repeated read of
+        # an unchanged ledger answers from this record instead.
+        self._membership_stamps: dict[str, dict[str, Any]] = {}
         self._create()
 
     def __enter__(self) -> Self:
@@ -1709,6 +1713,9 @@ class RunStore:
         for name, root in roots.items():
             if project is not None and name != project:
                 continue
+            stamp = ledger.index_state_stamp(name, root)
+            if self._membership_stamps.get(name) == stamp:
+                continue
             indexed = {
                 str(row[0])
                 for row in self._conn.execute(
@@ -1720,7 +1727,9 @@ class RunStore:
             # answers through the store whenever one exists and leaves the
             # check comparing the store with itself, so a ledger that moved
             # would never rebuild the rows it outgrew.
-            if indexed != ledger.file_run_ids(name, root):
+            committed = ledger.file_run_ids(name, root)
+            self._membership_stamps[name] = stamp
+            if indexed != committed:
                 data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
                 stale |= indexed
