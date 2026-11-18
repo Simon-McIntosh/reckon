@@ -1978,6 +1978,10 @@ def carry_review_forward(
     and the review-need judge, reading the move's diff against the run's goal
     and done-when, answers that it needs no new review. The judgement is kept
     on the carried record. A judge that cannot answer leaves the rule above.
+
+    A review bound to its reviewer's brief cannot be re-filed at another head.
+    Such a move composes a light review of the delta instead, preserving the
+    brief's revision constraint and the earlier record.
     """
     move = review_head_move(record)
     if not move:
@@ -2059,6 +2063,18 @@ def carry_review_forward(
         carried["carried_forward"]["judged"] = {
             "probability": judged.probability,
             "source": judged.source,
+        }
+    brief_refusal = review_module.review_brief_head_refusal(carried)
+    if brief_refusal:
+        return {
+            "run_id": run_id,
+            "carried": False,
+            "review_tier": review_tiers.LIGHT,
+            "scope": list(move["paths"]),
+            "paths": list(move["paths"]),
+            "reviewed_head": move["reviewed_head"],
+            "head": move["head"],
+            "reason": brief_refusal,
         }
     review_module.store_review(carried)
     _mutate_pointer(
