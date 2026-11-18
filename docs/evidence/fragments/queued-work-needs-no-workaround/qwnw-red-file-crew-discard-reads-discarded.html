@@ -1,0 +1,50 @@
+<section id="qwnw-red-file-crew-discard-reads-discarded-record">
+<h2>A promoted ledger row names a checkout whose branch carries its head</h2>
+<p>At the base revision <code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code>,
+<code>tests/test_crew_discard_reads_discarded.py</code> reads two failed and four passed. Both failures asserted
+<code>promoted</code> and read <code>complete</code>:</p>
+<pre>FAILED tests/test_crew_discard_reads_discarded.py::test_a_recorded_promotion_still_reads_promoted - AssertionError: assert 'complete' == 'promoted'
+FAILED tests/test_crew_discard_reads_discarded.py::test_a_promotion_outweighs_a_discard_marker - AssertionError: assert 'complete' == 'promoted'
+2 failed, 4 passed in 0.68s</pre>
+<h3 id="qwnw-red-file-crew-discard-reads-discarded-causes">Cause, with its verdict</h3>
+<p>One cause, and it is the test, not the product. Both cases built the same ledger row —
+<code>{"run_id": ..., "commits": ["HEAD"]}</code>, naming no checkout — and asserted that a departure carrying
+it reads <code>promoted</code>. Since <code>0f3f363ec8b12b0cc04f562f619b7fa75c728b17</code> (<em>distinguish
+promotion from landing in departure readers</em>) the departure reader asks the row's own checkout whether the
+delivered head reached the primary branch, and reads a row whose ancestry cannot be read as
+<code>complete</code> — delivered, its landing unverified — because a reader who believes an unverified landing
+stops attending to it. That rule is held at both ends by
+<code>tests/test_a_promoted_run_is_not_landed_until_merged.py</code>: an unmerged head reads
+<code>complete</code>, a merged head reads <code>promoted</code>. The product rule is kept; the fixture is
+updated to the rule the code now asserts. No assertion was deleted or weakened —
+<code>assert folded[0][2] == "promoted"</code> stands unchanged in both cases.</p>
+<p>The fixture now gives the row what the reader asks for: the row names the checkout it was promoted into, the
+head it delivered is on that checkout's primary branch, and the checkout reaches the temporary home's state
+directory through the same symlink a mounted project carries — so the row is one file, found by the discovery
+path and by the checkout's own path alike.</p>
+<h3 id="qwnw-red-file-crew-discard-reads-discarded-controls">The repaired assertion is not vacuous</h3>
+<p>Two controls were run against the repaired fixture. With the same row's head left on an unmerged work
+branch, the run reads <code>complete</code>, so the fixture reaches the ancestry rule instead of forcing the
+word from the row's presence. With the ledger row withheld, the marker-bearing run reads
+<code>discarded</code>, so the row is what produces <code>promoted</code>.</p>
+<h3 id="qwnw-red-file-crew-discard-reads-discarded-measurements">Measurements</h3>
+<table>
+<tr><th>Arm</th><th>Revision</th><th>Command</th><th>Result</th></tr>
+<tr><td>base</td><td><code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code></td>
+<td><code>PYTHONPATH=&lt;tree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_discard_reads_discarded.py</code></td>
+<td>2 failed, 4 passed — <code>EXIT=1</code></td></tr>
+<tr><td>head</td><td><code>50d40937a2cdff870c0f22205e80f16d832c5671</code></td>
+<td><code>PYTHONPATH=&lt;tree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_discard_reads_discarded.py</code></td>
+<td>6 passed in 6.52s — <code>EXIT=0</code></td></tr>
+</table>
+<p>The gate the done-when names ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset,
+against a scratch tree at the head revision: <code>6 passed in 1.18s</code>, <code>EXIT=0</code>. The page's
+declared suite (the project's census arm) reads <code>58 passed in 36.63s</code> at
+<code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code> and <code>58 passed in 36.90s</code> at
+<code>50d40937a2cdff870c0f22205e80f16d832c5671</code>, both <code>EXIT=0</code>, so the change adds no failure.
+The base
+control is logged at
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044608550551-qwnw-red-file-crew-discard-reads-discarded/negative-control-node-base.log</code>
+and the head run at
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044608550551-qwnw-red-file-crew-discard-reads-discarded/node-file-head.log</code>.</p>
+</section>
