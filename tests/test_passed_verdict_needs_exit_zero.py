@@ -20,6 +20,12 @@ base is refused, and so is one whose baseline arm stopped before its suite
 finished — a short list that happens to cover every id the head records is not
 a measurement of what the head added. A recorded gate command whose first
 token names no executable is also refused.
+
+``crew complete`` answers with a bounded receipt whose ``detail`` is cut at 240
+characters and which carries no ``record`` of its own, so each case reads the
+completion record the receipt's ``record_path`` names. The verdict, its
+figures and the full refusal are asserted there rather than in the receipt's
+one-line truncation of them.
 """
 
 from __future__ import annotations
@@ -200,6 +206,24 @@ def _invoke(run_id: str, repository: Path, log_path: Path, **extra):
     )
 
 
+def _completion_record(result) -> dict:
+    """The record the completion wrote, read from the path its receipt names.
+
+    The verb answers with a bounded receipt: the refusal ``detail`` it carries
+    is cut at 240 characters, and a passing run answers with no ``record`` at
+    all, only the ``record_path`` its record was written to. The verdict and
+    the refusal are read from that record, so the cases assert the record's own
+    words rather than the receipt's truncation of them.
+    """
+    receipt = json.loads(result.output)
+    return json.loads(Path(receipt["record_path"]).read_text(encoding="utf-8"))
+
+
+def _refusal_detail(result) -> str:
+    """The refusal a failed completion recorded, in full."""
+    return str(_completion_record(result).get("detail") or "")
+
+
 def test_a_passing_verdict_beside_a_nonzero_status_without_an_exit_record_is_refused(
     repository: Path, tmp_path: Path
 ) -> None:
@@ -213,8 +237,9 @@ def test_a_passing_verdict_beside_a_nonzero_status_without_an_exit_record_is_ref
     result = _invoke(run_id, repository, log, exit_status=1)
 
     assert result.exit_code != 0, result.output
-    assert "gate 'passed'" in result.output
-    assert "exit status 1" in result.output
+    detail = _refusal_detail(result)
+    assert "gate 'passed'" in detail
+    assert "exit status 1" in detail
     assert pointer_path(run_id).is_file()
 
 
@@ -231,8 +256,9 @@ def test_a_passing_verdict_beside_a_nonzero_status_with_an_agreeing_record_is_re
     result = _invoke(run_id, repository, log, exit_status=2)
 
     assert result.exit_code != 0, result.output
-    assert "gate 'passed'" in result.output
-    assert "exit status 2" in result.output
+    detail = _refusal_detail(result)
+    assert "gate 'passed'" in detail
+    assert "exit status 2" in detail
 
 
 def test_a_passing_verdict_with_a_zero_status_and_a_runnable_command_promotes(
@@ -246,7 +272,7 @@ def test_a_passing_verdict_with_a_zero_status_and_a_runnable_command_promotes(
     result = _invoke(run_id, repository, log)
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _completion_record(result)["record"]
     assert record["gate"] == "passed"
     assert record["gate_check"]["exit_status"] == 0
 
@@ -263,7 +289,7 @@ def test_a_leading_assignment_before_the_program_still_promotes(
     result = _invoke(run_id, repository, log, command=ASSIGNED_COMMAND)
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _completion_record(result)["record"]
     assert record["gate_check"]["command"] == ASSIGNED_COMMAND
 
 
@@ -278,8 +304,9 @@ def test_a_prose_gate_command_that_names_no_program_is_refused(
     result = _invoke(run_id, repository, log, command=PROSE_COMMAND)
 
     assert result.exit_code != 0, result.output
-    assert PROSE_COMMAND in result.output
-    assert "'one'" in result.output
+    detail = _refusal_detail(result)
+    assert PROSE_COMMAND in detail
+    assert "'one'" in detail
 
 
 def test_a_gate_command_that_does_not_parse_is_refused(
@@ -293,7 +320,7 @@ def test_a_gate_command_that_does_not_parse_is_refused(
     result = _invoke(run_id, repository, log, command=f'{PROGRAM} -m pytest "unclosed')
 
     assert result.exit_code != 0, result.output
-    assert "does not parse" in result.output
+    assert "does not parse" in _refusal_detail(result)
 
 
 def test_an_interrupted_baseline_that_covers_every_head_id_is_refused(
@@ -323,9 +350,10 @@ def test_an_interrupted_baseline_that_covers_every_head_id_is_refused(
     result = _invoke(run_id, repository, head_log, exit_status=1, waive_review=True)
 
     assert result.exit_code != 0, result.output
-    assert "gate 'passed'" in result.output
-    assert "exit status 1" in result.output
-    assert "baseline_suite" in result.output
+    detail = _refusal_detail(result)
+    assert "gate 'passed'" in detail
+    assert "exit status 1" in detail
+    assert "baseline_suite" in detail
     assert pointer_path(run_id).is_file()
 
 
@@ -352,7 +380,7 @@ def test_a_passing_verdict_on_a_red_base_that_adds_no_failure_promotes(
 
     result = _invoke(run_id, repository, head_log, exit_status=1, waive_review=True)
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _completion_record(result)["record"]
     assert record["gate"] == "passed"
     assert record["gate_check"]["exit_status"] == 1
 
@@ -380,8 +408,9 @@ def test_a_head_that_adds_a_failure_beside_a_red_base_is_refused(
     result = _invoke(run_id, repository, head_log, exit_status=1)
 
     assert result.exit_code != 0, result.output
-    assert "gate 'passed'" in result.output
-    assert "exit status 1" in result.output
+    detail = _refusal_detail(result)
+    assert "gate 'passed'" in detail
+    assert "exit status 1" in detail
 
 
 def test_an_empty_after_suite_failure_list_cannot_hide_an_id_the_head_log_names(
@@ -409,6 +438,7 @@ def test_an_empty_after_suite_failure_list_cannot_hide_an_id_the_head_log_names(
     result = _invoke(run_id, repository, head_log, exit_status=1)
 
     assert result.exit_code != 0, result.output
-    assert "gate 'passed'" in result.output
-    assert "exit status 1" in result.output
+    detail = _refusal_detail(result)
+    assert "gate 'passed'" in detail
+    assert "exit status 1" in detail
     assert pointer_path(run_id).is_file()
