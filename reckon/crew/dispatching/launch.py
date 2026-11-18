@@ -151,6 +151,14 @@ def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) ->
         raise _SupersededLaunchError(str(superseded)) from superseded
 
 
+def _dispatch_priority(dispatch_options: Mapping[str, Any]) -> int:
+    """The priority a launch was dispatched with, or zero when none was given."""
+    value = (dispatch_options or {}).get("priority")
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return int(value)
+    return 0
+
+
 def _launch_dispatch(
     *,
     accept_directory_claim,
@@ -448,6 +456,11 @@ def _launch_dispatch(
             "wave": wave_id,
             "coordinator": coordinator,
             "node": node_definition,
+            # The priority the request was given at submission. A launched run
+            # keeps it so its review and its promotion can inherit it, and its
+            # session's budget keeps nothing, because the points return the
+            # moment the request leaves the waiting phases.
+            "priority": _dispatch_priority(dispatch_options),
             "due": due,
             "urgency": urgency,
             "brief": brief,

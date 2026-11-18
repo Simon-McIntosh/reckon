@@ -4003,6 +4003,13 @@ def _composed_review_options(
     options: dict[str, Any] = {"allow_unreconciled_runs": allow_unreconciled_runs}
     if record.get("subject") == "plan":
         options["fresh_review"] = True
+    points = record.get("priority")
+    if isinstance(points, int) and not isinstance(points, bool) and points > 0:
+        # The points a review was submitted with ride the same options as the
+        # other request fields, so the queued record the admission pass replays
+        # carries the priority the caller gave it while it waits. A review's
+        # prioritised place is read from this field by the queue's ordering.
+        options["priority"] = int(points)
     return options
 
 
