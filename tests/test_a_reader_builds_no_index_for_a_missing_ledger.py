@@ -3,7 +3,8 @@
 An index is a cache of a ledger, published as ``ledger-<sha256>-v<schema>.sqlite``
 under ``_store.cache_root("pick-input")`` and keyed to the ledger path it
 indexes. When the ledger holds nothing there is no cache to keep: the read is
-the empty roster ``_load_aggregate`` answers at version 0, and the file a
+the empty roster ``_load_aggregate`` answers at version 0, carrying the
+reader's own ``auxiliary_version`` overlay at that same version, and the file a
 reader would publish names a checkout that may never exist, so a sweep
 classifies it ``recorded-checkout-gone`` and nothing removes it until someone
 runs a sweeping ``gc --apply``.
@@ -88,7 +89,12 @@ def test_a_project_with_no_ledger_and_no_runs_directory_builds_no_index(
 ) -> None:
     project, root = _checkout(tmp_path)
     data, version = ledger.load(project, root)
-    assert data == {"members": [], "runs": [], "holds": []}
+    assert data == {
+        "members": [],
+        "runs": [],
+        "holds": [],
+        "auxiliary_version": 0,
+    }
     assert version == 0
     _assert_no_index(cache_root)
 
@@ -99,7 +105,12 @@ def test_a_project_with_an_empty_runs_directory_builds_no_index(
     project, root = _checkout(tmp_path)
     (_state_dir(root) / "runs").mkdir()
     data, version = ledger.load(project, root)
-    assert data == {"members": [], "runs": [], "holds": []}
+    assert data == {
+        "members": [],
+        "runs": [],
+        "holds": [],
+        "auxiliary_version": 0,
+    }
     assert version == 0
     _assert_no_index(cache_root)
 
