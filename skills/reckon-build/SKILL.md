@@ -619,7 +619,8 @@ already has and register none.
 Admission is fair across sessions: each launch goes to the session using the
 least of the lane. Within your own session the queue launches, in order:
 
-1. the review of a delivered run, because it lets that run land;
+1. the review of a delivered run, because it lets that run land, and two
+   reviews are ordered by the points their runs carried, highest first;
 2. any request that has waited 30 minutes, so nothing starves;
 3. requests carrying a priority, highest first;
 4. the rest in roadmap order (critical path, then sprint order), then oldest.
@@ -642,8 +643,16 @@ not push work back. To defer work, hold it.
 
 **Change it in flight.** A priority is stored on the request and read on every
 admission pass, so raise or lower it whenever needs change while the request
-waits, queued or awaiting its upstream. Once the worker has launched, the
-router serves it and the priority no longer applies.
+waits, queued or awaiting its upstream. The points a run launched with carry to
+the review composed for it and to its promotion request, so both queues order by
+them — and a delivered run can be raised with the same verb while it waits to
+land, so its review and its promotion move ahead. A raise on a delivered run is
+charged to the session's budget again, and those points return when the run
+lands or is discarded.
+
+```text
+reckon crew queue reprioritise --run <delivered-run-id> --priority 90 --reason "this run's landing gates the next wave"
+```
 
 **Take work out of the queue when it is no longer wanted.**
 
