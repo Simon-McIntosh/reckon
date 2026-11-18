@@ -1,0 +1,143 @@
+<section id="qwnw-red-file-the-invocation-parser-spells-a-section-landing">
+  <h2>The invocation parser spells a section through the shared core</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_the_invocation_parser_spells_a_section.py</code> failed at the
+  base revision in one test, the census that walks every regular expression
+  under <code>reckon/</code> and requires each section-spelling frame to compose
+  <code>SECTION_NUMBER_PATTERN</code>. Every functional assertion in the file
+  already passed: the invocation expression composes the core, dotted and
+  hyphenated spellings resolve to <code>s5-1</code>, and an alphabetic suffix is
+  rejected. The census failed because three readers that landed after the census
+  (<code>0609e28519</code>, <code>3fa3b7b8e9</code>, <code>0daa5071f8</code>)
+  spelled the number grammar again in their own pattern rather than composing the
+  exported core.</p>
+
+  <p><strong>Causes and verdicts.</strong> Each is a product rule that broke, and
+  each repair is a substitution with no change to the accepted language:</p>
+
+  <ul id="qwnw-red-file-the-invocation-parser-spells-a-section-causes">
+    <li><code>reckon/crew/plan_review.py::_SECTION_REFERENCE</code> — product
+    wrong. It accepted <code>§5.1</code> and <code>s5-1</code> with a literal
+    copy of the number grammar; it now interpolates the core, and its compiled
+    pattern is byte-identical to the base one.</li>
+    <li><code>reckon/crew/plan_review.py::_SECTION_TOKEN</code> — product wrong.
+    <code>^[sS][0-9]+(?:[.-][0-9]+)*$</code> became
+    <code>^[sS]\d+(?:[.-]\d+)*$</code>; the anchored languages are the same, and
+    the token is handed to <code>section_record_id</code> exactly as before.</li>
+    <li><code>reckon/doccheck.py::_DEFERRED_WORK_TERM</code> — product wrong.
+    The prose alternative that reads "carries to §N" matched the number with its
+    own <code>\d+</code>; it now composes the core, so the one grammar decides
+    what a section number is. The only behaviour that moves is the length of a
+    quoted refusal: <code>§5.1</code> is quoted whole instead of as
+    <code>§5</code>. Every group in that pattern stays non-capturing, so
+    <code>re.findall</code> still yields text.</li>
+  </ul>
+
+  <p><strong>The test's own change.</strong> The census's expected set is the
+  whole population of core-composed frames, so it now names the three sites the
+  repair brings into the fold — ten entries, from seven. No assertion was deleted
+  or weakened: the census still requires the core in every frame it finds, still
+  compares the site set exactly, and its filter is unchanged. The test was
+  renamed from <code>…_reports_seven_…</code> to
+  <code>test_widened_census_reports_every_core_composed_expression</code>,
+  because a site count frozen into a name is a figure that goes stale on the next
+  reader; the set below it carries the figure.</p>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-measured">Measured</h3>
+
+  <table id="qwnw-red-file-the-invocation-parser-spells-a-section-arms">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>tree</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base run of the named file</td>
+        <td><code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code></td>
+        <td>extraction of the base revision under <code>$TMPDIR</code></td>
+        <td>1 failed, 11 passed — <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>head run of the named file, all_debug job 1326112</td>
+        <td><code>7e91f9b4166e55fabdb2a8ae852665849d83281e</code></td>
+        <td>this worktree</td>
+        <td>12 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>scoped gate (all_debug)</td>
+        <td><code>7e91f9b4166e55fabdb2a8ae852665849d83281e</code></td>
+        <td>this worktree</td>
+        <td>0 failures — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>suite baseline arm (all_debug)</td>
+        <td><code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code></td>
+        <td>base tree</td>
+        <td>0 failures — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>suite after arm (all_debug)</td>
+        <td><code>7e91f9b4166e55fabdb2a8ae852665849d83281e</code></td>
+        <td>this worktree</td>
+        <td>0 failures — <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The head run was submitted with <code>sbatch</code> to the
+  <code>all_debug</code> partition and unsets <code>SLURM_JOB_ID</code> and
+  <code>SLURM_JOB_NAME</code> inside the job, so a test that branches on running
+  under the scheduler sees a plain invocation; its log names the revision, the
+  tree, the imported module's <code>__file__</code>, the resolved working
+  directory and the bare <code>EXIT=</code> line.</p>
+
+  <p>The files that import what this change touches were run over both arms:
+  <code>tests/test_a_review_round_is_section_scoped.py</code>,
+  <code>tests/test_report_section_reference_uses_the_core.py</code>,
+  <code>tests/test_every_spelling_of_deferred_work_is_read.py</code> and
+  <code>tests/test_a_plan_write_refuses_the_bucket.py</code> read 52 passed at
+  the head and the same set passes at the base revision; the two failures they
+  carry at base are the pre-existing ones below. <code>ruff check</code> reports
+  15 findings on the three changed paths in both arms, and
+  <code>ruff format --check</code> reports all three formatted in both arms, so
+  the change adds none.</p>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-control">Negative control</h3>
+
+  <p>At the base revision the named file fails on one id, quoted from the log's
+  own summary line:</p>
+
+  <pre><code>_________ test_widened_census_reports_seven_core_composed_expressions __________
+…
+    assert "SECTION_NUMBER" in pattern, (path, context, pattern)
+E   AssertionError: (PosixPath(&#x27;…/reckon/doccheck.py&#x27;, &#x27;_DEFERRED_WORK_TERM&#x27;, …&#x27;§\\s*\\d+&#x27;…))
+…
+FAILED tests/test_the_invocation_parser_spells_a_section.py::test_widened_census_reports_seven_core_composed_expressions
+assert 'SECTION_NUMBER' in "'…§\\s*\\d+…'"
+1 failed, 11 passed in 1.09s
+EXIT=1</code></pre>
+
+  <p>The assertion it failed is the census's
+  <code>assert "SECTION_NUMBER" in pattern</code>. The base log is
+  <code>~/.config/reckon/crew/runs/r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section/logs/base-run.log</code>;
+  the head log is <code>…/logs/head-run.log</code> beside it.</p>
+
+  <p><strong>The guard fires.</strong> A passing census does not show that the
+  census can refuse, so the predicate was run against a synthesised module root
+  holding one reader that writes the grammar again —
+  <code>_SECTION_WORD_RE = re.compile(r"§\s*\d+")</code> — and it refused by
+  name:</p>
+
+  <pre><code>REFUSED: _SECTION_WORD_RE -&gt; '§\\s*\\d+'</code></pre>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-outside">Outside scope</h3>
+
+  <p>Three failures in the wider selection are older than this change and fail
+  identically at the base revision, so none is caused here:
+  <code>tests/test_no_source_names_the_retired_field.py::test_no_reckon_source_names_the_retired_field</code>
+  (a comment in <code>reckon/doccheck.py</code> naming a retired field),
+  <code>tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface</code>
+  and <code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>.
+  This gate measures only this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
