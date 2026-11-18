@@ -1,0 +1,93 @@
+<section id="qwnw-red-file-promotion-release-landing">
+  <h2>A test file red on the primary branch passes</h2>
+
+  <p><strong>What changed.</strong> One cause, <em>test wrong</em>. At the base
+  revision <code>84df41f8</code> the named file reads 4 passed and 1 failed:
+  <code>test_a_non_ancestor_worktree_is_kept_and_named_in_the_result</code> —
+  promotes a run whose worktree sits on a commit past its base while declaring,
+  through <code>no_commit=</code>, that no commit is being registered. The
+  worktree-at-base guard introduced at <code>e7e46bfc5f</code> refuses exactly
+  that shape: a promotion declaring no commit while its own tree holds one would
+  leave the work in no commit at all, and the release step takes the guard's
+  refusal on both the reasoned and the unreasoned path. The case's subject is
+  release policy — a tree holding a commit the integration branch cannot reach
+  is withheld and named — not the declaration form, so it now presents the
+  commit it made (<code>commits=[git(worktree, "rev-parse", "HEAD")]</code>) and
+  reaches the release step, which withholds the tree with
+  <code>"not reachable"</code> as it did before. All three assertions stand
+  unchanged: the tree is not released, the withheld reason names
+  <code>not reachable</code>, and the tree still exists. No product code is
+  touched and no assertion is deleted, weakened or re-spelled.</p>
+
+  <p>The rule the case now keeps is the one the product asserts and has its own
+  coverage for,
+  <code>tests/test_a_commitless_manifest_promotes.py::test_a_none_declaration_over_a_commit_beyond_the_base_is_refused</code>.
+  The failure is reproduced by the base arm quoted below rather than assumed.</p>
+
+  <h3 id="qwnw-red-file-promotion-release-arms">Measured
+  arms</h3>
+
+  <table id="qwnw-red-file-promotion-release-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head, all_debug job
+        (<code>crew verify-gate --worker --partition all_debug</code>)</td>
+        <td><code>5ee1f091cef9e4e5eef4ca6ff18f24b706eb6b81</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base (negative control)</td>
+        <td><code>84df41f817943ad9f228ac90491b8faf87dbd2c1</code></td>
+        <td>1 failed of 5, <code>EXIT=1</code></td></tr>
+      <tr><td>the affected selection at head</td>
+        <td><code>5ee1f091cef9</code></td>
+        <td>20 passed, 2 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the affected selection at base</td>
+        <td><code>84df41f8</code></td>
+        <td>19 passed, 3 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the affected selection, delta</td>
+        <td>base arm against head arm</td>
+        <td>0 added failures, 1 repaired</td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>5ee1f091cef9</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, baseline arm</td>
+        <td><code>84df41f8</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The affected selection is the four files whose subject is this policy —
+  <code>tests/test_promotion_release.py</code>,
+  <code>tests/test_promotion_releases_its_worktree.py</code>,
+  <code>tests/test_a_commitless_manifest_promotes.py</code> and
+  <code>tests/test_a_released_worktree_takes_its_index.py</code> — run over both
+  revisions with the same file list, so the delta is the change rather than the
+  population. No product module is modified by this node, so no test file that
+  imports one it changed exists to widen the selection with. The two ids red in
+  the head arm are red in the base arm as well:
+  <code>test_promotion_releases_only_the_integrated_clean_case</code> and
+  <code>test_the_runless_sweep_removes_an_index_whose_checkout_is_gone</code>.
+  They belong to other files under this section and are reported to the
+  coordinator rather than triaged here.</p>
+
+  <h3 id="qwnw-red-file-promotion-release-control">Negative control</h3>
+
+  <p>At <code>84df41f8</code> the one failing id is
+  <code>tests/test_promotion_release.py::test_a_non_ancestor_worktree_is_kept_and_named_in_the_result</code>,
+  with the refusal in full:</p>
+
+  <pre id="qwnw-red-file-promotion-release-reach">reckon.crew.CrewError: run 'r-20260903T000200000000-node-c' has a passing
+gate and cites no commit, but its worktree is at eaaebe831d30 rather than its
+base 34edacdba9ad: it committed, and nothing on the record says what. Work left
+only in a worktree is discarded the moment someone believes the ledger. Cite the
+commit, or pass --no-commit '&lt;why&gt;' to record deliberately that this
+node's commits are not being registered</pre>
+
+  <p>The base run of the named file is
+  <code>~/.config/reckon/crew/runs/r-20261118T062839648443-qwnw-red-file-promotion-release/negative-control-base-84df41f8.log</code>
+  (<code>EXIT=1</code>, 1 failed of 5); the head run is
+  <code>…/scoped-gate-1795007261828777759.log</code> (<code>EXIT=0</code>,
+  5 passed). Both were run with <code>SLURM_JOB_ID</code> absent, the head as an
+  <code>all_debug</code> job.</p>
+</section>
