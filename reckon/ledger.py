@@ -1737,8 +1737,159 @@ def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
     return projection
 
 
+# The rows one process has already decoded from a project's store, so a repeat
+# read decodes only what was promoted since. The entry is keyed by the store,
+# the project and the projection, because a picker-projected row and a full
+# record are different answers to the same history and neither can be derived
+# from the other once decoded (the picker projection leaves out fields the full
+# record keeps). Each entry holds the token its rows were read under and the
+# per-row signature the store answered at that read.
+_STORED_HISTORY: dict[
+    tuple[str, str, bool],
+    tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]],
+] = {}
+
+
+def clear_stored_history() -> None:
+    """Forget every history this process decoded from a run store."""
+    _STORED_HISTORY.clear()
+
+
+def _history_token(project: str, target: Path, *, run_store: Any) -> tuple[Any, ...]:
+    """What one stored history is a reading of: the store, its archive and writes.
+
+    The store's own change stamp moves on every write to it, including an
+    in-place update, and the archive is a second file a retirement writes. The
+    project's ledger-write generation is per project, so a write for another
+    project moves the stamps without moving that.
+    """
+    return (
+        run_store.store_stamp(target),
+        run_store.store_stamp(run_store._archive_path(target)),
+        ledger_generation(project),
+    )
+
+
+def _stored_rows(
+    project: str,
+    *,
+    target: Path,
+    run_ids: Iterable[str] | None,
+    picker_only: bool,
+) -> list[dict[str, Any]]:
+    """Decode the named rows, or every row when none are named."""
+    from reckon import run_store
+
+    stored = run_store.stored_run_rows(
+        project,
+        path=target,
+        run_ids=None if run_ids is None else sorted(run_ids),
+        fields=_PICKER_FIELDS if picker_only else None,
+    )
+    return list(stored or ())
+
+
+def _stored_auxiliary(project: str, root: str | Path | None) -> dict[str, Any]:
+    """The roster and holds a stored history is read beside.
+
+    The store's imported projection wins, as it does through :func:`load`, and
+    the committed aggregate answers a project the store holds no import for.
+    """
+    from reckon import run_store
+
+    data, aggregate_version = _aggregate_headers(project, root)
+    stored = run_store.read_auxiliary(project)
+    auxiliary, _version = stored or (
+        {"members": data["members"], "holds": data["holds"]},
+        aggregate_version,
+    )
+    return auxiliary
+
+
+def stored_history(
+    project: str,
+    root: str | Path | None = None,
+    *,
+    picker_only: bool = False,
+) -> tuple[list[dict[str, Any]], dict[str, Any]] | None:
+    """Read a project's stored history, decoding only rows new since the last read.
+
+    A process that holds no previous read reads the project's rows once; every
+    later read decodes only the rows whose signature moved since — an inserted
+    promotion, a retirement into the archive, or a rewrite that changed an
+    indexed column or the encoded size of the record. The answer is the same
+    one :func:`load` gives for the store's share of the history, so a caller
+    keeps the store as the authority for it, and the roster and holds beside
+    the rows are read fresh so an unchanged row still answers with the
+    attribution the current roster gives it.
+
+    A signature cannot see a rewrite that both stays inside the unindexed
+    durable fields and encodes to the same number of bytes. The project's write
+    generation covers that: a read whose generation moved while no signature
+    did is answered by decoding the project's rows again rather than from the
+    rows it holds.
+
+    None means the store holds no rows for this project, so a caller falls back
+    to the committed ledger exactly as :func:`load` does when the store answers
+    nothing.
+    """
+    from reckon import run_store
+
+    target = run_store.store_path()
+    key = (str(target), project, picker_only)
+    token = _history_token(project, target, run_store=run_store)
+    held = _STORED_HISTORY.get(key)
+    if held is not None and held[0] == token:
+        return sorted(held[2].values(), key=promotion_order_key), _stored_auxiliary(
+            project, root
+        )
+
+    signature = run_store.stored_run_signature(project, path=target)
+    if signature is None:
+        return None
+    current = {str(row[0]): row for row in signature}
+    # The rows this read has to decode: everything when nothing is held, and
+    # otherwise only those whose signature moved.
+    wanted: list[str] | None
+    if held is None:
+        rows: dict[str, dict[str, Any]] = {}
+        wanted = None
+    else:
+        rows = {run_id: row for run_id, row in held[2].items() if run_id in current}
+        wanted = sorted(
+            run_id for run_id, row in current.items() if held[1].get(run_id) != row
+        )
+        if not wanted and held[0][2] != token[2]:
+            # The project's generation moved and no row the signature can see
+            # did, so this is a rewrite the signature cannot describe. Read the
+            # project's rows again rather than answer from what it does not
+            # hold.
+            wanted = None
+    decoded = {
+        str(row.get("run_id")): row
+        for row in _stored_rows(
+            project, target=target, run_ids=wanted, picker_only=picker_only
+        )
+    }
+    rows.update({run_id: row for run_id, row in decoded.items() if run_id})
+    if not rows:
+        return None
+    complete = wanted is None or all(run_id in decoded for run_id in wanted)
+    answer = sorted(rows.values(), key=promotion_order_key)
+    auxiliary = _stored_auxiliary(project, root)
+    # Kept only when no write landed under the read and every row this read
+    # asked for arrived: a row promoted between the signature and the rows, or
+    # one that vanished under them, would otherwise be cached as already seen.
+    if complete and _history_token(project, target, run_store=run_store) == token:
+        _STORED_HISTORY[key] = (token, current, rows)
+    return answer, auxiliary
+
+
 def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Read projected history without decoding retained full payloads."""
+    stored = stored_history(project, root, picker_only=True)
+    if stored is not None:
+        return stored[0]
     data, _version = load(project, root, True)
     return data["runs"]
 
