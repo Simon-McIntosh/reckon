@@ -426,7 +426,7 @@ def _keep_pointer_for_pending_landing(run_id: str) -> bool:
             return True
         try:
             pending_landing.mark_pending_landing_repair(run_id, current)
-        except OSError:
+        except (OSError, CrewError):
             return False
         return True
 

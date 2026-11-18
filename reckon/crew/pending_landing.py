@@ -70,6 +70,108 @@ def save_group(group: Mapping[str, Any]) -> None:
     write_json_atomically(group_path(str(group["run_id"])), dict(group))
 
 
+def _release_integrated_group_member(
+    run_id: str, member: Mapping[str, Any], primary: str
+) -> None:
+    """Release an integrated member without replaying its stored pointer."""
+    from reckon.crew import promotion, promotion_release
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+    from reckon.crew.review_landing import finish_landing
+
+    try:
+        pointer = runs.read_pointer(run_id)
+    except runs.CrewError:
+        if runs.pointer_path(run_id).exists():
+            raise
+        clear_pending(run_id)
+        return
+    busy = _reviewed_run_is_busy(pointer)
+    if busy:
+        raise runs.CrewError(f"group member {run_id}: {busy}")
+    repository = Path(str(member["pointer"]["repo"]))
+    row = _promoted_row(str(member["pointer"]["project"]), run_id)
+    refusal = ""
+
+    def release(current: Mapping[str, Any]) -> bool:
+        nonlocal refusal
+        if dict(current) != pointer:
+            refusal = "the live pointer changed before workspace release"
+            return False
+        refusal = landed_workspace_refusal(current, repository, primary)
+        if refusal:
+            return False
+        outcome = promotion_release._release_run_workspace(
+            current,
+            integration_repo=repository,
+            integration_commit=primary,
+            gate=str((row or {}).get("gate") or "passed"),
+        )
+        if row is not None:
+            outcome, recorded = promotion._record_release_on_ledger(
+                project=str(current["project"]),
+                root=repository,
+                run_id=run_id,
+                release=outcome,
+                checkout=repository,
+                after_merge=True,
+            )
+            if recorded is None:
+                refusal = "the workspace outcome could not be recorded"
+                return False
+        if not outcome.get("worktree_released"):
+            refusal = str(
+                outcome.get("worktree_withheld") or "workspace release withheld"
+            )
+            return False
+        refusal = finish_landing(current, run_id)
+        return not refusal
+
+    if retire_pointer_if(run_id, release) == POINTER_HELD:
+        raise runs.CrewError(f"group member {run_id}: {refusal or 'pointer held'}")
+    clear_pending(run_id)
+    promotion._release_waiters_of_the_landed_section(pointer)
+
+
+def retire_integrated_group_members(group: dict[str, Any]) -> dict[str, Any] | None:
+    """Remove primary ancestors before repair, measurement or pointer replay."""
+    from reckon.crew import merge, queue_landing
+
+    for run_id, member in list(group["members"].items()):
+        pointer = member["pointer"]
+        primary = queue_landing._primary_revision(pointer)
+        if not merge._is_ancestor(
+            Path(str(pointer["repo"])), str(member["head"]), primary
+        ):
+            continue
+        _release_integrated_group_member(run_id, member, primary)
+        group.setdefault("finished_members", {})[run_id] = {
+            "head": member["head"],
+            "primary": primary,
+            "status": "already-landed",
+        }
+        del group["members"][run_id]
+        (group.get("merge_repairs") or {}).pop(run_id, None)
+        for field in ("head", "primary", "measurements", "refusal"):
+            group.pop(field, None)
+        save_group(group)
+    if group["members"]:
+        return None
+    finished = group.get("finished_members") or {}
+    outcome = {
+        "ok": True,
+        "run_id": group["run_id"],
+        "members": list(finished),
+        "candidate": queue_landing._primary_revision(
+            group["request"]["options"]["members"][0]["pointer"]
+        ),
+        "commits": [member["head"] for member in finished.values()],
+        "outcome": "all member heads are on the primary branch",
+    }
+    runs._write_json(runs.run_dir(str(group["run_id"])) / "landing-group.json", outcome)
+    group_path(str(group["run_id"])).unlink()
+    return outcome
+
+
 def refresh_group_repairs(group: dict[str, Any]) -> None:
     """Accept completed member repairs through the ordinary fresh-gate reader."""
     from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
@@ -135,7 +237,7 @@ def finish_landing_groups(*, only_run: str = "") -> list[dict[str, Any]]:
                 "run_id": member,
                 "status": "finished" if result.get("ok") else "group-refused",
             }
-            for member in group["members"]
+            for member in result.get("members", group["members"])
         )
     return results
 
@@ -316,6 +418,20 @@ def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool])
         return POINTER_RETIRED
 
 
+def promoted_pointer_write_refusal(run_id: str, pointer: Mapping[str, Any]) -> str:
+    """Name the journal requiring intervention rather than recreate a promoted run."""
+    project = str(pointer.get("project") or "")
+    if _promoted_row(project, run_id) is None:
+        return ""
+    group_id = str(pointer.get("landing_group") or "")
+    path = (
+        group_path(group_id)
+        if group_id and group_path(group_id).exists()
+        else _record_path(run_id)
+    )
+    return f"run {run_id} is promoted; pending-landing record {path} cannot write a live pointer"
+
+
 def mark_pending_landing_repair(
     run_id: str, pointer: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -328,6 +444,9 @@ def mark_pending_landing_repair(
     already belong to a newer attempt, and the pass must remove only the attempt
     it finished rather than whichever pointer happens to be there later.
     """
+    refusal = promoted_pointer_write_refusal(run_id, pointer)
+    if refusal:
+        raise runs.CrewError(refusal)
     marked = {
         **dict(pointer),
         "pending_landing_repair": True,
@@ -1163,14 +1282,26 @@ def finish_pending_landings(
             if not repaired:
                 from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
 
-                dispatch_merge_repair(
+                repair = dispatch_merge_repair(
                     record.get("pointer") or row,
                     head=head,
                     primary=str(conflict.get("main_revision") or ""),
                     paths=conflict.get("paths") or (),
                     promoted=True,
                 )
-                results.append({"run_id": run_id, "status": "awaiting-merge-repair"})
+                if repair.get("record"):
+                    results.append(
+                        {
+                            "run_id": run_id,
+                            "status": "record-obligation",
+                            "record": repair["record"],
+                            "error": repair["reason"],
+                        }
+                    )
+                else:
+                    results.append(
+                        {"run_id": run_id, "status": "awaiting-merge-repair"}
+                    )
                 continue
             head = repaired
             if pointer.get("pending_landing_repair_attempt") != marked_identity(

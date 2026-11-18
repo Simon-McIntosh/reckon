@@ -4498,6 +4498,10 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
                 },
             }
             pending_landing.save_group(group)
+        retired = pending_landing.retire_integrated_group_members(group)
+        if retired is not None:
+            return retired
+        publisher = next(iter(group["members"]))
         pending_landing.refresh_group_repairs(group)
         # Preflight all still-unpromoted members before the first write. This
         # is the same guard as each real completion, never a group exemption.
@@ -4530,7 +4534,7 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
         pending_landing.save_group(group)
         # A finished measurement is reusable only for this complete set and
         # the current product; publication records alone leave it unchanged.
-        pointer = group["members"][leader]["pointer"]
+        pointer = group["members"][publisher]["pointer"]
         primary = queue_landing._primary_revision(pointer)
         if not group.get(
             "head"
@@ -4562,10 +4566,10 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
                     queue_landing.measure_landing_group(group)
             group["publishing"] = True
             pending_landing.save_group(group)
-            first = group["members"][leader]
+            first = group["members"][publisher]
             report, code = _land_a_promoted_run(
                 first["promotion"],
-                run_id=leader,
+                run_id=publisher,
                 gate="passed",
                 checkout_path=None,
                 pointer=first["pointer"],
@@ -4579,7 +4583,7 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
         # Every other head is now on primary. Their ordinary callback performs
         # its idempotent push/release path without another merge or gate.
         for run_id, member in group["members"].items():
-            if run_id == leader:
+            if run_id == publisher:
                 continue
             # A promoted member's repaired worktree is ahead of its ledger head.
             # Release it against the combined head whose ancestry proved both.
@@ -4596,15 +4600,21 @@ def _complete_landing_group(request: Mapping[str, Any]) -> dict[str, Any]:
                 pending_landing.LANDING_GROUP.reset(token)
             if code:
                 raise runs.CrewError(str(released.get("error") or released))
-        path.unlink()
-        return {
+        finished = group.get("finished_members") or {}
+        outcome = {
             "ok": True,
             "run_id": leader,
-            "members": list(group["members"]),
+            "members": [*finished, *group["members"]],
             "candidate": group["head"],
-            "commits": [member["head"] for member in group["members"].values()],
+            "commits": [
+                member["head"]
+                for member in (*finished.values(), *group["members"].values())
+            ],
             "landing": report,
         }
+        runs._write_json(runs.run_dir(leader) / "landing-group.json", outcome)
+        path.unlink()
+        return outcome
     finally:
         lock.__exit__(None, None, None)
 
