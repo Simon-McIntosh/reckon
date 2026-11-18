@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="472">
+<meta name="plan-version" content="473">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -1788,6 +1788,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s92" data-id="c-run-r-20261118T074740303345-review-of-an-owed-review-pass-reads-what-changed-156f3343617c" data-who="reckon-build" data-when="2026-11-18T07:55:52.354Z">
     <div class="r-comment-body"><p>Reviewed r-20261118T054243717205-an-owed-review-pass-reads-what-changed at c54a15a657da7d5abd88ee0d0a54b940c650a11f..156f3343617c7eb3ce357dcbc6c63d15be6aefd3 and stored a parsed review record at review-records/r-20261118T054243717205-an-owed-review-pass-reads-what-changed.json carrying the sha pair, six scores (17/14/19/14/17/5), zero added failures and five non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s92" data-id="c-run-r-20261118T054243717205-an-owed-review-pass-reads-what-changed" data-who="reckon-build" data-when="2026-11-18T06:10:02Z">
+    <div class="r-comment-body"><p>An owed-plan-review pass now reads only what changed: the plan listing is remembered against the docs tree&#x27;s directory identity, the stored-review listing carries each record&#x27;s stat, identity and review run id so only a new or rewritten record is decoded, and the reflex state keeps each plan&#x27;s edit and status so an unmoved plan is weighed without being opened while the moved one goes first. Measured over four real passes on forty plans and four hundred stored reviews: the unchanged pass reads 0 records, 0 plan files and 0 resource directories; one rewritten record costs 1 read; one edited plan costs 1 plan read and 0 review reads; every pass composes the same reviews and skip reasons as the same pass with its change detection flushed.</p></div>
 </div>
 </section>
 </main>
