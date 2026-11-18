@@ -100,6 +100,26 @@ def _write_seat(*, host: str) -> None:
     )
 
 
+def _write_live_work(*, run_id: str = "run-missing-snapshot") -> None:
+    """Record a live pointer, so this session holds work the hook speaks for.
+
+    A session holding no live work is told nothing about an absent producer --
+    the hook clears its record rather than warn a coordinator that dispatched
+    nothing -- so the absent-producer reading is owed only to a session with
+    unsettled work. The pointer is written into the temporary home, so no case
+    touches the operator's own fleet state.
+    """
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "session": SESSION,
+            "phase": "working",
+        },
+    )
+
+
 def _touch_stream(*, age_seconds: float) -> None:
     """Create the seat's transition stream and stamp it ``age_seconds`` back."""
     path = runs.watch_stream_path(PROJECT)
@@ -221,6 +241,7 @@ def test_a_missing_snapshot_with_no_seat_reads_no_producer(
 ) -> None:
     """Absent snapshot and no foreign seat names no producer, as it always did."""
     _register_the_session()
+    _write_live_work()
 
     line = _line(_drive(repository))
 
@@ -234,6 +255,7 @@ def test_a_missing_snapshot_beside_a_stalled_seat_reads_no_producer(
 ) -> None:
     """A foreign seat whose stream has stalled names no live producer."""
     _register_the_session()
+    _write_live_work()
     _write_seat(host=FOREIGN_HOST)
     _touch_stream(age_seconds=3_600)
 
