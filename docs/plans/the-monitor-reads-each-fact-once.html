@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="482">
+<meta name="plan-version" content="483">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -1834,6 +1834,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s93" data-id="c-run-r-20261118T111947773423-lane-reference-rates-read-history-once" data-who="reckon-build" data-when="2026-11-18T11:33:59Z">
     <div class="r-comment-body"><p>A bucket roll keeps each project's per-run rate contributions and, for the bucket after the one it last answered, reads only the rows whose newest stamp reaches past the previous bucket's end, folding them in and dropping aged rows; in a 2,000-row three-lane fixture the opening bucket decodes 2,000 rows and the next bucket's roll 6 (base revision: 2,002), with every lane's rates and the overrun cause of 20 live runs equal to the whole-window read in both buckets; the repair prunes the retained contributions to each bucket's window, so the roll's state equals the window's population (and twelve idle buckets never grow it), against 2005 retained of 2002 without that pruning.</p></div>
+</div>
+<div class="r-comment" data-section="s94" data-id="c-run-r-20261118T174118041834-review-of-a-sweep-lists-live-pointers-once-dcfce91db29e" data-who="reckon-build" data-when="2026-11-18T17:43:07.513Z">
+    <div class="r-comment-body"><p>Independent review of r-20261118T112138074440-a-sweep-lists-live-pointers-once at base 250d9cf3 and head dcfce91db2: goal_fidelity 19, evidence 18, scope_discipline 16, durability 18, fit 17, reuse 16, added_failure_count 0, no blocking finding and three non-blocking.</p></div>
 </div>
 </section>
 </main>
