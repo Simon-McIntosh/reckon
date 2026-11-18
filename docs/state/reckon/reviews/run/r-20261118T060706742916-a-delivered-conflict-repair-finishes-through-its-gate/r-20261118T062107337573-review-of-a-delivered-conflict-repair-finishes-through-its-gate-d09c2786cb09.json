@@ -1,0 +1,125 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "Review waiting is bypassed or reported refused.",
+      "line": 563
+    },
+    {
+      "fails_if": "Dispatch is omitted, repeated or targets the original head rather than the git-observed repair.",
+      "line": 564
+    },
+    {
+      "fails_if": "Pending record retains the original head rather than the git-observed repair.",
+      "line": 565
+    },
+    {
+      "fails_if": "Primary HEAD advances before review storage.",
+      "line": 569
+    },
+    {
+      "fails_if": "Repair content reaches the primary checkout before storage.",
+      "line": 570
+    },
+    {
+      "fails_if": "An unconditional review hold prevents stored matching review from releasing the repair.",
+      "line": 591
+    },
+    {
+      "fails_if": "The second pass dispatches again instead of reading storage.",
+      "line": 592
+    },
+    {
+      "fails_if": "Finishing invokes promotion again, changing the previously observed call log.",
+      "line": 593
+    },
+    {
+      "fails_if": "Finishing leaves the live pointer present.",
+      "line": 594
+    },
+    {
+      "fails_if": "Finishing leaves the pending record present.",
+      "line": 595
+    }
+  ],
+  "assertion_independence": "No added assertion merely round-trips review inputs: the expected head comes from git commit output; dispatch, pending storage, primary HEAD, content, promotion calls and retirement are separate observations. Existing remote-head equality and repaired-content assertions remain.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:finish_pending_landings:1379",
+    "reckon/crew/pending_landing.py:_repair_review_wait:692",
+    "reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run:3908",
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run:3303"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-a-delivered-conflict-repair-finishes-through-its-gate-d09c2786cb09",
+      "recorded_at": "2026-11-18T06:44:41.754822+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-18T06:23:01Z",
+  "evidence_caveats": [
+    "Unmodified base fails with no live run; awaiting-review is reproduced by the documented fixture adjustment at unchanged historical product revisions.",
+    "The process-launch boundary is stubbed; actual worker execution is outside the test.",
+    "Worker normalized scheduler-notice placement and retained raw .asreceived captures."
+  ],
+  "failure_delta_evidence": {
+    "after_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060706742916-a-delivered-conflict-repair-finishes-through-its-gate/after_suite-1794982657648990072.log"
+    },
+    "baseline_suite": {
+      "failure_ids": [
+        "tests/test_concurrent_edits_land_unattended.py::test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060706742916-a-delivered-conflict-repair-finishes-through-its-gate/baseline_suite-1794982550594194196.log"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": "552",
+      "severity": "non-blocking",
+      "text": "non-blocking: compose duplicates the eight-line review-dispatch recorder in tests/test_a_repaired_head_is_reviewed_and_landed.py:131 verbatim; it neither extends nor wraps that helper, leaving two fixture implementations of the same dispatch return shape to maintain."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read 0450856b0fb3c586c5380b5ee381e91619d32a0a and d09c2786cb097582470b9c4733bd9c192fa7218b against c54a15a657da7d5abd88ee0d0a54b940c650a11f; the first adds review-wait/release assertions and the second constructs the retained repair before writing its promoted ledger row.",
+    "done_when": "The named test and its entire file pass in scoped-gate-1794982470014160818.log (19 passed), while the baseline/after logs show 1 failed/76 passed versus 77 passed and the adjusted historical controls expose awaiting-review.",
+    "goal": "Live docs/plans/delivered-work-lands-without-a-coordinator.html:199 allows the requested-review contract, and tests/test_concurrent_edits_land_unattended.py:562-602 now exercises that existing contract without changing product policy.",
+    "manifest": "The source manifest names both commits, readable revision-stamped gate logs, the deliberate review requirement from 9fc6cd8715774ed8bf84edced7c9bd876530bc26, and the distinction between the raw base pointer failure and the adjusted awaiting-review control.",
+    "write_paths": "The declared paths in the source manifest include tests/test_concurrent_edits_land_unattended.py, the sole path changed by both delivered commits."
+  },
+  "justifications": {
+    "durability": "tests/test_concurrent_edits_land_unattended.py:563-595 would fail if review waiting were removed, dispatch targeted the original head, storage failed to release the repair, publication happened early, another promotion ran, or retirement were omitted; expectations derive from independently observed git heads and effects rather than echoed review inputs.",
+    "evidence": "The source manifest's baseline_suite and after_suite logs identify c54a15a657da7d5abd88ee0d0a54b940c650a11f and d09c2786cb097582470b9c4733bd9c192fa7218b, end EXIT=1 and EXIT=0, and record one removed failure with zero added failures.",
+    "fit": "tests/test_concurrent_edits_land_unattended.py:482-602 follows the surrounding temporary-repository, monkeypatch and captured-gate idioms, with descriptive names and no forbidden source labels.",
+    "goal_fidelity": "tests/test_concurrent_edits_land_unattended.py:562-602 holds the allowed waiting contract through an automatic request followed by storage, publication and retirement, with the historical premise corrected in the source manifest.",
+    "reuse": "tests/test_concurrent_edits_land_unattended.py:552 duplicates the composition-recorder capability already implemented by tests/test_a_repaired_head_is_reviewed_and_landed.py:131 rather than extending or wrapping that owner, although production dispatch and review storage are reused.",
+    "scope_discipline": "Both delivered commits modify only the declared tests/test_concurrent_edits_land_unattended.py and preserve the existing product review requirement."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Live docs/plans/delivered-work-lands-without-a-coordinator.html:199 allows the requested-review contract, and tests/test_concurrent_edits_land_unattended.py:562-602 now exercises that existing contract without changing product policy.\nVERDICT done_when: The named test and its entire file pass in scoped-gate-1794982470014160818.log (19 passed), while the baseline/after logs show 1 failed/76 passed versus 77 passed and the adjusted historical controls expose awaiting-review.\nVERDICT write_paths: The declared paths in the source manifest include tests/test_concurrent_edits_land_unattended.py, the sole path changed by both delivered commits.\nVERDICT manifest: The source manifest names both commits, readable revision-stamped gate logs, the deliberate review requirement from 9fc6cd8715774ed8bf84edced7c9bd876530bc26, and the distinction between the raw base pointer failure and the adjusted awaiting-review control.\nVERDICT diff: Read 0450856b0fb3c586c5380b5ee381e91619d32a0a and d09c2786cb097582470b9c4733bd9c192fa7218b against c54a15a657da7d5abd88ee0d0a54b940c650a11f; the first adds review-wait/release assertions and the second constructs the retained repair before writing its promoted ledger row.\nCALL_SITES: reckon/crew/pending_landing.py:finish_pending_landings:1379, reckon/crew/pending_landing.py:_repair_review_wait:692, reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run:3908, reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run:3303\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_concurrent_edits_land_unattended.py:562-602 holds the allowed waiting contract through an automatic request followed by storage, publication and retirement, with the historical premise corrected in the source manifest.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source manifest's baseline_suite and after_suite logs identify c54a15a657da7d5abd88ee0d0a54b940c650a11f and d09c2786cb097582470b9c4733bd9c192fa7218b, end EXIT=1 and EXIT=0, and record one removed failure with zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both delivered commits modify only the declared tests/test_concurrent_edits_land_unattended.py and preserve the existing product review requirement.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_concurrent_edits_land_unattended.py:563-595 would fail if review waiting were removed, dispatch targeted the original head, storage failed to release the repair, publication happened early, another promotion ran, or retirement were omitted; expectations derive from independently observed git heads and effects rather than echoed review inputs.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_concurrent_edits_land_unattended.py:482-602 follows the surrounding temporary-repository, monkeypatch and captured-gate idioms, with descriptive names and no forbidden source labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_concurrent_edits_land_unattended.py:552 duplicates the composition-recorder capability already implemented by tests/test_a_repaired_head_is_reviewed_and_landed.py:131 rather than extending or wrapping that owner, although production dispatch and review storage are reused.\nFINDING tests/test_concurrent_edits_land_unattended.py:552 non-blocking: compose duplicates the eight-line review-dispatch recorder in tests/test_a_repaired_head_is_reviewed_and_landed.py:131 verbatim; it neither extends nor wraps that helper, leaving two fixture implementations of the same dispatch return shape to maintain.\n",
+  "review_run_id": "r-20261118T062107337573-review-of-a-delivered-conflict-repair-finishes-through-its-gate-d09c2786cb09",
+  "reviewed_base_sha": "c54a15a657da7d5abd88ee0d0a54b940c650a11f",
+  "reviewed_head_sha": "d09c2786cb097582470b9c4733bd9c192fa7218b",
+  "reviewed_run_id": "r-20261118T060706742916-a-delivered-conflict-repair-finishes-through-its-gate",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T06:30:25.393681+00:00",
+  "total": 105
+}
