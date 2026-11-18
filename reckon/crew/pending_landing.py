@@ -160,9 +160,6 @@ def retire_integrated_group_members(group: dict[str, Any]) -> dict[str, Any] | N
 
     for run_id, member in list(group["members"].items()):
         pointer = member["pointer"]
-        row = _promoted_row(str(pointer["project"]), run_id)
-        if row is None or row.get("run_id") != run_id:
-            continue
         primary = queue_landing._primary_revision(pointer)
         if not merge._is_ancestor(
             Path(str(pointer["repo"])), str(member["head"]), primary
@@ -516,11 +513,11 @@ def retire_promoted_pointers(
             retired.append(
                 {"run_id": group_id, "status": "group-refused", "error": str(exc)}
             )
-    for pointer in selected:
-        if retire_promoted_pointer(pointer) == POINTER_RETIRED:
-            retired.append(
-                {"run_id": str(pointer["run_id"]), "status": "retired-promoted-pointer"}
-            )
+    retired.extend(
+        {"run_id": str(pointer["run_id"]), "status": "retired-promoted-pointer"}
+        for pointer in selected
+        if retire_promoted_pointer(pointer) == POINTER_RETIRED
+    )
     return retired
 
 
