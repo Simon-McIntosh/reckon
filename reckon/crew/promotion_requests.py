@@ -171,10 +171,9 @@ def _drained_log_path() -> Path:
 
 
 def _waited_seconds(requested_at: Any, finished_at: Any) -> float | None:
-    try:
-        requested = datetime.fromisoformat(str(requested_at))
-        finished = datetime.fromisoformat(str(finished_at))
-    except (TypeError, ValueError):
+    requested = parse_utc(str(requested_at))
+    finished = parse_utc(str(finished_at))
+    if requested is None or finished is None:
         return None
     return round(max(0.0, (finished - requested).total_seconds()), 3)
 
@@ -271,9 +270,8 @@ def promotion_queue_report(
             parked += 1
     oldest = None
     for request in waiting:
-        try:
-            requested_at = datetime.fromisoformat(str(request.get("requested_at")))
-        except (TypeError, ValueError):
+        requested_at = parse_utc(str(request.get("requested_at")))
+        if requested_at is None:
             continue
         if oldest is None or requested_at < oldest[0]:
             oldest = (requested_at, request)
@@ -447,7 +445,12 @@ def request_promotion(
                 default=request["priority_override"],
             )
         runs._write_json(path, request)
-        stage_receipts.record_stage(run_id, "promotion_requested", at=request["requested_at"], attempt=request["request_id"])
+        stage_receipts.record_stage(
+            run_id,
+            "promotion_requested",
+            at=request["requested_at"],
+            attempt=request["request_id"],
+        )
         _mark_pointer(request, REQUESTED)
         return request
 
@@ -693,7 +696,7 @@ def _pending_requests(
     requested rows consume simulated future turns: running rows are already
     charged, and parked rows take no slot.
     """
-    moment = now or datetime.fromisoformat(_now())
+    moment = now or parse_utc(_now()) or datetime.now(UTC)
     pending = []
     for path in _requests_dir().glob("*.json"):
         request = _read(path)
@@ -779,7 +782,9 @@ def _defer_to_a_queued_review(
         }
         requeued.pop("started_at", None)
         runs._write_json(_request_path(run_id), requeued)
-        stage_receipts.note_promotion_outcome(request, DEFERRED, {"reason": str(refusal)})
+        stage_receipts.note_promotion_outcome(
+            request, DEFERRED, {"reason": str(refusal)}
+        )
         _mark_pointer(requeued, REQUESTED)
     return True
 
@@ -1090,7 +1095,12 @@ class PromotionService:
                     "stage_seconds": stage_seconds,
                 }
                 runs._write_json(_request_path(run_id), request)
-                stage_receipts.record_stage(run_id, "promotion_attempt", at=request["started_at"], attempt=request["attempt_id"])
+                stage_receipts.record_stage(
+                    run_id,
+                    "promotion_attempt",
+                    at=request["started_at"],
+                    attempt=request["attempt_id"],
+                )
                 _mark_pointer(request, RUNNING)
             from reckon.crew.promotion_scope import _branch_write_scope
 
@@ -1221,7 +1231,9 @@ def _settle(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
         if current.get("request_id") != request.get("request_id"):
             return {}
         runs._write_json(_request_path(run_id), settled)
-    stage_receipts.record_stage(run_id, "promotion_settled", at=settled["settled_at"], outcome=reason)
+    stage_receipts.record_stage(
+        run_id, "promotion_settled", at=settled["settled_at"], outcome=reason
+    )
     return settled
 
 
@@ -1256,6 +1268,7 @@ def failure_obligations(
     the age, which is measured from the original request.
     """
     items: list[dict[str, Any]] = []
+    moment = now or datetime.now(UTC)
     for path in _requests_dir().glob("*.json"):
         request = _read(path)
         waiting = request.get("phase") == WAITING
@@ -1271,9 +1284,7 @@ def failure_obligations(
             _settle(request, settled)
             continue
         if waiting:
-            age = _waited_seconds(
-                request.get("requested_at"), (now or datetime.now(UTC)).isoformat()
-            )
+            age = _waited_seconds(request.get("requested_at"), moment.isoformat())
             if age is None or age <= WAITING_OBLIGATION_SECONDS:
                 continue
             checked_at = str(request.get("checked_at") or "unknown")
@@ -1300,8 +1311,7 @@ def failure_obligations(
                     0,
                     int(
                         (
-                            (now or datetime.now(UTC))
-                            - datetime.fromisoformat(request["finished_at"])
+                            moment - (parse_utc(request.get("finished_at")) or moment)
                         ).total_seconds()
                     ),
                 ),
