@@ -443,10 +443,23 @@ def test_the_primary_arm_cannot_read_the_shadows_session_directory(
     shadow_tree.mkdir()
     (shadow_tree / "answer.txt").write_text("the shadow's answer\n", encoding="utf-8")
 
-    stub = tmp_path / "list.sh"
+    # The probe writes its own results, so it needs a directory the fence keeps
+    # writable: the node tmp is sealed read-only and only a declared root is
+    # re-bound beneath it. ``tmp_path`` itself cannot serve — the crew home
+    # beneath it holds the sealed delivery stores, and a declared root at or
+    # above a sealed one is skipped rather than re-opened through the seal.
+    probe = tmp_path / "probe"
+    probe.mkdir()
+    # The probe runs in a worktree of its own, never in the session directory
+    # it is masking: the fence grants a launch its worktree after the masks,
+    # and a grant is the last word on its own path, so a probe whose worktree
+    # was the masked directory would re-open exactly what it measures.
+    probe_worktree = probe / "worktree"
+    probe_worktree.mkdir()
+    stub = probe / "list.sh"
     stub.write_text(_LIST_STUB, encoding="utf-8")
     stub.chmod(0o755)
-    results = tmp_path / "results.txt"
+    results = probe / "results.txt"
 
     def listing(masked: tuple[str, ...]) -> str:
         argv = _backends.launch_plan(
@@ -458,8 +471,9 @@ def test_the_primary_arm_cannot_read_the_shadows_session_directory(
                 "sandbox": "worktree-full",
             },
             prompt="p",
-            worktree=str(shadow_session_dir),
-            manifest_path=str(tmp_path / "manifest.md"),
+            worktree=str(probe_worktree),
+            manifest_path=str(probe / "manifest.md"),
+            writable_directories=[str(probe)],
             fence=True,
             fence_home=str(home),
             masked_paths=masked,
@@ -472,7 +486,7 @@ def test_the_primary_arm_cannot_read_the_shadows_session_directory(
                 "FENCE_RESULTS": str(results),
                 "FENCE_TARGET": str(shadow_session_dir),
             },
-            cwd=str(tmp_path),
+            cwd=str(probe),
             capture_output=True,
             text=True,
             check=False,
