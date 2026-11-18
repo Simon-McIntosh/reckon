@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -170,6 +170,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261118T002127213819-review-of-the-sampler-runs-the-current-script-5312b01ff58b" data-who="reckon-build" data-when="2026-11-18T00:27:53Z">
     <div class="r-comment-body"><p>Independent incremental review of 9cc306b9d7de49e82efb90c85e4027624e3e75bc..5312b01ff58b358d5d427194fb6a711451010c83 finds no defects; six dimensions 20/20 and zero added failing IDs.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261118T040046061947-review-of-the-sampler-runs-the-current-script-166540399550" data-who="reckon-build" data-when="2026-11-18T04:09:54Z">
+    <div class="r-comment-body"><p>Independent incremental review stored for head 16654039955028fb15e0f4a498e4bc4d04b57699; one blocking timing-contract finding; zero added suite failures.</p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261118T004303865181-review-of-unowned-scratch-is-reclaimed-7b14a9c608ee" data-who="reckon-build" data-when="2026-11-18T00:49:28Z">
     <div class="r-comment-body"><p>Independent exact-revision review stored parsed with six scores, two blocking findings, and zero added failure IDs from the source run own completed suite arms; broader importer delta and live observation remain recorded separately.</p></div>
 </div>
@@ -261,7 +264,7 @@
     <div class="r-comment-body"><p>Reviewed r-20261117T111350313694-a-batch-dispatch-holds-bounded-memory at 4b7aa8a071ed10e619d95fdacdaa5e644d04b548..a876883a0c7f3796d592ba53cd201e4e1e56e898 and stored a parsed record scoring goal_fidelity 5, evidence 6, scope_discipline 16, durability 6, fit 15, reuse 11 (total 59), with one blocking finding: the batch's live-set trim drops every pointer's node mapping, so the held-node check no longer sees a live hold and queues a node another run holds.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261118T032304900420-review-of-a-batch-dispatch-holds-bounded-memory-13635ea8a9b6" data-who="reckon-build" data-when="2026-11-18T03:28:53.966Z">
-    <div class="r-comment-body"><p>Reviewed a876883a0c7f3796d592ba53cd201e4e1e56e898..13635ea8a9b6a2d4931ce73efe449e6be9d37d3a, the two commits the run gained since its a876883a0c review: the blocking finding (the live-set trim dropping every pointer&#x27;s node identity) is repaired and guarded by a test that reddens on the reverted trim, the held-row filter is now shared, pre-node-column rows are read again, and three non-blocking findings are recorded; scores 12/15/18/15/17/18, added failures 0.</p></div>
+    <div class="r-comment-body"><p>Reviewed a876883a0c7f3796d592ba53cd201e4e1e56e898..13635ea8a9b6a2d4931ce73efe449e6be9d37d3a, the two commits the run gained since its a876883a0c review: the blocking finding (the live-set trim dropping every pointer's node identity) is repaired and guarded by a test that reddens on the reverted trim, the held-row filter is now shared, pre-node-column rows are read again, and three non-blocking findings are recorded; scores 12/15/18/15/17/18, added failures 0.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-17T15:44:00Z">
     <div class="r-comment-body"><p>§9 landed through the crew's own promotion after its review (landing commit <code>cda8859a2c</code>). The per-pass ledger read is bounded: resident memory held at 82 MB after the hundredth pass against 80 MB after the tenth on a copied home, with one decision digest across all passes equal to the base's; on a copy of the live stores the peak fell from 4.6 GB to 2.0 GB. The six-hour live-fleet reading the section asks for is still to be recorded.</p></div>

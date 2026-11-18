@@ -1,0 +1,161 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertions": "Both generations, noninterleaving rows, timestamps present/finite/ordered, valid snapshot index, single stop and request.",
+      "fails_if": "Absent replacement, overlapping generations, missing/nonfinite/reordered timestamps, invalid earlier_count, or missing/duplicated lifecycle anchors violate the respective assertion; removing timestamp/request checks prevents the refusal controls at 575-588 from raising.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:75-87"
+    },
+    {
+      "assertions": "First post-request row is replacement; row does not precede request; at most two rounded elapsed instants and two consecutive missing instants.",
+      "fails_if": "An incumbent row at 8.5 after request 8.25 fails identity; replacement at 11.1 after 8.25 fails rounded elapsed; missing instants 7,8,9 fail consecutive misses; restoring stop-relative timing makes the 6.01-to-10 refusal test fail, but fractional overruns remain accepted.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:90-114"
+    },
+    {
+      "assertions": "Literal expected complete counts dictionary.",
+      "fails_if": "Changing row counts, request/first-row anchors, floor arithmetic, missed list [8,9], longest gap 2 or selected PID differs from independently fixed literals.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:500-513"
+    },
+    {
+      "assertions": "Specific refusal for late replacement, excessive misses, incumbent after request and late request-to-delivery despite late stop.",
+      "fails_if": "Removing the respective bound, using stop as request anchor, or raising for the wrong reason prevents the expected AssertionError/message.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:539-553"
+    },
+    {
+      "assertions": "Accept 8.25 and 8.99 against request 6.25; refuse 9.0; literal rounded counts; first_row_slot equals input row_slot.",
+      "fails_if": "Changing rounded arithmetic or selecting lifecycle sample=90 instead of the row fails the literal counts; exact fractional validation rejects 8.99, revealing the blocking contract mismatch; the final equality is an input echo, not an independent timing guard.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:558-572"
+    },
+    {
+      "assertions": "Require request and row timestamp anchors.",
+      "fails_if": "Removing either validation prevents its corresponding absent-anchor fixture from raising the specified refusal.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:575-588"
+    },
+    {
+      "assertions": "First row instant=7, elapsed=1, PID=22, missing run=0 despite later replacement rows.",
+      "fails_if": "Selecting the last replacement row or measuring observer time instead of the first row changes literal counters when four later rows exist.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:591-604"
+    },
+    {
+      "assertions": "Missing instants [7,9] and longest run 1 across later incumbent row.",
+      "fails_if": "Starting gap accounting only at the last incumbent drops instant 7; treating separated gaps as consecutive reports 2 instead of 1.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:607-615"
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T04:03:15Z",
+  "findings": [
+    {
+      "file": "tests/test_the_sampler_runs_the_current_script.py",
+      "line": 97,
+      "severity": "blocking",
+      "text": "blocking: Flooring both request_slot and first_slot before enforcing <=2 permits almost three elapsed sampling periods, violating the live plan's within-two-periods rehearsal. The new passing boundary case at lines 558-572 uses request=6.25 and row=8.99: elapsed is 2.74 periods (27.4 seconds at the ten-second cadence), but floor(8.99)-floor(6.25)=2. Restore the fractional elapsed bound independently of the whole-instant missing-sample counter, and require this overrun to be refused."
+    },
+    {
+      "file": "tests/test_the_sampler_runs_the_current_script.py",
+      "line": 572,
+      "severity": "non-blocking",
+      "text": "non-blocking: counts['first_row_slot'] == row_slot compares returned metadata directly with the same row_slot inserted into rows at line 561; it still passes if the elapsed-time guard is removed or rounded, so this equality must not be counted as an independent regression guard. The adjacent literal instant assertions exercise the chosen counter arithmetic; independent fractional refusal belongs to the blocking finding."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none; committed-tree searches find these handover test helpers only in their test module; production context is fleet_supervisor.py:3961 calling start_health_sampler at :1471.",
+    "diff": "Read commit 16654039955028fb15e0f4a498e4bc4d04b57699 against its parent 5312b01ff58b358d5d427194fb6a711451010c83; its sole-path diff changes tests/test_the_sampler_runs_the_current_script.py with 120 insertions and 85 deletions, including whole-instant arithmetic and counter controls.",
+    "done_when": "Read source prompt.txt FENCE EVIDENCE; whole-instants-scoped.log records 129 passed and the suite logs add zero failure IDs, but tests/test_the_sampler_runs_the_current_script.py:558-572 explicitly accepts 2.74 elapsed periods.",
+    "goal": "Read source prompt.txt GOAL and live plan section 12; tests/test_the_sampler_runs_the_current_script.py:97-100 weakens the replacement rehearsal from two elapsed sampling periods to two rounded instants.",
+    "manifest": "Read source manifest.md and its baseline_suite/after_suite logs; the base records 8 failed and 162 passed, the head records the same eight failures and 188 passed, and the scoped receipt records 129 passed.",
+    "write_paths": "Read source declared paths and orientation_write_paths; tests/test_the_sampler_runs_the_current_script.py is granted and is the only changed path since the last reviewed revision 5312b01ff58b358d5d427194fb6a711451010c83."
+  },
+  "justifications": {
+    "durability": "tests/test_the_sampler_runs_the_current_script.py:518-553 rejects large delays and incorrect incumbent identity, but :97-100 and :558-572 admit fractional overruns; the input-echo assertion at :572 supplies no independent timing oracle and receives no durability credit.",
+    "evidence": "The completed whole-instants-scoped.log and suite logs substantiate 129 scoped passes and zero added failures, while tests/test_the_sampler_runs_the_current_script.py:558-572 validates a weaker timing measure than done_when requires.",
+    "fit": "tests/test_the_sampler_runs_the_current_script.py:60-127 extends existing descriptive local helpers and uses standard math/time primitives without introducing forbidden source names or unrelated implementation.",
+    "goal_fidelity": "tests/test_the_sampler_runs_the_current_script.py:90-100 retains replacement identity coverage but accepts a replacement later than the live plan's two-period deadline.",
+    "reuse": "Committed-tree capability searches found tests/test_the_sampler_runs_the_current_script.py:71 is the existing handover-counter owner; new tests extend it, while opened tests/test_fleet_health.py:322 and tests/test_a_sampler_outlives_the_fleet_job.py:35 own only TSV reading.",
+    "scope_discipline": "The entire 5312b01ff58b358d5d427194fb6a711451010c83..16654039955028fb15e0f4a498e4bc4d04b57699 delta is granted tests/test_the_sampler_runs_the_current_script.py, covering sampler rehearsal timing directly."
+  },
+  "limitations": [
+    "Incremental test-only review of one commit; prior production review remains at its original revision.",
+    "No suite rerun or mutation performed; completed source receipts and committed assertions inspected.",
+    "Suite baseline is source original base 3845a12fe055e3b175e74f47984d4ecee9262d4e; review base is prior reviewed head 5312b01ff58b358d5d427194fb6a711451010c83.",
+    "No production call site reaches the changed test module; runtime context verified from git show/grep at the reviewed head, not the assigned review snapshot.",
+    "Ten-run receipt records ten iterations of 26 passes on all_debug with -n 8; this is supplementary stability evidence and exceeds the source named gate width of at most -n 4.",
+    "Live fleet observation and merged integration are coordinator work."
+  ],
+  "negative_control_evidence": {
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/evidence-clean/request-anchor-negative.pytest.log",
+    "result": "3 failed, 2 passed, 17 deselected in 0.57s; EXIT=1; stop-relative mutation; prior-head evidence only, since fractional controls changed at reviewed head.",
+    "revision": "5312b01ff58b358d5d427194fb6a711451010c83"
+  },
+  "nonblocking_disposition_recommendation": {
+    "finding_index": 1,
+    "kind": "exempted",
+    "reason": "Keep the equality as metadata round-trip coverage but give it no timing durability credit; the blocking repair must supply independent fractional refusal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt GOAL and live plan section 12; tests/test_the_sampler_runs_the_current_script.py:97-100 weakens the replacement rehearsal from two elapsed sampling periods to two rounded instants.\nVERDICT done_when: Read source prompt.txt FENCE EVIDENCE; whole-instants-scoped.log records 129 passed and the suite logs add zero failure IDs, but tests/test_the_sampler_runs_the_current_script.py:558-572 explicitly accepts 2.74 elapsed periods.\nVERDICT write_paths: Read source declared paths and orientation_write_paths; tests/test_the_sampler_runs_the_current_script.py is granted and is the only changed path since the last reviewed revision 5312b01ff58b358d5d427194fb6a711451010c83.\nVERDICT manifest: Read source manifest.md and its baseline_suite/after_suite logs; the base records 8 failed and 162 passed, the head records the same eight failures and 188 passed, and the scoped receipt records 129 passed.\nVERDICT diff: Read commit 16654039955028fb15e0f4a498e4bc4d04b57699 against its parent 5312b01ff58b358d5d427194fb6a711451010c83; its sole-path diff changes tests/test_the_sampler_runs_the_current_script.py with 120 insertions and 85 deletions, including whole-instant arithmetic and counter controls.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_sampler_runs_the_current_script.py:90-100 retains replacement identity coverage but accepts a replacement later than the live plan's two-period deadline.\nSCORE evidence: 16\nJUSTIFICATION evidence: The completed whole-instants-scoped.log and suite logs substantiate 129 scoped passes and zero added failures, while tests/test_the_sampler_runs_the_current_script.py:558-572 validates a weaker timing measure than done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The entire 5312b01ff58b358d5d427194fb6a711451010c83..16654039955028fb15e0f4a498e4bc4d04b57699 delta is granted tests/test_the_sampler_runs_the_current_script.py, covering sampler rehearsal timing directly.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_sampler_runs_the_current_script.py:518-553 rejects large delays and incorrect incumbent identity, but :97-100 and :558-572 admit fractional overruns; the input-echo assertion at :572 supplies no independent timing oracle and receives no durability credit.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_the_sampler_runs_the_current_script.py:60-127 extends existing descriptive local helpers and uses standard math/time primitives without introducing forbidden source names or unrelated implementation.\nSCORE reuse: 20\nJUSTIFICATION reuse: Committed-tree capability searches found tests/test_the_sampler_runs_the_current_script.py:71 is the existing handover-counter owner; new tests extend it, while opened tests/test_fleet_health.py:322 and tests/test_a_sampler_outlives_the_fleet_job.py:35 own only TSV reading.\nFINDING tests/test_the_sampler_runs_the_current_script.py:97 blocking: Flooring both request_slot and first_slot before enforcing <=2 permits almost three elapsed sampling periods, violating the live plan's within-two-periods rehearsal. The new passing boundary case at lines 558-572 uses request=6.25 and row=8.99: elapsed is 2.74 periods (27.4 seconds at the ten-second cadence), but floor(8.99)-floor(6.25)=2. Restore the fractional elapsed bound independently of the whole-instant missing-sample counter, and require this overrun to be refused.\nFINDING tests/test_the_sampler_runs_the_current_script.py:572 non-blocking: counts['first_row_slot'] == row_slot compares returned metadata directly with the same row_slot inserted into rows at line 561; it still passes if the elapsed-time guard is removed or rounded, so this equality must not be counted as an independent regression guard. The adjacent literal instant assertions exercise the chosen counter arithmetic; independent fractional refusal belongs to the blocking finding.\n",
+  "review_run_id": "r-20261118T040046061947-review-of-the-sampler-runs-the-current-script-166540399550",
+  "reviewed_base_sha": "5312b01ff58b358d5d427194fb6a711451010c83",
+  "reviewed_head_sha": "16654039955028fb15e0f4a498e4bc4d04b57699",
+  "reviewed_run_id": "r-20261117T211039288247-the-sampler-runs-the-current-script",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_run_leaves_nothing_behind.py tests/test_an_installed_interpreter_refuses_a_write.py tests/test_each_admission_pass_records_its_verdict.py tests/test_fleet_health_records_node_tmp.py tests/test_gc_bounds_a_run_file.py tests/test_no_caller_waits_on_a_promotion.py tests/test_the_sampler_runs_the_current_script.py tests/test_the_station_starts_where_workers_run.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 8,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/whole-instants-head.log",
+      "measurement_cwd": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/the-sampler-runs-the-current-script",
+      "measurement_module": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/the-sampler-runs-the-current-script/reckon/crew/fleet_supervisor.py",
+      "partition": "all_debug",
+      "revision": "16654039955028fb15e0f4a498e4bc4d04b57699",
+      "summary": "8 failed, 188 passed in 254.00s (0:04:14)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crashed_producer_is_restarted.py tests/test_a_run_leaves_nothing_behind.py tests/test_an_installed_interpreter_refuses_a_write.py tests/test_each_admission_pass_records_its_verdict.py tests/test_fleet_health_records_node_tmp.py tests/test_gc_bounds_a_run_file.py tests/test_no_caller_waits_on_a_promotion.py tests/test_the_station_starts_where_workers_run.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 8,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/evidence-recapture-base-git.log",
+      "measurement_cwd": "/tmp/sampler-evidence-base-ibASn3/base-tree",
+      "measurement_module": "/tmp/sampler-evidence-base-ibASn3/base-tree/reckon/crew/fleet_supervisor.py",
+      "partition": "all_debug",
+      "revision": "3845a12fe055e3b175e74f47984d4ecee9262d4e",
+      "summary": "8 failed, 162 passed in 211.52s (0:03:31)"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T04:10:29.690645+00:00",
+  "total": 109
+}
