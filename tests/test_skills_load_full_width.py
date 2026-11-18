@@ -20,7 +20,8 @@ def test_dispatch_set_includes_sections_waiting_for_upstream() -> None:
     assert "queue all of them in one beat" in build
     assert "naming no lane so the picker routes each request" in build
     assert "The set may include sections whose upstream has not landed" in build
-    assert "Never load a plan wholesale: choose each section" in build
+    assert "Queue every reviewed plan you are orchestrating at its full width" in build
+    assert "Never load a plan wholesale" not in build
     assert "parks its node `awaiting-upstream`" in build
     assert "queue all of them in one beat" in reference
     assert "naming no lane" in reference
@@ -49,7 +50,7 @@ def test_readiness_reports_do_not_narrow_the_dispatch_set() -> None:
     assert "does not limit the build skill's one-beat load" in normalized(
         ROADMAP.read_text()
     )
-    assert "including those whose upstream has not landed" in normalized(
+    assert "including sections whose upstream has not landed" in normalized(
         GUIDANCE.read_text()
     )
 
