@@ -1,0 +1,123 @@
+<section id="qwnw-red-file-ledger-files-and-index-agree-negative-control">
+<h2>The ledger's file and index readers agree</h2>
+<p><strong>Negative control.</strong> <code>tests/test_ledger_files_and_index_agree.py</code>
+at the base revision <code>f400f70a5262901ce41d9500c69d765daa072d2c</code> read
+<strong>55 failed, 50 passed</strong> (exit 1). The same file at head
+<code>693f3f4ccb8b9f9cca356a5caa4cd04b5a49c9ca</code> read <strong>105 passed</strong>
+on <code>all_debug</code> (host 98dci4-clu-3141, exit 0). The base tree is a
+<code>git archive</code> of the base revision, so the module under test is that
+tree's own <code>reckon/__init__.py</code>.</p>
+
+<h3 id="qwnw-red-file-ledger-files-and-index-agree-causes">Each cause, and which side was wrong</h3>
+<table>
+<thead><tr><th>Cause</th><th>Verdict</th><th>What it produced</th></tr></thead>
+<tbody>
+<tr><td>A keyed store read compared its own membership with <code>ledger.run_ids</code>, which prefers the store</td><td>product wrong - repaired</td><td>A cache missing rows, holding an extra row, or holding a different set than the committed ledger agreed with itself and was never rebuilt: every <code>test_index_membership_is_rebuilt</code> id, every id whose store answered <code>None</code>, all three <code>test_index_resolves_the_owning_checkout</code> routings, <code>test_carryover_live_pointer_wins</code>, and both <code>test_run_files_survive_without_an_aggregate_run_list</code> ids.</td></tr>
+<tr><td>A reader's row gained <code>store_write</code> when a document answered the read instead of the store</td><td>test wrong - updated to the rule the reader keeps</td><td>The store has never held the promotion record, so the same committed corpus answered with the full row or without one field depending on whether a cache existed. Every <code>test_readers_agree</code> id for <code>load</code>, <code>runs</code> and <code>records</code>, plus <code>test_identical_duplicate_is_read_once</code>, <code>test_bad_run_file_is_not_silently_omitted</code> and <code>test_promotion_order_survives_a_split</code>.</td></tr>
+<tr><td>A rebuild whose write is refused answered with no project on its file-backed rows</td><td>product wrong - repaired</td><td><code>test_rebuild_failure_still_answers_from_files</code> read <code>'project': ''</code> off a row whose run file carries no project field and whose refused write left no column to read it from; the file's directory is the project.</td></tr>
+</tbody>
+</table>
+<p>No assertion was removed or narrowed. The durable-row rule is asserted in
+every cache lifetime, and the committed file's own copy of the field is still
+asserted verbatim by the <code>use_index=False</code> reads and by
+<code>test_serialisation_is_stable_and_keeps_every_field</code>.</p>
+
+<h3 id="qwnw-red-file-ledger-files-and-index-agree-guards">The repairs, each shown firing</h3>
+<p>Reverting each repair in the head tree reddens the named file, so no passing
+id rests on something other than the repair:</p>
+<ul>
+<li id="qwnw-red-file-ledger-files-and-index-agree-guard-a">membership read through the store again
+(<code>ledger.run_ids(name, root, use_index=True)</code> in
+<code>run_store.RunStore._refresh</code>): <strong>37 failed</strong>, exit 1.</li>
+<li id="qwnw-red-file-ledger-files-and-index-agree-guard-b">the reader's row left unprojected: <strong>18 failed</strong>,
+exit 1, every one a <code>test_readers_agree</code> arm.</li>
+</ul>
+
+<h3 id="qwnw-red-file-ledger-files-and-index-agree-head">Head run</h3>
+<pre>srun: task re-enters the worker fence; absolute scheduler paths bypass this guard.
+# revision: 693f3f4ccb8b9f9cca356a5caa4cd04b5a49c9ca
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -c "import os, reckon; print(\"module:\", reckon.__file__); print(\"cwd:\", os.getcwd())" &amp;&amp; PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger_files_and_index_agree.py'
+module: /tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/reckon/__init__.py
+cwd: /tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree
+........................................................................ [ 68%]</pre>
+<pre>105 passed in 1.23s
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/tests/test_passed_verdict_needs_exit_zero.py'
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/tests/test_a_review_promotes_what_it_passed.py'
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20261003T215919812156-verify-gate-ok-means-the-replay-passed/r-20261003T221231020712-review-of-verify-gate-ok-means-the-replay-passed.json'
+removed directory '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20261003T215919812156-verify-gate-ok-means-the-replay-passed'
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20261002T130419125202-passed-verdict-needs-exit-zero/r-20261002T173003682835-review-of-passed-verdict-needs-exit-zero.json'
+removed directory '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20261002T130419125202-passed-verdict-needs-exit-zero'
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20260930T164620132498-repair-of-a-review-promotes-what-it-passed-b3683d8e6840/r-20260930T170421750014-review-of-repair-of-a-review-promotes-what-it-passed-b3683d8e6840.json'
+removed directory '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20260930T164620132498-repair-of-a-review-promotes-what-it-passed-b3683d8e6840'
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20260930T154556201330-a-review-promotes-what-it-passed/r-20260930T163156258746-review-of-a-review-promotes-what-it-passed.json'
+removed directory '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/state/reckon/reviews/run/r-20260930T154556201330-a-review-promotes-what-it-passed'
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/evidence/fragments/crew-runtime-positive-controls/verify-gate-ok-means-the-replay-passed.html'
+removed '/tmp/mcintos-landing-6ec85eb4d102-7nIbnq/tree/docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-review-promotes-what-it-passed.html'</pre>
+
+<h3 id="qwnw-red-file-ledger-files-and-index-agree-base">Base run, and its failing ids</h3>
+<pre># revision: f400f70a5262901ce41d9500c69d765daa072d2c
+# tree: /tmp/reckon-crew-scratch/r-20261118T054010831171-qwnw-red-file-ledger-files-and-index-agree/qwnw-base (git archive of the base revision)
+# host: 98dci4-clu-3051.iter.org
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-ledger-files-and-index-agree/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger_files_and_index_agree.py
+module: /tmp/reckon-crew-scratch/r-20261118T054010831171-qwnw-red-file-ledger-files-and-index-agree/qwnw-base/reckon/__init__.py
+cwd: /tmp/reckon-crew-scratch/r-20261118T054010831171-qwnw-red-file-ledger-files-and-index-agree/qwnw-base
+FFF.....FFF.....FFF........FFFFF...FFFFF...FFFFFFFF.....FFF.....FFF..... [ 68%]</pre>
+<pre>55 failed, 50 passed in 4.45s</pre>
+<pre>tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-aggregate-load]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-aggregate-runs]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-aggregate-records]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-files-load]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-files-runs]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-files-records]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-split-load]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-split-runs]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[present-split-records]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-aggregate-get_run]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-aggregate-get_detail]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-aggregate-durable_rows]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-aggregate-death]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-aggregate-carryover]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-files-get_run]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-files-get_detail]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-files-durable_rows]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-files-death]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-files-carryover]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-split-get_run]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-split-get_detail]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-split-durable_rows]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-split-death]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[deleted-split-carryover]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-aggregate-load]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-aggregate-runs]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-aggregate-records]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-files-load]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-files-runs]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-files-records]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-split-load]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-split-runs]
+tests/test_ledger_files_and_index_agree.py::test_readers_agree[rebuilt-split-records]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[missing-get_run]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[missing-get_detail]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[missing-durable_rows]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[missing-death]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[missing-carryover]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[extra-get_run]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[extra-get_detail]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[extra-durable_rows]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[extra-death]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[extra-carryover]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[same_count-get_run]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[same_count-get_detail]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[same_count-durable_rows]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[same_count-death]
+tests/test_ledger_files_and_index_agree.py::test_index_membership_is_rebuilt[same_count-carryover]
+tests/test_ledger_files_and_index_agree.py::test_run_files_survive_without_an_aggregate_run_list[absent]
+tests/test_ledger_files_and_index_agree.py::test_run_files_survive_without_an_aggregate_run_list[no_runs_key]
+tests/test_ledger_files_and_index_agree.py::test_rebuild_failure_still_answers_from_files
+tests/test_ledger_files_and_index_agree.py::test_carryover_live_pointer_wins
+tests/test_ledger_files_and_index_agree.py::test_index_resolves_the_owning_checkout[state_symlink]
+tests/test_ledger_files_and_index_agree.py::test_index_resolves_the_owning_checkout[mount]
+tests/test_ledger_files_and_index_agree.py::test_index_resolves_the_owning_checkout[explicit_root]</pre>
+</section>
