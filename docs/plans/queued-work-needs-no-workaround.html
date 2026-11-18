@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="583">
+<meta name="plan-version" content="584">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1819,7 +1819,10 @@
     <div class="r-comment-body"><p>validate_node refuses a time budget above the resolved fence unless the node carries a stated over-fence reason, failing the bounded property by name; tests/test_goal_contract_lint.py reports 10 passed at 540da6aaf94cacb92ecabbe18d1e631c81bf1230 on all_debug (base 23b9016: 1 failed, 9 passed), and the over-fence arm goes from 11 failing ids at base to 7, all pre-existing and outside this change.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063020115894-qwnw-red-file-effort-routing-contract" data-who="reckon-build" data-when="2026-11-18T14:27:53.667Z">
-    <div class="r-comment-body"><p>The effort-routing contract file is green in full: its single cause was the test reading docs/state/reckon/crew.json as a tracked working-tree document after ledger retirement (60c4622f55) deleted it from git and ignored the path, so the test now reads that ledger from the newest committed revision that carries it and asserts the lane&#x27;s exact rows select at least one run while open selects none; `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_effort_routing_contract.py` reads 7 passed, 0 failed at head against 1 failed, 6 passed at fb3ec9a.</p></div>
+    <div class="r-comment-body"><p>The effort-routing contract file is green in full: its single cause was the test reading docs/state/reckon/crew.json as a tracked working-tree document after ledger retirement (60c4622f55) deleted it from git and ignored the path, so the test now reads that ledger from the newest committed revision that carries it and asserts the lane's exact rows select at least one run while open selects none; `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_effort_routing_contract.py` reads 7 passed, 0 failed at head against 1 failed, 6 passed at fb3ec9a.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T143835956336-review-of-qwnw-red-file-ledger-write-keeps-run-files-79fd565a73fb" data-who="reckon-build" data-when="2026-11-18T17:11:52.244Z">
+    <div class="r-comment-body"><p>independent review of r-20261118T062931577460-qwnw-red-file-ledger-write-keeps-run-files at head 79fd565a (base 23b90169) is stored parsed with all six dimensions scored 19/15/20/18/19/20, total 111, three non-blocking findings, and the crux is that the head-arm excerpt at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-keeps-run-files.html:24 quotes 6 passed in 6.51s while the cited scoped-gate-1795011757597093462.log:7 records 6 passed in 1.12s; added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own suite arms (58 passed EXIT=0 at 23b90169 and 58 passed EXIT=0 at aefd7b73)</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
