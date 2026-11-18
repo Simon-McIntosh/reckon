@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T07:44:34Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_profile_refresh_costs_its_row.py",
+      "line": 118,
+      "severity": "non-blocking",
+      "text": "The three restated assertions (raw == [] here, assertion at :98 that decoded == [], and attempts == [] at :364) hold through the store fallback at reckon/crew/picker/lane_context.py:800 whatever the index writer does, so the first recorded cause is unguarded: put back the five-value INSERT into the six-column records table and this file still reads 51 rows with zero decodes, because _stored_profile_inputs re-derives the rows in SQL. Restate one case that asserts the index holds the appended row (re-checking records.stamp/generation after append_run) so the repair reddens if it returns."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "The manifest's baseline_suite/after_suite pair names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py (58 passed each, EXIT=0), files the change cannot reach, while the importer arm the done_when asks for lives only in the artifacts line over logs/importer-arm-base.log (60 failed) and logs/importer-arm-head.log (59 failed, delta []); a reader taking the suite pair as this run's gate measures the wrong test set; record the importer arm in the suite pair too."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node goal is 'Make tests/test_a_promotion_profile_refresh_costs_its_row.py pass in full on the primary branch', and the file ran 23 passed EXIT=0 at 57edff12f4 in the run's logs/head-named-file.log, with fee11bca3b adding only the evidence fragment.\nVERDICT done_when: The done_when asks for that file at head as an all_debug job with SLURM_JOB_ID unset plus an importer arm naming both full revisions; the head log header reads '# slurm_job_name: promo-profile-head partition: all_debug' with 'env -u SLURM_JOB_ID' and ends EXIT=0, and logs/importer-arm-base.log (60 failed) and logs/importer-arm-head.log (59 failed) carry 40-character revisions 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed and 57edff12f41ec24500093f48fc7fbf570983d4f4 with delta added_failure_ids [].\nVERDICT write_paths: The source node's write_paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and all four delivered paths (reckon/ledger.py, reckon/crew/picker/lane_context.py, tests/test_a_promotion_profile_refresh_costs_its_row.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-profile-refresh-costs-its-row.html) sit inside them.\nVERDICT manifest: Read manifest.md; it records the 23-passed scoped gate and head job, the 9-failed base arm with its failing ids, and the importer delta 0 added / 1 fixed, and the finding below concerns the files its suite-pair fields name rather than anything it leaves unclaimed.\nVERDICT diff: Read both commits against base 21b69555c731ae5390dc953649571cd29bdd5fd1: 57edff12f4 fills the sixth column at reckon/ledger.py:1359, imports the committed ledger before a project's first stored row at reckon/ledger.py:3603, and adds the store fallback at reckon/crew/picker/lane_context.py:800; fee11bca3b adds the 97-line evidence fragment, and the test file's two cases are restated rather than removed.\nCALL_SITES: reckon/crew/picker/lane_context.py:refresh_run_time_profile, reckon/crew/picker/lane_context.py:_promotion_fold_inputs, reckon/ledger.py:write_run_file, reckon/ledger.py:append_run\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:800 keeps the refresh decode-free through the store while the named file passes 23/23 at 57edff12f4, and fee11bca3b changes only the evidence fragment.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-named-file.log ends '23 passed' with EXIT=0 at 57edff12f4 and logs/base-named-file.log ends '9 failed, 14 passed' with EXIT=1 at 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed, but manifest.md:17 records a two-file suite pair (58 passed each) that the change cannot reach in place of the importer arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in git diff 21b69555c731ae5390dc953649571cd29bdd5fd1..fee11bca3b07c31334253d2577166298c5c490a7 is inside the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround scope, with no plan, sprint or state file touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_promotion_profile_refresh_costs_its_row.py:118 and :364 redden if the store fallback or the no-rebuild fold is reverted, and :121 reddens if the committed ledger import is withdrawn, but :98 holds with the five-column index INSERT put back, so the first recorded cause carries no failing assertion.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/picker/lane_context.py:800 follows the module's private-helper and lazy-import idiom beside _indexed_profile_inputs, though splitting the docstring across :825 and :846 leaves the wrapper explaining a rule its callee now implements.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/picker/lane_context.py:800 wraps the existing owners reckon/run_store.py:844 stored_run_rows and ledger._PICKER_FIELDS, and the search over reckon found no other store-to-profile-inputs mechanism: reckon/velocity.py:823 resolves run records from git blobs, a different capability.\nFINDING tests/test_a_promotion_profile_refresh_costs_its_row.py:118 non-blocking: The restated assertions (this one, :98, :364) all hold through the store fallback at reckon/crew/picker/lane_context.py:800, so reinstating the five-value INSERT into the new six-column form at reckon/ledger.py:1359 leaves the file green at 51 rows and zero decodes and the node's first cause is unguarded.\nFINDING manifest.md:17 non-blocking: The baseline_suite/after_suite pair names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cannot reach the changed modules, while the importer arm the done_when names appears only in the artifacts line over logs/importer-arm-{base,head}.log.\n",
+  "review_run_id": "r-20261118T054723463265-review-of-qwnw-red-file-a-promotion-profile-refresh-costs-its-row-fee11bca3b07",
+  "reviewed_base_sha": "21b69555c731ae5390dc953649571cd29bdd5fd1",
+  "reviewed_head_sha": "fee11bca3b07c31334253d2577166298c5c490a7",
+  "reviewed_run_id": "r-20261118T044603236836-qwnw-red-file-a-promotion-profile-refresh-costs-its-row",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:07:25.798051+00:00",
+  "total": 108
+}
