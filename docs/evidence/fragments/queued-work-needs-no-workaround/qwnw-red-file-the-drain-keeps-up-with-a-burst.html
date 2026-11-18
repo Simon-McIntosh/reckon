@@ -1,0 +1,36 @@
+<section id="qwnw-red-file-the-drain-keeps-up-with-a-burst-landing">
+  <h2>The named file is already green on the primary branch</h2>
+
+  <p><strong>Finding.</strong> <code>tests/test_the_drain_keeps_up_with_a_burst.py</code>
+  passes in full at the branch head this node started from,
+  <code>f29efdc635a1b578bb4461ff90785d3be848646b</code>. The red state the
+  section quotes was measured on 15 November at <code>8d50b0333f</code>; the file
+  has since been repaired in the same plan's earlier node for this scenario,
+  whose commits are in this revision's history — the last of them,
+  <code>487cc32505</code>, touches both
+  <code>scripts/replay_promotion_drain.py</code> and this test file to clear
+  historical scheduler handles before they are relocated into a private replay.
+  There is no cause left to attribute to product or test at this revision.</p>
+
+  <p><strong>Reproduction.</strong> The done-when command, as a job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset and its log on
+  shared storage, read <code>26 passed</code> and <code>EXIT=0</code> at
+  <code>f29efdc635</code>, and the same run at the head this node commits,
+  <code>944700bc042806254b627087ae4a1d6ea63c800d</code>, read the same. Both
+  logs are recorded beside this record in
+  <code>red-file-the-drain-keeps-up-with-a-burst.html</code>. A third run in
+  the worker's own worktree, with <code>SLURM_JOB_ID</code> set to a synthetic
+  value, also read <code>26 passed</code>, so the pass is not an artifact of
+  the scheduler variable the fence names or of the measurement tree.</p>
+
+  <p><strong>What changed.</strong> Nothing in product source or tests. No
+  assertion was deleted or weakened, because none failed. This node's own
+  evidence is the passing run above; the file is the whole population the
+  done-when names.</p>
+
+  <p><strong>Negative control.</strong> The fence's negative control is the base
+  run of this file with its failing ids. At this base the run has no failing
+  ids, so the control cannot be produced from this file, and the run that would
+  have carried it is instead the passing run recorded above. Nothing in the
+  manifest claims a red log.</p>
+</section>
