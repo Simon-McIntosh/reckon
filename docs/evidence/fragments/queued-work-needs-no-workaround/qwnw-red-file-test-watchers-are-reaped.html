@@ -1,0 +1,42 @@
+<section id="qwnw-red-file-test-watchers-are-reaped-head-run">
+<h2>A dispatch document read as one stream, and the run that reads it apart</h2>
+<p>The file failed at base because the child session's dispatch command prints
+<code>reckon: created run &lt;id&gt;</code> to <b>stderr</b> — on purpose, so a
+caller that exits mid-launch still sees the identity while stdout stays the
+command's JSON document — while the test parsed <code>result.output</code> as
+JSON. Click 8.2 replaced <code>result.output</code> with a mix of both
+captured streams, so the notice displaced the document. Verdict: <b>test
+wrong</b>; the product rule is intact and is now asserted rather than assumed.
+No assertion was deleted or weakened: the exit code is still asserted, the
+document is still parsed and both <code>watch</code> fields are still checked,
+and the test additionally holds the notice to stderr, so a product that moved
+it onto stdout would fail.</p>
+<pre># head run, all_debug job, SLURM_JOB_ID unset, output on shared storage
+# revision: 2a495a5f0b59ae692d90bf1bc66302397a3ee142
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-179e36a6b222-CsSqI9/tree
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_test_watchers_are_reaped.py'
+s..                                                                      [100%]
+2 passed, 1 skipped in 20.34s
+EXIT=0</pre>
+</section>
+
+<section id="qwnw-red-file-test-watchers-are-reaped-negative-control">
+<h2>Negative control: the base run, failing ids quoted</h2>
+<p>The same command over the base revision, in a job on the same partition with
+the same cleared scheduler identity, reproduces the defect: the parent measure
+fails only through its child, whose own failure is the parse it makes of the
+mixed stream.</p>
+<pre># base run, all_debug job, SLURM_JOB_ID unset
+# revision: 25255992b19bf9b2dc2bb9e4fd46d9e429f943f6
+# tree: /tmp/mcintos-landing-847e4ecb5053-yy4BKC/tree
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_test_watchers_are_reaped.py'
+sF.                                                                      [100%]
+FAILED tests/test_test_watchers_are_reaped.py::test_a_watcher_armed_by_a_child_session_is_not_left_running
+  (through its child) FAILED tests/test_test_watchers_are_reaped.py::test_arms_a_watcher_without_reaping_it
+  json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 1 passed, 1 skipped in 21.24s
+EXIT=1</pre>
+<p>Logs: run directory <code>negative-control-1795004557199734287.log</code>
+beside <code>scoped-gate-1795004607739121977.log</code>.</p>
+</section>
