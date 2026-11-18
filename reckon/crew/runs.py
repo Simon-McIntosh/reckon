@@ -4457,8 +4457,14 @@ def _stream_transition(
     previous: str | None,
     current: str,
     counts: Mapping[str, Any],
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Build the transition object consumed by the established formatter."""
+    """Build the transition object consumed by the established formatter.
+
+    ``pointers`` is the fleet reading the caller already holds, so a row that
+    names a review's reviewed run resolves it against that reading instead of
+    listing the fleet a second time.
+    """
     from reckon.crew.recovery import _watch_transition
 
     return _watch_transition(
@@ -4468,6 +4474,7 @@ def _stream_transition(
         previous=previous,
         current=current,
         counts=counts,
+        pointers=pointers,
     )
 
 
@@ -4632,8 +4639,8 @@ def _publish_watch_transitions(
             # exactly the transitions this seed was taken to carry.
             producer.seeded_states = published
             baseline = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
-            counts = _transition_counts(current)
-            lines = []
+            counts = _transition_counts(current, pointers=records)
+            lines: list[dict[str, Any]] = []
             for run_id, snapshot in current.items():
                 state = str(snapshot["state"])
                 seeded = published.get(run_id)
@@ -4651,6 +4658,7 @@ def _publish_watch_transitions(
                         previous=seeded,
                         current=state,
                         counts=counts,
+                        pointers=records,
                     )
                 )
             _append_watch_lines(producer.path, lines)
@@ -4672,6 +4680,7 @@ def _publish_watch_transitions(
                 previous=previous,
                 current=state,
                 counts=event_counts,
+                pointers=records,
             )
             for snapshot, previous, state, event_counts in folded
         ]
@@ -4958,9 +4967,8 @@ def watch_stream_cursor(
 
     producer = _WATCH_STREAM_PRODUCERS.get(project)
     effective_window = producer.stall_window if producer is not None else stall_window
-    snapshots = _watch_stream_snapshots(
-        _list_live_records(project=project), stall_window=effective_window
-    )
+    records = _list_live_records(project=project)
+    snapshots = _watch_stream_snapshots(records, stall_window=effective_window)
     counts = _fleet_counts(snapshots)
     baseline = [
         _stream_transition(
@@ -4969,6 +4977,7 @@ def watch_stream_cursor(
             previous=None,
             current=str(snapshot["state"]),
             counts=counts,
+            pointers=records,
         )
         for snapshot in snapshots.values()
     ]
