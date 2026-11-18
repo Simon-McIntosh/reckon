@@ -428,7 +428,8 @@ DEFERRED_WORK_RULE = (
 #: capture group would put a tuple where the refusal quotes text.
 _DEFERRED_WORK_TERM = re.compile(
     r"\bfollow[- ]?ons?\b"
-    r"|\b(?:carry|carries|carried|go|goes)\s+to\s+§\s*\d+"
+    r"|\b(?:carry|carries|carried|go|goes)\s+to\s+§\s*"
+    rf"{_plan_html.SECTION_NUMBER_PATTERN}"
     r"|\b(?:left\s+for|deferred\s+to|sent\s+to|going\s+to|go\s+to|goes\s+to)\b"
     r"\s+(?:\w+\s+){0,2}"
     r"(?:follow-?up|later|next|separate)\s+(?:\w+\s+){0,2}"

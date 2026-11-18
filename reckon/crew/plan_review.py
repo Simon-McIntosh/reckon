@@ -2028,7 +2028,7 @@ def _record_decided_units(units: Iterable[str]) -> None:
         holder["units"] = tuple(sorted(units))
 
 
-_SECTION_TOKEN = re.compile(r"^[sS][0-9]+(?:[.-][0-9]+)*$")
+_SECTION_TOKEN = re.compile(rf"^[sS]{_plan_html.SECTION_NUMBER_PATTERN}$")
 
 
 def _normalise_sections(sections: Iterable[Any] | None) -> tuple[str, ...]:
@@ -3279,7 +3279,8 @@ def _reviewed_plan_text(
 
 
 _SECTION_REFERENCE = re.compile(
-    r"§\s*(\d+(?:[.-]\d+)*)|(?<![0-9A-Za-z_])s(\d+(?:[.-]\d+)*)(?![0-9])"
+    rf"§\s*({_plan_html.SECTION_NUMBER_PATTERN})"
+    rf"|(?<![0-9A-Za-z_])s({_plan_html.SECTION_NUMBER_PATTERN})(?![0-9])"
 )
 
 
