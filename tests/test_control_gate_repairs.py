@@ -28,6 +28,7 @@ from reckon.cli import main as cli_main
 from reckon.crew import promotion
 from reckon.crew.reports import audit_manifest
 from reckon.crew.runs import _write_json, pointer_path
+from reckon.nested_launch import SCHEDULER_FENCE_NOTICE
 
 PROJECT = "gate-log"
 
@@ -136,6 +137,67 @@ def test_a_gate_log_naming_no_revision_on_its_first_line_is_reported(
     findings = [finding for finding in audit["findings"] if str(head_log) in finding]
     assert findings, audit["findings"]
     assert any("revision" in finding for finding in findings)
+
+
+# ── A log a fenced launch captured, whose first line is the fence's ─────────
+
+
+def test_a_gate_log_opening_with_the_fence_notice_is_judged_by_its_header(
+    tmp_path: Path,
+) -> None:
+    """A fenced job's log opens with the launch's notice, not the measure's header.
+
+    The notice is written to the task's stderr before the task runs, so every
+    arm log the suite measurement captures through the fence carries it first
+    and the header second. Judging the literal first line reported a log the
+    audit's own writer had produced.
+    """
+    manifest_path = tmp_path / "manifest.md"
+    notice = SCHEDULER_FENCE_NOTICE.format(tool="srun")
+    head_log = tmp_path / "head-gate.log"
+    head_log.write_text(
+        f"{notice}\n# revision: {_HEAD_REVISION}\n# tree: /tmp/head\n"
+        "# command: pytest -q\n1 passed\nEXIT=0\n",
+        encoding="utf-8",
+    )
+    _log(tmp_path / "base-gate.log", f"rev={_BASE_REVISION} tree=/tmp/base")
+    body = _arm_manifest(
+        manifest_path,
+        base_revision=_BASE_REVISION,
+        head_revision=_HEAD_REVISION,
+        base_log="base-gate.log",
+        head_log="head-gate.log",
+    )
+
+    audit = audit_manifest(body, manifest_path=manifest_path)
+
+    assert audit["findings"] == [], audit["findings"]
+
+
+def test_a_gate_log_whose_notice_precedes_prose_is_still_reported(
+    tmp_path: Path,
+) -> None:
+    """Skipping the notice does not excuse a log that records no revision after it."""
+    manifest_path = tmp_path / "manifest.md"
+    notice = SCHEDULER_FENCE_NOTICE.format(tool="srun")
+    head_log = tmp_path / "head-gate.log"
+    head_log.write_text(
+        f"{notice}\nthe runner's progress line\n1 passed\nEXIT=0\n",
+        encoding="utf-8",
+    )
+    _log(tmp_path / "base-gate.log", f"rev={_BASE_REVISION} tree=/tmp/base")
+    body = _arm_manifest(
+        manifest_path,
+        base_revision=_BASE_REVISION,
+        head_revision=_HEAD_REVISION,
+        base_log="base-gate.log",
+        head_log="head-gate.log",
+    )
+
+    audit = audit_manifest(body, manifest_path=manifest_path)
+
+    findings = [finding for finding in audit["findings"] if str(head_log) in finding]
+    assert findings, audit["findings"]
 
 
 # ── A log cited for one arm that records another arm's run ──────────────────
@@ -312,3 +374,23 @@ def test_a_promotion_presenting_an_unresolvable_sha_names_it_in_the_refusal(
     # Nothing was recorded, so the refusal is not a report beside a stored row.
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).exists()
+
+
+def test_the_launch_module_imports_first_in_a_fresh_interpreter() -> None:
+    """A launch imports the fence module before any other part of the package.
+
+    The manifest audit recognises the fence's notice, and the fence module
+    reaches the audit while it is still initialising, so the audit must not
+    need the notice at import time.
+    """
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-c", "import reckon.nested_launch"],
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).resolve().parents[1],
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr

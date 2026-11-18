@@ -9,11 +9,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
-from reckon import cli as cli_module
 from reckon import ledger
-from reckon.crew import obligations, queue_admission, queue_landing, runs
+from reckon.crew import (
+    obligations,
+    promotion_requests,
+    queue_admission,
+    queue_landing,
+    runs,
+)
 from reckon.crew import review as review_module
 from reckon.crew.recovery_review_dispatch import _dispatch_text_review_for_run
 from tests.helpers.git import git as fixture_git
@@ -343,36 +347,24 @@ def test_an_unchanged_head_is_not_reviewed_a_second_time(
     assert "not awaiting review" in result["reason"]
 
 
-def test_land_invokes_the_shared_path_through_the_scheduler_shim(
-    delivery,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: dict = {}
-
-    def run(command, **options):
-        captured.update(command=command, options=options)
-        return subprocess.CompletedProcess(command, 0, json.dumps({"ok": True}), "")
-
-    monkeypatch.setattr(queue_landing, "_run_srun", run)
+def test_land_records_the_shared_completion_command_as_a_request(delivery) -> None:
     measured = queue_landing._measure_delivery(
         runs.read_pointer(RUN), RUN, str(delivery["head"]), str(delivery["repo"])
     )
     assert queue_landing._measure_guard(measured) == ""
-    assert queue_landing._land(RUN) == (True, "")
-    command = captured["command"]
-    assert Path(command[0]).name == "srun"
-    assert command[1:3] == ["--overlap", "--ntasks=1"]
-    assert command[command.index("crew") + 1] == "complete"
-    assert command[command.index("--run") + 1] == RUN
-    assert command[command.index("--commit") + 1] == delivery["head"]
-    assert command[-3:] == [
-        "--no-impl-change",
-        queue_landing.LANDING_BEAT_REASON,
-        "--land",
-    ]
-    assert captured["options"]["env"]["PYTHONPATH"].split(":")[0] == str(
-        Path(queue_landing.__file__).resolve().parents[2]
-    )
+
+    assert queue_landing._land(RUN) == (True, promotion_requests.REQUESTED)
+
+    request = promotion_requests.read_promotion(RUN)
+    assert request["phase"] == promotion_requests.REQUESTED
+    assert request["kind"] == "command"
+    options = request["options"]
+    assert options["run_id"] == [RUN]
+    assert options["gate"] == "passed"
+    assert options["commits"] == [str(delivery["head"])]
+    assert options["candidate"] == measured.population["candidate_sha"]
+    assert options["no_impl_change"] == queue_landing.LANDING_BEAT_REASON
+    assert options["land"] is True
 
 
 @pytest.fixture()
@@ -463,16 +455,15 @@ def promotable_delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict
 
     receipts = []
 
-    def run_in_shim(command, **_options):
-        assert Path(command[0]).name == "srun"
-        assert command[1:3] == ["--overlap", "--ntasks=1"]
-        result = CliRunner().invoke(cli_module.main, command[6:])
-        receipts.append(
-            {"command": command, "exit_code": result.exit_code, "output": result.output}
-        )
-        return subprocess.CompletedProcess(command, result.exit_code, result.output, "")
+    def drain() -> dict:
+        """Drain the request through the service that owns promotion."""
+        service = promotion_requests.PromotionService()
+        service.tick()
+        service.settle(timeout=120)
+        receipt = promotion_requests.read_promotion(run_id)
+        receipts.append(receipt)
+        return receipt
 
-    monkeypatch.setattr(queue_landing, "_run_srun", run_in_shim)
     return {
         "repo": repository,
         "origin": origin,
@@ -482,7 +473,7 @@ def promotable_delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict
         "run_id": run_id,
         "gate_log": gate_log,
         "manifest": manifest,
-        "run_in_shim": run_in_shim,
+        "drain": drain,
         "receipts": receipts,
     }
 
@@ -490,7 +481,13 @@ def promotable_delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict
 def test_accepted_delivery_uses_the_real_crew_land_path(promotable_delivery) -> None:
     delivery = promotable_delivery
     result = queue_landing.land_once()
-    assert result["landed"] == [delivery["run_id"]], (result, delivery["receipts"])
+    assert result["landed"] == [], result
+    assert result["promotion_requested"] == [delivery["run_id"]], result
+    receipt = delivery["drain"]()
+    assert receipt["phase"] == promotion_requests.PROMOTED, (
+        receipt,
+        delivery["receipts"],
+    )
     assert (
         fixture_git(delivery["repo"], "show", "main:reviewed.txt")
         == "accepted delivery"
@@ -510,6 +507,7 @@ def test_an_unarmed_delivery_never_reaches_completion(promotable_delivery) -> No
     )
     result = queue_landing.land_once()
     assert not result["landed"], result
+    assert "promotion_requested" not in result, result
     assert "suite command" in result["obligations"][0]["guard"]
     assert not delivery["receipts"]
     assert fixture_git(delivery["repo"], "rev-parse", "HEAD") == delivery["base"]

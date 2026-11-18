@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/resumption.py:2016 withdraw_superseded_review",
+    "reckon/crew/recovery_review_acceptance.py:1695 withdraw_superseded_review",
+    "reckon/crew/recovery_review_dispatch.py:3283 carry_review_forward",
+    "reckon/crew/recovery_review_dispatch.py:1986 review_head_move (from carry_review_forward)",
+    "reckon/crew/recovery_review_dispatch.py:1715 clones.own_changed_paths (from review_head_move)",
+    "reckon/crew_dispatch_commands.py:3381 dispatch_review_for_run (CLI)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:36:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_running_review_finishes_across_a_resume.py",
+      "line": "113",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture seeds only refs/remotes/origin/main, so it exercises the fallback arm of _integration_ref at reckon/crew/recovery_review_dispatch.py:1523-1535 and never its first probe of refs/remotes/origin/HEAD at :1510-1522; no test in the repository seeds that symbolic ref, so a regression in that primary probe stays green here while the comment at :108-112 calls the fixture the clone shape a real run's worktree has, and a real clone carries origin/HEAD as well as origin/main."
+    },
+    {
+      "file": "tests/test_a_running_review_finishes_across_a_resume.py",
+      "line": "111",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment says a fixture with no remote-tracking ref asks every head-move question about a tree the crew never sees, but a repository with no remote is a state the product answers deliberately and another test already pins, tests/test_a_review_reads_only_its_runs_changes.py:243-274 asserting review_head_move returns {}, so the sentence overstates reachability and a reader could take the no-remote tree for an untested corner rather than the documented answer it is."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-running-review-finishes-across-a-resume.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the scoped gate ran in a scratch tree on an all_debug node, but the log it cites records only revision, host, tree and command at scoped-gate-1794998724593335335.log:2-5, and the head arm's partition is likewise absent from head-arm.log:5, which carries only `# job: 1325842`; the all_debug facts rest on the sbatch line in stream.jsonl and on landing_measure.py:223's default partition, so a reader holding only the named logs cannot reconcile the claim."
+    }
+  ],
+  "head_log_revision": "570523bffa71a6c8ad9dd36c98b5b113490e061b",
+  "item_aggregate": 6,
+  "item_count": 6,
+  "item_verdicts": {
+    "call_sites": "the production path the fixture exercises was verified at the six sites named in call_sites: withdraw_superseded_review from resumption and review acceptance, carry_review_forward and review_head_move and clones.own_changed_paths inside the reflex, and dispatch_review_for_run from the CLI.",
+    "diff": "read both commits against 2f00851c42f2: 570523bffa71 adds `seeded = _commit(...)` and the update-ref seed with a six-line comment in the fixture, 2b57fd32bd98 adds the 69-line evidence fragment; nothing else.",
+    "done_when": "the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, a base run first, a cause with a product-or-test verdict, both suite arms as inline JSON with 40-character revisions, and a negative control; head-arm.log records job 1325842 under `env -u SLURM_JOB_ID` at `3 passed` / `EXIT=0`, negative-control-base.log is the red base run at 2 failed / 1 passed / EXIT=1, both suite logs read 58 passed EXIT=0 at full 40-character revisions, and manifest.md carries the verdict test-wrong.",
+    "goal": "the node's goal is that tests/test_a_running_review_finishes_across_a_resume.py passes in full; at head 2b57fd32 the fixture seeds refs/remotes/origin/main at its first commit (tests/test_a_running_review_finishes_across_a_resume.py:113) and head-arm.log reads `3 passed ... EXIT=0`, so the file passes in full.",
+    "manifest": "read; status complete, commits 570523bffa71a6c8ad9dd36c98b5b113490e061b and 2b57fd32bd98b94ec276d65644305a0d4e46ad95, tests the scoped pytest command on the named file, test_logs the five logs the record cites, baseline_suite and after_suite both 0 failures at 40-character revisions, negative_control_log the base-arm red log.",
+    "write_paths": "the fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's fragment and figure paths; git diff 2f00851c42f2..2b57fd32 touches tests/test_a_running_review_finishes_across_a_resume.py and the fragment, both inside it."
+  },
+  "justifications": {
+    "durability": "removing the single seeded ref at tests/test_a_running_review_finishes_across_a_resume.py:113 reinstates the regression and reddens test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward and test_a_launched_review_over_a_source_move_earns_a_light_re_review as negative-control-base.log records (2 failed, 1 passed, EXIT=1); the change adds no assertion of its own, so the guard is those pre-existing assertions, and they were shown red before the repair.",
+    "evidence": "head-arm.log opens with revision 570523b, the worktree tree, the command carrying `env -u SLURM_JOB_ID` and `# job: 1325842`, and ends `3 passed` / `EXIT=0`; negative-control-base.log reads `2 failed, 1 passed` / `EXIT=1` with both failing ids; baseline_suite-1794998559623818948.log and after_suite-1794998602488948044.log each read `58 passed` under 40-character revisions 2f00851c42f247cba1c81c80ed0cf7b41045de76 and 570523bffa71a6c8ad9dd36c98b5b113490e061b.",
+    "fit": "the addition is one _git(repo, \"update-ref\", ...) call reusing the fixture's existing helper at tests/test_a_running_review_finishes_across_a_resume.py:68 and a comment in the file's own voice, and the fragment follows the sibling shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html with no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_a_running_review_finishes_across_a_resume.py:113 is the only change to the file, and at head the file reads `3 passed ... EXIT=0` in head-arm.log, so the node's deliverable, that file passing in full, is met.",
+    "reuse": "no function, class or module is added; the change seeds the ref the product already reads through reckon/crew/recovery_review_dispatch.py:_integration_ref, and the no-remote reading it depends on is already owned and tested by reckon/clones.py:own_changed_paths and tests/test_a_review_reads_only_its_runs_changes.py:243.",
+    "scope_discipline": "git diff 2f00851c42f2..2b57fd32 lists tests/test_a_running_review_finishes_across_a_resume.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-running-review-finishes-across-a-resume.html only, both inside the declared tests and docs/evidence/fragments fence, and no product module is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_running_review_finishes_across_a_resume.py passes in full; the landed change seeds refs/remotes/origin/main at tests/test_a_running_review_finishes_across_a_resume.py:113 and head-arm.log reads `3 passed ... EXIT=0`.\nVERDICT done_when: the done_when asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a cause verdict, both suite arms as inline JSON with 40-character revisions and a negative control; head-arm.log records job 1325842 under `env -u SLURM_JOB_ID` with `3 passed` / `EXIT=0`, negative-control-base.log reads 2 failed, 1 passed at EXIT=1, and baseline_suite-1794998559623818948.log and after_suite-1794998602488948044.log each read `58 passed` at 2f00851c42f247cba1c81c80ed0cf7b41045de76 and 570523bffa71a6c8ad9dd36c98b5b113490e061b.\nVERDICT write_paths: the declared paths were reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 2f00851c42f2..2b57fd32 touches only tests/test_a_running_review_finishes_across_a_resume.py and the node's fragment, both inside them.\nVERDICT manifest: read; status complete, commits 570523b and 2b57fd32, tests the scoped pytest command on the named file, test_logs the five cited logs, baseline_suite and after_suite both 0 failures, negative_control_log the base-arm red log.\nVERDICT diff: read both commits against 2f00851c42f2; 570523bffa71 seeds the ref plus a six-line comment in the fixture and 2b57fd32bd98 adds the 69-line evidence fragment, nothing else.\nCALL_SITES: reckon/crew/resumption.py:2016 withdraw_superseded_review, reckon/crew/recovery_review_acceptance.py:1695 withdraw_superseded_review, reckon/crew/recovery_review_dispatch.py:3283 carry_review_forward, reckon/crew/recovery_review_dispatch.py:1986 review_head_move, reckon/crew/recovery_review_dispatch.py:1715 clones.own_changed_paths, reckon/crew_dispatch_commands.py:3381 dispatch_review_for_run\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_running_review_finishes_across_a_resume.py:113 plus head-arm.log's `3 passed ... EXIT=0` at 570523bffa71 show the file passing in full, which is the goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-arm.log, negative-control-base.log and both suite logs are on disk with their summaries and exit codes, but the all_debug attribution the fragment leans on is carried by no cited log header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 2f00851c42f2..2b57fd32 lists only tests/test_a_running_review_finishes_across_a_resume.py and the fragment, both inside the declared fence and nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the seed at tests/test_a_running_review_finishes_across_a_resume.py:113 reddens two of the file's three cases, as negative-control-base.log records (2 failed, 1 passed, EXIT=1), so the fixture change is held by a test that fails when it regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the seed reuses the fixture's own _git helper at tests/test_a_running_review_finishes_across_a_resume.py:68 and the fragment matches its siblings, with no identifier the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change seeds the ref reckon/crew/recovery_review_dispatch.py:_integration_ref already reads, and the no-remote rule already lives in reckon/clones.py:own_changed_paths with its own test at tests/test_a_review_reads_only_its_runs_changes.py:243.\nFINDING tests/test_a_running_review_finishes_across_a_resume.py:113 non-blocking: only the fallback ref is seeded, so _integration_ref's first probe of refs/remotes/origin/HEAD at reckon/crew/recovery_review_dispatch.py:1510-1522 is exercised by no test, while the comment at :108-112 calls the fixture the clone shape a real worktree has although a real clone also carries origin/HEAD.\nFINDING tests/test_a_running_review_finishes_across_a_resume.py:111 non-blocking: the comment calls a no-remote tree one the crew never sees, while tests/test_a_review_reads_only_its_runs_changes.py:243-274 pins the product's deliberate answer for that state.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-running-review-finishes-across-a-resume.html:44 non-blocking: the fragment's all_debug claim for the scoped gate is absent from the log it cites (scoped-gate-1794998724593335335.log:2-5 names only host, tree and command), and head-arm.log:5 names only the job id, so the partition survives only in stream.jsonl and landing_measure.py:223's default.\n",
+  "review_run_id": "r-20261118T105406890585-review-of-qwnw-red-file-a-running-review-finishes-across-a-resume-2b57fd32bd98",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "2b57fd32bd98b94ec276d65644305a0d4e46ad95",
+  "reviewed_run_id": "r-20261118T062529458184-qwnw-red-file-a-running-review-finishes-across-a-resume",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T105406890585-review-of-qwnw-red-file-a-running-review-finishes-across-a-resume-2b57fd32bd98"
+  },
+  "reviewer_run_id": "r-20261118T105406890585-review-of-qwnw-red-file-a-running-review-finishes-across-a-resume-2b57fd32bd98",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:02:26.254133+00:00",
+  "total": 114
+}

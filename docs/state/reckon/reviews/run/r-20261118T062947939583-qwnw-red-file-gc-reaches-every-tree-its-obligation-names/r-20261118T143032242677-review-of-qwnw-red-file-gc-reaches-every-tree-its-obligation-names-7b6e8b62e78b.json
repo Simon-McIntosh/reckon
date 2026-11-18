@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/merge.py:1778 release_landed_worktrees"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T14:33:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-reaches-every-tree-its-obligation-names.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence reports a pre-repair measurement of both views with no log cited, and the base-arm block at :25-30 records only the KeyError, so the named view's base-revision answer is the worker's account rather than a receipt a later reader can open."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-reaches-every-tree-its-obligation-names.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run block quotes revision 362e6d79d407, the first of the two commits, while the delivered head is 7b6e8b6 and its own gate (scoped-gate-1795011793705602832.log, 4 passed, EXIT=0) is not quoted, so a reader taking this fragment's head row lands on a pre-delivery revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against base 23b9016 \u2014 362e6d79 moves the merged-tree association from _held_worktree_records to _named_worktree_records and adds the duty view's empty answer at tests/test_gc_reaches_every_tree_its_obligation_names.py:208-211, and 7b6e8b6 adds 39 lines of evidence fragment; no other path changed.",
+    "done_when": "the done_when requires the file green at head under a job on all_debug with SLURM_JOB_ID unset, one cause classified as product-wrong or test-wrong with no assertion dropped, and both suite arms recorded as inline JSON with full 40-character revisions; the manifest carries both revisions at 0 failures and the file's own gate at 7b6e8b6, while the two suite arms run the census pair rather than an arm over importing test files, which the manifest's evidence_inputs explains as the harness selection for directory-scoped write paths.",
+    "goal": "the node's goal is that tests/test_gc_reaches_every_tree_its_obligation_names.py passes in full on the primary branch; at the delivered head 7b6e8b6 its scoped gate log reads \"4 passed\" with EXIT=0 and the diff touches no product module.",
+    "manifest": "read; it names the single cause as test-wrong, the literal pytest gate command, the base negative-control log with the failing id and EXIT=1, the head gate at 7b6e8b6 reading 4 passed with EXIT=0, and both suite arms at 0 failures carrying full 40-character revisions.",
+    "write_paths": "declared paths are reckon, tests, the evidence fragment directory and the fragment file itself; the diff 23b9016..7b6e8b6 changes only tests/test_gc_reaches_every_tree_its_obligation_names.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-reaches-every-tree-its-obligation-names.html, both inside them."
+  },
+  "justifications": {
+    "durability": "restoring the pre-change read at tests/test_gc_reaches_every_tree_its_obligation_names.py:208: the duty view omits both landed trees, so line 208 returns a populated dict and lines 210-211 raise KeyError exactly as negative-control-gc-reaches-base.log:25-30 records.",
+    "evidence": "scoped-gate-1795011793705602832.log reads \"# revision: 7b6e8b62e78b...\" and \"4 passed ... EXIT=0\", and negative-control-gc-reaches-base.log ends \"EXIT=1\" with the failing id the head run does not fail.",
+    "fit": "the new lines follow the file's own record-read idiom at tests/test_gc_reaches_every_tree_its_obligation_names.py:170-172 and introduce no new name, symbol or module.",
+    "goal_fidelity": "the assertion set at tests/test_gc_reaches_every_tree_its_obligation_names.py:208-211 makes the file green at 7b6e8b6 with no product module touched, which is the stated goal.",
+    "reuse": "no definition is added; the change calls the existing owner reckon/crew/obligations.py:3657 _named_worktree_records, already used by reckon/crew/merge.py:1778, and the search across reckon/crew found no other land-aware tree reader.",
+    "scope_discipline": "the only two files in 23b9016..7b6e8b6 are tests/test_gc_reaches_every_tree_its_obligation_names.py and the fragment, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_gc_reaches_every_tree_its_obligation_names.py passes in full on the primary branch; at the delivered head 7b6e8b6 its scoped gate log reads \"4 passed\" with EXIT=0 and the diff touches no product module.\nVERDICT done_when: the done_when requires the file green at head under a job on all_debug with SLURM_JOB_ID unset, one cause classified as product-wrong or test-wrong with no assertion dropped, and both suite arms recorded as inline JSON with full 40-character revisions; the manifest carries both revisions at 0 failures and the file's own gate at 7b6e8b6, while the two suite arms run the census pair rather than an arm over importing test files, which the manifest's evidence_inputs explains as the harness selection for directory-scoped write paths.\nVERDICT write_paths: declared paths are reckon, tests, the evidence fragment directory and the fragment file itself; the diff 23b9016..7b6e8b6 changes only tests/test_gc_reaches_every_tree_its_obligation_names.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-reaches-every-tree-its-obligation-names.html, both inside them.\nVERDICT manifest: read; it names the single cause as test-wrong, the literal pytest gate command, the base negative-control log with the failing id and EXIT=1, the head gate at 7b6e8b6 reading 4 passed with EXIT=0, and both suite arms at 0 failures carrying full 40-character revisions.\nVERDICT diff: read both commits against base 23b9016 \u2014 362e6d79 moves the merged-tree association from _held_worktree_records to _named_worktree_records and adds the duty view's empty answer at tests/test_gc_reaches_every_tree_its_obligation_names.py:208-211, and 7b6e8b6 adds 39 lines of evidence fragment; no other path changed.\nCALL_SITES: reckon/crew/merge.py:1778 release_landed_worktrees\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the assertion set at tests/test_gc_reaches_every_tree_its_obligation_names.py:208-211 makes the file green at 7b6e8b6 with no product module touched, which is the stated goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795011793705602832.log reads \"# revision: 7b6e8b62e78b...\" and \"4 passed ... EXIT=0\", and negative-control-gc-reaches-base.log ends \"EXIT=1\" with the failing id the head run does not fail.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only two files in 23b9016..7b6e8b6 are tests/test_gc_reaches_every_tree_its_obligation_names.py and the fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the pre-change read at tests/test_gc_reaches_every_tree_its_obligation_names.py:208: the duty view omits both landed trees, so line 208 returns a populated dict and lines 210-211 raise KeyError exactly as negative-control-gc-reaches-base.log:25-30 records.\nSCORE fit: 18\nJUSTIFICATION fit: the new lines follow the file's own record-read idiom at tests/test_gc_reaches_every_tree_its_obligation_names.py:170-172 and introduce no new name, symbol or module.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change calls the existing owner reckon/crew/obligations.py:3657 _named_worktree_records, already used by reckon/crew/merge.py:1778, and the search across reckon/crew found no other land-aware tree reader.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-reaches-every-tree-its-obligation-names.html:11 non-blocking: the sentence reports a pre-repair measurement of both views with no log cited, and the base-arm block at :25-30 records only the KeyError, so the named view's base-revision answer is the worker's account rather than a receipt a later reader can open.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gc-reaches-every-tree-its-obligation-names.html:33 non-blocking: the head-run block quotes revision 362e6d79d407, the first of the two commits, while the delivered head is 7b6e8b6 and its own gate (scoped-gate-1795011793705602832.log, 4 passed, EXIT=0) is not quoted, so a reader taking this fragment's head row lands on a pre-delivery revision.",
+  "review_method": "Read-only: the reviewed node definition, its manifest, both suite arms, the base negative-control log and the head scoped gate, and the two landed commits against base 23b9016; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T143032242677-review-of-qwnw-red-file-gc-reaches-every-tree-its-obligation-names-7b6e8b62e78b",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "7b6e8b62e78bc6b64a2c658bc984bd6cda9c8f3f",
+  "reviewed_run_id": "r-20261118T062947939583-qwnw-red-file-gc-reaches-every-tree-its-obligation-names",
+  "reviewer_run_id": "r-20261118T143032242677-review-of-qwnw-red-file-gc-reaches-every-tree-its-obligation-names-7b6e8b62e78b",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:46:44Z",
+  "total": 109
+}

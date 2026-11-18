@@ -312,7 +312,9 @@ def test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched(
     result = CliRunner().invoke(cli_module.main, _arguments(repo, dry_run=False))
 
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output)
+    # Stdout is the command's single JSON document; the launch notice a live
+    # dispatch writes for its identity goes to stderr.
+    payload = json.loads(result.stdout)
     assert len(calls) == 1, "the picker must be asked once per dispatch"
     assert payload["picker_selection"]["backend"] == "alpha"
     assert payload["backend"] == "alpha"

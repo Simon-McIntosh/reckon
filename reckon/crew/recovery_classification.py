@@ -3527,9 +3527,16 @@ def _delivery_reading(
 
 
 def delivery_summary(
-    rows: Sequence[Mapping[str, Any]], *, session: str | None = None
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Count one classified population and locate its oldest promotion request."""
+    """Count one classified population and locate its oldest promotion request.
+
+    ``pointers`` — the fleet reading the caller already holds — is passed to the
+    queue report, so counting a population inside a fleet read lists no fleet.
+    """
     selected = [
         row
         for row in rows
@@ -3564,7 +3571,7 @@ def delivery_summary(
         )
         places = {
             row["run_id"]: row["position"]
-            for row in promotion_queue_report()["requests"]
+            for row in promotion_queue_report(pointers=pointers)["requests"]
         }
         position = places.get(oldest["run_id"])
         requested_at = (oldest.get("delivery") or {}).get("requested_at")

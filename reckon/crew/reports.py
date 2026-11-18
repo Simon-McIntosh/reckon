@@ -1501,6 +1501,47 @@ def _names_the_same_revision(left: str, right: str) -> bool:
     return first.startswith(second) or second.startswith(first)
 
 
+# The tool whose name prefixes the fence notice, so a log line is recognised as
+# the launch's prologue only when a scheduler's own name stands in front of the
+# notice's text rather than merely quoting it.
+_FENCE_NOTICE_TOOLS = frozenset({"salloc", "sbatch", "srun"})
+
+
+def _fence_notice_text() -> str:
+    """The fence notice with its tool prefix removed.
+
+    Read at call time: the launcher imports ``reckon.nested_launch`` first, and
+    that module reaches this one while it is still initialising, so a
+    module-level import of the notice here would close an import cycle.
+    """
+    from reckon.nested_launch import SCHEDULER_FENCE_NOTICE
+
+    return SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
+
+
+def _is_fence_prologue(line: str) -> bool:
+    """Whether a log line is the launch fence's notice rather than a record."""
+    tool, _, rest = line.partition(":")
+    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() == _fence_notice_text()
+
+
+def _first_recorded_line(text: str) -> str:
+    """The first line a log records, past the launch fence's own notice.
+
+    A fenced launch writes its notice to the task's stderr before the task
+    itself runs, so a job log a measure captures opens with that line rather
+    than with the header the measure writes. The notice is the launch's, not
+    the log's, so it is skipped; only that exact notice with a scheduler's own
+    name in front of it is, and a log whose next line still names no revision
+    is reported exactly as before.
+    """
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    index = 0
+    while index < len(lines) and _is_fence_prologue(lines[index]):
+        index += 1
+    return lines[index] if index < len(lines) else ""
+
+
 def _gate_log_revision_findings(
     manifest: dict[str, Any],
     *,
@@ -1523,6 +1564,14 @@ def _gate_log_revision_findings(
     not compared, and one that cites no log for an arm is not judged. A
     relative path resolves beside the manifest, the same way the control log's
     does, so one manifest is not judged two ways by where the check is called.
+
+    The line judged is the first one the log records, which is not always the
+    file's first line: a launch through the worker fence writes its notice to
+    the task's stderr before the task runs, so every arm log the suite
+    measurement captures on a fenced partition opens with that notice and the
+    header the measure writes lands second. Judging the literal first line
+    reported a log its own writer had produced, so the notice is skipped and
+    the header it precedes is judged in its place.
     """
     findings: list[str] = []
     for key, arm in _GATE_LOG_ARMS:
@@ -1538,9 +1587,7 @@ def _gate_log_revision_findings(
         text, resolved = _read_control_log(cited, manifest_path=manifest_path)
         if text is None:
             continue
-        first_line = next(
-            (line.strip() for line in text.splitlines() if line.strip()), ""
-        )
+        first_line = _first_recorded_line(text)
         named = [match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line)]
         if not named:
             findings.append(

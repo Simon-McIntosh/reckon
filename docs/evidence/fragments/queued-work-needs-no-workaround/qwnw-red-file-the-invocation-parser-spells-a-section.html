@@ -22,9 +22,11 @@
     copy of the number grammar; it now interpolates the core, and its compiled
     pattern is byte-identical to the base one.</li>
     <li><code>reckon/crew/plan_review.py::_SECTION_TOKEN</code> — product wrong.
-    <code>^[sS][0-9]+(?:[.-][0-9]+)*$</code> became
-    <code>^[sS]\d+(?:[.-]\d+)*$</code>; the anchored languages are the same, and
-    the token is handed to <code>section_record_id</code> exactly as before.</li>
+    <code>^[sS][0-9]+(?:[.-][0-9]+)*$</code> was composed into the core here;
+    the primary branch reached the same rule by deletion in
+    <code>0409b3be</code>, which removes the gate because the parser's own
+    identity derivation already reads every s-prefixed spelling. The merge
+    keeps the deletion, so the module owns no grammar at all.</li>
     <li><code>reckon/doccheck.py::_DEFERRED_WORK_TERM</code> — product wrong.
     The prose alternative that reads "carries to §N" matched the number with its
     own <code>\d+</code>; it now composes the core, so the one grammar decides
@@ -43,6 +45,32 @@
   <code>test_widened_census_reports_every_core_composed_expression</code>,
   because a site count frozen into a name is a figure that goes stale on the next
   reader; the set below it carries the figure.</p>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-merge">Merge with the primary branch</h3>
+
+  <p>The landing conflicted with <code>c1d038a8</code> in
+  <code>reckon/crew/plan_review.py</code>, the one product file both sides
+  changed. The primary branch reached this node's rule twice. <code>0409b3be</code>
+  removes <code>_SECTION_TOKEN</code> outright — the identity derivation already
+  reads every s-prefixed spelling — and composes the reference scanner from
+  <code>SECTION_NUMBER_PATTERN</code> through the named grammar
+  <code>_SECTION_REFERENCE_GRAMMAR</code>; <code>14444f7a</code> then drops the
+  refusal under the scanner; the section-name check that nothing could reach.
+  The merge takes that side whole, which keeps both intents: no private number
+  grammar in the module, and no unreachable refusal. Both sides' hunks are
+  resolved to the primary branch's text and the file is byte-identical to
+  <code>0409b3be</code>'s successor on main.</p>
+
+  <p>One consequence is on this node's own test. The census reads a
+  <code>re.compile</code> call's first argument, so a grammar held in a named
+  constant became invisible to it — the scanner it had just started covering
+  would have dropped out of the guard silently. The census now resolves one
+  level of module-level string constant, so
+  <code>crew/plan_review.py::_SECTION_REFERENCE</code> stays covered through
+  <code>_SECTION_REFERENCE_GRAMMAR</code>, and
+  <code>crew/reports.py::_PLAN_SECTION_REFERENCE</code>, which compiles the same
+  named grammar, is covered with it. The expected set keeps ten frames:
+  <code>crew/reports.py</code> stands where the removed token gate stood.</p>
 
   <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-measured">Measured</h3>
 

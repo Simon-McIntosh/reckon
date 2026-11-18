@@ -61,6 +61,15 @@ from reckon.shim_lookup import (
 # scheduler tools so a caller can tell a refusal from a launch failure.
 REFUSAL_STATUS = 97
 
+# The line a fenced launch writes to stderr before the task's own first output,
+# so a job log it captures opens with this notice rather than with the header
+# the measure writes. Named here because the manifest audit has to recognise it
+# as the launch's prologue and not as the log's first recorded line.
+SCHEDULER_FENCE_NOTICE = (
+    "{tool}: task re-enters the worker fence; absolute scheduler paths bypass "
+    "this guard."
+)
+
 # The status returned when no real binary can be found outside the shim.
 MISSING_BINARY_STATUS = 127
 
@@ -730,7 +739,7 @@ def fenced_scheduler_task(
     wraps = [value for name, value, _tokens in parsed if name == "wrap"]
     wrap = wraps[-1] if wraps else None
     print(
-        f"{tool}: task re-enters the worker fence; absolute scheduler paths bypass this guard.",
+        SCHEDULER_FENCE_NOTICE.format(tool=tool),
         file=sys.stderr,
     )
     if tool == "srun":

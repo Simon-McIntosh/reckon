@@ -188,8 +188,12 @@ def _fleet_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, An
     The held-worktree derivation reads a run document only when a registered,
     unoccupied tree is inspected, so this registers one tree and writes one run
     record that retains it — the least that makes the region hand a document
-    out. The environment is named for the call and left in place, because the
-    fixtures that use it read through those variables.
+    out. The tree carries a commit the primary branch does not reach, because a
+    retained tree is a duty only while it holds work no landing has taken: a
+    clean tree reachable from ``main`` holds nothing, so its row would go and
+    the derivation would read no run document at all. The environment is named
+    for the call and left in place, because the fixtures that use it read
+    through those variables.
     """
     config_home = tmp_path / "config"
     config_home.mkdir()
@@ -212,6 +216,9 @@ def _fleet_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, An
     tree = root.parent / "managed-worktrees" / SESSION / NODE
     tree.parent.mkdir(parents=True, exist_ok=True)
     _git(root, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+    (tree / "work.txt").write_text("work\n", encoding="utf-8")
+    _git(tree, "add", "work.txt")
+    _git(tree, "commit", "-q", "-m", "test: leave work the fixture branch lacks")
     run_id = f"r-20261016T100000-{NODE}"
     record = ledger.build_record(
         run_id=run_id,

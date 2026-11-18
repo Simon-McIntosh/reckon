@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A delivered-review stop reads the tick's pointers</title>
+<meta name="reckon-type" content="evidence">
+<meta name="reckon-node" content="qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers">
+<meta name="reckon-plan" content="queued-work-needs-no-workaround">
+</head>
+<body>
+<main>
+<h1>A delivered-review stop reads the tick's pointers</h1>
+
+<section id="qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers-defect">
+<h2>The defect, reproduced at the base revision</h2>
+<p><code>tests/test_a_delivered_review_stop_reads_the_tick_pointers.py</code> at
+97dec20bfb8603ab71c4e9deeefddab685e0a42e fails on its final assertion:</p>
+<pre><code>assert listing.call_count == 1
+E       AssertionError: assert 6 == 1
+E        +  where 6 = &lt;Mock id='139981870730608'&gt;.call_count</code></pre>
+<p>The test's own figure line reads
+<code>{"delivered_reviews": 5, "list_live_calls": 6, "live_pointers": 40, ...}</code>:
+one call is the producer tick's own read, and five are further listings taken
+while the same tick composed its rows.</p>
+</section>
+
+<section id="qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers-causes">
+<h2>The causes and their verdicts</h2>
+<table>
+<thead><tr><th>Cause</th><th>Verdict</th><th>Repair</th></tr></thead>
+<tbody>
+<tr>
+<td>A published transition row was rebuilt without the fleet reading the sweep
+already held, so a review row's reviewed run was resolved by listing the fleet
+again: <code>runs._stream_transition</code> called
+<code>_watch_transition</code> with no <code>pointers</code>.</td>
+<td>product wrong</td>
+<td><code>_stream_transition</code> takes <code>pointers</code> and forwards it.
+<code>_publish_watch_transitions</code> passes the record list it folded,
+<code>watch_stream_cursor</code> passes its listing, and
+<code>_report_queued_failure</code> in
+<code>admission/holds.py</code> passes the live list it already read.</td>
+</tr>
+<tr>
+<td>Counting the fleet for a transition called
+<code>delivery_summary</code>, which located the oldest promotion position
+through <code>promotion_queue_report()</code> with no population; the queue then
+resolved each review request's reviewed run against
+<code>runs.list_live()</code> again, once per counting pass.</td>
+<td>product wrong</td>
+<td><code>_fleet_counts</code>, <code>_session_fleet_counts</code> and
+<code>_transition_counts</code> take <code>pointers</code>;
+<code>delivery_summary</code> passes it to <code>promotion_queue_report</code>,
+which hands it to <code>_pending_requests</code> and
+<code>_reviewed_request_runs</code>. A reading answers only the projects it
+carries, so a request naming another project still lists rather than resolving
+against a population that cannot contain it.</td>
+</tr>
+<tr>
+<td>The delivered-review stop itself already shared the tick's reading:
+<code>_stop_delivered_reviews</code> passed <code>pointers</code> through to
+<code>review_delivered</code>.</td>
+<td>product correct</td>
+<td>Verified, not reimplemented. The five extra calls came from the row
+composition above, not from the stop.</td>
+</tr>
+</tbody>
+</table>
+<p>No assertion was deleted or weakened. The test file is untouched by this
+node.</p>
+</section>
+
+<section id="qwnw-red-file-a-delivered-review-stop-reads-the-tick-pointers-measure">
+<h2>The measure</h2>
+<p>Both runs of the named file are jobs on <code>all_debug</code> (job 1325735)
+with <code>SLURM_JOB_ID</code> unset for pytest, and every log is on shared
+storage under the run directory.</p>
+<table>
+<thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+<tbody>
+<tr>
+<td>head</td>
+<td><code>2b8f8a21b9792b07b43f2b5ea1ee4e35bf1da500</code></td>
+<td>1 passed, <code>EXIT=0</code></td>
+<td><code>logs/node-head.log</code></td>
+</tr>
+<tr>
+<td>base (negative control)</td>
+<td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+<td>1 failed, <code>EXIT=1</code>, on
+<code>test_delivered_reviews_share_the_ticks_single_live_read</code></td>
+<td><code>logs/node-base.log</code></td>
+</tr>
+</tbody>
+</table>
+<p>The arm over the test files that import the changed modules
+(<code>recovery_watch</code>, <code>promotion_requests</code>,
+<code>recovery_classification</code>) reads 5 failed and 253 passed at both
+revisions, and the five failing ids are the same set in both arms; the only
+difference between the two logs' failure lines is a clock string printed inside
+one assertion message. That arm adds no failure at head.</p>
+<p><code>ruff check</code> over the five changed files reports four findings at
+each revision, the same four, so the change adds none. <code>ruff format
+--check</code> reports the same two already-unformatted files at each revision
+(<code>promotion_requests.py</code>, <code>recovery_classification.py</code>);
+the hunks ruff would rewrite are at lines far from the added code.</p>
+</section>
+</main>
+</body>
+</html>

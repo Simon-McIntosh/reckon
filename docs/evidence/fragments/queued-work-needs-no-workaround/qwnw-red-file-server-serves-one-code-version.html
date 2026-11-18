@@ -1,0 +1,27 @@
+<section id="qwnw-red-file-server-serves-one-code-version">
+<h2>A server that serves one code version: the file red on the primary branch</h2>
+<p><strong>Cause and verdict: test wrong.</strong> <code>tests/test_server_serves_one_code_version.py</code> was red on the primary branch at <code>39c536f25e471db929ddf93c09240e236f22a637</code> for one reason, and the product was not it. The lazy-import case rewrites <code>local_liveness</code>'s final line in <code>reckon/crew/recovery_liveness.py</code> so the running server holds a definition that changed under it, then makes a newly imported module ask for a name that exists only in the replacement source. The rewrite was anchored on <code>"    return alive, proven\n\n\ndef live_worker_pid"</code> — the return line <em>plus the next top-level definition</em>. When <code>f58c9d20460</code> (2026-11-08) inserted <code>live_worker_reading</code> between those two definitions, the anchor matched nothing, so <code>source.count(needle) == 1</code> failed and the case reported its own fixture rather than the server. The rule the file asserts — an executed definition that changes on disk makes the server answer 503 <code>stale-code</code> naming the changed file, instead of importing source newer than the process — is still kept by the product; the base run below shows the failure is in the fixture, and the head run shows the same case passing with the mutation landing on the executed definition.</p>
+<p><strong>Repair.</strong> The mutation is anchored on the definition it targets: <code>"    return alive, proven"</code>, asserted unique in the file, replaced with <code>"    return alive, bool(proven)"</code>, and the replacement is asserted to have changed the text. The appended <code>stale_code_probe</code> constant and every assertion is retained; nothing was deleted or weakened.</p>
+<p>Base arm: <code>git archive 39c536f25e47</code> into a scratch tree, run there as an all_debug job with <code>SLURM_JOB_ID</code> unset; its log is <code>base-arm-target-test.log</code> in the run directory.</p>
+<pre># BASE ARM — revision 39c536f25e471db929ddf93c09240e236f22a637, all_debug, SLURM_JOB_ID unset
+....                                                                     [100%]
+FAILED tests/test_server_serves_one_code_version.py::test_server_refuses_a_lazy_import_from_new_source - AssertionError: assert 0 == 1
+1 failed, 3 passed in 3.70s
+EXIT=1</pre>
+<pre># HEAD GATE — revision 00fdb2584704ea0afa9c981cb60938adcbdc57d9, all_debug job, SLURM_JOB_ID unset
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID .venv/bin/python -c "import os; print(\"SLURM_JOB_ID=\" + os.environ.get(\"SLURM_JOB_ID\", \"unset\"))"; env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_server_serves_one_code_version.py'
+SLURM_JOB_ID=unset
+....                                                                     [100%]
+4 passed in 4.35s
+EXIT=0</pre>
+<p><strong>Negative control.</strong> The guard was made not to fire: <code>Handler._refuse_stale_code</code> in <code>reckon/serve.py</code> was given an immediate <code>return False</code> and the file re-run at the head. Three cases fail, including the repaired one, which then reaches the lazy import and dies on <code>ImportError</code> inside a 500 where it expects the 503 refusal, so the 503 is what the case measures. A first attempt disabled the guard from a pytest plugin instead of the source; that control was rejected rather than reported, because the lazy-import case starts its server as a subprocess with its own <code>PYTHONPATH</code> and the plugin did not reach it, so only two cases failed. The source mutation was reverted before the head gate above; the working tree carries only the test change and this fragment.</p>
+<pre># NEGATIVE CONTROL — revision 19bae56778, refusal disabled in the source
+# mutation: Handler._refuse_stale_code returns False before it reads the report
+# command: PYTHONPATH=&lt;worktree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_server_serves_one_code_version.py
+.FFF                                                                     [100%]
+FAILED tests/test_server_serves_one_code_version.py::test_executed_module_change_reexecs_after_refusal - assert 204 == 503
+FAILED tests/test_server_serves_one_code_version.py::test_requests_inside_report_window_compare_package_once - assert 0 == 1
+FAILED tests/test_server_serves_one_code_version.py::test_server_refuses_a_lazy_import_from_new_source - AssertionError: (500, {'error': 'distributed_project_state_invalid', 'detail': "cannot import name 'stale_code_probe' from 'reckon.crew.recovery_liveness'"})
+3 failed, 1 passed in 6.31s
+EXIT=1</pre>
+</section>

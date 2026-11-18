@@ -724,6 +724,47 @@ def _launch_claim_holder_is_alive(record: Mapping[str, Any]) -> bool:
     return started is not None and started <= launched.timestamp()
 
 
+def _budget_reports_a_reading(budget: Any) -> bool:
+    """Whether a pointer's budget block holds a measurement, not the placeholder.
+
+    ``reckon._backends.unknown_budget`` is what every pointer is composed with
+    before anything launches, so its presence on a pointer is the launcher's own
+    act. What an observer that folded a worker's stream adds is one of the
+    block's readings: a headroom label other than unknown, a numeric
+    utilisation, a token count, a cost, a rate-limit window, a threshold verdict
+    or a refusal. A block holding none of them measures nothing.
+
+    A block that is present but empty, or absent, likewise reports no reading.
+
+    An observer can also fold a stream and find no rate-limit event, which yields
+    the same shapeless block. That costs nothing here: the stream it folded is
+    itself spawn evidence through :func:`_record_newest_stream`, and a fold that
+    observes nothing is not a fact about a worker's spawn; the composition
+    placeholder is the same shape and must not be read as one.
+    """
+    if not isinstance(budget, Mapping):
+        return False
+    if str(budget.get("headroom") or "").strip() not in ("", "unknown"):
+        return True
+    if budget.get("refusal"):
+        return True
+    tokens = budget.get("tokens")
+    if tokens is not None and tokens != {}:
+        return True
+    for key in (
+        "cost_usd",
+        "utilisation_pct",
+        "rate_limit_type",
+        "rate_limit_period_minutes",
+        "resets_at",
+        "threshold_status",
+        "surpassed_threshold",
+    ):
+        if budget.get(key) is not None:
+            return True
+    return False
+
+
 def _spawn_evidence(record: Mapping[str, Any]) -> bool:
     """Whether the launch left anything showing that a worker was started.
 
@@ -740,10 +781,15 @@ def _spawn_evidence(record: Mapping[str, Any]) -> bool:
     in flight, read on its own because the two questions are different: a launch
     still composing and a launch whose worker has come and gone both carry it,
     and only the age separates them.
+
+    A budget counts only when it carries a reading. Every pointer is composed
+    with the placeholder :func:`reckon._backends.unknown_budget` before anything
+    launches, so its mere presence is the launcher's own act and not evidence of
+    a worker — a compose that stopped before spawning holds one too.
     """
     if record.get("pid"):
         return True
-    if isinstance(record.get("budget"), Mapping):
+    if _budget_reports_a_reading(record.get("budget")):
         return True
     if _worker_record(record) is not None:
         return True

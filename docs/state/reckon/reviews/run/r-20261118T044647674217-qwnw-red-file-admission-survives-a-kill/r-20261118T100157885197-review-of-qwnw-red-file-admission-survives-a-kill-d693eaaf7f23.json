@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/serve.py:_send_evidence_record",
+    "reckon/crew/reports.py:_composed_record_id_findings",
+    "reckon/doccheck.py:audit_fragment_ids"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:24:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-admission-survives-a-kill-d693eaaf7f23",
+      "recorded_at": "2026-11-18T12:00:24.229539+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html",
+      "line": "22",
+      "severity": "blocking",
+      "text": "the block headed 'Head run of the named file: partitioned job on all_debug' quotes a log whose own header reads '# revision: 97dec20bfb8603ab71c4e9deeefddab685e0a42e' with tree /tmp/mcintos-landing-934d9ba13296-HqYggt and '10.47s', which is scoped-gate-1794993921658026861.log, a run at the base revision; the head gate that ran at d693eaaf7f is scoped-gate-1794994432625277780.log with tree /tmp/mcintos-landing-a14fac219d93-RgWqgN and '10.44s', so the fragment shows the base run under a head heading and the record it lands in never shows the head run it claims."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044647674217-qwnw-red-file-admission-survives-a-kill/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the done_when requires the head run as a job on all_debug with SLURM_JOB_ID unset, but the logged command runs through crew verify-gate with --partition all_debug and scoped-gate-1794994432625277780.log:1 opens with 'srun: task re-enters the worker fence', so the exported gate ran as an srun step with the job environment set and neither the command nor the log records the unset condition."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "the heading asserts a partitioned job on all_debug but neither the quoted block nor any log for the head gate names a partition or a job id, so that claim is asserted rather than shown."
+    }
+  ],
+  "justifications": {
+    "durability": "the admission behaviour the goal names is guarded by the 12 cases in tests/test_admission_survives_a_kill.py, but nothing fails if the fragment's own claims drift, as they already do at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:22.",
+    "evidence": "scoped-gate-1794994432625277780.log records 12 passed at revision d693eaaf7f23aee9d22790a7d433d8a02001b979 with EXIT=0 and both arms are recorded at full 40-character revisions, but the done_when's SLURM_JOB_ID-unset clause is recorded nowhere and the fragment's head exhibit at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:22 quotes a base-revision log.",
+    "fit": "the fragment follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html, a section with a per-node slug id and pre blocks carrying log headers, and names nothing the repository naming rules forbid.",
+    "goal_fidelity": "tests/test_admission_survives_a_kill.py reads 12 passed with EXIT=0 at the base 97dec20 in base-admission-file-run.log and 12 passed with EXIT=0 at the head d693eaaf7f in scoped-gate-1794994432625277780.log, so the goal is met and the only delivery defect is the fragment's misattributed head exhibit at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:22.",
+    "reuse": "the diff adds no definition; a capability search over reckon/ for fragment authoring found only readers and auditors, reckon/evidence.py:1668 compose_landed_record and reckon/doccheck.py:2128 audit_fragment_ids, because fragments are hand-authored by design.",
+    "scope_discipline": "the one commit d693eaaf7f23aee9d22790a7d433d8a02001b979 adds 30 lines to the fragment and touches no other path, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_admission_survives_a_kill.py pass in full on the primary branch; the diff adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html, and the named file reads 12 passed at both the base 97dec20bfb and the head d693eaaf7f.\nVERDICT done_when: the done_when asks for the named file in full at head as an all_debug job with SLURM_JOB_ID unset plus two arms at full 40-character revisions; scoped-gate-1794994432625277780.log records 12 passed at d693eaaf7f23aee9d22790a7d433d8a02001b979 with EXIT=0 and arm-baseline_suite.log and arm-after_suite.log record 58 passed each, but the SLURM_JOB_ID-unset clause is recorded nowhere.\nVERDICT write_paths: the declared paths name docs/evidence/fragments/queued-work-needs-no-workaround, and the single path in the diff 97dec20..d693eaa lies inside it with no path outside.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044647674217-qwnw-red-file-admission-survives-a-kill/manifest.md, whose status is complete, which names one changed path and records the gate and both arms with log paths and EXIT=0.\nVERDICT diff: commit d693eaaf7f against 97dec20 adds 30 lines of a new fragment and changes no source or test file; the fragment quotes two logs but its head block names the base revision.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/serve.py:_send_evidence_record, reckon/crew/reports.py:_composed_record_id_findings, reckon/doccheck.py:audit_fragment_ids\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_admission_survives_a_kill.py reads 12 passed with EXIT=0 at the base 97dec20 in base-admission-file-run.log and 12 passed with EXIT=0 at the head d693eaaf7f in scoped-gate-1794994432625277780.log, so the goal is met and the only delivery defect is the fragment's misattributed head exhibit at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:22.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1794994432625277780.log records 12 passed at revision d693eaaf7f23aee9d22790a7d433d8a02001b979 with EXIT=0 and both arms are recorded at full 40-character revisions, but the done_when's SLURM_JOB_ID-unset clause is recorded nowhere and the fragment's head exhibit at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:22 quotes a base-revision log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the one commit d693eaaf7f23aee9d22790a7d433d8a02001b979 adds 30 lines to the fragment and touches no other path, all inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: the admission behaviour the goal names is guarded by the 12 cases in tests/test_admission_survives_a_kill.py, but nothing fails if the fragment's own claims drift, as they already do at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:22.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the sibling idiom of docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html, a section with a per-node slug id and pre blocks carrying log headers, and names nothing the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; a capability search over reckon/ for fragment authoring found only readers and auditors, reckon/evidence.py:1668 compose_landed_record and reckon/doccheck.py:2128 audit_fragment_ids, because fragments are hand-authored by design.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:22 blocking: the block headed 'Head run of the named file: partitioned job on all_debug' quotes a log whose own header reads '# revision: 97dec20bfb8603ab71c4e9deeefddab685e0a42e' with tree /tmp/mcintos-landing-934d9ba13296-HqYggt and '10.47s', which is scoped-gate-1794993921658026861.log, a run at the base revision; the head gate that ran at d693eaaf7f is scoped-gate-1794994432625277780.log with tree /tmp/mcintos-landing-a14fac219d93-RgWqgN and '10.44s', so the fragment shows the base run under a head heading and the record it lands in never shows the head run it claims.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044647674217-qwnw-red-file-admission-survives-a-kill/manifest.md:12 non-blocking: the done_when requires the head run as a job on all_debug with SLURM_JOB_ID unset, but the logged command runs through crew verify-gate with --partition all_debug and scoped-gate-1794994432625277780.log:1 opens with 'srun: task re-enters the worker fence', so the exported gate ran as an srun step with the job environment set and neither the command nor the log records the unset condition.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-survives-a-kill.html:20 non-blocking: the heading asserts a partitioned job on all_debug but neither the quoted block nor any log for the head gate names a partition or a job id, so that claim is asserted rather than shown.\n",
+  "review_run_id": "r-20261118T100157885197-review-of-qwnw-red-file-admission-survives-a-kill-d693eaaf7f23",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "d693eaaf7f23aee9d22790a7d433d8a02001b979",
+  "reviewed_run_id": "r-20261118T044647674217-qwnw-red-file-admission-survives-a-kill",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261118T100157885197-review-of-qwnw-red-file-admission-survives-a-kill-d693eaaf7f23",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:47:29.756028+00:00",
+  "total": 103
+}

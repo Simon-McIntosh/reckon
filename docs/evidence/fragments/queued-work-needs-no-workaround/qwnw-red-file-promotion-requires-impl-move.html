@@ -1,0 +1,49 @@
+<section id="qwnw-red-file-promotion-requires-impl-move-evidence">
+<h2>Impl-move refusal: the file red on the primary branch</h2>
+<p>The node's measure is <code>tests/test_promotion_requires_impl_move.py</code> passing in full. It ran at the base revision <code>7191ae15e776ab99300334a96cc53c71754c3acf</code> as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> stripped from the submitting environment and its output on shared storage, and read one failed and 23 passed. At the delivered head <code>96bade96e310f0254e30c71b26052d4acf362273</code> the same command reads 24 passed with <code>EXIT=0</code>.</p>
+
+<table>
+<thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+<tbody>
+<tr><td>head gate</td><td><code>96bade96e310f0254e30c71b26052d4acf362273</code></td><td>24 passed, <code>EXIT=0</code></td><td>scoped-gate-1795007443538534498.log</td></tr>
+<tr><td>base control</td><td><code>7191ae15e776ab99300334a96cc53c71754c3acf</code></td><td>1 failed, 23 passed, <code>EXIT=1</code></td><td>negative-control-base-1795007505351486565.log</td></tr>
+<tr><td>declared suite, base</td><td><code>7191ae15e776ab99300334a96cc53c71754c3acf</code></td><td>0 failed, <code>EXIT=0</code></td><td>baseline_suite-1795007556266106440.log</td></tr>
+<tr><td>declared suite, after</td><td><code>96bade96e310f0254e30c71b26052d4acf362273</code></td><td>0 failed, <code>EXIT=0</code></td><td>after_suite-1795007599468861694.log</td></tr>
+<tr><td>importer arm, base</td><td><code>7191ae15e776ab99300334a96cc53c71754c3acf</code></td><td>20 failed, 402 passed, <code>EXIT=1</code></td><td>importer-min-base-1795007713907779929.log</td></tr>
+<tr><td>importer arm, head</td><td><code>96bade96e310f0254e30c71b26052d4acf362273</code></td><td>20 failed, 402 passed, <code>EXIT=1</code></td><td>importer-min-head-1795008206219077155.log</td></tr>
+</tbody>
+</table>
+
+<h3>Base control, with its failing id</h3>
+<pre># revision: 7191ae15e776ab99300334a96cc53c71754c3acf
+# module: /tmp/mcintos-landing-c57eb4204300-pYx2fI/tree/reckon/__init__.py
+# cwd: /tmp/mcintos-landing-c57eb4204300-pYx2fI/tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_requires_impl_move.py
+.......................F                                                 [100%]
+...
+E       assert 0 != 0
+E        +  where 0 = &lt;Result okay&gt;.exit_code
+tests/test_promotion_requires_impl_move.py:678: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_promotion_requires_impl_move.py::test_the_cli_flag_promotes_a_landing_that_did_not_move_the_plan - assert 0 != 0
+1 failed, 23 passed in 7.98s
+EXIT=1</pre>
+
+<h3>Head run</h3>
+<pre># revision: 96bade96e310f0254e30c71b26052d4acf362273
+# module: /tmp/mcintos-landing-5f5934267185-mSiZHF/tree/reckon/__init__.py
+# cwd: /tmp/mcintos-landing-5f5934267185-mSiZHF/tree
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_requires_impl_move.py
+........................                                                 [100%]
+24 passed in 8.05s
+EXIT=0</pre>
+
+<h3>Causes and verdicts</h3>
+<ol>
+<li><strong>test wrong</strong> — <code>crew complete</code> queues a promotion request and answers with its receipt unless <code>--wait</code> asks for the outcome in the call (<code>reckon/crew_run_commands.py</code>, the explicit wait option), so a CLI case that reads a refusal's exit status and a waiver's ledger row must name the wait. The helper now passes <code>--wait</code>; the case still drives the verdict.</li>
+<li><strong>test wrong</strong> — the fixture gate log read "probe check passed" with no terminal <code>EXIT=0</code> line, which the capture convention now requires of a cited passing gate (<code>_require_gate_log_agrees</code>). The fixture log records the command's own status beside the pass. No assertion changed.</li>
+<li><strong>product wrong</strong> — the compact completion reply cut every detail to 240 characters, so a single run's impl-move refusal was truncated mid-word before the <code>--no-impl-change</code> remedy it names. A single run's reply is one document and now carries the refusal whole; a batch still compacts each row (<code>_complete_many</code>).</li>
+</ol>
+
+<p>The arm over the 25 test files that import the changed module ran both revisions as <code>all_debug</code> jobs: 20 failed and 402 passed at <code>7191ae15e776ab99300334a96cc53c71754c3acf</code> and the same 20 failing ids, 20 failed and 402 passed, at <code>96bade96e310f0254e30c71b26052d4acf362273</code>. It adds no failure against the base.</p>
+</section>

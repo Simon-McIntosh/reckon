@@ -1,0 +1,63 @@
+<section id="qwnw-red-file-test-watchers-are-reaped-head-run">
+<h2>A dispatch document read as one stream, and the run that reads it apart</h2>
+<p>The file failed at base because the child session's dispatch command prints
+<code>reckon: created run &lt;id&gt;</code> to <b>stderr</b> — on purpose, so a
+caller that exits mid-launch still sees the identity while stdout stays the
+command's JSON document — while the test parsed <code>result.output</code> as
+JSON. Click 8.2 replaced <code>result.output</code> with a mix of both
+captured streams, so the notice displaced the document. Verdict: <b>test
+wrong</b>; the product rule is intact and is now asserted rather than assumed.
+No assertion was deleted or weakened: the exit code is still asserted, the
+document is still parsed and both <code>watch</code> fields are still checked,
+and the test additionally requires the notice on stderr. The product keeps that
+side of the contract in <code>_single_document_stdout</code>, which points
+<code>sys.stdout</code> at stderr for the duration of a JSON command, so
+everything the command prints lands on stderr and the document is written to
+the stream held aside; deleting the notice line fails the new assertion, and
+that red run is logged beside the two arms.</p>
+<pre># head run, all_debug job, SLURM_JOB_ID unset, output on shared storage
+# (this record's own commit is the only later difference in the tree)
+# revision: 1a6c2c009f98e9def78b518b860b666a658bf731
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-95e6703c2c95-h1Ift8/tree
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_test_watchers_are_reaped.py'
+2 passed, 1 skipped in 20.26s
+EXIT=0</pre>
+</section>
+
+<section id="qwnw-red-file-test-watchers-are-reaped-negative-control">
+<h2>Negative control: the base run, failing ids quoted</h2>
+<p>The same command over the base revision, in a job on the same partition with
+the same cleared scheduler identity, reproduces the defect: the parent measure
+fails only through its child, whose own failure is the parse it makes of the
+mixed stream.</p>
+<pre># base run, all_debug job, SLURM_JOB_ID unset
+# revision: 25255992b19bf9b2dc2bb9e4fd46d9e429f943f6
+# tree: /tmp/mcintos-landing-847e4ecb5053-yy4BKC/tree
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_test_watchers_are_reaped.py'
+sF.                                                                      [100%]
+FAILED tests/test_test_watchers_are_reaped.py::test_a_watcher_armed_by_a_child_session_is_not_left_running
+  (through its child) FAILED tests/test_test_watchers_are_reaped.py::test_arms_a_watcher_without_reaping_it
+  json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 1 passed, 1 skipped in 21.24s
+EXIT=1</pre>
+<p>Logs: run directory <code>negative-control-1795004557199734287.log</code>
+beside <code>scoped-gate-1795004804923485505.log</code>.</p>
+</section>
+<section id="qwnw-red-file-test-watchers-are-reaped-audit-repair">
+<h2>The record's own audit refused the logs its writer wrote</h2>
+<p>Writing this record hit a second defect, in the check rather than the code under
+test. A launch through the worker fence writes its notice to the task's stderr
+before the task runs, so an arm log captured on a fenced partition opens with
+<code>srun: task re-enters the worker fence; …</code> and the header the measure
+writes lands second. The manifest audit read the <b>literal</b> first line, so
+both suite arms of a fresh pair were refused as naming no revision — logs
+<code>crew suite run</code> had just produced. The notice is now a named constant
+in <code>reckon/nested_launch.py</code>, skipped where it opens a log and only
+with a scheduler's own name in front of it, and the first recorded line after it
+is judged exactly as before; a log that only quotes the notice, or that records
+prose after it, is still reported. Two tests hold those two directions.</p>
+<p>This record cites the pair it was measured with and is audited by the same
+check, which is why the defect surfaced here rather than in a later node's
+gate.</p>
+</section>

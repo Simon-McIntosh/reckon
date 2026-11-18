@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "733461c8d8d352db23c859392481c65ef7ac73b3",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:342 launch -> _compose_dispatch_prompt -> compose_prompt",
+    "reckon/crew/dispatch_claims.py:1512 _compose_dispatch_prompt -> compose_prompt at :1544",
+    "reckon/crew/prompts.py:476 _negative_control_declaration -> NEGATIVE_CONTROL_DECLARED_RULE at :500"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:23:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-prompt-carries-the-declaration.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's ruff clause has no receipt on disk; the base and head `ruff check` comparison (2 errors each, on the same unreadable clause lines) and the format arm's \"2 files already formatted\" exist only in the run's stream, so a reader holding the manifest and the fragment cannot re-check that clause."
+    }
+  ],
+  "head_log_revision": "2065f171d1b3e60f87e3e04cfc549bbe6929e4a5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read all three commits against 733461c8: aea0c31 reworks NEGATIVE_CONTROL_DECLARED_RULE at reckon/crew/prompts.py:431 and the negative_control_log gloss at :1205 plus the mirrored snapshot line, 55678620 adds the 52-line fragment, and 2065f171 corrects one failing id in that fragment.",
+    "done_when": "the done_when names that file at head plus the base arm, an importer arm adding no failure, the negative control, ruff, the commits line and a one-write manifest, and every clause has a receipt on disk except ruff, whose two-errors-each base and head comparison survives only in the run's stream.",
+    "goal": "the goal is that tests/test_prompt_carries_the_declaration.py passes in full, and the run's final gate log scoped-gate-1794996495963333804.log, taken at the reviewed head 2065f171d1b3 through crew verify-gate --partition all_debug, reads \"10 passed\" with EXIT=0.",
+    "manifest": "read in full: status complete, three full commit ids, the literal pytest command on the tests line, nine named test logs, a completed baseline_suite and after_suite at 58 passed each, and a negative_control_log whose base run reads 2 failed and 8 passed with EXIT=1.",
+    "write_paths": "the manifest declares reckon, tests, the plan's fragment directory and this node's fragment, and the diff touches only reckon/crew/prompts.py, tests/test_brief_prompt.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-prompt-carries-the-declaration.html, all inside that scope."
+  },
+  "justifications": {
+    "durability": "the guard is independent of the code and shown to fire: tests/test_prompt_carries_the_declaration.py:78 asserts a hardcoded phrase, and base-run-test_prompt_carries_the_declaration.log shows that case failing with its AssertionError while the head gate shows it passing, so the diff's only test line, tests/test_brief_prompt.py:413, is a mirror guarding byte-identity at :238 and not the rule.",
+    "evidence": "both suite arms carry a completion line and EXIT=0 (baseline_suite-1794996518238751584.log \"58 passed\", after_suite-1794996593366315675.log \"58 passed\"), but the ruff clause the done_when names has no log, only the stream's \"Found 2 errors\" at both arms.",
+    "fit": "the change keeps the module's line-wrapped string-concatenation idiom and adds no name, though the gloss at reckon/crew/prompts.py:1205 names a non-zero `EXIT=` line as the first fact and then says the `EXIT=` record is not the only way the run shows a failure.",
+    "goal_fidelity": "the named file passes in full at the reviewed head: scoped-gate-1794996495963333804.log carries the revision line for 2065f171d1b3, \"10 passed\" and EXIT=0, where base-run-test_prompt_carries_the_declaration.log shows the same file at 2 failed.",
+    "reuse": "the diff adds no definition: it updates the two existing prompt copies in place at reckon/crew/prompts.py:431 and :1205, whose capability owner is the control gate's refusal text at reckon/crew/promotion_checks.py:2778, and no second reader was introduced.",
+    "scope_discipline": "git diff 733461c8..2065f171 lists three paths, each inside the manifest's declared reckon, tests and fragment scope, and no plan meta or project index is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_prompt_carries_the_declaration.py passes in full, and the run's final gate log scoped-gate-1794996495963333804.log, taken at the reviewed head 2065f171d1b3 through crew verify-gate --partition all_debug, reads \"10 passed\" with EXIT=0.\nVERDICT done_when: the done_when names that file at head plus the base arm, an importer arm adding no failure, the negative control, ruff, the commits line and a one-write manifest, and every clause has a receipt on disk except ruff, whose two-errors-each base and head comparison survives only in the run's stream.\nVERDICT write_paths: the manifest declares reckon, tests, the plan's fragment directory and this node's fragment, and the diff touches only reckon/crew/prompts.py, tests/test_brief_prompt.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-prompt-carries-the-declaration.html, all inside that scope.\nVERDICT manifest: read in full: status complete, three full commit ids, the literal pytest command on the tests line, nine named test logs, a completed baseline_suite and after_suite at 58 passed each, and a negative_control_log whose base run reads 2 failed and 8 passed with EXIT=1.\nVERDICT diff: read all three commits against 733461c8: aea0c31 reworks NEGATIVE_CONTROL_DECLARED_RULE at reckon/crew/prompts.py:431 and the negative_control_log gloss at :1205 plus the mirrored snapshot line, 55678620 adds the 52-line fragment, and 2065f171 corrects one failing id in that fragment.\nCALL_SITES: reckon/crew/dispatching/launch.py:342 launch -> _compose_dispatch_prompt -> compose_prompt, reckon/crew/dispatch_claims.py:1512 _compose_dispatch_prompt -> compose_prompt at :1544, reckon/crew/prompts.py:476 _negative_control_declaration -> NEGATIVE_CONTROL_DECLARED_RULE at :500\nSCORE goal_fidelity: 20\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 19\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the named file passes in full at the reviewed head: scoped-gate-1794996495963333804.log carries the revision line for 2065f171d1b3, \"10 passed\" and EXIT=0, where base-run-test_prompt_carries_the_declaration.log shows the same file at 2 failed.\nJUSTIFICATION evidence: both suite arms carry a completion line and EXIT=0 (baseline_suite-1794996518238751584.log \"58 passed\", after_suite-1794996593366315675.log \"58 passed\"), but the ruff clause the done_when names has no log, only the stream's \"Found 2 errors\" at both arms.\nJUSTIFICATION scope_discipline: git diff 733461c8..2065f171 lists three paths, each inside the manifest's declared reckon, tests and fragment scope, and no plan meta or project index is touched.\nJUSTIFICATION durability: the guard is independent of the code and shown to fire: tests/test_prompt_carries_the_declaration.py:78 asserts a hardcoded phrase, and base-run-test_prompt_carries_the_declaration.log shows that case failing with its AssertionError while the head gate shows it passing, so the diff's only test line, tests/test_brief_prompt.py:413, is a mirror guarding byte-identity at :238 and not the rule.\nJUSTIFICATION fit: the change keeps the module's line-wrapped string-concatenation idiom and adds no name, though the gloss at reckon/crew/prompts.py:1205 names a non-zero `EXIT=` line as the first fact and then says the `EXIT=` record is not the only way the run shows a failure.\nJUSTIFICATION reuse: the diff adds no definition: it updates the two existing prompt copies in place at reckon/crew/prompts.py:431 and :1205, whose capability owner is the control gate's refusal text at reckon/crew/promotion_checks.py:2778, and no second reader was introduced.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-prompt-carries-the-declaration.html:1 non-blocking: the done_when's ruff clause has no receipt on disk; the base and head `ruff check` comparison (2 errors each, on the same unreadable clause lines) and the format arm's \"2 files already formatted\" exist only in the run's stream, so a reader holding the manifest and the fragment cannot re-check that clause.",
+  "review_run_id": "r-20261118T101457793450-review-of-qwnw-red-file-prompt-carries-the-declaration-2065f171d1b3",
+  "reviewed_base_sha": "733461c8d8d352db23c859392481c65ef7ac73b3",
+  "reviewed_head_sha": "2065f171d1b3e60f87e3e04cfc549bbe6929e4a5",
+  "reviewed_run_id": "r-20261118T062414149712-qwnw-red-file-prompt-carries-the-declaration",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T101457793450-review-of-qwnw-red-file-prompt-carries-the-declaration-2065f171d1b3"
+  },
+  "reviewer_run_id": "r-20261118T101457793450-review-of-qwnw-red-file-prompt-carries-the-declaration-2065f171d1b3",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:44:28.136943+00:00",
+  "total": 113
+}

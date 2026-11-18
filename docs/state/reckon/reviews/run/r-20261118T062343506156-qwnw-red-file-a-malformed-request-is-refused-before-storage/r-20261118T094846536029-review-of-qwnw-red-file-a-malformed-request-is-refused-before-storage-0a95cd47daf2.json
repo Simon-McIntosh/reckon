@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:316 _crew_argument_refusal -> query._refuse_unknown_live_fields for a live view",
+    "reckon/mcp.py:2909 _crew_state_tool pre-flight calls _crew_state_tool with the argument refusal ahead of any read",
+    "reckon/crew/query.py:482 _refuse_unknown_live_fields inside the live read",
+    "reckon/crew/query.py:242 _live_field_vocabulary builds the accepted set from LIVE_FIELD_VOCABULARY"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:25:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-malformed-request-is-refused-before-storage.html",
+      "line": "49-55",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two rows labelled \"the declared suite\" are baseline_suite-1794994504567796249/after_suite-1794994547823506196 over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and neither file imports reckon.crew.query, so their 58 passes read as coverage of the changed module that they do not provide; the done_when's arm over the importing tests is carried only by the node's own file rows above them."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-malformed-request-is-refused-before-storage.html",
+      "line": "52",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names the negative-control log at .../queued-work-needs-no-workaround/red-file-a-malformed-request-is-refused-before-storage.html while the delivered file carries the qwnw- prefix; the delivered name is the dispatch's declared write path and every sibling fragment in the directory carries that prefix, so the done_when text is the stale side and no path is lost."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified two production call sites plus the two read paths they enter: reckon/mcp.py:316 _crew_argument_refusal refuses live fields against LIVE_FIELD_VOCABULARY with an empty classification, and reckon/crew/query.py:482 _refuse_unknown_live_fields does the same against the served rows; both resolve the vocabulary through reckon/crew/query.py:242.",
+    "diff": "read commit by commit against 97dec20bfb: 31780fd944 adds four names plus three comment blocks to reckon/crew/query.py's LIVE_CLASSIFICATION_FIELDS and changes nothing else; 0a95cd47da adds the 58-line evidence fragment and no code.",
+    "done_when": "the done_when names the file passing in full on all_debug with the base run first, per-cause verdicts, no weakened assertion, an imported-tests arm recorded both ways, the negative control logged in the evidence fragment, and clean ruff; scoped-gate-1794994405572447181.log (all_debug, rev 31780fd944) reads 15 passed EXIT=0, base-run-target-test.log (rev 97dec20bfb) reads 1 failed/14 passed EXIT=1, the diff touches no test line, and ruff is clean on the reviewed query.py \u2014 the two suite arms, 58 passed on each side, are over tests that do not import the changed module.",
+    "goal": "the node's goal is that tests/test_a_malformed_request_is_refused_before_storage.py pass in full on the primary branch; reckon/crew/query.py:108,144,163,164 declares delivery, orientation_check, stuck and stuck_reason in LIVE_CLASSIFICATION_FIELDS, which is what the file's failing test compared against, and the head arm at 31780fd944 passes all 15.",
+    "manifest": "read; status complete, commits 31780fd944 and 0a95cd47da, changed_paths the same two files, tests the literal verify-gate command that matches scoped-gate-1794994405572447181.log's `# command:` header, negative_control_log the base arm, and baseline_suite/after_suite 58 passed each with full 40-character revisions.",
+    "write_paths": "the node's fence was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment/figures paths for its slug; the two files the two commits touch, reckon/crew/query.py and the qwnw-red-file-a-malformed-request-is-refused-before-storage.html fragment, are both inside it."
+  },
+  "justifications": {
+    "durability": "no assertion was added, but the surviving guard at tests/test_a_malformed_request_is_refused_before_storage.py:91 reddens when the four names are reinstated as absent, shown by base-run-target-test.log EXIT=1 at 97dec20bfb; that assertion only fails on an undeclared classifier key, so an over-declared name would pass it.",
+    "evidence": "the head arm is a verify-gate run on all_debug (stream.jsonl records --partition all_debug) and base-run-target-test.log at 97dec20bfb reads \"1 failed, 14 passed\" EXIT=1 with the quoted ids, but the two suite arms in baseline_suite/after_suite measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.crew.query.",
+    "fit": "reckon/crew/query.py:108-110 keeps the tuple's alphabetical order, the module's `#:` doc-comment idiom and a diff that `ruff check` and `ruff format --check` pass on, though the three inline comment blocks are a comment form no other entry inside LIVE_CLASSIFICATION_FIELDS uses.",
+    "goal_fidelity": "reckon/crew/query.py:108,144,163-164 adds the four names the base arm proves were missing, and scoped-gate-1794994405572447181.log at 31780fd944 reads \"15 passed\" EXIT=0 for tests/test_a_malformed_request_is_refused_before_storage.py.",
+    "reuse": "the change extends the sole owner of the live vocabulary \u2014 reckon/crew/query.py:283 LIVE_FIELD_VOCABULARY built from LIVE_CLASSIFICATION_FIELDS \u2014 and adds no definition; searches for a second live-field list found none, with reckon/mcp.py:316 being a caller that delegates to the same declaration.",
+    "scope_discipline": "git diff --stat 97dec20bfb..0a95cd47da lists only reckon/crew/query.py (+10) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-malformed-request-is-refused-before-storage.html (+58), both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a passing tests/test_a_malformed_request_is_refused_before_storage.py, and reckon/crew/query.py:108,144,163,164 declares delivery, orientation_check, stuck and stuck_reason in LIVE_CLASSIFICATION_FIELDS, the side the base arm shows was stale.\nVERDICT done_when: the done_when asks for the file at head on all_debug, a base run first, the negative control in the fragment and an imported-tests arm; scoped-gate-1794994405572447181.log (all_debug, rev 31780fd944) reads 15 passed EXIT=0 and base-run-target-test.log (rev 97dec20bfb) reads 1 failed, 14 passed EXIT=1, but the two 58-pass suite arms are over tests that do not import the changed module.\nVERDICT write_paths: the fence was reckon, tests and the queued-work-needs-no-workaround fragment paths; git diff 97dec20bfb..0a95cd47da touches reckon/crew/query.py and the qwnw- fragment, both inside it.\nVERDICT manifest: read; status complete, commits 31780fd944 and 0a95cd47da, tests the literal verify-gate command matching the gate log's `# command:` header, both suite arms 58 passed with full 40-character revisions, the base arm as the negative control.\nVERDICT diff: read both commits against 97dec20bfb \u2014 31780fd944 adds four names and three comment blocks to LIVE_CLASSIFICATION_FIELDS and nothing else, 0a95cd47da adds the 58-line evidence fragment.\nCALL_SITES: reckon/mcp.py:316 _crew_argument_refusal -> query._refuse_unknown_live_fields, reckon/mcp.py:2909 _crew_state_tool pre-flight, reckon/crew/query.py:482 _refuse_unknown_live_fields inside the live read, reckon/crew/query.py:242 _live_field_vocabulary\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:108,144,163-164 adds exactly the four names the base arm reports as missing, and scoped-gate-1794994405572447181.log at 31780fd944 reads \"15 passed\" EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head arm is a verify-gate run on all_debug and the base arm log carries the failing id, but baseline_suite and after_suite at 58 passed each measure two census tests that do not import reckon.crew.query.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 97dec20bfb..0a95cd47da lists only reckon/crew/query.py and the slug's own evidence fragment, both inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: no assertion was added, and the guard at tests/test_a_malformed_request_is_refused_before_storage.py:91 is shown to fire by base-run-target-test.log EXIT=1, though it catches only an undeclared classifier key and not an over-declared name.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/query.py:108-110 keeps the alphabetical order, module `#:` idiom and ruff cleanliness, while the three inline comment blocks are a form no other LIVE_CLASSIFICATION_FIELDS entry uses.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the sole owner at reckon/crew/query.py:283 LIVE_FIELD_VOCABULARY and adds no definition; reckon/mcp.py:316 delegates to the same declaration and no second live-field list exists.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-malformed-request-is-refused-before-storage.html:49-55 non-blocking: the rows labelled \"the declared suite\" are two census tests that do not import reckon.crew.query, so their 58 passes read as coverage of the changed module that they do not provide.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-malformed-request-is-refused-before-storage.html:52 non-blocking: the done_when names the negative-control log without the qwnw- prefix; the delivered name is the dispatch's declared write path and the directory's own convention, so the done_when text is the stale side.",
+  "review_run_id": "r-20261118T094846536029-review-of-qwnw-red-file-a-malformed-request-is-refused-before-storage-0a95cd47daf2",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "0a95cd47daf2cdbd0a24ab027650e0bc8a1da8fd",
+  "reviewed_run_id": "r-20261118T062343506156-qwnw-red-file-a-malformed-request-is-refused-before-storage",
+  "reviewer_run_id": "r-20261118T094846536029-review-of-qwnw-red-file-a-malformed-request-is-refused-before-storage-0a95cd47daf2",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:39:08.561554+00:00",
+  "total": 111
+}

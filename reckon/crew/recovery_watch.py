@@ -2269,7 +2269,10 @@ def _stuck_count(rows: Iterable[Mapping[str, Any]]) -> int:
 
 
 def _fleet_counts(
-    snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
+    snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Partition the fleet into working, reviewing, blocked, delivered and waiting.
 
@@ -2328,7 +2331,7 @@ def _fleet_counts(
     if any("delivery" in row and row["delivery"] is not None for row in rows):
         from .recovery_classification import delivery_summary
 
-        delivery = delivery_summary(rows)
+        delivery = delivery_summary(rows, pointers=pointers)
         counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
@@ -2862,6 +2865,8 @@ def handover_run_ids(project: str) -> set[str]:
 
 def _session_fleet_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """The fleet partition per owning session, unowned rows under ``""``.
 
@@ -2875,7 +2880,7 @@ def _session_fleet_counts(
     for owner in owners | {""}:
         rows, _peers = _partition_session_rows(snapshots.values(), owner)
         counts[owner] = {
-            **_fleet_counts(snapshots, session=owner),
+            **_fleet_counts(snapshots, session=owner, pointers=pointers),
             "stuck": _stuck_count(rows),
         }
     return counts
@@ -2883,12 +2888,14 @@ def _session_fleet_counts(
 
 def _transition_counts(
     snapshots: Mapping[str, Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The fleet's counts at one transition, with the per-session partition."""
     return {
-        **_fleet_counts(snapshots),
+        **_fleet_counts(snapshots, pointers=pointers),
         "stuck": _stuck_count(snapshots.values()),
-        "sessions": _session_fleet_counts(snapshots),
+        "sessions": _session_fleet_counts(snapshots, pointers=pointers),
     }
 
 
@@ -4208,7 +4215,7 @@ def watch_ticker(
                         )
                         continue
 
-                    counts = _transition_counts(current)
+                    counts = _transition_counts(current, pointers=pointers)
                     watch_record["last_stage"] = "publishing"
                     if not fleet_seen:
                         fleet_seen = True

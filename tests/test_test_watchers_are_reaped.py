@@ -161,10 +161,15 @@ def test_arms_a_watcher_without_reaping_it(
             ],
         )
 
-    payload = json.loads(result.output)
-    assert result.exit_code == 0, result.output
+    # The dispatch document is stdout; the "created run" notice goes to stderr
+    # so it survives a caller exiting mid-launch without displacing that
+    # document. Click's ``result.output`` mixes the two streams, so read the
+    # stream the contract names, and hold the notice to its own side.
+    assert result.exit_code == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
     assert payload["watch"]["watcher_live"] is True
     assert payload["watch"]["arming_line"] == "reckon crew watch --project proj"
+    assert "reckon: created run" in result.stderr, result.stderr
 
 
 # ── the measure ─────────────────────────────────────────────────────────────

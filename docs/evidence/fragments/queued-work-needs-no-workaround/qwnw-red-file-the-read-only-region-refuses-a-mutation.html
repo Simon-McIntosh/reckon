@@ -1,0 +1,62 @@
+<section id="qwnw-red-file-the-read-only-region-refuses-a-mutation-landing">
+  <h2>A read-only-region test asks for a duty the derivation still raises</h2>
+
+  <p><strong>What was red.</strong> At base <code>1766ca11885924</code> one of
+  the five cases in <code>tests/test_the_read_only_region_refuses_a_mutation.py</code>
+  failed: <code>test_a_fleet_state_derivation_inside_the_region_completes</code>
+  asserted <code>duties == {"r-20261016T100000-node-00"}</code> and read
+  <code>set()</code>.</p>
+
+  <p><strong>Cause, and the verdict: the test, not the product.</strong> The
+  case synthesises a home with one run record that retains one worktree, then
+  runs one <code>obligation_snapshot.fleet_state</code> derivation inside
+  <code>reckon.file_memo.read_only_region</code> so the read-only guard is
+  exercised by a production derivation. The fixture created that tree detached
+  at the primary branch's head and left it clean, while the product since
+  <code>c778aaa1f63e</code> holds a retained tree only while it carries a commit
+  its primary branch does not reach — a clean, reachable tree holds nothing to
+  lose, so its row is not a duty. The tree therefore never became a
+  <code>worktree-held</code> duty, the derivation raised no duty for the
+  session, and the assertion read an empty set. The derivation still read the
+  run document through the region (the case's own
+  <code>assert handed_out</code> guard passed), so the guard was exercised and
+  the failing assertion was the one naming a duty the code no longer raises.</p>
+
+  <p><strong>Change.</strong> <code>_fleet_home</code> now commits one file in the
+  tree after <code>git worktree add</code>, so the fixture's tree holds a commit
+  the fixture branch lacks and the duty exists for the reason the product
+  raises one. Every assertion is unchanged: the refusals, the copy case, the
+  tuple case and the derivation case all still assert what they asserted. The
+  rewritten fixture docstring states why the commit is there.</p>
+
+  <h3 id="qwnw-red-file-the-read-only-region-refuses-a-mutation-control">Arms</h3>
+
+  <table id="qwnw-red-file-the-read-only-region-refuses-a-mutation-arms">
+    <caption>Each arm is a job on <code>all_debug</code>; each log's first lines
+    name the revision, the tree and the command, and its last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head</td>
+        <td><code>9db9eca304e5</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base (negative control)</td>
+        <td><code>1766ca118859</code></td>
+        <td>4 passed, 1 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>1766ca118859</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>9db9eca304e5</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-the-read-only-region-refuses-a-mutation-base">Negative control</h3>
+
+  <p>The base arm's only failing id is
+  <code>tests/test_the_read_only_region_refuses_a_mutation.py::test_a_fleet_state_derivation_inside_the_region_completes</code>,
+  failing with <code>AssertionError: assert set() == {'r-20261016T100000-node-00'}</code>.
+  The head arm fails no id, so the base arm's failing id is one the head arm
+  does not fail.</p>
+</section>

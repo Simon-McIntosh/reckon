@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-a-spent-global-lift-landing">
+<h3>The session lift already governed; the red cases read the mixed terminal stream</h3>
+<p><code>tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py</code> was red at <code>2f00851c42f2</code>: 2 failed, 2 passed. Both failures had one cause — the fixture parsed a dispatch payload from <code>CliRunner().invoke(...).output</code>. Click 8.2 redefined <code>Result.output</code> as the terminal rendering with stdout and stderr interleaved; it was a stdout proxy only through 8.1. A launched dispatch prints <code>reckon: created run &lt;id&gt;</code> on stderr by design — the notice channel exists so a caller decoding stdout gets exactly one document — so the first line the fixture saw was that notice, and <code>json.loads</code> raised before any budget judgement ran.</p>
+<p>The product rule the file asserts was already correct: <code>reckon/crew/budget_lift.py::_governing_lift</code> orders candidate lifts by scope specificity before grant time (session, then project, then global), so a newer global lift on the same group does not mask a live session lift, and the session lift's own cap judges that session. No product line changed. The fix is in the fixture: the payload is read from <code>result.stdout</code>, the convention the sibling dispatch tests already use (<code>tests/test_a_node_is_queued_once.py:92</code>). No assertion was deleted or weakened.</p>
+
+<h4 id="qwnw-red-file-a-spent-global-lift-cause">Cause and verdict</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>The payload was parsed from <code>result.output</code>, the mixed terminal stream</td>
+<td>2 of 4: <code>test_a_live_session_lift_admits_its_own_session</code> and <code>test_a_session_lift_judges_its_own_spend_on_the_fallback_path</code>, both <code>JSONDecodeError</code> with the <code>created run</code> notice as the first line. The other two are refused before launch, print no notice, and never reached the parse.</td>
+<td><strong>test wrong</strong>: the product's contract is one JSON document on stdout with notices on stderr; the click release in use made <code>output</code> the mixed stream. The parse now reads <code>result.stdout</code>.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-a-spent-global-lift-negative-control">Negative control: the base revision's own run</h4>
+<p>Verbatim capture as <code>negative-control-base-run.log</code> in the run directory. The test file was restored to the base revision's content (<code>git show 2f00851c:tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py</code>, diff-verified identical) before the run.</p>
+<pre>
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py
+# revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76
+# tree: the node's worktree, tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py at 2f00851c42f247cba1c81c80ed0cf7b41045de76
+F..F                                                                     [100%]
+FAILED tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py::test_a_live_session_lift_admits_its_own_session - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py::test_a_session_lift_judges_its_own_spend_on_the_fallback_path - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+2 failed, 2 passed in 2.40s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-a-spent-global-lift-falsification">Falsification: the scope precedence this file is about</h4>
+<p>A green gate never shows that the guard fires, so the control the file's own docstring declares — judge the cap against the newest lift on the group regardless of scope — was applied to <code>_governing_lift</code>'s <code>priority</code> (specificity forced to 0), measured, and reverted; <code>git status --porcelain</code> was afterwards clean apart from the test file. The refusal is <code>budget-hold</code> on the global lift's spent <code>codex-group</code> cap, which is the defect a newest-lift-wins read reintroduces.</p>
+<pre>
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py
+# revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76 plus that one-line mutation, reverted after measurement
+F.FF                                                                     [100%]
+FAILED …::test_a_live_session_lift_admits_its_own_session - AssertionError: {"detail": "wave held on budget for backend 'beta' … "error": "budget-hold"
+FAILED …::test_a_session_lift_past_its_own_cap_holds_its_session
+FAILED …::test_a_session_lift_judges_its_own_spend_on_the_fallback_path - AssertionError: … assert 3 == 0
+3 failed, 1 passed in 1.77s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-a-spent-global-lift-head-gate">Head gate: an all_debug job with SLURM_JOB_ID stripped</h4>
+<p>The gate harness passes the scheduler variable through: a probe inside it read <code>SLURM_JOB_ID=[1325825]</code>. The gate therefore strips it, and a second probe under the same prefix read the variable as unset. The log below is the run at the delivered head.</p>
+<pre>
+# revision: 9e47ddce84727c3115afab42798b35b9f67fd17f
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-1eedb0f4c8df-InSMHq/tree
+# command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py'
+....                                                                     [100%]
+4 passed in 1.38s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-a-spent-global-lift-arms">Suite arms: the armed command, resolved over each arm's own tree</h4>
+<p>This node's write scope names a directory, so the resolved node-test list is the armed census pair, and the changed file is not among either arm's files: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>. The baseline arm ran in a scratch extraction of the base commit (HEAD rebuilt by <code>git init</code> plus one commit over those bytes, because the census reader lists a checkout's revision); the after arm ran in this worktree.</p>
+<table>
+<thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>baseline</td><td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td><td>58 passed in 42.27s, exit 0</td></tr>
+<tr><td>after</td><td><code>9e47ddce84727c3115afab42798b35b9f67fd17f</code></td><td>58 passed in 43.77s, exit 0</td></tr>
+</tbody>
+</table>
+</section>

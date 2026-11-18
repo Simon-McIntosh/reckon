@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite records 59 passed EXIT=0 at 987753b5e4 (after-arm.log, no FAILED line) and baseline_suite records 58 passed EXIT=0 at 29142e76 (baseline-arm.log, no FAILED line), so the set difference of failing test ids is empty (0); the base-revision red run is the declared negative control (negative-control.log, EXIT=1, 2002 <= 10), not an added failure against the head.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3208",
+    "reckon/crew/recovery_watch.py:2201",
+    "reckon/crew/recovery_stream.py:551"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:19:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-lane-reference-rates-read-history-once-987753b5e450",
+      "recorded_at": "2026-11-18T12:53:14.058656+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_stream.py",
+      "line": "253",
+      "severity": "blocking",
+      "text": "blocking: the roll folds the new contributions into the previous bucket's contributions but never removes the entries the new window's start has passed \u2014 _lane_rates_from (:273-277) only filters them out of the answer \u2014 so _LANE_RATE_BUCKETS retains every distinct row completed since the process's first read of that project, and each later bucket re-walks that whole retained set. That contradicts the comment at :164-165 ('The population a project's window can hold is the bound on memory'), the function's own docstring, the commit message's 'dropping the rows the new window no longer admits' and the fragment's 'drops the rows the section's new window's start has passed', and it makes a long-lived station's memory and per-bucket cost grow with process uptime rather than with the window, which is the exact bound the replaced lru_cache kept."
+    },
+    {
+      "file": "tests/test_lane_reference_rates_read_history_once.py",
+      "line": "247",
+      "severity": "non-blocking",
+      "text": "non-blocking: causes_first == base_causes_first (:247) and causes_next == base_causes_next (:279) compare the head code's warm path against the head code's cold path after cache_clear, not against the base revision's answers the done_when names, so despite the base_ prefix the two sides move together and any defect shared by both paths passes; the rates half is independent (ledger.load(PROJECT) recomputed at :163), and _budget_overrun_cause and _historical_reference_rate are untouched by the diff, so the gap is narrow rather than blind."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites: reckon/crew/recovery_classification.py:3208 calls _budget_overrun_cause, reckon/crew/recovery_watch.py:2201 calls recovery_stream._budget_overrun_cause, and reckon/crew/recovery_stream.py:551 calls it from the module's own classifier; all reach _lane_reference_rates through _historical_reference_rate at :301.",
+    "diff": "read commit by commit against 29142e76: 5f8c0a43a3 replaces the lru_cache in reckon/crew/recovery_stream.py with a per-project contribution fold (+145/-29) and adds the 281-line test, and 987753b5e4 adds the 52-line fragment; nothing outside the declared paths changed.",
+    "done_when": "the done_when asks for a 2,000-row three-lane fixture, a roll ceiling of 10 decoded rows, equality of every lane's rates and 20 live runs' _budget_overrun_cause with the base revision's, a bucket where rows age out, and a base revision that decodes at least 2,000; tests/test_lane_reference_rates_read_history_once.py:261 asserts the ceiling, :268-269 assert the rates against an independent ledger.load(PROJECT) recomputation, :272-274 assert the aging, and negative-control.log records the base revision failing at 2002 <= 10 \u2014 the cause equality is asserted only head-against-head (:247, :279).",
+    "goal": "the node goal is to make a bucket roll refresh the lane reference rates from rows added since the previous bucket; reckon/crew/recovery_stream.py:245-254 does exactly that for the consecutive-bucket case and falls back to one window read otherwise, and reckon/crew/recovery_stream.py:341 derives the bucket as int(moment // 300) so consecutive rolls are the live path.",
+    "manifest": "read; it reports status complete, head gate 59 passed EXIT=0 in after-arm.log, base arm 58 passed EXIT=0 in baseline-arm.log, and a negative-control.log whose first lines name revision 29142e76 and whose body shows the roll decoding 2002 rows against a ceiling of 10 at EXIT=1, all of which I confirmed on disk.",
+    "write_paths": "the declared paths are reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py, the evidence fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/, and an unused figures directory; the two commits touch only the source, the test and the fragment, all inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_lane_reference_rates_read_history_once.py:261 reddens if the roll widens back to the window read (negative-control.log shows it), :268-269 redden if a rolled row is missing or duplicated, and :272-274 redden if an aged row is not dropped from the answer \u2014 but no assertion covers the retained contribution set itself, which is why reckon/crew/recovery_stream.py:253's missing prune is unguarded.",
+    "evidence": "tests/test_lane_reference_rates_read_history_once.py:261 asserts the roll ceiling and negative-control.log records the base revision failing that same assertion at 2002 <= 10, so the assertion can redden and did.",
+    "fit": "reckon/crew/recovery_stream.py:289 and :307 attach cache_clear as a function attribute so the removed lru_cache's caller contract survives, which is a shim rather than the module's own idiom, and :262-263 hand-rolls the 16-entry eviction the lru_cache used to provide.",
+    "goal_fidelity": "reckon/crew/recovery_stream.py:245-254 folds only the rows whose activity stamp reaches past the previous bucket's end, so the roll reads 6 rows instead of 2,002, but the deliverable's drop of aged rows is not carried into the retained map \u2014 reckon/crew/recovery_stream.py:253 folds without pruning, so the contributions keep growing past the window the function claims bounds them.",
+    "reuse": "the bounded ledger read stays with its owner, reckon/ledger.py:1911 applying activity_since, and the prior incremental reader at reckon/crew/plan_review.py:4242 follows the same boundary idiom; a search for an existing per-project contribution fold found none, the removed lru_cache having been its only cache.",
+    "scope_discipline": "both commits touch only reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py and the node's fragment, which are the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a bucket roll refresh the lane reference rates from rows added since the previous bucket; reckon/crew/recovery_stream.py:245-254 does exactly that for the consecutive-bucket case and falls back to one window read otherwise, and reckon/crew/recovery_stream.py:341 derives the bucket as int(moment // 300) so consecutive rolls are the live path.\nVERDICT done_when: the done_when names a 2,000-row three-lane fixture, a 10-row roll ceiling, equality of every lane's rates and 20 live runs' _budget_overrun_cause with the base revision's, a bucket where rows age out, and a base revision decoding at least 2,000; tests/test_lane_reference_rates_read_history_once.py:261 asserts the ceiling and :272-274 the aging, :268-269 compare the rates against an independent ledger.load(PROJECT) recomputation, and negative-control.log records the base failing at 2002 <= 10 \u2014 but the cause equality (:247, :279) is head against head, not against the base revision.\nVERDICT write_paths: the declared paths are reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py, the evidence fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/, and the node's figures directory, and both commits touch only the first three.\nVERDICT manifest: read; it reports status complete, 59 passed EXIT=0 at head in after-arm.log, 58 passed EXIT=0 at base in baseline-arm.log, and a negative-control.log naming revision 29142e76 whose body shows the roll decoding 2002 rows against a ceiling of 10 at EXIT=1, all confirmed on disk.\nVERDICT diff: read commit by commit against 29142e76: 5f8c0a43a3 replaces the lru_cache in reckon/crew/recovery_stream.py with a per-project contribution fold and adds the 281-line test, and 987753b5e4 adds the 52-line fragment; nothing outside the declared paths changed.\nCALL_SITES: reckon/crew/recovery_classification.py:3208, reckon/crew/recovery_watch.py:2201, reckon/crew/recovery_stream.py:551\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_stream.py:245-254 folds only rows whose activity stamp reaches past the previous bucket's end, but :253 folds without pruning so the contributions keep growing past the window the function claims bounds them.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_lane_reference_rates_read_history_once.py:261 asserts the roll ceiling and negative-control.log records the base revision failing that same assertion at 10.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py and the node's fragment, which are the declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_lane_reference_rates_read_history_once.py:261 reddens on the reinstated window read and :272-274 redden if an aged row survives in the answer, but nothing asserts the retained contribution set that reckon/crew/recovery_stream.py:253 leaves unpruned.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_stream.py:289 attaches cache_clear as a function attribute and :262-263 hand-rolls the eviction the lru_cache provided, which is a shim against the module's own idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the bounded read stays with its owner reckon/ledger.py:1911 and the prior incremental reader at reckon/crew/plan_review.py:4242 uses the same idiom; no existing per-project contribution fold exists to extend.\nFINDING reckon/crew/recovery_stream.py:253 blocking: the roll folds new contributions in but never removes the entries the new window's start has passed, so each retained project's map grows with process uptime instead of the seven-day window its comment at :164-165 promises, and every later bucket re-walks that whole set.\nFINDING tests/test_lane_reference_rates_read_history_once.py:247 non-blocking: the base_-named cause comparisons at :247 and :279 run the head code's warm path against its own cold path rather than against the base revision the done_when names, so a defect shared by both paths passes.\n",
+  "review_node": "review-of-lane-reference-rates-read-history-once-987753b5e450",
+  "review_run_id": "r-20261118T120714612384-review-of-lane-reference-rates-read-history-once-987753b5e450",
+  "reviewed_base_sha": "29142e76198fe89fb173c9927236dd1d0cacd816",
+  "reviewed_head_sha": "987753b5e450cc45510b04ddd07a4d6d8095d5cd",
+  "reviewed_run_id": "r-20261118T111947773423-lane-reference-rates-read-history-once",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T120714612384-review-of-lane-reference-rates-read-history-once-987753b5e450"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T12:34:06.592190+00:00",
+  "total": 105
+}

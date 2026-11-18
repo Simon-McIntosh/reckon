@@ -39,6 +39,7 @@ WAITS_ON_A = "plan-b"
 WAITS_ON_B = "plan-c"
 INDEPENDENT = "plan-d"
 RELEASING = "plan-e"
+RELEASING_AGAIN = "plan-f"
 
 UPSTREAM_HOURS = 3.0
 WAITS_ON_A_HOURS = 5.0
@@ -46,13 +47,18 @@ WAITS_ON_B_HOURS = 2.0
 INDEPENDENT_HOURS = 1.0
 
 # The three ready sections releasing the most work, in the order the payload's
-# reach field forces: the chain's head releases the middle plan's section, the
-# releasing plan's first section releases its own second, and the independent
-# plan releases nothing. Written out here so the brief's reach list is
-# compared against the fixture rather than against a repeat of its own sort.
+# reach field forces: each releasing plan's first section releases its own
+# second, and the independent plan releases nothing. Equal reach is broken by
+# ref, so the two releasing sections come in plan order before the one that
+# releases nothing. The chain's head is deliberately absent: the fixture's
+# blocked run sits on ``plan-a#s2``, and a section carrying a run is not a
+# ready section. Written out here so the brief's reach list is compared
+# against the fixture rather than against a repeat of its own sort, and so a
+# name-ordered list — which would open with the independent plan — is not
+# mistaken for it.
 EXPECTED_REACH = [
-    (f"{UPSTREAM}#s2", 1),
     (f"{RELEASING}#s1", 1),
+    (f"{RELEASING_AGAIN}#s1", 1),
     (f"{INDEPENDENT}#s1", 0),
 ]
 
@@ -167,6 +173,12 @@ def three_plan_project(mounted_project):
         RELEASING,
         sections={"s1": INDEPENDENT_HOURS, "s2": INDEPENDENT_HOURS},
         section_depends_on={"s2": [f"{RELEASING}#s1"]},
+    )
+    _write_plan(
+        mounted_project,
+        RELEASING_AGAIN,
+        sections={"s1": INDEPENDENT_HOURS, "s2": INDEPENDENT_HOURS},
+        section_depends_on={"s2": [f"{RELEASING_AGAIN}#s1"]},
     )
     return mounted_project
 

@@ -1,0 +1,69 @@
+<section id="qwnw-red-file-a-running-review-finishes-across-a-resume-landing">
+  <h2>A running review finishes across a resume</h2>
+
+  <p><strong>What changed.</strong> One line of history in the fixture. Every
+  case in <code>tests/test_a_running_review_finishes_across_a_resume.py</code>
+  asks what a resumed run's head move means for the review stored against it,
+  and the product answers that by reading the run's own commits — the ones
+  reachable from its new head but from neither the reviewed head nor the
+  integration branch's remote-tracking ref
+  (<code>reckon/clones.py:own_changed_paths</code>). A tree with no such ref is
+  read as uncomparable history rather than as an empty delta, by design, so the
+  fixture's bare local repository made every head move uncomparable:
+  <code>carry_review_forward</code> answered <code>None</code>, and the composed
+  review fields carried no delta, so the light re-review recorded no tier.</p>
+
+  <p>The fixture now seeds <code>refs/remotes/origin/main</code> at its first
+  commit, which is the clone shape a real run's worktree has. No assertion is
+  deleted or weakened; the shipped rule under test — a resume withdraws only a
+  review that never launched — is unchanged.</p>
+
+  <h3 id="qwnw-red-file-a-running-review-finishes-across-a-resume-arms">Arms</h3>
+
+  <table id="qwnw-red-file-a-running-review-finishes-across-a-resume-table">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code></td>
+        <td><code>negative-control-base.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>570523bffa71a6c8ad9dd36c98b5b113490e061b</code></td>
+        <td>3 passed, <code>EXIT=0</code></td>
+        <td><code>head-arm.log</code>, scoped gate log</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The head run is all_debug job 1325842 with <code>SLURM_JOB_ID</code>
+  unset, and its log opens with the revision, the tree and the command it ran;
+  the scoped gate ran the same file in a scratch tree on an all_debug node and
+  reads <code>EXIT=0</code>. Both suite arms — the node's declared suite
+  resolved at each revision — read 58 passed with no failure id.</p>
+
+  <h3 id="qwnw-red-file-a-running-review-finishes-across-a-resume-control">Negative control</h3>
+
+  <p>The base run is the red log: the file as it stood at
+  <code>2f00851c42f2</code> fails exactly the two cases whose expectations the
+  missing ref suppressed —</p>
+
+  <ul>
+    <li><code>test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward</code>
+    — <code>assert (None is not None)</code> on the carry report;</li>
+    <li><code>test_a_launched_review_over_a_source_move_earns_a_light_re_review</code>
+    — <code>assert None == 'light'</code> on the review tier.</li>
+  </ul>
+
+  <p>The third case, the queued not-yet-launched review, passes at both
+  revisions; it is the case that never asks a head-move question. The lint run
+  on the changed path reports nothing: <code>ruff check</code> passes and
+  <code>ruff format --check</code> reads the file formatted.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

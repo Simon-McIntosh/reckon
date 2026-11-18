@@ -195,14 +195,15 @@ def test_server_refuses_a_lazy_import_from_new_source(tmp_path: Path) -> None:
             # that appears only in the replacement source on disk.
             recovery = package / "crew" / "recovery_liveness.py"
             source = recovery.read_text()
-            needle = "    return alive, proven\n\n\ndef live_worker_pid"
+            # The change must land on the definition the server ran, and on
+            # that definition alone: change what ``local_liveness`` returns,
+            # anchored at its own final line rather than at whatever
+            # definition happens to follow it.
+            needle = "    return alive, proven"
             assert source.count(needle) == 1
-            recovery.write_text(
-                source.replace(
-                    needle, "    return alive, bool(proven)\n\n\ndef live_worker_pid"
-                )
-                + "\nstale_code_probe = True\n"
-            )
+            changed = source.replace(needle, "    return alive, bool(proven)")
+            assert changed != source
+            recovery.write_text(changed + "\nstale_code_probe = True\n")
             with (package / "roadmap.py").open("a") as source:
                 source.write("\nfrom reckon.crew.recovery_liveness import stale_code_probe\n")
 

@@ -173,6 +173,7 @@ def _promote(repository: Path, run_id: str):
             "the fixture exercises a promotion's worktree-copy release",
             "--no-commit",
             "the sole deliverable is the report",
+            "--wait",
             "--checkout-path",
             str(repository),
         ],

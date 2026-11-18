@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/budget_lift.py:_governing_lift",
+    "reckon/crew/budget_lift.py:491",
+    "reckon/crew/budget_lift.py:717"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:51:27Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-spent-global-lift-does-not-mask-a-session-lift.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-gate section claims an all_debug job while the capture it introduces at :47-52 names only revision, host and command and the gate's scheduler receipt is empty, so the partition clause is carried by the manifest alone."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-spent-global-lift-does-not-mask-a-session-lift.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node commits a second evidence fragment whose base and head capture blocks repeat those in its landing fragment, where the landing contract permits one fragment per node and no further evidence prose."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from 67493d8fa0 through c140c8ed9dd2 against 2f00851c42f2: one test-helper line plus a comment at tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:337, a 65-line landing fragment and a 25-line control-logs fragment, and no product source changed.",
+    "done_when": "the evidence fence wants the file green at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; scoped-gate-1795000282362319968.log:3-6 records revision c140c8ed, host 98dci4-clu-3141, the env -u command and 4 passed EXIT=0, but the capture and its empty scheduler receipt name no partition, so that clause rests on the manifest's word.",
+    "goal": "dispatch-detail.json states the goal as making tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py pass in full, and scoped-gate-1795000282362319968.log records 4 passed at c140c8ed where negative-control-base-run.log records 2 failed, 2 passed at 2f00851c42f2.",
+    "manifest": "the reviewed manifest reads complete and records the literal gate command, both suite arms as inline JSON at 58 passed and EXIT=0, and negative-control-base-run.log with EXIT=1 and two failing ids; its test_logs omits the 9e47ddce gate log the landing fragment reproduces.",
+    "write_paths": "the declared scope is tests, reckon, docs/evidence/fragments/queued-work-needs-no-workaround and an unused figure directory; git diff --numstat 2f00851c42f2..c140c8ed9dd2 lists only tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py and two fragments inside that directory, and no reckon/ path."
+  },
+  "justifications": {
+    "durability": "no assertion was added, and the guard is the surviving test at tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:337, which negative-control-base-run.log reddens with two ids when the result.output parse is put back.",
+    "evidence": "scoped-gate-1795000282362319968.log and after_suite-6944973277.log are header-first captures naming revision, tree, command and a bare EXIT line, but the all_debug-job clause is asserted in the manifest rather than recorded in either capture.",
+    "fit": "tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:337-339 reads result.stdout with a comment in the shape of tests/test_a_node_is_queued_once.py:92 and introduces no new name.",
+    "goal_fidelity": "scoped-gate-1795000282362319968.log records 4 passed at c140c8ed for tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py with EXIT=0, the file-green deliverable docs/plans/queued-work-needs-no-workaround.html#s29 states.",
+    "reuse": "a capability search over tests/ found 128 local `def _dispatch` helpers and no shared owner, so the change follows the sibling convention at tests/test_a_node_is_queued_once.py:92 rather than forking a helper.",
+    "scope_discipline": "every path in git diff --numstat 2f00851c42f2..c140c8ed9dd2 lies inside the declared paths, the one surplus being a second evidence-prose fragment the landing contract does not allow."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json states the goal as making tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py pass in full, and scoped-gate-1795000282362319968.log records 4 passed at c140c8ed where negative-control-base-run.log records 2 failed, 2 passed at 2f00851c42f2.\nVERDICT done_when: the evidence fence wants the file green at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; scoped-gate-1795000282362319968.log:3-6 records revision c140c8ed, host 98dci4-clu-3141, the env -u command and 4 passed EXIT=0, but the capture and its empty scheduler receipt name no partition, so that clause rests on the manifest's word.\nVERDICT write_paths: the declared scope is tests, reckon, docs/evidence/fragments/queued-work-needs-no-workaround and an unused figure directory; git diff --numstat 2f00851c42f2..c140c8ed9dd2 lists only tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py and two fragments inside that directory, and no reckon/ path.\nVERDICT manifest: the reviewed manifest reads complete and records the literal gate command, both suite arms as inline JSON at 58 passed and EXIT=0, and negative-control-base-run.log with EXIT=1 and two failing ids; its test_logs omits the 9e47ddce gate log the landing fragment reproduces.\nVERDICT diff: read commit by commit from 67493d8fa0 through c140c8ed9dd2 against 2f00851c42f2: one test-helper line plus a comment at tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:337, a 65-line landing fragment and a 25-line control-logs fragment, and no product source changed.\nCALL_SITES: reckon/crew/budget_lift.py:_governing_lift, reckon/crew/budget_lift.py:491, reckon/crew/budget_lift.py:717\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: scoped-gate-1795000282362319968.log records 4 passed at c140c8ed for tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py with EXIT=0, the file-green deliverable docs/plans/queued-work-needs-no-workaround.html#s29 states.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795000282362319968.log and after_suite-6944973277.log are header-first captures naming revision, tree, command and a bare EXIT line, but the all_debug-job clause is asserted in the manifest rather than recorded in either capture.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in git diff --numstat 2f00851c42f2..c140c8ed9dd2 lies inside the declared paths, the one surplus being a second evidence-prose fragment the landing contract does not allow.\nSCORE durability: 19\nJUSTIFICATION durability: no assertion was added, and the guard is the surviving test at tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:337, which negative-control-base-run.log reddens with two ids when the result.output parse is put back.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:337-339 reads result.stdout with a comment in the shape of tests/test_a_node_is_queued_once.py:92 and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over tests/ found 128 local `def _dispatch` helpers and no shared owner, so the change follows the sibling convention at tests/test_a_node_is_queued_once.py:92 rather than forking a helper.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-spent-global-lift-does-not-mask-a-session-lift.html:44 non-blocking: the head-gate section claims an all_debug job while the capture it introduces at :47-52 names only revision, host and command and the gate's scheduler receipt is empty, so the partition clause is carried by the manifest alone.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-spent-global-lift-does-not-mask-a-session-lift.html:1 non-blocking: the node commits a second evidence fragment whose base and head capture blocks repeat those in its landing fragment, where the landing contract permits one fragment per node and no further evidence prose.",
+  "review_run_id": "r-20261118T111628294920-review-of-qwnw-red-file-a-spent-global-lift-does-not-mask-a-session-lift-c140c8ed9dd2",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "c140c8ed9dd2946ec56bac7a1859c325b40f8227",
+  "reviewed_run_id": "r-20261118T062526260073-qwnw-red-file-a-spent-global-lift-does-not-mask-a-session-lift",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:14:36.140127+00:00",
+  "total": 113
+}

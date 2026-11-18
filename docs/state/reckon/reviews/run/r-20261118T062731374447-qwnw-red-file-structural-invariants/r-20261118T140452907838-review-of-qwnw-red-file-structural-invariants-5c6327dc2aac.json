@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "25255992b19bf9b2dc2bb9e4fd46d9e429f943f6",
+  "call_site_count": 12,
+  "call_sites": [
+    "reckon/crew/obligations.py:4832 (fleet_test_obligations, the fleet test sample stamp)",
+    "reckon/crew/obligations.py:5189 (failure_obligations, the promotion failure and wait ages)",
+    "reckon/crew/obligation_snapshot.py:2055 (fleet_test_obligations over a snapshot's now)",
+    "reckon/crew/obligation_snapshot.py:2158 (failure_obligations over a snapshot's now)",
+    "reckon/crew/plan_review.py:2818 (_commit_time for a landed edit)",
+    "reckon/crew/plan_review.py:2819 (_answer_instant for a stored answer)",
+    "reckon/crew/station.py:1425 (_prune_released_followers from the tick's maintenance stage)",
+    "reckon/crew/review_records.py:1082 (_delivery_order ordering stored review rounds)",
+    "reckon/crew/repository_maintenance.py:449 (maintenance_due over each repository)",
+    "reckon/crew/station_obligations.py:576 (_publish_pending from the obligation refresh)",
+    "reckon/hooks/coordinator_obligations.py:961 (limit_reset_events in the notice trailer)",
+    "reckon/hooks/coordinator_obligations.py:1473 (limit_reset_events in the duty digest)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:00:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062731374447-qwnw-red-file-structural-invariants/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_logs names the scoped gate and the base control, but the scheduler receipt beside every log in the run directory (scoped-gate-1795005024362054785.log.scheduler, baseline_suite-1795005080015678912.log.scheduler, after_suite-1795005123542389040.log.scheduler) is 0 bytes, so the done_when clause 'as a job on all_debug with SLURM_JOB_ID unset' rests on the manifest's prose and the log header's host line (98dci4-clu-3141.iter.org) rather than on a recorded receipt; the substantive measure -- the file passing in full, EXIT=0, with the base control's failing ids -- is recorded and reproduces."
+    },
+    {
+      "file": "reckon/crew/station_obligations.py",
+      "line": "371",
+      "severity": "non-blocking",
+      "text": "non-blocking: the rewrite changes behaviour where the old call raised -- `parse_utc(stored[\"changed_at\"]) or instant` here and `parse_utc(request.get(\"finished_at\")) or moment` at reckon/crew/promotion_requests.py:1314 substitute the current instant for an unreadable stamp instead of propagating the ValueError, and no assertion in tests/test_structural_invariants.py or the untouched timestamp-caller batches names either branch, so a regression in that fallback would not redden any test this node relies on."
+    }
+  ],
+  "head_log_revision": "d012fc6d3513e832a2402357e25cf346c4c5fa5a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "twelve production readers were opened and confirmed to reach the change: fleet_test_obligations and failure_obligations from both reckon/crew/obligations.py and reckon/crew/obligation_snapshot.py, _commit_time and _answer_instant from reckon/crew/plan_review.py:2818-2819, _prune_released_followers from the station tick, _delivery_order from the review store read, maintenance_due from the maintenance sweep, _publish_pending from the obligation refresh, and limit_reset_events from two hook paths.",
+    "diff": "read both commits against 25255992: d012fc6d35 rewrites fifteen `datetime.fromisoformat` sites in reckon/crew/fleet_supervisor.py, plan_review.py, promotion_requests.py, repository_maintenance.py, review_records.py, station.py, station_obligations.py and reckon/hooks/coordinator_obligations.py onto reckon._timestamps.parse_utc, adding a `None` guard at fleet_supervisor.py:1031 and instant fallbacks at station_obligations.py:371,648 and promotion_requests.py:1314; 5c6327dc2a adds only the 58-line evidence fragment. No test file changed and nothing falls outside the fence.",
+    "done_when": "the done_when asks for tests/test_structural_invariants.py passing in full as an all_debug job with SLURM_JOB_ID unset, a base control with failing ids, suite arms as inline JSON with full revisions, the base run logged beside head in the named fragment, and nothing new from ruff on the changed paths; scoped-gate-1795005024362054785.log reads `7 passed` and `EXIT=0` at d012fc6d35, base-structural-invariants.log reads `1 failed, 6 passed` and `EXIT=1` naming the fifteen sites, both suite arms read `58 passed` with EXIT=0, the fragment records the pair, and ruff at 5c6327dc reports only two pre-existing S105 findings with all eight files format-clean -- but the all_debug/SLURM_JOB_ID-unset clause has no scheduler receipt.",
+    "goal": "the goal is that tests/test_structural_invariants.py passes in full at head; an independent re-run of that file in a scratch extraction of 5c6327dc reads `7 passed`, against `1 failed, 6 passed` at 25255992, and the fifteen offender sites the base run named are gone from the eight changed modules.",
+    "manifest": "read; status complete, both commit ids, nine changed_paths, the tests/test_logs/negative_control_log lines filled, both suite arms as inline JSON with full 40-character revisions, the importer arms with counts, and all six rubric lines answered; its claims about formatting and the gate exit reproduce at 5c6327dc, while its all_debug provenance has no receipt behind it.",
+    "write_paths": "the fence was reckon, tests, the evidence-fragment directory, the named fragment and a figures directory; every one of the nine delivered paths lies under reckon/ or is the declared fragment file, and no test, figure or plan file changed."
+  },
+  "justifications": {
+    "durability": "reinstating `datetime.fromisoformat(stamp)` at reckon/crew/fleet_supervisor.py:1031 reddens tests/test_structural_invariants.py:132, which the base run reproduced with all fifteen offenders; but that guard pins only which function parses, not what the migrated calls return, so the `or instant` and `or moment` fallbacks at reckon/crew/station_obligations.py:371 and reckon/crew/promotion_requests.py:1314 are unguarded.",
+    "evidence": "the gate log carries revision d012fc6d35, host, tree, command, `7 passed` and a bare `EXIT=0`, and the base control carries `1 failed, 6 passed` with EXIT=1 and the fifteen ids, so the measure is recorded rather than claimed; the scheduler receipt beside it is 0 bytes, leaving the all_debug/SLURM_JOB_ID-unset clause to prose.",
+    "fit": "each migrated site calls the module the invariant names, the lazy in-function import at reckon/crew/plan_review.py:2209 and reckon/hooks/coordinator_obligations.py:722 matches the lazy convention already used there, and the module-level import at reckon/crew/station.py:21 matches that module's header imports.",
+    "goal_fidelity": "the file the goal names passes in full at 5c6327dc (7 passed, re-run here) and the fifteen offenders listed in base-structural-invariants.log are absent from the eight changed modules.",
+    "reuse": "no parser, helper or module is added: all fifteen sites route to reckon/_timestamps.py:41 parse_utc, the owner the invariant names, and the duplicated Z-suffix and naive-to-UTC rules at the call sites are deleted rather than re-spelled.",
+    "scope_discipline": "git diff 25255992..5c6327dc touches the eight modules that held the fifteen offender sites plus the declared evidence fragment, and no test, figure, plan or unrelated module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_structural_invariants.py passes in full at head; an independent re-run of that file in a scratch extraction of 5c6327dc reads `7 passed`, against `1 failed, 6 passed` at 25255992, and the fifteen offender sites the base run named are gone from the eight changed modules.\nVERDICT done_when: the done_when asks for tests/test_structural_invariants.py passing in full as an all_debug job with SLURM_JOB_ID unset, a base control with failing ids, suite arms as inline JSON with full revisions, the base run logged beside head in the named fragment, and nothing new from ruff on the changed paths; scoped-gate-1795005024362054785.log reads `7 passed` and `EXIT=0` at d012fc6d35, base-structural-invariants.log reads `1 failed, 6 passed` and `EXIT=1` naming the fifteen sites, both suite arms read `58 passed` with EXIT=0, the fragment records the pair, and ruff at 5c6327dc reports only two pre-existing S105 findings with all eight files format-clean -- but the all_debug/SLURM_JOB_ID-unset clause has no scheduler receipt.\nVERDICT write_paths: the fence was reckon, tests, the evidence-fragment directory, the named fragment and a figures directory; every one of the nine delivered paths lies under reckon/ or is the declared fragment file, and no test, figure or plan file changed.\nVERDICT manifest: read; status complete, both commit ids, nine changed_paths, the tests/test_logs/negative_control_log lines filled, both suite arms as inline JSON with full 40-character revisions, the importer arms with counts, and all six rubric lines answered; its claims about formatting and the gate exit reproduce at 5c6327dc, while its all_debug provenance has no receipt behind it.\nVERDICT diff: read both commits against 25255992: d012fc6d35 rewrites fifteen `datetime.fromisoformat` sites in reckon/crew/fleet_supervisor.py, plan_review.py, promotion_requests.py, repository_maintenance.py, review_records.py, station.py, station_obligations.py and reckon/hooks/coordinator_obligations.py onto reckon._timestamps.parse_utc, adding a `None` guard at fleet_supervisor.py:1031 and instant fallbacks at station_obligations.py:371,648 and promotion_requests.py:1314; 5c6327dc2a adds only the 58-line evidence fragment. No test file changed and nothing falls outside the fence.\nCALL_SITES: reckon/crew/obligations.py:4832 (fleet_test_obligations), reckon/crew/obligations.py:5189 (failure_obligations), reckon/crew/obligation_snapshot.py:2055 (fleet_test_obligations), reckon/crew/obligation_snapshot.py:2158 (failure_obligations), reckon/crew/plan_review.py:2818 (_commit_time), reckon/crew/plan_review.py:2819 (_answer_instant), reckon/crew/station.py:1425 (_prune_released_followers), reckon/crew/review_records.py:1082 (_delivery_order), reckon/crew/repository_maintenance.py:449 (maintenance_due), reckon/crew/station_obligations.py:576 (_publish_pending), reckon/hooks/coordinator_obligations.py:961 (limit_reset_events), reckon/hooks/coordinator_obligations.py:1473 (limit_reset_events)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the file the goal names passes in full at 5c6327dc (7 passed, re-run here) and the fifteen offenders listed in base-structural-invariants.log are absent from the eight changed modules.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log carries revision d012fc6d35, host, tree, command, `7 passed` and a bare `EXIT=0`, and the base control carries `1 failed, 6 passed` with EXIT=1 and the fifteen ids, so the measure is recorded rather than claimed; the scheduler receipt beside it is 0 bytes, leaving the all_debug/SLURM_JOB_ID-unset clause to prose.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 25255992..5c6327dc touches the eight modules that held the fifteen offender sites plus the declared evidence fragment, and no test, figure, plan or unrelated module.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating `datetime.fromisoformat(stamp)` at reckon/crew/fleet_supervisor.py:1031 reddens tests/test_structural_invariants.py:132, which the base run reproduced with all fifteen offenders; but that guard pins only which function parses, not what the migrated calls return, so the `or instant` and `or moment` fallbacks at reckon/crew/station_obligations.py:371 and reckon/crew/promotion_requests.py:1314 are unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: each migrated site calls the module the invariant names, the lazy in-function import at reckon/crew/plan_review.py:2209 and reckon/hooks/coordinator_obligations.py:722 matches the lazy convention already used there, and the module-level import at reckon/crew/station.py:21 matches that module's header imports.\nSCORE reuse: 20\nJUSTIFICATION reuse: no parser, helper or module is added: all fifteen sites route to reckon/_timestamps.py:41 parse_utc, the owner the invariant names, and the duplicated Z-suffix and naive-to-UTC rules at the call sites are deleted rather than re-spelled.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062731374447-qwnw-red-file-structural-invariants/manifest.md:17 non-blocking: test_logs names the scoped gate and the base control, but the scheduler receipt beside every log in the run directory (scoped-gate-1795005024362054785.log.scheduler, baseline_suite-1795005080015678912.log.scheduler, after_suite-1795005123542389040.log.scheduler) is 0 bytes, so the done_when clause 'as a job on all_debug with SLURM_JOB_ID unset' rests on the manifest's prose and the log header's host line (98dci4-clu-3141.iter.org) rather than on a recorded receipt; the substantive measure -- the file passing in full, EXIT=0, with the base control's failing ids -- is recorded and reproduces.\nFINDING reckon/crew/station_obligations.py:371 non-blocking: the rewrite changes behaviour where the old call raised -- `parse_utc(stored[\"changed_at\"]) or instant` here and `parse_utc(request.get(\"finished_at\")) or moment` at reckon/crew/promotion_requests.py:1314 substitute the current instant for an unreadable stamp instead of propagating the ValueError, and no assertion in tests/test_structural_invariants.py or the untouched timestamp-caller batches names either branch, so a regression in that fallback would not redden any test this node relies on.\n",
+  "review_run_id": "r-20261118T140452907838-review-of-qwnw-red-file-structural-invariants-5c6327dc2aac",
+  "reviewed_base_sha": "25255992b19bf9b2dc2bb9e4fd46d9e429f943f6",
+  "reviewed_head_sha": "5c6327dc2aac91f40a505a388809709363d2f486",
+  "reviewed_run_id": "r-20261118T062731374447-qwnw-red-file-structural-invariants",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T140452907838-review-of-qwnw-red-file-structural-invariants-5c6327dc2aac"
+  },
+  "reviewer_run_id": "r-20261118T140452907838-review-of-qwnw-red-file-structural-invariants-5c6327dc2aac",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:23:47.635229+00:00",
+  "total": 107
+}

@@ -1,0 +1,49 @@
+<section id="qwnw-red-file-granted-path-is-a-claim-landing">
+<h3>The file passes; its two red cases were two rules the product deliberately replaced, and the file still asserted the old ones</h3>
+<p><code>tests/test_granted_path_is_a_claim.py</code> was red on the primary branch at <code>ef0bce316448</code>: 2 failed, 2 passed. The two failures had different causes, both of them the test encoding a claim rule the code no longer keeps, and both replaced by rules the product states in its own docstrings and that sibling tests already pin and pass. No product line changed here, and no assertion was deleted or weakened.</p>
+
+<h4 id="qwnw-red-file-granted-path-is-a-claim-causes">Causes and verdicts</h4>
+<table>
+<thead><tr><th>Cause</th><th>Case</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td>A granted landing path is now an artifact git cannot reconcile, so a live holder keeps it and the second dispatch is refused</td>
+<td><code>test_a_granted_landing_collision_is_reported</code> — <code>assert 2 == 0</code>: the payload carried <code>admission.state: refused</code> with <code>detail: write scope 'docs/evidence/archive/plan-a-landed.html' conflicts with live claim … ; exclusive pattern 'docs/evidence/archive/'; run 'r-holder' is still running as pid …</code>, and the dry run exited on the write-scope refusal</td>
+<td><strong>test wrong</strong> — <code>5695689722</code> shares source and test declarations across worktrees and keeps plan, state, evidence, figure, lockfile and binary exclusions "including explicitly granted landing artifacts". <code>_shared_landing_paths</code> and <code>_candidate_scope_entries</code> state the same rule, and <code>tests/test_only_unmergeable_paths_are_claimed.py::test_an_unmergeable_path_is_refused_naming_its_live_owner</code> pins all three legacy landing paths as refused naming the live owner. The test now asserts the refusal, and keeps every assertion it made about the report: the holder's run and node, the candidate, the claimed paths and the path pairs, for all three granted paths. The figures topic is a directory, which the write-scope rule refuses before the admission code is reached, so the exit code asserted is that refusal's.</td>
+</tr>
+<tr>
+<td>A source path is shared by default between isolated worktrees, so a live claim on one no longer refuses a caller-named collision</td>
+<td><code>test_a_caller_named_collision_is_reported_as_before</code> — <code>assert 0 == 7</code> over <code>package/target.py</code>: the dry run admitted and reported <code>live_conflicts: []</code></td>
+<td><strong>test wrong</strong> — <code>runs._shared_write_paths</code> returns <code>default_share=True</code> with no sharing declaration, so <code>_claim_shares_overlap</code> excuses a mergeable path and two worktrees meet at the merge. <code>tests/test_only_unmergeable_paths_are_claimed.py</code> pins the same split from the other side (a source directory and its live file are both dispatched). The caller-named case now names an unmergeable artifact — <code>docs/plans/plan-other.html</code>, a leaf file in an exclusive class that is not one of the candidate's granted landing paths — so its subject survives intact: exit 7, <code>error: scope-conflict</code>, the holder named at the top level and in the projection, and the exact <code>live_conflicts</code> row.</td>
+</tr>
+</tbody>
+</table>
+
+<h4 id="qwnw-red-file-granted-path-is-a-claim-negative-control">Negative control: the base revision's own run</h4>
+<p>Read from <code>gate-base.log</code> in this run's directory, a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, over a <code>git archive</code> extraction of the base revision. Its failure lines quote a pid the fixture generated, which differs on every run.</p>
+<pre>
+# revision: ef0bce316448244cae55cedef8aca7e1dbc36988
+# tree: /tmp/reckon-crew-scratch/r-20261118T062432183719-qwnw-red-file-granted-path-is-a-claim/gate-base.rBEadu
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_granted_path_is_a_claim.py
+# module.__file__: /tmp/reckon-crew-scratch/r-20261118T062432183719-qwnw-red-file-granted-path-is-a-claim/gate-base.rBEadu/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T062432183719-qwnw-red-file-granted-path-is-a-claim/gate-base.rBEadu
+# slurm_job_id: unset
+FAILED tests/test_granted_path_is_a_claim.py::test_a_granted_landing_collision_is_reported - AssertionError: {"admission": {"candidate_path": "docs/evidence/archive/plan-a-landed.html", "claimed_path": "docs/evidence/archive/plan-a-landed.html", "conflicting_node_id": "node-holder", "conflicting_run_id": "r-holder", "detail": "write scope 'docs/evidence/archive/plan-a-landed.html' conflicts with live claim 'docs/evidence/archive/plan-a-landed.html' held by run 'r-holder' (node 'node-holder') Resolve with `reckon crew observe` and the owner's reported reconciliation command, then `reckon crew dispatch`.; exclusive pattern 'docs/evidence/archive/'; run 'r-holder' is still running as pid 8", "error": "scope-conflict", "state": "refused"}, …
+FAILED tests/test_granted_path_is_a_claim.py::test_a_caller_named_collision_is_reported_as_before - assert 0 == 7
+2 failed, 2 passed in 1.05s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-granted-path-is-a-claim-head-gate">Head gate: the same job at the delivered head</h4>
+<pre>
+# revision: 71274bf4887eb86e28048f4e662cd3b8f6364892
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-granted-path-is-a-claim
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_granted_path_is_a_claim.py
+# slurm_job_id: unset
+4 passed in 1.40s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-granted-path-is-a-claim-arms">Arm over the files that share the changed file's subject</h4>
+<p>The change is one test file, so no product module's importers are at stake; the arm covers the test files that judge the same two rules, resolved over each arm's own tree. Base <code>47 passed, 2 failed</code> — the two ids above and nothing else. Head <code>49 passed</code>, no failure. No failure is added against the base.</p>
+</section>

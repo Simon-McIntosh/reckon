@@ -1,0 +1,39 @@
+<section id="qwnw-red-file-gc-reaches-every-tree-its-obligation-names-verdict">
+<h2>One cause, and it is the test</h2>
+<p>The base run fails one of four cases:
+<code>test_two_sessions_one_node_id_resolve_their_own_tree</code>. That case merges
+both heads and then asks <code>obligations._held_worktree_records</code> which run
+each tree belongs to.</p>
+<p>A tree whose landing took its work is not a duty: the held pass drops exactly
+those trees, and <code>tests/test_a_clean_landing_releases_its_worktree.py</code>
+pins <code>_held_worktree_records(PROJECT) == {}</code> after a clean landing. So
+the assertion contradicted a rule the code keeps and another test enforces.</p>
+<p>Measured on the failing fixture before the repair: the duty view answered
+empty for both merged trees, while the named view answered each tree with its
+own run, alpha with the early run and zeta with the late one. The session
+narrowing the case exists for was already correct; only the view it read was
+wrong.</p>
+<p>Verdict: test wrong. No product code changed. The case now reads the named
+view for the association and pins the duty view's empty answer beside it, so
+the distinction the two views carry is asserted rather than assumed. The
+association asserted is unchanged and no assertion was dropped.</p>
+</section><section id="qwnw-red-file-gc-reaches-every-tree-its-obligation-names-runs">
+<h2>Base red, head green</h2>
+<p>The base-revision run of the node's own test file, measured in an
+archive of <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code> so no
+unread working file is measured:</p>
+<pre># revision: 23b901694b4bfec73d95be3a082d4c336d9a4101
+# tree: /tmp/reckon-crew-scratch/r-20261118T062947939583-qwnw-red-file-gc-reaches-every-tree-its-obligation-names/gcdbg/base
+# command: PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T062947939583-qwnw-red-file-gc-reaches-every-tree-its-obligation-names/gcdbg/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gc_reaches_every_tree_its_obligation_names.py
+FAILED tests/test_gc_reaches_every_tree_its_obligation_names.py::test_two_sessions_one_node_id_resolve_their_own_tree - KeyError: PosixPath(&#x27;/tmp/reckon-crew-scratch/r-20261118T062947939583-qwnw-red-file-gc-reaches-every-tree-its-obligation-names/pytest-of-mcintos/pytest-4/test_two_sessions_one_node_id_0/.reckon-worktrees/repo-f5acadf7fc40/gc-reaches-zeta/withheld-node&#x27;)
+1 failed, 3 passed in 1.46s
+EXIT=1</pre>
+<p>The same file at the committed head, run as a job on all_debug by
+<code>crew verify-gate --worker</code>:</p>
+<pre># revision: 362e6d79d407a8be5daf259dae86f22c91ea2bfc
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-f0c72009c9f7-BBVl2H/tree
+# command: env PYTHONPATH=. sh -c &#x27;PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gc_reaches_every_tree_its_obligation_names.py&#x27;
+4 passed in 1.24s
+EXIT=0</pre>
+</section>

@@ -232,16 +232,27 @@ def test_rendered_status_chips_reduce_the_plan_feed(
 
       const status = document.querySelector('.r-feed-status-filters');
       const baseline = countRows();
-      const statusOption = [...status.querySelectorAll("button")]
-        .find(button => Number(button.dataset.count) > 0 && Number(button.dataset.count) < baseline);
-      const statusCount = await choose(statusOption);
+      // A chip's count describes the project's corpus, while the feed also
+      // applies the hide-done filter, so pick the chip by what it renders.
+      const candidates = [...status.querySelectorAll("button")].slice(1)
+        .filter(button => Number(button.dataset.count) > 0);
+      let statusOption = null;
+      let statusCount = 0;
+      for (const candidate of candidates) {
+        const rendered = await choose(candidate);
+        if (rendered > 0 && rendered < baseline) {
+          statusOption = candidate;
+          statusCount = rendered;
+          break;
+        }
+      }
       const all = status.querySelector("button");
       const restored = await choose(all);
       return {
         baseline,
         statusCount,
         restored,
-        statusLabel: statusOption.textContent.trim(),
+        statusLabel: statusOption ? statusOption.textContent.trim() : "",
       };
     })()"""
 

@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:19:14Z",
+  "findings": [],
+  "justifications": {
+    "durability": "the diff adds no assertion, but with reckon/crew/recovery_liveness.py:1356 absent at base the assertions at tests/test_resume_sweep_needs_an_observed_death.py:246 and :272 redden in target-base.log and pass at head.",
+    "evidence": "target-base.log:108-118 records 2 failed and 1 passed with EXIT=1 and both failing ids; scoped-gate-1794994288892155902.log records 3 passed with EXIT=0 at eb04e06b81; both importer arms record 10 failed and 465 passed with identical ids; both suite arms record 58 passed with EXIT=0.",
+    "fit": "reckon/crew/recovery_liveness.py:1356 is a two-line early return with a docstring paragraph in the module's existing voice, introducing no new name.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:1356 returns None when the worker record is absent, so the run is no longer reported parked and the resume doors read as unknown; tests/test_resume_sweep_needs_an_observed_death.py runs 3 passed at the reviewed head.",
+    "reuse": "the guard reuses _worker_record at reckon/crew/recovery_liveness.py:278, the module's own worker-record reader already used at :748 and :1784; no second reader was added.",
+    "scope_discipline": "the two paths in the diff are reckon/crew/recovery_liveness.py and the queued-work-needs-no-workaround evidence fragment named by the done_when, and both are inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_resume_sweep_needs_an_observed_death.py passes in full; reckon/crew/recovery_liveness.py:1356 delivers it and the file runs 3 passed at head.\nVERDICT done_when: the done_when asks for the named file at head, a cause verdict per cause, an importer arm adding no failure, and the base failing ids in the fragment; target-base.log:108-118 carries both ids and both importer arms are id-identical.\nVERDICT write_paths: both changed paths sit inside the declared reckon, tests and queued-work-needs-no-workaround paths, and the fragment is the exact file the done_when names.\nVERDICT manifest: it records complete, both commits, the literal gate command, both suite arms at 40-character revisions with 58 passed and EXIT=0, and the verdict that the product was wrong.\nVERDICT diff: eb04e06b81 adds 10 lines to reckon/crew/recovery_liveness.py and aea2ced58fd6 adds 74 lines to the evidence fragment; no test file is touched.\nCALL_SITES: reckon/crew/resumption.py:_parked_on_a_wait (def at 1537, read at 1500), reckon/crew/resumption.py:1655 sweep gate, reckon/crew/dispatch_launch.py:_run_is_parked_on_a_declared_wait (def at 2879, read at 2823)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1356 is the only product change and it turns tests/test_resume_sweep_needs_an_observed_death.py from 2 failed to 3 passed.\nSCORE evidence: 18\nJUSTIFICATION evidence: target-base.log:108-118 records the base arm ids at 97dec20bfb86 and scoped-gate-1794994288892155902.log records 3 passed with EXIT=0 at eb04e06b81.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths changed are reckon/crew/recovery_liveness.py and the evidence fragment the done_when names.\nSCORE durability: 19\nJUSTIFICATION durability: the diff adds no assertion, and tests/test_resume_sweep_needs_an_observed_death.py:246 would redden if reckon/crew/recovery_liveness.py:1356 were removed, which target-base.log shows.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:1356 adds an early return and a docstring paragraph in the surrounding idiom, with no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the guard calls _worker_record at reckon/crew/recovery_liveness.py:278 rather than adding a second worker-record reader.",
+  "review_run_id": "r-20261118T095021080120-review-of-qwnw-red-file-resume-sweep-needs-an-observed-death-aea2ced58fd6",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "aea2ced58fd60c251f1df37833bda4d6a38a1e45",
+  "reviewed_run_id": "r-20261118T044615446581-qwnw-red-file-resume-sweep-needs-an-observed-death",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:41:44.773750+00:00",
+  "total": 115
+}

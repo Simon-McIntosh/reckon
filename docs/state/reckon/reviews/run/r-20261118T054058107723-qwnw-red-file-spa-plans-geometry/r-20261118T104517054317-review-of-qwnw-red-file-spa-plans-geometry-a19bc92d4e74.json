@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (f29efdc635, 58 passed, EXIT=0) and after_suite (a19bc92d4e, 58 passed, EXIT=0) each record failure_ids [] in manifest.md, so the head adds no failure over the base.",
+  "call_sites": [
+    "docs/ui/shell.jsx:529 ArtifactSurface mount",
+    "docs/ui/shell-route.jsx:88 ARTIFACT_ROUTES and useHashRoute",
+    "docs/ui/shell-plans.jsx:186 artifact-route resolution"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T12:12:24Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-plans-geometry.html",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "The quoted base summary prints '- TypeError: Cannot read properties of undefined (reading 'click')' for the chip case, but logs/base-full.log:353 records that summary line as 'tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed ...'; the TypeError appears only inside that failure's traceback at base-full.log:369, so a reader comparing the quote against the cited log finds a line the summary block does not hold."
+    },
+    {
+      "file": "tests/test_spa_plans_geometry.py",
+      "line": 25,
+      "severity": "non-blocking",
+      "text": "The rendered_browser fixture skips every rendered case when no browser resolves, and the recorded gate command supplies RECKON_BROWSER from an operator cache path, so a promotion re-run without that path returns EXIT=0 with 7 skipped and the mount condition at docs/ui/shell.jsx:38 unexercised."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-plans-geometry.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "Commit a19bc92d4e carries a subject and no body, against the run's rule that a local commit carries both; the change itself is a two-line quote correction in the two fragments."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Three production call sites were read: the single mount at docs/ui/shell.jsx:529, the hash-route parsing at docs/ui/shell-route.jsx:88 that supplies route.slug, and the artifact-route resolution at docs/ui/shell-plans.jsx:186.",
+    "diff": "Read all three commits against f29efdc635: 8a820e48 changes one mount condition in docs/ui/shell.jsx:38 and the chip probe in tests/test_spa_plans_geometry.py:232-246, 57dc8cd adds the two evidence fragments, a19bc92 corrects the base-arm quote in both; no path in the diff lies outside the declared scope.",
+    "done_when": "The done_when names tests/test_spa_plans_geometry.py at head as an all_debug job after a base run with a per-cause verdict; the manifest records the head gate (11 passed EXIT=0, header revision 8a820e48, host 98dci4-clu-3144), the base arm logs/base-full.log (4 failed, 7 passed EXIT=1 at f29efdc635) and the per-cause table, but neither log shows SLURM_JOB_ID being unset at the test process.",
+    "goal": "The node goal is 'Make tests/test_spa_plans_geometry.py pass in full on the primary branch'; docs/ui/shell.jsx:38 mounts the plans list column only when a plan is selected, and scoped-gate-1794993734982693221.log:7 records 11 passed EXIT=0 at 8a820e4803.",
+    "manifest": "Read in full; it names commits 8a820e4803, 57dc8cd42f and a19bc92d4e, the literal gate command with its browser path, four log paths that all exist with a bare EXIT= last line, a 0-added-failure suite pair and the importer arm in evidence_inputs.",
+    "write_paths": "The diff touches docs/ui/shell.jsx, tests/test_spa_plans_geometry.py and two files under docs/evidence/fragments/queued-work-needs-no-workaround/; all four are inside the run's resolved expected write paths (classification.json .orientation_check.expected.write_paths)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_spa_plans_geometry.py pass in full on the primary branch'; docs/ui/shell.jsx:38 mounts the plans list column only when a plan is selected, and scoped-gate-1794993734982693221.log:7 records 11 passed EXIT=0 at 8a820e4803.\nVERDICT done_when: the done_when names tests/test_spa_plans_geometry.py at head as an all_debug job after a base run with a per-cause verdict; the manifest records the head gate (11 passed EXIT=0, header revision 8a820e48, host 98dci4-clu-3144), the base arm logs/base-full.log (4 failed, 7 passed EXIT=1 at f29efdc635) and the per-cause table, but neither log shows SLURM_JOB_ID being unset at the test process.\nVERDICT write_paths: the diff touches docs/ui/shell.jsx, tests/test_spa_plans_geometry.py and two files under docs/evidence/fragments/queued-work-needs-no-workaround/; all four are inside the run's resolved expected write paths (classification.json .orientation_check.expected.write_paths), though the node spec field listed only reckon, tests and the evidence directory.\nVERDICT manifest: read in full; it names commits 8a820e4803, 57dc8cd42f and a19bc92d4e, the literal gate command with its browser path, four log paths that all exist with a bare EXIT= last line, a 0-added-failure suite pair (58 passed at both revisions) and the importer arm in evidence_inputs.\nVERDICT diff: read all three commits against f29efdc635: 8a820e48 changes one mount condition in docs/ui/shell.jsx:38 and the chip probe in tests/test_spa_plans_geometry.py:232-246, 57dc8cd adds the two evidence fragments, a19bc92 corrects the base-arm quote in both; no path in the diff lies outside the declared scope.\nCALL_SITES: docs/ui/shell.jsx:529, docs/ui/shell-route.jsx:88, docs/ui/shell-plans.jsx:186\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/shell.jsx:38 restores the selection guard the locked artifact-layout decision requires, and the head gate at that tree reads 11 passed EXIT=0 against the four ids the base arm fails (logs/base-full.log:335-353).\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate command is the literal one scoped-gate-1794993734982693221.log:5 carries and its EXIT=0 is the log's last line, but the declared suite pair (baseline_suite-clean.log:3, after_suite-clean.log:3) reads only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cannot observe docs/ui/shell.jsx.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in f29efdc..a19bc92 is inside the run's resolved expected write paths, and the declared figure directory docs/figures/queued-work-needs-no-workaround/qwnw-red-file-spa-plans-geometry received nothing.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the unguarded mount at docs/ui/shell.jsx:38 reproduces the base arm's own three geometry failures and restoring the old chip probe at tests/test_spa_plans_geometry.py:236 reproduces the fourth, while the assertions at :214-216 and :269-271 compare DOM measurements against the viewport and the probe's own first count, not against a value the test handed the code.\nSCORE fit: 17\nJUSTIFICATION fit: docs/ui/shell.jsx:37 adds the file's only JSX comment, but the guard reuses the component's own route-derived `selected` at :35 and the surrounding ternaries unchanged, and the probe comment at tests/test_spa_plans_geometry.py:234 follows the file's existing comment idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over reckon/ and tests/ for chip selection and mount conditions (grep for dataset.count, ListCol) found no owner to extend, and the diff adds no function, class or module, reusing tests/spa_browser_harness.served_spa unchanged.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-plans-geometry.html:19 non-blocking: the quoted base summary prints '- TypeError: Cannot read properties of undefined (reading click)' for the chip case, but logs/base-full.log:353 records that summary line as 'tests.spa_browser_harness.BrowserProbeError: browser probe navigation-never-completed ...'; the TypeError appears only inside that failure's traceback at base-full.log:369, so a reader comparing the quote against the cited log finds a line the summary block does not hold.\nFINDING tests/test_spa_plans_geometry.py:25 non-blocking: the rendered_browser fixture skips every rendered case when no browser resolves, and the recorded gate command supplies RECKON_BROWSER from an operator cache path, so a promotion re-run without that path returns EXIT=0 with 7 skipped and the mount condition at docs/ui/shell.jsx:38 unexercised.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-plans-geometry.html:1 non-blocking: commit a19bc92d4e carries a subject and no body, against the run's rule that a local commit carries both; the change itself is a two-line quote correction in the two fragments.",
+  "review_run_id": "r-20261118T104517054317-review-of-qwnw-red-file-spa-plans-geometry-a19bc92d4e74",
+  "reviewed_base_sha": "f29efdc635a1b578bb4461ff90785d3be848646b",
+  "reviewed_head_sha": "a19bc92d4e74b66d1f809b677899546ea73996e1",
+  "reviewed_run_id": "r-20261118T054058107723-qwnw-red-file-spa-plans-geometry",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T12:25:09.271389+00:00",
+  "total": 108
+}
