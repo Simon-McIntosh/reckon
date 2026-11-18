@@ -657,25 +657,26 @@ def _read_review_once(
     record rewritten in place, a new copy of it, a reviewed manifest rewritten
     or a gate log it names rewritten all move the digest and force the read.
 
-    The holding is :func:`reckon.crew.review_records.memoised_read` over
-    :func:`reckon.file_memo.memoized_key`, the store's own bounded LRU behind
-    its lock: it copies in and out, so a caller that annotates or normalises
-    the record it was given cannot alter what the store reports to the next
-    reader, and two readers that miss at once -- the review reflex on its own
-    thread beside the tick -- cannot race on the cache's own structure. A read
-    that met a record it could not use reported that to the region it ran
-    inside, and the region's finding travels with the cached answer, so a
-    derivation answered from here names the same unreadable record the read
-    that filled the memo named.
+    The holding is :func:`reckon.file_memo.memoized_key`, the store's own
+    bounded LRU behind its lock: it copies in and out, so a caller that
+    annotates or normalises the record it was given cannot alter what the store
+    reports to the next reader, and two readers that miss at once -- the review
+    reflex on its own thread beside the tick -- cannot race on the same file.
+
+    This key is the run's classification inputs, not the store's current
+    entries, so an answer held here outlives a record being deleted: a finding
+    the read reported is deliberately not carried with it. The holder that can
+    see the store move is :func:`reckon.crew.review_records.memoised_read` at
+    the callers whose keys name the store's entries, and that is where a skip
+    is replayed from, since a replay from here would name a file the store no
+    longer holds.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
         return reader()
     digest = _classification_key(_review_read_inputs(record, tree=tree))
-    from reckon.crew import review_records
-
-    return review_records.memoised_read(
+    return file_memo.memoized_key(
         "stored_review_answer", (project, run_id, *selector, digest), reader
     )
 

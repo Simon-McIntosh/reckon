@@ -610,17 +610,20 @@ def report_read_failures(entries: Iterable[tuple[str, str]]) -> None:
     A derived reading is what publishes a record it could not use, but a memo
     that answers a later reading without touching the file would drop that
     finding on every reading after the first: the second derivation would then
-    publish fewer duties than the snapshot beside it, and the same failure the
-    first one named would vanish from the view. The caller that holds the skip
-    therefore hands it back here, and it lands in the region this reading
-    opened. With no region open the replay names nobody and is dropped, which
-    is the rule a read itself follows.
+    publish fewer duties than the snapshot beside it, and the file itself
+    cannot be re-read to recover it.
+
+    The replay is conditional on the file the read named still being there. A
+    store index that has not revalidated can answer for a record that has been
+    removed, and a duty naming a path nobody can open is worse than no duty:
+    the reader would be sent to a file that does not exist. A skip whose file
+    has gone is dropped, the same way a read of it would now find nothing.
     """
     target = _READ_FAILURES.get()
     if target is None:
         return
     for path, error in entries:
-        if not path:
+        if not path or not Path(path).is_file():
             continue
         _remember_failure(target, path, str(error))
 
