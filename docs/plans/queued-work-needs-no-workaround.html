@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="610">
+<meta name="plan-version" content="611">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1901,7 +1901,10 @@
     <div class="r-comment-body"><p>tests/test_dispatch_refuses_without_tmp_headroom.py passes in full — 3 passed, EXIT=0 — at 3bb68474 against a base arm of 1 failed, 2 passed, EXIT=1 at 94359be6; the one cause is the test's: its dry-run case named no --section and so stopped at the whole-plan usage gate the CLI has carried since 74fd70f0e7 instead of reaching the scratch-headroom refusal it asserts, and naming one section restores that path with no assertion deleted or weakened.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T161157937298-review-of-qwnw-red-file-an-unchanged-run-costs-one-stat-da60d21a5b01" data-who="reckon-build" data-when="2026-11-18T20:54:59.300Z">
-    <div class="r-comment-body"><p>independent review of r-20261118T063403304859-qwnw-red-file-an-unchanged-run-costs-one-stat at base 60ecc274f1bf7008b09057c6a5252423deb4cfe5 head da60d21a5b01c8e7cc1c9fd52391ef2e98a364dc — goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 18; added_failure_count 0 with no ids over the reviewed run&#x27;s own baseline_suite and after_suite arms (58 passed at 60ecc274, 58 passed at da60d21a); one non-blocking finding on the fragment&#x27;s head citation; the six-line repair in recovery_memo._review_annotation_identities is confirmed by the base refusal (assert 1 == 0) and the head gate log</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261118T063403304859-qwnw-red-file-an-unchanged-run-costs-one-stat at base 60ecc274f1bf7008b09057c6a5252423deb4cfe5 head da60d21a5b01c8e7cc1c9fd52391ef2e98a364dc — goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 18; added_failure_count 0 with no ids over the reviewed run's own baseline_suite and after_suite arms (58 passed at 60ecc274, 58 passed at da60d21a); one non-blocking finding on the fragment's head citation; the six-line repair in recovery_memo._review_annotation_identities is confirmed by the base refusal (assert 1 == 0) and the head gate log</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063403304859-qwnw-red-file-an-unchanged-run-costs-one-stat" data-who="reckon-build" data-when="2026-11-18T15:16:35.379Z">
+    <div class="r-comment-body"><p>recovery_memo&#x27;s review-annotation reader now returns at the stat when a run has no manifest instead of decoding the missing file and re-opening it on every poll, so an unchanged run&#x27;s poll costs its four stats and no open — tests/test_an_unchanged_run_costs_one_stat.py goes from 1 failed/6 passed at 60ecc274 to 7 passed on all_debug at da60d21a</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
