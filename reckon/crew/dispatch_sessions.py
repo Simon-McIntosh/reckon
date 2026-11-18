@@ -374,36 +374,99 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     return _mutate_pointer(run_id, fold)
 
 
-def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> None:
-    """Block a run whose first reported orientation differs from its pointer."""
+def _orientation_substance(
+    record: Mapping[str, Any], reported: Mapping[str, Any]
+) -> list[str]:
+    """Verify the issued tree, ancestry and commit scope independently of echoes."""
+    from reckon.crew.promotion_evidence import _committed_scope
+    from reckon.crew.promotion_scope import _outside_declared_scope
+    from reckon.crew.reports import _COMMIT_IDENTIFIER_TOKEN
+
+    worktree = Path(str(record.get("worktree") or ""))
+    if not record.get("worktree") or not worktree.is_dir():
+        return [f"worktree {str(worktree)!r} is unavailable"]
+    top, error = _worktree_git_read(worktree, "rev-parse", "--show-toplevel")
+    if error or top is None or Path(top.stdout.strip()).resolve() != worktree.resolve():
+        return [
+            f"worktree {str(worktree)!r} cannot be verified: {error or 'not a git root'}"
+        ]
+    base = str(record.get("base_sha") or "")
+    ancestor, error = _worktree_git_read(
+        worktree, "merge-base", "--is-ancestor", base, "HEAD"
+    )
+    if error or ancestor is None:
+        return [
+            f"base {base!r} is not a verified ancestor of the worktree head: {error}"
+        ]
+    for commit in reported.get("commits") or ():
+        # An object identifier can establish foreign work. Free-text absence
+        # declarations and citation descriptions are validated by promotion.
+        tokens = str(commit).split(maxsplit=1)
+        candidate = tokens[0].strip("`") if tokens else ""
+        if not _COMMIT_IDENTIFIER_TOKEN.fullmatch(candidate):
+            continue
+        ancestor, error = _worktree_git_read(
+            worktree, "merge-base", "--is-ancestor", candidate, "HEAD"
+        )
+        if error or ancestor is None:
+            return [
+                f"commit {commit!r} is not in worktree {str(worktree)!r} history: {error}"
+            ]
+    # Measure every run commit, including paths a later commit deletes, with
+    # the same merge accounting promotion uses for its scope verdict.
+    revisions, error = _worktree_git_read(
+        worktree, "rev-list", "--first-parent", "--reverse", f"{base}..HEAD", "--"
+    )
+    if error or revisions is None:
+        return [f"worktree commits could not be read: {error}"]
+    commits = revisions.stdout.splitlines()
+    paths: tuple[str, ...] = ()
+    if commits:
+        try:
+            scope = _committed_scope(cwd=worktree, commits=commits)
+        except CrewError as exc:
+            return [f"worktree commit paths could not be verified: {exc}"]
+        if not scope.changed_lines.get("available", True):
+            return [f"worktree commit paths could not be read: {scope.changed_lines}"]
+        paths = scope.paths
+    outside = _outside_declared_scope(
+        paths,
+        (record.get("node") or {}).get("write_paths") or (),
+        record=record,
+        tree=worktree,
+    )
+    return [f"committed path outside declared scope: {path}" for path in outside]
+
+
+def _apply_orientation_check(
+    record: dict[str, Any],
+    manifest: Path | None,
+    *,
+    reported: Mapping[str, Any] | None = None,
+) -> None:
+    """Repair an echoed field only when the pointer and commit history agree."""
+    from reckon.crew.recovery_memo import _worktree_head_identity
     from reckon.crew.reports import parse_manifest
 
-    prior = record.get("orientation_check")
-    if isinstance(prior, Mapping):
-        if prior.get("matched") is False:
-            record["phase"] = "blocked"
-            record["detail"] = str(prior.get("detail") or "orientation mismatch")
-        return
-    if manifest is None:
-        return
-
-    reported = parse_manifest(manifest.read_text())
+    if reported is None:
+        if manifest is None:
+            return
+        reported = parse_manifest(manifest.read_text())
     names = ("orientation_worktree", "orientation_base_sha", "orientation_write_paths")
-    if any(not reported.get(name) for name in names):
+    if not any(reported.get(name) for name in names):
         return
 
-    raw_paths = reported["orientation_write_paths"]
+    raw_paths = reported.get("orientation_write_paths", [])
     try:
         decoded_paths = json.loads(str(raw_paths))
     except json.JSONDecodeError:
         decoded_paths = raw_paths
-    if isinstance(decoded_paths, list) and all(
-        isinstance(path, str) for path in decoded_paths
-    ):
-        reported_paths: Any = sorted(decoded_paths)
-    else:
-        reported_paths = raw_paths
-
+    reported_paths: Any = (
+        sorted(decoded_paths)
+        if isinstance(decoded_paths, list)
+        and all(isinstance(path, str) for path in decoded_paths)
+        else raw_paths
+    )
     expected = {
         "worktree": str(record.get("worktree") or ""),
         "base_sha": str(record.get("base_sha") or ""),
@@ -412,33 +475,64 @@ def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> N
         ),
     }
     actual = {
-        "worktree": str(reported["orientation_worktree"]),
-        "base_sha": str(reported["orientation_base_sha"]),
+        "worktree": str(reported.get("orientation_worktree") or ""),
+        "base_sha": str(reported.get("orientation_base_sha") or ""),
         "write_paths": reported_paths,
     }
     mismatches = [name for name in expected if actual[name] != expected[name]]
-    if not mismatches:
-        record["orientation_check"] = {
-            "checked_at": _utc_now(),
-            "matched": True,
-        }
-        return
-
-    detail = "orientation mismatch: " + "; ".join(
-        f"{name} expected={json.dumps(expected[name], sort_keys=True)} "
-        f"reported={json.dumps(actual[name], sort_keys=True)}"
-        for name in mismatches
-    )
-    record["orientation_check"] = {
-        "checked_at": _utc_now(),
-        "matched": False,
-        "mismatches": mismatches,
+    status = str(reported.get("status") or "").strip().lower()
+    inputs = {
         "expected": expected,
         "reported": actual,
-        "detail": detail,
+        "status": status,
+        "commits": list(reported.get("commits") or ()),
+        "head": _worktree_head_identity(Path(expected["worktree"])),
     }
-    record["phase"] = "blocked"
-    record["detail"] = detail
+    prior = record.get("orientation_check")
+    if isinstance(prior, Mapping) and prior.get("inputs") == inputs:
+        check = dict(prior)
+    else:
+        findings = (
+            _orientation_substance(record, reported)
+            if mismatches or status == "complete"
+            else []
+        )
+        detail = "; ".join(findings)
+        if findings and mismatches:
+            detail += "; orientation mismatch: " + "; ".join(
+                f"{name} expected={json.dumps(expected[name], sort_keys=True)} "
+                f"reported={json.dumps(actual[name], sort_keys=True)}"
+                for name in mismatches
+            )
+        check = {
+            "checked_at": _utc_now(),
+            "matched": not findings,
+            "inputs": inputs,
+            "mismatches": mismatches,
+            "expected": expected,
+            "reported": actual,
+            "detail": detail,
+        }
+        if mismatches and not findings:
+            check["repaired_echo"] = {
+                name: {"expected": expected[name], "reported": actual[name]}
+                for name in mismatches
+            }
+    record["orientation_check"] = check
+    if check["matched"] is False:
+        record["phase"] = "blocked"
+        record["detail"] = check["detail"]
+    elif (
+        isinstance(prior, Mapping)
+        and prior.get("matched") is False
+        and record.get("phase") == "blocked"
+        and (
+            record.get("detail") == prior.get("detail")
+            or str(record.get("detail") or "").startswith("orientation mismatch:")
+        )
+    ):
+        record["phase"] = status
+        record.pop("detail", None)
 
 
 def _record_node_id(record: Mapping[str, Any]) -> str:
@@ -1100,7 +1194,7 @@ def _latest_attempt_capacity_refusal(record: Mapping[str, Any]) -> str | None:
     log_path = str(record.get("log_path") or "").strip()
     if not log_path or not Path(log_path).exists():
         return None
-    events, _malformed = _backends.cached_stream_events(log_path)
+    events, _malformed = _backends.cached_stream_events(log_path, whole=True)
     for event in reversed(events):
         kind = str(event.get("type") or "")
         if kind not in _TERMINAL_STREAM_KINDS:
@@ -1227,7 +1321,12 @@ def resume_plan(
     record = read_pointer(run_id)
     if record.get("launch") != "cli":
         raise CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if record_process_alive(record, process_alive) is True:
+    from reckon.crew.recovery_liveness import _record_is_known_foreign
+
+    if (
+        not _record_is_known_foreign(record)
+        and record_process_alive(record, process_alive) is True
+    ):
         from reckon.crew import resumption as _resumption
 
         _resumption.store_refused_advice(run_id, advice)
@@ -1390,6 +1489,8 @@ def resume_plan(
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
+        if "launcher_host_observation" in record:
+            current["launcher_host_observation"] = record["launcher_host_observation"]
         # The held reservation's reach statement, resolved above onto the
         # pointer this attempt read, so the pointer persisted below carries it.
         if "placement_reservation" in record:
@@ -2133,6 +2234,17 @@ def terminate(run_id: str) -> dict[str, Any]:
     """
 
     def stop(record: dict[str, Any]) -> dict[str, Any]:
+        from reckon.crew.recovery_liveness import (
+            _record_is_known_foreign,
+            launcher_host_is_gone,
+        )
+
+        foreign = _record_is_known_foreign(record)
+        if foreign and not launcher_host_is_gone(record):
+            raise CrewError(
+                f"run {run_id!r} launched on {record.get('launcher_host')}: "
+                "scheduler has not established its worker is gone; stop it there"
+            )
         run_directory = run_dir(run_id)
         recorded_pid = record.get("pid")
         project = str(record.get("project") or "") or None
@@ -2149,63 +2261,71 @@ def terminate(run_id: str) -> dict[str, Any]:
         # away from its supervisor is reached by the run's environment mark
         # rather than by descent, which is why the resolution is the run's own
         # rather than the recorded pid's.
-        target_pids = _run_process_pids(
-            int(recorded_pid) if recorded_pid else None,
-            run_id=run_id,
-            run_dir=run_directory,
-            expected_start_time=start_time,
-        )
-        # A recorded pid that still names a process goes through the
-        # identity-checked signal: it refuses a pid the kernel has since
-        # recycled rather than signalling an unrelated process. A recorded
-        # start tick alone is not a reason to take that path — it is evidence
-        # about a process the table no longer holds, where there is no identity
-        # left to protect. A supervisor that has already exited leaves exactly
-        # that record, so taking the identity-checked path on the tick alone
-        # would refuse, or fail a group lookup for a pid with no process, and
-        # never reap the worker it left reparented to init — which the run's
-        # environment mark reaches.
-        if recorded_pid and process_alive(int(recorded_pid)) is True:
-            ended = _signal_process_group(
-                int(recorded_pid),
-                record.get("pid_start_time"),
-                run_dir=run_directory,
-                reason="run-stop",
-                project=project,
-            )
+        # Foreign pids can collide with unrelated local processes. The
+        # scheduler settles the remote end without probing or signalling them.
+        if foreign:
+            target_pids = []
+            ended = []
+            alive_after = []
+            killed = []
         else:
-            ended = signal_worker(
-                0,
-                signal.SIGTERM,
-                reason="run-stop",
+            target_pids = _run_process_pids(
+                int(recorded_pid) if recorded_pid else None,
+                run_id=run_id,
                 run_dir=run_directory,
-                project=project,
-                run_id=run_id,
-                reach_run=True,
+                expected_start_time=start_time,
             )
-            if not ended and not recorded_pid:
-                raise CrewError(f"run {run_id!r} has no process to stop")
-        alive_after = _await_run_processes_gone(
-            int(recorded_pid) if recorded_pid else None,
-            run_id=run_id,
-            run_dir=run_directory,
-            expected_start_time=start_time,
-        )
-        killed: list[int] = []
-        if alive_after:
-            killed = _escalate_run_stop(
-                recorded_pid,
-                start_time,
-                run_id=run_id,
-                run_directory=run_directory,
-                project=project,
-            )
+            # A recorded pid that still names a process goes through the
+            # identity-checked signal: it refuses a pid the kernel has since
+            # recycled rather than signalling an unrelated process. A recorded
+            # start tick alone is not a reason to take that path — it is evidence
+            # about a process the table no longer holds, where there is no identity
+            # left to protect. A supervisor that has already exited leaves exactly
+            # that record, so taking the identity-checked path on the tick alone
+            # would refuse, or fail a group lookup for a pid with no process, and
+            # never reap the worker it left reparented to init — which the run's
+            # environment mark reaches.
+            if recorded_pid and process_alive(int(recorded_pid)) is True:
+                ended = _signal_process_group(
+                    int(recorded_pid),
+                    record.get("pid_start_time"),
+                    run_dir=run_directory,
+                    reason="run-stop",
+                    project=project,
+                )
+            else:
+                ended = signal_worker(
+                    0,
+                    signal.SIGTERM,
+                    reason="run-stop",
+                    run_dir=run_directory,
+                    project=project,
+                    run_id=run_id,
+                    reach_run=True,
+                )
+                if not ended and not recorded_pid:
+                    raise CrewError(f"run {run_id!r} has no process to stop")
             alive_after = _await_run_processes_gone(
                 int(recorded_pid) if recorded_pid else None,
                 run_id=run_id,
                 run_dir=run_directory,
                 expected_start_time=start_time,
             )
+            killed: list[int] = []
+            if alive_after:
+                killed = _escalate_run_stop(
+                    recorded_pid,
+                    start_time,
+                    run_id=run_id,
+                    run_directory=run_directory,
+                    project=project,
+                )
+                alive_after = _await_run_processes_gone(
+                    int(recorded_pid) if recorded_pid else None,
+                    run_id=run_id,
+                    run_dir=run_directory,
+                    expected_start_time=start_time,
+                )
         worktree = str(record.get("worktree") or "")
         holders = _processes_holding(Path(worktree)) if worktree else []
         record["target_pids"] = target_pids
@@ -2264,9 +2384,14 @@ def _record_stopped_attempt_exit(run_id: str, record: Mapping[str, Any]) -> bool
         _supervisor_write,
     )
     from reckon.crew.process_signal import _recorded_worker_pid
-    from reckon.crew.recovery_liveness import _current_attempt_number, _run_exit_record
+    from reckon.crew.recovery_liveness import (
+        _current_attempt_number,
+        _record_is_known_foreign,
+        _run_exit_record,
+        launcher_host_is_gone,
+    )
 
-    if record.get("launcher_host") not in (None, socket.gethostname()):
+    if _record_is_known_foreign(record) and not launcher_host_is_gone(record):
         return False
     directory = run_dir(run_id)
     attempt = _current_attempt_number(record) or 1
@@ -2298,6 +2423,8 @@ def _record_stopped_attempt_exit(run_id: str, record: Mapping[str, Any]) -> bool
     receipt = receipt | {
         "stop": {"reason": "run-stop", "stopped_at": record["stopped_at"]}
     }
+    if "launcher_host_observation" in record:
+        receipt["launcher_host_observation"] = record["launcher_host_observation"]
     if not (directory / name).exists() and not _supervisor_write(
         directory / name, receipt
     ):

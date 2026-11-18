@@ -1,0 +1,95 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "tests/test_fleet_health_records_node_tmp.py:523": "Fails if any of the four independently literal disk names disappears or changes relative order; does not compare the production schema to itself.",
+    "tests/test_fleet_health_records_node_tmp.py:524": "Fails if source moves after the first disk field; canonical schema extensions after disk fields remain permitted.",
+    "tests/test_fleet_health_records_node_tmp.py:615": "Fails if production queries a scheduler executable other than squeue through the injected runner.",
+    "tests/test_fleet_health_records_node_tmp.py:616": "Fails if the production scheduler call omits or changes its ten-second timeout.",
+    "tests/test_fleet_health_records_node_tmp.py:624": "Fails if the terminal observation does not stop after one scheduler call; an extra call changes the observed calls list.",
+    "tests/test_fleet_health_records_node_tmp.py:625": "Fails if append overwrites any existing prefix bytes; the prefix is a pre-call persisted snapshot, so this is a preservation check rather than a disk-measurement claim.",
+    "tests/test_fleet_health_records_node_tmp.py:629": "Fails if append changes the pre-existing header; columns was used to create the initial file, not passed into the function under test, so the before/after comparison protects preservation and is not credited as independent schema correctness.",
+    "tests/test_fleet_health_records_node_tmp.py:630": "Fails if the scheduler row is dropped, appended twice or the node row is lost.",
+    "tests/test_fleet_health_records_node_tmp.py:631": "Fails if the retained node row source is changed from its literal node marker.",
+    "tests/test_fleet_health_records_node_tmp.py:632": "Fails if append changes the original node memory reading from its literal 37.",
+    "tests/test_fleet_health_records_node_tmp.py:633": "Fails if the appended row does not identify the scheduler source.",
+    "tests/test_fleet_health_records_node_tmp.py:634": "Fails if the recorded terminal state differs from the independent scheduler response CANCELLED; this checks serialization, not discovery of a real scheduler state.",
+    "tests/test_fleet_health_records_node_tmp.py:635": "Fails if a terminal CANCELLED scheduler response is classified or persisted as anything other than end; this is the derived event needed to stop the reader.",
+    "tests/test_fleet_health_records_node_tmp.py:636": "Fails for the nonempty extra-columns parameter if scheduler rows invent metric values rather than the literal dash; the empty parameter alone is vacuous and is not credited for this guard.",
+    "tests/test_fleet_health_records_node_tmp.py:637": "Fails if an appended row has excess fields, which DictReader reports under a None key; it is not credited as detection of too few values.",
+    "tests/test_fleet_health_records_node_tmp.py:676": "Fails if removing any one of the seven required fields no longer raises FleetNodeError with the named refusal; removing the guard or omitting a required name would make its parameter case fail.",
+    "tests/test_fleet_health_records_node_tmp.py:678": "Fails if refusing the malformed header alters any file bytes; before is a persisted pre-call snapshot, a valid nonmutation assertion."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "bin/fleet-health:40",
+    "reckon/crew/fleet_node.py:347",
+    "reckon/crew/fleet_node.py:969"
+  ],
+  "completed_at": "2026-11-17T14:32:16Z",
+  "dispatched_at": "2026-11-17T14:27:43Z",
+  "evidence_limits": "No reviewer test rerun or source mutation. Declared suite delta is zero; broader importer comparison and pending live deployment observation are not claimed green. No new blocking or non-blocking defect found in the incremental patch.",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_fleet_health_records_node_tmp.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/after_suite-1794924720243393919.receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "09023f48c86c0aba2494a87476bb7975a6f0c95e"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_health.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T110445940804-node-disk-is-in-the-health-series/baseline_suite-1794923893261084724.receipt.log",
+      "measured_by": "worker",
+      "partition": "all_debug",
+      "reason": "",
+      "revision": "45967c6c6399a70306ce0cd5cb106e6ed54e0c21"
+    }
+  },
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "bin/fleet-health:40, reckon/crew/fleet_node.py:347, reckon/crew/fleet_node.py:969",
+    "diff": "Read be21046f38fad9fc1ad86be4bbbbdb3a7dfbcd99 and 09023f48c86c0aba2494a87476bb7975a6f0c95e against c80531412e01f6c0eb939ac6c5e7779d845d5462; only explicit scheduler-column validation and compatibility/refusal assertions changed.",
+    "done_when": "Read source live node.done_when and manifest.md baseline_suite/after_suite logs: 73/118 passes and zero added declared-gate failures, with a failing suffix mutation; broader importer failures and the live one-hour observation remain disclosed limitations.",
+    "goal": "Read source live node.goal and plan section 5; the incremental repair in reckon/crew/fleet_node.py:280 preserves terminal scheduler observations when disk fields extend the series.",
+    "manifest": "Read source manifest.md, the complete baseline/head receipt logs and their verified raw SHA-256 digests, reproduction log, suffix-negative log and seven actual missing-column refusals.",
+    "write_paths": "Read source live node.write_paths and manifest.md orientation_write_paths; both reckon/crew/fleet_node.py and tests/test_fleet_health_records_node_tmp.py are granted."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_health_records_node_tmp.py:587 fails if the suffix-based validator returns, and :652 fails if any required-column refusal is removed; the recorded mutation reproduces both compatible-header failures.",
+    "evidence": "Source manifest.md records complete 73/118-pass declared suite logs and scheduler-schema-final-suffix-negative.log records two failures, while its broader importer delta and plan section 5 live-hour observation remain unresolved.",
+    "fit": "reckon/crew/fleet_node.py:280 retains the existing locked writer and FleetNodeError idiom, and tests/test_fleet_health_records_node_tmp.py:547 uses capability-based fixture and test names.",
+    "goal_fidelity": "reckon/crew/fleet_node.py:280 now requires seven literal scheduler columns independently of appended disk or future metrics, repairing the prior blocking compatibility defect.",
+    "reuse": "Capability searches for scheduler append, historical-series fixtures and recorded scheduler runners found and opened fleet_node.py:267 and tests/test_a_sampler_outlives_the_fleet_job.py:111; the patch extends the existing production owner and its fixture specifically supplies the missing historical header.",
+    "scope_discipline": "The two incremental paths reckon/crew/fleet_node.py and tests/test_fleet_health_records_node_tmp.py are both in the source live node.write_paths and contain only the compatibility repair and its tests."
+  },
+  "prior_blocking_finding": "Repaired: explicit scheduler names accept compatible existing headers while missing required fields still refuse.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source live node.goal and plan section 5; the incremental repair in reckon/crew/fleet_node.py:280 preserves terminal scheduler observations when disk fields extend the series.\nVERDICT done_when: Read source live node.done_when and manifest.md baseline_suite/after_suite logs: 73/118 passes and zero added declared-gate failures, with a failing suffix mutation; broader importer failures and the live one-hour observation remain disclosed limitations.\nVERDICT write_paths: Read source live node.write_paths and manifest.md orientation_write_paths; both reckon/crew/fleet_node.py and tests/test_fleet_health_records_node_tmp.py are granted.\nVERDICT manifest: Read source manifest.md, the complete baseline/head receipt logs and their verified raw SHA-256 digests, reproduction log, suffix-negative log and seven actual missing-column refusals.\nVERDICT diff: Read be21046f38fad9fc1ad86be4bbbbdb3a7dfbcd99 and 09023f48c86c0aba2494a87476bb7975a6f0c95e against c80531412e01f6c0eb939ac6c5e7779d845d5462; only explicit scheduler-column validation and compatibility/refusal assertions changed.\nCALL_SITES: bin/fleet-health:40, reckon/crew/fleet_node.py:347, reckon/crew/fleet_node.py:969\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_node.py:280 now requires seven literal scheduler columns independently of appended disk or future metrics, repairing the prior blocking compatibility defect.\nSCORE evidence: 14\nJUSTIFICATION evidence: Source manifest.md records complete 73/118-pass declared suite logs and scheduler-schema-final-suffix-negative.log records two failures, while its broader importer delta and plan section 5 live-hour observation remain unresolved.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two incremental paths reckon/crew/fleet_node.py and tests/test_fleet_health_records_node_tmp.py are both in the source live node.write_paths and contain only the compatibility repair and its tests.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_fleet_health_records_node_tmp.py:587 fails if the suffix-based validator returns, and :652 fails if any required-column refusal is removed; the recorded mutation reproduces both compatible-header failures.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_node.py:280 retains the existing locked writer and FleetNodeError idiom, and tests/test_fleet_health_records_node_tmp.py:547 uses capability-based fixture and test names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for scheduler append, historical-series fixtures and recorded scheduler runners found and opened fleet_node.py:267 and tests/test_a_sampler_outlives_the_fleet_job.py:111; the patch extends the existing production owner and its fixture specifically supplies the missing historical header.\n",
+  "review_run_id": "r-20261117T142548702485-review-of-node-disk-is-in-the-health-series-09023f48c86c",
+  "review_scope": "Only the two commits since reviewed head c80531412e01f6c0eb939ac6c5e7779d845d5462 in the two named files; all source/call-site reads pinned to 09023f48c86c0aba2494a87476bb7975a6f0c95e rather than review worktree HEAD.",
+  "reviewed_base_sha": "c80531412e01f6c0eb939ac6c5e7779d845d5462",
+  "reviewed_head_sha": "09023f48c86c0aba2494a87476bb7975a6f0c95e",
+  "reviewed_run_id": "r-20261117T110445940804-node-disk-is-in-the-health-series",
+  "scores": {
+    "durability": 20,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:35:59.469051+00:00",
+  "total": 114
+}

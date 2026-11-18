@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import os
@@ -101,7 +102,7 @@ class StationBeat:
     alive, and the tick is the worst place to write it: a tick walks mounted
     projects across ledger reads and path resolution, and under a loaded
     filesystem one takes minutes. So liveness is written here, on its own
-    thread and its own store handle, for as long as the process lives; what the
+    thread and a node-local file, for as long as the process lives; what the
     tick records instead is progress -- the stage it has entered and the
     instants that bound it -- and the reader compares the two to tell a slow
     station from a stopped one.
@@ -113,7 +114,6 @@ class StationBeat:
         *,
         beat_seconds: float | None = None,
         clock: Callable[[], datetime] | None = None,
-        store: station_store.StationStore | None = None,
         guard: station_store.StoreWriteGuard | None = None,
     ) -> None:
         self.root = root
@@ -121,30 +121,76 @@ class StationBeat:
             STATION_BEAT_SECONDS if beat_seconds is None else beat_seconds
         )
         self._clock = clock or (lambda: datetime.now(tz=UTC))
-        self._store = store
         self.guard = guard
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self._publisher: threading.Thread | None = None
+        self._publication_due = threading.Event()
+        self._publication_lock = threading.Lock()
+        self._pending: tuple[dict[str, str], str | None] | None = None
 
-    def _handle(self) -> station_store.StationStore:
-        """This thread's own store handle, opened on first use.
+    def _local_beat(self) -> tuple[dict[str, str], str | None]:
+        """Write liveness without taking the tick's database writer lock."""
+        from reckon._store import write_json_atomically
 
-        A handle of its own rather than the tick's: the two write the same
-        table from different threads, and a connection shared across threads is
-        the kind of coupling that turns one slow tick into a corrupted beat.
-        """
-        if self._store is None:
-            self._store = station_store.StationStore(self.root, guard=self.guard)
-        return self._store
+        def read(connection):
+            markers = obligation_snapshot._station_markers(connection)
+            row = connection.execute(
+                "SELECT value FROM station WHERE key = ?",
+                (station_store.CREW_HOME_KEY,),
+            ).fetchone()
+            return markers, None if row is None else str(row[0])
+
+        answered, reading = obligation_snapshot._station_read(
+            self.root / station_store.DATABASE_NAME, read
+        )
+        if not answered:
+            raise RuntimeError("the station's heartbeat could not read its identity")
+        markers, home = reading
+        markers[station_store.HEARTBEAT_KEY] = self._clock().isoformat()
+        if self.guard is not None:
+            self.guard.check()
+        write_json_atomically(
+            self.root / obligation_snapshot.STATION_HEARTBEAT_NAME,
+            {key: markers[key] for key in ("heartbeat", "store_identity")},
+            fsync=False,
+        )
+        return markers, home
 
     def beat_once(self) -> None:
-        """Move the heartbeat to now."""
-        self._handle().heartbeat(now=self._clock())
+        """Move the local beat and synchronously publish one off-node reading."""
+        markers, home = self._local_beat()
+        if self.guard is not None:
+            self.guard.check()
+        obligation_snapshot.publish_station_reading(markers, home=home)
+
+    def _publish(self) -> None:
+        """Publish the latest beat, coalescing while shared storage is slow."""
+        while not self._stop.is_set():
+            self._publication_due.wait()
+            self._publication_due.clear()
+            if self._stop.is_set():
+                return
+            with self._publication_lock:
+                pending, self._pending = self._pending, None
+            if pending is None:
+                continue
+            try:
+                if self.guard is not None:
+                    self.guard.check()
+                markers, home = pending
+                obligation_snapshot.publish_station_reading(markers, home=home)
+            except Exception:  # noqa: BLE001 - publication is retried next beat
+                print("station-beat-publication-failure", file=sys.stderr, flush=True)
+                traceback.print_exc(file=sys.stderr)
 
     def _run(self) -> None:
         while not self._stop.is_set():
             try:
-                self.beat_once()
+                reading = self._local_beat()
+                with self._publication_lock:
+                    self._pending = reading
+                self._publication_due.set()
             except Exception:  # noqa: BLE001 - a missed beat is retried on the next
                 print(
                     "station-beat-failure: the heartbeat could not be written",
@@ -158,20 +204,25 @@ class StationBeat:
         """Beat once, then keep beating on its own thread."""
         if self._thread is not None:
             return
+        self._publisher = threading.Thread(
+            target=self._publish, name="station-beat-publisher", daemon=True
+        )
+        self._publisher.start()
         self._thread = threading.Thread(
             target=self._run, name="station-beat", daemon=True
         )
         self._thread.start()
 
     def stop(self) -> None:
-        """Stop beating and close this thread's handle."""
+        """Stop requesting beats and publications, and join both threads."""
         self._stop.set()
+        self._publication_due.set()
         if self._thread is not None:
-            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread.join()
             self._thread = None
-        if self._store is not None:
-            self._store.close()
-            self._store = None
+        if self._publisher is not None:
+            self._publisher.join()
+            self._publisher = None
 
 
 # A census reads local processes and ownership records. One pass per minute
@@ -452,6 +503,18 @@ REFLEX_BEAT_SECONDS = 30.0
 # and the duties it had not yet published are the next station's to derive.
 DUTY_DRAIN_SECONDS = 10.0
 
+# How long a stopping station has to unwind before it exits where it stands.
+# Nothing a stop signal interrupts is under this process's control: a tick can
+# sit in a derivation doing storage IO, a dispatcher can sit between its claim
+# and its worker, and the drain joins workers one after another — none of which
+# reads the stop flag, so none of which the ordered shutdown can rely on
+# reaching. Measured on 15 November, two of three station restarts were still
+# running 120 s after SIGTERM and needed SIGKILL, and a killed station gives
+# back nothing: it orphaned seven launch claims at 13:00Z, six of them other
+# sessions'. So the bound is a promise the process keeps from a thread of its
+# own rather than a check the stuck path may never reach.
+STATION_STOP_BOUND_SECONDS = 15.0
+
 # How long a due reload is held for the derivations in flight to land. A reload
 # replaces the image and ends every thread, so a derivation slower than the gap
 # between two landings on the primary branch was ended on every reload and its
@@ -594,11 +657,22 @@ class DutyBeat:
             self._quiescing = False
 
     def drain(self, timeout: float | None = None) -> None:
-        """Wait for the derivations this station started to finish."""
+        """Wait, bounded in total, for the derivations this station started.
+
+        The bound covers the whole drain rather than each worker: a stopping
+        station joins every derivation it started, and one bound per worker
+        multiplies whatever is stuck in storage by the number of projects. A
+        derivation the bound leaves running is ended by the process exiting,
+        and the duties it had not published are the next station's to derive.
+        """
         with self._lock:
             workers = list(self._workers.values())
+        deadline = None if timeout is None else time.monotonic() + timeout
         for worker in workers:
-            worker.join(timeout)
+            remaining = (
+                None if deadline is None else max(0.0, deadline - time.monotonic())
+            )
+            worker.join(remaining)
         with self._lock:
             self._workers.clear()
 
@@ -854,9 +928,7 @@ class StationReloader:
             os.environ.get(SOURCE_ROOT_ENV, str(self.import_root))
         ).resolve()
         self.identity = os.environ.pop(IMAGE_IDENTITY_ENV, "") or (
-            checkout_trust.source_code_identity(
-                self.source_root / "reckon", source_root=self.source_root
-            )
+            checkout_trust.running_code_identity(self.import_root / "reckon")
         )
         self.image_pin: int | None = None
         carried = os.environ.pop(IMAGE_PIN_ENV, "")
@@ -870,6 +942,7 @@ class StationReloader:
                     self.image_pin = candidate
             except (OSError, ValueError):
                 pass
+        self.window: follower_reload.ReloadWindow | None = None
         self.deferred_identity: str | None = None
         # When the deferred image's proof may be repeated, and the spacing its
         # next refusal waits. Zero means the next poll.
@@ -881,6 +954,10 @@ class StationReloader:
         # happens only at a tick's end: a tick longer than the bound used to put
         # the deadline a whole tick past it.
         self._clear_since: float | None = None
+
+    def start_window(self) -> None:
+        """Enable the standing-service schedule around the image reloader."""
+        self.window = follower_reload.ReloadWindow("station", self.identity)
 
     def poll(self, duties: DutyBeat | None = None) -> None:
         """Check committed code after a tick and re-execute when it moves.
@@ -900,7 +977,11 @@ class StationReloader:
         current = checkout_trust.source_code_identity(
             self.source_root / "reckon", source_root=self.source_root
         )
-        due = self._reload_owed(current)
+        if self.window is not None and not self.window.due(current):
+            return
+        due = self._reload_owed(current) or bool(
+            self.window is not None and self.window.pending_request
+        )
         if not due:
             self._clear_since = time.monotonic()
         if due and duties is not None and not self._quiet(duties):
@@ -922,7 +1003,7 @@ class StationReloader:
 
         A deferred image is owed again once its proof is due to be repeated: a
         deferral that said nothing about the image must not stand until main
-        moves, which used to be the only thing that asked for it again.
+        moves, because the proof's retry clock can expire without a new commit.
         """
         if re.fullmatch(r"[0-9a-f]{40}", current) is None:
             return False
@@ -986,11 +1067,16 @@ class StationReloader:
         # and leave the claim with no worker behind it. Wait for it, bounded.
         dispatch_claims.wait_for_dispatches_in_flight()
         try:
-            os.execve(  # noqa: S606 - replacement keeps this station's pid
-                sys.executable,
-                follower_reload.image_reexec_argv(image),
-                environment,
-            )
+            with (
+                self.window.replacement(current)
+                if self.window is not None
+                else contextlib.nullcontext()
+            ):
+                os.execve(  # noqa: S606 - replacement keeps this station's pid
+                    sys.executable,
+                    follower_reload.image_reexec_argv(image),
+                    environment,
+                )
         except OSError:
             os.close(pin)
             raise
@@ -1017,6 +1103,10 @@ class Station:
         self.projects = projects
         self.stall_seconds = stall_seconds
         self.clock = clock or (lambda: datetime.now(tz=UTC))
+        self._stage_durations: dict[str, float] = {}
+        self._timed_stage = ""
+        self._stage_since: float | None = None
+        self._tick_started_at = ""
         # The schedule that keeps every managed repository packed. ``None``
         # leaves it off, which is what a test driving one tick wants: a pass
         # submits a scheduler job, and only the long-running service does that.
@@ -1059,12 +1149,45 @@ class Station:
         Both are written before the work they name rather than after it, so a
         stage a reader sees is the stage the tick has not yet finished.
         """
+        timer = time.monotonic()
         if started is not None:
+            self._stage_durations = {}
+            self._tick_started_at = started.astimezone(UTC).isoformat()
             self.store.set_station_value(
                 obligation_snapshot.STATION_TICK_STARTED_AT_KEY,
-                started.astimezone(UTC).isoformat(),
+                self._tick_started_at,
             )
+        else:
+            self._measure_stage(timer)
+        self._timed_stage, self._stage_since = stage, timer
         self.store.set_station_value(obligation_snapshot.STATION_TICK_STAGE_KEY, stage)
+
+    def _measure_stage(self, timer: float) -> None:
+        """Accumulate elapsed time independently of wall-clock adjustments."""
+        if self._stage_since is not None:
+            elapsed = timer - self._stage_since
+            self._stage_durations[self._timed_stage] = (
+                self._stage_durations.get(self._timed_stage, 0.0) + elapsed
+            )
+
+    def _record_finished_tick(self, finished: str) -> None:
+        """Replace the completed measurement as one bounded station record."""
+        self._measure_stage(time.monotonic())
+        slowest = max(self._stage_durations, key=self._stage_durations.get)
+        self.store.set_station_value(
+            obligation_snapshot.STATION_LAST_TICK_KEY,
+            json.dumps(
+                {
+                    "started_at": self._tick_started_at,
+                    "finished_at": finished,
+                    "stage_durations_seconds": self._stage_durations,
+                    "duration_seconds": sum(self._stage_durations.values()),
+                    "slowest_stage": slowest,
+                    "slowest_stage_seconds": self._stage_durations[slowest],
+                }
+            ),
+        )
+        self._stage_since = None
 
     def _due_reset_events(
         self, project: str, moment: datetime
@@ -1187,8 +1310,8 @@ class Station:
         self._enter(stages[2])
         self.store.heartbeat(now=moment)
         pointers = {
-            str(row["run_id"]): json.loads(str(row["fields"]))
-            for row in self.store.pointer_rows()
+            str(record.get("run_id") or ""): record
+            for record in self.store.pointer_fields().values()
         }
         project_names = (
             set(self.projects())
@@ -1306,11 +1429,68 @@ class Station:
                 print(f"station-maintenance: {row}", flush=True)
         # The finish stamp is what closes the tick for a reader: until it is
         # later than the start, a stage on record is a tick still running.
+        finished = self.clock().astimezone(UTC).isoformat()
+        self._record_finished_tick(finished)
         self.store.set_station_value(
-            obligation_snapshot.STATION_TICK_FINISHED_AT_KEY,
-            self.clock().astimezone(UTC).isoformat(),
+            obligation_snapshot.STATION_TICK_FINISHED_AT_KEY, finished
         )
         return published
+
+
+class StopBound:
+    """Hold a stopping station to the bound its shutdown is promised.
+
+    The ordered shutdown waits on work this process did not start and cannot
+    interrupt — a derivation reading storage, a dispatcher between its claim
+    and its worker — so the flag a signal sets is only read by paths that are
+    running. When they are not, the shutdown never begins, which is how a
+    SIGTERM came to be ignored for 120 s and answered with SIGKILL.
+
+    The bound is therefore enforced from a thread no blocked path holds, and it
+    does the two things a killed station cannot: it hands back the claims this
+    process published and never reached a worker, and it exits. The ordered
+    shutdown keeps whatever time it has left up to the bound; one that finishes
+    first cancels the thread, so a clean stop is never cut short by it.
+    """
+
+    def __init__(
+        self,
+        bound: float = STATION_STOP_BOUND_SECONDS,
+        *,
+        exit: Callable[[int], None] = os._exit,
+        release: Callable[[], tuple[str, ...]] | None = None,
+    ) -> None:
+        self.bound = bound
+        self._exit = exit
+        self._release = release or dispatch_claims.release_unlaunched_claims
+        self._unwound = threading.Event()
+        self._timer: threading.Timer | None = None
+
+    def arm(self) -> None:
+        """Start the bound."""
+        if self._timer is not None:
+            return
+        self._timer = threading.Timer(self.bound, self._enforce)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def unwound(self) -> None:
+        """Record that the ordered shutdown finished inside the bound."""
+        self._unwound.set()
+        if self._timer is not None:
+            self._timer.cancel()
+
+    def _enforce(self) -> None:
+        if self._unwound.is_set():
+            return
+        released = self._release()
+        print(
+            f"station-stop: the shutdown did not finish in {self.bound:g}s; "
+            f"exiting with {len(released)} unlaunched claim(s) handed back",
+            file=sys.stderr,
+            flush=True,
+        )
+        self._exit(0)
 
 
 def run_station(
@@ -1329,6 +1509,9 @@ def run_station(
     ``census_sweep`` opts this station into stopping proven orphans. It is off
     unless a caller asks for it: signalling a process is a destructive act, so
     no station run takes it as a side effect of starting.
+
+    A single pass propagates its tick failure to the caller. A completed tick
+    records its finish in the store, so success has a positive completion marker.
     """
     from reckon.crew import repository_maintenance
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
@@ -1337,10 +1520,14 @@ def run_station(
     if store is None:
         store = station_store.StationStore.at_runtime_root()
     stopping = False
+    stop_bound = StopBound()
 
     def stop(_signum: int, _frame: Any) -> None:
         nonlocal stopping
         stopping = True
+        # The shutdown this flag asks for is only reached by a loop that is
+        # between ticks, so the bound starts here rather than in that loop.
+        stop_bound.arm()
 
     if lease is None:
         lease = station_lease(store.root)
@@ -1389,6 +1576,9 @@ def run_station(
                 else station_instance
             )
             reloader = StationReloader(store.root)
+            start_window = getattr(reloader, "start_window", None)
+            if start_window is not None:
+                start_window()
             # Both threads start before the first tick, so a station whose
             # opening tick is slow is never read as one that never started, and
             # its lease never lapses while that tick runs.
@@ -1412,11 +1602,16 @@ def run_station(
                     break
                 try:
                     station.tick()
+                    window = getattr(reloader, "window", None)
+                    if window is not None:
+                        window.exported()
                 except station_store.StationLeaseLostError as lost:
                     raise StationHeldError(
                         f"station lost its lease at {lease.path}: {lost}"
                     ) from None
-                except Exception as error:  # noqa: BLE001 - one tick costs one tick
+                except Exception as error:
+                    if once:
+                        raise
                     print(
                         f"station-tick-failure: {error}",
                         file=sys.stderr,
@@ -1445,4 +1640,11 @@ def run_station(
                 beat.stop()
             for signum, handler in previous.items():
                 signal.signal(signum, handler)
+            # A dispatcher thread caught between its claim and its worker dies
+            # with this process whatever the shutdown did, so the claims it
+            # published are handed back here as well as at the bound: a claim
+            # with no worker is a run nothing can relaunch until its holder is
+            # read as dead, and nothing else in this process is left to do it.
+            dispatch_claims.release_unlaunched_claims()
             lease.release()
+            stop_bound.unwound()

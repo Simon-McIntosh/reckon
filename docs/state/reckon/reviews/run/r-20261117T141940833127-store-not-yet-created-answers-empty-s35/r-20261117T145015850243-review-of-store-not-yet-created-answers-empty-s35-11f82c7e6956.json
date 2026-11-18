@@ -1,0 +1,216 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from FAILED IDs in the reviewed run baseline_suite and after_suite logs, reconciled against the recorded manifest arms, exact revisions, summaries and terminal EXIT=0 lines.",
+  "additional_evidence": {
+    "drain_passes": 10,
+    "drain_repetitions": 10,
+    "importers": {
+      "added_failure_ids": [],
+      "base_failure_count": 76,
+      "head_failure_count": 75
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T141940833127-store-not-yet-created-answers-empty-s35/negative-control.log",
+      "summary": "10 failed, 15 passed in 1.27s"
+    },
+    "new_tests_at_base": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T141940833127-store-not-yet-created-answers-empty-s35/new-tests-at-base.log",
+      "summary": "13 failed, 12 passed in 2.52s"
+    }
+  },
+  "assertion_analysis": [
+    {
+      "fails_if": "Restoring the base migration refusal raises instead of answering empty in all nine reader/metadata combinations; negative-control.log records these failures.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 52
+    },
+    {
+      "fails_if": "Reader-triggered migration or another write changes the file against an independent before-image captured from disk.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 53
+    },
+    {
+      "fails_if": "Removing the record distinction allows recorded table loss, raises the wrong exception, or omits the migration explanation.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 64
+    },
+    {
+      "fails_if": "Missing payload is swallowed instead of raising UnreadableRunStoreError.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 76
+    },
+    {
+      "fails_if": "The missing-column refusal omits the migration explanation.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 78
+    },
+    {
+      "fails_if": "The missing-column refusal omits payload.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 79
+    },
+    {
+      "fails_if": "A real SQLite exclusive lock is swallowed or raises the wrong exception.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 88
+    },
+    {
+      "fails_if": "The refusal loses the SQLite locked cause.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 90
+    },
+    {
+      "fails_if": "A lock is wrongly reported as an owed migration.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 91
+    },
+    {
+      "fails_if": "An always-empty or lossy reader misses a run inserted through the real writer; the literal expectation is checked against an independent persistence read.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 99
+    },
+    {
+      "fails_if": "Removing the second column description at run_store.py:269 refuses a store completed between reads, or an early empty answer loses the known run.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 120
+    },
+    {
+      "fails_if": "The column-description path is bypassed and the deterministic creation-race hook never fires.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 121
+    },
+    {
+      "fails_if": "The direct reader raises or answers nonempty during observed creation; observer exceptions are retained for line 168.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 148
+    },
+    {
+      "fails_if": "The ledger reader raises or answers nonempty during observed creation; observer exceptions are retained for line 168.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 149
+    },
+    {
+      "fails_if": "The identity reader raises or answers nonempty during observed creation; observer exceptions are retained for line 168.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 150
+    },
+    {
+      "fails_if": "Any observer error occurs, including the restored empty-store refusal demonstrated by negative-control.log.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 168
+    },
+    {
+      "fails_if": "The writer exposes a committed schema record without runs, as independently queried through a separate SQLite connection.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 169
+    },
+    {
+      "fails_if": "The observer misses any of absent, table-only and recorded states or sees a forbidden state; the expected state set prevents a vacuous empty-observation pass.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 170
+    },
+    {
+      "fails_if": "The final ledger read loses an appended known run, so uniform emptiness cannot satisfy the test.",
+      "file": "tests/test_a_store_not_yet_created_answers_empty.py",
+      "line": 175
+    },
+    {
+      "fails_if": "DROP TABLE did not remove runs or table-description no longer reports an absent table as no columns.",
+      "file": "tests/test_a_locked_store_is_not_read_as_missing_columns.py",
+      "line": 44
+    },
+    {
+      "fails_if": "The guard permits a recorded store to lose runs instead of refusing.",
+      "file": "tests/test_a_locked_store_is_not_read_as_missing_columns.py",
+      "line": 45
+    },
+    {
+      "fails_if": "The recorded-store refusal no longer names the schema migration.",
+      "file": "tests/test_a_locked_store_is_not_read_as_missing_columns.py",
+      "line": 50
+    }
+  ],
+  "assertion_independence": "No added assertion compares a reader result with the same variable supplied to that reader: the byte comparison uses an independent disk snapshot, known-run literals test actual persisted output, and schema ordering uses separate SQLite observations.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/run_store.py:stored_run_rows:854",
+    "reckon/run_store.py:indexed_run_ids:2042",
+    "reckon/ledger.py:_load_runs:2542",
+    "reckon/ledger.py:run_ids:1190",
+    "reckon/ledger.py:index_lag:4065",
+    "reckon/crew/dispatching/preparation.py:143"
+  ],
+  "completed_at": "2026-11-17T15:01:22Z",
+  "dispatched_at": "2026-11-17T14:55:00Z",
+  "failure_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T141940833127-store-not-yet-created-answers-empty-s35/after_suite-1794925855042074626.log",
+      "revision": "11f82c7e6956da9d748789ecce51f9d0d49f56bc",
+      "summary": "86 passed in 41.09s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T141940833127-store-not-yet-created-answers-empty-s35/baseline_suite-1794925779767908385.log",
+      "revision": "036737e6dc8cddd2440a86f5a5b152ffb541c8df",
+      "summary": "61 passed in 35.56s"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read the single commit against parent 036737e6dc8cddd2440a86f5a5b152ffb541c8df; reckon/run_store.py extends the existing refusal owner and both tests exercise the new boundary without changing writer behavior.",
+    "done_when": "The live plan docs/plans/history-persists-as-detail-washes-out.html:435 and prompt.txt:170 are supported by the added reader/refusal/creation assertions, ten successful drain-repeat logs, a failing negative control, and importer logs with no added failure IDs.",
+    "goal": "The goal in the reviewed run's prompt.txt:38 is satisfied by reckon/run_store.py:256-269 and its callers: a file without either runs or a schema record answers empty, while recorded damage still raises.",
+    "manifest": "The reviewed run's manifest.md names its commit and receipts, and its baseline_suite and after_suite reconcile with logs ending in 61 passed / EXIT=0 and 86 passed / EXIT=0 respectively.",
+    "write_paths": "The three changed paths in commit 11f82c7e6956da9d748789ecce51f9d0d49f56bc are all explicitly granted at the reviewed run's prompt.txt:95-97; no other deliverable was changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_store_not_yet_created_answers_empty.py:52 fails when the old migration refusal returns, lines 64-91 fail if damage or lock errors are swallowed, and lines 120 and 168-175 guard the creation race and schema ordering with independent observations and a known-present control.",
+    "evidence": "The reviewed run's baseline_suite-1794925779767908385.log and after_suite-1794925855042074626.log record zero failures at the exact base/head pair, while negative-control.log and drain-repeat-01.log through drain-repeat-10.log directly exercise the measure.",
+    "fit": "reckon/run_store.py:239 extends the existing read-only guard using its established _table_columns, _unreadable and _SCHEMA_RECORD_KEY owners, and both changed test filenames and added symbols describe behavior without forbidden labels.",
+    "goal_fidelity": "reckon/run_store.py:256-269 distinguishes creation from recorded loss and rechecks columns if creation completes between reads, while lines 854 and 2042 deliver the intended empty results.",
+    "reuse": "Capability searches for schema records, read-only schema refusal, store fixtures and trace observers locate the existing owners in reckon/run_store.py:221,239,1195,1202; the diff extends that owner and adds only local test adapters that exercise the production readers rather than implementing another store.",
+    "scope_discipline": "The complete diff changes only reckon/run_store.py and the two declared test paths listed in prompt.txt:95-97, including the specifically requested narrowing of the existing absent-table test."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in the reviewed run's prompt.txt:38 is satisfied by reckon/run_store.py:256-269 and its callers: a file without either runs or a schema record answers empty, while recorded damage still raises.\nVERDICT done_when: The live plan docs/plans/history-persists-as-detail-washes-out.html:435 and prompt.txt:170 are supported by the added reader/refusal/creation assertions, ten successful drain-repeat logs, a failing negative control, and importer logs with no added failure IDs.\nVERDICT write_paths: The three changed paths in commit 11f82c7e6956da9d748789ecce51f9d0d49f56bc are all explicitly granted at the reviewed run's prompt.txt:95-97; no other deliverable was changed.\nVERDICT manifest: The reviewed run's manifest.md names its commit and receipts, and its baseline_suite and after_suite reconcile with logs ending in 61 passed / EXIT=0 and 86 passed / EXIT=0 respectively.\nVERDICT diff: Read the single commit against parent 036737e6dc8cddd2440a86f5a5b152ffb541c8df; reckon/run_store.py extends the existing refusal owner and both tests exercise the new boundary without changing writer behavior.\nCALL_SITES: reckon/run_store.py:stored_run_rows:854, reckon/run_store.py:indexed_run_ids:2042, reckon/ledger.py:_load_runs:2542, reckon/ledger.py:run_ids:1190, reckon/ledger.py:index_lag:4065, reckon/crew/dispatching/preparation.py:143\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_store.py:256-269 distinguishes creation from recorded loss and rechecks columns if creation completes between reads, while lines 854 and 2042 deliver the intended empty results.\nSCORE evidence: 20\nJUSTIFICATION evidence: The reviewed run's baseline_suite-1794925779767908385.log and after_suite-1794925855042074626.log record zero failures at the exact base/head pair, while negative-control.log and drain-repeat-01.log through drain-repeat-10.log directly exercise the measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete diff changes only reckon/run_store.py and the two declared test paths listed in prompt.txt:95-97, including the specifically requested narrowing of the existing absent-table test.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_store_not_yet_created_answers_empty.py:52 fails when the old migration refusal returns, lines 64-91 fail if damage or lock errors are swallowed, and lines 120 and 168-175 guard the creation race and schema ordering with independent observations and a known-present control.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/run_store.py:239 extends the existing read-only guard using its established _table_columns, _unreadable and _SCHEMA_RECORD_KEY owners, and both changed test filenames and added symbols describe behavior without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for schema records, read-only schema refusal, store fixtures and trace observers locate the existing owners in reckon/run_store.py:221,239,1195,1202; the diff extends that owner and adds only local test adapters that exercise the production readers rather than implementing another store.\n",
+  "reproduction_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T141940833127-store-not-yet-created-answers-empty-s35/reproduction.log",
+  "reproduction_quote": "UnreadableRunStoreError: cannot read the run store at /tmp/tmpvz3pr_kt/store.db: it owes the schema migration (the runs table has no activity_seconds, backend, completed_at, member, node, payload, plan, project, revision, run_id column, current 0c37a9ba76cd); open it through RunStore, which migrates it before answering",
+  "reuse_search": "Searched schema records, migration refusal, store fixtures, ledger adapters and trace callbacks in reviewed production/test owners. No production definition is added: the existing read-only guard and readers in reckon/run_store.py are extended. Opened RunStore._recorded_schema_version and _record_schema_version: these are writer-owned methods; the read-only guard uses the same key without opening a migrating writer. New test fixtures/adapters/observers compose existing runtime owners rather than fork them.",
+  "review_run_id": "r-20261117T145015850243-review-of-store-not-yet-created-answers-empty-s35-11f82c7e6956",
+  "reviewed_base_sha": "036737e6dc8cddd2440a86f5a5b152ffb541c8df",
+  "reviewed_changed_paths": [
+    "reckon/run_store.py",
+    "tests/test_a_locked_store_is_not_read_as_missing_columns.py",
+    "tests/test_a_store_not_yet_created_answers_empty.py"
+  ],
+  "reviewed_commits": [
+    "11f82c7e6956da9d748789ecce51f9d0d49f56bc"
+  ],
+  "reviewed_head_sha": "11f82c7e6956da9d748789ecce51f9d0d49f56bc",
+  "reviewed_run_id": "r-20261117T141940833127-store-not-yet-created-answers-empty-s35",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T15:04:23.330937+00:00",
+  "total": 120
+}

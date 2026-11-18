@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 
+from .. import queue_order
 from reckon.crew.open_run_index import operational_read
 
 from . import holds as _holds
@@ -123,15 +124,19 @@ def admit_once(
             # to ``blocked-upstream`` the moment one is closed as abandoned or
             # failed, with no coordinator turn in between. This is what lets a
             # batch queued in one call launch in dependency order.
-            waits_started = time.monotonic()
-            upstream = _release.advance_waiting_requests(live)
-            _verdicts._record_readiness_verdicts(
-                result, live=live, lane=lane, config_for=config_for
-            )
-            result["released_plan_review"] = _reviews._release_plan_review_holds(
-                live, config_for=config_for
-            )
-            result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
+            # Opened before the stage's clock starts, so the cost of measuring
+            # the stage is not charged to the stage.
+            with _service._read_tally() as wait_reads:
+                waits_started = time.monotonic()
+                upstream = _release.advance_waiting_requests(live)
+                _verdicts._record_readiness_verdicts(
+                    result, live=live, lane=lane, config_for=config_for
+                )
+                result["released_plan_review"] = _reviews._release_plan_review_holds(
+                    live, config_for=config_for
+                )
+                result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
+            _service._record_stage_reads(result, "wait", wait_reads)
             result["promoted_upstream"] = upstream["promoted"]
             result["blocked_upstream"] = upstream["blocked"]
             result["upstream_obligations"] = upstream["obligations"]
@@ -158,6 +163,23 @@ def admit_once(
             queued = [pointer for pointer in queued if included(pointer)]
         else:
             excluded_by_lane = []
+        disk_hold = _service.node_disk_admission_hold() if queued else None
+        if disk_hold is not None:
+            reason = str(disk_hold["reason"])
+            result["obligations"].append(disk_hold)
+            for pointer in queued:
+                identifier = str(pointer.get("run_id") or "")
+                result["held"].append(identifier)
+                _holds._record_pass_hold(
+                    pointer, {"verdict": "held-by-gate", "reason": reason},
+                    live=live, moment=moment,
+                )
+                result["verdicts"].append(_verdicts._verdict_row(
+                    pointer, allowance=0, allowance_source="node disk reserve",
+                    verdict="held-by-gate", detail=reason,
+                ))
+            result["action"] = "gated"
+            return result
         if local_gated and run_id and queued:
             pointer = queued[0]
             config = (
@@ -231,21 +253,13 @@ def admit_once(
                 str(pointer.get("run_id") or ""),
             ]
         # A queued pointer whose arrival time cannot be read has no place in the
-        # ordering, and the ordering refuses such a pointer outright. That
-        # refusal belongs to the pointer, not to the pass: left to propagate, one
+        # ordering, so it is set aside rather than ranked. Left to propagate, one
         # such record — a fixture, or a hand-edited record in the crew home —
-        # ends the pass and the service with it, so no queued request on the lane
-        # launches for any session. The pointer is left out of the ordering and
-        # named in a verdict instead, and every other request is admitted in the
-        # order the pass would otherwise have given them.
-        placeable = [
-            pointer
-            for pointer in queued
-            if parse_utc(pointer.get("queued_at")) is not None
-        ]
-        unplaceable = [
-            pointer for pointer in queued if parse_utc(pointer.get("queued_at")) is None
-        ]
+        # would end the pass and the service with it, so no queued request on the
+        # lane would launch for any session. The pointer is left out of the
+        # ordering and named in a verdict instead, and every other request is
+        # admitted in the order the pass would otherwise have given them.
+        placeable, unplaceable = queue_order.partition_placeable(queued)
         order = (
             placeable
             if run_id
@@ -255,6 +269,16 @@ def admit_once(
         )
         remaining: dict[tuple[str, str], float | None] = {}
         allowance_sources: dict[tuple[str, str], str] = {}
+        # The router's own verdict for each session read this pass, the sessions
+        # whose full reading has already been waited on, and how many launches
+        # each session has already been given from this pass's grant. All three
+        # are per pass: a verdict describes the reading it came with, a session
+        # is waited on once per pass however many requests it is holding, and a
+        # session that has spent part of its grant is not read as full -- the
+        # zero is this pass's own arithmetic, not the lane's reading.
+        router_verdicts: dict[tuple[str, str], str] = {}
+        room_waits: set[tuple[str, str]] = set()
+        launches_by_key: dict[tuple[str, str], int] = {}
         verdicts: list[dict[str, Any]] = result["verdicts"]
         for pointer in unplaceable:
             allowance, source = _holds._session_allowance_read(
@@ -344,22 +368,49 @@ def admit_once(
                 session = str(pointer["session"])
                 allowance_key = (str(pointer.get("backend") or ""), session)
                 if allowance_key not in remaining:
-                    read, source = _holds._session_allowance_read(
+                    read, source, verdict = _holds._session_room_read(
                         pointer, config_for=config_for
                     )
                     remaining[allowance_key] = read
                     allowance_sources[allowance_key] = source
+                    router_verdicts[allowance_key] = verdict
                 allowance = remaining[allowance_key]
                 if allowance is not None and allowance <= 0:
-                    if filling and launches.has_pending(allowance_key):
+                    if filling:
+                        # A grant that is exhausted here may be the whole of what
+                        # holds this session, and it may clear before this pass
+                        # ends. Every candidate held on it is deferred to the
+                        # second sweep, where one bounded wait per session reads
+                        # the router again; holding them here would end the pass
+                        # on a reading of one instant.
                         deferred.append((index, pointer))
                         continue
-                    if not filling:
-                        launches.wait_for_allowance(allowance_key)
-                        allowance = remaining[allowance_key]
-                        if tick() >= deadline:
-                            budget_spent = True
-                            break
+                    launches.wait_for_allowance(allowance_key)
+                    allowance = remaining[allowance_key]
+                    if allowance is not None and allowance <= 0:
+                        # Only a grant this pass has not spent is read as the
+                        # lane's reading of full. A zero this pass's own launches
+                        # produced is our arithmetic on a figure the lane already
+                        # published, and re-reading it would grant the session a
+                        # second helping of the same slots.
+                        room = None
+                        if not launches_by_key.get(allowance_key):
+                            room = _wait_for_lane_room(
+                                pointer,
+                                config_for=config_for,
+                                tick=tick,
+                                deadline=deadline,
+                                waited=room_waits,
+                                key=allowance_key,
+                                router_verdict=router_verdicts.get(allowance_key, ""),
+                            )
+                        if room is not None:
+                            allowance, room_source = room
+                            remaining[allowance_key] = allowance
+                            allowance_sources[allowance_key] = room_source
+                    if tick() >= deadline:
+                        budget_spent = True
+                        break
                 allowance_source = allowance_sources[allowance_key]
                 landed_subject = _holds._landed_review_subject(pointer, live=live)
                 if landed_subject:
@@ -509,16 +560,21 @@ def admit_once(
                     moment=moment,
                     claims=claims,
                     fenced=_holds._non_binding_holds(verdicts),
+                    shared=shared_files[shared_key],
                 )
                 if overlap is not None:
-                    # An earlier-ranked queued request names a path this one also
-                    # names, so this launch would be refused against a claim that
-                    # fences nothing while both wait. It is left exactly as it is —
-                    # queued, with no failure recorded — and the head of the queue,
-                    # which has no earlier overlap, is never held this way. An
-                    # earlier request the pass has already held is not a fence: it
-                    # cannot launch, so holding this one behind it would stop the
-                    # lane on a request that is waiting elsewhere.
+                    # An earlier-ranked queued request names a path a merge cannot
+                    # reconcile — a plan document, generated state, a cumulative
+                    # evidence record, a figure directory or a dependency lock —
+                    # and this one names it too, so this launch would be refused
+                    # against a claim that fences nothing while both wait. Source
+                    # paths are not a reason to wait: the worktrees isolate the
+                    # edits and the merge reconciles them. It is left exactly as it
+                    # is — queued, with no failure recorded — and the head of the
+                    # queue, which has no earlier overlap, is never held this way.
+                    # An earlier request the pass has already held is not a fence:
+                    # it cannot launch, so holding this one behind it would stop
+                    # the lane on a request that is waiting elsewhere.
                     result["held"].append(str(pointer["run_id"]))
                     result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                         f"held behind earlier queued request "
@@ -581,6 +637,9 @@ def admit_once(
                         )
                     )
                     continue
+                launches_by_key[allowance_key] = (
+                    launches_by_key.get(allowance_key, 0) + 1
+                )
                 launches.submit(
                     allowance_key,
                     pointer,
@@ -641,6 +700,82 @@ def admit_once(
                 order, verdicts, moment=moment, ordered=not bool(run_id)
             )
         return result
+
+
+# How long one pass waits for a lane that granted no worker slot to publish room
+# again, and the cadence it re-reads on. A pass used to end on the reading it
+# took, so a full reading held every queued request until the next pass -- 45 to
+# 185 seconds on the fleet -- while the lane's own grants cleared in seconds. The
+# wait is bounded because a full reading that persists is a lane that really is
+# saturated, and the pass must still return to do the rest of its work.
+LANE_ROOM_WAIT_SECONDS = 30.0
+LANE_ROOM_POLL_SECONDS = 1.0
+
+
+def _wait_for_lane_room(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    tick: Callable[[], float],
+    deadline: float,
+    waited: set[tuple[str, str]],
+    key: tuple[str, str],
+    router_verdict: str,
+) -> tuple[float | None, str] | None:
+    """Wait, bounded, for a lane that granted no slot to publish room again.
+
+    Returns the allowance the later reading published together with its source,
+    or ``None`` when the lane is still full when the wait ends, the session was
+    already waited on this pass, or the lane is paused. Three things keep this
+    one wait per session per pass rather than a poll loop that ends with the
+    pass:
+
+    * a session already waited on this pass is not waited on again, so a queue
+      of twelve requests costs one wait, not twelve;
+    * the wait never outlasts the pass's own launch deadline, so a lane cannot
+      hold a pass open past the budget the pass was given;
+    * a paused lane is not waited on at all. A full reading is an instant that
+      clears as the requests the router already holds complete, while a pause
+      is the lane stating it takes no work, and a later reading of the same
+      pause is not worth a wait. A re-read that comes back paused ends the wait
+      for the same reason.
+
+    The read is a fresh one. The figure this pass cached is the reading being
+    waited out, so reusing it would answer the fresh question with the stale
+    instant, and no wait would ever end for a lane that reopened.
+
+    The wait pauses on the service's own pause seam, so a caller driving this
+    pass with a stub pause keeps it fast without changing what the pass
+    decides.
+    """
+    if router_verdict == "paused" or key in waited:
+        return None
+    seconds = min(LANE_ROOM_WAIT_SECONDS, deadline - tick())
+    if seconds <= 0:
+        return None
+    waited.add(key)
+    # The config is resolved once here rather than per read: a lane document
+    # sitting on a shared filesystem is re-read every poll, while the mounts and
+    # lane declarations behind the config do not move inside one wait.
+    config = (
+        config_for(pointer)
+        if config_for is not None
+        else _launching._resolve_lane_config(pointer)
+    )
+
+    def frozen(_pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+        return config
+
+    for _poll in range(max(1, int(seconds // LANE_ROOM_POLL_SECONDS))):
+        _service._pause(LANE_ROOM_POLL_SECONDS)
+        allowance, source, verdict = _holds._session_room_read(
+            pointer, config_for=frozen
+        )
+        if verdict == "paused":
+            return None
+        if allowance is None or allowance > 0:
+            return allowance, source
+    return None
 
 
 def _launch_budget_from_flight() -> float:

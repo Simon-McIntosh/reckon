@@ -60,7 +60,7 @@ _REAL_SHAPED_JSON = """\
     "failure_ids": ["tests/test_a.py::test_a", "tests/test_b.py::test_b"]
   },
   "after_suite": {
-    "revision": "036dfe72",
+    "revision": "9f1d4d0e3a1c4b7f8e2d6c5a4b3f2e1d0c9b8a76",
     "command": "pytest -q",
     "exit_status": 0,
     "log_path": "/durable/after.log",

@@ -11,6 +11,8 @@ import pytest
 from reckon.crew import (
     landing_measure,
     merge,
+    pending_landing,
+    promotion_requests,
     queue_landing,
     review_dispositions,
     runs,
@@ -143,6 +145,28 @@ def _runner(delivery, monkeypatch, *, repeats_fail=True, main_fails=False, clean
 def _record():
     path = runs.run_dir(RUN) / "landing-measure/measurement.json"
     return json.loads(path.read_text())
+
+
+def _drain_promotion(run_id):
+    """Run the promotion a landing requested and read its durable receipt.
+
+    The landing pass measures a delivery and requests its promotion; the
+    promotion itself is drained by the fleet service. A test that wants the
+    merge to happen drives that drain here and then reads the receipt, which is
+    where a promotion's outcome — including a guard's refusal — is written.
+    """
+    service = promotion_requests.PromotionService()
+    service.tick()
+    service.settle(timeout=120)
+    return promotion_requests.read_promotion(run_id)
+
+
+def _after_suite_log(manifest):
+    """The arm log a promotion reads the gate evidence from, per the manifest."""
+    for line in Path(manifest).read_text().splitlines():
+        if line.startswith("after_suite: "):
+            return Path(json.loads(line.split(": ", 1)[1])["log_path"])
+    raise AssertionError("the delivered manifest states no after_suite arm")
 
 
 def test_a_reproducing_candidate_failure_refuses_landing(delivery, monkeypatch):
@@ -279,33 +303,28 @@ def actual_delivery(tmp_path, monkeypatch):
     return cli_checks.promotable_delivery.__wrapped__(tmp_path, monkeypatch)
 
 
-def test_primary_advance_after_measurement_refuses_the_actual_cli_merge(
-    actual_delivery, monkeypatch
-):
+def test_primary_advance_after_measurement_refuses_the_promotion(actual_delivery):
     delivery = actual_delivery
-    moved = []
-
-    def advance(command, **options):
-        moved.append(
-            _commit(delivery["repo"], "concurrent.txt", "concurrent primary edit\n")
-        )
-        return delivery["run_in_shim"](command, **options)
-
-    monkeypatch.setattr(queue_landing, "_run_srun", advance)
     result = queue_landing.land_once()
+    assert result["promotion_requested"] == [delivery["run_id"]], result
+    moved = _commit(delivery["repo"], "concurrent.txt", "concurrent primary edit\n")
 
-    assert not result["landed"], result
-    assert "primary" in result["obligations"][0]["guard"]
-    assert _git(delivery["repo"], "rev-parse", "HEAD") == moved[0]
+    receipt = _drain_promotion(delivery["run_id"])
+
+    assert receipt["phase"] == promotion_requests.REFUSED, receipt
+    assert "primary" in receipt["error"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == moved
     assert _git(delivery["origin"], "rev-parse", "main") == delivery["base"]
     assert runs.pointer_path(delivery["run_id"]).exists()
 
 
-def test_the_actual_cli_lands_exactly_the_measured_candidate(actual_delivery):
+def test_the_promotion_lands_exactly_the_measured_candidate(actual_delivery):
     delivery = actual_delivery
     result = queue_landing.land_once()
 
-    assert result["landed"] == [delivery["run_id"]], (result, delivery["receipts"])
+    assert result["promotion_requested"] == [delivery["run_id"]], result
+    receipt = _drain_promotion(delivery["run_id"])
+    assert receipt["phase"] == promotion_requests.PROMOTED, receipt
     record = queue_landing._measurement_record(delivery["run_id"])
     candidate = record["population"]["candidate_sha"]
     main = record["population"]["main_sha"]
@@ -320,30 +339,27 @@ def test_the_actual_cli_lands_exactly_the_measured_candidate(actual_delivery):
     assert _git(delivery["origin"], "rev-parse", "main") == _git(
         delivery["repo"], "rev-parse", "HEAD"
     )
-    receipt = json.loads(delivery["receipts"][-1]["output"])
-    assert receipt["steps"]["promote"]["ok"] is True
-    assert receipt["steps"]["land"]["commit"] == candidate
+    promoted = receipt["result"]
+    assert promoted["steps"]["promote"]["ok"] is True
+    assert promoted["steps"]["land"]["commit"] == candidate
     assert not runs.pointer_path(delivery["run_id"]).exists()
     assert not delivery["worker"].exists()
-    assert all(
-        r["command"][r["command"].index("crew") + 1] != "merge"
-        for r in delivery["receipts"]
-    )
+    # The merge is made inside the promotion; the landing pass runs no command.
+    assert delivery["receipts"] == []
 
 
-def test_candidate_handoff_preserves_the_promotion_guard(actual_delivery, monkeypatch):
+def test_candidate_handoff_preserves_the_promotion_guard(actual_delivery):
     delivery = actual_delivery
-
-    def remove_gate(command, **options):
-        if "complete" in command:
-            delivery["gate_log"].unlink()
-        return delivery["run_in_shim"](command, **options)
-
-    monkeypatch.setattr(queue_landing, "_run_srun", remove_gate)
     result = queue_landing.land_once()
+    assert result["promotion_requested"] == [delivery["run_id"]], result
+    # The promotion reads its gate evidence from the manifest the worker
+    # delivered rather than trusting the land pass's own ``--gate passed``.
+    _after_suite_log(delivery["manifest"]).unlink()
 
-    assert not result["landed"], result
-    assert "gate" in result["obligations"][0]["guard"]
+    receipt = _drain_promotion(delivery["run_id"])
+
+    assert receipt["phase"] == promotion_requests.REFUSED, receipt
+    assert "gate" in receipt["error"]
     assert _git(delivery["repo"], "rev-parse", "HEAD") == delivery["base"]
     assert _git(delivery["origin"], "rev-parse", "main") == delivery["base"]
     assert runs.pointer_path(delivery["run_id"]).exists()
@@ -363,18 +379,18 @@ def test_primary_advance_after_promotion_measurement_refuses_publication(
 
     monkeypatch.setattr(merge, "land", advance)
     result = queue_landing.land_once()
+    assert result["promotion_requested"] == [delivery["run_id"]], result
 
-    assert not result["landed"], result
-    assert "parents" in result["obligations"][0]["guard"]
+    receipt = _drain_promotion(delivery["run_id"])
+
+    assert receipt["phase"] == promotion_requests.REFUSED, receipt
+    assert "parents" in receipt["error"]
     assert _git(delivery["repo"], "rev-parse", "HEAD") == moved[0]
     assert _git(delivery["origin"], "rev-parse", "main") == delivery["base"]
     assert not (delivery["repo"] / "reviewed.txt").exists()
     assert delivery["worker"].exists()
-    saved = json.loads(
-        (runs.run_dir(delivery["run_id"]) / "admission-landing.json").read_text()
-    )
-    assert saved["status"] == "refused"
-    assert "parents" in saved["guard"]
+    pending = json.loads(pending_landing._record_path(delivery["run_id"]).read_text())
+    assert pending["head"] == delivery["head"]
 
 
 def test_an_unarmed_implementation_cannot_land_unmeasured(delivery, monkeypatch):

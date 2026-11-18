@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_memo.py:861 _terminal_lane_signal",
+    "reckon/crew/station_store.py:1026 classify_tick"
+  ],
+  "completed_at": "2026-11-17T12:10:06.887Z",
+  "dispatched_at": "2026-11-17T12:09:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": 806,
+      "severity": "blocking",
+      "text": "The node goal is to remove the dominant read its own census names, but the census ranks _backends._cached_stream_entry at 42.7 percent of the dominant input; this change repairs _newest_result_event, the 19.5 percent reader beneath it (line 806), and the live done_when bound is measured unmet in both arms (1,376 and 1,724 MB/min against 20, above 75 percent of one core against 5), so the measure the node was dispatched against is not moved."
+    },
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": 734,
+      "severity": "non-blocking",
+      "text": "Duplicates an owner the repository already has: reckon/_backends.py:4255 stream_head_fingerprint and reckon/_backends.py:4266 _stream_head_intact already digest a stream's bounded opening and compare it under a cursor, and this file already imports that module for _stream_lines_from at line 843. The copies differ only in the sample size (256 here against _STREAM_HEAD_SAMPLE = 8 * 1024), so the rewrite check this node relies on is the weaker of the two and the two bounds can drift apart silently."
+    },
+    {
+      "file": "tests/test_the_station_reads_only_what_changed.py",
+      "line": 1003,
+      "severity": "non-blocking",
+      "text": "The verdict-equality assertion compares classify_tick against recovery_watch._watch_snapshot, the very function the tick calls, and both sides read the same module-global _NEWEST_RESULTS cursor, so a cursor that returned a stale result would be returned to both sides and the assertion would hold: it is not independent of the value under test and does not guard the fold it reads as guarding."
+    },
+    {
+      "file": "tests/test_the_station_reads_only_what_changed.py",
+      "line": 1011,
+      "severity": "non-blocking",
+      "text": "The byte assertion is the durable guard for this change (the base arm reads 11,009,290 against the 1,000,000 bound), but line 969 total >= 10_000_000, line 1006 len(records) >= STREAM_RUNS and line 1011 over > 0 are fixture preconditions rather than guards: they fail only if the fixture shrinks or the code stops reading, never on a regression of the cursor, so counting four assertions as four guards overstates the coverage."
+    },
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": 780,
+      "severity": "non-blocking",
+      "text": "_touch_newest_result and _evict_newest_results exist to keep a plain-dict monkeypatch of _NEWEST_RESULTS (tests/test_a_lane_signal_reads_a_stream_once.py:20) working, so product code carries getattr probing and an isinstance branch for a test's chosen container; the store's own eviction already has owners at reckon/_backends.py:3651 and reckon/_backends.py:3735 that evict an OrderedDict without the duck-typing."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": 511,
+      "severity": "non-blocking",
+      "text": "The second repaired window's 1,724 MB/min and 78.0 percent figures are cited with no surviving receipt: the census scratch directory the manifest's artifacts line names (/tmp/reckon-crew-scratch/.../census/logs/) no longer exists, and the 235 s window log itself records that its raw samples were overwritten by that second window, so one of the three numbers the RCA's table states cannot be read back from any log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read/manifest.md",
+      "line": 10,
+      "severity": "non-blocking",
+      "text": "The done_when's clause that ruff check and ruff format --check on the staged paths add no finding is unrecorded: the manifest's tests, test_logs, after_suite and artifacts carry three pytest arms and no lint arm, so one element of the gate the node was measured against has no receipt either way."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read all four commits from 73a771c to 5d61bd888a: 77100cbd43 and 3d28583c0c change reckon/crew/recovery_memo.py's newest-result store into a per-stream cursor; a11ff64808 and 5d61bd888a add the census and the window tables to the RCA; the test file gains one test, test_a_moved_stream_is_read_only_where_it_changed.",
+    "done_when": "The done_when asks for a 60 s census with at least 30 live runs, a fixture test under 1 MB, verdict equality, a live window under 20 MB/min and 5 percent of one core, matched importer arms and a clean ruff; the gate on record is three pytest files (73 passed at head) which asserts only the fixture arm, the census is a 40 s window at --interval 1, the live window is recorded unmet, and the ruff clause has no receipt.",
+    "goal": "The goal is to remove the dominant read a 60 s per-path census of the station names; the census the run took (logs/station-reads-only-what-changed: logs/station-read-census-40s.txt) ranks _backends._cached_stream_entry at 42.7 percent and recovery_memo._newest_result_event at 19.5 percent, and the diff changes only the second, while docs/research/monitor-storage-load-rca.html:521 states the 20 MB/min and 5 percent bound is not met.",
+    "manifest": "Read manifest.md at lines 1-30: it correctly records the run as blocked with the 11,009,290-to-7,545 fixture figure, but its reuse rubric line claims the opening-digest head check was reused when recovery_memo.py:734 copies it.",
+    "write_paths": "Declared scope is reckon/crew, reckon/file_memo.py, tests/test_the_station_reads_only_what_changed.py and docs/research/monitor-storage-load-rca.html; the diff touches reckon/crew/recovery_memo.py, that test file and that RCA only."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to remove the dominant read a 60 s per-path census of the station names; the census at logs/station-read-census-40s.txt ranks _backends._cached_stream_entry 42.7% and recovery_memo._newest_result_event 19.5%, and the diff changes only the second.\nVERDICT done_when: the done_when asks for a 60 s census, a sub-1 MB fixture test, verdict equality, a live window under 20 MB/min and 5% of one core, matched importer arms and clean ruff; the recorded gate is three pytest files (73 passed at head) covering only the fixture arm, docs/research/monitor-storage-load-rca.html:521 records the bound unmet, and no ruff receipt exists.\nVERDICT write_paths: the declared scope is reckon/crew, reckon/file_memo.py, tests/test_the_station_reads_only_what_changed.py and docs/research/monitor-storage-load-rca.html; the diff touches only reckon/crew/recovery_memo.py, that test file and that RCA.\nVERDICT manifest: read manifest.md lines 1-30; it records status blocked, the 11,009,290-to-7,545 fixture figure and both gate arms at EXIT=0, and its reuse rubric line claims a reused opening-digest check that recovery_memo.py:734 actually copies.\nVERDICT diff: read all four commits against 73a771c; reckon/crew/recovery_memo.py:720-855 replaces the whole-file newest-result scan with a per-stream cursor, tests/test_the_station_reads_only_what_changed.py:965-1015 adds one instrumented fixture test, and docs/research/monitor-storage-load-rca.html:441-525 adds the census and window tables.\nCALL_SITES: reckon/crew/recovery_memo.py:861 _terminal_lane_signal, reckon/crew/station_store.py:1026 classify_tick\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_memo.py:806 repairs the 19.5% reader while the census ranks _backends._cached_stream_entry at 42.7%, so the dominant read the goal names is untouched.\nSCORE evidence: 10\nJUSTIFICATION evidence: the gate recorded in manifest.md:10 asserts only the fixture arm and asserts nothing about the 20 MB/min and 5% bound that docs/research/monitor-storage-load-rca.html:521 records unmet, nor about ruff.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the 467-line diff (reckon/crew/recovery_memo.py, tests/test_the_station_reads_only_what_changed.py, docs/research/monitor-storage-load-rca.html) lies inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_station_reads_only_what_changed.py:1011 reddens at the base revision with 11,009,290 bytes as its negative-control log shows, but the verdict-equality assertion at line 1003 shares the cursor it would have to catch.\nSCORE fit: 13\nJUSTIFICATION fit: reckon/crew/recovery_memo.py:780-804 carries getattr probing and an isinstance branch so a test's plain-dict swap of _NEWEST_RESULTS keeps working.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_memo.py:734 duplicates the capability reckon/_backends.py:4255 stream_head_fingerprint already owns, down to the dict shape, under a second 256-byte bound.\nFINDING reckon/crew/recovery_memo.py:806 blocking: the node's goal is the dominant census read and this repairs the 19.5% one; the live bound is unmet in both arms at 1,376 and 1,724 MB/min.\nFINDING reckon/crew/recovery_memo.py:734 non-blocking: _result_stream_head and _result_stream_head_intact duplicate reckon/_backends.py:4255 and :4266 under a 256-byte sample against the owner's 8 KB.\nFINDING tests/test_the_station_reads_only_what_changed.py:1003 non-blocking: verdicts == fresh compares classify_tick against the same _watch_snapshot that produced it, both reading the shared _NEWEST_RESULTS cursor, so a stale cursor passes it.\nFINDING tests/test_the_station_reads_only_what_changed.py:1011 non-blocking: only the byte bound guards the change; the three assertions at lines 969, 1006 and 1011's lower arm are fixture preconditions that no cursor regression reddens.\nFINDING reckon/crew/recovery_memo.py:780 non-blocking: the ordered-store helpers exist to serve a test's plain-dict monkeypatch, against the OrderedDict eviction reckon/_backends.py:3651 already uses.\nFINDING docs/research/monitor-storage-load-rca.html:511 non-blocking: the 1,724 MB/min window figure has no surviving log; the scratch census logs it cites were removed and its own window log says its samples were overwritten.",
+  "review_run_id": "r-20261117T120750092280-review-of-the-station-reads-only-what-changed-after-one-pointer-read-5d61bd888ac8",
+  "reviewed_base_sha": "73a771cde3238af66d88944a3bae01debf09896f",
+  "reviewed_head_sha": "5d61bd888ac8b728e92a75328b2de5581c98b77e",
+  "reviewed_run_id": "r-20261116T220347695299-the-station-reads-only-what-changed-after-one-pointer-read",
+  "scores": {
+    "durability": 15,
+    "evidence": 10,
+    "fit": 13,
+    "goal_fidelity": 8,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T13:00:33.107199+00:00",
+  "total": 71
+}

@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs, both read at their last lines: arms/baseline.log records `# revision: 6acc2ef37f...`, `58 passed in 34.25s` and `EXIT=0` with no FAILED id; arms/after.log records `# revision: 27b44d36fe...`, `61 passed in 37.17s` and `EXIT=0` with no FAILED id. The set difference is empty. The instrument is shown to see failures by the same runner's red logs: negative-control.log reads `2 failed, 1 passed in 38.73s` `EXIT=1`, and negative-control-promotion.log reads `1 failed, 2 passed in 15.39s` `EXIT=1` failing test_a_promotion_names_the_attempt_it_kept.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1785 `_complete_locked` calls `_remove_promoted_pointer_or_defer`",
+    "reckon/crew/promotion.py:2468 `_complete_locked` calls `_remove_promoted_pointer_or_defer`",
+    "reckon/crew/dispatch_launch.py:2299 `_launch_refused_by` calls `_retired_attempt_ended`"
+  ],
+  "completed_at": "2026-11-16T01:55:54.196Z",
+  "dispatched_at": "2026-11-16T01:55:12Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph says the third case runs `_remove_promoted_pointer_or_defer` and then quotes its refusal as `changed while promotion ran; attempt 5 was recorded after this promotion read the pointer; its pointer and workspace are preserved; retry promotion` \u2014 that tail is the inner pointer-removal step's text at reckon/crew/promotion.py:270-274, which the cleanup discards for a non-review run, and even that text yields a colon from `_newer_attempt_named` (reckon/crew/promotion.py:293) where the fragment prints a semicolon, so the refusal the case actually asserts (reckon/crew/promotion.py:495-499, `...; its promotion is recorded and its pointer is kept, marked pending_landing_repair, ...`) matches neither the quotation nor its punctuation in the paragraph whose subject is which message a production call site raises."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224054286669-an-ended-attempt-holds-nothing/negative-control-promotion.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the red log's header names `63181b9c754cbd2fd30a812aa051d2e1d6bca1e4 with the failing promotion wrapper's attempt naming reverted`, but its traceback calls `promotion._remove_promoted_pointer_or_defer`, a call the test file only makes at the reviewed head, and the log carries no `# tree:`/`# module:`/`# cwd:` line, so the record a reader opens to see the guard fire does not say which tree it measured or from which revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224054286669-an-ended-attempt-holds-nothing/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's last clause requires `ruff check and ruff format --check add no finding on the staged paths`, and test_logs names no ruff log, so that clause of the measure is recorded nowhere; re-running ruff 0.16.4 over the three changed python files at 27b44d36fe reports `3 files already formatted` and no finding on the changed lines, so the clause holds but the record cannot show it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the single commit 27b44d36fe against 63181b9c75: four files, +19/-16 \u2014 the cleanup's two refusals gain `_newer_attempt_named` at promotion.py:487 and :496, `_retired_attempt_ended` drops the `_run_exit_record` call for `_reserved_attempt_ended(directory, attempt)` at dispatch_launch.py:2236, the promotion case moves from the private step to the wrapper at tests/test_an_ended_attempt_holds_nothing.py:311, and the fragment's promotion and arms paragraphs are corrected.",
+    "done_when": "The done_when names tests/test_an_ended_attempt_holds_nothing.py on a temporary crew home with matched arms and ruff; the manifest records the three-file gate command and arms/after.log at 27b44d36fe reads `61 passed` `EXIT=0`, and the case the gate names now drives `promotion._remove_promoted_pointer_or_defer` at tests/test_an_ended_attempt_holds_nothing.py:311, but the ruff clause of the done_when is still recorded nowhere.",
+    "goal": "The reviewed node's goal is that no launch, resume or discard is refused by an attempt that has ended, and that a promotion-level refusal names the attempt it kept; the landed commit at reckon/crew/promotion.py:487 and :496 appends the newer attempt to both of the cleanup's own refusals, and reckon/crew/dispatch_launch.py:2236 routes `_retired_attempt_ended` through `_reserved_attempt_ended`, so the repair named by the prior review is present in the landed text.",
+    "manifest": "Read the reviewed run's manifest.md: it records the three-file gate command at line 14, both arm logs with their revisions and `EXIT=` lines at lines 15 and 20-21, the negative-control logs at line 18, measurement_module/measurement_cwd for the base checkout, and outside_scope naming recovery_liveness.py.",
+    "write_paths": "The node's declared paths are reckon/crew/dispatch_launch.py, reckon/crew/recovery_liveness.py, tests/test_an_ended_attempt_holds_nothing.py and the node's fragment; `git diff --stat 63181b9c75 27b44d36fe` names the fragment, dispatch_launch.py, promotion.py and the test file, and promotion.py is inside the scope the run's manifest declares (`changed_paths`), with recovery_liveness.py untouched."
+  },
+  "justifications": {
+    "durability": "negative-control-promotion.log records the naming reverted and tests/test_an_ended_attempt_holds_nothing.py:312 reddens on it with the attempt-free message, so the assertion independently guards the repair; the `_retired_attempt_ended` deduplication at reckon/crew/dispatch_launch.py:2236 and the first wrapper branch at promotion.py:487 have no assertion of its own, and the two readers it unifies differ only for a record carrying no run_id, which nothing exercises.",
+    "evidence": "arms/after.log ran the literal three-file command at 27b44d36fe with `61 passed` `EXIT=0` and arms/baseline.log at 6acc2ef37f with `58 passed` `EXIT=0`, and negative-control-promotion.log shows `EXIT=1`; the gap is that the reviewed record names no ruff run, though ruff 0.16.4 on the three changed python files at the head reports no new finding.",
+    "fit": "The naming is spliced as a second f-string literal beside the existing message parts at reckon/crew/promotion.py:486-490 and :495-499, following the same construction the inner step already uses at :271-274, and the comment at dispatch_launch.py:2234-2235 states the reason in the module's register.",
+    "goal_fidelity": "reckon/crew/promotion.py:487 and :496 carry the naming on both wrapper refusals, so the message the prior review found discarded at promotion.py:468 now names the launch, and `git diff --stat` shows nothing else was rewritten to get there.",
+    "reuse": "The diff adds no definition: it replaces the inline `_run_exit_record(record, 'attempt-N-exit.json', require_run_id=True)` call at dispatch_launch.py:2236 with the module's existing strict reader `_reserved_attempt_ended` at dispatch_launch.py:2707, moving toward the owner rather than forking it; the residual duplication against reckon/crew/recovery_liveness.py:1534 `_run_exit_record` is the finding the prior review folded into a repair node and is named in the manifest's outside_scope.",
+    "scope_discipline": "`git diff --name-only 63181b9c75 27b44d36fe` lists exactly the fragment, reckon/crew/dispatch_launch.py, reckon/crew/promotion.py and tests/test_an_ended_attempt_holds_nothing.py, all declared by the run's manifest.md, and the diff carries no change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that no launch, resume or discard is refused by an attempt that has ended and that a promotion-level refusal names the attempt it kept; reckon/crew/promotion.py:487 and :496 now append `_newer_attempt_named` to both of the cleanup's own refusals, and reckon/crew/dispatch_launch.py:2236 routes `_retired_attempt_ended`'s receipt read through `_reserved_attempt_ended`.\nVERDICT done_when: the done_when names tests/test_an_ended_attempt_holds_nothing.py on a temporary crew home with matched arms and ruff; arms/after.log at 27b44d36fe records the literal three-file command with `61 passed` `EXIT=0`, and the case now drives `promotion._remove_promoted_pointer_or_defer` at tests/test_an_ended_attempt_holds_nothing.py:311, but the ruff clause is recorded nowhere.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch_launch.py, reckon/crew/recovery_liveness.py, tests/test_an_ended_attempt_holds_nothing.py and the node's fragment; `git diff --stat 63181b9c75 27b44d36fe` changes four files \u2014 the fragment, dispatch_launch.py, promotion.py and the test \u2014 with promotion.py inside the run manifest's own changed_paths and recovery_liveness.py untouched.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224054286669-an-ended-attempt-holds-nothing/manifest.md; it records the gate command at line 14, both arms with their revision and `EXIT=` lines (`61 passed` after, `58 passed` at base), both negative-control logs at line 18, and the base arm's measurement_module.\nVERDICT diff: read 27b44d36fe against 63181b9c75 commit by commit; +19/-16 across docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html, reckon/crew/dispatch_launch.py, reckon/crew/promotion.py and tests/test_an_ended_attempt_holds_nothing.py, all inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:1785 (_complete_locked), reckon/crew/promotion.py:2468 (_complete_locked), reckon/crew/dispatch_launch.py:2299 (_launch_refused_by)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:487 and :496 carry the naming on both of the wrapper's refusals, so the message the prior review found discarded at promotion.py:468 now names the launch that kept the pointer.\nSCORE evidence: 16\nJUSTIFICATION evidence: arms/after.log at 27b44d36fe reads `61 passed in 37.17s` `EXIT=0` and negative-control-promotion.log reads `EXIT=1`, but no ruff result is recorded for the done_when's last clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-only 63181b9c75 27b44d36fe` lists exactly the fragment, reckon/crew/dispatch_launch.py, reckon/crew/promotion.py and tests/test_an_ended_attempt_holds_nothing.py, all declared in manifest.md's changed_paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_an_ended_attempt_holds_nothing.py:312 reddens on the reverted naming, as negative-control-promotion.log records, but the deduplicated read at dispatch_launch.py:2236 and the first wrapper branch at promotion.py:487 carry no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the naming is spliced as a second f-string literal at reckon/crew/promotion.py:486-490 and :495-499, the same construction the inner step uses at :269-274.\nSCORE reuse: 16\nJUSTIFICATION reuse: the diff adds no definition and replaces the inline receipt read at reckon/crew/dispatch_launch.py:2236 with the module's existing `_reserved_attempt_ended` at :2707; the residual duplication against reckon/crew/recovery_liveness.py:1534 is the folded finding named in the manifest's outside_scope.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-ended-attempt-holds-nothing.html:28 non-blocking: the paragraph quotes the inner pointer-removal step's message, printing a semicolon where reckon/crew/promotion.py:293 yields a colon, for a refusal the cleanup it names does not raise.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224054286669-an-ended-attempt-holds-nothing/negative-control-promotion.log:1 non-blocking: the header names 63181b9c75 while the mutant carries the head's test, and no tree/module/cwd line says what was measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224054286669-an-ended-attempt-holds-nothing/manifest.md:15 non-blocking: the done_when's ruff clause is recorded nowhere, though ruff at the head adds no finding on the changed files.",
+  "review_node": "review-of-an-ended-attempt-holds-nothing-27b44d36fe01",
+  "review_run_id": "r-20261116T014724829563-review-of-an-ended-attempt-holds-nothing-27b44d36fe01",
+  "reviewed_base_sha": "63181b9c754cbd2fd30a812aa051d2e1d6bca1e4",
+  "reviewed_commits": [
+    "27b44d36fe01329947d58cb6f6b5a95dadf996f5"
+  ],
+  "reviewed_head_sha": "27b44d36fe01329947d58cb6f6b5a95dadf996f5",
+  "reviewed_run_id": "r-20261115T224054286669-an-ended-attempt-holds-nothing",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T014724829563-review-of-an-ended-attempt-holds-nothing-27b44d36fe01"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T02:16:43.348742+00:00",
+  "total": 104
+}

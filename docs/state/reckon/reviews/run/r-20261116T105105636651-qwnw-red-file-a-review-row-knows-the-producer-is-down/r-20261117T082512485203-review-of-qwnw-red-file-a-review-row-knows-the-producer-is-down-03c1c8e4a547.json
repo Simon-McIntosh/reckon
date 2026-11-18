@@ -1,0 +1,68 @@
+{
+  "added_failure_basis": "baseline_suite at 655a2befa9 reads '58 passed in 40.55s' EXIT=0 with zero failure ids in logs/baseline-suite.log, and after_suite at 03c1c8e4a5 reads '58 passed in 54.56s' EXIT=0 in logs/after-suite.log, so the suite pair adds no id; the importer arms were re-derived line by line from the FAILED and ERROR lines of logs/baseline-importers.log (54 ids: 44 failed + 10 errors) and logs/after-importers.log (30 ids: 20 failed + 10 errors), giving 0 ids present at head and absent at base and 24 base ids no longer failing",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/obligations.py:1695",
+    "reckon/crew/recovery_review_dispatch.py:3216",
+    "reckon/crew/recovery_review_dispatch.py:3311",
+    "reckon/crew/query.py:597",
+    "reckon/crew/recovery_watch.py:757",
+    "reckon/crew/promotion.py:1126",
+    "reckon/serve.py:902"
+  ],
+  "completed_at": "2026-11-17T08:26:44.987Z",
+  "dispatched_at": "2026-11-17T08:26:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered record's arm table still names the named check at 7a104067b9 and the importer head arm at bcbb2fadb0 (line 48), while the logs it cites were re-recorded at the delivered head 03c1c8e4a5 - logs/all-debug-target-file.log names job 1321607 and logs/after-importers.log reads 20 failed, 883 passed, 10 errors - so a reader comparing table to logs sees a different revision and a 35-failure figure the head no longer carries."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "1991",
+      "severity": "non-blocking",
+      "text": "non-blocking: the condition this run adds is not guarded on its own at the delivered head - the fixture's pointer carries process_alive False, so main's `alive is not False` at line 1989 already clears pre_spawn_waiting and deleting only `not manifest_present` leaves all three tests green; the case the clause uniquely fixes is a pointer whose liveness is unproven with a manifest present, and no test in tests/test_a_review_row_knows_the_producer_is_down.py builds that pointer."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line records every arm the done_when names except the ruff pair and logs/ holds no ruff output, so the clause 'ruff check and ruff format --check report nothing new on the changed paths' cannot be re-read from the run; measured independently, the same single pre-existing SIM102 at reckon/crew/recovery_classification.py:3468 reports at both 655a2befa9 and 03c1c8e4a5 and ruff format --check reports the file already formatted, so nothing new is introduced."
+    },
+    {
+      "file": "tests/test_a_review_row_knows_the_producer_is_down.py",
+      "line": "148",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected overdue figure is produced by obligations._overdue_figure, the same helper the code under test calls, from the same `silence` the test supplied, so both sides move together and the assertion holds whatever that helper returns; line 165 has the same shape against obligations._reflex_review_window_seconds, and neither is an independent source for the value it checks."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 states the goal as tests/test_a_review_row_knows_the_producer_is_down.py passing in full, and the delivered tree meets it \u2014 the base arm in logs/baseline-target-file.log reads \"3 failed in 0.71s\" EXIT=1 with the fixture's zero-duty assertion, while logs/head-target-file.log at 03c1c8e4a5 reads \"3 passed in 2.15s\" EXIT=0.\nVERDICT done_when: the measure at prompt.txt:278 asks for the file green as an all_debug job with SLURM_JOB_ID unset, a logged negative control, no added importer failure, and a clean ruff pair; logs/all-debug-target-file.log records job 1321607 at 03c1c8e4a5 reading \"3 passed in 1.57s\" EXIT=0 under \"env -u SLURM_JOB_ID\", the negative control is logged, the importer arms add 0 ids, but the run logged no ruff output, so I ran the pair myself on the file at 03c1c8e4a5 and found the same single pre-existing SIM102 (reckon/crew/recovery_classification.py:3468) at both 655a2befa9 and the head with format clean.\nVERDICT write_paths: the fence at prompt.txt:66-70 grants reckon, tests, the fragment directory and the figure directory; the node's authored commits are bcbb2fadb0 (reckon/crew/recovery_classification.py, 12 added and 2 deleted lines), f75f6418e9 and three one-line amendment commits to docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html, all inside that fence, and no figure was declared because the done_when names no artifact.\nVERDICT manifest: read the run's manifest.md in the config-home run directory \u2014 status complete, nine commits listed, tests naming the single-file pytest command, baseline_suite and after_suite both exit 0 with 0 failures and 0 ids, and one landing line citing 3 failed at 655a2befa9 to 3 passed.\nVERDICT diff: read each commit from 655a2befa9 to 03c1c8e4a5; the product change is one boolean condition `not manifest_present` at reckon/crew/recovery_classification.py plus its paragraph of reasoning, and `git show --cc 03c1c8e4a5` shows the merge's own contribution is 8 comment lines and that condition, keeping main's `alive is not False` and the `_stranded_launch` guard, so the resolved predicate at line 1987 carries all four conditions.\nCALL_SITES: reckon/crew/obligations.py:1695, reckon/crew/recovery_review_dispatch.py:3216, reckon/crew/recovery_review_dispatch.py:3311, reckon/crew/query.py:597, reckon/crew/recovery_watch.py:757, reckon/crew/promotion.py:1126, reckon/serve.py:902\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1987 now reads a pointer that carries a manifest from the manifest instead of from its pre-spawn label, which is the reading the fixture's zero-duty assertion at tests/test_a_review_row_knows_the_producer_is_down.py:127 needs.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/baseline-suite.log and logs/after-suite.log both read \"58 passed\" with EXIT=0 and the importer logs derive 0 added ids, but the done_when's ruff clause at prompt.txt:278 has no log anywhere in the run and had to be measured by this review instead.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node's authored surface is bcbb2fadb0's 14 changed lines in reckon/crew/recovery_classification.py and the fragment commits under docs/evidence/fragments/queued-work-needs-no-workaround/, and the two merges carry primary main's files rather than edits of the node's own.\nSCORE durability: 13\nJUSTIFICATION durability: main's `alive is not False` at reckon/crew/recovery_classification.py:1989 clears the pre-spawn reading for the fixture's process_alive-False pointer by itself, so reverting only the `not manifest_present` condition at line 1991 reddens nothing in tests/test_a_review_row_knows_the_producer_is_down.py\nSCORE fit: 20\nJUSTIFICATION fit: the change is one clause inside the pre_spawn_waiting predicate at reckon/crew/recovery_classification.py:1987 with a comment in the file's own voice, and it introduces no new symbol, so there is no name to weigh against the repository's naming rules.\nSCORE reuse: 20\nJUSTIFICATION reuse: the clause reads `manifest_present`, already computed at reckon/crew/recovery_classification.py:1407 by _run_chain_manifest_freshness and already read by the manifest arms, so no second manifest reader was added; a search over reckon/crew for a mechanism that lets a written manifest outrank the phase label found only this predicate and main's pre_spawn_reads_as_claim at line 2001, which the merge kept beside it rather than duplicating.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-row-knows-the-producer-is-down.html:33 non-blocking: the delivered record's arm table still names the named check at 7a104067b9 and the importer head arm at bcbb2fadb0 (line 48), while the logs it cites were re-recorded at the delivered head 03c1c8e4a5 \u2014 logs/all-debug-target-file.log names job 1321607 and logs/after-importers.log reads 20 failed, 883 passed, 10 errors \u2014 so a reader comparing table to logs sees a different revision and a 35-failure figure the head no longer carries.\nFINDING reckon/crew/recovery_classification.py:1991 non-blocking: the condition this run adds is not guarded on its own at the delivered head \u2014 the fixture's pointer carries process_alive False, so main's `alive is not False` at line 1989 already clears pre_spawn_waiting and deleting only `not manifest_present` leaves all three tests green; the case the clause uniquely fixes is a pointer whose liveness is unproven with a manifest present, and no test in tests/test_a_review_row_knows_the_producer_is_down.py builds that pointer.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down/manifest.md:21 non-blocking: the artifacts line records every arm the done_when names except the ruff pair and logs/ holds no ruff output, so the clause \"ruff check and ruff format --check report nothing new on the changed paths\" cannot be re-read from the run; measured independently, the same single pre-existing SIM102 at reckon/crew/recovery_classification.py:3468 reports at both 655a2befa9 and 03c1c8e4a5 and ruff format --check reports the file already formatted, so nothing new is introduced.\nFINDING tests/test_a_review_row_knows_the_producer_is_down.py:148 non-blocking: the expected overdue figure is produced by obligations._overdue_figure, the same helper the code under test calls, from the same `silence` the test supplied, so both sides move together and the assertion holds whatever that helper returns; line 165 has the same shape against obligations._reflex_review_window_seconds, and neither is an independent source for the value it checks.",
+  "review_run_id": "r-20261117T082512485203-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-03c1c8e4a547",
+  "reviewed_base_sha": "feb903b18d35b2bdd5985f9cb629d036ab9b4bf3",
+  "reviewed_head_sha": "03c1c8e4a54720c8475fb240e569dd7eb0631a21",
+  "reviewed_run_id": "r-20261116T105105636651-qwnw-red-file-a-review-row-knows-the-producer-is-down",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T082512485203-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-03c1c8e4a547"
+  },
+  "reviewer_run_id": "r-20261117T082512485203-review-of-qwnw-red-file-a-review-row-knows-the-producer-is-down-03c1c8e4a547",
+  "scope_note": "third review of this run, covering the commits gained since the reviewed head feb903b18d35b2bdd5985f9cb629d036ab9b4bf3: the merge 03c1c8e4a5's own resolution of reckon/crew/recovery_classification.py, and the arms recorded at 03c1c8e4a5 by the same run",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T08:41:18.869436+00:00",
+  "total": 110
+}

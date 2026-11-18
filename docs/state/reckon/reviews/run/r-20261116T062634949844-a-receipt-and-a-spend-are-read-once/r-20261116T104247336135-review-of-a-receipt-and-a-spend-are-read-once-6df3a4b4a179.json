@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:125",
+    "reckon/crew/promotion_release.py:941",
+    "reckon/crew/recovery_watch.py:2952",
+    "reckon/crew/promotion_scope.py:1143",
+    "reckon/crew/recovery_stream.py:59",
+    "reckon/ledger.py:4053",
+    "reckon/budget.py:2789",
+    "reckon/mcp_views.py:949"
+  ],
+  "completed_at": "2026-11-16T10:44:40.550Z",
+  "dispatched_at": "2026-11-16T10:44:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "it states the whole-file comparison 'is made after a growth and a truncation', but no truncation arm calls tests/test_a_receipt_and_spend_are_read_once.py:598 _folded_against_whole_file (the test at :497 only asserts the decode count and a cached-versus-fresh equality), so the fragment claims coverage the test does not carry."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html",
+      "line": "124",
+      "severity": "non-blocking",
+      "text": "'all ten pass at the repair's head (logs/head-node.log)' cites a log whose header reads revision bcd60512ff and whose summary is 4 passed, so the cited receipt does not contain the ten-test result; the ten-test head run is logs/head-suite.log (68 passed at 01898fce4e)."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html",
+      "line": "135",
+      "severity": "non-blocking",
+      "text": "'58 at base, 62 with the node's test added' is the pre-repair 4-test figure; logs/head-suite.log at 01898fce4e records 68 passed, which is 58 template tests plus the 10 the repaired file now holds."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T062634949844-a-receipt-and-a-spend-are-read-once/manifest.md.attempt-1.asdelivered",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "the after_suite revision field reads bcd60512ff while the log_path it names opens '# revision: 01898fce4e407cfe93aacfe977736b84b7825634', so the arm record names a revision the arm did not run at."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read 01898fce4e and 6df3a4b4a1 against base bcd60512ff commit by commit: the repair merges the two identity, listing and continue copies onto reckon.file_memo and rollout.py helpers, adds a per-entry lock and a newline-less tail fold, adds 330 test lines with whole-file oracles, and 6df3a4b4a1 restates the repair in the evidence fragment.",
+    "done_when": "Read its clauses against tests/test_a_receipt_and_spend_are_read_once.py:386 (0 decodes and 0 listings), :403 (fresh-process equality), :477 (exactly 5 appended decodes), :497 (truncation) and the added whole-file oracles at :598, and against logs/head-suite.log (68 passed, EXIT=0 at 01898fce4e) and logs/base-node.log (3 failed, 1 passed, EXIT=1, 138,000 decodes); the gate measures the done_when and its result is recorded.",
+    "goal": "Read the source goal ('Read a rollout receipt and a stream's spend once per file identity and size') and 01898fce4e: reckon/crew/rollout.py:211 asks reckon.file_memo for the one identity, :245 holds the one continue rule and :225 the one listing cache, and reckon/crew/metering.py:26 imports all three, so the receipt and the spend answer from one fold per file identity and size.",
+    "manifest": "Read manifest.md and its as-delivered attempt-1 copy: both suite arms declare completed with 0 failures, the node test reads 4 passed at bcd60512ff and 3 failed, 1 passed at base, and the commits are 6df3a4b4a1 and 01898fce4e; its after_suite revision field reads bcd60512ff, while the head-suite.log it cites opens at revision 01898fce4e.",
+    "write_paths": "Read the declared write paths (reckon/crew/rollout.py, reckon/crew/metering.py, tests/test_a_receipt_and_spend_are_read_once.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html, and an untouched docs/figures path) against the diff bcd60512ff..6df3a4b4a1: the four changed paths are all declared and the figure directory is absent."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source goal ('Read a rollout receipt and a stream's spend once per file identity and size') and 01898fce4e: reckon/crew/rollout.py:211 asks reckon.file_memo for the one identity, :245 holds the one continue rule and :225 the one listing cache, and reckon/crew/metering.py:26 imports all three, so the receipt and the spend answer from one fold per file identity and size.\nVERDICT done_when: Read its clauses against tests/test_a_receipt_and_spend_are_read_once.py:386 (0 decodes and 0 listings), :403 (fresh-process equality), :477 (exactly 5 appended decodes), :497 (truncation) and the added whole-file oracles at :598, and against logs/head-suite.log (68 passed, EXIT=0 at 01898fce4e) and logs/base-node.log (3 failed, 1 passed, EXIT=1, 138,000 decodes); the gate measures the done_when and its result is recorded.\nVERDICT write_paths: Read the declared write paths (reckon/crew/rollout.py, reckon/crew/metering.py, tests/test_a_receipt_and_spend_are_read_once.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html, and an untouched docs/figures path) against the diff bcd60512ff..6df3a4b4a1: the four changed paths are all declared and the figure directory is absent.\nVERDICT manifest: Read manifest.md and its as-delivered attempt-1 copy: both suite arms declare completed with 0 failures, the node test reads 4 passed at bcd60512ff and 3 failed, 1 passed at base, and the commits are 6df3a4b4a1 and 01898fce4e; its after_suite revision field reads bcd60512ff while the head-suite.log it cites opens at revision 01898fce4e.\nVERDICT diff: Read 01898fce4e and 6df3a4b4a1 against base bcd60512ff commit by commit: the repair merges the two identity, listing and continue copies onto reckon.file_memo and rollout.py helpers, adds a per-entry lock and a newline-less tail fold, adds 330 test lines with whole-file oracles, and 6df3a4b4a1 restates the repair in the evidence fragment.\nCALL_SITES: reckon/crew/promotion_checks.py:125, reckon/crew/promotion_release.py:941, reckon/crew/recovery_watch.py:2952, reckon/crew/promotion_scope.py:1143, reckon/crew/recovery_stream.py:59, reckon/ledger.py:4053, reckon/budget.py:2789, reckon/mcp_views.py:949\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/rollout.py:211 and :245 with reckon/crew/metering.py:330 make both readers share one identity, one continue rule and one listing cache, which is the goal's once-per-identity-and-size read.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-suite.log records 68 passed with EXIT=0 at 01898fce4e and both arms completed, but docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html:91 claims a truncation comparison the test never makes and :124 and :135 cite a log and a count the recorded logs contradict.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/rollout.py, reckon/crew/metering.py, tests/test_a_receipt_and_spend_are_read_once.py, the evidence fragment) is one the source node declared.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_receipt_and_spend_are_read_once.py:730 reddens if file_memo's change time is dropped from the identity and :765 reddens on an unlocked fold (logs/pre-repair-node.log: 5 failed, EXIT=1 at bcd60512ff), though :502's count now admits the tail attempt and nothing asserts that a record still being written stays unfolded.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow the comment-and-docstring idiom at reckon/crew/rollout.py:184-245 and keep the bounded per-process store shape, though reckon/crew/metering.py:291 re-spells the identity tuple instead of importing the shared alias.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/rollout.py:211 wraps reckon/file_memo.py:277 file_signature, the owner whose :283 declares the fields, and :225 and :245 are the single owner for the listing cache and continue rule they replaced; a search over reckon/**/*.py for os.listdir and os.scandir found no other cached-listing capability.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html:91 non-blocking: it states the whole-file comparison 'is made after a growth and a truncation', but no truncation arm calls tests/test_a_receipt_and_spend_are_read_once.py:598 _folded_against_whole_file (the test at :497 only asserts the decode count and a cached-versus-fresh equality), so the fragment claims coverage the test does not carry.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html:124 non-blocking: 'all ten pass at the repair's head (logs/head-node.log)' cites a log whose header reads revision bcd60512ff and whose summary is 4 passed, so the cited receipt does not contain the ten-test result; the ten-test head run is logs/head-suite.log (68 passed at 01898fce4e).\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-receipt-and-a-spend-are-read-once.html:135 non-blocking: '58 at base, 62 with the node's test added' is the pre-repair 4-test figure; logs/head-suite.log at 01898fce4e records 68 passed, which is 58 template tests plus the 10 the repaired file now holds.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T062634949844-a-receipt-and-a-spend-are-read-once/manifest.md.attempt-1.asdelivered:26 non-blocking: the after_suite revision field reads bcd60512ff while the log_path it names opens '# revision: 01898fce4e407cfe93aacfe977736b84b7825634', so the arm record names a revision the arm did not run at.\n",
+  "review_run_id": "r-20261116T104247336135-review-of-a-receipt-and-a-spend-are-read-once-6df3a4b4a179",
+  "reviewed_base_sha": "bcd60512ff62795346ab3da0f0bb80d0d2084e62",
+  "reviewed_head_sha": "6df3a4b4a17908458d26d9146013e33dfa58680b",
+  "reviewed_run_id": "r-20261116T062634949844-a-receipt-and-a-spend-are-read-once",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T10:59:31.824973+00:00",
+  "total": 107
+}

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review-reflex fixture keys on a launched run and a measurable integration ref</title>
+<meta name="reckon-node" content="qwnw-red-file-reflex-keys-on-reviewed-run-and-head">
+</head>
+<body>
+<article class="r-fragment" id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head">
+  <h2 id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-h">The reflex test's fixture, not the reflex, was wrong</h2>
+
+  <p id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-p1">The file
+  <code>tests/test_reflex_keys_on_reviewed_run_and_head.py</code> failed five of
+  five at base revision <code>ee93819a0d</code>. Every case drove
+  <code>recovery.dispatch_awaiting_reviews</code>, and the sweep returned an
+  empty report, so the failure looked like a product regression. It was not.
+
+  <h3 id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-causes">Two causes, both in the fixture</h3>
+
+  <table id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-t1">
+    <thead>
+      <tr><th>Cause</th><th>Verdict</th><th>Rule the code now keeps</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>The seeded pointer carried <code>"phase": "starting"</code> with no
+        worker.  That is a pre-spawn launch, so the classifier reports
+        <em>running — the launcher has claimed this run and has not started its
+        worker yet</em> and never reaches the completed-manifest arm that makes
+        the run <em>scoring</em>. No run awaiting review, so no review
+        composed.</td>
+        <td>test wrong</td>
+        <td>A run that has launched carries a launched phase; the pre-spawn
+        phases name a claim whose worker has not started.</td>
+      </tr>
+      <tr>
+        <td>The seeded repository had no remote-tracking integration ref.
+        <code>clones.own_changed_paths</code> answers <code>None</code> for a
+        history it cannot compare, so <code>review_head_move</code> found
+        nothing to decide and the data-only move re-reviewed instead of
+        <code>carry_review_forward</code> carrying the stored record to the new
+        head. That decision is documented at commit
+        <code>beb6dfff11</code>: “A history git cannot compare — no remote, or
+        a ref that does not resolve — reads as an unshown delta, so no review is
+        carried forward over it.”</td>
+        <td>test wrong</td>
+        <td>Carry-forward needs a measurable move; the fixture must give the
+        repository the <code>origin/main</code> ref it resolves.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-control">The two arms and the negative control</h3>
+
+  <table id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-t2">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, scratch tree, unmodified fixture (<code>base-suite.log</code>)</td>
+        <td><code>ee93819a0d</code></td>
+        <td>5 failed, <code>EXIT=1</code> — the ids below</td>
+      </tr>
+      <tr>
+        <td>head, sbatch job on <code>all_debug</code> with
+        <code>SLURM_JOB_ID</code> unset (<code>gate-head.log</code>)</td>
+        <td>the run's head; the log's first line names it</td>
+        <td>5 passed, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-p2">Both arms ran
+  the same command, resolved over their own tree:
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_reflex_keys_on_reviewed_run_and_head.py</code>. The base run's
+  failing ids are the ones the manifest's <code>negative_control_log</code>
+  names, and none of them is in the head arm.</p>
+
+  <ol id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-control-list">
+    <li><code>test_a_live_review_under_any_node_id_suppresses_the_reflex</code></li>
+    <li><code>test_a_stored_record_for_the_head_stands_and_an_older_head_does_not</code></li>
+    <li><code>test_a_data_only_move_carries_the_stored_record_forward</code></li>
+    <li><code>test_a_run_resumed_to_a_new_head_gets_one_review_and_a_second_sweep_none</code></li>
+    <li><code>test_the_composed_done_when_names_the_added_failure_derivation</code></li>
+  </ol>
+
+  <p id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-p3">No assertion was
+  deleted or weakened. The five cases still discriminate: the stale half of
+  <code>test_a_stored_record_for_the_head_stands_and_an_older_head_does_not</code>
+  and the carry-forward case both drive a head move over a real git history,
+  and each fails when the recognition they test is dropped.</p>
+
+  <h3 id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-outside">Seen outside this node</h3>
+  <p id="qwnw-red-file-reflex-keys-on-reviewed-run-and-head-p4">The same
+  missing-integration-ref defect fails seven sibling cases at base — four in
+  <code>tests/test_a_review_is_not_carried_over_its_own_deliverable.py</code>
+  and three in <code>tests/test_a_review_with_no_base_is_not_carried.py</code>.
+  Neither file creates a remote-tracking ref (no <code>update-ref</code> or
+  <code>remote add</code> anywhere in either), and <code>_integration_ref</code>
+  answers <code>''</code> for a repository that holds none, which is measured
+  directly against a fresh two-commit repository. They are outside this node's
+  named file and are reported, not fixed, here.</p>
+</article>
+</body>
+</html>

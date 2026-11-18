@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:2893 _require_repository_tree_boundary",
+    "reckon/crew/promotion_scope.py:990 _require_repository_tree_boundary"
+  ],
+  "completed_at": "2026-11-16T10:18:59.524Z",
+  "dispatched_at": "2026-11-16T10:18:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html",
+      "line": "52",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head row of the fragment's run table names revision d3acd1579122 for the `10 passed` gate result, while the gate log the manifest records for that command, logs/head-gate-dispatch-file.log, carries `# rev: f53e175079dc...`; the only run logged at d3acd1579122 is logs/gate-head-1319596.out, which reads `4 failed, 6 passed` EXIT=1, so a reader reconciling the fragment against its log finds a revision the log does not name. Both revisions carry the same product code, so the result transfers; the row should name f53e175079dc41705d2f2936c9342bedc12fd321, where the recorded run actually ran."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified two production call sites that reach the changed predicate: the promotion check that requires the boundary at reckon/crew/promotion_checks.py:2893 and the predicate's own caller at reckon/crew/promotion_scope.py:990.",
+    "diff": "read both commits against 0e0f25b0; d3acd15791 replaces the `_claim_paths_share(shared_files, changed, changed)` exemption at reckon/crew/promotion_scope.py:934 with `changed not in shared_files` plus five comment lines, and in the same commit writes docs/state/sample/shared-write-paths.json with `shared_roots: []` into tests/test_dispatch_returns_without_worker.py's fixture at :438-460; f53e175079 adds only the 82-line landing fragment; no assertion is added, deleted or edited.",
+    "done_when": "the done_when measures the named file at head, an arm over the test files that import the change, a per-cause verdict and no weakened assertion; the manifest records head 10 passed EXIT=0 (logs/head-gate-dispatch-file.log), base 1 failed of 10 EXIT=1 (logs/base-arm-dispatch-file.log), and the importer arm 48 passed against a base 5 failed of 48, but the manifest's landing line gives the product verdict only and states the fixture change as a repair step rather than a cause judged test-wrong.",
+    "goal": "the node's goal is that tests/test_dispatch_returns_without_worker.py passes in full; the landed change repairs the boundary exemption at reckon/crew/promotion_scope.py:934 and logs/head-gate-dispatch-file.log reads 10 passed EXIT=0 for that file, so the goal's deliverable is present in the node's tree.",
+    "manifest": "read; status complete, commits d3acd15791 and f53e175079, changed_paths the three landed files, tests the literal pytest command for the named file, test_logs the base and head arms, and baseline_suite (0e0f25b0, exit 1, one failure) and after_suite (f53e175079, exit 0, no failure) both completed, matching the logs' own headers and EXIT lines.",
+    "write_paths": "the fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround/<node>.html; git diff --stat 0e0f25b0..f53e1750 lists exactly reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and that fragment, plus no figure, so every landed path is inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_returns_without_worker.py:1682 asserts the violation list is non-empty and would redden if the base predicate returned: restoring `_claim_paths_share(shared_files, changed, changed)` exempts a source path under the fixture's declared empty sharing list too, because the owner at reckon/crew/runs.py:1985 answers `not default_class(changed) and shares_region(changed)`, so `violations` would be empty.",
+    "evidence": "logs/head-gate-dispatch-file.log carries `# rev: f53e175079`, the literal command, `10 passed` and a bare `EXIT=0`, and logs/base-arm-dispatch-file.log carries `# rev: 0e0f25b0`, one FAILED id and `EXIT=1`, so the recorded gate measures the file the done_when names at both arms.",
+    "fit": "the comment at reckon/crew/promotion_scope.py:924-930 states the mechanism beside the code it explains and introduces no new symbol; the fixture writes docs/state/sample/shared-write-paths.json, the same declaration tests/test_boundary_check_reads_only_declared_roots.py:56 already carries.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:934 now asks the project's own declaration (`changed not in shared_files`) and the case at tests/test_dispatch_returns_without_worker.py:1682 reports the stray edit, which is what the goal's file needed to pass in full.",
+    "reuse": "the change calls the existing owner of shareability membership, `_SharedWritePaths.__contains__` at reckon/crew/runs.py:1926 with its roots, declared exclusive patterns and default, rather than adding a second predicate; a search for capability over reckon/crew found `_claim_paths_share` and `_exclusive_write_pattern`, both of which answer a different question (two claims compared) and are left in place for their callers.",
+    "scope_discipline": "`git diff 0e0f25b0..f53e1750 --stat` lists only reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and the node's own fragment, each inside the declared reckon/tests/evidence fences, and the product delta is one predicate line plus its comment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_dispatch_returns_without_worker.py passes in full; the landed change repairs the boundary exemption at reckon/crew/promotion_scope.py:934 and logs/head-gate-dispatch-file.log reads 10 passed EXIT=0 for that file, so the goal's deliverable is present in the node's tree.\nVERDICT done_when: the done_when measures the named file at head, an arm over the test files that import the change, a per-cause verdict and no weakened assertion; the manifest records head 10 passed EXIT=0 (logs/head-gate-dispatch-file.log), base 1 failed of 10 EXIT=1 (logs/base-arm-dispatch-file.log), and the importer arm 48 passed against a base 5 failed of 48, but the manifest's landing line gives the product verdict only and states the fixture change as a repair step rather than a cause judged test-wrong.\nVERDICT write_paths: the fence was reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround/<node>.html; git diff --stat 0e0f25b0..f53e1750 lists exactly reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and that fragment, plus no figure, so every landed path is inside the fence.\nVERDICT manifest: read; status complete, commits d3acd15791 and f53e175079, changed_paths the three landed files, tests the literal pytest command for the named file, test_logs the base and head arms, and baseline_suite (0e0f25b0, exit 1, one failure) and after_suite (f53e175079, exit 0, no failure) both completed, matching the logs' own headers and EXIT lines.\nVERDICT diff: read both commits against 0e0f25b0; d3acd15791 replaces the `_claim_paths_share(shared_files, changed, changed)` exemption at reckon/crew/promotion_scope.py:934 with `changed not in shared_files` plus five comment lines, and in the same commit writes docs/state/sample/shared-write-paths.json with `shared_roots: []` into tests/test_dispatch_returns_without_worker.py's fixture at :438-460; f53e175079 adds only the 82-line landing fragment; no assertion is added, deleted or edited.\nCALL_SITES: reckon/crew/promotion_checks.py:2893 (_require_repository_tree_boundary through the promotion check), reckon/crew/promotion_scope.py:990 (_require_repository_tree_boundary calling _repository_tree_boundary_violations)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:934 now asks the project's own declaration (`changed not in shared_files`) and the case at tests/test_dispatch_returns_without_worker.py:1682 reports the stray edit, which is what the goal's file needed to pass in full.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate-dispatch-file.log carries `# rev: f53e175079`, the literal command, `10 passed` and a bare `EXIT=0`, and logs/base-arm-dispatch-file.log carries `# rev: 0e0f25b0`, one FAILED id and `EXIT=1`, so the recorded gate measures the file the done_when names at both arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff 0e0f25b0..f53e1750 --stat` lists only reckon/crew/promotion_scope.py, tests/test_dispatch_returns_without_worker.py and the node's own fragment, each inside the declared reckon/tests/evidence fences, and the product delta is one predicate line plus its comment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_returns_without_worker.py:1682 asserts the violation list is non-empty and would redden if the base predicate returned: restoring `_claim_paths_share(shared_files, changed, changed)` exempts a source path under the fixture's declared empty sharing list too, because the owner at reckon/crew/runs.py:1985 answers `not default_class(changed) and shares_region(changed)`, so `violations` would be empty.\nSCORE fit: 19\nJUSTIFICATION fit: the comment at reckon/crew/promotion_scope.py:924-930 states the mechanism beside the code it explains and introduces no new symbol; the fixture writes docs/state/sample/shared-write-paths.json, the same declaration tests/test_boundary_check_reads_only_declared_roots.py:56 already carries.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change calls the existing owner of shareability membership, `_SharedWritePaths.__contains__` at reckon/crew/runs.py:1926 with its roots, declared exclusive patterns and default, rather than adding a second predicate; a search for capability over reckon/crew found `_claim_paths_share` and `_exclusive_write_pattern`, both of which answer a different question (two claims compared) and are left in place for their callers.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-returns-without-worker.html:52 non-blocking: the head row of the fragment's run table names revision d3acd1579122 for the `10 passed` gate result, while the gate log the manifest records for that command, logs/head-gate-dispatch-file.log, carries `# rev: f53e175079dc...`; the only run logged at d3acd1579122 is logs/gate-head-1319596.out, which reads `4 failed, 6 passed` EXIT=1, so a reader reconciling the fragment against its log finds a revision the log does not name. Both revisions carry the same product code, so the result transfers; the row should name f53e175079dc41705d2f2936c9342bedc12fd321, where the recorded run actually ran.",
+  "review_run_id": "r-20261116T101737561159-review-of-qwnw-red-file-dispatch-returns-without-worker-f53e175079dc",
+  "reviewed_base_sha": "0e0f25b0f941b8d6660ee6c2b03a226f7cfe47bc",
+  "reviewed_baseline_failure_ids": [
+    "tests/test_dispatch_returns_without_worker.py::test_a_delegated_launch_records_a_boundary_snapshot"
+  ],
+  "reviewed_head_failure_ids": [],
+  "reviewed_head_sha": "f53e175079dc41705d2f2936c9342bedc12fd321",
+  "reviewed_run_id": "r-20261116T031924945473-qwnw-red-file-dispatch-returns-without-worker",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T101737561159-review-of-qwnw-red-file-dispatch-returns-without-worker-f53e175079dc"
+  },
+  "reviewer_run_id": "r-20261116T101737561159-review-of-qwnw-red-file-dispatch-returns-without-worker-f53e175079dc",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:29:15.488242+00:00",
+  "total": 114
+}

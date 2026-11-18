@@ -1658,9 +1658,10 @@ def _run_directory_records_end(run_directory: Path) -> bool:
 
     A supervisor writes ``exit.json`` beside the attempt's own exit record when
     the worker process ends, and a discarded run leaves its discard marker. Both
-    say the run is over; a directory holding neither belongs to a run that is
-    still working or one whose supervisor died before writing the record, and
-    its scratch is not settled on that reading alone.
+    record an end but can survive a resume, so the caller also checks the
+    current run identity and live pointers. A directory holding neither belongs
+    to a run that is still working or one whose supervisor died before writing
+    the record, and its scratch is not settled on that reading alone.
     """
     if (run_directory / "exit.json").is_file():
         return True
@@ -1687,10 +1688,11 @@ def settle_run_scratch(
 
     The decision is made from the crew home, which every host shares, and never
     from a project ledger: a directory named for a run whose run directory
-    records that the run ended, and that no live pointer names and no process
-    holds, is removed at once with no age wait. The run-directory pass retires a
-    finished run's directory after its grace, so a copy can outlive its record; such a copy is
-    removed under the same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
+    records that the run ended, and that neither the current run identity nor a
+    live pointer names and no process holds, is removed at once with no age
+    wait. The run-directory pass retires a finished run's directory after its
+    grace, so a copy can outlive its record; such a copy is removed under the
+    same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
     applies, after the same holder check. A directory not named for a run is
     left to :func:`garbage_collect_orphan_scratch`.
 
@@ -1721,6 +1723,7 @@ def settle_run_scratch(
         return {"root": str(scratch), "entries": [], "removed": [], "bytes_freed": 0}
     stamp = time.time() if now is None else now
     live_ids = {str(record.get("run_id") or "") for record in list_live()}
+    current_run_id = os.environ.get("RECKON_RUN_ID", "")
     holders = _scratch_process_holders(scratch)
     home = Path(runs_root) if runs_root is not None else None
     entries: list[dict[str, Any]] = []
@@ -1734,7 +1737,12 @@ def settle_run_scratch(
             continue
         directory = (home / name) if home is not None else run_dir(name)
         age = max(0.0, stamp - _scratch_ctime(child))
-        if name in live_ids:
+        # A resumed step creates its scratch before entering the worker and
+        # can still carry an earlier attempt's exit record while its pointer
+        # is not yet visible. Its own launch identity already proves it live.
+        if name == current_run_id:
+            state, reason = RUN_SCRATCH_LIVE, "current run"
+        elif name in live_ids:
             state, reason = RUN_SCRATCH_LIVE, "live pointer"
         elif holders.get(name):
             state, reason = RUN_SCRATCH_HELD, f"held by process {holders[name]}"
@@ -1813,20 +1821,32 @@ def _scratch_disposition(
     return SCRATCH_UNATTRIBUTED
 
 
-def _processes_holding(path: Path) -> list[dict[str, Any]]:
+def _processes_holding(path: Path) -> list[dict[str, Any]] | None:
     """Name the processes holding ``path`` as their cwd or as an open file.
 
-    Read-only and best-effort: ``/proc`` may be absent or a process may exit
-    mid-scan, and a scan that raised would turn a report into a refusal. A
-    holder is only ever reported, never killed — the survey's whole point is to
-    let a human decide what a tree nobody owns is doing.
+    The one holder scan in the package. It answers two questions that used to
+    have two implementations: what a survey should report about a tree nobody
+    owns, and whether an ``index.lock`` still has a live writer. git writes no
+    owner into that lock, so ``/proc/<pid>/fd`` is the only local evidence that
+    no process holds it, and a second scan with slightly different matching
+    was a second answer to one question.
+
+    Read-only and best-effort: a process may exit mid-scan, and a scan that
+    raised would turn a report into a refusal. A holder is only ever reported,
+    never killed — the survey's whole point is to let a human decide what a
+    tree nobody owns is doing.
+
+    ``None`` is the scan's own failure, not an empty answer: a ``/proc`` that
+    cannot be read proves nothing either way, and a caller judging whether a
+    holder exists must not read that as "nobody holds it".
     """
     holders: list[dict[str, Any]] = []
-    proc = Path("/proc")
-    if not proc.is_dir():
-        return holders
+    try:
+        entries = sorted(Path("/proc").iterdir())
+    except OSError:  # pragma: no cover - an unreadable /proc answers "unknown".
+        return None
     target = path.resolve()
-    for entry in proc.iterdir():
+    for entry in entries:
         if not entry.name.isdigit():
             continue
         pid = int(entry.name)
@@ -1901,7 +1921,10 @@ def garbage_collect_scratch(
         }
         if state == SCRATCH_UNATTRIBUTED:
             report["ctime"] = _iso_ctime(child)
-            report["held_by"] = _processes_holding(child)
+            # A survey reports what it saw; an unreadable scan is an empty
+            # holder list here rather than an unknown, because nothing is
+            # decided from it.
+            report["held_by"] = _processes_holding(child) or []
         if state == SCRATCH_TERMINAL and apply:
             shutil.rmtree(child)
             report["removed"] = True
@@ -1925,7 +1948,7 @@ def garbage_collect_scratch(
                     "path": str(child),
                     "bytes": tree_size_bytes(child, limit=_UNATTRIBUTED_SIZE_LIMIT),
                     "ctime": _iso_ctime(child),
-                    "held_by": _processes_holding(child),
+                    "held_by": _processes_holding(child) or [],
                 }
             )
 
@@ -1970,7 +1993,17 @@ RETENTION_PROGRESS_EVERY = 10
 
 #: The phases a pass times. Each prints one line to stderr as it completes, so a
 #: pass killed under its timeout still leaves a record of how far it got.
-RETENTION_PHASES = ("ledger", "judge", "trash", "scratch", "cache", "store", "log")
+RETENTION_PHASES = (
+    "identities",
+    "ledger",
+    "judge",
+    "trash",
+    "scratch",
+    "cache",
+    "store",
+    "export",
+    "log",
+)
 
 
 def retention_log_path() -> Path:
@@ -2148,6 +2181,12 @@ def retention_sweep(
     the next hour. A removal is written to one log under the crew home, and a
     pass that removed nothing writes nothing.
 
+    It also removes the execution identity files of executions that have gone:
+    ``--sweep-exec-identities`` alone never ran on a schedule, so every
+    maintenance pass makes the same judgment. A file is removed only when the
+    process that published it is no longer that process, which is why a live
+    run's file survives the pass that runs while it is being written.
+
     The pass resumes from the cursor the previous pass persisted, so a long run
     of permanently withheld directories at the head of the sorted list is walked
     over once per cycle rather than re-judged on every pass. Each project's
@@ -2165,6 +2204,10 @@ def retention_sweep(
         raise CrewError("store row and compaction page limits must be positive")
     ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
     phase_seconds: dict[str, float] = {}
+
+    started = time.perf_counter()
+    identities = sweep_exec_identities(apply=apply)
+    _emit_phase("identities", started, phase_seconds)
 
     started = time.perf_counter()
     mounted = flight.mounted_project_docs()
@@ -2292,6 +2335,12 @@ def retention_sweep(
     )
     _emit_phase("store", started, phase_seconds)
 
+    from reckon.crew.export_ledger import export_projects
+
+    started = time.perf_counter()
+    ledger_exports = export_projects(roots, apply=apply)
+    _emit_phase("export", started, phase_seconds)
+
     started = time.perf_counter()
     written = ""
     if (
@@ -2300,6 +2349,7 @@ def retention_sweep(
         or trash_removed
         or caches_removed
         or store_retention["retired"]
+        or identities["removed"]
     ):
         from reckon.crew.watch_unit import _WatchLogStream
 
@@ -2316,6 +2366,8 @@ def retention_sweep(
                 stream.write(f"removed cache {row['path']} ({row['size']} bytes)\n")
             for run_id in store_retention["retired"]:
                 stream.write(f"archived run {run_id} to {store_retention['archive']}\n")
+            for row in identities["removed"]:
+                stream.write(f"removed identity file {row['path']}\n")
         finally:
             stream.close()
         written = str(target)
@@ -2327,6 +2379,10 @@ def retention_sweep(
         "unreachable_projects": unreachable,
         "limit": limit,
         "ended_cleanup": ended_cleanup,
+        "exec_identities": {
+            "removed": len(identities["removed"]),
+            "kept": len(identities["kept"]),
+        },
         "examined": examined,
         "judged": judged,
         "offered": offered,
@@ -2342,6 +2398,7 @@ def retention_sweep(
         "persisted_memos": persisted_memos,
         "cache_removed_count": len(caches_removed),
         "run_store": store_retention,
+        "ledger_exports": ledger_exports,
         "log": written,
         "phase_seconds": phase_seconds,
     }

@@ -27,6 +27,7 @@ from reckon.crew.runs import (
     list_live,
     read_pointer,
 )
+from reckon.crew.resume import station_hold_reason
 
 
 REPAIR_ADVICE_HOLD_SECONDS = 60
@@ -72,10 +73,35 @@ def dispatch_merge_repair(
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
+    other_side = merge._run(
+        Path(str(record.get("repo") or "")),
+        "log",
+        "--reverse",
+        "--no-merges",
+        "--format=%H %s",
+        f"{head}..{primary}",
+        "--",
+        *paths,
+    )
+    if other_side.returncode:
+        raise CrewError(
+            "could not identify the commits on the conflicting side: "
+            + (other_side.stderr or other_side.stdout)
+        )
+    peer_commits = []
+    for line in other_side.stdout.splitlines():
+        sha, _, subject = line.partition(" ")
+        if sha:
+            peer_commits.append({"sha": sha, "subject": subject})
+    receipt["peer_commits"] = peer_commits
+    provenance = "".join(
+        f"  {item['sha']} {item['subject']}\n" for item in peer_commits
+    )
     advice = (
         _repair_round_token(round_id) + "\n"
         f"Landing met a merge conflict against primary {branch} at {primary}.\n"
         f"Conflicted paths: {', '.join(paths)}.\n"
+        f"Other-side commits affecting these paths:\n{provenance}"
         f"Merge the current primary {branch} into this run's worktree, resolve "
         "the named paths keeping both changes' intent, and commit the merge. "
         "Do not discard either side or commit conflict markers. Re-run this "
@@ -1156,8 +1182,7 @@ def supersede_a_held_repair_round(run_id: str) -> int | None:
     record = _live_pointer_or_absent(run_id) or {}
     held_round = record.get(REPAIR_DISPATCH_FIELD)
     if not (
-        isinstance(held_round, Mapping)
-        and held_round.get("status") == "advice-hold"
+        isinstance(held_round, Mapping) and held_round.get("status") == "advice-hold"
     ):
         return None
     reservation = dispatch_launch.held_launch_reservation(directory)
@@ -1441,6 +1466,20 @@ def dispatch_repair_for_run(
     capacity on it again.
     """
     run_id = str(record.get("run_id") or "")
+    held = station_hold_reason(record)
+    if held:
+        # A coordinator's hold covers every delivery, so the round this pass
+        # would compose belongs to a run the coordinator has taken by hand. A
+        # resume taken here moved a held delivery's head and drew a review
+        # nobody asked for, so the round is reported and left alone: the run
+        # keeps the head, the record and the review it had, and the next pass
+        # after `crew release` is the one that acts.
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "held": True,
+            "reason": f"the run is under a delivery hold — {held}",
+        }
     refusal = _repair_source_refusal(record)
     if refusal:
         return {"run_id": run_id, "dispatched": False, "reason": refusal}
@@ -1836,6 +1875,19 @@ def dispatch_repair_for_run(
         from reckon.crew.dispatch import BudgetHold, LanePaused
 
         durable = read_pointer(run_id) or {}
+        # The hold is re-read at the launch, not only at entry: a coordinator
+        # can hold the run during the lane resolution above, and a resume
+        # offered from the entry-time record would launch beside that hold.
+        held_at_launch = station_hold_reason(durable or record)
+        if held_at_launch:
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "held": True,
+                "round_id": round_id,
+                "node_id": node_id,
+                "reason": f"the run is under a delivery hold — {held_at_launch}",
+            }
         recorded = durable.get(REPAIR_DISPATCH_FIELD)
         same_round = isinstance(recorded, Mapping) and str(
             recorded.get("round_id") or ""

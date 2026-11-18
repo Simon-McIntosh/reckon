@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 import sys
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime, timedelta
@@ -32,6 +33,103 @@ DURABLE_WRITE_CONTRACT = (
     "  any long output. This is recovery, not death prevention: a durable write\n"
     "  preceding a long generation survives that generation failing."
 )
+
+
+def _resolved_exclusive_patterns(project: str, worktree: str) -> tuple[str, ...]:
+    """The classes git cannot reconcile in this checkout, for the scope block.
+
+    The brief states what the fence seals, so it reads the list the launch's
+    fence is composed from (``unmergeable_patterns``) rather than the shipped
+    defaults alone: a project's own declared patterns name paths its worker is
+    refused for, and a brief that left them out would describe a narrower seal
+    than the one in force.
+
+    A declaration that cannot be read, and a worktree that does not exist, fall
+    back to the shipped classes. Composing a prompt must not fail on a fence
+    declaration another surface already reports, and the shipped classes are
+    what such a fence seals anyway.
+    """
+    from reckon.crew.runs import DEFAULT_EXCLUSIVE_PATHS, unmergeable_patterns
+
+    try:
+        return tuple(unmergeable_patterns(project or None, Path(worktree)))
+    except (OSError, ValueError):
+        return tuple(DEFAULT_EXCLUSIVE_PATHS)
+
+
+# The heading the scope fence is carried under. One spelling, so a reader
+# handed two briefs compares the same marker, and a test can find the block
+# without parsing prose.
+SCOPE_HEADING = (
+    "FENCE — SCOPE (the worktree is writable; the declared paths say where the "
+    "change is expected)"
+)
+
+
+def scope_block(
+    node: TaskNode, *, paths: Iterable[str] = (), patterns: Iterable[str] = ()
+) -> str:
+    """Compose the scope fence: what may be written, and what is expected.
+
+    A dispatched node may change any file in its repository that git can
+    reconcile, so the fence states the worktree as writable and the declared
+    paths as the place its change is expected. Only the classes git cannot
+    reconcile are writable when declared, and those are named here so a worker
+    learns the rule from the brief it was handed rather than from a refusal at
+    promotion.
+
+    ``paths`` and ``patterns`` are the declarations to state. A caller that
+    composes with nothing reads the node's own write paths and the shipped
+    classes alone, which is what a node declaring no write path is fenced
+    against. ``compose_prompt`` passes the resolved list, so a project's own
+    exclusive patterns — the ones its fence actually seals — are named beside
+    the shipped ones rather than left out of the brief. A
+    declaration written absolutely names a location outside the checkout — a
+    role's own delivery root — so it is stated as a delivery grant rather than
+    as an expected edit.
+
+    A node that declares no repository path is stated that way rather than as an
+    empty list: the repository is its writable scope, and printing "none" under
+    a heading that reads "nothing outside them" is what told a worker its whole
+    scope was an evidence fragment.
+    """
+    from reckon.crew.runs import DEFAULT_EXCLUSIVE_PATHS
+
+    declared = [str(path) for path in (paths or node.write_paths) if str(path).strip()]
+    repository_paths = [path for path in declared if not Path(path).is_absolute()]
+    delivery = [path for path in declared if Path(path).is_absolute()]
+    lines = [
+        SCOPE_HEADING,
+        "  Writable: the whole worktree — any file git can merge, declared or not.",
+        "  The declared paths are where this node's change is expected, and a review",
+        "  compares your diff against them; editing a mergeable file outside them",
+        "  neither refuses nor blocks the node.",
+    ]
+    if repository_paths:
+        lines.append("  Expected:")
+        lines.extend(f"  {path}" for path in repository_paths)
+    else:
+        lines.extend(
+            [
+                "  Expected: the repository itself. No write path is declared, so",
+                "  nothing narrows what this node is expected to change.",
+            ]
+        )
+    if delivery:
+        lines.append(
+            "  Delivery grants outside the repository (named, not expected edits):"
+        )
+        lines.extend(f"  {path}" for path in delivery)
+    exclusive = list(patterns) or list(DEFAULT_EXCLUSIVE_PATHS)
+    lines.extend(
+        [
+            "  Writable only when a dispatch declares it: a path a merge cannot",
+            f"  reconcile — {', '.join(exclusive)} — plus any pattern this project adds.",
+            "  The fence holds those read-only where none is declared.",
+        ]
+    )
+    return "\n".join(lines)
+
 
 # The falsifiable-evidence contract, embedded in every composed prompt beside
 # the durable-write one. It lives here for the same reason its sibling does:
@@ -178,18 +276,34 @@ def _artifact_allowance(done_when: str) -> str:
 # the fragment reads the run-record carrier instead. The record goes to the
 # node's own fragment and its landing to a single manifest line rather than to
 # the plan, so two nodes on one plan never edit the same file and their merged
-# records need no manual union. Figure placement and the meta-line ban are stated
+# records need no manual union. The fragment itself is optional — a routine
+# landing leaves only its `landing:` line, its run record and its gate log —
+# and the clause names the two cases it is written for, a negative result and a
+# mechanism that does not fit a landing line. Nothing splices a fragment into a
+# plan's landed record: the landed record is synthesized once at closure, which
+# links the fragment from the node's row and reproduces none of its text.
+# Figure placement and the meta-line ban are stated
 # because a worker still edits the plan in its tree when it must. Kept as a
 # standalone constant so a test can compose with it masked out and diff against
 # the live prompt, which proves the addition is removable and scoped.
 PLAN_LANDING_CONTRACT = (
     "CONTRACT — LANDING YOUR RECORD\n"
-    "  Write your landing record to your own fragment path and never to the plan:\n"
-    "  your evidence anchor to your scope's fragment under\n"
-    "  docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`\n"
-    "  line in your manifest in place of a plan edit. The fragment goes into your\n"
-    "  final commit; promotion lands the `landing:` line on your plan section.\n"
+    "  Exactly one `landing:` line in your manifest is the record of this node,\n"
+    "  stating what changed and its measure's figure, and promotion lands it on\n"
+    "  your plan section. A per-node evidence fragment is optional: it is not the\n"
+    "  record and a routine landing writes none, so the landing line is the whole\n"
+    "  prose account of the node. Write a fragment only in one of the two cases\n"
+    "  it is for — you have a negative result, or a mechanism that does not fit a\n"
+    "  landing line — and when you write one, place it as follows. Write your\n"
+    "  landing record to your own fragment path and never to the plan: your\n"
+    "  evidence anchor to your scope's fragment under\n"
+    "  docs/evidence/fragments/<plan>/<node-id>.html, and\n"
+    "  exactly one `landing:` line in your manifest in place of a plan edit. The\n"
+    "  fragment goes into your final commit; promotion lands the `landing:` line on your plan section.\n"
     + SMALL_NODE_RULE
+    + "  Nothing splices a fragment into the plan's landed record: that record is\n"
+    "  synthesized once at closure and links the fragment from your node's row\n"
+    "  without reproducing its text.\n"
     + "  Every element id in the fragment begins with the node id, so sibling\n"
     "  fragments composed into one record cannot claim the same anchor.\n"
     + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
@@ -231,7 +345,11 @@ BRIEF_LANDING_CONTRACT = (
     "  the repository files your node changes, and name the record's absolute path\n"
     "  in your manifest so a later reader can open it without the run id.\n"
     "  The `landing:` line lands on this run's own record, because a brief names\n"
-    "  no plan section for a promotion to land it on.\n"
+    "  no plan section for a promotion to land it on. A per-node evidence\n"
+    "  fragment is optional: write one only when you have a negative result or a\n"
+    "  mechanism that does not fit a landing line, and a routine landing writes\n"
+    "  none, its `landing:` line being then the whole prose account of the node.\n"
+    "  Nothing splices a fragment into a plan's landed record.\n"
     + SMALL_NODE_RULE
     + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
@@ -722,6 +840,41 @@ def prompt_without_anchored_edit_instruction(prompt: str) -> str:
     return prompt
 
 
+def worker_gate_commands(
+    *, project: str, run_id: str, worktree: str, done_when: str
+) -> str:
+    """Compose executable gate calls using the run's own identity and partition."""
+    from reckon.crew.standing_suite import node_gate_partition
+
+    prefix = [sys.executable, "-c", "from reckon.cli import main; main()", "crew"]
+    options = [
+        "--project",
+        project,
+        "--run",
+        run_id,
+        "--checkout-path",
+        worktree,
+        "--partition",
+        node_gate_partition(done_when),
+    ]
+    source = shlex.quote(str(Path(__file__).resolve().parents[2]))
+    gate = f"PYTHONPATH={source} " + shlex.join(
+        [*prefix, "verify-gate", "--worker", *options]
+    )
+    arms = f"PYTHONPATH={source} " + shlex.join([*prefix, "suite", "run", *options])
+    return (
+        "\nFENCE — COMPOSED GATE CALLS\n"
+        "  Commit the measured work first: each call measures committed revisions.\n"
+        "  Scoped gate (add --command with a quoted command for a different scoped check):\n"
+        f"    {gate}\n"
+        "  Base and head arms (each resolves the declared suite over its own tree):\n"
+        f"    {arms}\n"
+        "  Each call creates its own logs and returns JSON. Copy tests and test_logs\n"
+        "  from the scoped gate, and baseline_suite and after_suite from the arms,\n"
+        "  into your manifest. Keep the returned revision, command and receipt.\n"
+    )
+
+
 def compose_prompt(
     *,
     node: TaskNode,
@@ -803,7 +956,9 @@ def compose_prompt(
         f"{sys.executable} -c 'from reckon.crew.dispatch import _peer_command; "
         "raise SystemExit(_peer_command())'"
     )
-    scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
+    scope_lines = scope_block(
+        node, patterns=_resolved_exclusive_patterns(project, worktree)
+    )
     section = f" {node.section}" if node.section else ""
     # The plan pointer is the plan-section read instruction, and the plan name
     # and section it names are the whole of it. A brief alone replaces that
@@ -917,6 +1072,10 @@ RUNTIME FILESYSTEM
         )
     else:
         suite_gate_block = ""
+    if suite_command and run_id:
+        suite_gate_block += worker_gate_commands(
+            project=project, run_id=run_id, worktree=worktree, done_when=node.done_when
+        )
     # The check is composed with this run's own id so the worker can execute the
     # line as written. A composing caller that supplies no id still gets a
     # runnable instruction rather than a command that silently checks nothing.
@@ -999,12 +1158,11 @@ ROLE     {node.role}
 
 {closure_authority_contract}
 
-FENCE — SCOPE (declared write paths; nothing outside them)
 {scope_lines}
 
 CONCURRENT NODES (information only; overlapping source and test edits are allowed)
-  Work in your own worktree within your declared write paths. Git merge reconciles
-  shared edits; a real conflict returns to the worker for a merge repair.
+  Work in your own worktree. Git merge reconciles shared edits; a real conflict
+  returns to the worker for a merge repair.
 {peer_lines}
 
 PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endpoint {peer_channel}.

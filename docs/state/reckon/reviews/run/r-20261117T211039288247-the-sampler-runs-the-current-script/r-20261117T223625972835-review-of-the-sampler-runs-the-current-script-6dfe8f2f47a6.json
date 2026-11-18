@@ -1,0 +1,150 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertions": "replacement differs; elapsed <= two periods; retained earlier rows padded with dash; exactly one active sampler after every start and replacement alone at end",
+      "fails_if": "Restoring the base start-only launcher prevents an added-column row and times out; restoring archive-on-schema-change loses earlier rows; overlapping starts make the active set exceed one. Missing cross-path transition is the blocking finding.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:113-125"
+    },
+    {
+      "assertions": "two rows; old data mapped into retained columns; current row present; no archive file",
+      "fails_if": "Restoring rename-to-archive produces one row in the canonical series and an archive; dropping or misplacing old values fails the independent kept/dash expectations. Current-row equality is a round-trip assertion using the supplied schema, not independent protection for the canonical column list; durability rests on preservation and row count, not that equality.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:145-153"
+    },
+    {
+      "assertions": "admission open; missing kind; fleet-health owner/reason; no held claim or launch remedy",
+      "fails_if": "Restoring generic unreadable classification, omitting owner or restoring the before-admission instruction fails the respective literal checks; fixture admission reserve is independently set to zero.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:169-175"
+    },
+    {
+      "assertions": "refuses unidentified lock holder; sends no signals; emits refusal",
+      "fails_if": "Treating an unidentified lock as free, signalling an unverified target or suppressing refusal breaks the respective assertion; actual flock is held by the test.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:184-186"
+    },
+    {
+      "assertions": "returned child PID and checkout script selected despite stale PATH resolution",
+      "fails_if": "Restoring unconditional shutil.which selects the deliberately different stale path and fails argv equality; PID equality alone is fixture plumbing, not protection for script selection.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:203-204"
+    },
+    {
+      "assertions": "raises FleetNodeError; original contents remain; only original and lock file exist",
+      "fails_if": "Accepting unknown headers or malformed rows, publishing a partial conversion or leaving a temporary file breaks these independently specified content/path assertions.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:213-216"
+    },
+    {
+      "assertions": "successful pass; rejecting system python never invoked; four helper fields known zero; series disk figures equal published figures",
+      "fails_if": "Restoring any python3 fallback writes the rejecting interpreter marker and yields unknown helper values; restoring disk fallback prevents the JSON publication. Disk equality only checks agreement between publication and row, not independent filesystem accuracy; the no-marker and successful helper checks provide fallback protection.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:229-250"
+    },
+    {
+      "assertions": "absent publication expected kind is node-disk-missing in admission, direct/published obligations and queued launch",
+      "fails_if": "Restoring FileNotFoundError to the generic unreadable branch makes each literal missing-kind assertion fail; stale and malformed classifications remain separately expected.",
+      "path": "tests/test_fleet_health_records_node_tmp.py:179,336-344,427,485"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve:3907",
+    "reckon/crew/fleet_supervisor.py:handle_line:3788",
+    "reckon/crew/fleet_node.py:__main__",
+    "bin/fleet-health:--initialise-series",
+    "bin/fleet-health:--append-node-row",
+    "reckon/crew/obligations.py:_node_disk_notice:4553",
+    "reckon/crew/admission/service.py:node_disk_admission_hold:192"
+  ],
+  "completed_at": "2026-11-17T22:45:12Z",
+  "dispatched_at": "2026-11-17T22:39:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-sampler-runs-the-current-script",
+      "recorded_at": "2026-11-17T23:13:43.685417+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1520",
+      "severity": "blocking",
+      "text": "blocking: The old sampler is filtered against the replacement's pathname before its held lock descriptor is examined; the base launcher selected fleet-health through PATH whereas the new default selects _checkout_root()/bin/fleet-health, so an existing legitimate sampler at another installed or checkout path yields zero candidates, _stop_health_sampler returns False and start_health_sampler returns without replacing it. Identify the previous sampler independently of the destination path while retaining ownership checks, and cover a handover from one script path to another; the current rehearsal only rewrites the same path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read 7276420cf33013ab1887bf0c991b145bb4a214c7, 3b7efab5cfe3ebcc86361e4890213f64dbfcd7ad, cdf46b0831c8ba8215ea8fdbc59cddb6c33eb705 and 6dfe8f2f47a6be4181368e1e7a6498ac166866f1 individually against their parents; the final five-file delta adds sampler replacement, retained-row schema widening, missing-publication attribution and project-interpreter fallback.",
+    "done_when": "The source live pointer node.done_when requires the section's cases, failing base control and zero importer additions; scoped-gate-1794952287046052892.log records 111 passed and the completed baseline/head receipts contain identical eight failure IDs, but the same-path rehearsal omits migration from a previous PATH location and the post-landing live check remains outstanding.",
+    "goal": "The source live pointer node.goal asks for replacement by the current checkout script; reckon/crew/fleet_supervisor.py:1520 prevents this when the previous sampler's script pathname differs from the replacement's.",
+    "manifest": "The source manifest.md names four resolvable commits and completed all_debug arms; its receipts confirm 8 failed/162 passed at base and 8 failed/170 passed at head, and explicitly defer live-fleet confirmation.",
+    "write_paths": "The source live pointer node.write_paths and manifest orientation_write_paths grant all five changed files, including reckon/crew/fleet_node.py and tests/test_fleet_health_records_node_tmp.py."
+  },
+  "justifications": {
+    "durability": "tests/test_the_sampler_runs_the_current_script.py:113-125 fails on restored no-replacement or archive-on-widen behavior and :229-250 detects restored system-python fallbacks, while :72 and :98 keep the sampler pathname constant and therefore cannot detect the blocking migration defect.",
+    "evidence": "tests/test_the_sampler_runs_the_current_script.py:60 rehearses re-execution and added-column retention and both suite receipt logs substantiate zero added IDs, but it rewrites one pathname and the source manifest explicitly leaves the live two-reexecution measure to the coordinator.",
+    "fit": "reckon/crew/fleet_supervisor.py:1488 uses the shared exclusive_lock and :1540 uses signal_worker, while reckon/crew/fleet_node.py:967 uses write_atomically and the added names describe mechanisms without release or task labels.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1520 ties the existing lock owner's identity to the new script pathname, so a legitimate sampler previously selected through a different PATH location survives the requested handover.",
+    "reuse": "Capability searches for series migration, sampler ownership and process stopping found append_node_reading in reckon/crew/fleet_node.py, DeclaredServices._stop_locked in reckon/crew/fleet_supervisor.py, signal_worker in reckon/crew/process_signal.py:917 and write_atomically in reckon/_store.py:585; the additions extend the series/sampler owners and wrap the shared primitives, and the full-shell test reuses tests/test_fleet_health.py:sandbox/run_pass/sample_rows.",
+    "scope_discipline": "The five paths in 3845a12fe055e3b175e74f47984d4ecee9262d4e..6dfe8f2f47a6be4181368e1e7a6498ac166866f1 all occur in the source node's granted write_paths and directly support sampler handover, publication or its importer expectations."
+  },
+  "limitations": [
+    "No suite rerun performed; original completed receipts read.",
+    "Live-fleet columns within two supervisor re-executions remain a coordinator post-landing measurement.",
+    "Blocking cross-path handover is established by source reading, not a new mutation experiment."
+  ],
+  "negative_control_evidence": {
+    "fallback": {
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/fallback-negative.log",
+      "result": "FAILED tests/test_the_sampler_runs_the_current_script.py::test_sampling_without_interpreter_overrides_uses_the_project_environment; all four helpers recorded through rejecting python3; EXIT=1"
+    },
+    "handover": {
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/negative-control-final.log",
+      "result": "FAILED tests/test_the_sampler_runs_the_current_script.py::test_reexecution_replaces_the_script_and_keeps_earlier_samples; Failed: sampler handover did not reach its expected state; EXIT=1"
+    }
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source live pointer node.goal asks for replacement by the current checkout script; reckon/crew/fleet_supervisor.py:1520 prevents this when the previous sampler's script pathname differs from the replacement's.\nVERDICT done_when: The source live pointer node.done_when requires the section's cases, failing base control and zero importer additions; scoped-gate-1794952287046052892.log records 111 passed and the completed baseline/head receipts contain identical eight failure IDs, but the same-path rehearsal omits migration from a previous PATH location and the post-landing live check remains outstanding.\nVERDICT write_paths: The source live pointer node.write_paths and manifest orientation_write_paths grant all five changed files, including reckon/crew/fleet_node.py and tests/test_fleet_health_records_node_tmp.py.\nVERDICT manifest: The source manifest.md names four resolvable commits and completed all_debug arms; its receipts confirm 8 failed/162 passed at base and 8 failed/170 passed at head, and explicitly defer live-fleet confirmation.\nVERDICT diff: Read 7276420cf33013ab1887bf0c991b145bb4a214c7, 3b7efab5cfe3ebcc86361e4890213f64dbfcd7ad, cdf46b0831c8ba8215ea8fdbc59cddb6c33eb705 and 6dfe8f2f47a6be4181368e1e7a6498ac166866f1 individually against their parents; the final five-file delta adds sampler replacement, retained-row schema widening, missing-publication attribution and project-interpreter fallback.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve:3907, reckon/crew/fleet_supervisor.py:handle_line:3788, reckon/crew/fleet_node.py:__main__, bin/fleet-health:--initialise-series, bin/fleet-health:--append-node-row, reckon/crew/obligations.py:_node_disk_notice:4553, reckon/crew/admission/service.py:node_disk_admission_hold:192\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1520 ties the existing lock owner's identity to the new script pathname, so a legitimate sampler previously selected through a different PATH location survives the requested handover.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_the_sampler_runs_the_current_script.py:60 rehearses re-execution and added-column retention and both suite receipt logs substantiate zero added IDs, but it rewrites one pathname and the source manifest explicitly leaves the live two-reexecution measure to the coordinator.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in 3845a12fe055e3b175e74f47984d4ecee9262d4e..6dfe8f2f47a6be4181368e1e7a6498ac166866f1 all occur in the source node's granted write_paths and directly support sampler handover, publication or its importer expectations.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_sampler_runs_the_current_script.py:113-125 fails on restored no-replacement or archive-on-widen behavior and :229-250 detects restored system-python fallbacks, while :72 and :98 keep the sampler pathname constant and therefore cannot detect the blocking migration defect.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1488 uses the shared exclusive_lock and :1540 uses signal_worker, while reckon/crew/fleet_node.py:967 uses write_atomically and the added names describe mechanisms without release or task labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for series migration, sampler ownership and process stopping found append_node_reading in reckon/crew/fleet_node.py, DeclaredServices._stop_locked in reckon/crew/fleet_supervisor.py, signal_worker in reckon/crew/process_signal.py:917 and write_atomically in reckon/_store.py:585; the additions extend the series/sampler owners and wrap the shared primitives, and the full-shell test reuses tests/test_fleet_health.py:sandbox/run_pass/sample_rows.\nFINDING reckon/crew/fleet_supervisor.py:1520 blocking: The old sampler is filtered against the replacement's pathname before its held lock descriptor is examined; the base launcher selected fleet-health through PATH whereas the new default selects _checkout_root()/bin/fleet-health, so an existing legitimate sampler at another installed or checkout path yields zero candidates, _stop_health_sampler returns False and start_health_sampler returns without replacing it. Identify the previous sampler independently of the destination path while retaining ownership checks, and cover a handover from one script path to another; the current rehearsal only rewrites the same path.\n",
+  "review_run_id": "r-20261117T223625972835-review-of-the-sampler-runs-the-current-script-6dfe8f2f47a6",
+  "reviewed_base_sha": "3845a12fe055e3b175e74f47984d4ecee9262d4e",
+  "reviewed_head_sha": "6dfe8f2f47a6be4181368e1e7a6498ac166866f1",
+  "reviewed_run_id": "r-20261117T211039288247-the-sampler-runs-the-current-script",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_failure_ids": [
+      "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+      "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+      "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+      "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+      "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+      "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+      "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+      "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/after_suite_final-1794952288098549392.receipt.log",
+    "baseline_failure_ids": [
+      "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+      "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+      "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+      "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+      "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+      "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+      "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+      "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/baseline_suite-1794951749253646711.receipt.log",
+    "completed": true
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T22:46:25.584740+00:00",
+  "total": 106
+}

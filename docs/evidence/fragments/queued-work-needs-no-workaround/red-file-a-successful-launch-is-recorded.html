@@ -1,0 +1,42 @@
+<section id="qwnw-red-file-a-successful-launch-is-recorded-red-file">
+  <h3>The red file: <code>tests/test_a_successful_launch_is_recorded.py</code></h3>
+  <p>Both runs are jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+  unset inside the job. The command in each arm is the project's own template
+  resolved over that arm's tree; only the revision, command and log differ.</p>
+  <table id="qwnw-red-file-a-successful-launch-is-recorded-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>d0d77f07e2dcc64d74713755aebe748602f9a06f</code></td>
+        <td><code>9 failed, 3 passed in 10.37s</code></td>
+        <td>1</td>
+        <td><code>logs/base-arm.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>ba9cc94a1b33177114c1518ec41b465242e3a396</code></td>
+        <td><code>12 passed in 11.05s</code></td>
+        <td>0</td>
+        <td><code>logs/head-arm.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm's nine failing ids, which are the nine the whole-suite log at
+  <code>8d50b0333f</code> also lists for this file:</p>
+  <ul id="qwnw-red-file-a-successful-launch-is-recorded-red-file-ids">
+    <li><code>test_the_spawn_republishes_the_full_record[direct]</code></li>
+    <li><code>test_the_spawn_republishes_the_full_record[admission]</code></li>
+    <li><code>test_a_late_refusal_only_appends_history[annotate-direct]</code></li>
+    <li><code>test_a_late_refusal_only_appends_history[annotate-admission]</code></li>
+    <li><code>test_a_late_refusal_only_appends_history[restore-direct]</code></li>
+    <li><code>test_a_late_refusal_only_appends_history[restore-admission]</code></li>
+    <li><code>test_publication_preserves_a_supervisors_newer_state</code></li>
+    <li><code>test_a_refused_dispatch_cannot_restore_over_another_launch[direct]</code></li>
+    <li><code>test_a_refused_dispatch_cannot_restore_over_another_launch[admission]</code></li>
+  </ul>
+  <p>One cause accounts for all nine. The three passing cases are the ones that
+  never read <code>argv</code> from a record: the queued request's own launch
+  path, the dispatched argv written before the spawn, and the completed
+  manifest written over an unrepaired launch record.</p>
+</section>

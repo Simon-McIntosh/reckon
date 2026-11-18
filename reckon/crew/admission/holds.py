@@ -42,7 +42,7 @@ from .shared import (
 def _session_allowance_read(
     pointer: Mapping[str, Any],
     *,
-    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> tuple[float | None, str]:
     """The extra-worker allowance the lane grants the queued run's session.
 
@@ -51,6 +51,30 @@ def _session_allowance_read(
     document is declared, so the lane publishes nothing to hold on and every
     queued run may be attempted. A published allowance of zero or less holds
     that session.
+
+    The router's own verdict is asked for by :func:`_session_room_read` and
+    dropped here, because every caller of this spelling wants only the figure
+    and its source.
+    """
+    allowance, source, _verdict = _session_room_read(pointer, config_for=config_for)
+    return allowance, source
+
+
+def _session_room_read(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> tuple[float | None, str, str]:
+    """The session's allowance, the source it came from, and the router's verdict.
+
+    The verdict rides beside the figure because the two answer different
+    questions about the same reading. An allowance of zero says the router has
+    no room at this instant, and a full reading is exactly that: an instant,
+    which clears as the workers holding the router's requests finish. A verdict
+    of ``paused`` says the lane has been stopped on purpose, so the configured
+    figures are not a reading of load at all. A caller deciding whether another
+    reading is worth waiting for reads the verdict; a caller deciding whether
+    it may launch reads the allowance.
     """
     config = (
         config_for(pointer)
@@ -59,21 +83,22 @@ def _session_allowance_read(
     )
     backend = (config.get("backends") or {}).get(str(pointer.get("backend") or ""))
     if not backend:
-        return None, "no backend declares the request's lane"
+        return None, "no backend declares the request's lane", ""
     decision = _dispatch_lane_allowance(
         backend,
         session=str(pointer["session"]),
         weights_configured=_ordering._fair_use_weights_configured(config),
     )
     if decision is None:
-        return None, "the lane publishes no allowance"
+        return None, "the lane publishes no allowance", ""
     source = str(decision.get("source") or "unknown")
+    verdict = str(decision.get("verdict") or "")
     if decision.get("held"):
-        return 0, source
+        return 0, source, verdict
     allowance = decision.get("allowance")
     if isinstance(allowance, bool) or not isinstance(allowance, (int, float)):
-        return None, source
-    return float(allowance), source
+        return None, source, verdict
+    return float(allowance), source, verdict
 
 
 def _lane_gate_hold(
@@ -226,24 +251,62 @@ def _pass_claims(
     return resolved
 
 
+def _exclusive_shared_paths(
+    pointer: Mapping[str, Any],
+    cache: dict[tuple[str, str], frozenset[str]],
+) -> frozenset[str]:
+    """The judged request's exclusive-path policy, resolved at most once per pass.
+
+    The policy is the one the live-claim hold judges a pair with, read from the
+    repository that declares it. An unreadable or absent declaration answers an
+    empty policy, which the sharing rule reads as "this path is unmergeable" —
+    the same hold the overlap check made before it consulted the policy at all.
+    """
+    key = (str(pointer.get("project") or ""), str(pointer.get("repo") or ""))
+    if key not in cache:
+        cache[key] = (
+            runs._shared_write_paths(key[0], Path(key[1])) if all(key) else frozenset()
+        )
+    return cache[key]
+
+
 def _queued_requests_overlap(
     first: Mapping[str, Any],
     second: Mapping[str, Any],
     *,
     claims: dict[str, list[tuple[Path | None, Path]]],
+    shared: frozenset[str] | None = None,
+    policies: dict[tuple[str, str], frozenset[str]] | None = None,
 ) -> bool:
-    """Whether two queued requests name a write path in one repository.
+    """Whether two queued requests name a path a merge cannot reconcile.
 
     The comparison is the dispatch scope check's own: same repository, and paths
     that overlap by component containment. A pair in different repositories never
     overlaps, however their relative spellings read.
+
+    Only the class git cannot reconcile, the set promotion and the write-time
+    audit refuse, holds one queued request behind another. Where the two paths
+    meet is judged by the claim check's own sharing rule, so two requests that
+    share source files — including a repository-wide directory such as
+    ``reckon`` — fence nothing while both wait, and a plan document, generated
+    state, a cumulative evidence record, a figure topic directory or a
+    dependency lock still does. ``shared`` is the pass's own policy for
+    ``second``; without one it is resolved here and cached in ``policies``.
     """
     first_claims = _pass_claims(first, claims)
     if not first_claims:
         return False
+    policy = (
+        shared
+        if shared is not None
+        else _exclusive_shared_paths(second, policies if policies is not None else {})
+    )
     return any(
         repository == other_repository
         and runs._scopes_overlap(absolute.as_posix(), other_absolute.as_posix())
+        and not runs._claim_paths_share(
+            policy, absolute.as_posix(), other_absolute.as_posix()
+        )
         for repository, absolute in first_claims
         for other_repository, other_absolute in _pass_claims(second, claims)
     )
@@ -265,6 +328,7 @@ def _earlier_overlapping_request(
     moment: datetime,
     claims: dict[str, list[tuple[Path | None, Path]]],
     fenced: Collection[str] = (),
+    shared: frozenset[str] | None = None,
 ) -> Mapping[str, Any] | None:
     """An earlier-ranked queued request whose write paths overlap this one.
 
@@ -275,6 +339,9 @@ def _earlier_overlapping_request(
     whose own session is never granted a slot. ``claims`` is the pass's resolved
     claims, so each comparison reads a request's paths rather than resolving
     them again.
+
+    An overlap holds only over a path a merge cannot reconcile, so a pair that
+    shares source files waits for seats rather than for each other.
 
     An earlier request holds a later one only while it could launch: one the
     same pass has already held on a claim, a gate, a back-off or a plan review
@@ -287,10 +354,14 @@ def _earlier_overlapping_request(
     ):
         return None
     skipping = set(fenced)
+    policies: dict[tuple[str, str], frozenset[str]] = {}
+    policy = (
+        shared if shared is not None else _exclusive_shared_paths(pointer, policies)
+    )
     for candidate in earlier:
         if str(candidate.get("run_id") or "") in skipping:
             continue
-        if _queued_requests_overlap(pointer, candidate, claims=claims):
+        if _queued_requests_overlap(pointer, candidate, claims=claims, shared=policy):
             return candidate
     return None
 
@@ -691,11 +762,80 @@ def _named_runs(record: Mapping[str, Any]) -> list[str]:
     return named
 
 
+def _carried_hold(
+    pointer: Mapping[str, Any], record: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The hold record to store, keeping an unchanged record's own instant.
+
+    ``recorded_at`` dates the reason, not the pass that last confirmed it, so a
+    pass that writes the record it already finds leaves the stored instant where
+    it was. The identity comparison ignores only that instant: every other key
+    is what a reader of the request is being told.
+    """
+
+    def without_time(row: Mapping[str, Any]) -> dict[str, Any]:
+        return {key: value for key, value in row.items() if key != "recorded_at"}
+
+    previous = recorded_pass_hold(pointer)
+    if previous and without_time(previous) == without_time(record):
+        return previous
+    return dict(record)
+
+
+def _released_claim(
+    record: Mapping[str, Any], live: Sequence[Mapping[str, Any]]
+) -> bool:
+    """Whether the run a stored scope refusal names claims its path no longer.
+
+    A refusal is written from the launch check's view of one run and the path it
+    claimed, and that view is evidence for the pass that saw it. A later pass
+    reads the fleet again, so the same pass can see that run's pointer: a holder
+    whose declared paths no longer include the claimed one holds nothing there,
+    and a scope refusal kept because its own text said so is the reason a
+    request carries for hours after its cause went away. A holder the pass did
+    not observe is no evidence either way.
+    """
+    holder = record.get("holder")
+    if not isinstance(holder, Mapping):
+        return False
+    holders = {str(candidate.get("run_id") or ""): candidate for candidate in live}
+    observed = holders.get(str(holder.get("run_id") or ""))
+    claimed = str(holder.get("path") or "")
+    if observed is None or not claimed:
+        return False
+    return not any(
+        runs._scopes_overlap(path, claimed) for path in _declared_scope_paths(observed)
+    )
+
+
+def _declined_refusal_hold(
+    record: Mapping[str, Any], *, moment: datetime
+) -> dict[str, Any]:
+    """Describe a stored scope refusal whose claim its holder no longer declares.
+
+    Nothing the request waits on is still held, so the refusal is retired and
+    the request reads as waiting out the ordinary back-off: the record says what
+    the pass saw rather than repeating a claim nobody makes.
+    """
+    holder = record.get("holder") if isinstance(record.get("holder"), Mapping) else {}
+    holder_run = str(holder.get("run_id") or "")
+    claimed = str(holder.get("path") or "")
+    return {
+        "verdict": "held-on-retry-backoff",
+        "reason": (
+            f"the launch was refused on a scope conflict with run {holder_run!r}, "
+            f"which no longer declares the write path {claimed!r}; the refusal is "
+            "retired and the request waits out the bounded retry back-off"
+        ),
+        "recorded_at": moment.isoformat(),
+    }
+
+
 def _refusal_hold(
     caught: Exception, live: Sequence[Mapping[str, Any]], *, moment: datetime
 ) -> dict[str, Any] | None:
     """Describe a launch refusal that names the run holding the request."""
-    holders = {str(pointer.get("run_id") or ""): pointer for pointer in live}
+    holders = {str(candidate.get("run_id") or ""): candidate for candidate in live}
     if isinstance(caught, ScopeConflict):
         holder_run = str(caught.run_id or "")
         holder = holders.get(holder_run) or {}
@@ -762,11 +902,16 @@ def _record_pass_hold(
         # A retry timer cannot settle the named runs. A scope conflict takes
         # this path only after the claim check found no binding collision.
         chosen = previous
+    stored_refusal = str(previous.get("verdict") or "") == "refused-scope-conflict"
+    if stored_refusal and _released_claim(previous, live):
+        # The pass re-read the run the stored refusal names and found it no
+        # longer claims the path, so the refusal is retired and the request
+        # reads as waiting out the ordinary back-off.
+        chosen = _declined_refusal_hold(previous, moment=moment)
 
-    def without_time(row: Mapping[str, Any]) -> dict[str, Any]:
-        return {key: value for key, value in row.items() if key != "recorded_at"}
-
-    if without_time(chosen) == without_time(previous):
+    chosen = _carried_hold(pointer, chosen)
+    if chosen == previous:
+        # Nothing about the reason changed, so its own instant stands.
         return
     chosen["recorded_at"] = moment.isoformat()
     run_id = str(pointer.get("run_id") or "")

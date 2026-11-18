@@ -1,0 +1,228 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert len(queue_landing.land_once()[\"promotion_requested\"]) == 3",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 613,
+      "would_fail_if": "The unattended queue omits one of the three eligible members."
+    },
+    {
+      "assertion": "assert len(service.tick()) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 648,
+      "would_fail_if": "The production promotion service starts zero or multiple grouped requests."
+    },
+    {
+      "assertion": "assert [item[0] for item in seen] == [run_id]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 656,
+      "would_fail_if": "Removing the new MergeConflictError catch leaves no repair resume, or dispatch targets the wrong member."
+    },
+    {
+      "assertion": "assert repair[\"main_revision\"] == primary",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 659,
+      "would_fail_if": "Repair advice is pinned to an intermediate candidate instead of the independently committed primary."
+    },
+    {
+      "assertion": "assert repair[\"head\"] == member[\"head\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 660,
+      "would_fail_if": "Repair dispatch records a different member head."
+    },
+    {
+      "assertion": "assert repair[\"paths\"] == [\"sample.py\"]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 661,
+      "would_fail_if": "The real merge conflict paths are missing or incorrect."
+    },
+    {
+      "assertion": "assert primary in seen[0][1] and \"sample.py\" in seen[0][1]",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 662,
+      "would_fail_if": "The resumed worker receives advice without the independently committed primary or conflict path."
+    },
+    {
+      "assertion": "assert len(fleet.calls) == (3 if after_promotion else 0)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 663,
+      "would_fail_if": "Queued conflict handling promotes too early, or the post-promotion scenario loses/duplicates promotions."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == (1 if after_promotion else 0)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 664,
+      "would_fail_if": "A queued conflict measures prematurely or the promoted scenario lacks its initial measure."
+    },
+    {
+      "assertion": "assert git(fleet.repo, \"rev-parse\", \"HEAD\") == primary",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 665,
+      "would_fail_if": "Conflict refusal moves the primary before the repair arrives."
+    },
+    {
+      "assertion": "assert pending_landing.finish_landing_groups()[0][\"status\"] == \"group-refused\"",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 666,
+      "would_fail_if": "A pending repair is published or recovery does not report refusal."
+    },
+    {
+      "assertion": "assert len(seen) == 1, \"a waiting repair resumed the same worker twice\"",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 667,
+      "would_fail_if": "A second recovery pass resumes a duplicate worker for the same repair round."
+    },
+    {
+      "assertion": "assert merged.returncode == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 675,
+      "would_fail_if": "The scenario ceases to produce a real git merge conflict."
+    },
+    {
+      "assertion": "assert checked.returncode == 0",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 692,
+      "would_fail_if": "The independently executed sample gate rejects the repaired fixture."
+    },
+    {
+      "assertion": "assert len(results) == 3 and all(row[\"status\"] == \"finished\" for row in results), (\n        results\n    )",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 704,
+      "would_fail_if": "Removing refresh_group_repairs leaves old conflicting heads persisted, or group recovery fails to finish every member."
+    },
+    {
+      "assertion": "assert len(fleet.calls) == 3 and len(set(fleet.calls)) == 3",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 707,
+      "would_fail_if": "Recovery promotes a member again or omits one of the original three promotions."
+    },
+    {
+      "assertion": "assert len(fleet.measured) == (2 if after_promotion else 1)",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 708,
+      "would_fail_if": "The repaired candidate is not remeasured exactly once, or the initial promoted measurement is repeated."
+    },
+    {
+      "assertion": "assert len(seen) == 1",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 709,
+      "would_fail_if": "Finishing a delivered repair resumes another worker."
+    },
+    {
+      "assertion": "assert \"REPAIRED = True\" in text",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 711,
+      "would_fail_if": "Publication drops the independently authored repair marker."
+    },
+    {
+      "assertion": "assert expected in text",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 718,
+      "would_fail_if": "Publication drops or corrupts the independently specified repaired function or another member function."
+    },
+    {
+      "assertion": "assert not pending_landing.group_path(\n        fleet.members[0][\"pointer\"][\"run_id\"]\n    ).exists()",
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": 719,
+      "would_fail_if": "Successful publication leaves the durable group pending."
+    }
+  ],
+  "assertion_independence": "All 21 added assertions name observable failure conditions. The primary/head comparisons at lines 659-660 compare durable product receipts to Git fixture commits, not to values passed directly to a stub that echoes them; the content assertions at lines 711 and 718 compare the published repository with independently authored fixture content. No self-comparing assertion found. Review and promotion eligibility are stubbed in this scenario, so these tests cover grouped repair plumbing and do not establish those pre-existing guards independently.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:_execute:443",
+    "reckon/crew/pending_landing.py:finish_landing_groups:127",
+    "reckon/crew/pending_landing.py:finish_pending_landings:761",
+    "reckon/crew_run_commands.py:_complete_landing_group:4209",
+    "reckon/crew_run_commands.py:_complete_landing_group:4253",
+    "reckon/crew_run_commands.py:_complete_landing_group:4270",
+    "reckon/crew_run_commands.py:_land_a_promoted_run:4368"
+  ],
+  "completed_at": "2026-11-17T04:22:56Z",
+  "dispatched_at": "2026-11-17T04:18:24Z",
+  "findings": [],
+  "item_aggregate": 100,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call sites",
+    "diff": "read sole new commit 7d7dbacbe431301d0bcff4c88acc421cbec05bd7 against previously reviewed cff27336df6c2ba389b4e0246a62a79a2ae03651: four files, 212 insertions and 11 deletions persist, dispatch and recover late group conflicts with four parameterized regression cases.",
+    "done_when": "prompt.txt:251 names the section cases, negative control and zero added importer failures; repair-baseline-suite.log records 73 passes, head-repair-suite.log records 77 passes, repair-negative-control.log records four failures, and repair-importer-delta.json records zero added ids for this incremental repair.",
+    "goal": "prompt.txt:38 and live docs/plans/delivered-work-lands-without-a-coordinator.html#s7 require unattended landing after primary moves; queue_landing.py:2061 now returns the actual conflicting member to its worker and pending_landing.py:73 accepts its gated repair.",
+    "manifest": "manifest.md cites repair 7d7dbacbe431301d0bcff4c88acc421cbec05bd7, the original armed baseline and exact-head after logs, and the supplementary same-command repair pair; the readable logs confirm the reported zero added failures.",
+    "write_paths": "manifest.md orientation_write_paths and the current review brief name pending_landing.py, queue_landing.py, crew_run_commands.py and tests/test_concurrent_edits_land_unattended.py; the sole new commit changes exactly those four authorized files."
+  },
+  "justifications": {
+    "durability": "tests/test_concurrent_edits_land_unattended.py:656 fails when the conflict catch is removed, :704 fails when refresh_group_repairs is omitted, and :707-718 fail on repeated promotions, wrong measurement counts or dropped repaired and peer content.",
+    "evidence": "head-repair-suite.log records 77 passed and EXIT=0 at the requested head, repair-baseline-suite.log records 73 passed at the reviewed base, and repair-negative-control.log fails all four added cases after reversing the three product modules.",
+    "fit": "reckon/crew/pending_landing.py:73 follows the existing journal and lazy-import idiom, reckon/crew_run_commands.py:4294 resets its ContextVar in finally, and the added definitions and comments describe mechanisms without forbidden labels.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:2061 persists the conflicting member against the published primary before dispatch, and reckon/crew/pending_landing.py:103 installs its fresh head for the existing grouped publisher.",
+    "reuse": "reckon/crew/pending_landing.py:86 calls its existing _delivered_repair owner at :452 and reckon/crew/queue_landing.py:2072 calls recovery_repair_dispatch.py:37, while follower release reuses _land_a_promoted_run instead of adding a publisher.",
+    "scope_discipline": "git diff cff27336..7d7dbacbe431 changes only the four authorized files, and reckon/crew_run_commands.py:4294 merely supplies the existing group publication context to follower release."
+  },
+  "negative_control": {
+    "completed": true,
+    "exit_status": 1,
+    "failure_ids": [
+      "tests/test_concurrent_edits_land_unattended.py::test_a_primary_conflict_after_queueing_returns_its_member_for_repair[queued-alpha]",
+      "tests/test_concurrent_edits_land_unattended.py::test_a_primary_conflict_after_queueing_returns_its_member_for_repair[queued-beta]",
+      "tests/test_concurrent_edits_land_unattended.py::test_a_primary_conflict_after_queueing_returns_its_member_for_repair[promoted-alpha]",
+      "tests/test_concurrent_edits_land_unattended.py::test_a_primary_conflict_after_queueing_returns_its_member_for_repair[promoted-beta]"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/repair-negative-control.log",
+    "revision": "7d7dbacbe431301d0bcff4c88acc421cbec05bd7",
+    "summary": "4 failed in 13.42s"
+  },
+  "prior_finding_answer": "Prior blocking late-group conflict finding at queue_landing.py:2057 is answered by catch at :2061, refresh at pending_landing.py:73, and all four queued/promoted leader/follower regression cases; reproduction log records 2 failed in 3.47s at cff27336 on assert [item[0] for item in seen] == [run_id].",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 and live docs/plans/delivered-work-lands-without-a-coordinator.html#s7 require unattended landing after primary moves; queue_landing.py:2061 now returns the actual conflicting member to its worker and pending_landing.py:73 accepts its gated repair.\nVERDICT done_when: prompt.txt:251 names the section cases, negative control and zero added importer failures; repair-baseline-suite.log records 73 passes, head-repair-suite.log records 77 passes, repair-negative-control.log records four failures, and repair-importer-delta.json records zero added ids for this incremental repair.\nVERDICT write_paths: manifest.md orientation_write_paths and the current review brief name pending_landing.py, queue_landing.py, crew_run_commands.py and tests/test_concurrent_edits_land_unattended.py; the sole new commit changes exactly those four authorized files.\nVERDICT manifest: manifest.md cites repair 7d7dbacbe431301d0bcff4c88acc421cbec05bd7, the original armed baseline and exact-head after logs, and the supplementary same-command repair pair; the readable logs confirm the reported zero added failures.\nVERDICT diff: read sole new commit 7d7dbacbe431301d0bcff4c88acc421cbec05bd7 against previously reviewed cff27336df6c2ba389b4e0246a62a79a2ae03651: four files, 212 insertions and 11 deletions persist, dispatch and recover late group conflicts with four parameterized regression cases.\nCALL_SITES: reckon/crew/promotion_requests.py:_execute:443, reckon/crew/pending_landing.py:finish_landing_groups:127, reckon/crew/pending_landing.py:finish_pending_landings:761, reckon/crew_run_commands.py:_complete_landing_group:4209, reckon/crew_run_commands.py:_complete_landing_group:4253, reckon/crew_run_commands.py:_complete_landing_group:4270, reckon/crew_run_commands.py:_land_a_promoted_run:4368\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:2061 persists the conflicting member against the published primary before dispatch, and reckon/crew/pending_landing.py:103 installs its fresh head for the existing grouped publisher.\nSCORE evidence: 20\nJUSTIFICATION evidence: head-repair-suite.log records 77 passed and EXIT=0 at the requested head, repair-baseline-suite.log records 73 passed at the reviewed base, and repair-negative-control.log fails all four added cases after reversing the three product modules.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff cff27336..7d7dbacbe431 changes only the four authorized files, and reckon/crew_run_commands.py:4294 merely supplies the existing group publication context to follower release.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_concurrent_edits_land_unattended.py:656 fails when the conflict catch is removed, :704 fails when refresh_group_repairs is omitted, and :707-718 fail on repeated promotions, wrong measurement counts or dropped repaired and peer content.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/pending_landing.py:73 follows the existing journal and lazy-import idiom, reckon/crew_run_commands.py:4294 resets its ContextVar in finally, and the added definitions and comments describe mechanisms without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/pending_landing.py:86 calls its existing _delivered_repair owner at :452 and reckon/crew/queue_landing.py:2072 calls recovery_repair_dispatch.py:37, while follower release reuses _land_a_promoted_run instead of adding a publisher.\n",
+  "reuse_audit": {
+    "refresh_group_repairs": "Capability search at reviewed head over pending_landing.py, queue_landing.py, recovery_repair_dispatch.py, promotion_requests.py and crew_run_commands.py located _delivered_repair, _require_repair_gate and dispatch_merge_repair; opened those owners and confirmed the addition orchestrates them rather than duplicating their ancestry, gate or resume mechanisms.",
+    "test_nested_helpers": "move_primary constructs the independently moving Git fixture; moved wraps the existing publication callback to inject the late-primary timing; no production capability copied."
+  },
+  "review_limits": "Incremental artifact review only: sole new commit after cff27336; no source mutation or suite rerun; previous full-node findings/evidence remain in the existing at-cff27336 record. Zero added failures derived from source manifest baseline_suite and after_suite logs, with the exact same-command incremental repair pair also read.",
+  "review_run_id": "r-20261117T041659971098-review-of-concurrent-edits-land-unattended-7d7dbacbe431",
+  "reviewed_base_sha": "cff27336df6c2ba389b4e0246a62a79a2ae03651",
+  "reviewed_head_sha": "7d7dbacbe431301d0bcff4c88acc421cbec05bd7",
+  "reviewed_run_id": "r-20261116T234158820301-concurrent-edits-land-unattended",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_log_evidence": [
+    {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/baseline-final-suite.log",
+      "revision": "5b93c97d604b49797e845a7fda92a9c31a9b2e3c",
+      "summary": "58 passed in 33.98s"
+    },
+    {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/head-repair-suite.log",
+      "revision": "7d7dbacbe431301d0bcff4c88acc421cbec05bd7",
+      "summary": "77 passed in 101.08s (0:01:41)"
+    },
+    {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234158820301-concurrent-edits-land-unattended/repair-baseline-suite.log",
+      "revision": "cff27336df6c2ba389b4e0246a62a79a2ae03651",
+      "summary": "73 passed in 81.39s (0:01:21)"
+    }
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T05:11:05.153072+00:00",
+  "total": 120
+}

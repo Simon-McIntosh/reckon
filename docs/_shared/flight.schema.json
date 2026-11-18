@@ -1310,6 +1310,25 @@
                     ],
                     "description": "How dispatch selects its worker backend."
                 },
+                "service_reload_window_seconds": {
+                    "description": "Minimum automatic standing-service reload interval in seconds; 1800 by default.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "session_scratch": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SessionScratchConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Per-session scratch bound and aggregate share of the local disk."
+                },
                 "summary": {
                     "anyOf": [
                         {
@@ -3126,6 +3145,31 @@
             "title": "SandboxMode",
             "type": "string"
         },
+        "SessionScratchConfig": {
+            "additionalProperties": false,
+            "description": "Sampled bounds on the node-local disk used by interactive sessions.",
+            "properties": {
+                "disk_share": {
+                    "description": "Fraction of the local disk available to all session scratch; new sessions refuse at this share.",
+                    "maximum": 1,
+                    "minimum": 0.001,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "max_bytes": {
+                    "description": "Allocated file bytes above which a session owes scratch cleanup.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            },
+            "title": "SessionScratchConfig",
+            "type": "object"
+        },
         "SpecificationRouting": {
             "additionalProperties": false,
             "description": "Routing overlays keyed by the closed specification-level vocabulary.",
@@ -3243,6 +3287,22 @@
             "properties": {
                 "cleanup": {
                     "$ref": "#/$defs/WorktreeCleanup"
+                },
+                "node_tmp_reserve_bytes": {
+                    "description": "Minimum usable bytes on the fleet node local disk; lower free space holds new launches and raises an obligation. Defaults to 8 GiB.",
+                    "minimum": 0,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "node_tmp_sample_max_age_seconds": {
+                    "description": "Maximum age in seconds of a published fleet local disk reading. Missing, unreadable or older samples hold remote admission and raise a distinct reading obligation. Defaults to 180 seconds, three default one-minute sampling periods.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
                 },
                 "scratch_min_free_bytes": {
                     "description": "Minimum free bytes on the worker scratch filesystem before a dispatch.",
@@ -3501,6 +3561,25 @@
                 }
             ],
             "description": "How dispatch selects its worker backend."
+        },
+        "service_reload_window_seconds": {
+            "description": "Minimum automatic standing-service reload interval in seconds; 1800 by default.",
+            "minimum": 1,
+            "type": [
+                "integer",
+                "null"
+            ]
+        },
+        "session_scratch": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/SessionScratchConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "Per-session scratch bound and aggregate share of the local disk."
         },
         "summary": {
             "anyOf": [

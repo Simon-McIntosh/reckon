@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -156,10 +157,12 @@ def _owed_review_tiers(pointer: Mapping[str, Any]) -> list[str]:
     The tier rule is the review reflex's own — the one it dispatches by — so the
     lander and the reflex cannot disagree about which reviews a run owes. A
     delivered run always owes its code review, and owes a figure review exactly
-    when its commits add or change a figure image. A changed-path list git
-    cannot produce reads as no figure review owed, which is the reflex's own
-    reading of it: a lander waiting on a review the reflex would never dispatch
-    would hold the run forever, so the two must answer alike.
+    when its commits add or change a figure image. The change list is that one
+    helper's answer, so both sides read the same list: an own-commit range git
+    cannot produce is read from the base-to-head pair instead, and only a run
+    whose history can be compared neither way answers no figure review owed. A
+    lander waiting on a review the reflex would never dispatch would hold the
+    run forever, so the two must answer alike.
     """
     from reckon.crew.recovery_review_dispatch import _changed_figure_paths
 
@@ -1316,11 +1319,8 @@ def _promoted_candidate(
             promoted=True,
         )
         return candidate
-    if (_measure_config(pointer).get("landing") or {}).get("measure_partition"):
-        raise CrewError(
-            "the primary product changed during promotion; a new scheduler "
-            "measurement is required before publishing the candidate"
-        )
+    # The configured runner submits the fresh pair to the measurement
+    # partition. A moved product needs evidence, not a coordinator command.
     measured = _measure_delivery(pointer, run_id, head, tree, promoted=True)
     refusal = _measure_guard(measured)
     if refusal:
@@ -1751,7 +1751,23 @@ def _verified_measurement(
     if moved and not _moved_primary_keeps_the_measurement(
         pointer, measured_main, primary
     ):
-        raise CrewError("the measured primary changed before completion")
+        conflicts = _merge_conflicts(
+            {**pointer, "merge_primary_revision": primary}, head
+        )
+        if conflicts:
+            from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+            dispatch_merge_repair(pointer, head=head, primary=primary, paths=conflicts)
+            raise CrewError("merge-conflict: " + ", ".join(conflicts))
+        measured = _measure_delivery(pointer, run_id, head, _tree)
+        guard = _measure_guard(measured)
+        if guard:
+            raise CrewError(guard)
+        measured_main = str(measured.population["main_sha"])
+        primary = _primary_revision(pointer)
+        if primary != measured_main:
+            raise CrewError("the primary moved again during the refreshed measurement")
+        moved, candidate = False, ""
     if (
         candidate
         and merge._rev_parse(repo, candidate) != measured.population["candidate_sha"]
@@ -1927,6 +1943,31 @@ def land_once() -> dict[str, Any]:
             )
     if finished:
         result["interrupted_landings"] = finished
+        named = {row["run_id"] for row in result["obligations"]}
+        for row in finished:
+            if (
+                row.get("status")
+                not in {
+                    "merge-conflict",
+                    "awaiting-merge-repair",
+                    "repair-gate-refused",
+                    "review-refused",
+                }
+                or row["run_id"] in named
+            ):
+                continue
+            result["obligations"].append(
+                {
+                    "run_id": row["run_id"],
+                    "session": str(row.get("session") or ""),
+                    "guard": str(
+                        row.get("guard")
+                        or row.get("error")
+                        or f"merge conflict awaiting repair: {', '.join(row.get('paths') or ())}"
+                    ),
+                }
+            )
+            named.add(row["run_id"])
     return result
 
 
@@ -1946,6 +1987,185 @@ def _measurement_run_skip(pointer: Mapping[str, Any]) -> str:
     return "the run is a measurement run: it builds and gates, and it never lands"
 
 
+def _queue_landing_groups(eligible: Sequence[tuple]) -> list[str]:
+    """Queue compatible deliveries together after their ordinary eligibility checks."""
+    from reckon.crew import merge
+    from reckon.crew.promotion_requests import PENDING, request_promotion
+    from reckon.crew_run_commands import crew_complete
+
+    cohorts: dict[tuple[str, str], list[tuple]] = {}
+    for entry in eligible:
+        pointer = entry[0]
+        if not pointer.get("suite_command") or pointer.get("landing_measurement_job"):
+            continue
+        key = (str(pointer.get("repo") or ""), str(pointer.get("project") or ""))
+        cohorts.setdefault(key, []).append(entry)
+    queued = []
+    for (repository, _project), entries in cohorts.items():
+        if len(entries) < 2 or len({entry[3] for entry in entries}) < 2:
+            continue
+        repo = Path(repository)
+        primary = _primary_revision(entries[0][0])
+        candidate = primary
+        compatible = []
+        for entry in entries:
+            try:
+                candidate = merge.build_merge_group(repo, candidate, [entry[3]])
+            except merge.MergeConflictError:
+                # Leave the conflicting delivery on the ordinary path. After
+                # the compatible group lands, its own conflict repair names
+                # the actual primary, never an unpublished synthetic parent.
+                continue
+            compatible.append(entry)
+        if len(compatible) < 2:
+            continue
+        leader = compatible[0][1]
+        members = []
+        for pointer, run_id, _project, head, *_rest in compatible:
+            command = _land_command(run_id)
+            with crew_complete.make_context(
+                "complete", command[command.index("complete") + 1 :]
+            ) as context:
+                options = {**context.params, "candidate": ""}
+            members.append(
+                {
+                    "pointer": {**pointer, "landing_group": leader},
+                    "head": head,
+                    "options": options,
+                }
+            )
+        receipt = request_promotion(
+            leader, kind="landing-group", options={"members": members}
+        )
+        if (
+            receipt.get("kind") != "landing-group"
+            or receipt.get("phase") not in PENDING
+        ):
+            continue
+        for member in members:
+            run_id = str(member["pointer"]["run_id"])
+            runs._mutate_pointer(
+                run_id,
+                lambda record, leader=leader: {
+                    **record,
+                    "landing_group": leader,
+                    "promotion_status": "promotion-requested",
+                },
+            )
+            queued.append(run_id)
+    return queued
+
+
+def measure_landing_group(group: dict[str, Any]) -> str:
+    """Prove one combined candidate with the union of its members' own gates."""
+    from reckon.crew import merge
+
+    leader = str(group["run_id"])
+    members = [
+        group["members"][leader],
+        *(
+            member
+            for run_id, member in sorted(group["members"].items())
+            if run_id != leader
+        ),
+    ]
+    pointer = members[0]["pointer"]
+    repo = Path(str(pointer["repo"]))
+    primary = _primary_revision(pointer)
+    signature = {
+        "primary": primary,
+        "heads": [member["head"] for member in members],
+        "commands": [member["pointer"].get("suite_command") for member in members],
+        "code": _landing_code_stamp(),
+    }
+    refusal = group.get("refusal") or {}
+    if refusal.get("signature") == signature:
+        raise CrewError(str(refusal["guard"]))
+    try:
+        aggregate = merge.build_merge_group(
+            repo, primary, [member["head"] for member in members]
+        )
+    except merge.MergeConflictError as exc:
+        from reckon.crew.pending_landing import save_group
+        from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+        member = next(member for member in members if member["head"] == exc.head)
+        run_id = str(member["pointer"]["run_id"])
+        # The intermediate candidate may include earlier members. Repair advice
+        # must name the published primary, which the worker can actually merge.
+        repair = {"head": exc.head, "main_revision": primary, "paths": exc.paths}
+        group.setdefault("merge_repairs", {})[run_id] = repair
+        save_group(group)
+        dispatch_merge_repair(
+            member["pointer"],
+            head=exc.head,
+            primary=primary,
+            paths=exc.paths,
+            promoted=bool(member.get("promotion")),
+        )
+        raise CrewError(
+            f"merge-conflict: group member {run_id}: {', '.join(exc.paths)}"
+        ) from exc
+    scope = sorted(
+        {
+            path
+            for member in members
+            for path in (member["pointer"].get("node") or {}).get("write_paths", ())
+        }
+    )
+    synthetic = {
+        **pointer,
+        "base_sha": primary,
+        "node": {**(pointer.get("node") or {}), "write_paths": scope},
+    }
+    records = []
+    commands = list(
+        dict.fromkeys(
+            str(member["pointer"].get("suite_command") or "") for member in members
+        )
+    )
+    for command in commands:
+        directory = (
+            runs.run_dir(str(group["run_id"]))
+            / "landing-measure"
+            / "groups"
+            / uuid.uuid4().hex
+            / hashlib.sha256(command.encode()).hexdigest()
+        )
+        measured = _measure_delivery(
+            {**synthetic, "suite_command": command},
+            str(group["run_id"]),
+            aggregate,
+            str(repo),
+            promoted=True,
+            request={
+                "config": dict(_measure_config(synthetic)),
+                "logs_dir": str(directory),
+                "primary": primary,
+            },
+        )
+        guard = _measure_guard(measured)
+        if guard:
+            from reckon.crew.pending_landing import save_group
+
+            group["refusal"] = {"signature": signature, "guard": guard}
+            save_group(group)
+            raise CrewError(guard)
+        records.append(measured.as_dict())
+    # Completion's publication check reads the leader's command and candidate.
+    # All other commands' receipts remain on the durable group itself.
+    _record_suite_evidence(
+        str(group["run_id"]),
+        landing_measure.Measurement.from_dict(records[0]),
+        promoted=True,
+    )
+    group.update(head=aggregate, primary=primary, measurements=records)
+    from reckon.crew.pending_landing import save_group
+
+    save_group(group)
+    return aggregate
+
+
 def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]:
     settled_landings = settled_landings or set()
     landed: list[str] = []
@@ -1955,6 +2175,7 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
     deferred: list[str] = []
     deferred_reasons: dict[str, str] = {}
     measured_this_pass = False
+    eligible = []
     live = sorted(runs.list_live(), key=_delivery_order)
     active_measurements = landing_measure.active_measurement_jobs(live)
     # One history read per project for the whole pass, not one per run: the
@@ -2045,6 +2266,11 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
 
         manual_reason = manual_landing_reason(pointer)
         if manual_reason:
+            from reckon.crew.recovery_classification import _promotion_command
+
+            remedy = _promotion_command(run_id, pointer, entries)
+            if "crew complete" in remedy:
+                remedy += " --land"
             previous = pointer.get("admission_landing") or {}
             if previous.get("guard") != manual_reason or previous.get("head") != head:
                 _record_attempt(
@@ -2055,7 +2281,7 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
                     code_stamp=_landing_code_stamp(),
                     review_stamp=manual_reason,
                     previous=previous,
-                    remedy=f"reckon crew complete --run {run_id} --gate passed --land",
+                    remedy=remedy,
                 )
                 obligations.append(
                     {
@@ -2250,6 +2476,34 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         if _landed_elsewhere(pointer, run_id):
             skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
+        eligible.append(
+            (
+                pointer,
+                run_id,
+                project,
+                head,
+                tree,
+                code_stamp,
+                review_stamp,
+                previous,
+                conflict_primary,
+            )
+        )
+    grouped = _queue_landing_groups(eligible)
+    requested.extend(grouped)
+    for (
+        pointer,
+        run_id,
+        project,
+        head,
+        tree,
+        code_stamp,
+        review_stamp,
+        previous,
+        primary,
+    ) in eligible:
+        if run_id in grouped:
+            continue
         command = str(pointer.get("suite_command") or "").strip()
         measured = (
             _stored_measurement(run_id, head, command, primary, pointer)
@@ -2396,6 +2650,8 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
             requested.append(run_id)
             continue
         if accepted:
+            from reckon.crew.stage_receipts import record_stage
+            record_stage(run_id, "landing")
             landed.append(run_id)
             try:
                 from reckon.crew import review_dispositions as dispositions_module

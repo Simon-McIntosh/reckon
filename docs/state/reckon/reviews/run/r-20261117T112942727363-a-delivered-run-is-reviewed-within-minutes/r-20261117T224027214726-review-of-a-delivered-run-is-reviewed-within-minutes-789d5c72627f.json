@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/resumption.py:3019 resumption.sweep -> recovery_review_dispatch.review_request_census",
+    "reckon/crew/resumption.py:3038 resumption.sweep -> report[\"reviews\"][\"failed\"] (the owed rows the obligation is appended to)",
+    "reckon/crew/station_obligations.py:96 record_sweep_report -> reads report[\"reviews\"][\"failed\"] and persists it per session",
+    "reckon/crew/station_obligations.py:202 _with_sweep_failures -> renders each persisted failure as a duty row",
+    "reckon/crew/admission/launching.py:360 note_review(pointer, \"review_admitted\") -> the receipt the census reads as launched_at",
+    "reckon/crew/dispatch_launch.py:4402 note_review(current, \"review_admitted\") -> the second writer of the launched_at receipt",
+    "reckon/crew/stage_receipts.py:29 STAGES -> the stage vocabulary review_stage_instants indexes by name"
+  ],
+  "completed_at": "2026-11-17T22:42:07.913Z",
+  "dispatched_at": "2026-11-17T22:41:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 4631,
+      "severity": "non-blocking",
+      "text": "def _stage_percentile is defined a second time at 4631 immediately after the first definition at 4617, character for character: the second shadows the first, so the first is dead and an edit to either copy can leave the other's behaviour silently in force; both came in with ebf70e3eda, in the commits gained since the review at 881e3fd9af."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 4645,
+      "severity": "non-blocking",
+      "text": "_inherit_review_priority is unreachable: git grep over 789d5c72 finds only its definition and no caller in reckon/ or tests/, so ~30 added lines including a docstring stating that the review request is given the reviewed run's priority can never run; the write it performs (priority_override, priority_override_set_at, priority_override_reason) duplicates the capability reckon/crew/queue_edit.py:564 reprioritise already owns, without extending it, and the fragment itself says this node does not implement priority inheritance."
+    },
+    {
+      "file": "tests/test_a_delivered_run_is_reviewed_within_minutes.py",
+      "line": 180,
+      "severity": "non-blocking",
+      "text": "assert census[\"request_lag_seconds\"][\"max\"] == row[\"request_lag_seconds\"] compares two values the census itself produced from the same single sample, so it holds for any max implementation over one element and cannot redden on the regression it claims to guard."
+    },
+    {
+      "file": "tests/test_a_delivered_run_is_reviewed_within_minutes.py",
+      "line": 179,
+      "severity": "non-blocking",
+      "text": "assert row[\"launch_lag_seconds\"] != row[\"request_lag_seconds\"] is satisfied by launch_lag_seconds being None, which is the value this fixture produces because it records no review_admitted receipt; the request-to-launch interval, half the node goal, therefore has no assertion that reddens if the review_admitted mapping at recovery_review_dispatch.py:4694 is dropped."
+    },
+    {
+      "file": "docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html",
+      "line": 73,
+      "severity": "non-blocking",
+      "text": "The fragment quotes '10 passed in 8.3 s' for the node's tests at the head, but no log in the run directory carries that summary: the scoped gate log is at c10e31115a with 61 tests, the head arm reads '68 passed in 51.14s', and the only ten-test run recorded is the red negative control ('3 failed, 7 passed'), so a quoted figure has no receipt a reader can open."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_delivered_run_is_reviewed_within_minutes.py:167-174 recompute the lag from the journal and the negative control reddens three cases, but no assertion covers a real review_admitted receipt, so line 179 holds on a null launch lag.",
+    "evidence": "after_suite-head.log records 68 passed EXIT=0 at 789d5c72627f and baseline_suite-head.log 58 passed EXIT=0 at 0c9f4fc8cd, and the negative control records 3 failed, 7 passed, EXIT=1, but the fragment's '68' figure is receipted while its '10 passed in 8.3 s' at line 73 is not.",
+    "fit": "The block at reckon/crew/recovery_review_dispatch.py:4600-4930 follows the module's commented-constant and docstringed-reader idiom, but carries two definitions of one function (4617, 4631) and an uncalled helper (4645).",
+    "goal_fidelity": "The two intervals are reported apart at reckon/crew/recovery_review_dispatch.py:4846-4925 and the obligation at 4849 reaches the duty rows via reckon/crew/resumption.py:3038, leaving only the surplus _inherit_review_priority as unimplemented prose.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:4645 writes priority_override against the owner at reckon/crew/queue_edit.py:564 instead of calling it, so this change both extends (review_stage_instants over stage_receipts.read_receipts, _stage_percentile over run_time_profile._percentile) and duplicates one capability.",
+    "scope_discipline": "The four diff paths (docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html, reckon/crew/recovery_review_dispatch.py, reckon/crew/resumption.py, tests/test_a_delivered_run_is_reviewed_within_minutes.py) are all inside the five declared write paths, and no file outside them was touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261117T224027214726-review-of-a-delivered-run-is-reviewed-within-minutes-789d5c72627f",
+  "reviewed_base_sha": "0c9f4fc8cd6b0b6ceb3e5463c427beacac7af388",
+  "reviewed_head_sha": "789d5c72627f68e698096ddb7f4039e414af717a",
+  "reviewed_run_id": "r-20261117T112942727363-a-delivered-run-is-reviewed-within-minutes",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 13,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T22:56:44.826862+00:00",
+  "total": 82,
+  "verdicts": {
+    "diff": "Read commit by commit over 0c9f4fc8cd..789d5c72627f: the two commits gained since the review at 881e3fd9af are ebf70e3eda (101 lines in recovery_review_dispatch.py, 27 in resumption.py, 189 in the test file, wiring the obligations into report[\"reviews\"][\"failed\"] and replacing the _nearest_rank quantile) and 789d5c72627f (19 lines in the evidence fragment); both also introduced the duplicated _stage_percentile at 4631 and the uncalled _inherit_review_priority at 4645.",
+    "done_when": "The done_when asks for the last 50 delivered runs on the live fleet with the request inside 120 s at p90 plus a held-tick test and a withheld-precondition obligation; the gate ran tests/test_a_delivered_run_is_reviewed_within_minutes.py beside the two importer files (68 passed, EXIT=0 at the head) and asserts the held-tick case at 120 s and the obligation at 599 s and 601 s, while the run's own live-census-20261117T2145Z.log reads 23 delivered non-review runs with a request-lag p90 of 917.1 s over five samples, so the test half is measured and the fleet half is recorded unmet.",
+    "goal": "The goal asks for a request inside 120 s of delivery, the request-to-launch interval recorded apart, and an obligation after ten minutes with its reason; reckon/crew/recovery_review_dispatch.py:4846-4925 reports the two intervals apart and 4849 raises the obligation, which reckon/crew/resumption.py:3038 now carries to the duty rows station_obligations.py:96 persists, so the previously unresolved reader gap is closed.",
+    "manifest": "The manifest of r-20261117T112942727363 records status complete with seven commits, both suite arms as JSON with revisions and logs, the negative-control path and the live census figures; it also records the two findings of the earlier review as answered at ebf70e3eda, which the diff confirms.",
+    "write_paths": "The diff carries four paths, each inside the five declared write paths (reckon/crew/recovery_review_dispatch.py, reckon/crew/resumption.py, tests/test_a_delivered_run_is_reviewed_within_minutes.py, docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes.html); docs/figures/dispatch-admission-and-landing-take-seconds/a-delivered-run-is-reviewed-within-minutes is declared and unused."
+  }
+}

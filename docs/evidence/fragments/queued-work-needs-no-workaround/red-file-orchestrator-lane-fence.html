@@ -1,0 +1,105 @@
+<section id="qwnw-red-file-orchestrator-lane-fence-arms">
+  <h2>Orchestrator lane fence: the rules hold, the payload reader did not</h2>
+
+  <p><strong>What was wrong.</strong> Three of the seven cases in
+  <code>tests/test_orchestrator_lane_fence.py</code> errored with
+  <code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1
+  (char 0)</code>. The failing line is
+  <code>tests/test_dispatch_names_its_backend.py:161</code>, the shared helper
+  the fence cases read their payload through:
+  <code>json.loads(result.output.splitlines()[0])</code>.</p>
+
+  <p><strong>Cause and verdict: test wrong.</strong> Since
+  <code>4a73e31fe3</code> the dispatch writes
+  <code>reckon: created run &lt;id&gt;</code> to stderr as its first durable
+  notice, and the product states the contract in that commit: "stdout remains
+  a single final JSON document". Click 8.2 changed
+  <code>Result.output</code> from a proxy for stdout into an interleaving of
+  stdout and stderr in write order, so the notice is now line 0 of the mixed
+  stream and the document is line 0 of <code>result.stdout</code>. The helper
+  encoded the old Click generation's stream shape, not a rule the code keeps.
+  No product rule broke: a probe through the real CLI shows stdout carrying
+  exactly one JSON document and stderr carrying only the notice.</p>
+
+  <p><strong>What changed.</strong> One helper in
+  <code>tests/test_dispatch_names_its_backend.py</code>: <code>_payload</code>
+  now parses <code>result.stdout</code>, and its docstring names the channel
+  and why the mixed stream cannot serve. No assertion is deleted or weakened;
+  every case still asserts the same declarations, states, discharges and
+  write order it did before.</p>
+
+  <h3 id="qwnw-red-file-orchestrator-lane-fence-figures">Measured</h3>
+
+  <table id="qwnw-red-file-orchestrator-lane-fence-table">
+    <caption>Each arm is a log under the run directory whose header lines name
+    the revision, tree and command and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead>
+      <tr><th>arm</th><th>revision / host</th><th>result</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>the gate, base arm</td>
+        <td><code>cd6f85d1db</code>, worktree, <code>SLURM_JOB_ID</code> unset</td>
+        <td>3 failed, 4 passed, <code>EXIT=1</code></td>
+        <td><code>logs/base-gate.log</code></td>
+      </tr>
+      <tr>
+        <td>the gate, head arm</td>
+        <td><code>afef6711f2</code>, batch job 1320194 on
+        <code>all_debug</code>/<code>98dci4-clu-3141</code>,
+        <code>SLURM_JOB_ID</code> unset (the same 7 passed was first run at
+        <code>76386c3ed4</code>, job 1320189)</td>
+        <td>7 passed, <code>EXIT=0</code></td>
+        <td><code>logs/head-gate-all-debug.log</code></td>
+      </tr>
+      <tr>
+        <td>the test file that owns the helper</td>
+        <td><code>76386c3ed4</code>, worktree</td>
+        <td>11 passed, <code>EXIT=0</code></td>
+        <td><code>logs/sibling-arm.log</code></td>
+      </tr>
+      <tr>
+        <td>the suite arms</td>
+        <td><code>cd6f85d1db</code> and <code>76386c3ed4</code>, worktree</td>
+        <td>58 passed <code>EXIT=0</code> in both</td>
+        <td><code>logs/base-suite.log</code>,
+        <code>logs/after-suite.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The suite arms are the promotion template resolved over each arm's own
+  tree:
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code>. Both arms
+  are 58 passed, so the helper change adds no failure. <code>ruff check</code>
+  reports nothing on the changed path; <code>ruff format --check</code> reports
+  the one pre-existing finding at
+  <code>tests/test_dispatch_names_its_backend.py:148</code>, which is present
+  byte-identically at the base revision and untouched by this commit.</p>
+
+  <h3 id="qwnw-red-file-orchestrator-lane-fence-control">Negative control</h3>
+
+  <p>The base arm reproduces the recorded defect: three failures, all
+  <code>JSONDecodeError</code> raised inside the helper before any assertion in
+  the case ran, and the string it could not parse is the stderr notice
+  <code>reckon: created run r-20261116T145227241976-fenced-order</code>.</p>
+
+  <ul>
+    <li><code>test_a_lane_declaring_nothing_launches_unstopped</code></li>
+    <li><code>test_the_stop_is_recorded_on_the_run_that_launched</code></li>
+    <li><code>test_nothing_is_written_before_the_stop</code></li>
+  </ul>
+
+  <h3 id="qwnw-red-file-orchestrator-lane-fence-outside">Outside scope</h3>
+
+  <p>Three other test files fail at the head arm for the same instrument defect,
+  each red before this change and each outside this node's measure. Sibling
+  nodes own them: <code>tests/test_routing_picker_key.py</code> (six cases),
+  <code>tests/test_every_launch_route_runs_the_resolved_command.py</code> (one),
+  <code>tests/test_a_node_names_its_inputs_and_measurement.py</code> (four, a
+  <code>KeyError: 'validation'</code> — a second, unrelated cause). The arm is
+  <code>logs/peers-json.log</code>: 10 failed, 69 passed, <code>EXIT=1</code>.</p>
+</section>

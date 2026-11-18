@@ -140,6 +140,38 @@ def test_a_field_added_after_the_request_was_stored_takes_its_default(
     assert rebuilt.admission_findings == []
 
 
+def test_a_required_field_the_stored_node_lacks_takes_an_empty_value(
+    queued_home: Path,
+) -> None:
+    """A pointer stored without a required field still rebuilds.
+
+    A queued request is stamped with its review contract at queue time, and
+    that stamp reads the node back out of the pointer. A node stored without a
+    required field — a pointer written before the field was declared, or a
+    request seeded by hand — raised ``TypeError`` out of the whole dispatch
+    instead of rebuilding, so the run was never queued at all.
+    """
+    run_directory = runs.run_dir(RUN_ID)
+    stored = _dispatched(run_directory).as_dict()
+    for name in ("id", "goal", "plan"):
+        stored.pop(name)
+
+    rebuilt = _node_from_pointer({"run_id": RUN_ID, "node": stored})
+
+    assert rebuilt.id == ""
+    assert rebuilt.goal == ""
+    assert rebuilt.plan == ""
+    # The pointer still names the run, so the rebuild keeps every field it did
+    # carry rather than discarding the node.
+    assert rebuilt.role == "review"
+
+    stored["id"] = "node-queued"
+    stored["plan"] = "a-queue-holds-the-whole-plan"
+    partial = _node_from_pointer({"run_id": RUN_ID, "node": None})
+    assert partial.goal == ""
+    assert partial.role == "implement"
+
+
 def test_the_real_crew_home_is_untouched(queued_home: Path) -> None:
     assert runs.crew_home().is_relative_to(queued_home)
     real_home = Path.home() / ".config" / "reckon" / "crew"

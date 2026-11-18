@@ -346,64 +346,53 @@ def live_work_populations(
     from reckon.crew.recovery_memo import _classification_input_tick
     from reckon.resources import resource_scan_scope
 
-    grouped: dict[str, list[dict[str, Any]]] = {}
-    for pointer in snapshot:
-        grouped.setdefault(str(pointer.get("project") or ""), []).append(dict(pointer))
-    token = obligations._VIEW_LIVE_POINTERS.set(
-        {project: tuple(rows) for project, rows in grouped.items()}
-    )
-    # The in-flight answer the duties share is keyed on this pass's snapshot,
-    # so it is published with the snapshot and dropped with it rather than left
-    # holding the pass that produced it.
-    reviews_token = obligations._VIEW_REVIEWS_IN_FLIGHT.set(None)
-    try:
-        # Every terminal run's duty reads the review store, so the pass shares
-        # one enumeration of each store directory across all of them, as the
-        # station's classify stage does; per run, it grew with runs times store.
-        # The pass reads plans too, and resolving one checks its identity
-        # against every sibling plan file, so it shares one docs-tree scan and
-        # identity index the same way. The pass writes nothing, which is the
-        # condition the scan scope asks.
-        with (
-            process_signal.process_table_walk_once(),
-            _classification_input_tick(),
-            resource_scan_scope(),
-        ):
-            for pointer in snapshot:
-                if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES or (
-                    not read_terminal_duties and _record_has_pending_work(pointer)
-                ):
-                    project_live = True
-                    owner = str(pointer.get("session") or "")
-                    if owner:
-                        sessions.add(owner)
-                    else:
-                        unowned = True
-                    continue
-                if not read_terminal_duties:
-                    continue
-                project = str(pointer.get("project") or "")
-                if project not in graces:
-                    graces[project] = _review_grace(project)
-                pair = (project, str(pointer.get("session") or ""))
-                if pair not in in_flight:
-                    in_flight[pair] = obligations._live_review_runs(*pair)
-                if not run_owes_its_coordinator(
-                    pointer,
-                    grace=graces[project],
-                    reviews_in_flight=in_flight[pair],
-                    **duty_inputs,
-                ):
-                    continue
+    # Every terminal run's duty reads the review store, so the pass shares
+    # one enumeration of each store directory across all of them, as the
+    # station's classify stage does; per run, it grew with runs times store.
+    # The pass reads plans too, and resolving one checks its identity
+    # against every sibling plan file, so it shares one docs-tree scan and
+    # identity index the same way. The pass writes nothing, which is the
+    # condition the scan scope asks. The pointer snapshot, and the in-flight
+    # review answer keyed on it, are published and dropped by the one entry
+    # point that owns them.
+    with (
+        obligations.live_pointer_snapshot(pointers=snapshot),
+        process_signal.process_table_walk_once(),
+        _classification_input_tick(),
+        resource_scan_scope(),
+    ):
+        for pointer in snapshot:
+            if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES or (
+                not read_terminal_duties and _record_has_pending_work(pointer)
+            ):
                 project_live = True
                 owner = str(pointer.get("session") or "")
                 if owner:
                     sessions.add(owner)
                 else:
                     unowned = True
-    finally:
-        obligations._VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
-        obligations._VIEW_LIVE_POINTERS.reset(token)
+                continue
+            if not read_terminal_duties:
+                continue
+            project = str(pointer.get("project") or "")
+            if project not in graces:
+                graces[project] = _review_grace(project)
+            pair = (project, str(pointer.get("session") or ""))
+            if pair not in in_flight:
+                in_flight[pair] = obligations._live_review_runs(*pair)
+            if not run_owes_its_coordinator(
+                pointer,
+                grace=graces[project],
+                reviews_in_flight=in_flight[pair],
+                **duty_inputs,
+            ):
+                continue
+            project_live = True
+            owner = str(pointer.get("session") or "")
+            if owner:
+                sessions.add(owner)
+            else:
+                unowned = True
     return project_live, unowned, sorted(sessions)
 
 

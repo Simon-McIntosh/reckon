@@ -1,0 +1,207 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Changing fixture BAD states or actual observations from green dispatch, inherited-only primary and mixed head fails these independent runner controls.",
+      "lines": [
+        83,
+        84,
+        187,
+        188,
+        189
+      ]
+    },
+    {
+      "failure_condition": "Product requests a base other than the actual primary commit, another head, another suite, or a partition other than all_debug; these constrain the mocked measurement request, not the real runner.",
+      "lines": [
+        145,
+        146,
+        147,
+        148
+      ]
+    },
+    {
+      "failure_condition": "Restoring baseline-only subtraction charges both IDs and fails 192; accepting owned failures misses raises at 190; dropping inherited evidence or mutating dispatch baseline breaks 194-196.",
+      "lines": [
+        190,
+        192,
+        194,
+        195,
+        196
+      ]
+    },
+    {
+      "failure_condition": "Restoring the former verdict guard refuses before these assertions; retaining inherited IDs as added breaks clean/empty checks; dropping receipt evidence or mutating baseline breaks 210-214.",
+      "lines": [
+        208,
+        209,
+        210,
+        211,
+        214
+      ]
+    },
+    {
+      "failure_condition": "Excusing a newer primary failure that the run never merged removes INTRODUCED from the refusal or records the wrong primary identity.",
+      "lines": [
+        219,
+        221,
+        222
+      ]
+    },
+    {
+      "failure_condition": "Accepting an incomplete, wrong-revision, wrong-command, disagreeing-ID or summary-less receipt misses the expected SuiteDeltaError.",
+      "lines": [
+        245
+      ]
+    },
+    {
+      "failure_condition": "Dry run reports clean, plans the wrong revision/command, invokes measurement, mutates pointer, or creates record directory.",
+      "lines": [
+        251,
+        252,
+        253,
+        254,
+        255,
+        256
+      ]
+    },
+    {
+      "failure_condition": "Refusing inherited-only head breaks clean checks; always remeasuring breaks singleton request count; trusting a cache whose log changed misses expected error.",
+      "lines": [
+        261,
+        262,
+        263,
+        265
+      ]
+    },
+    {
+      "failure_condition": "Deferring an unrelated red gate misses CrewError; excusing unmerged primary IDs misses SuiteDeltaError or its independent INTRODUCED expectation; unnecessary primary measurement breaks empty list.",
+      "lines": [
+        271,
+        288,
+        290,
+        291
+      ]
+    },
+    {
+      "failure_condition": "Selecting the stale/first merge returns a SHA different from the independently committed latest primary.",
+      "lines": [
+        299
+      ]
+    },
+    {
+      "failure_condition": "Measuring or transplanting a scoped test absent on primary returns an arm or invokes the stub instead of returning None with no measurement.",
+      "lines": [
+        315,
+        316
+      ]
+    }
+  ],
+  "assertion_independence": "No regression assertion merely echoes an input so as to survive the declared baseline-only subtraction defect; metadata comparisons use actual fixture commits and measurement-request assertions at 145-148, but the real runner and composite CTest logs are not exercised.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete_run gate checks at line 1336",
+    "reckon/crew/promotion.py:complete_run suite evaluator at line 1381",
+    "reckon/crew/promotion_evidence.py:_require_verdict_matches_exit_status",
+    "reckon/crew/promotion_records.py:_evaluate_suite_delta"
+  ],
+  "completed_at": "2026-11-17T12:38:29Z",
+  "dispatched_at": "2026-11-17T12:31:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-base-failure-is-not-charged-to-the-run",
+      "recorded_at": "2026-11-17T12:54:25.895099+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": "1282",
+      "severity": "blocking",
+      "text": "blocking: the nested usable validator duplicates promotion_evidence.py:_receipt_mismatches rather than extending or wrapping that owner and unconditionally calls review.last_run_text, whereas _text_the_receipt_describes preserves the whole log for multi-label CTest gates; when an earlier label fails and the last label passes, a valid primary receipt listing all inherited failures is rejected, so promotion still refuses the run this change should admit; reuse the format-aware receipt owner with the required completion and exit checks and cover this composite-log case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single commit 30ebc5c13551530a260841f17f2847f1ed16b481 against e76577d9450dd76d22e4782b4a882b7eb997a0d3; promotion_evidence.py adds merge-parent selection and exact-gate deferral, promotion_records.py adds primary attribution, and the new test file adds 13 cases.",
+    "done_when": "prompt.txt:220 and live plan section s17 require the mixed-failure case, inherited-only admission, red base control and zero importer delta; focused-final.log records 18 passed, negative-control.log records both core cases failed, and importer logs retain the same four failure IDs.",
+    "goal": "prompt.txt:38 requires inherited failure attribution to the measured merged-primary revision; promotion_records.py:1564 implements it for single-run logs but the primary receipt reader loses earlier CTest label runs.",
+    "manifest": "manifest.md records the sole full commit, completed 58/71-test suite arms, focused and importer logs, and base/head failure IDs consistent with the captured summaries and terminal EXIT lines.",
+    "write_paths": "manifest.md:3 and resume-1-advice.txt:1 grant all three changed files, including the explicitly widened reckon/crew/promotion_records.py path; the diff changes only those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_base_failure_is_not_charged_to_the_run.py:192 fails when the inherited ID is charged and :208 fails when inherited-only promotion refuses, as negative-control.log demonstrates, but the tests mock the measurement seam and never exercise multi-label receipt validation.",
+    "evidence": "tests/test_a_base_failure_is_not_charged_to_the_run.py:186 and :199 assert the declared mixed and inherited-only outcomes, and focused-final.log, negative-control.log and both importer logs record their measured results with zero added importer failures.",
+    "fit": "reckon/crew/promotion_evidence.py:1874 and promotion_records.py:1244 follow their existing owners' mapping, private-helper and deferred-import idioms, and the three touched paths introduce no forbidden source identifiers or provenance comments.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:1564 removes measured inherited IDs while preserving the dispatch baseline, but its receipt reader at line 1282 cannot retain every run of a supported multi-label CTest gate.",
+    "reuse": "reckon/crew/promotion_records.py:1271 duplicates receipt-to-log validation already owned by promotion_evidence.py:_receipt_mismatches at line 1589 and bypasses its format-aware _text_the_receipt_describes at line 1572, although measurement and failure-set subtraction reuse their existing owners.",
+    "scope_discipline": "all three paths in commit 30ebc5c13551530a260841f17f2847f1ed16b481 are granted by manifest.md:3 and the explicit promotion_records.py extension in resume-1-advice.txt:1, and all changes implement or test the stated attribution behavior."
+  },
+  "negative_control_evidence": {
+    "failure_ids": [
+      "tests/test_a_base_failure_is_not_charged_to_the_run.py::test_only_the_runs_own_failure_is_added_and_the_primary_id_is_recorded",
+      "tests/test_a_base_failure_is_not_charged_to_the_run.py::test_removing_the_runs_failure_admits_promotion_with_its_primary_receipt"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/negative-control.log",
+    "summary": "2 failed in 3.98s"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires inherited failure attribution to the measured merged-primary revision; promotion_records.py:1564 implements it for single-run logs but the primary receipt reader loses earlier CTest label runs.\nVERDICT done_when: prompt.txt:220 and live plan section s17 require the mixed-failure case, inherited-only admission, red base control and zero importer delta; focused-final.log records 18 passed, negative-control.log records both core cases failed, and importer logs retain the same four failure IDs.\nVERDICT write_paths: manifest.md:3 and resume-1-advice.txt:1 grant all three changed files, including the explicitly widened reckon/crew/promotion_records.py path; the diff changes only those paths.\nVERDICT manifest: manifest.md records the sole full commit, completed 58/71-test suite arms, focused and importer logs, and base/head failure IDs consistent with the captured summaries and terminal EXIT lines.\nVERDICT diff: read the single commit 30ebc5c13551530a260841f17f2847f1ed16b481 against e76577d9450dd76d22e4782b4a882b7eb997a0d3; promotion_evidence.py adds merge-parent selection and exact-gate deferral, promotion_records.py adds primary attribution, and the new test file adds 13 cases.\nCALL_SITES: reckon/crew/promotion.py:complete_run gate checks at line 1336, reckon/crew/promotion.py:complete_run suite evaluator at line 1381, reckon/crew/promotion_evidence.py:_require_verdict_matches_exit_status, reckon/crew/promotion_records.py:_evaluate_suite_delta\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:1564 removes measured inherited IDs while preserving the dispatch baseline, but its receipt reader at line 1282 cannot retain every run of a supported multi-label CTest gate.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_base_failure_is_not_charged_to_the_run.py:186 and :199 assert the declared mixed and inherited-only outcomes, and focused-final.log, negative-control.log and both importer logs record their measured results with zero added importer failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three paths in commit 30ebc5c13551530a260841f17f2847f1ed16b481 are granted by manifest.md:3 and the explicit promotion_records.py extension in resume-1-advice.txt:1, and all changes implement or test the stated attribution behavior.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_base_failure_is_not_charged_to_the_run.py:192 fails when the inherited ID is charged and :208 fails when inherited-only promotion refuses, as negative-control.log demonstrates, but the tests mock the measurement seam and never exercise multi-label receipt validation.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_evidence.py:1874 and promotion_records.py:1244 follow their existing owners' mapping, private-helper and deferred-import idioms, and the three touched paths introduce no forbidden source identifiers or provenance comments.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion_records.py:1271 duplicates receipt-to-log validation already owned by promotion_evidence.py:_receipt_mismatches at line 1589 and bypasses its format-aware _text_the_receipt_describes at line 1572, although measurement and failure-set subtraction reuse their existing owners.\nFINDING reckon/crew/promotion_records.py:1282 blocking: the nested usable validator duplicates promotion_evidence.py:_receipt_mismatches rather than extending or wrapping that owner and unconditionally calls review.last_run_text, whereas _text_the_receipt_describes preserves the whole log for multi-label CTest gates; when an earlier label fails and the last label passes, a valid primary receipt listing all inherited failures is rejected, so promotion still refuses the run this change should admit; reuse the format-aware receipt owner with the required completion and exit checks and cover this composite-log case.\n",
+  "reproduction": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/reproduction.log",
+    "positive_control": "baseline already includes inherited id: clean; added_failure_ids = []",
+    "quote": "own id removed: refused; added_failure_ids = [tests/test_charge.py::test_inherited]"
+  },
+  "reuse_search": {
+    "added_definitions": "Merged-primary revision and exact-gate selection extend promotion evidence; primary baseline scheduling wraps existing measurement; usable forks the receipt owner; git/commit/observe, scenario and its write/measure/mutate closures, evaluate/remove_owned_failure/gate construct an isolated test fixture.",
+    "owners_opened": [
+      "promotion_evidence.py:_merge_repair_scope (scope measurement differs from exact imported parent selection)",
+      "promotion_evidence.py:_receipt_mismatches and _text_the_receipt_describes (duplicated by usable)",
+      "promotion_records.py:_measure_missing_arms and landing_measure.py:armed_observations (reused)"
+    ],
+    "searched": "merge-parent/first-parent and primary-revision capability in reckon/crew; receipt/log agreement in promotion_evidence.py, promotion_records.py, review.py and landing_measure.py"
+  },
+  "review_run_id": "r-20261117T122916805015-review-of-a-base-failure-is-not-charged-to-the-run-30ebc5c13551",
+  "reviewed_base_sha": "e76577d9450dd76d22e4782b4a882b7eb997a0d3",
+  "reviewed_head_sha": "30ebc5c13551530a260841f17f2847f1ed16b481",
+  "reviewed_run_id": "r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "source_suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": "3a3965fe6b2f44671395fc863aaeb4befb278b1ee5d60ce22bca6431e33788ee",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/after_suite-1794917574511832162.log",
+      "revision": "30ebc5c13551530a260841f17f2847f1ed16b481",
+      "summary": "71 passed in 59.70s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": "a2ef388af061ad74ab997231307d628696194e536a084fa1b75d95bc3c7503c4",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T114152407073-a-base-failure-is-not-charged-to-the-run/baseline_suite-1794917499423167229.log",
+      "revision": "e76577d9450dd76d22e4782b4a882b7eb997a0d3",
+      "summary": "58 passed in 34.44s"
+    }
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:41:58.878229+00:00",
+  "total": 99
+}

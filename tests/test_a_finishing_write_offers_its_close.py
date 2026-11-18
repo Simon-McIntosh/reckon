@@ -224,7 +224,9 @@ def test_a_failed_read_leaves_the_write_landed(setup, monkeypatch):
     def _boom(*args, **kwargs):
         raise RuntimeError("the roadmap walk is unavailable")
 
-    monkeypatch.setattr(mcp_module, "_roadmap_scoped", _boom)
+    from reckon import mcp_deadlines
+
+    monkeypatch.setattr(mcp_deadlines, "_plan_readiness_report", _boom)
     result = _edit(
         docs_dir,
         [{"op": "set", "path": "section_declarations.s2", "value": "done"}],

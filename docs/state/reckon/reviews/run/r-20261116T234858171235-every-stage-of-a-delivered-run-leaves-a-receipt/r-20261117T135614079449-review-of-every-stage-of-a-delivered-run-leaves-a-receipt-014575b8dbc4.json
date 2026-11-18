@@ -1,0 +1,748 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 13,
+  "added_failure_ids": [
+    "tests/test_a_limit_reset_reaches_every_pane.py::test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane",
+    "tests/test_an_admitted_request_continues_its_row.py::test_session_counts_scope_each_sessions_own_figures_without_a_live_read",
+    "tests/test_crew_recovery.py::test_an_unowned_snapshot_stays_counted_for_a_scoped_reader",
+    "tests/test_crew_recovery.py::test_fleet_counts_scope_to_the_session_the_reader_follows",
+    "tests/test_crew_recovery.py::test_fleet_counts_still_partition_the_runs_in_flight",
+    "tests/test_crew_recovery.py::test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path",
+    "tests/test_crew_ticker.py::test_a_count_above_the_fixed_width_widens_its_own_row",
+    "tests/test_crew_ticker.py::test_counter_cells_stay_apart_at_every_digit_width",
+    "tests/test_ledger.py::test_explicit_promotion_stamp_reaches_every_duration_consumer",
+    "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_unknown_spend_and_measured_zero_render_differently",
+    "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_promotion",
+    "tests/test_the_pane_counts_reviews_under_r.py::test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s",
+    "tests/test_the_pane_speaks_seven_words.py::test_counter_labels_and_hues_share_the_pane_words"
+  ],
+  "added_failures_note": "13 raw added identities against the manifest historical baseline; all thirteen occur at the newer primary. This is not evidence that these unrelated primary changes were introduced by receipt hooks.",
+  "assertion_audit": [
+    {
+      "assertion": "assert not report[\"dispatched\"]",
+      "fails_if": "Removing real promotion request/start/outcome hooks, changing refusal propagation or rewriting the append-only journal breaks the expected phase, error or prefix assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 141,
+      "test": "_lifecycle"
+    },
+    {
+      "assertion": "assert requests.read_promotion(run_id)[\"error\"] == \"review requires a repair\"",
+      "fails_if": "Removing real promotion request/start/outcome hooks, changing refusal propagation or rewriting the append-only journal breaks the expected phase, error or prefix assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 157,
+      "test": "_lifecycle"
+    },
+    {
+      "assertion": "assert requests.read_promotion(run_id)[\"phase\"] == requests.PROMOTED",
+      "fails_if": "Removing real promotion request/start/outcome hooks, changing refusal propagation or rewriting the append-only journal breaks the expected phase, error or prefix assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 162,
+      "test": "_lifecycle"
+    },
+    {
+      "assertion": "assert receipts.receipt_path(run_id).read_bytes().startswith(prefix)",
+      "fails_if": "Removing real promotion request/start/outcome hooks, changing refusal propagation or rewriting the append-only journal breaks the expected phase, error or prefix assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 163,
+      "test": "_lifecycle"
+    },
+    {
+      "assertion": "assert [row[\"stage\"] for row in rows] == [\n        \"delivery_recorded\",\n        \"delivery_shown\",\n        \"review_requested\",\n        \"review_admitted\",\n        \"review_started\",\n        \"review_record_written\",\n        \"promotion_requested\",\n        \"promotion_attempt\",\n        \"promotion_outcome\",\n        \"promotion_requested\",\n        \"promotion_attempt\",\n        \"promotion_outcome\",\n        \"promotion_settled\",\n        \"landing\",\n    ]",
+      "fails_if": "Omitting, reordering or deduplicating distinct lifecycle events or losing the refusal reason breaks the literal ordered stages, outcome, instant-order or distinct-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 171,
+      "test": "test_delivery_review_refusal_retry_and_landing_keep_every_instant"
+    },
+    {
+      "assertion": "assert [row[\"at\"] for row in rows] == sorted(row[\"at\"] for row in rows)",
+      "fails_if": "Omitting, reordering or deduplicating distinct lifecycle events or losing the refusal reason breaks the literal ordered stages, outcome, instant-order or distinct-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 187,
+      "test": "test_delivery_review_refusal_retry_and_landing_keep_every_instant"
+    },
+    {
+      "assertion": "assert outcomes[0][\"outcome\"] == requests.REFUSED",
+      "fails_if": "Omitting, reordering or deduplicating distinct lifecycle events or losing the refusal reason breaks the literal ordered stages, outcome, instant-order or distinct-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 189,
+      "test": "test_delivery_review_refusal_retry_and_landing_keep_every_instant"
+    },
+    {
+      "assertion": "assert outcomes[0][\"reason\"] == \"review requires a repair\"",
+      "fails_if": "Omitting, reordering or deduplicating distinct lifecycle events or losing the refusal reason breaks the literal ordered stages, outcome, instant-order or distinct-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 190,
+      "test": "test_delivery_review_refusal_retry_and_landing_keep_every_instant"
+    },
+    {
+      "assertion": "assert outcomes[1][\"outcome\"] == requests.PROMOTED",
+      "fails_if": "Omitting, reordering or deduplicating distinct lifecycle events or losing the refusal reason breaks the literal ordered stages, outcome, instant-order or distinct-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 191,
+      "test": "test_delivery_review_refusal_retry_and_landing_keep_every_instant"
+    },
+    {
+      "assertion": "assert len({row[\"attempt\"] for row in outcomes}) == 2",
+      "fails_if": "Omitting, reordering or deduplicating distinct lifecycle events or losing the refusal reason breaks the literal ordered stages, outcome, instant-order or distinct-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 192,
+      "test": "test_delivery_review_refusal_retry_and_landing_keep_every_instant"
+    },
+    {
+      "assertion": "assert census[\"unread_runs\"] == []",
+      "fails_if": "Dropping a fixture run or interval, labeling a complete interval unknown, overlapping intervals or double-counting durations breaks the literal count, adjacency, duration or sum assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 200,
+      "test": "test_ten_run_census_leaves_no_interval_unattributed"
+    },
+    {
+      "assertion": "assert census[\"unknown_seconds\"] == 0, census",
+      "fails_if": "Dropping a fixture run or interval, labeling a complete interval unknown, overlapping intervals or double-counting durations breaks the literal count, adjacency, duration or sum assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 201,
+      "test": "test_ten_run_census_leaves_no_interval_unattributed"
+    },
+    {
+      "assertion": "assert len(census[\"intervals\"]) == 130",
+      "fails_if": "Dropping a fixture run or interval, labeling a complete interval unknown, overlapping intervals or double-counting durations breaks the literal count, adjacency, duration or sum assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 202,
+      "test": "test_ten_run_census_leaves_no_interval_unattributed"
+    },
+    {
+      "assertion": "assert sum(row[\"seconds\"] for row in intervals) == duration > 0",
+      "fails_if": "Dropping a fixture run or interval, labeling a complete interval unknown, overlapping intervals or double-counting durations breaks the literal count, adjacency, duration or sum assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 211,
+      "test": "test_ten_run_census_leaves_no_interval_unattributed"
+    },
+    {
+      "assertion": "assert all(\n            left[\"end\"] == right[\"start\"]\n            for left, right in itertools.pairwise(intervals)\n        )",
+      "fails_if": "Dropping a fixture run or interval, labeling a complete interval unknown, overlapping intervals or double-counting durations breaks the literal count, adjacency, duration or sum assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 212,
+      "test": "test_ten_run_census_leaves_no_interval_unattributed"
+    },
+    {
+      "assertion": "assert sum(census[\"seconds_by_stage\"].values()) == total",
+      "fails_if": "Dropping a fixture run or interval, labeling a complete interval unknown, overlapping intervals or double-counting durations breaks the literal count, adjacency, duration or sum assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 217,
+      "test": "test_ten_run_census_leaves_no_interval_unattributed"
+    },
+    {
+      "assertion": "assert census[\"unknown_seconds\"] > 0",
+      "fails_if": "Restoring a census that assigns the suppressed review-admission gap to a known stage or zero duration breaks the positive unknown duration and unknown-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 232,
+      "test": "test_a_suppressed_receipt_reports_unknown_time"
+    },
+    {
+      "assertion": "assert any(row[\"stage\"] == \"unknown\" for row in census[\"intervals\"])",
+      "fails_if": "Restoring a census that assigns the suppressed review-admission gap to a known stage or zero duration breaks the positive unknown duration and unknown-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 233,
+      "test": "test_a_suppressed_receipt_reports_unknown_time"
+    },
+    {
+      "assertion": "assert len(rows) == 150",
+      "fails_if": "Losing attempts, omitting truncation markers, exceeding the literal 16000-byte bound, modifying an existing prefix or failing to append overflow breaks these assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 254,
+      "test": "test_fifty_attempts_fit_and_never_rewrite_a_receipt"
+    },
+    {
+      "assertion": "assert not any(row[\"stage\"] == \"overflow\" for row in rows)",
+      "fails_if": "Losing attempts, omitting truncation markers, exceeding the literal 16000-byte bound, modifying an existing prefix or failing to append overflow breaks these assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 255,
+      "test": "test_fifty_attempts_fit_and_never_rewrite_a_receipt"
+    },
+    {
+      "assertion": "assert all(\n        row[\"reason\"].endswith(\"\u2026\")\n        for row in rows\n        if row[\"stage\"] == \"promotion_outcome\"\n    )",
+      "fails_if": "Losing attempts, omitting truncation markers, exceeding the literal 16000-byte bound, modifying an existing prefix or failing to append overflow breaks these assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 256,
+      "test": "test_fifty_attempts_fit_and_never_rewrite_a_receipt"
+    },
+    {
+      "assertion": "assert path.stat().st_size < 16_000",
+      "fails_if": "Losing attempts, omitting truncation markers, exceeding the literal 16000-byte bound, modifying an existing prefix or failing to append overflow breaks these assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 262,
+      "test": "test_fifty_attempts_fit_and_never_rewrite_a_receipt"
+    },
+    {
+      "assertion": "assert path.read_bytes().startswith(prefix)",
+      "fails_if": "Losing attempts, omitting truncation markers, exceeding the literal 16000-byte bound, modifying an existing prefix or failing to append overflow breaks these assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 267,
+      "test": "test_fifty_attempts_fit_and_never_rewrite_a_receipt"
+    },
+    {
+      "assertion": "assert path.stat().st_size <= receipts.MAX_BYTES",
+      "fails_if": "Losing attempts, omitting truncation markers, exceeding the literal 16000-byte bound, modifying an existing prefix or failing to append overflow breaks these assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 268,
+      "test": "test_fifty_attempts_fit_and_never_rewrite_a_receipt"
+    },
+    {
+      "assertion": "assert receipts.read_receipts(run_id)[-1][\"stage\"] == \"overflow\"",
+      "fails_if": "Losing attempts, omitting truncation markers, exceeding the literal 16000-byte bound, modifying an existing prefix or failing to append overflow breaks these assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 269,
+      "test": "test_fifty_attempts_fit_and_never_rewrite_a_receipt"
+    },
+    {
+      "assertion": "assert receipts.receipt_path(\"r-replayed\").read_bytes() == before",
+      "fails_if": "Appending duplicate delivery observations or treating a working transition as delivered breaks the unchanged-byte and literal count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 276,
+      "test": "test_replayed_delivery_preserves_its_first_instant"
+    },
+    {
+      "assertion": "assert len(receipts.read_receipts(\"r-replayed\")) == 1",
+      "fails_if": "Appending duplicate delivery observations or treating a working transition as delivered breaks the unchanged-byte and literal count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 277,
+      "test": "test_replayed_delivery_preserves_its_first_instant"
+    },
+    {
+      "assertion": "assert len(receipts.read_receipts(\"r-replayed\")) == 1",
+      "fails_if": "Appending duplicate delivery observations or treating a working transition as delivered breaks the unchanged-byte and literal count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 279,
+      "test": "test_replayed_delivery_preserves_its_first_instant"
+    },
+    {
+      "assertion": "assert receipts.receipt_path(\"r-durable\").read_bytes() == before",
+      "fails_if": "Keeping receipts only in the rewritten request or dropping its refusal reason breaks the independent journal-byte and literal-reason assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 289,
+      "test": "test_receipts_survive_a_request_rewrite_and_removal"
+    },
+    {
+      "assertion": "assert receipts.read_receipts(\"r-durable\")[-1][\"reason\"] == \"review incomplete\"",
+      "fails_if": "Keeping receipts only in the rewritten request or dropping its refusal reason breaks the independent journal-byte and literal-reason assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 290,
+      "test": "test_receipts_survive_a_request_rewrite_and_removal"
+    },
+    {
+      "assertion": "assert census[\"unknown_seconds\"] > 0",
+      "fails_if": "Ignoring a corrupt append without attributing an unknown interval makes the asserted positive unknown duration zero.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 299,
+      "test": "test_an_interrupted_append_is_unknown"
+    },
+    {
+      "assertion": "assert receipts.read_receipts(\"r-absent\") == []",
+      "fails_if": "Inventing events for an absent run or omitting that run from unread_runs breaks the literal empty-receipt or unread-identity assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 303,
+      "test": "test_reading_an_absent_run_reports_it_unread"
+    },
+    {
+      "assertion": "assert receipts.stage_census([\"r-absent\"])[\"unread_runs\"] == [\"r-absent\"]",
+      "fails_if": "Inventing events for an absent run or omitting that run from unread_runs breaks the literal empty-receipt or unread-identity assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 304,
+      "test": "test_reading_an_absent_run_reports_it_unread"
+    },
+    {
+      "assertion": "assert census[\"unknown_seconds\"] == 0",
+      "fails_if": "Reinstating stage = left[stage] after a late pane display mislabels the fourth interval and breaks its literal review_admitted expectation.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 316,
+      "test": "test_late_display_does_not_make_a_complete_history_unknown"
+    },
+    {
+      "assertion": "assert census[\"intervals\"][3][\"stage\"] == \"review_admitted\"",
+      "fails_if": "Reinstating stage = left[stage] after a late pane display mislabels the fourth interval and breaks its literal review_admitted expectation.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 317,
+      "test": "test_late_display_does_not_make_a_complete_history_unknown"
+    },
+    {
+      "assertion": "assert census[\"unknown_seconds\"] > 0",
+      "fails_if": "Attributing the overflow tail to a known stage or discarding the known prefix breaks the literal unknown/known-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 327,
+      "test": "test_saturation_accounts_for_the_tail_as_unknown"
+    },
+    {
+      "assertion": "assert census[\"intervals\"][-1][\"stage\"] == \"unknown\"",
+      "fails_if": "Attributing the overflow tail to a known stage or discarding the known prefix breaks the literal unknown/known-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 328,
+      "test": "test_saturation_accounts_for_the_tail_as_unknown"
+    },
+    {
+      "assertion": "assert census[\"intervals\"][0][\"stage\"] == \"delivery_recorded\"",
+      "fails_if": "Attributing the overflow tail to a known stage or discarding the known prefix breaks the literal unknown/known-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 329,
+      "test": "test_saturation_accounts_for_the_tail_as_unknown"
+    },
+    {
+      "assertion": "assert result.exit_code == 0, result.output",
+      "fails_if": "Removing the follower display hook or recording a JSON-only event as shown breaks the mode-dependent receipt membership assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 358,
+      "test": "test_only_a_delivery_printed_to_its_own_pane_is_shown"
+    },
+    {
+      "assertion": "assert (\"delivery_shown\" in stages) is not json_output",
+      "fails_if": "Removing the follower display hook or recording a JSON-only event as shown breaks the mode-dependent receipt membership assertion.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 360,
+      "test": "test_only_a_delivery_printed_to_its_own_pane_is_shown"
+    },
+    {
+      "assertion": "assert dispatch_launch._supervisor_spawn_worker(spec) == 123",
+      "fails_if": "Removing the actual supervisor-spawn hook breaks the literal admitted/started stage list independently of mocked process creation.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 416,
+      "test": "test_worker_start_is_recorded_at_the_actual_spawn"
+    },
+    {
+      "assertion": "assert [row[\"stage\"] for row in receipts.read_receipts(source)] == [\n        \"review_admitted\",\n        \"review_started\",\n    ]",
+      "fails_if": "Removing the actual supervisor-spawn hook breaks the literal admitted/started stage list independently of mocked process creation.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 417,
+      "test": "test_worker_start_is_recorded_at_the_actual_spawn"
+    },
+    {
+      "assertion": "assert len(rows) == 2",
+      "fails_if": "Reinstating prefix truncation for long identities merges the two different heads and breaks the literal two-row and unequal-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 428,
+      "test": "test_long_review_ids_remain_distinct_at_their_head_suffix"
+    },
+    {
+      "assertion": "assert rows[0][\"attempt\"] != rows[1][\"attempt\"]",
+      "fails_if": "Reinstating prefix truncation for long identities merges the two different heads and breaks the literal two-row and unequal-attempt assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 429,
+      "test": "test_long_review_ids_remain_distinct_at_their_head_suffix"
+    },
+    {
+      "assertion": "assert [row[\"stage\"] for row in receipts.read_receipts(run_id)] == [\n        \"delivery_recorded\"\n    ]",
+      "fails_if": "Removing supervisor delivery recording makes its immediate literal delivery_recorded expectation fail; appending monitor duplicates breaks byte equality.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 447,
+      "test": "test_supervisor_records_delivery_without_waiting_for_the_monitor"
+    },
+    {
+      "assertion": "assert receipts.receipt_path(run_id).read_bytes() == before",
+      "fails_if": "Removing supervisor delivery recording makes its immediate literal delivery_recorded expectation fail; appending monitor duplicates breaks byte equality.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 452,
+      "test": "test_supervisor_records_delivery_without_waiting_for_the_monitor"
+    },
+    {
+      "assertion": "assert delivered is not None",
+      "fails_if": "Stamping at observation or filing time, corrupting the direct file, or adding a second completion breaks the original mtime, identity, byte and count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 461,
+      "test": "test_a_direct_review_file_is_dated_before_later_filing"
+    },
+    {
+      "assertion": "assert delivered[\"record_mtime\"] == written",
+      "fails_if": "Stamping at observation or filing time, corrupting the direct file, or adding a second completion breaks the original mtime, identity, byte and count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 462,
+      "test": "test_a_direct_review_file_is_dated_before_later_filing"
+    },
+    {
+      "assertion": "assert len(rows) == 1, rows",
+      "fails_if": "Stamping at observation or filing time, corrupting the direct file, or adding a second completion breaks the original mtime, identity, byte and count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 471,
+      "test": "test_a_direct_review_file_is_dated_before_later_filing"
+    },
+    {
+      "assertion": "assert datetime.fromisoformat(rows[0][\"at\"]).timestamp() == written",
+      "fails_if": "Stamping at observation or filing time, corrupting the direct file, or adding a second completion breaks the original mtime, identity, byte and count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 472,
+      "test": "test_a_direct_review_file_is_dated_before_later_filing"
+    },
+    {
+      "assertion": "assert rows[0][\"attempt\"] == pointer[\"run_id\"]",
+      "fails_if": "Stamping at observation or filing time, corrupting the direct file, or adding a second completion breaks the original mtime, identity, byte and count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 473,
+      "test": "test_a_direct_review_file_is_dated_before_later_filing"
+    },
+    {
+      "assertion": "assert path.read_text() == json.dumps(body)",
+      "fails_if": "Stamping at observation or filing time, corrupting the direct file, or adding a second completion breaks the original mtime, identity, byte and count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 474,
+      "test": "test_a_direct_review_file_is_dated_before_later_filing"
+    },
+    {
+      "assertion": "assert receipts.receipt_path(run_id).read_bytes() == before",
+      "fails_if": "Stamping at observation or filing time, corrupting the direct file, or adding a second completion breaks the original mtime, identity, byte and count assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 478,
+      "test": "test_a_direct_review_file_is_dated_before_later_filing"
+    },
+    {
+      "assertion": "assert filed[\"filed\"] and filed[\"refused\"] == [], filed",
+      "fails_if": "Removing review_file_instant makes the later filing stamp differ from the separately recorded direct file mtime.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 492,
+      "test": "test_filing_direct_json_keeps_its_original_write_instant"
+    },
+    {
+      "assertion": "assert len(rows) == 1",
+      "fails_if": "Removing review_file_instant makes the later filing stamp differ from the separately recorded direct file mtime.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 498,
+      "test": "test_filing_direct_json_keeps_its_original_write_instant"
+    },
+    {
+      "assertion": "assert datetime.fromisoformat(rows[0][\"at\"]).timestamp() == written",
+      "fails_if": "Removing review_file_instant makes the later filing stamp differ from the separately recorded direct file mtime.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 499,
+      "test": "test_filing_direct_json_keeps_its_original_write_instant"
+    },
+    {
+      "assertion": "assert recovery_review_delivery.review_delivered(pointer) is None",
+      "fails_if": "Accepting an unparsed, scoreless, wrong-reviewer or wrong-head direct record breaks the explicit None and absent-completion assertions; this does not exercise store_review.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 516,
+      "test": "test_an_incomplete_or_foreign_direct_file_stamps_no_completion"
+    },
+    {
+      "assertion": "assert not any(\n        row[\"stage\"] == \"review_record_written\"\n        for row in receipts.read_receipts(run_id)\n    )",
+      "fails_if": "Accepting an unparsed, scoreless, wrong-reviewer or wrong-head direct record breaks the explicit None and absent-completion assertions; this does not exercise store_review.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 518,
+      "test": "test_an_incomplete_or_foreign_direct_file_stamps_no_completion"
+    },
+    {
+      "assertion": "assert census[\"unknown_seconds\"] > 0, census",
+      "fails_if": "Removing request-identity pairing makes the suppressed second-round request appear attributed and breaks the positive unknown and literal unknown-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 538,
+      "test": "test_a_second_review_without_its_request_has_unknown_time"
+    },
+    {
+      "assertion": "assert census[\"intervals\"][5][\"stage\"] == \"unknown\"",
+      "fails_if": "Removing request-identity pairing makes the suppressed second-round request appear attributed and breaks the positive unknown and literal unknown-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 539,
+      "test": "test_a_second_review_without_its_request_has_unknown_time"
+    },
+    {
+      "assertion": "assert census[\"unknown_seconds\"] == 0, census",
+      "fails_if": "Removing request-identity pairing makes the suppressed second-round request appear attributed and breaks the positive unknown and literal unknown-stage assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 541,
+      "test": "test_a_second_review_without_its_request_has_unknown_time"
+    },
+    {
+      "assertion": "assert request[\"stage\"] == \"review_requested\"",
+      "fails_if": "Minting a different dispatch/queue identity than the recorded request, reusing one across rounds or losing queued phase breaks the observed identity, phase, uniqueness or census assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 614,
+      "test": "test_the_review_request_identity_reaches_dispatch_and_queued_admission"
+    },
+    {
+      "assertion": "assert request[\"attempt\"] == dispatched[-1] == reviewer_id",
+      "fails_if": "Minting a different dispatch/queue identity than the recorded request, reusing one across rounds or losing queued phase breaks the observed identity, phase, uniqueness or census assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 615,
+      "test": "test_the_review_request_identity_reaches_dispatch_and_queued_admission"
+    },
+    {
+      "assertion": "assert reviewer[\"phase\"] == \"queued\"",
+      "fails_if": "Minting a different dispatch/queue identity than the recorded request, reusing one across rounds or losing queued phase breaks the observed identity, phase, uniqueness or census assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 618,
+      "test": "test_the_review_request_identity_reaches_dispatch_and_queued_admission"
+    },
+    {
+      "assertion": "assert identities[0] != identities[1]",
+      "fails_if": "Minting a different dispatch/queue identity than the recorded request, reusing one across rounds or losing queued phase breaks the observed identity, phase, uniqueness or census assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 624,
+      "test": "test_the_review_request_identity_reaches_dispatch_and_queued_admission"
+    },
+    {
+      "assertion": "assert receipts.stage_census([source[\"run_id\"]])[\"unknown_seconds\"] == 0",
+      "fails_if": "Minting a different dispatch/queue identity than the recorded request, reusing one across rounds or losing queued phase breaks the observed identity, phase, uniqueness or census assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 625,
+      "test": "test_the_review_request_identity_reaches_dispatch_and_queued_admission"
+    },
+    {
+      "assertion": "assert parked[\"phase\"] == requests.WAITING",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 641,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert parked[\"waiting_reason\"] == \"review record is still writing\"",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 642,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert runs.read_pointer(run_id)[\"promotion_status\"] == requests.WAITING",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 643,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert len(outcomes) == 1",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 649,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert outcomes[0][\"attempt\"] == parked[\"attempt_id\"]",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 650,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert outcomes[0][\"outcome\"] == requests.WAITING",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 651,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert outcomes[0][\"reason\"] == parked[\"waiting_reason\"]",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 652,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert slot is not None",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 655,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert service.tick() == []",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 657,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert ready[\"phase\"] == requests.REQUESTED",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 659,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert ready[\"request_id\"] == request[\"request_id\"]",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 660,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert ready[\"attempt_id\"] == parked[\"attempt_id\"]",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 661,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert ready[\"waiting_reason\"] == \"\"",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 662,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert ready[\"checked_at\"] != parked[\"checked_at\"]",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 663,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert receipts.receipt_path(run_id).read_bytes() == journal",
+      "fails_if": "Dropping the waiting outcome hook, changing waiting to refusal, clearing attempt identity or altering journal history during a readiness-only refresh breaks these phase, literal-reason, identity, freshness or byte assertions.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 664,
+      "test": "test_a_waiting_attempt_keeps_its_receipt_when_readiness_changes_with_slots_full"
+    },
+    {
+      "assertion": "assert [row[\"stage\"] for row in receipts.read_receipts(run_id)] == [\n        \"delivery_recorded\",\n        \"delivery_shown\",\n        \"promotion_outcome\",\n        \"promotion_settled\",\n        \"landing\",\n    ]",
+      "fails_if": "Mutating the observed public pointer/event/snapshot/rendering/count payloads when writing receipts breaks byte equality, and suppressing receipt writes breaks the literal lifecycle-stage control.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 713,
+      "test": "test_durable_receipts_leave_public_payload_bytes_unchanged"
+    },
+    {
+      "assertion": "assert public_bytes() == before",
+      "fails_if": "Mutating the observed public pointer/event/snapshot/rendering/count payloads when writing receipts breaks byte equality, and suppressing receipt writes breaks the literal lifecycle-stage control.",
+      "file": "tests/test_review_handoff_has_durable_stage_receipts.py",
+      "line": 720,
+      "test": "test_durable_receipts_leave_public_payload_bytes_unchanged"
+    }
+  ],
+  "assertion_independence_note": "Round-trip identity equalities at test lines 586, 621-623 and 632-633 are supported by literal stage/phase/reason, uniqueness and missing-request controls; they are transport checks, not independent proofs of census attribution. No unconditional self-equality was found. The public-byte test also has a literal receipt-stage positive control.",
+  "call_site_count": 14,
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:request_promotion",
+    "reckon/crew/promotion_requests.py:PromotionService._run",
+    "reckon/crew/promotion_requests.py:_finish",
+    "reckon/crew/promotion_requests.py:_settle",
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review",
+    "reckon/crew/admission/launching.py:_launch_queued",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker",
+    "reckon/crew/dispatch_launch.py:_publish_stored_phase",
+    "reckon/crew/recovery_watch.py:_watch_transition",
+    "reckon/crew/recovery_watch.py:_compute_watch_snapshot",
+    "reckon/crew/review.py:_write_record",
+    "reckon/crew/review.py:file_delivered_run_review_report",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew_follow_commands.py:crew_follow"
+  ],
+  "census_call_sites_note": "stage_census is a new callable census API; the production hook search finds no application caller of stage_census in reckon/crew or scripts at the reviewed head. Its fixture consumers are tests, not production call sites.",
+  "completed_at": "2026-11-17T14:05:08Z",
+  "dispatched_at": "2026-11-17T13:57:48Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "every-stage-of-a-delivered-run-leaves-a-receipt",
+      "recorded_at": "2026-11-17T16:28:34.040440+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/stage_receipts.py",
+      "line": "291",
+      "severity": "blocking",
+      "text": "blocking: note_review_record treats every record with reviewed_run_id as a completed review; review.py:store_review deliberately accepts incomplete and unparsed records and its _write_record calls this hook unconditionally, so storing an incomplete record first then a parsed record with the same review_run_id permanently retains the incomplete file's earlier review_record_written instant through record_stage's identity deduplication at :132; apply the existing completion eligibility rule to the store hook and add a stored-incomplete-then-parsed regression case."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "cd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/fe0acb0a-56ea-447a-8357-bb11f3bf471c/every-stage-of-a-delivered-run-leaves-a-receipt && PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_limit_reset_reaches_every_pane.py tests/test_an_admitted_request_continues_its_row.py tests/test_crew_recovery.py tests/test_crew_ticker.py tests/test_follow_sweep_cadence.py tests/test_ledger.py tests/test_resume_reaps_its_child.py tests/test_review_handoff_has_durable_stage_receipts.py tests/test_the_departure_row_says_how_and_what_it_spent.py tests/test_the_lander_measures_the_population.py tests/test_the_pane_counts_reviews_under_r.py tests/test_the_pane_speaks_seven_words.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 23,
+      "failure_ids": [
+        "tests/test_a_limit_reset_reaches_every_pane.py::test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane",
+        "tests/test_an_admitted_request_continues_its_row.py::test_session_counts_scope_each_sessions_own_figures_without_a_live_read",
+        "tests/test_crew_recovery.py::test_an_unowned_snapshot_stays_counted_for_a_scoped_reader",
+        "tests/test_crew_recovery.py::test_fleet_counts_scope_to_the_session_the_reader_follows",
+        "tests/test_crew_recovery.py::test_fleet_counts_still_partition_the_runs_in_flight",
+        "tests/test_crew_recovery.py::test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path",
+        "tests/test_crew_ticker.py::test_a_count_above_the_fixed_width_widens_its_own_row",
+        "tests/test_crew_ticker.py::test_counter_cells_stay_apart_at_every_digit_width",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_ledger.py::test_a_failed_index_write_keeps_the_rows_already_written",
+        "tests/test_ledger.py::test_a_foreign_projects_promoted_row_reaches_its_registered_checkout",
+        "tests/test_ledger.py::test_a_projects_own_checkout_remains_its_promotion_target",
+        "tests/test_ledger.py::test_a_successful_index_write_follows_the_file_and_is_reported",
+        "tests/test_ledger.py::test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent",
+        "tests/test_ledger.py::test_explicit_promotion_stamp_reaches_every_duration_consumer",
+        "tests/test_ledger.py::test_the_crew_tool_reads_the_ledger_and_the_live_pointers",
+        "tests/test_ledger.py::test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one",
+        "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words",
+        "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_promoted_transition_keeps_the_live_pointer_figures",
+        "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_unknown_spend_and_measured_zero_render_differently",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_promotion",
+        "tests/test_the_pane_counts_reviews_under_r.py::test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s",
+        "tests/test_the_pane_speaks_seven_words.py::test_counter_labels_and_hues_share_the_pane_words"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/reviewed-head-suite.log",
+      "revision": "014575b8dbc4d742c7021d7980ee045f09c61840",
+      "summary": "23 failed, 345 passed in 226.76s (0:03:46)"
+    },
+    "baseline_suite": {
+      "command": "cd /tmp/receipt-neutral-ly88dflg/tree && PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_limit_reset_reaches_every_pane.py tests/test_an_admitted_request_continues_its_row.py tests/test_crew_recovery.py tests/test_crew_ticker.py tests/test_follow_sweep_cadence.py tests/test_ledger.py tests/test_resume_reaps_its_child.py tests/test_the_departure_row_says_how_and_what_it_spent.py tests/test_the_lander_measures_the_population.py tests/test_the_pane_counts_reviews_under_r.py tests/test_the_pane_speaks_seven_words.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 15,
+      "failure_ids": [
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_follow_sweep_cadence.py::test_pane_output_is_unchanged_by_the_sweep",
+        "tests/test_ledger.py::test_a_failed_index_write_keeps_the_rows_already_written",
+        "tests/test_ledger.py::test_a_foreign_projects_promoted_row_reaches_its_registered_checkout",
+        "tests/test_ledger.py::test_a_projects_own_checkout_remains_its_promotion_target",
+        "tests/test_ledger.py::test_a_successful_index_write_follows_the_file_and_is_reported",
+        "tests/test_ledger.py::test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent",
+        "tests/test_ledger.py::test_the_crew_tool_reads_the_ledger_and_the_live_pointers",
+        "tests/test_ledger.py::test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one",
+        "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_four_departures_render_three_pane_words",
+        "tests/test_the_departure_row_says_how_and_what_it_spent.py::test_promoted_transition_keeps_the_live_pointer_figures",
+        "tests/test_the_lander_measures_the_population.py::test_candidate_handoff_preserves_the_promotion_guard",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_actual_cli_merge",
+        "tests/test_the_lander_measures_the_population.py::test_primary_advance_after_promotion_measurement_refuses_publication",
+        "tests/test_the_lander_measures_the_population.py::test_the_actual_cli_lands_exactly_the_measured_candidate"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/expanded-base-suite.log",
+      "revision": "c6274b6a0e6698ed29f59c3027552f4e795abc10"
+    },
+    "current_primary_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt/reviewed-primary-suite.log",
+    "current_primary_note": "The thirteen historical-pair additions are already present in the completed newer-primary suite log. The matched newer-primary/head scoped suite adds zero ids; the raw historical-pair count remains above.",
+    "current_primary_revision": "36f9fb1df9599ea22e783314719cd3bf487422b5",
+    "derivation": "Failure identities parsed from the two logs named by baseline_suite and after_suite; no subtraction by attribution or renaming."
+  },
+  "incomplete_store_trace": [
+    "store_review accepts recognised incomplete/unparsed statuses and writes partial reviews (review.py:3481-3567).",
+    "_write_record writes via review_records.record_written and unconditionally invokes note_review_record (review.py:4333-4340).",
+    "note_review_record checks subject presence only (stage_receipts.py:291-301).",
+    "record_stage deduplicates stage/attempt/outcome and preserves the first instant (stage_receipts.py:132-136).",
+    "A later parsed write with the same reviewing run therefore cannot replace the premature completion instant. This is a code reading, not an executed mutation."
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 14 production call site(s)",
+    "diff": "Read the node's feature and repair commits and the final diff from 36f9fb1df9599ea22e783314719cd3bf487422b5 to 014575b8dbc4d742c7021d7980ee045f09c61840; ten scoped files add receipt hooks and 28 test cases, with one incomplete-review completion defect at reckon/crew/stage_receipts.py:291.",
+    "done_when": "docs/plans/delivered-work-lands-without-a-coordinator.html#s13 requires ordered lifecycle receipts, ten fully attributed fixtures, an unknown missing-receipt interval, fifty attempts below 16 kB and no importer regression; tests/test_review_handoff_has_durable_stage_receipts.py:167-299 covers the quantitative cases, and the retained gate and negative-control logs record actual results.",
+    "goal": "The source prompt's goal is durable stage instants for a disjoint census; reckon/crew/stage_receipts.py:99 supplies the journal and :198 the census, but :291 stamps incomplete stored reviews as finished.",
+    "manifest": "The source manifest records ten commits, completed logs and the later primary comparison, but baseline_suite still cites c6274b6a0e6698ed29f59c3027552f4e795abc10 whereas after_suite cites the reviewed head, yielding thirteen raw added failure identities that also appear at the newer primary.",
+    "write_paths": "The expanded orientation_write_paths in the source manifest include all ten paths in the final primary-relative diff; no unrelated node-authored change remains in that diff."
+  },
+  "justifications": {
+    "durability": "tests/test_review_handoff_has_durable_stage_receipts.py:171, :201, :232 and :262 fail on missing lifecycle hooks, lost attribution, zero-filled gaps or excessive journal size, but :501 only rejects incomplete direct files and leaves the stored-review path unguarded.",
+    "evidence": "The source manifest's reviewed-head-suite.log records 23 failed and 345 passed with EXIT=1, reviewed-primary-suite.log records 24 failed and 316 passed with EXIT=1, and current-negative-controls.log records the deliberately restored defects failing their named receipt assertions.",
+    "fit": "reckon/crew/stage_receipts.py:30-32 reuses the timestamp parser, run archive resolver and shared cross-node lock, with capability-based names and additive hooks in the existing lifecycle owners.",
+    "goal_fidelity": "reckon/crew/stage_receipts.py:291 records a completion before a stored incomplete review is actionable, weakening the otherwise complete lifecycle journal and census.",
+    "reuse": "Capability searches found rotating or trimmed logs in reckon/crew/watch_unit.py:1751 and promotion_requests.py:148 rather than a preserving per-run journal; stage_receipts.py reuses node_exclusive_lock.py:79 and recovery_review_delivery.py:308 instead of forking locking or review-subject resolution.",
+    "scope_discipline": "The ten-file diff against 36f9fb1df9599ea22e783314719cd3bf487422b5 matches the expanded source manifest's orientation_write_paths and consists of the receipt owner, production hooks and its focused tests."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt's goal is durable stage instants for a disjoint census; reckon/crew/stage_receipts.py:99 supplies the journal and :198 the census, but :291 stamps incomplete stored reviews as finished.\nVERDICT done_when: docs/plans/delivered-work-lands-without-a-coordinator.html#s13 requires ordered lifecycle receipts, ten fully attributed fixtures, an unknown missing-receipt interval, fifty attempts below 16 kB and no importer regression; tests/test_review_handoff_has_durable_stage_receipts.py:167-299 covers the quantitative cases, and the retained gate and negative-control logs record actual results.\nVERDICT write_paths: The expanded orientation_write_paths in the source manifest include all ten paths in the final primary-relative diff; no unrelated node-authored change remains in that diff.\nVERDICT manifest: The source manifest records ten commits, completed logs and the later primary comparison, but baseline_suite still cites c6274b6a0e6698ed29f59c3027552f4e795abc10 whereas after_suite cites the reviewed head, yielding thirteen raw added failure identities that also appear at the newer primary.\nVERDICT diff: Read the node's feature and repair commits and the final diff from 36f9fb1df9599ea22e783314719cd3bf487422b5 to 014575b8dbc4d742c7021d7980ee045f09c61840; ten scoped files add receipt hooks and 28 test cases, with one incomplete-review completion defect at reckon/crew/stage_receipts.py:291.\nCALL_SITES: reckon/crew/promotion_requests.py:request_promotion, reckon/crew/promotion_requests.py:PromotionService._run, reckon/crew/promotion_requests.py:_finish, reckon/crew/promotion_requests.py:_settle, reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review, reckon/crew/admission/launching.py:_launch_queued, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/dispatch_launch.py:_publish_stored_phase, reckon/crew/recovery_watch.py:_watch_transition, reckon/crew/recovery_watch.py:_compute_watch_snapshot, reckon/crew/review.py:_write_record, reckon/crew/review.py:file_delivered_run_review_report, reckon/crew/queue_landing.py:_land_deliveries, reckon/crew_follow_commands.py:crew_follow\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/stage_receipts.py:291 records a completion before a stored incomplete review is actionable, weakening the otherwise complete lifecycle journal and census.\nSCORE evidence: 18\nJUSTIFICATION evidence: The source manifest's reviewed-head-suite.log records 23 failed and 345 passed with EXIT=1, reviewed-primary-suite.log records 24 failed and 316 passed with EXIT=1, and current-negative-controls.log records the deliberately restored defects failing their named receipt assertions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The ten-file diff against 36f9fb1df9599ea22e783314719cd3bf487422b5 matches the expanded source manifest's orientation_write_paths and consists of the receipt owner, production hooks and its focused tests.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_review_handoff_has_durable_stage_receipts.py:171, :201, :232 and :262 fail on missing lifecycle hooks, lost attribution, zero-filled gaps or excessive journal size, but :501 only rejects incomplete direct files and leaves the stored-review path unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/stage_receipts.py:30-32 reuses the timestamp parser, run archive resolver and shared cross-node lock, with capability-based names and additive hooks in the existing lifecycle owners.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found rotating or trimmed logs in reckon/crew/watch_unit.py:1751 and promotion_requests.py:148 rather than a preserving per-run journal; stage_receipts.py reuses node_exclusive_lock.py:79 and recovery_review_delivery.py:308 instead of forking locking or review-subject resolution.\nFINDING reckon/crew/stage_receipts.py:291 blocking: note_review_record treats every record with reviewed_run_id as a completed review; review.py:store_review deliberately accepts incomplete and unparsed records and its _write_record calls this hook unconditionally, so storing an incomplete record first then a parsed record with the same review_run_id permanently retains the incomplete file's earlier review_record_written instant through record_stage's identity deduplication at :132; apply the existing completion eligibility rule to the store hook and add a stored-incomplete-then-parsed regression case.\n",
+  "review_method": "Read-only review; no implementation mutation and no suite rerun. Exact revision content was read with git show and git grep because the assigned reviewer tree HEAD differs from the reviewed head.",
+  "review_run_id": "r-20261117T135614079449-review-of-every-stage-of-a-delivered-run-leaves-a-receipt-014575b8dbc4",
+  "reviewed_base_sha": "36f9fb1df9599ea22e783314719cd3bf487422b5",
+  "reviewed_head_sha": "014575b8dbc4d742c7021d7980ee045f09c61840",
+  "reviewed_run_id": "r-20261116T234858171235-every-stage-of-a-delivered-run-leaves-a-receipt",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:14:29.202561+00:00",
+  "total": 110
+}

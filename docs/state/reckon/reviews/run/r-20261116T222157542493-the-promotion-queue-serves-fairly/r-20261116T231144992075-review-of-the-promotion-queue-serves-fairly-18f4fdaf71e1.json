@@ -1,0 +1,207 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from source manifest baseline_suite and after_suite log failure sets: both empty with complete summaries and EXIT=0; repair-baseline-suite also has no failures; importer comparison retains the same five failure IDs.",
+  "assertion_analysis": [
+    {
+      "fails_if": "Unconditional future-turn increments at promotion_requests.py:561 swap runnable A/B order in either inactive-phase case; the literal expected sequence fails.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 133
+    },
+    {
+      "fails_if": "Dropping or misclassifying RUNNING rows makes the running count differ from the independently specified phase fixture.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 137
+    },
+    {
+      "fails_if": "Dropping or misclassifying WAITING rows makes the parked count differ from the independently specified phase fixture.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 138
+    },
+    {
+      "fails_if": "Filtering inactive rows out of _pending_requests entirely fails membership; the ID is fixture identity, and the output can omit it, so this assertion is not a tautology.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 139
+    },
+    {
+      "fails_if": "Restoring unconditional turn increments selects younger B rather than the literal older A through the real tick; owner and review-wait stubs model unavailable inactive work.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 158
+    },
+    {
+      "fails_if": "Ignoring or over-expiring the ten-minute A completion makes older A win rather than literal B/A.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 178
+    },
+    {
+      "fails_if": "Forwarding a 60-second report window into scheduling ignores A history and makes report order differ from independently anchored drain order at line 178.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 181
+    },
+    {
+      "fails_if": "Counting history outside the report-rate window yields one at 60 seconds; ignoring valid history yields zero at 3600/7200 seconds.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 182
+    },
+    {
+      "fails_if": "A tick that selects a different first request than the independently anchored B/A sequence fails; drain_order is constrained at line 178 rather than supplied as tick input.",
+      "file": "tests/test_the_promotion_queue_serves_fairly.py",
+      "line": 186
+    }
+  ],
+  "assertion_independence": "No input-echo tautology found; output-to-output parity at lines 181 and 186 is anchored to the literal independent expected order at line 178; fixture identity membership at line 139 can fail if the result drops that row.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:183 promotion_queue_report",
+    "reckon/crew/promotion_requests.py:815 PromotionService._tick_locked",
+    "reckon/crew_run_commands.py:2012 crew_promotions",
+    "reckon/crew/admission/service.py:244 admit_until_stopped"
+  ],
+  "completed_at": "2026-11-16T23:17:23Z",
+  "dispatched_at": "2026-11-16T23:12:58Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_importers": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits"
+      ],
+      "header": "# revision: 18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf; tree: /tmp/promotion-order-3all60b3/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_refused_review_is_retried_only_when_it_moves.py tests/test_a_raced_promotion_still_lands.py tests/test_cleanly_reviewed_run_lands_itself.py tests/test_an_obligation_offers_only_measured_remedies.py tests/test_a_working_review_keeps_its_working_phase.py tests/test_a_promoted_review_is_never_promoted_again.py tests/test_an_unlaunched_review_is_not_requested.py tests/test_review_promotion_waits_for_its_record.py tests/test_no_caller_waits_on_a_promotion.py tests/test_a_landing_judges_the_head_by_its_suite.py tests/test_code_reload_never_cuts_off_a_promotion.py tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py tests/test_refused_promotion_request_settles.py tests/test_review_promoted_before_its_run.py tests/test_a_station_tick_delivers_and_lands_a_run.py tests/test_promotion_queue_drains_at_slot_speed.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-after-importers.log",
+      "summary": "5 failed, 101 passed, 1 warning in 129.53s (0:02:09)"
+    },
+    "after_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "header": "# revision: 18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf; tree: /tmp/promotion-order-3all60b3/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_promotion_queue_serves_fairly.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-after-suite.log",
+      "summary": "64 passed in 40.91s"
+    },
+    "baseline_importers": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_landing_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_code_reload_never_cuts_off_a_promotion.py::test_a_promotion_in_flight_finishes_before_the_service_reexecutes",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_refused_promotion_request_settles.py::test_a_landed_run_settles_its_refused_request_as_landed",
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits"
+      ],
+      "header": "# revision: 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; tree: /tmp/promotion-order-mtjngwsf/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_refused_review_is_retried_only_when_it_moves.py tests/test_a_raced_promotion_still_lands.py tests/test_cleanly_reviewed_run_lands_itself.py tests/test_an_obligation_offers_only_measured_remedies.py tests/test_a_working_review_keeps_its_working_phase.py tests/test_a_promoted_review_is_never_promoted_again.py tests/test_an_unlaunched_review_is_not_requested.py tests/test_review_promotion_waits_for_its_record.py tests/test_no_caller_waits_on_a_promotion.py tests/test_a_landing_judges_the_head_by_its_suite.py tests/test_code_reload_never_cuts_off_a_promotion.py tests/test_a_promotion_refused_for_moved_inputs_is_judged_again.py tests/test_refused_promotion_request_settles.py tests/test_review_promoted_before_its_run.py tests/test_a_station_tick_delivers_and_lands_a_run.py tests/test_promotion_queue_drains_at_slot_speed.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-baseline-importers.log",
+      "summary": "5 failed, 101 passed in 129.99s (0:02:09)"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "header": "# revision: f9a238e45926b5e142e68414f2df42780ebc69f5; tree: /tmp/promotion-order-q7r2e9mz/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/baseline-confirmed.log",
+      "summary": "58 passed in 35.23s"
+    },
+    "importer_added_failure_ids": [],
+    "negative_accounting": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_the_promotion_queue_serves_fairly.py::test_only_runnable_requests_consume_future_session_turns[promotion-running]",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_only_runnable_requests_consume_future_session_turns[promotion-waiting]"
+      ],
+      "header": "# revision: 18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf; tree: /tmp/promotion-order-3all60b3/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -k only_runnable_requests_consume_future_session_turns tests/test_the_promotion_queue_serves_fairly.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-negative-accounting.log",
+      "summary": "2 failed, 4 deselected in 0.37s"
+    },
+    "negative_run_name": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_the_promotion_queue_serves_fairly.py::test_a_burst_leaves_other_sessions_in_the_first_four",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_a_queued_review_precedes_the_run_it_reviews",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_an_aged_request_precedes_a_younger_priority",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_only_runnable_requests_consume_future_session_turns[promotion-running]",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_only_runnable_requests_consume_future_session_turns[promotion-waiting]",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_report_rate_window_preserves_the_drains_queue_order"
+      ],
+      "header": "# revision: 18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf; tree: /tmp/promotion-order-3all60b3/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_promotion_queue_serves_fairly.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-negative-run-name.log",
+      "summary": "6 failed in 0.63s"
+    },
+    "negative_window": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_the_promotion_queue_serves_fairly.py::test_report_rate_window_preserves_the_drains_queue_order"
+      ],
+      "header": "# revision: 18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf; tree: /tmp/promotion-order-3all60b3/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -k report_rate_window_preserves_the_drains_queue_order tests/test_the_promotion_queue_serves_fairly.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-negative-window.log",
+      "summary": "1 failed, 5 deselected in 0.35s"
+    },
+    "repair_baseline_suite": {
+      "exit_status": 0,
+      "failure_ids": [],
+      "header": "# revision: 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; tree: /tmp/promotion-order-mtjngwsf/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_promotion_queue_serves_fairly.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-baseline-suite.log",
+      "summary": "61 passed in 37.39s"
+    },
+    "reproduction": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_the_promotion_queue_serves_fairly.py::test_only_runnable_requests_consume_future_session_turns[promotion-running]",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_only_runnable_requests_consume_future_session_turns[promotion-waiting]",
+        "tests/test_the_promotion_queue_serves_fairly.py::test_report_rate_window_preserves_the_drains_queue_order"
+      ],
+      "header": "# revision: 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; tree: /tmp/promotion-order-mtjngwsf/tree; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_promotion_queue_serves_fairly.py",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T222157542493-the-promotion-queue-serves-fairly/repair-reproduction.log",
+      "summary": "3 failed, 3 passed in 0.75s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/promotion_requests.py:183 promotion_queue_report, reckon/crew/promotion_requests.py:815 PromotionService._tick_locked, reckon/crew_run_commands.py:2012 crew_promotions, reckon/crew/admission/service.py:244 admit_until_stopped",
+    "diff": "Read sole added commit 18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf against previously reviewed 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; two focused production changes and two new test functions answer both previous blocking findings.",
+    "done_when": "Read source pointer node.done_when and live plan section 2; repair-after-suite.log records 64 passes including the original three cases and three repair cases, with no added importer failures.",
+    "goal": "Read source pointer node.goal; promotion_requests.py:561 now charges simulated turns only to requested rows, preserving fair runnable-session service.",
+    "manifest": "Read source manifest.md and opened its gate logs; its repair commit, 61/64 passing baseline/head, unchanged five importer failures and failing negative controls agree with the receipts.",
+    "write_paths": "Read source pointer node.write_paths; the repair changes only reckon/crew/promotion_requests.py and tests/test_the_promotion_queue_serves_fairly.py, both explicitly granted."
+  },
+  "justifications": {
+    "durability": "tests/test_the_promotion_queue_serves_fairly.py:133,158,178,181 anchors report and actual service order to independent expected run IDs, with recorded two-case accounting and one-case window failures under source reversal.",
+    "evidence": "repair-reproduction.log records three failures before repair, repair-after-suite.log records 64 passes, importer logs retain identical five failure IDs, and repair-negative-accounting.log and repair-negative-window.log fail when the answering source change is reversed.",
+    "fit": "reckon/crew/promotion_requests.py:561 adds a phase check using existing constants and tests/test_the_promotion_queue_serves_fairly.py:111 uses parametrized fixtures with descriptive mechanism names.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:183,561 separates report-rate windows from scheduling and charges requested rows alone, directly repairing both previously reviewed fairness defects.",
+    "reuse": "Capability search and inspection of reckon/crew/queue_order.py:285-400 found admission lane occupancy ordering; this repair adds no production definition and extends existing promotion history and report owners at promotion_requests.py:183,486 rather than duplicating them.",
+    "scope_discipline": "The sole repair commit changes only reckon/crew/promotion_requests.py and tests/test_the_promotion_queue_serves_fairly.py within the source node write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source pointer node.goal; promotion_requests.py:561 now charges simulated turns only to requested rows, preserving fair runnable-session service.\nVERDICT done_when: Read source pointer node.done_when and live plan section 2; repair-after-suite.log records 64 passes including the original three cases and three repair cases, with no added importer failures.\nVERDICT write_paths: Read source pointer node.write_paths; the repair changes only reckon/crew/promotion_requests.py and tests/test_the_promotion_queue_serves_fairly.py, both explicitly granted.\nVERDICT manifest: Read source manifest.md and opened its gate logs; its repair commit, 61/64 passing baseline/head, unchanged five importer failures and failing negative controls agree with the receipts.\nVERDICT diff: Read sole added commit 18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf against previously reviewed 22a3bb307b048c9e9e463156fb14ce4ae8bdd13e; two focused production changes and two new test functions answer both previous blocking findings.\nCALL_SITES: reckon/crew/promotion_requests.py:183 promotion_queue_report, reckon/crew/promotion_requests.py:815 PromotionService._tick_locked, reckon/crew_run_commands.py:2012 crew_promotions, reckon/crew/admission/service.py:244 admit_until_stopped\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:183,561 separates report-rate windows from scheduling and charges requested rows alone, directly repairing both previously reviewed fairness defects.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduction.log records three failures before repair, repair-after-suite.log records 64 passes, importer logs retain identical five failure IDs, and repair-negative-accounting.log and repair-negative-window.log fail when the answering source change is reversed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole repair commit changes only reckon/crew/promotion_requests.py and tests/test_the_promotion_queue_serves_fairly.py within the source node write_paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_promotion_queue_serves_fairly.py:133,158,178,181 anchors report and actual service order to independent expected run IDs, with recorded two-case accounting and one-case window failures under source reversal.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:561 adds a phase check using existing constants and tests/test_the_promotion_queue_serves_fairly.py:111 uses parametrized fixtures with descriptive mechanism names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability search and inspection of reckon/crew/queue_order.py:285-400 found admission lane occupancy ordering; this repair adds no production definition and extends existing promotion history and report owners at promotion_requests.py:183,486 rather than duplicating them.\n",
+  "resolved_previous_findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "previous_line": 527,
+      "resolution": "Only REQUESTED rows increment future turns at reviewed head line 561; running occupancy remains charged once and parked rows remain separately visible."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "previous_line": 183,
+      "resolution": "Report calls default scheduling window while retaining its requested rate window for _recent_drained."
+    }
+  ],
+  "review_limitations": "Review covers only the repair commit after the previous review; static source/call-site reading and recorded receipts, with no test rerun or mutation performed by this reviewer.",
+  "review_run_id": "r-20261116T231144992075-review-of-the-promotion-queue-serves-fairly-18f4fdaf71e1",
+  "reviewed_base_sha": "22a3bb307b048c9e9e463156fb14ce4ae8bdd13e",
+  "reviewed_head_sha": "18f4fdaf71e1724fa99188b2dcb554a49bbe0dbf",
+  "reviewed_run_id": "r-20261116T222157542493-the-promotion-queue-serves-fairly",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T23:23:22.014320+00:00",
+  "total": 120
+}

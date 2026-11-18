@@ -13,6 +13,7 @@ from click.testing import CliRunner
 from reckon import _store, cli, crew, crew_dispatch_commands, flight
 from reckon.crew import dispatch_plan as dispatch_plan_module
 from reckon.crew import picker
+from reckon.crew import runs as crew_runs
 from reckon.crew.dispatch import change_lane
 from reckon.crew.dispatch import shadow as dispatch_shadow
 from tests.test_picker_in_dispatch import CONFIG, selection
@@ -57,7 +58,10 @@ def invoke(repo, *, route=None, dry_run=False):
         args += ["--dry-run"]
     result = CliRunner().invoke(cli.main, args)
     assert result.exit_code == 0, result.output
-    return json.loads(result.output.splitlines()[0])
+    # The command writes its identity notice to stderr before the document, so
+    # the mixed terminal stream can open with a sentence. A caller pipes
+    # stdout, and that stream is the document.
+    return json.loads(result.stdout.splitlines()[0])
 
 
 @pytest.mark.parametrize("dry_run", [False, True])
@@ -99,11 +103,15 @@ def test_dispatch_resolves_routing_key(
             deadline = (
                 time.monotonic() + dispatch_module.PICKER_DISPATCH_TIMEOUT_SECONDS + 5
             )
-            while record["picker_selection"] is None and time.monotonic() < deadline:
+            # A deterministic launch records its shadow answer after return, as
+            # dispatch-time detail rather than inline on the live pointer.
+            selection_record = crew_runs.dispatch_field(record, "picker_selection")
+            while selection_record is None and time.monotonic() < deadline:
                 time.sleep(0.05)
                 record = json.loads(pointer.read_text())
-            assert record["picker_selection"] is not None
-            assert record["picker_selection"]["action"] in {
+                selection_record = crew_runs.dispatch_field(record, "picker_selection")
+            assert selection_record is not None
+            assert selection_record["action"] in {
                 "route",
                 "refuse",
                 "fallback",

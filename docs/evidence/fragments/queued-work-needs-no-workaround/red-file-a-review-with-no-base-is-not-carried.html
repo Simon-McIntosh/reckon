@@ -1,0 +1,55 @@
+<section id="qwnw-red-file-a-review-with-no-base-is-not-carried-red-file">
+  <h3>The red file: <code>tests/test_a_review_with_no_base_is_not_carried.py</code></h3>
+  <p>Both runs are jobs on <code>all_debug</code> issued with
+  <code>sbatch --wait</code>, with <code>SLURM_JOB_ID</code> unset for the pytest
+  process inside the job. The command in each arm is the project's own template
+  resolved over that arm's tree; only the revision, the tree and the log differ.
+  The base arm ran in a detached scratch checkout of the base revision under
+  <code>$TMPDIR</code>, and its log names the module it imported as
+  <code>…/qwnw-base-1320112/tree/reckon/crew/recovery.py</code>.</p>
+  <table id="qwnw-red-file-a-review-with-no-base-is-not-carried-red-file-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Summary line</th><th>Exit</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>655a2befa979af690bab537523cd9ad97dc108c5</code></td>
+        <td><code>3 failed in 0.66s</code></td>
+        <td>1</td>
+        <td><code>gate-base.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>ba0dc1d74fd44fc1f9810482ff0d25d95bd32a3c</code></td>
+        <td><code>3 passed in 1.21s</code></td>
+        <td>0</td>
+        <td><code>gate-head.log</code></td>
+      </tr>
+      <tr>
+        <td>head, <code>_review_delivered_paths</code> mutated to read a missing base as an empty diff</td>
+        <td><code>655a2befa979af690bab537523cd9ad97dc108c5</code> plus the mutation in the worktree</td>
+        <td><code>2 failed, 1 passed in 1.71s</code></td>
+        <td>1</td>
+        <td><code>negative-control.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm's three failing ids, each failing on
+  <code>assert report is not None</code>:</p>
+  <ul id="qwnw-red-file-a-review-with-no-base-is-not-carried-red-file-ids">
+    <li><code>test_a_move_over_the_deliverable_is_not_carried_when_no_base_is_named</code></li>
+    <li><code>test_a_move_over_an_unrelated_record_is_not_carried_when_no_base_is_named</code></li>
+    <li><code>test_a_move_over_an_unrelated_record_carries_when_the_base_resolves</code></li>
+  </ul>
+  <p>One cause accounts for all three: the fixture's checkout carries no remote, so
+  <code>review_head_move</code> cannot resolve a remote-tracking integration ref,
+  reads the move as an uncomparable delta and returns <code>{}</code> — the
+  reflex's "nothing to decide" — before any case reaches the no-base rule. The
+  third base id is the case that must carry, and it failed on the same absence,
+  which is what shows the cause is the fixture rather than the rule under test.</p>
+  <p>The mutated run's two failing ids are
+  <code>test_a_move_over_the_deliverable_is_not_carried_when_no_base_is_named</code>
+  and <code>test_a_move_over_an_unrelated_record_is_not_carried_when_no_base_is_named</code>,
+  both on <code>assert True is False</code> for <code>report["carried"]</code>: the
+  refusal the file exists to check stops firing when the product stops reading a
+  missing base as unprovable. The mutation was reverted before the head arm ran.</p>
+</section>

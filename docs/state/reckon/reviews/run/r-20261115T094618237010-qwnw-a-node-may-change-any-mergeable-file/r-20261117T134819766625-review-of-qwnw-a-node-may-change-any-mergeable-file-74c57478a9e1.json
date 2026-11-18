@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:828 plan_dispatch -> reckon/crew/dispatch_admission.py:1913 _resolved_write_paths (fills a role's default write scope before the launch)",
+    "reckon/crew/prompts.py:958 compose_prompt -> reckon/crew/prompts.py:69 scope_block (classifies absolute declarations as delivery grants, predicates printed at :114 and :120)",
+    "reckon/crew/dispatch_claims.py:1544 _compose_dispatch_prompt -> reckon/crew/prompts.py:956 compose_prompt"
+  ],
+  "completed_at": "2026-11-17T13:50:07.190Z",
+  "dispatched_at": "2026-11-17T13:49:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Non-blocking and correct as stated: the three added assertions have no recorded red arm against a reverted delivery-grant classification. The node's own negative control is recorded for its first five tests; a red arm for the later assertions is not added in this node.",
+      "recorded_at": "2026-11-17T14:03:48.316137+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_node_may_change_any_mergeable_file.py",
+      "line": "207",
+      "severity": "non-blocking",
+      "text": "non-blocking: the three added assertions have no recorded red arm \u2014 node-tests.log:1 is the 75ecd95a tree, which predates this commit, and negative-control.log:1 ran the five-test file at base 4dc26dde, so nothing on disk shows the delivery-grant branch at reckon/crew/prompts.py:120-123 failing when its classification is reverted."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read git diff 75ecd95a 74c57478 commit by commit: one file, +16/-3, adding the _resolved_write_paths import, the resolved-default assertions and a comment replacing the one the prior review reasoned against; no production file changed in the gained range.",
+    "done_when": "read the done_when's four behaviours against the head test file: the fragment brief (:164-176), the repository-scope brief (:181-185) and the review brief (:246-257) are asserted, the empty-declaration acceptance at :202-203, and the state the dispatch route presents \u2014 default scope resolved by reckon/crew/dispatch_admission.py:1913 and stated as delivery grants \u2014 at :207-218; the route that fills it is pinned separately by tests/test_crew_test_role.py:263.",
+    "goal": "read the node goal (let a dispatched node change any mergeable file in its repository with declared paths as the expected scope) and the gained commit: 74c57478 is test-only and asserts the state a worker actually receives, compose_prompt over the resolved default paths in tests/test_a_node_may_change_any_mergeable_file.py:207-218, while production stays at reckon/crew/prompts.py:69-126.",
+    "manifest": "read the reviewed run's manifest.md at 74c57478: status complete, four commits recorded with head 74c57478, tests names the three-file gate, test_logs names baseline-suite.log and after-suite.log, after_suite records exit_status 0 with 0 failures at 74c57478, and the truncated-manifest finding the prior review raised as blocking is answered.",
+    "write_paths": "read the source node's declared paths from its manifest and dispatch-detail (reckon, tests, skills, docs/evidence/fragments/queued-work-needs-no-workaround, the section fragment and its figure directory) against git diff --stat 75ecd95a 74c57478: the single changed path tests/test_a_node_may_change_any_mergeable_file.py lies inside tests."
+  },
+  "justifications": {
+    "durability": "tests/test_a_node_may_change_any_mergeable_file.py:217 reddens if reckon/crew/prompts.py:120-123 stops classifying an absolute declaration as a delivery grant, and :210 reddens if dispatch_admission.py:1926 returns the relative entries unresolved, but no recorded log runs the added block against a reverted tree.",
+    "evidence": "after-suite.log:6 records 64 passed with EXIT=0 at revision 74c57478 and the manifest's tests line names that same command, while the reviewed run's baseline_suite (0 failures) and after_suite (0 failures) yield zero added failures.",
+    "fit": "the added block follows the file's existing helper idiom (the surrounding tests at :184-205 and imports at :22-24), and the private-helper import matches tests/test_crew_test_role.py:26, which imports the same function.",
+    "goal_fidelity": "tests/test_a_node_may_change_any_mergeable_file.py:207-218 asserts the brief of a node carrying the resolved default scope, so the reviewed delta verifies the scope the dispatch presents rather than changing behaviour.",
+    "reuse": "the added block resolves paths through the existing owner reckon/crew/dispatch_admission.py:1913 _resolved_write_paths rather than restating resolution, and a capability search over reckon/crew found no second resolver of a role's default write scope.",
+    "scope_discipline": "git diff --stat 75ecd95a 74c57478 touches only tests/test_a_node_may_change_any_mergeable_file.py, inside the declared tests path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (let a dispatched node change any mergeable file in its repository with declared paths as the expected scope) and the gained commit: 74c57478 is test-only and asserts the state a worker actually receives, compose_prompt over the resolved default paths in tests/test_a_node_may_change_any_mergeable_file.py:207-218, while production stays at reckon/crew/prompts.py:69-126.\nVERDICT done_when: read the done_when's four behaviours against the head test file: the fragment brief (:164-176), the repository-scope brief (:181-185) and the review brief (:246-257) are asserted, the empty-declaration acceptance at :202-203, and the state the dispatch route presents - default scope resolved by reckon/crew/dispatch_admission.py:1913 and stated as delivery grants - at :207-218; the route that fills it is pinned separately by tests/test_crew_test_role.py:263.\nVERDICT write_paths: read the source node's declared paths from its manifest and dispatch-detail (reckon, tests, skills, docs/evidence/fragments/queued-work-needs-no-workaround, the section fragment and its figure directory) against git diff --stat 75ecd95a 74c57478: the single changed path tests/test_a_node_may_change_any_mergeable_file.py lies inside tests.\nVERDICT manifest: read the reviewed run's manifest.md at 74c57478: status complete, four commits recorded with head 74c57478, tests names the three-file gate, test_logs names baseline-suite.log and after-suite.log, after_suite records exit_status 0 with 0 failures at 74c57478, and the truncated-manifest finding the prior review raised as blocking is answered.\nVERDICT diff: read git diff 75ecd95a 74c57478 commit by commit: one file, +16/-3, adding the _resolved_write_paths import, the resolved-default assertions and a comment replacing the one the prior review reasoned against; no production file changed in the gained range.\nCALL_SITES: reckon/crew/dispatch_plan.py:828 plan_dispatch -> reckon/crew/dispatch_admission.py:1913 _resolved_write_paths, reckon/crew/prompts.py:958 compose_prompt -> reckon/crew/prompts.py:69 scope_block, reckon/crew/dispatch_claims.py:1544 _compose_dispatch_prompt -> reckon/crew/prompts.py:956 compose_prompt\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_node_may_change_any_mergeable_file.py:207-218 asserts the brief of a node carrying the resolved default scope, so the reviewed delta verifies the scope the dispatch presents rather than changing behaviour.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-suite.log:6 records 64 passed with EXIT=0 at revision 74c57478 and the manifest's tests line names that same command, while the reviewed run's baseline_suite (0 failures) and after_suite (0 failures) yield zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 75ecd95a 74c57478 touches only tests/test_a_node_may_change_any_mergeable_file.py, inside the declared tests path.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_node_may_change_any_mergeable_file.py:217 reddens if reckon/crew/prompts.py:120-123 stops classifying an absolute declaration as a delivery grant, and :210 reddens if dispatch_admission.py:1926 returns the relative entries unresolved, but no recorded log runs the added block against a reverted tree.\nSCORE fit: 18\nJUSTIFICATION fit: the added block follows the file's existing helper idiom (the surrounding tests at :184-205 and imports at :22-24), and the private-helper import matches tests/test_crew_test_role.py:26, which imports the same function.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added block resolves paths through the existing owner reckon/crew/dispatch_admission.py:1913 _resolved_write_paths rather than restating resolution, and a capability search over reckon/crew found no second resolver of a role's default write scope.\nFINDING tests/test_a_node_may_change_any_mergeable_file.py:207 non-blocking: the three added assertions have no recorded red arm - node-tests.log:1 is the 75ecd95a tree, which predates this commit, and negative-control.log:1 ran the five-test file at base 4dc26dde, so nothing on disk shows the delivery-grant branch at reckon/crew/prompts.py:120-123 failing when its classification is reverted.",
+  "review_run_id": "r-20261117T134819766625-review-of-qwnw-a-node-may-change-any-mergeable-file-74c57478a9e1",
+  "reviewed_base_sha": "75ecd95a0e69b419f0786cba53decba6b93daa4c",
+  "reviewed_head_sha": "74c57478a9e1b37f1dd1fea19c6629eb451e518b",
+  "reviewed_run_id": "r-20261115T094618237010-qwnw-a-node-may-change-any-mergeable-file",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T134819766625-review-of-qwnw-a-node-may-change-any-mergeable-file-74c57478a9e1"
+  },
+  "reviewer_run_id": "r-20261117T134819766625-review-of-qwnw-a-node-may-change-any-mergeable-file-74c57478a9e1",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:02:40.573487+00:00",
+  "total": 110
+}
