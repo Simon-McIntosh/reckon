@@ -1,0 +1,122 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "Fails when a counter label other than 'stuck' or 'promotion queue' is not one of the pane words in WORDS, so restoring any cell named outside the product's vocabulary reddens it.",
+      "limit": "The exclusion set grew by 'promotion queue'; the exhaustive tuple assertion at :72-80 is what pins that the excluded figure is exactly the product's seventh cell.",
+      "location": "tests/test_the_pane_speaks_seven_words.py:71"
+    },
+    {
+      "conditions_for_failure": "Fails if the product's counter cell tuple is restored to six cells or its order changes; the expected value is a literal written in the test, independent of what the product returns.",
+      "limit": "Cannot fail on the cell's rendering, only on its declaration.",
+      "location": "tests/test_the_pane_speaks_seven_words.py:72-80"
+    },
+    {
+      "conditions_for_failure": "Fails if the 'promotion queue' count-field mapping is removed or renamed, so a regression that stops reading promotion_queued from the event reddens it.",
+      "limit": "Does not assert that the event key is populated or suffixed; the sample at :92-104 omits both promotion keys.",
+      "location": "tests/test_the_pane_speaks_seven_words.py:81-86"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/ticker.py:3929 Ticker._stats",
+    "reckon/crew/ticker.py:3932 _COUNT_FIELD lookup",
+    "reckon/crew/ticker.py:3942 oldest_promotion_position suffix",
+    "reckon/crew/ticker.py:1178 _state_hue",
+    "reckon/crew/recovery_watch.py:3031 promotion_queued count"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:25:28Z",
+  "findings": [
+    {
+      "file": "tests/test_the_pane_speaks_seven_words.py",
+      "line": "92",
+      "severity": "non-blocking",
+      "text": "non-blocking: the _stats sample dict supplies no promotion_queued or oldest_promotion_position, so the seventh cell's count lookup at reckon/crew/ticker.py:3932 and its @position suffix at :3942 are not asserted, and a regression dropping the suffix or the count-field consumption would leave this guard green while the figure the diff exists to pin disappears from the pane."
+    },
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite and after_suite carry only revision and command, after_suite's command being the literal string \"placeholder\", with no exit_status, completed, failure_count or failure_ids, so the done_when requirement that both arms be recorded as inline JSON carrying full 40-character revisions is unmet and promotion cannot read an arm result from this record."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "blocking",
+      "text": "blocking: test_logs names .../scoped-gate-x, which does not exist (the actual log is scoped-gate-1795001661040433791.log), and tests: at manifest.md:13 reads \"env PYTHONPATH=x\", so neither the gate command nor its log can be re-run or opened from the record."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the done_when's negative-control fragment, the base run with its failing ids beside the head run, was never written; no such path exists at b7dcd55e3e36 although 238 sibling fragments live under docs/evidence/fragments/queued-work-needs-no-workaround/."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read the single commit b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 against base 1766ca118859247ca28cefa0064b27175002d0ce: 6 insertions and 2 deletions in tests/test_the_pane_speaks_seven_words.py that add \"promotion queue\" to the pinned _MAX_CELLS tuple and _COUNT_FIELD mapping and exclude that figure from the pane-word membership assertion.",
+    "done_when": "The source node.done_when requires a base run first, each cause with a product-or-test verdict, no deleted or weakened assertion, both arms recorded as inline JSON carrying full 40-character revisions, a negative-control fragment under docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, and clean ruff; the base run (negative-control.log, 1 failed 2 passed EXIT=1 at 1766ca118859) and the head gate are on disk, but the fragment never exists at head and manifest.md:20-21 record no readable arm JSON.",
+    "goal": "The source node.goal in dispatch-detail.json is \"Make tests/test_the_pane_speaks_seven_words.py pass in full on the primary branch\"; at head b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 the file reads 3 passed EXIT=0 in scoped-gate-1795001661040433791.log:7, and the diff retunes its counter-block case to the seven-cell rule reckon/crew/ticker.py:783 now keeps.",
+    "manifest": "Read manifest.md in the reviewed run directory; it names commit b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 and the 3-passed/1-failed landing claim, but carries placeholder fields at :13 (`tests: env PYTHONPATH=x`), :15 (`test_logs: .../scoped-gate-x`, which does not exist), :20-21 (arm JSON with no exit_status, completed, failure_count or failure_ids, after_suite command \"placeholder\") and :22 (`artifacts: x`).",
+    "write_paths": "The source node.write_paths are [\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\"]; the landed diff 1766ca118859..b7dcd55e3e36 changes only tests/test_the_pane_speaks_seven_words.py, inside `tests`, while the fragment path the same node was fenced to write was left unwritten."
+  },
+  "justifications": {
+    "durability": "tests/test_the_pane_speaks_seven_words.py:71-86 reddens if the six-cell tuple or the promotion count-field entry is restored, but the sample dict at :92-104 supplies no promotion key so the seventh cell's count lookup and @position suffix at reckon/crew/ticker.py:3932-3942 are unasserted.",
+    "evidence": "The head gate and the base negative control are real on-disk logs (scoped-gate-1795001661040433791.log, negative-control.log) but manifest.md:13 and :20-21 leave the gate command and both arm results unreadable and the required fragment is absent.",
+    "fit": "tests/test_the_pane_speaks_seven_words.py:70-79 keeps the file's comment-then-literal idiom and its use of the private ticker constants already used at :36-42.",
+    "goal_fidelity": "tests/test_the_pane_speaks_seven_words.py at commit b7dcd55e3e36 is 3 passed as recorded in scoped-gate-1795001661040433791.log:7, which is the goal sentence satisfied for the file.",
+    "reuse": "The diff defines nothing new; it edits an existing test in tests/test_the_pane_speaks_seven_words.py, and a capability search over tests/ for _MAX_CELLS owners found only sibling pins (tests/test_crew_ticker_layout.py), so no mechanism is forked.",
+    "scope_discipline": "git diff 1766ca118859..b7dcd55e3e36 shows only tests/test_the_pane_speaks_seven_words.py, a path inside the declared `tests` scope, and no extra file or behaviour."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node.goal in dispatch-detail.json is \"Make tests/test_the_pane_speaks_seven_words.py pass in full on the primary branch\"; at head b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 the file reads 3 passed EXIT=0 in scoped-gate-1795001661040433791.log:7, and the diff retunes its counter-block case to the seven-cell rule reckon/crew/ticker.py:783 now keeps.\nVERDICT done_when: The source node.done_when requires a base run first, each cause with a product-or-test verdict, no deleted or weakened assertion, both arms recorded as inline JSON carrying full 40-character revisions, a negative-control fragment under docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, and clean ruff; the base run (negative-control.log, 1 failed 2 passed EXIT=1 at 1766ca118859) and the head gate are on disk, but the fragment never exists at head and manifest.md:20-21 record no readable arm JSON.\nVERDICT write_paths: The source node.write_paths are [\"reckon\", \"tests\", \"docs/evidence/fragments/queued-work-needs-no-workaround\"]; the landed diff 1766ca118859..b7dcd55e3e36 changes only tests/test_the_pane_speaks_seven_words.py, inside `tests`, while the fragment path the same node was fenced to write was left unwritten.\nVERDICT manifest: Read manifest.md in the reviewed run directory; it names commit b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 and the 3-passed/1-failed landing claim, but carries placeholder fields at :13 (`tests: env PYTHONPATH=x`), :15 (`test_logs: .../scoped-gate-x`, which does not exist), :20-21 (arm JSON with no exit_status, completed, failure_count or failure_ids, after_suite command \"placeholder\") and :22 (`artifacts: x`).\nVERDICT diff: Read the single commit b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 against base 1766ca118859247ca28cefa0064b27175002d0ce: 6 insertions and 2 deletions in tests/test_the_pane_speaks_seven_words.py that add \"promotion queue\" to the pinned _MAX_CELLS tuple and _COUNT_FIELD mapping and exclude that figure from the pane-word membership assertion.\nCALL_SITES: reckon/crew/ticker.py:3929 Ticker._stats, reckon/crew/ticker.py:3932 _COUNT_FIELD lookup, reckon/crew/ticker.py:3942 oldest_promotion_position suffix, reckon/crew/ticker.py:1178 _state_hue, reckon/crew/recovery_watch.py:3031 promotion_queued count\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_the_pane_speaks_seven_words.py at commit b7dcd55e3e36 is 3 passed as recorded in scoped-gate-1795001661040433791.log:7, which is the goal sentence satisfied for the file.\nSCORE evidence: 10\nJUSTIFICATION evidence: The head gate and the base negative control are real on-disk logs (scoped-gate-1795001661040433791.log, negative-control.log) but manifest.md:13 and :20-21 leave the gate command and both arm results unreadable and the required fragment is absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 1766ca118859..b7dcd55e3e36 shows only tests/test_the_pane_speaks_seven_words.py, a path inside the declared `tests` scope, and no extra file or behaviour.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_pane_speaks_seven_words.py:71-86 reddens if the six-cell tuple or the promotion count-field entry is restored, but the sample dict at :92-104 supplies no promotion key so the seventh cell's count lookup and @position suffix at reckon/crew/ticker.py:3932-3942 are unasserted.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_the_pane_speaks_seven_words.py:70-79 keeps the file's comment-then-literal idiom and its use of the private ticker constants already used at :36-42.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff defines nothing new; it edits an existing test in tests/test_the_pane_speaks_seven_words.py, and a capability search over tests/ for _MAX_CELLS owners found only sibling pins (tests/test_crew_ticker_layout.py), so no mechanism is forked.\nFINDING tests/test_the_pane_speaks_seven_words.py:92 non-blocking: the _stats sample dict supplies no promotion_queued or oldest_promotion_position, so the seventh cell's count lookup at reckon/crew/ticker.py:3932 and its @position suffix at :3942 are not asserted, and a regression dropping the suffix or the count-field consumption would leave this guard green while the figure the diff exists to pin disappears from the pane.\nFINDING manifest.md:20 blocking: baseline_suite and after_suite carry only revision and command, after_suite's command being the literal string \"placeholder\", with no exit_status, completed, failure_count or failure_ids, so the done_when requirement that both arms be recorded as inline JSON carrying full 40-character revisions is unmet and promotion cannot read an arm result from this record.\nFINDING manifest.md:15 blocking: test_logs names .../scoped-gate-x, which does not exist (the actual log is scoped-gate-1795001661040433791.log), and tests: at manifest.md:13 reads \"env PYTHONPATH=x\", so neither the gate command nor its log can be re-run or opened from the record.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html:1 blocking: the done_when's negative-control fragment, the base run with its failing ids beside the head run, was never written; no such path exists at b7dcd55e3e36 although 238 sibling fragments live under docs/evidence/fragments/queued-work-needs-no-workaround/.\n",
+  "review_method": "Read-only review of the source pointer, manifest, recorded gate and negative-control logs, and the single landed commit; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T115537358593-review-of-qwnw-red-file-the-pane-speaks-seven-words-b7dcd55e3e36",
+  "reviewed_base_sha": "1766ca118859247ca28cefa0064b27175002d0ce",
+  "reviewed_head_sha": "b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814",
+  "reviewed_run_id": "r-20261118T062638373945-qwnw-red-file-the-pane-speaks-seven-words",
+  "scores": {
+    "durability": 15,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062638373945-qwnw-red-file-the-pane-speaks-seven-words/after_suite-1795002101697069492.log",
+      "observed_summary": "58 passed in 37.75s",
+      "revision": "b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062638373945-qwnw-red-file-the-pane-speaks-seven-words/baseline_suite-1795002058606330094.log",
+      "observed_summary": "58 passed in 35.53s",
+      "revision": "1766ca118859247ca28cefa0064b27175002d0ce"
+    },
+    "ticker_arm": {
+      "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062638373945-qwnw-red-file-the-pane-speaks-seven-words/ticker-arm-base.log",
+      "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062638373945-qwnw-red-file-the-pane-speaks-seven-words/ticker-arm-head.log",
+      "note": "The arm over the 79 test files importing the changed ticker module fails 21 tests and passes 839 at both revisions; ticker-arm-base.ids and ticker-arm-head.ids compare identical, so no failure is added against the base, though both logs end EXIT=1 on the pre-existing ids."
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:40:45.783608+00:00",
+  "total": 100
+}
