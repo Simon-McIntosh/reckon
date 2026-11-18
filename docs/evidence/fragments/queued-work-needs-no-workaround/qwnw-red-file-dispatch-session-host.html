@@ -1,0 +1,89 @@
+<section id="qwnw-red-file-dispatch-suite-head">
+  <h2>A session-host case that asked a session it was not</h2>
+
+  <p><strong>What was red.</strong> At the base revision
+  <code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, one case of
+  <code>tests/test_dispatch_session_host.py</code> failed and 7 passed:</p>
+
+  <pre><code>FAILED tests/test_dispatch_session_host.py::test_dispatch_asks_the_session_host_and_is_admitted_by_it
+1 failed, 7 passed in 2.88s
+EXIT=1</code></pre>
+
+  <p><strong>Verdict: the test was wrong in three places; no product module was
+  changed.</strong> The file was written on 7 October; three rules it encoded
+  were changed or extended afterwards, and each is guarded where it lives.</p>
+
+  <h3 id="qwnw-red-file-dispatch-suite-head-causes">The three causes</h3>
+
+  <ol id="qwnw-red-file-dispatch-suite-head-cause-list">
+    <li><strong>A request is written only for the calling process's own session
+      pair</strong> (<code>reckon/crew/dispatch_watch.py</code>,
+      <code>_request_host_follower</code>: <em>“the FIFO belongs to the calling
+      process's host, so a pair named for any other session would be followed by
+      a host that does not own it”</em>). The case dispatched under the name
+      <code>session-hosted</code> while the fixture makes this process
+      <code>claude-session-host-test</code>, so nothing was written to the FIFO
+      and the dispatch fell through to the unchanged Monitor refusal. Measured
+      directly, with the FIFO open and its host reading:</li>
+  </ol>
+
+  <pre><code>session session-hosted request written: False elapsed 0.0
+session claude-session-host-test request written: True elapsed 0.0
+line: b'{"project": "sample", "session": "claude-session-host-test", "owner_checked": true}\n'</code></pre>
+
+  <ol start="2" id="qwnw-red-file-dispatch-suite-head-cause-list-2">
+    <li><strong>The answer dispatch accepts is the host's own live child in its
+      census</strong>, not a bare follower registration
+      (<code>_ask_session_host_for_follower</code> waits on
+      <code>_session_host_child_pid</code>). The stub host took a follower
+      registration and published no census, so even a delivered request left
+      the answer unheld. Measured with a live registration and then with the
+      census record naming that same pid:</li>
+  </ol>
+
+  <pre><code>census child with registration only: None
+census child after record = the follower's pid is the host's: True</code></pre>
+
+  <ol start="3" id="qwnw-red-file-dispatch-suite-head-cause-list-3">
+    <li><strong>The request line carries the owner mark</strong>
+      (<code>_request_line</code> writes <code>owner_checked</code>), and the case
+      asserted a two-key line. That mark is printed in the probe above.</li>
+  </ol>
+
+  <p><strong>What was updated, and to what rule.</strong> The case now
+  dispatches as the session the environment declares (a module constant,
+  <code>CLAUDE_SESSION</code>, that the fixture also sets), the stub host
+  publishes the follower it starts in the host census under the registration it
+  holds, and the delivered line is asserted whole, owner mark included. No
+  assertion was deleted or weakened: the two-key line assertion was replaced by
+  a three-key one, which is stricter; the delivery, attachment and empty arming
+  line assertions are unchanged.</p>
+
+  <h3 id="qwnw-red-file-dispatch-suite-head-arms">The arms</h3>
+
+  <table id="qwnw-red-file-dispatch-suite-head-arm-table">
+    <caption>Every arm is a log whose first lines name the revision, tree and
+    command, and whose last line reads <code>EXIT=&lt;code&gt;</code>. Both ran
+    as jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code> removed from
+    the test process's environment.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base arm (negative control)</td>
+        <td><code>94359be6ce0d3f31fd31f0ac4d4b7437f2835832</code>, scratch extraction</td>
+        <td>1 failed, 7 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head arm</td>
+        <td><code>eea4a1160b4dd194387fed094c19c8afffe36e45</code>, the worktree</td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm is the negative control and fails exactly one id, which the
+  head arm passes:</p>
+
+  <ul id="qwnw-red-file-dispatch-suite-head-failing-ids">
+    <li><code>tests/test_dispatch_session_host.py::test_dispatch_asks_the_session_host_and_is_admitted_by_it</code></li>
+  </ul>
+
+  <p>Logs: <code>~/.config/reckon/crew/runs/r-20261118T063025989041-qwnw-red-file-dispatch-session-host/base-arm.log</code>
+  and <code>…/head-arm.log</code>.</p>
+</section>
