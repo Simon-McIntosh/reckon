@@ -44,3 +44,20 @@ EXIT=1</pre>
 <p>Logs: run directory <code>negative-control-1795004557199734287.log</code>
 beside <code>scoped-gate-1795004804923485505.log</code>.</p>
 </section>
+<section id="qwnw-red-file-test-watchers-are-reaped-audit-repair">
+<h2>The record's own audit refused the logs its writer wrote</h2>
+<p>Writing this record hit a second defect, in the check rather than the code under
+test. A launch through the worker fence writes its notice to the task's stderr
+before the task runs, so an arm log captured on a fenced partition opens with
+<code>srun: task re-enters the worker fence; …</code> and the header the measure
+writes lands second. The manifest audit read the <b>literal</b> first line, so
+both suite arms of a fresh pair were refused as naming no revision — logs
+<code>crew suite run</code> had just produced. The notice is now a named constant
+in <code>reckon/nested_launch.py</code>, skipped where it opens a log and only
+with a scheduler's own name in front of it, and the first recorded line after it
+is judged exactly as before; a log that only quotes the notice, or that records
+prose after it, is still reported. Two tests hold those two directions.</p>
+<p>This record cites the pair it was measured with and is audited by the same
+check, which is why the defect surfaced here rather than in a later node's
+gate.</p>
+</section>
