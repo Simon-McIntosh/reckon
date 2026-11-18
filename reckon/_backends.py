@@ -4276,7 +4276,11 @@ def cached_stream_fold(
     state = step(seed, events)
     with _STREAM_SUMMARY_LOCK:
         live = _STREAM_SUMMARIES.get(str(source.resolve()))
-        if live is not None:
+        if live is not None and live.identity == summary.identity:
+            # The summary is still at the version this state folds; one that
+            # moved while the bytes were read is not extended from an older
+            # state, because the records between the two versions would never
+            # be folded into it.
             live.scans[name] = _StreamScan(name, step, seed, state)
     return state
 
