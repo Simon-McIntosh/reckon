@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "fd2fe9c17f80e5901236fb399cb7ac4831d2bcce",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/merge.py:187 merge preflight -> promotion.complete_dry_run",
+    "reckon/crew_run_commands.py:3997 crew complete --dry-run -> promotion_module.complete_dry_run",
+    "reckon/mcp.py:3055 MCP refusal listing -> promotion_module.complete_dry_run",
+    "reckon/crew/promotion_checks.py:1393 _require_review_waiver -> _review_is_owed"
+  ],
+  "completed_at": "2026-11-15T16:46:55Z",
+  "dispatched_at": "2026-11-18T01:11:57Z",
+  "findings": [
+    {
+      "file": "tests/test_a_dry_run_reports_what_the_real_call_refuses.py",
+      "line": "279",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's first clause, that a run the real complete --land refuses on its armed suite evidence is reported by the dry run with the same refusal, has no case at the head: this rewrite asserts `report[\"refusals\"] == []` over the would-measure population, and the refused population now exists only as the owner's raised ledger.SuiteDeltaError caught at reckon/crew/promotion.py:1714, so a regression that reported the suite evaluation and then dropped the refusal would not redden any assertion in the file."
+    },
+    {
+      "file": "tests/test_a_dry_run_reports_what_the_real_call_refuses.py",
+      "line": "357",
+      "severity": "non-blocking",
+      "text": "non-blocking: nothing fails if reviews_owed stops naming the tier the entry is built with at reckon/crew/promotion_checks.py:1385, although the goal and the \u00a710 fragment both state the entry carries run, tier and head; the earlier assertion on it was deleted and the manifest's rubric.correctness still claims the review case asserts run, tier and head."
+    },
+    {
+      "file": "tests/test_a_dry_run_reports_what_the_real_call_refuses.py",
+      "line": "360",
+      "severity": "non-blocking",
+      "text": "non-blocking: `[str(entry[\"run_id\"]) for entry in owed] == [run_id]` compares the id the report echoes against the id the test itself wrote into the pointer, so it holds for any code that copies the field; the independent guards are the entry's existence and the head assertion at line 361."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145809318143-dry-run-tells-the-truth-s10/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line states the four cases fail at fd2fe9c17f0, but the recorded base arm runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and logs/ holds no run of the new cases against base code, so the done_when's base-revision clause is asserted rather than shown."
+    }
+  ],
+  "head_log_revision": "669f5f4fb6c6bca86f3fbdc0574e56b21f40b478",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against fd2fe9c: 5e8e1847c6e adds _promotion_coordination, dry_run_state threading, _dry_run_suite_refusals and _reviews_the_dry_run_owes with a 333-line test; 7134a2c438e adds the \u00a710 fragment; d6a7a892ee narrows the suite refusal to the landing's own branch and adds the would_measure note; 072e4c7a and 669f5f4f are merges of primary main, and the second removes _dry_run_suite_refusals in favour of main's own suite refusal and rewrites the suite case to the would-measure population.",
+    "done_when": "the done_when asks for a dry run that reports the suite refusal the real call raises, the review a delivered unreviewed head owes, no write lock, and new cases failing at the base revision; logs/after-suite-all-debug.log records 62 passed EXIT=0 at 669f5f4f against 58 passed at fd2fe9c, tests/test_a_dry_run_reports_what_the_real_call_refuses.py:376 asserts no lock is taken, but after the merge the file asserts only the would-measure population (line 279) and no case asserts the refused-pair report, and no log runs the four cases against base code.",
+    "goal": "the node goal is that a promotion dry run report what the real call will refuse; reckon/crew/promotion.py:1448 hands the landing's own suite_delta and reviews_owed into the report, reckon/crew/promotion.py:1669 carries would_measure, and reckon/crew/promotion.py:235 drops the pointer lock and host claim from the dry-run path, so all three gaps the plan names are reported.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145809318143-dry-run-tells-the-truth-s10/manifest.md; status complete, five commits headed 669f5f4f, four changed paths, gate 62 passed against 58 passed, negative control 2 failed 60 passed EXIT=1, and the importer sets with the head's 12 failures reproduced on primary main.",
+    "write_paths": "read the source manifest's declared paths (reckon/crew/promotion.py, reckon/crew/promotion_checks.py, tests/test_a_dry_run_reports_what_the_real_call_refuses.py, the \u00a710 fragment, a figures directory); the node's own commits 5e8e1847c6e, 7134a2c438e and d6a7a892ee touch only the first four and nothing else, and the paths the delivered diff adds outside them arrive through the two merges of primary main."
+  },
+  "justifications": {
+    "durability": "tests/test_a_dry_run_reports_what_the_real_call_refuses.py:279 fails if a would-measure pair becomes a refusal, proven red at logs/negative-control.log, and line 376 fails if the dry run takes any of the three locks, but no case fails if the dry run stops reporting the refusal the real call raises, and line 357 leaves the entry's tier unasserted.",
+    "evidence": "logs/after-suite-all-debug.log ends `62 passed ... EXIT=0` at 669f5f4f and logs/baseline-suite-all-debug.log `58 passed ... EXIT=0` at fd2fe9c, but neither log nor any other runs the four new cases against base code, so the done_when's base-revision clause rests on the manifest's artifacts prose even though reading fd2fe9c:reckon/crew/promotion.py:1268 shows no suite_delta, would_measure or reviews_owed key and line 749 shows the lock taken.",
+    "fit": "the added helpers follow the module's private-helper and docstring idiom and the head lints clean on the changed files; the two UP017 findings in promotion_checks.py come from the same lines at fd2fe9c and are not this run's.",
+    "goal_fidelity": "reckon/crew/promotion.py:1448 passes the landing's own suite_delta and reviews_owed into _dry_run_report, and promotion_checks.py:1355 states the owed review from the gate's own predicate at promotion_checks.py:1311, so the dry run answers the question the real call answers.",
+    "reuse": "_review_is_owed is extracted and read by both the refusal and the report, and the merge at 669f5f4f deletes _dry_run_suite_refusals so no refusal wording is forked; a search for an owed-review owner found reckon/crew/obligations.py:1061 and reckon/crew/admission/reviews.py:417, which dispatch and hold reviews from pointer rows rather than judging a promotion's own gate, so _reviews_the_dry_run_owes extends the promotion's owner instead of duplicating them.",
+    "scope_discipline": "the node's own commits touch only the four declared paths, and the out-of-scope paths in the delivered diff are the contents of the two merges of primary main, which a merge reconciles rather than the node authoring."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a promotion dry run report what the real call will refuse; reckon/crew/promotion.py:1448 hands the landing's own suite_delta and reviews_owed into the report, reckon/crew/promotion.py:1669 carries would_measure, and reckon/crew/promotion.py:235 drops the pointer lock and host claim from the dry-run path, so all three gaps the plan names are reported.\nVERDICT done_when: the done_when asks for a dry run that reports the suite refusal the real call raises, the review a delivered unreviewed head owes, no write lock, and new cases failing at the base revision; logs/after-suite-all-debug.log records 62 passed EXIT=0 at 669f5f4f against 58 passed at fd2fe9c, tests/test_a_dry_run_reports_what_the_real_call_refuses.py:376 asserts no lock is taken, but after the merge the file asserts only the would-measure population (line 279) and no case asserts the refused-pair report, and no log runs the four cases against base code.\nVERDICT write_paths: read the source manifest's declared paths (reckon/crew/promotion.py, reckon/crew/promotion_checks.py, tests/test_a_dry_run_reports_what_the_real_call_refuses.py, the \u00a710 fragment, a figures directory); the node's own commits 5e8e1847c6e, 7134a2c438e and d6a7a892ee touch only the first four and nothing else, and the paths the delivered diff adds outside them arrive through the two merges of primary main.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145809318143-dry-run-tells-the-truth-s10/manifest.md; status complete, five commits headed 669f5f4f, four changed paths, gate 62 passed against 58 passed, negative control 2 failed 60 passed EXIT=1, and the importer sets with the head's 12 failures reproduced on primary main.\nVERDICT diff: read commit by commit against fd2fe9c: 5e8e1847c6e adds _promotion_coordination, dry_run_state threading, _dry_run_suite_refusals and _reviews_the_dry_run_owes with a 333-line test; 7134a2c438e adds the \u00a710 fragment; d6a7a892ee narrows the suite refusal to the landing's own branch and adds the would_measure note; 072e4c7a and 669f5f4f are merges of primary main, and the second removes _dry_run_suite_refusals in favour of main's own suite refusal and rewrites the suite case to the would-measure population.\nCALL_SITES: reckon/crew/merge.py:187, reckon/crew_run_commands.py:3997, reckon/mcp.py:3055, reckon/crew/promotion_checks.py:1393\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1448 passes the landing's own suite_delta and reviews_owed into _dry_run_report, and promotion_checks.py:1355 states the owed review from the gate's own predicate at promotion_checks.py:1311, so the dry run answers the question the real call answers.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/after-suite-all-debug.log ends `62 passed ... EXIT=0` at 669f5f4f and logs/baseline-suite-all-debug.log `58 passed ... EXIT=0` at fd2fe9c, but neither log nor any other runs the four new cases against base code, so the done_when's base-revision clause rests on the manifest's artifacts prose even though reading fd2fe9c:reckon/crew/promotion.py:1268 shows no suite_delta, would_measure or reviews_owed key and line 749 shows the lock taken.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node's own commits touch only the four declared paths, and the out-of-scope paths in the delivered diff are the contents of the two merges of primary main, which a merge reconciles rather than the node authoring.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_dry_run_reports_what_the_real_call_refuses.py:279 fails if a would-measure pair becomes a refusal, proven red at logs/negative-control.log, and line 376 fails if the dry run takes any of the three locks, but no case fails if the dry run stops reporting the refusal the real call raises, and line 357 leaves the entry's tier unasserted.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers follow the module's private-helper and docstring idiom and the head lints clean on the changed files; the two UP017 findings in promotion_checks.py come from the same lines at fd2fe9c and are not this run's.\nSCORE reuse: 18\nJUSTIFICATION reuse: _review_is_owed is extracted and read by both the refusal and the report, and the merge at 669f5f4f deletes _dry_run_suite_refusals so no refusal wording is forked; a search for an owed-review owner found reckon/crew/obligations.py:1061 and reckon/crew/admission/reviews.py:417, which dispatch and hold reviews from pointer rows rather than judging a promotion's own gate, so _reviews_the_dry_run_owes extends the promotion's owner instead of duplicating them.\nFINDING tests/test_a_dry_run_reports_what_the_real_call_refuses.py:279 non-blocking: the done_when's first clause, that a run the real complete --land refuses on its armed suite evidence is reported by the dry run with the same refusal, has no case at the head: this rewrite asserts `report[\"refusals\"] == []` over the would-measure population, and the refused population now exists only as the owner's raised ledger.SuiteDeltaError caught at reckon/crew/promotion.py:1714, so a regression that reported the suite evaluation and then dropped the refusal would not redden any assertion in the file.\nFINDING tests/test_a_dry_run_reports_what_the_real_call_refuses.py:357 non-blocking: nothing fails if reviews_owed stops naming the tier the entry is built with at reckon/crew/promotion_checks.py:1385, although the goal and the \u00a710 fragment both state the entry carries run, tier and head; the earlier assertion on it was deleted and the manifest's rubric.correctness still claims the review case asserts run, tier and head.\nFINDING tests/test_a_dry_run_reports_what_the_real_call_refuses.py:360 non-blocking: `[str(entry[\"run_id\"]) for entry in owed] == [run_id]` compares the id the report echoes against the id the test itself wrote into the pointer, so it holds for any code that copies the field; the independent guards are the entry's existence and the head assertion at line 361.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T145809318143-dry-run-tells-the-truth-s10/manifest.md:22 non-blocking: the artifacts line states the four cases fail at fd2fe9c17f0, but the recorded base arm runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and logs/ holds no run of the new cases against base code, so the done_when's base-revision clause is asserted rather than shown.\n",
+  "review_run_id": "r-20261118T011117379753-review-of-dry-run-tells-the-truth-s10-669f5f4fb6c6",
+  "reviewed_base_sha": "fd2fe9c17f80e5901236fb399cb7ac4831d2bcce",
+  "reviewed_head_sha": "669f5f4fb6c6bca86f3fbdc0574e56b21f40b478",
+  "reviewed_run_id": "r-20261115T145809318143-dry-run-tells-the-truth-s10",
+  "reviewer_run_id": "r-20261118T011117379753-review-of-dry-run-tells-the-truth-s10-669f5f4fb6c6",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T01:21:21.216341+00:00",
+  "total": 101
+}
