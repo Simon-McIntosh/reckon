@@ -9,9 +9,14 @@ captured streams, so the notice displaced the document. Verdict: <b>test
 wrong</b>; the product rule is intact and is now asserted rather than assumed.
 No assertion was deleted or weakened: the exit code is still asserted, the
 document is still parsed and both <code>watch</code> fields are still checked,
-and the test additionally holds the notice to stderr, so a product that moved
-it onto stdout would fail.</p>
+and the test additionally requires the notice on stderr. The product keeps that
+side of the contract in <code>_single_document_stdout</code>, which points
+<code>sys.stdout</code> at stderr for the duration of a JSON command, so
+everything the command prints lands on stderr and the document is written to
+the stream held aside; deleting the notice line fails the new assertion, and
+that red run is logged beside the two arms.
 <pre># head run, all_debug job, SLURM_JOB_ID unset, output on shared storage
+# (this record's own commit is the only later difference in the tree)
 # revision: 1a6c2c009f98e9def78b518b860b666a658bf731
 # host: 98dci4-clu-3141.iter.org
 # tree: /tmp/mcintos-landing-95e6703c2c95-h1Ift8/tree
