@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:10:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment is stored under a name without the qwnw- prefix the node's declared write path names, so a reader resolving .../qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html finds no file; the fragment's own section id carries the prefix and 48 of the directory's 216 fragments use the same prefix-less name, so the directory grant covers it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment's \"head run\" block quotes scoped-gate-1794998770598446069.log at revision 867ee30029 while the manifest's gate for the delivered head is scoped-gate-1794999495998612549.log at 6d4cb77bbc, so a reader opening the log this fragment cites measures the test commit rather than the head the review read; the paragraph says so and the manifest's test_logs carry the fragment's cited run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base 2f00851c \u2014 867ee30029 replaces outside.txt with docs/plans/outside.html in the two escape cases at tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:107-124 and :126-145, keeping every assertion, and 6d4cb77bbc adds the 94-line evidence fragment and no code.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset on shared storage; red-file-arm-head.log names revision 6d4cb77bbc, its tree and its command and ends with \"8 passed in 4.81s\" then EXIT=0, arm.sh runs pytest under `env -u SLURM_JOB_ID`, and red-file-arm-base.log reads \"2 failed, 6 passed\" EXIT=1 at 2f00851c with both suite arms at 58 passed EXIT=0.",
+    "goal": "the node goal is that tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py pass in full on the primary branch; the head arm in red-file-arm-head.log reads \"8 passed\" EXIT=0 at 6d4cb77bbc, so every id in the file passes.",
+    "manifest": "read; status complete, commits 867ee30029 and 6d4cb77bbc, changed_paths the two landed files, tests the literal pytest command, test_logs red-file-arm-head.log and scoped-gate-1794999495998612549.log, negative_control_log red-file-arm-base.log, and baseline_suite/after_suite both 58 passed EXIT=0 with full 40-character revisions.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a qwnw-prefixed fragment beside it; git diff --stat 2f00851c..6d4cb77bbc lists exactly tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html, both inside the declared tests and fragment directories."
+  },
+  "justifications": {
+    "durability": "the two reinstated guards at tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:114-118 and :132-136 would redden with \"DID NOT RAISE CrewError\" if reckon/crew/runs.py:2162's DEFAULT_EXCLUSIVE_PATHS or _changed_artifacts_needing_acceptance at reckon/crew/promotion_scope.py:585 stopped matching docs/plans/*.html, and each assertion compares the refusal message against git-discovered paths rather than a value the test handed crew.complete.",
+    "evidence": "red-file-arm-head.log's header names its revision, tree and command and its last two lines read \"8 passed in 4.81s\" and EXIT=0, while red-file-arm-base.log reads \"2 failed, 6 passed\" EXIT=1 and the manifest records 58 passed EXIT=0 on both suite arms \u2014 though no log line states the all_debug partition the done_when names.",
+    "fit": "the comment at tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:107-110 states the rule in the file's own voice and ruff check plus ruff format --check report nothing on the head file, though the new fragment at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html:1-2 opens unindented with an h3 where its sibling qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html:1-2 indents two spaces under an h2.",
+    "goal_fidelity": "tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:107-124 and :126-145 now escape with docs/plans/outside.html, a class reckon/crew/runs.py:2162 still lists as exclusive, and red-file-arm-head.log reads \"8 passed\" EXIT=0 at the delivered head.",
+    "reuse": "the diff adds no function, class or module \u2014 the tests reach the existing owner reckon/crew/promotion_scope.py:585 and take the exclusive classes from reckon/crew/runs.py:2162 rather than restating them, and a search over reckon for a second copy of the pattern list found only that one constant, which unmergeable_patterns also builds on.",
+    "scope_discipline": "git diff 2f00851c..6d4cb77bbc touches only tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared tests and fragment directories."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py pass in full on the primary branch; the head arm in red-file-arm-head.log reads \"8 passed\" EXIT=0 at 6d4cb77bbc, so every id in the file passes.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset on shared storage; red-file-arm-head.log names revision 6d4cb77bbc, its tree and its command and ends with \"8 passed in 4.81s\" then EXIT=0, arm.sh runs pytest under `env -u SLURM_JOB_ID`, and red-file-arm-base.log reads \"2 failed, 6 passed\" EXIT=1 at 2f00851c with both suite arms at 58 passed EXIT=0.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a qwnw-prefixed fragment beside it; git diff --stat 2f00851c..6d4cb77bbc lists exactly tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html, both inside the declared tests and fragment directories.\nVERDICT manifest: read; status complete, commits 867ee30029 and 6d4cb77bbc, changed_paths the two landed files, tests the literal pytest command, test_logs red-file-arm-head.log and scoped-gate-1794999495998612549.log, negative_control_log red-file-arm-base.log, and baseline_suite/after_suite both 58 passed EXIT=0 with full 40-character revisions.\nVERDICT diff: read both commits against base 2f00851c \u2014 867ee30029 replaces outside.txt with docs/plans/outside.html in the two escape cases at tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:107-124 and :126-145, keeping every assertion, and 6d4cb77bbc adds the 94-line evidence fragment and no code.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:107-124 and :126-145 now escape with docs/plans/outside.html, a class reckon/crew/runs.py:2162 still lists as exclusive, and red-file-arm-head.log reads \"8 passed\" EXIT=0 at the delivered head.\nSCORE evidence: 17\nJUSTIFICATION evidence: red-file-arm-head.log's header names its revision, tree and command and its last two lines read \"8 passed in 4.81s\" and EXIT=0, while red-file-arm-base.log reads \"2 failed, 6 passed\" EXIT=1 and the manifest records 58 passed EXIT=0 on both suite arms \u2014 though no log line states the all_debug partition the done_when names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 2f00851c..6d4cb77bbc touches only tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared tests and fragment directories.\nSCORE durability: 18\nJUSTIFICATION durability: the two reinstated guards at tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:114-118 and :132-136 would redden with \"DID NOT RAISE CrewError\" if reckon/crew/runs.py:2162's DEFAULT_EXCLUSIVE_PATHS or _changed_artifacts_needing_acceptance at reckon/crew/promotion_scope.py:585 stopped matching docs/plans/*.html, and each assertion compares the refusal message against git-discovered paths rather than a value the test handed crew.complete.\nSCORE fit: 18\nJUSTIFICATION fit: the comment at tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py:107-110 states the rule in the file's own voice and ruff check plus ruff format --check report nothing on the head file, though the new fragment at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html:1-2 opens unindented with an h3 where its sibling qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html:1-2 indents two spaces under an h2.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module \u2014 the tests reach the existing owner reckon/crew/promotion_scope.py:585 and take the exclusive classes from reckon/crew/runs.py:2162 rather than restating them, and a search over reckon for a second copy of the pattern list found only that one constant, which unmergeable_patterns also builds on.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html:1 non-blocking: the fragment is stored under a name without the qwnw- prefix the node's declared write path names, so a reader resolving .../qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html finds no file; the fragment's own section id carries the prefix and 48 of the directory's 216 fragments use the same prefix-less name, so the directory grant covers it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-merge-repaired-run-is-judged-on-its-own-changes.html:50 non-blocking: the fragment's \"head run\" block quotes scoped-gate-1794998770598446069.log at revision 867ee30029 while the manifest's gate for the delivered head is scoped-gate-1794999495998612549.log at 6d4cb77bbc, so a reader opening the log this fragment cites measures the test commit rather than the head the review read; the paragraph says so and the manifest's test_logs carry the fragment's cited run.",
+  "review_run_id": "r-20261118T111807225901-review-of-qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes-6d4cb77bbcfa",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "6d4cb77bbcfa35c6b3cfe8ebc0303c554922e09b",
+  "reviewed_run_id": "r-20261118T062553794779-qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T111807225901-review-of-qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes-6d4cb77bbcfa"
+  },
+  "reviewer_run_id": "r-20261118T111807225901-review-of-qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes-6d4cb77bbcfa",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:30:10.091773+00:00",
+  "total": 110
+}
