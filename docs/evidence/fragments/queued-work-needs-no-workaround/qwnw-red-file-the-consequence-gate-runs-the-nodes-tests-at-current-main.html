@@ -1,0 +1,63 @@
+<section id="qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main-landing">
+  <h2>The consequence-gate test reads the record its receipt links</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_the_consequence_gate_runs_the_nodes_tests.py</code>
+  was red at the primary branch with five failures, all of them one cause: the
+  completion reply stopped carrying the run's record inline. Commit
+  <code>ba811581d3</code> made the completion receipt compact — it names
+  <code>record_path</code> and keeps the full outcome there — and the test still
+  read <code>json.loads(result.output)["record"]["suite_delta"]</code>, so five
+  cases raised <code>KeyError: 'record'</code> or
+  <code>KeyError: 'missing_fields'</code>. The test's last repair
+  (<code>d375c2f912</code>) predates that reply change, which is what broke it
+  since.</p>
+
+  <p><strong>Verdict: the test was wrong.</strong> The compact receipt is the
+  product rule the code states in its own docstring — "Replies link the full
+  record and stay below 2 kB" — and the record is retained whole at
+  <code>record_path</code>. The test now opens the file the receipt names, in one
+  helper (<code>_full_outcome</code>), and every assertion it already made is
+  kept: the suite delta's status, resolved command, arms and added-failure list,
+  and the refusal's <code>error</code> with the exact missing-field names. No
+  assertion was deleted, relaxed or re-pinned to a narrower fact.</p>
+
+  <p><strong>Cause</strong>, per the node's deliverable: one cause, verdict
+  <em>test wrong</em>, named above. No product rule was broken, so nothing under
+  <code>reckon/</code> changed.</p>
+
+  <h3 id="qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main-arms">Measured</h3>
+
+  <table id="qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main-arm-table">
+    <caption>Each arm is a log whose header names the revision, tree and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>base (negative control)</td>
+        <td><code>5b0a1f537ef9</code></td>
+        <td>5 failed, 9 passed</td>
+        <td><code>runs/r-20261118T064011548725-…/negative-control-base-run.log</code></td></tr>
+      <tr><td>head, all_debug job 14 cpus</td>
+        <td><code>bb5974ccacb9</code></td>
+        <td>14 passed, <code>EXIT=0</code></td>
+        <td><code>runs/r-20261118T064011548725-…/scoped-gate-1795045999666285069.log</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main-negative-control">Negative control</h3>
+
+  <p>The base run is the same file, from a <code>git archive</code> of the base
+  revision in a scratch tree, with the repository's own interpreter and
+  <code>SLURM_JOB_ID</code> unset. Its failing ids:</p>
+
+  <ul id="qwnw-red-file-the-consequence-gate-runs-the-nodes-tests-at-current-main-failing-ids">
+    <li><code>test_the_declared_command_measures_the_nodes_fenced_test_files</code> — <code>KeyError: 'record'</code></li>
+    <li><code>test_a_scoped_pair_over_the_nodes_test_files_promotes</code> — <code>KeyError: 'record'</code></li>
+    <li><code>test_a_scoped_pair_over_the_whole_suite_is_refused</code> — <code>KeyError: 'missing_fields'</code></li>
+    <li><code>test_a_scoped_pair_over_another_nodes_files_is_refused</code> — <code>KeyError: 'missing_fields'</code></li>
+    <li><code>test_a_project_with_no_declaration_records_no_suite_observation</code> — <code>KeyError: 'record'</code></li>
+  </ul>
+
+  <p>The head run collects the same fourteen cases and reads
+  <code>14 passed in 3.62s</code> on <code>98dci4-clu-3141</code>, so the five
+  ids above are gone and none was replaced.</p>
+</section>
