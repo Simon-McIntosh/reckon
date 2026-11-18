@@ -803,87 +803,77 @@ def _canonical_identity_is_unique(
 
 #: One directory's HTML entries, each with the stamp that identifies it.
 _Listing = tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]
-#: A directory's own stat identity, whose modification stamp moves exactly when
-#: an entry is added to, removed from or renamed inside it.
-_DirectoryStamp = tuple[int, int, int, int, int]
 
-#: Listings held between resolves. Resolving a slug revalidates a held identity
-#: index against its directory's listing, and the listing — one glob and one
-#: stat per sibling — was rebuilt on every resolve although the directory had
-#: not moved. The entry is keyed on the directory's own stamp, so a directory
-#: whose entry set changed is listed again and an unchanged one costs one
-#: ``stat`` instead of a glob and a stat per sibling. The key matches
-#: ``_INDEX_MEMO``'s, so both memos describe the same directory.
-_LISTING_MEMO: dict[tuple[str, str, str], tuple[_DirectoryStamp, _Listing]] = {}
-
-
-def _directory_stamp(directory: Path) -> _DirectoryStamp | None:
-    """Return the stamp that moves when ``directory``'s entry set changes."""
-    try:
-        status = os.stat(directory)
-    except OSError:
-        return None
-    return (
-        status.st_dev,
-        status.st_ino,
-        status.st_mtime_ns,
-        status.st_ctime_ns,
-        status.st_size,
-    )
+#: Entry names held between resolves, keyed as ``_INDEX_MEMO`` is. Resolving a
+#: slug revalidates a held identity index against its directory's listing, and
+#: the listing's names were rediscovered by a glob on every resolve although the
+#: directory had not moved. Only the names are held: every entry is stamped
+#: afresh on each call, because a sibling rewritten in place changes no
+#: directory entry and would otherwise keep the identity it carried before the
+#: write. The identity is ``metadata_index._dir_identity``, which moves exactly
+#: when an entry is added, removed or renamed, so a moved directory is globbed
+#: again and an unchanged one pays no glob at all.
+_ENTRY_NAMES: dict[tuple[str, str, str], tuple[list[int], tuple[Path, ...]]] = {}
 
 
 def _identity_listing(directory: Path, docs_dir: Path, project: str) -> _Listing:
-    """Return each HTML entry of ``directory`` with the stamp that identifies it.
+    """Return each HTML entry of ``directory`` with the directory's own identity.
 
     The listing is the key a held index is revalidated against: an entry added
-    or removed changes the set of names, and a sibling written in place changes
-    its own stamp. A file that cannot be stat'ed keeps its place in the listing
-    with no stamp. The listing is keyed on the directory's own stamp: an
-    entry set that has not moved is answered from the listing taken for it
-    rather than paying the glob and one stat per sibling again. The stamp is
-    read before the listing, so a change landing during the read leaves the
-    stored stamp behind the directory and the next call lists it again. Only an
-    entry set can hide behind this: the resolved file's own head is read fresh
-    on every resolve, so a document written in place is still current.
+    or removed changes the names, and a sibling written in place changes its own
+    stamp. Only the names are held, against the directory's entry-set identity,
+    so an unchanged directory is not globbed again; every entry is stamped on
+    each call, so a rewrite is seen by the next resolve and the index is never
+    revalidated against a stamp the file no longer carries. A file that cannot
+    be stat'ed keeps its place in the listing with no stamp, so the index is
+    rebuilt rather than trusted. The identity is read before the names are
+    taken, so a directory that moved during the read is globbed again on the
+    next call rather than trusted here.
     """
-    key = (str(docs_dir), project, str(directory))
-    stamp = _directory_stamp(directory)
-    if stamp is not None:
-        with _INDEX_LOCK:
-            held = _LISTING_MEMO.get(key)
-        if held is not None and held[0] == stamp:
-            return held[1]
-    listing = _list_identity_entries(directory, docs_dir, project)
-    if stamp is not None:
-        with _INDEX_LOCK:
-            _LISTING_MEMO[key] = (stamp, listing)
-    return listing
-
-
-def _list_identity_entries(directory: Path, docs_dir: Path, project: str) -> _Listing:
-    """List ``directory``'s HTML entries and stamp each one."""
     from reckon import metadata_index
 
-    reused = metadata_index._reuse_covered(docs_dir, project)
-    if reused is not None:
-        paths = [
-            path
-            for relative, path in reused[0]
-            if relative.endswith(".html") and path.parent == directory
-        ]
-    else:
-        try:
-            paths = sorted(directory.glob("*.html"))
-        except OSError:
-            return ()
+    key = (str(docs_dir), project, str(directory))
+    identity = metadata_index._dir_identity(directory)
+    names: tuple[Path, ...] | None = None
+    if identity is not None:
+        with _INDEX_LOCK:
+            held = _ENTRY_NAMES.get(key)
+        if held is not None and held[0] == identity:
+            names = held[1]
+    if names is None:
+        names = _list_entry_names(directory, docs_dir, project)
+        if names is not None and identity is not None:
+            with _INDEX_LOCK:
+                _ENTRY_NAMES[key] = (identity, names)
+    if not names:
+        return ()
     listing: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
-    for path in paths:
+    for path in names:
         try:
             signature = file_memo.file_signature(path)
         except OSError:
             signature = None
         listing.append((str(path), signature))
     return tuple(listing)
+
+
+def _list_entry_names(
+    directory: Path, docs_dir: Path, project: str
+) -> tuple[Path, ...] | None:
+    """Return ``directory``'s HTML entries, or None when it cannot be listed."""
+    from reckon import metadata_index
+
+    reused = metadata_index._reuse_covered(docs_dir, project)
+    if reused is not None:
+        return tuple(
+            path
+            for relative, path in reused[0]
+            if relative.endswith(".html") and path.parent == directory
+        )
+    try:
+        return tuple(sorted(directory.glob("*.html")))
+    except OSError:
+        return None
 
 
 def _directory_identity_index(

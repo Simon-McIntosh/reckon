@@ -7,12 +7,16 @@ the index is revalidated against: a glob of the directory and a stat of every
 sibling. The listing was rebuilt on each resolve, so 200 named reads paid 400
 directory listings across two passes even though nothing had moved.
 
-The listing now follows the directory's own stat stamp, which moves exactly
-when an entry is added, removed or renamed. Two passes over 200 plans therefore
-cost one glob and one stat per sibling between them, and a pass after one plan
-is added and one renamed costs one further glob. Every resolution answers what
-the base revision answers, checked against the classifier the base revision uses
-for each file the test wrote.
+The directory's entry names are what now follow its own entry-set identity,
+which moves exactly when an entry is added, removed or renamed. The test builds
+200 plans and resolves all 200 twice, then again after one plan is added and one
+renamed. The two passes pay one glob between them instead of 400, and the pass
+after the change costs one further glob. Each entry is still stamped on every
+resolve, exactly as the base revision stamps it, because a held stamp is a stamp
+the file may no longer carry; the in-place case below holds that down by
+asserting the refusal the base revision gives when a rewritten sibling claims an
+already resolved slug, and that the rewrite left the directory's own identity
+alone. Every resolution answers what the base revision answers.
 
 Negative control: at the base revision the two passes glob the directory at
 least 400 times.
@@ -24,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import file_memo, resources
+from reckon import file_memo, metadata_index, resources
 
 PROJECT = "sample"
 PLAN_COUNT = 200
@@ -139,9 +143,12 @@ def test_plan_resolution_reads_the_directory_once_per_change(
     assert meter.globs <= 1, (
         f"two passes over {PLAN_COUNT} plans globbed the directory {meter.globs} times"
     )
-    assert sum(meter.sibling_stats) <= PLAN_COUNT, (
-        f"two passes over {PLAN_COUNT} plans stamped "
-        f"{sum(meter.sibling_stats)} siblings"
+    # Every listing stamps the same 200 entries, and no listing is shorter than
+    # the directory: the held names never stand in for a stamp, because a held
+    # stamp is one the file may no longer carry (see the in-place case below).
+    assert set(meter.sibling_stats) == {PLAN_COUNT}, (
+        "listings stamped different numbers of siblings: "
+        f"{sorted(set(meter.sibling_stats))}"
     )
     assert first == expected
     assert second == expected
@@ -166,3 +173,38 @@ def test_plan_resolution_reads_the_directory_once_per_change(
         f"{meter.globs} times on the next pass"
     )
     assert third == expected_after
+
+
+def test_a_sibling_rewritten_in_place_is_seen(tmp_path: Path) -> None:
+    """A rewrite that claims a resolved slug is refused, as the base revision does.
+
+    The directory's own identity cannot see this write: no entry is added,
+    removed or renamed, so the held names are still right. Only the rewritten
+    sibling's own stamp moves, and a listing that held that stamp would hand the
+    held index the identity the file carried before the write, resolve the slug
+    it now claims, and lose the refusal the base revision gives.
+    """
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    _write_plan(docs, "alpha")
+    beta = _write_plan(docs, "beta")
+
+    # Warm the held names and the held index on an answer the rewrite must
+    # invalidate.
+    assert resources.resolve_resource(docs, PROJECT, "alpha") is not None
+    assert resources.resolve_resource(docs, PROJECT, "beta") is not None
+    before = metadata_index._dir_identity(plans)
+    assert before is not None
+
+    beta.write_text(_plan_doc("alpha"), encoding="utf-8")
+
+    assert metadata_index._dir_identity(plans) == before, (
+        "the rewrite moved the directory, so this case no longer tests a "
+        "sibling's own stamp"
+    )
+    with pytest.raises(resources.ResourceCollision) as refused:
+        resources.resolve_resource(docs, PROJECT, "alpha")
+
+    message = str(refused.value)
+    assert "duplicate resource" in message, message
+    assert "plans/alpha.html" in message and "plans/beta.html" in message, message
