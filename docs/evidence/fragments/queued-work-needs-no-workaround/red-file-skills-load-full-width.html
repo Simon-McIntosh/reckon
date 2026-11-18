@@ -1,0 +1,118 @@
+<section id="qwnw-red-file-skills-load-full-width-landing">
+  <p><strong>What changed.</strong> <code>tests/test_skills_load_full_width.py</code>
+  carried two assertions against wording the skills no longer hold, so the file
+  was red on the primary branch: <em>2 failed, 7 passed</em>. Both causes take
+  the same verdict — <strong>the test was wrong</strong> — and one commit is
+  behind both: <code>9da8596517</code>, <em>docs(reckon-build): queue every
+  reviewed plan at its full width</em>, which applied the lead's 14 November
+  directive to stop rationing the queue. It rewrote
+  <code>skills/reckon-build/SKILL.md</code> and <code>AGENTS.md</code> and left
+  the test asserting the sentence it removed.</p>
+
+  <table id="qwnw-red-file-skills-load-full-width-causes">
+    <caption>Each cause, what the test asserted, and what the surfaces carry.</caption>
+    <thead><tr><th>cause</th><th>asserted at base</th><th>now</th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr><td>retired queue-width rule</td>
+        <td><code>Never load a plan wholesale: choose each section</code> in the
+        build skill</td>
+        <td><code>Queue every reviewed plan you are orchestrating at its full
+        width</code>, and the retired sentence is barred</td>
+        <td>test wrong — the lead's directive replaced the rule</td></tr>
+      <tr><td>guidance clause wording</td>
+        <td><code>including those whose upstream has not landed</code></td>
+        <td><code>including sections whose upstream has not landed</code></td>
+        <td>test wrong — same clause, same meaning, reworded in the same
+        commit</td></tr>
+    </tbody>
+  </table>
+
+  <p>No assertion was deleted or weakened. The retired-rule assertion became
+  two: one names the instruction the build skill now carries, one bars the
+  retired sentence from returning, which the old assertion could not do. The
+  guidance assertion keeps its clause, its test and its meaning; only the noun
+  follows the document.</p>
+
+  <h3 id="qwnw-red-file-skills-load-full-width-arms">Measured</h3>
+
+  <p>Each arm is a log whose first lines name the revision, tree and command and
+  whose last line reads <code>EXIT=&lt;code&gt;</code>. The base arm extracts
+  <code>97dec20bfb</code> with <code>git archive</code> into the run's scratch
+  directory and runs the file there, so it measures the base revision's own test
+  against the base revision's own documents.</p>
+
+  <table id="qwnw-red-file-skills-load-full-width-arms-table">
+    <caption>The named file on both sides, and the armed suite promotion runs.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>named file, base arm</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code>, extraction</td>
+        <td>2 failed, 2 of 9 ids red, <code>EXIT=1</code></td></tr>
+      <tr><td>named file, head arm</td>
+        <td><code>c7efa46ac05a2d5ca2faea2dc9207659a8080bc1</code>, scoped gate on
+        <code>all_debug</code></td>
+        <td>9 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>armed suite, base arm</td>
+        <td><code>97dec20bfb</code>, <code>all_debug</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>armed suite, after arm</td>
+        <td><code>c7efa46ac0</code>, <code>all_debug</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-skills-load-full-width-control">Negative control</h3>
+
+  <p>The base arm, verbatim from its log:</p>
+
+  <pre id="qwnw-red-file-skills-load-full-width-base-log"># revision: 97dec20bfb8603ab71c4e9deeefddab685e0a42e
+# tree: /tmp/reckon-crew-scratch/r-20261118T044617464935-qwnw-red-file-skills-load-full-width/qwnw-base-arm (git archive of 97dec20bfb8603ab71c4e9deeefddab685e0a42e)
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skills_load_full_width.py
+# module.__file__: /tmp/reckon-crew-scratch/r-20261118T044617464935-qwnw-red-file-skills-load-full-width/qwnw-base-arm/tests/test_skills_load_full_width.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T044617464935-qwnw-red-file-skills-load-full-width/qwnw-base-arm
+F.F......                                                                [100%]
+=================================== FAILURES ===================================
+___________ test_dispatch_set_includes_sections_waiting_for_upstream ___________
+
+&gt;       assert "Never load a plan wholesale: choose each section" in build
+tests/test_skills_load_full_width.py:23: AssertionError
+____________ test_readiness_reports_do_not_narrow_the_dispatch_set _____________
+
+&gt;       assert "including those whose upstream has not landed" in normalized(
+tests/test_skills_load_full_width.py:52: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_skills_load_full_width.py::test_dispatch_set_includes_sections_waiting_for_upstream
+FAILED tests/test_skills_load_full_width.py::test_readiness_reports_do_not_narrow_the_dispatch_set
+2 failed, 7 passed in 1.45s
+EXIT=1</pre>
+
+  <p>The head arm, verbatim from its gate log:</p>
+
+  <pre id="qwnw-red-file-skills-load-full-width-head-log"># revision: c7efa46ac05a2d5ca2faea2dc9207659a8080bc1
+# host: 98dci4-clu-3144.iter.org
+# tree: /tmp/mcintos-landing-a833ae5ae869-SPtIKs/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skills_load_full_width.py'
+.........                                                                [100%]
+9 passed in 1.25s
+EXIT=0</pre>
+
+  <p>The base arm's two red ids are exactly the two the head arm now passes; no
+  other id moves.</p>
+
+  <h3 id="qwnw-red-file-skills-load-full-width-mutations">Mutations that falsify the guards</h3>
+
+  <table id="qwnw-red-file-skills-load-full-width-mutation-table">
+    <caption>Each mutation applies to a copy of the document in memory, and the
+    assertion under test is evaluated against the mutated text.</caption>
+    <thead><tr><th>mutation</th><th>expected</th><th>observed</th></tr></thead>
+    <tbody>
+      <tr><td>reinsert <code>Never load a plan wholesale: choose each section</code>
+        in the build skill</td><td>absence guard fires</td>
+        <td>fired</td></tr>
+      <tr><td>revert the guidance clause to <code>including those whose upstream
+        has not landed</code></td><td>clause guard fires</td><td>fired</td></tr>
+      <tr><td>replace the full-width instruction with <code>Queue the work you
+        have chosen</code></td><td>full-width assertion fires</td><td>fired</td></tr>
+    </tbody>
+  </table>
+</section>
