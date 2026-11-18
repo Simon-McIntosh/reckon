@@ -36,8 +36,34 @@
       <tr><td>the node's file, head arm (gate job on <code>all_debug</code>)</td>
         <td><code>a6ce199ff387</code>, worktree</td>
         <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the 371 test files reaching
+        <code>read_pointer</code>/<code>live_pointer_snapshot</code>,
+        base arm</td>
+        <td><code>23b901694b4b</code>, extraction</td>
+        <td>116 failed, 2984 passed, 1 skipped, 1 error, <code>EXIT=1</code></td></tr>
+      <tr><td>the same 371 files, head arm</td>
+        <td><code>088339dcc738</code>, worktree</td>
+        <td>111 failed, 2989 passed, 1 skipped, 1 error, <code>EXIT=1</code></td></tr>
+      <tr><td>importer delta</td>
+        <td>head against base</td>
+        <td>0 added ids</td></tr>
     </tbody>
   </table>
+
+  <p>The 371 files are those whose source names <code>read_pointer</code> or
+  <code>live_pointer_snapshot</code>; both arms ran the same list, each against
+  its own tree and its own pytest base. The head arm's 112 failing ids are a
+  subset of the base arm's 117: five ids are fixed at head, one of them this
+  node's own <code>test_one_derivation_lists_the_live_directory_once</code>, and
+  the other four name temporary-root and scheduler fixtures outside this
+  change's surface. The importer arms' logs are
+  <code>importing-arm-base.log</code> and <code>importing-arm-head.log</code> in
+  the run directory.</p>
+
+  <p>The station-pid rule and the copy promise were exercised directly: with a
+  population published, an unchanged pointer is served from it, a pointer
+  written during the pass is decoded afresh, a caller's mutation does not reach
+  the population, and an absent run still raises <code>no live run</code>.</p>
 
   <h3 id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-control">Negative control</h3>
 
