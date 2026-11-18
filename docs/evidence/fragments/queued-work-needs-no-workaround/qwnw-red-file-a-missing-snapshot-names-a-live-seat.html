@@ -1,0 +1,76 @@
+<section id="qwnw-red-file-a-missing-snapshot-names-a-live-seat-landing">
+  <h2>A missing snapshot names a live foreign seat</h2>
+
+  <p><strong>What changed.</strong> The prompt hook's absent-producer reading is
+  already the one the seat judgement produces: a session with no snapshot beside
+  a live foreign seat names that seat's host and offers this session's follower
+  arming, while a stalled seat or no seat at all keeps the "no producer"
+  sentence and <code>watch --ensure</code>. Six of the file's eight cases
+  asserted that behaviour and passed at the base revision.</p>
+
+  <p>The two cases that failed at the base revision are the two that assert the
+  "no producer" sentence, and they failed for the reason the hook's own silence
+  rule gives: since the hook stopped warning a session whose live pointers show
+  no unsettled work, a registered session holding no runs publishes nothing, so
+  <code>stdout</code> was empty and both cases died on the JSON decode rather
+  than on the sentence they name. Both now record the session's live pointer
+  first — <code>runs.pointer_path</code> under the same temporary home — which
+  is the precondition the reading is owed to. No assertion was deleted or
+  weakened: the no-seat case still names the host-less absent producer and
+  offers <code>watch --ensure</code>; the stalled-seat case still names no host
+  and offers no follower arming.</p>
+
+  <p>That the silence rule is the cause, and that it is already guarded, is shown
+  by the hook's own suite: <code>tests/test_the_hook_counts_only_what_is_owed.py</code>
+  drives an idle session and asserts an empty <code>stdout</code>, then writes a
+  <code>working</code> pointer and asserts the "no producer" line appears. It
+  passes at this head (19 passed).</p>
+
+  <h3 id="qwnw-red-file-a-missing-snapshot-names-a-live-seat-measured">Measured</h3>
+
+  <p>Both arms run <code>tests/test_a_missing_snapshot_names_a_live_seat.py</code>
+  with <code>SLURM_JOB_ID</code> unset, as a job on <code>all_debug</code>. The
+  base arm runs over an extraction of <code>git archive</code> at the base
+  revision; the head arm runs in the worktree at the committed head. Each log
+  names its revision, tree, working directory and command on its first lines and
+  ends with a bare <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table id="qwnw-red-file-a-missing-snapshot-names-a-live-seat-arms">
+    <caption>Logs hold under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062547780161-qwnw-red-file-a-missing-snapshot-names-a-live-seat/</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>negative control (base)</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code>, extraction</td>
+        <td>2 failed, 6 passed, <code>EXIT=1</code></td>
+        <td><code>base-run-a-missing-snapshot.log</code></td></tr>
+      <tr><td>head</td>
+        <td><code>286e72791a020a7e919784a04a2e5a3edd638b10</code>, worktree</td>
+        <td>8 passed, <code>EXIT=0</code></td>
+        <td><code>head-run-a-missing-snapshot.log</code></td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>0 failed, <code>EXIT=0</code>, <code>completed</code></td>
+        <td><code>baseline_suite-1794998697503969957.log</code></td></tr>
+      <tr><td>declared suite, after arm</td>
+        <td><code>286e72791a020a7e919784a04a2e5a3edd638b10</code></td>
+        <td>0 failed, <code>EXIT=0</code>, <code>completed</code></td>
+        <td><code>after_suite-1794998772772949669.log</code></td></tr>
+    </tbody>
+    <tfoot><tr><td colspan="4">The declared suite records no failure on
+    either arm, so the delta carries no added failure. The head arm imports
+    <code>reckon/crew/watch_unit.py</code> from the worktree; the base arm
+    imports it from the extraction.</td></tr></tfoot>
+  </table>
+
+  <p>The base arm's failing ids, which the head arm does not fail.</p>
+
+  <pre id="qwnw-red-file-a-missing-snapshot-names-a-live-seat-red"><code>FAILED tests/test_a_missing_snapshot_names_a_live_seat.py::test_a_missing_snapshot_with_no_seat_reads_no_producer
+FAILED tests/test_a_missing_snapshot_names_a_live_seat.py::test_a_missing_snapshot_beside_a_stalled_seat_reads_no_producer
+2 failed, 6 passed in 4.40s
+EXIT=1</code></pre>
+
+  <p>Both ids fail on <code>json.decoder.JSONDecodeError: Expecting value: line 1
+  column 1 (char 0)</code>: the hook printed nothing, so the case died reading
+  an empty <code>stdout</code> as JSON. The head arm prints a line for both.</p>
+</section>
