@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="483">
+<meta name="plan-version" content="484">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -1837,6 +1837,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s94" data-id="c-run-r-20261118T174118041834-review-of-a-sweep-lists-live-pointers-once-dcfce91db29e" data-who="reckon-build" data-when="2026-11-18T17:43:07.513Z">
     <div class="r-comment-body"><p>Independent review of r-20261118T112138074440-a-sweep-lists-live-pointers-once at base 250d9cf3 and head dcfce91db2: goal_fidelity 19, evidence 18, scope_discipline 16, durability 18, fit 17, reuse 16, added_failure_count 0, no blocking finding and three non-blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s94" data-id="c-run-r-20261118T112138074440-a-sweep-lists-live-pointers-once" data-who="reckon-build" data-when="2026-11-18T13:15:26Z">
+    <div class="r-comment-body"><p>A sweep shares its held live listing across acknowledgement, review, waiver, delivery and worktree checks: 520 decodes for 200 pointers (ceiling 600) versus 85040 at base, with identical actions/classifications; the next sweep sees the new pointer in 523 decodes for 201. Scoped suite 65 passed; matched 661/662-file importer arms add 0 failing ids; lint and format add 0 findings.</p></div>
 </div>
 </section>
 </main>
