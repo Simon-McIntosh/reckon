@@ -308,12 +308,19 @@ def test_promotion_releases_only_the_integrated_clean_case(
             "root": repository,
         }
         if divergent:
-            kwargs["no_commit"] = (
-                "the worker result is deliberately uncited for this case"
-            )
+            # A passing run whose worktree made a commit must cite it: a
+            # promotion that declares no commit while the tree has one is
+            # refused, because the row would point at nothing and the release
+            # would take the work with the tree.
+            kwargs["commits"] = [_git(worktree, "rev-parse", "HEAD")]
         if gate == "failed":
             kwargs["failure_classification"] = "negative-result"
-        else:
+        elif not divergent:
+            # A run that cites a commit changing no runtime source owes no
+            # review, and a waiver offered for one is refused as a waiver of
+            # nothing. The commitless cases declare nothing about what they
+            # changed, so the tier resolver grants them the fuller review and
+            # the waiver is what admits them.
             kwargs["review_waiver"] = (
                 "the synthesized cleanup fixture has no code review"
             )
