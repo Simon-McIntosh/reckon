@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records 58 passed EXIT=0 at 29142e7619 (baseline-arm.log, no FAILED line) and after_suite records 60 passed EXIT=0 at 987753b5e4..72de6f6e09 (after-arm.log, no FAILED line), so the set difference of failing test ids is empty (0). The base-revision red run (negative-control.log, EXIT=1, 'assert 2002 <= 10') and the pre-repair red run (repair red log, EXIT=1, 2005 retained against 2002) are declared negative controls, not added failures against the head.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:3208",
+    "reckon/crew/recovery_watch.py:2201",
+    "reckon/crew/recovery_stream.py:575",
+    "reckon/crew/recovery.py:296"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:01:05Z",
+  "findings": [
+    {
+      "file": "tests/test_lane_reference_rates_read_history_once.py",
+      "line": "344",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert _retained_count() <= settled cannot fail on any code the equality at :339 admits \u2014 window_count is the same population at every later bucket, and settled was read after the same prune \u2014 so it is a redundant line and should not be counted as a second guard on the retained bound; the real guard is the equality at :339, which repair-negative-control.log shows reddening at 2005 against 2002."
+    },
+    {
+      "file": "reckon/crew/recovery_stream.py",
+      "line": "236",
+      "severity": "non-blocking",
+      "text": "non-blocking: _lane_rate_window restates the window bound 'start <= entry[0] <= end' that _lane_rates_from already applies at :300 in the same module, so the module now carries two independent copies of its one window predicate; a later change to the bound in one place leaves the prune and the answer builder silently admitting different rows, which for the prune means answering from a narrower window than the one it stored."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production call sites: reckon/crew/recovery_classification.py:3208 and reckon/crew/recovery_stream.py:575 call _budget_overrun_cause, reckon/crew/recovery_watch.py:2201 calls recovery_stream._budget_overrun_cause, and reckon/crew/recovery.py:296 re-exports _budget_overrun_cause and re-exports _historical_reference_rate at :301; all reach the changed _lane_reference_rates through recovery_stream.py:325.",
+    "diff": "read commit by commit over 987753b5e4..72de6f6e09 (the commits gained since the review at 987753b5e4): b07869472e adds _lane_rate_window and its call before the bucket is stored (+24 in reckon/crew/recovery_stream.py) plus two retained-set assertions and the idle-bucket test in tests/test_lane_reference_rates_read_history_once.py, and 72de6f6e09 records the repair in the fragment (+18/-2), all inside the declared paths.",
+    "done_when": "the done_when asks for a 2,000-row three-lane fixture whose second bucket decodes at most 10 rows, every lane's rates and _budget_overrun_cause for 20 live runs equal to the whole-window read in both buckets including a bucket where rows age out, and a base revision decoding at least 2,000; tests/test_lane_reference_rates_read_history_once.py:261 asserts the ceiling, :268-269 the rates against an independent ledger.load(PROJECT) recomputation, :272-274 the aging, and negative-control.log records the base revision failing at 'assert 2002 <= 10' with EXIT=0 on the head gate.",
+    "goal": "the node goal is that a bucket roll refreshes a project's lane reference rates from the rows added since the previous bucket and drops the rows that aged out, with every overrun answer unchanged; reckon/crew/recovery_stream.py:220-240 now prunes the stored contributions to the window before :285 stores them, and :271-279 keeps the narrow roll for the consecutive-bucket case and the one window read otherwise, so both halves of the deliverable are present at this head.",
+    "manifest": "read; it reports status complete at head 72de6f6e09, the gate command with 60 passed EXIT=0 in scoped-gate-1795006047494989467.log and after-arm.log, baseline 58 passed EXIT=0, baseline_suite and after_suite both completed with failure_count 0 and [], and a repair red log showing the pre-repair module failing both retained-set checks at 2005 against 2002, all of which I confirmed on disk.",
+    "write_paths": "the declared paths are reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py, the fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/ and an unused figures directory; the two gained commits touch the source, the test and the fragment, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_lane_reference_rates_read_history_once.py:291 and :339 both redden if the prune is removed \u2014 repair-negative-control.log records exactly that at 'retained 2005 of 2002' and '2005 retained at bucket +2 against 2002' \u2014 and :300 would redden on a prune that kept the aged rows while dropping others, although the recorded mutation fires the count equality first.",
+    "evidence": "the manifest's gate command is the literal 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_reference_rates_read_history_once.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py, its log at scoped-gate-1795006047494989467.log opens with revision 72de6f6e09 and '60 passed' and ends 'EXIT=0', and both suite arms are recorded with completed true and empty failure_ids.",
+    "fit": "reckon/crew/recovery_stream.py:220 is a module-private helper beside _lane_rates_from (:291) with the same docstring voice and the _LaneRateContributions alias, though :236 duplicates the window predicate :300 already carries.",
+    "goal_fidelity": "reckon/crew/recovery_stream.py:283 runs the prune on every path before the bucket is stored, so the retained set is the window's population and not the process's uptime, and :288 still answers from the same window so _budget_overrun_cause is unmoved \u2014 proven equal to the whole-window read in both buckets at tests/test_lane_reference_rates_read_history_once.py:268-269.",
+    "reuse": "a search over reckon/ and reckon/crew/ for an existing window-prune or contribution-fold mechanism found only _lane_rates_from in this same module, which the new helper deliberately does not call; the bounded ledger read stays with its owner, activity_since at the ledger load in _lane_rate_contributions.",
+    "scope_discipline": "both gained commits touch only reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py and the node's fragment, which are the declared paths; the declared figures directory is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a bucket roll refresh a project's lane reference rates from the rows added since the previous bucket and drop the rows that aged out with every overrun answer unchanged; reckon/crew/recovery_stream.py:220-240 now prunes the stored contributions to the window before :285 stores them; reckon/crew/recovery_stream.py:264-279 keeps the narrow roll and the single-window fallback.\nVERDICT done_when: the done_when asks for a 2,000-row three-lane fixture, a 10-row roll ceiling, equality of every lane's rates and 20 live runs' _budget_overrun_cause with the whole-window read including a bucket where rows age out, and a base revision decoding at least 2,000; tests/test_lane_reference_rates_read_history_once.py:261 asserts the ceiling, :268-269 the rates against an independent ledger.load(PROJECT) recomputation, :272-274 the aging, and negative-control.log records the base revision failing at 'assert 2002 <= 10'.\nVERDICT write_paths: the declared paths are reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/lane-reference-rates-read-history-once.html and an unused figures directory; both gained commits stay inside them.\nVERDICT manifest: read; it reports status complete at 72de6f6e09 with the literal gate command, 60 passed EXIT=0 in scoped-gate-1795006047494989467.log and after-arm.log, baseline 58 passed EXIT=0, both suite arms completed with failure_count 0 and [], and the repair red log at 2005 retained against 2002.\nVERDICT diff: read commit by commit over 987753b5e4..72de6f6e09 \u2014 b07869472e adds _lane_reference_rates' prune plus two retained-set assertions and the idle-bucket test, 72de6f6e09 records the repair in the fragment; three paths, all declared.\nCALL_SITES: reckon/crew/recovery_classification.py:3208, reckon/crew/recovery_watch.py:2201, reckon/crew/recovery_stream.py:575, reckon/crew/recovery.py:296\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_stream.py:283 prunes the retained contributions to the window before the bucket is stored at :285, so the reloaded set is the window's population, and :288 answers from that same window.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-1795006047494989467.log names revision 72de6f6e09, records '60 passed' and ends 'EXIT=0', and both suite arms are recorded with completed true and empty failure_ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two gained commits touch only reckon/crew/recovery_stream.py, tests/test_lane_reference_rates_read_history_once.py and the node's fragment, which are exactly the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_lane_reference_rates_read_history_once.py:291 and :339 redden on the pruned-versus-unpruned difference and repair-negative-control.log records both at 2005 retained against 2002.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_stream.py:220 follows the module's private-helper idiom beside _lane_rates_from (:291) and uses the _LaneRateContributions alias.\nSCORE reuse: 17\nJUSTIFICATION reuse: a search of reckon/ and reckon/crew/ for a contribution prune found only _lane_rates_from, which :236 partially restates rather than reuses.\nFINDING tests/test_lane_reference_rates_read_history_once.py:344 non-blocking: assert _retained_count() <= settled is implied by the equality at :339 and cannot fail independently of it.\nFINDING reckon/crew/recovery_stream.py:236 non-blocking: _lane_rate_window restates the window bound _lane_rates_from applies at :300, leaving two copies of the module window predicate.",
+  "review_node": "review-of-lane-reference-rates-read-history-once-72de6f6e096a",
+  "review_run_id": "r-20261118T125327714452-review-of-lane-reference-rates-read-history-once-72de6f6e096a",
+  "reviewed_base_sha": "987753b5e450cc45510b04ddd07a4d6d8095d5cd",
+  "reviewed_head_sha": "72de6f6e096af987450a91b0dda11723122d5a27",
+  "reviewed_run_id": "r-20261118T111947773423-lane-reference-rates-read-history-once",
+  "reviewed_through_base_note": "the dispatch's delivered diff was quoted from 29142e7619, but the run was already reviewed at 987753b5e4, so this record's base is that reviewed head and the diff read is 987753b5e4..72de6f6e09.",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T125327714452-review-of-lane-reference-rates-read-history-once-72de6f6e096a"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:16:50.808576+00:00",
+  "total": 110
+}
