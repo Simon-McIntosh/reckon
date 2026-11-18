@@ -3,6 +3,7 @@
 import csv
 import fcntl
 import json
+import math
 import os
 import shlex
 import signal
@@ -19,7 +20,7 @@ from reckon.crew import fleet_node
 from reckon.crew import fleet_supervisor as supervisor
 from reckon.crew.admission import service
 
-SAMPLE_PERIOD_SECONDS = 2
+SAMPLE_PERIOD_SECONDS = 10
 HANG_PERIODS = 40
 HANG_SECONDS = SAMPLE_PERIOD_SECONDS * HANG_PERIODS
 
@@ -59,49 +60,70 @@ def _emission_events(path, pid):
 
 def _event_code(verb, pid):
     return (
-        "event_slot = float(Path('/proc/uptime').read_text().split()[0]) / "
-        "int(os.environ['FLEET_SLEEP_SECONDS'])\n"
+        "import time\n"
+        "event_slot = time.monotonic_ns() / "
+        "(int(os.environ['FLEET_SLEEP_SECONDS']) * 1_000_000_000)\n"
         "with Path(os.environ['EVENTS']).open('a') as event_stream:\n"
         f"    event_stream.write(f'{verb} {{{pid}}} {{event_slot}}\\n')\n"
     )
 
 
 def _handover_counts(rows, events, first, replacement, earlier_count):
-    """Compare the supervisor request and sampler emission on their shared slot clock."""
+    """Count occupied whole sampling instants from the published row timestamps."""
     before = [row for row in rows if int(row["sampler_pid"]) == first]
     after = [row for row in rows if int(row["sampler_pid"]) == replacement]
     assert before and after, "both sampler generations must publish a row"
     assert rows == before + after, "sampler generations must not interleave"
+    assert all(row.get("slot") for row in rows), (
+        "series rows must carry sampling timestamps"
+    )
+    timestamps = [float(row["slot"]) for row in rows]
+    assert all(math.isfinite(stamp) for stamp in timestamps)
+    assert timestamps == sorted(timestamps), "series timestamps must remain ordered"
+    assert 1 <= earlier_count <= len(before)
     delivery_rows = len(before) - earlier_count + 1
-    assert 1 <= delivery_rows <= 2, "first replacement row exceeds two series samples"
     stop_slots = [slot for verb, pid, slot in events if (verb, pid) == ("stop", first)]
     assert len(stop_slots) == 1, "the previous sampler must emit its stop slot"
     request_slots = [slot for verb, _, slot in events if verb == "request"]
     assert len(request_slots) == 1, "the supervisor must record its re-execution slot"
-    emissions = [(pid, slot) for verb, pid, slot in events if verb == "sample"]
-    replacement_slots = [slot for pid, slot in emissions if pid == replacement]
-    assert replacement_slots, "the replacement must record its first emission slot"
     request_slot = request_slots[0]
-    first_slot = replacement_slots[0]
-    elapsed_slots = first_slot - request_slot
-    assert 0 <= elapsed_slots <= 2, (
-        "first replacement sample exceeds two sampling slots"
+    following = [row for row in rows if float(row["slot"]) >= request_slot]
+    assert following, "the series must contain a row after re-execution"
+    assert int(following[0]["sampler_pid"]) == replacement, (
+        "the first row after re-execution must come from the replacement"
     )
-    incumbent_slots = [slot for pid, slot in emissions if pid == first]
-    assert incumbent_slots, "the incumbent must record its emission slots"
-    occupied = {int(slot) for _, slot in emissions}
-    missing = sorted(
-        set(range(int(incumbent_slots[-1]) + 1, int(first_slot))) - occupied
+    first_slot = float(after[0]["slot"])
+    assert first_slot >= request_slot, "replacement row precedes re-execution"
+    request_instant = math.floor(request_slot)
+    first_instant = math.floor(first_slot)
+    elapsed_instants = first_instant - request_instant
+    assert 0 <= elapsed_instants <= 2, (
+        "first replacement row exceeds two whole sampling instants"
     )
-    assert len(missing) <= 2, "handover missed more than two sampling slots"
+    occupied = {math.floor(stamp) for stamp in timestamps}
+    baseline_instant = math.floor(float(before[earlier_count - 1]["slot"]))
+    missing = []
+    consecutive = longest = 0
+    for instant in range(baseline_instant + 1, first_instant):
+        if instant in occupied:
+            consecutive = 0
+        else:
+            missing.append(instant)
+            consecutive += 1
+            longest = max(longest, consecutive)
+    assert longest <= 2, "handover missed more than two consecutive sampling instants"
     return {
         "rows_before": len(before),
         "rows_after": len(after),
         "delivery_rows": delivery_rows,
         "request_slot": request_slot,
-        "first_emission_slot": first_slot,
-        "elapsed_slots": elapsed_slots,
+        "first_row_slot": first_slot,
+        "request_instant": request_instant,
+        "first_row_instant": first_instant,
+        "elapsed_instants": elapsed_instants,
         "missed_slots": missing,
+        "max_consecutive_misses": longest,
+        "first_post_request_pid": int(following[0]["sampler_pid"]),
     }
 
 
@@ -118,11 +140,11 @@ def _script(path, *, added):
     columns = ["utc", "probe", "sampler_pid", "slot", *(["added"] if added else [])]
     code = (
         "from pathlib import Path; from reckon.crew import fleet_node as n; "
-        "import os; "
-        "slot=int(float(Path('/proc/uptime').read_text().split()[0])"
-        "/int(os.environ['FLEET_SLEEP_SECONDS'])); "
+        "from datetime import UTC, datetime; import os, time; "
+        "slot=time.monotonic_ns()"
+        "/(int(os.environ['FLEET_SLEEP_SECONDS']) * 1_000_000_000); "
         f"n._HEALTH_COLUMNS={columns!r}; "
-        "values=['now','sample',os.environ['SAMPLER_PID'],str(slot)]"
+        "values=[datetime.now(UTC).isoformat(),'sample',os.environ['SAMPLER_PID'],str(slot)]"
         f"+{['present'] if added else []!r}; "
         "n.append_node_reading(Path(os.environ['SERIES']), '\\t'.join(values))\n"
         + _event_code("sample", 'os.environ["SAMPLER_PID"]')
@@ -474,107 +496,120 @@ def test_handover_counts_accept_two_slots_and_two_missing_samples():
         {"sampler_pid": "11", "slot": "7"},
         {"sampler_pid": "22", "slot": "10"},
     ]
-    events = [
-        ("start", 11, 6),
-        ("sample", 11, 6),
-        ("sample", 11, 7),
-        ("request", 33, 8),
-        ("stop", 11, 8),
-        ("start", 22, 9),
-        ("sample", 22, 10),
-    ]
+    events = [("start", 11, 6), ("request", 33, 8), ("stop", 11, 9.5)]
     assert _handover_counts(rows, events, 11, 22, 1) == {
         "rows_before": 2,
         "rows_after": 1,
         "delivery_rows": 2,
         "request_slot": 8,
-        "first_emission_slot": 10,
-        "elapsed_slots": 2,
+        "first_row_slot": 10,
+        "request_instant": 8,
+        "first_row_instant": 10,
+        "elapsed_instants": 2,
         "missed_slots": [8, 9],
+        "max_consecutive_misses": 2,
+        "first_post_request_pid": 22,
     }
 
 
 @pytest.mark.parametrize(
-    "violation", ["late_replacement", "missing_samples", "late_series"]
+    "violation", ["late_replacement", "missing_samples", "incumbent_after_request"]
 )
 def test_handover_counts_refuse_excess_slots(violation):
-    rows = [
-        {"sampler_pid": "11", "slot": "6" if violation == "missing_samples" else "7"},
+    rows = [{"sampler_pid": "11", "slot": "6"}]
+    if violation != "missing_samples":
+        rows.append(
+            {
+                "sampler_pid": "11",
+                "slot": "8.5" if violation == "incumbent_after_request" else "7",
+            }
+        )
+    rows.append(
         {
             "sampler_pid": "22",
-            "slot": "11" if violation == "late_replacement" else "10",
-        },
-    ]
-    if violation == "late_series":
-        rows[1:1] = [
-            {"sampler_pid": "11", "slot": "8"},
-            {"sampler_pid": "11", "slot": "9"},
-        ]
-    events = [("start", 11, 6), ("request", 33, 8), ("stop", 11, 9.5)]
-    events.extend(
-        ("sample", int(row["sampler_pid"]), float(row["slot"])) for row in rows
+            "slot": "11.1" if violation == "late_replacement" else "10.1",
+        }
     )
+    events = [("request", 33, 8.25), ("stop", 11, 9.5)]
     message = {
-        "late_replacement": "first replacement sample exceeds two sampling slots",
-        "missing_samples": "handover missed more than two sampling slots",
-        "late_series": "first replacement row exceeds two series samples",
+        "late_replacement": "first replacement row exceeds two whole sampling instants",
+        "missing_samples": "handover missed more than two consecutive sampling instants",
+        "incumbent_after_request": "the first row after re-execution must come from the replacement",
     }[violation]
-    with pytest.raises(AssertionError, match=message):
+    with pytest.raises(AssertionError, match=message) as refusal:
         _handover_counts(rows, events, 11, 22, 1)
+    print(f"{violation}: refused: {refusal.value}")
 
 
 def test_delivery_clock_starts_at_reexecution_even_when_stop_is_late():
     rows = [
         {"sampler_pid": "11", "slot": "6"},
-        {"sampler_pid": "11", "slot": "7"},
         {"sampler_pid": "22", "slot": "10"},
     ]
-    events = [
-        ("start", 11, 6),
-        ("sample", 11, 6),
-        ("request", 33, 6.01),
-        ("sample", 11, 7),
-        ("stop", 11, 8),
-        ("start", 22, 9),
-        ("sample", 22, 10),
-    ]
-    with pytest.raises(AssertionError, match="exceeds two sampling slots") as refusal:
+    events = [("request", 33, 6.01), ("stop", 11, 8)]
+    with pytest.raises(
+        AssertionError, match="exceeds two whole sampling instants"
+    ) as refusal:
         _handover_counts(rows, events, 11, 22, 1)
-    print(f"request slot 6.01, emission slot 10: refused: {refusal.value}")
+    print(f"request instant 6, first row instant 10: refused: {refusal.value}")
 
 
-@pytest.mark.parametrize("emission_slot", [8.25, 8.255])
-def test_delivery_clock_preserves_fractional_slots(emission_slot):
+@pytest.mark.parametrize("row_slot", [8.25, 8.99, 9.0])
+def test_delivery_counts_whole_instants_from_series_rows(row_slot):
     rows = [
         {"sampler_pid": "11", "slot": "6"},
-        {"sampler_pid": "22", "slot": "8"},
+        {"sampler_pid": "22", "slot": str(row_slot)},
     ]
-    events = [
-        ("start", 11, 6),
-        ("sample", 11, 6),
-        ("request", 33, 6.25),
-        ("stop", 11, 7.5),
-        ("start", 22, 8),
-        ("sample", 22, emission_slot),
-    ]
-    if emission_slot > 8.25:
-        with pytest.raises(AssertionError, match="exceeds two sampling slots"):
+    events = [("request", 33, 6.25), ("stop", 11, 7.5), ("sample", 22, 90)]
+    if row_slot >= 9:
+        with pytest.raises(AssertionError, match="exceeds two whole sampling instants"):
             _handover_counts(rows, events, 11, 22, 1)
     else:
         counts = _handover_counts(rows, events, 11, 22, 1)
-        assert counts["elapsed_slots"] == 2
-        assert counts["request_slot"] == 6.25
-        assert counts["first_emission_slot"] == emission_slot
+        assert counts["elapsed_instants"] == 2
+        assert counts["request_instant"] == 6
+        assert counts["first_row_instant"] == 8
+        assert counts["first_row_slot"] == row_slot
 
 
-@pytest.mark.parametrize("missing", ["request", "sample"])
+@pytest.mark.parametrize("missing", ["request", "timestamp"])
 def test_delivery_clock_requires_both_recorded_anchors(missing):
     rows = [
         {"sampler_pid": "11", "slot": "6"},
         {"sampler_pid": "22", "slot": "8"},
     ]
-    events = [("request", 33, 6.25), ("stop", 11, 7.5), ("sample", 22, 8.25)]
-    events = [event for event in events if event[0] != missing]
-    message = "re-execution slot" if missing == "request" else "first emission slot"
+    events = [("request", 33, 6.25), ("stop", 11, 7.5)]
+    if missing == "request":
+        events = [event for event in events if event[0] != missing]
+    else:
+        rows[-1].pop("slot")
+    message = "re-execution slot" if missing == "request" else "sampling timestamps"
     with pytest.raises(AssertionError, match=message):
         _handover_counts(rows, events, 11, 22, 1)
+
+
+@pytest.mark.parametrize("later_rows", [0, 4])
+def test_delayed_observation_keeps_the_first_replacement_row(later_rows):
+    rows = [
+        {"sampler_pid": "11", "slot": "6"},
+        {"sampler_pid": "22", "slot": "7.1"},
+    ]
+    rows.extend(
+        {"sampler_pid": "22", "slot": str(10 * (i + 1))} for i in range(later_rows)
+    )
+    counts = _handover_counts(rows, [("request", 33, 6.25), ("stop", 11, 7)], 11, 22, 1)
+    assert counts["first_row_instant"] == 7
+    assert counts["elapsed_instants"] == 1
+    assert counts["first_post_request_pid"] == 22
+    assert counts["max_consecutive_misses"] == 0
+
+
+def test_missing_instants_are_counted_before_later_incumbent_rows():
+    rows = [
+        {"sampler_pid": "11", "slot": "6"},
+        {"sampler_pid": "11", "slot": "8"},
+        {"sampler_pid": "22", "slot": "10"},
+    ]
+    counts = _handover_counts(rows, [("request", 33, 8.25), ("stop", 11, 9)], 11, 22, 1)
+    assert counts["missed_slots"] == [7, 9]
+    assert counts["max_consecutive_misses"] == 1
