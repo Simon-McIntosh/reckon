@@ -11,6 +11,7 @@ from typing import (
     Any,
     Iterable,
     Mapping,
+    Sequence,
 )
 from reckon import (
     _backends,
@@ -1182,6 +1183,26 @@ def _carry_fence_unprotected(
 MODEL_CAPACITY_REFUSAL_PREFIX = "Selected model is at capacity"
 
 
+def _terminal_capacity_scan(
+    state: tuple[str, str], events: Sequence[Mapping[str, Any]]
+) -> tuple[str, str]:
+    """Fold a stream's records into its latest terminal event's kind and detail.
+
+    The verdict is the last terminal event's, so an earlier one is replaced
+    rather than remembered: a stream that recovered after a failure is not a
+    refusal. Folding forward is what lets the reader answer from the state it
+    already holds instead of reading the stream again from its first record.
+    """
+    kind, detail = state
+    for event in events:
+        name = str(event.get("type") or "")
+        if name not in _TERMINAL_STREAM_KINDS:
+            continue
+        kind = name
+        detail = _backends._error_detail(event)
+    return (kind, detail)
+
+
 def _latest_attempt_capacity_refusal(record: Mapping[str, Any]) -> str | None:
     """The launched model when the latest attempt ended in a capacity turn.failed.
 
@@ -1190,26 +1211,25 @@ def _latest_attempt_capacity_refusal(record: Mapping[str, Any]) -> str | None:
     declines whatever prose the stream also carries. Only a ``turn.failed`` whose
     error message begins with the capacity prefix names the refusal. Returns the
     model id the attempt launched, or ``None`` for any other ending.
+
+    The answer is a fold over the stream's records, held per stream for the
+    version last read, so a steady tick folds only what the stream gained, and
+    a stream whose records the events cache dropped for size costs no whole
+    read to re-answer.
     """
     log_path = str(record.get("log_path") or "").strip()
     if not log_path or not Path(log_path).exists():
         return None
-    events, _malformed = _backends.cached_stream_events(log_path, whole=True)
-    for event in reversed(events):
-        kind = str(event.get("type") or "")
-        if kind not in _TERMINAL_STREAM_KINDS:
-            continue
-        if kind != "turn.failed":
-            return None
-        detail = _backends._error_detail(event)
-        if not detail.startswith(MODEL_CAPACITY_REFUSAL_PREFIX):
-            return None
-        agent = record.get("agent")
-        model = ""
-        if isinstance(agent, Mapping):
-            model = str(agent.get("model") or "").strip()
-        return model or None
-    return None
+    kind, detail = _backends.cached_stream_fold(
+        log_path, "capacity-refusal", _terminal_capacity_scan, ("", "")
+    )
+    if kind != "turn.failed" or not detail.startswith(MODEL_CAPACITY_REFUSAL_PREFIX):
+        return None
+    agent = record.get("agent")
+    model = ""
+    if isinstance(agent, Mapping):
+        model = str(agent.get("model") or "").strip()
+    return model or None
 
 
 #: The event kinds that end a stream. Only the latest of these decides how an

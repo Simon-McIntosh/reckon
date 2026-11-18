@@ -3837,7 +3837,11 @@ def _cached_stream_entry(path: str | Path, *, whole: bool = False) -> _ParsedStr
         prior_events = None
         joined = False
         prior_ends_newline = data.endswith(b"\n")
-    head = stream_head_fingerprint(source, offset=end)
+    head = (
+        dict(cursor.head)
+        if resume and cursor is not None
+        else stream_head_fingerprint(source, offset=end)
+    )
     with _PARSED_STREAM_LOCK:
         live = _PARSED_STREAMS.get(key)
         if live is not None and live.identity == identity and (live.whole or not whole):
@@ -3925,12 +3929,31 @@ class _StreamFold:
 
 
 @dataclass
+class _StreamScan:
+    """One named fold over a stream's whole record sequence.
+
+    A reader whose answer is about the stream's end — the latest terminal
+    event, whether an admission refusal was written — folds each record it
+    reads into this state rather than keeping the records. The state covers the
+    stream from its first byte, so a summary that has read the whole stream
+    once answers every later version by folding only what grew, and a stream
+    the events cache dropped for size costs no whole read here.
+    """
+
+    name: str
+    step: Callable[[Any, Sequence[Mapping[str, Any]]], Any]
+    seed: Any
+    state: Any
+
+
+@dataclass
 class _StreamSummary:
     """One stream's derived readings for the file version last read."""
 
     cursor: _StreamCursor
     folds: dict[str, _StreamFold] = field(default_factory=dict)
     bounds: dict[Any, tuple] = field(default_factory=dict)
+    scans: dict[str, _StreamScan] = field(default_factory=dict)
 
     @property
     def identity(self) -> tuple[int, int, int, int]:
@@ -3950,14 +3973,19 @@ class _StreamSummary:
 
 
 def _observation_settings_key(
-    backend_name: str,
-    backend: Mapping[str, Any],
-    elapsed_seconds: float | None,
-    receipt: object | None,
+    backend_name: str, backend: Mapping[str, Any], receipt: object | None
 ) -> str:
-    """The identity of everything an observation is a function of besides bytes."""
+    """The identity of everything an observation's records are a function of.
+
+    ``elapsed_seconds`` is deliberately absent: it rates what the records say
+    against the caller's clock and changes nothing about which records the
+    stream holds. A tick that passes a new elapsed time would otherwise miss
+    every fold it held and read every stream whole, so the elapsed reading is
+    applied to the folded state when the fold is read rather than into the key
+    that identifies it.
+    """
     settings = json.dumps(backend, sort_keys=True, default=repr)
-    return repr((backend_name, settings, elapsed_seconds, receipt))
+    return repr((backend_name, settings, receipt))
 
 
 def _extend_stamp_bounds(
@@ -4067,6 +4095,11 @@ def _stream_summary(
         events, malformed = parse_events(lines)
         ends_newline = True
         whole = False
+        # A growth read has just confirmed the opening is the one the cursor
+        # recorded, so the fingerprint is carried rather than read again: the
+        # bytes it digests cannot have moved, and re-reading them would charge
+        # the read for the guard it already paid for.
+        head = dict(stored.head)
     else:
         try:
             entry = _cached_stream_entry(path, whole=True)
@@ -4078,7 +4111,7 @@ def _stream_summary(
         end = entry.identity[2] if ends_newline else _last_line_boundary(path)
         identity = entry.identity
         whole = True
-    head = stream_head_fingerprint(path, offset=end)
+        head = stream_head_fingerprint(path, offset=end)
     cursor = _StreamCursor.of(info, offset=end, head=head)
     with _STREAM_SUMMARY_LOCK:
         live = _STREAM_SUMMARIES.get(key)
@@ -4088,6 +4121,14 @@ def _stream_summary(
             return live, [], 0, False
         folds: dict[str, _StreamFold] = dict(stored.folds) if stored else {}
         bounds = dict(stored.bounds) if stored else {}
+        scans: dict[str, _StreamScan] = dict(stored.scans) if stored else {}
+        for scan_name, scan in list(scans.items()):
+            scans[scan_name] = _StreamScan(
+                scan.name,
+                scan.step,
+                scan.seed,
+                scan.step(scan.seed if whole else scan.state, events),
+            )
         for fold_key, fold in list(folds.items()):
             observation = _observe_events(
                 backend_name=fold.backend_name,
@@ -4116,7 +4157,7 @@ def _stream_summary(
                 reader: _extend_stamp_bounds(first, last, events, reader)
                 for reader, (first, last) in bounds.items()
             }
-        summary = _StreamSummary(cursor=cursor, folds=folds, bounds=bounds)
+        summary = _StreamSummary(cursor=cursor, folds=folds, bounds=bounds, scans=scans)
         _STREAM_SUMMARIES[key] = summary
         _STREAM_SUMMARIES.move_to_end(key)
         while len(_STREAM_SUMMARIES) > _STREAM_SUMMARY_LIMIT:
@@ -4134,14 +4175,20 @@ def _summarised_observation(
     elapsed_seconds: float | None,
     receipt: object | None,
 ) -> Observation | None:
-    """The observation a stream's summary holds, reading only what grew."""
+    """The observation a stream's summary holds, reading only what grew.
+
+    The fold is keyed by the records it folded — backend settings and receipt —
+    and not by the caller's elapsed time. A new tick passing a new elapsed time
+    is answered from the held fold, with the clock applied to the state the
+    fold carries: the events are the same events, so only the rate over them
+    moves. That is what keeps a steady tick from reading every stream whole
+    once per distinct elapsed reading.
+    """
     path = Path(log_path)
     summary, events, malformed, whole = _stream_summary(path)
     if summary is None:
         return None
-    settings = _observation_settings_key(
-        backend_name, backend, elapsed_seconds, receipt
-    )
+    settings = _observation_settings_key(backend_name, backend, receipt)
     with _STREAM_SUMMARY_LOCK:
         fold = summary.folds.get(settings)
     if fold is None:
@@ -4160,7 +4207,7 @@ def _summarised_observation(
             backend=backend,
             events=events,
             malformed=malformed,
-            elapsed_seconds=elapsed_seconds,
+            elapsed_seconds=None,
             receipt=receipt,
             state=None,
         )
@@ -4168,7 +4215,7 @@ def _summarised_observation(
         fold = _StreamFold(
             backend_name,
             dict(backend),
-            elapsed_seconds,
+            None,
             receipt,
             observation,
         )
@@ -4177,7 +4224,61 @@ def _summarised_observation(
             if live is not None:
                 live.folds[settings] = fold
         return copy.deepcopy(fold.observation)
+    if elapsed_seconds != fold.elapsed_seconds:
+        # The same records rated against this caller's clock: the fold state is
+        # extended over no records, so nothing is read and every count the
+        # stream reported most recently is carried forward.
+        observation = _observe_events(
+            backend_name=fold.backend_name,
+            backend=fold.backend,
+            events=[],
+            malformed=0,
+            elapsed_seconds=elapsed_seconds,
+            receipt=fold.receipt,
+            state=fold.observation.stream_state,
+        )
+        observation.stream_state["offset"] = fold.observation.stream_state.get("offset")
+        return observation
     return copy.deepcopy(fold.observation)
+
+
+def cached_stream_fold(
+    path: str | Path,
+    name: str,
+    step: Callable[[Any, Sequence[Mapping[str, Any]]], Any],
+    seed: Any,
+) -> Any:
+    """The named fold over a stream's whole record sequence, reading only growth.
+
+    A reader whose answer is a question about the stream — which terminal event
+    it reached, whether an admission refusal was written — expresses it as a
+    fold from ``seed`` over every record in order, and is answered from the
+    summary's held state on every later call. The summary reads the whole
+    stream once, then only the bytes a stream gained, which is what keeps the
+    reader from re-paying for a stream whose records the byte-bounded events
+    cache has dropped. A stream that cannot be stat'd is answered by one whole
+    read and stands no state, because there is no version to key it to.
+    """
+    source = Path(path)
+    summary, events, _malformed, whole = _stream_summary(source)
+    if summary is None:
+        entry = _cached_stream_entry(source, whole=True)
+        return step(seed, entry.events)
+    with _STREAM_SUMMARY_LOCK:
+        scan = summary.scans.get(name)
+        if scan is not None:
+            return scan.state
+    if not whole:
+        # This reader arrives after the summary read this version: the records
+        # it must fold from the stream's first byte are not the growth in hand.
+        entry = _cached_stream_entry(source, whole=True)
+        events = entry.events
+    state = step(seed, events)
+    with _STREAM_SUMMARY_LOCK:
+        live = _STREAM_SUMMARIES.get(str(source.resolve()))
+        if live is not None:
+            live.scans[name] = _StreamScan(name, step, seed, state)
+    return state
 
 
 def _events_timestamp_bounds(
@@ -4408,13 +4509,16 @@ _STREAM_BOUNDARY_CHUNK = 64 * 1024
 
 # How much of a stream's opening a cursor records, so a later read can tell an
 # append from a rewrite. The inode and the size together catch a stream replaced
-# or truncated, but a stream rewritten in place at the same inode to a size at or
-# above the recorded offset — which is what a producer's stream does between
+# or truncated, but a stream rewritten in place at the same inode to a rewrite at
+# or above the recorded offset — which is what a producer's stream does between
 # in-place rewrites — is otherwise indistinguishable from an append by stat
 # alone. The digest covers a bounded opening rather than the whole consumed
 # prefix, so the check costs a fixed small read rather than re-reading the bytes
-# the cursor exists to skip.
-_STREAM_HEAD_SAMPLE = 8 * 1024
+# the cursor exists to skip. The bound is one record's opening: a rewrite
+# replaces the first record, and a resumed read of a live population pays this
+# sample on every stream it resumes, so the sample is what decides whether a
+# steady tick's cost is the bytes it gained or a fixed toll on the population.
+_STREAM_HEAD_SAMPLE = 1024
 
 
 def _stream_head_size(offset: int) -> int:

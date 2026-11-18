@@ -6,7 +6,7 @@ import re
 from functools import lru_cache
 from pathlib import Path
 from statistics import median
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
@@ -793,6 +793,47 @@ def _result_turned_no_tokens(event: Mapping[str, Any]) -> bool:
     return True
 
 
+def _admission_marks(
+    state: tuple[str, str, bool], events: Sequence[Mapping[str, Any]]
+) -> tuple[str, str, bool]:
+    """Fold a stream's records into the marks an admission refusal leaves.
+
+    The refusal text and the terminal reason are the last ones the stream
+    states, and a zero-token result anywhere is remembered: a stream that wrote
+    an attempt and then a retry does not lose the refusal of the attempt that
+    was refused. Folding forward lets a later read extend the state it already
+    holds instead of re-reading the stream from its first record.
+    """
+    refusal_reason, terminal_reason, zero_token_error = state
+    for event in events:
+        kind = str(event.get("type") or "")
+        if kind == "assistant":
+            message = event.get("message")
+            if not isinstance(message, Mapping):
+                continue
+            if str(message.get("model") or "") != _SYNTHETIC_MODEL:
+                continue
+            if str(event.get("error") or "") != "invalid_request":
+                continue
+            text = _assistant_refusal_text(message)
+            if text:
+                refusal_reason = text
+        elif kind == "result":
+            terminal_reason = str(event.get("terminal_reason") or "")
+            if _result_turned_no_tokens(event):
+                zero_token_error = True
+    return refusal_reason, terminal_reason, zero_token_error
+
+
+def _admission_scan(log: Path) -> tuple[str, str, bool]:
+    """The admission marks for a stream, folding only the bytes it gained."""
+    from reckon import _backends
+
+    return _backends.cached_stream_fold(
+        log, "admission", _admission_marks, ("", "", False)
+    )
+
+
 def _admission_refusal(
     record: Mapping[str, Any], *, memo: dict[str, Any] | None = None
 ) -> dict[str, Any] | None:
@@ -814,9 +855,10 @@ def _admission_refusal(
     cannot reach this reading. None means the ordinary dead-process arms
     classify the run, so this gate never widens them.
 
-    The scan's result is memoised against the stream's stat identity. Decoded
-    events come from the shared stream cache, so a grown stream parses only its
-    append and an unchanged stream needs no decoding here.
+    The scan's result is memoised against the stream's stat identity. The marks
+    come from the per-stream fold, which holds the stream's own record sequence
+    and folds only the bytes a stream gained, so a grown stream costs its append
+    and an unchanged stream costs nothing here.
     """
     if record.get("launch") != "cli":
         return None
@@ -828,33 +870,11 @@ def _admission_refusal(
     if isinstance(cached, Mapping) and str(cached.get("ident") or "") == ident:
         refusal = cached.get("refusal")
         return dict(refusal) if isinstance(refusal, Mapping) else None
-    refusal_reason = ""
-    terminal_reason = ""
-    zero_token_error = False
-    from reckon import _backends
-
     try:
-        events, _malformed = _backends.cached_stream_events(log, whole=True)
+        refusal_reason, terminal_reason, zero_token_error = _admission_scan(log)
         size = log.stat().st_size
     except OSError:
         return None
-    for event in events:
-        kind = str(event.get("type") or "")
-        if kind == "assistant":
-            message = event.get("message")
-            if not isinstance(message, Mapping):
-                continue
-            if str(message.get("model") or "") != _SYNTHETIC_MODEL:
-                continue
-            if str(event.get("error") or "") != "invalid_request":
-                continue
-            text = _assistant_refusal_text(message)
-            if text:
-                refusal_reason = text
-        elif kind == "result":
-            terminal_reason = str(event.get("terminal_reason") or "")
-            if _result_turned_no_tokens(event):
-                zero_token_error = True
     _count_admission_bytes(size)
     refusal: dict[str, Any] | None = None
     if refusal_reason and terminal_reason == "blocking_limit" and zero_token_error:
