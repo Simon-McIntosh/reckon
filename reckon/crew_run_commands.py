@@ -3476,18 +3476,23 @@ def _complete_many(run_ids, parameters):
             if key in result
         }
         report["record_path"] = str(path)
+        # A batch reply carries one row per run and keeps each row short; a
+        # single run's reply is one document, and its refusal is carried whole
+        # because a refusal cut at a fixed width loses the remedy it names —
+        # the flag a caller reads to answer it.
+        excerpt = 240 if len(run_ids) > 1 else None
         for key in ("error", "detail", "reason"):
             if result.get(key):
-                report[key] = str(result[key])[:240]
+                text = str(result[key])
+                report[key] = text if excerpt is None else text[:excerpt]
                 break
         else:
             steps = result.get("steps")
             if isinstance(steps, Mapping):
                 for stage, entry in steps.items():
                     if isinstance(entry, Mapping) and entry.get("ok") is False:
-                        report["error"] = f"{stage}: {entry.get('error') or 'refused'}"[
-                            :240
-                        ]
+                        text = f"{stage}: {entry.get('error') or 'refused'}"
+                        report["error"] = text if excerpt is None else text[:excerpt]
                         break
         reports.append(report)
     reply = (
