@@ -6,6 +6,10 @@ both put the lane's own models to the picker and launch the model the answer
 names. The lane still never changes: a hold, a raise, a fallback and a model of
 another lane all launch the lane default, and a lane declaring no choice, a
 ``--model``, a ``--local`` and a paired arm ask nothing at all.
+
+Every payload is read from stdout, which carries exactly one JSON line. A real
+dispatch also writes advisories such as the created-run notice to stderr, and
+the runner's combined stream puts those first.
 """
 
 from __future__ import annotations
@@ -234,7 +238,7 @@ def test_a_named_lane_launches_the_model_jev_names(repo, monkeypatch):
     result = CliRunner().invoke(cli.main, _arguments(repo, node="named-lane-luna"))
 
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["backend"] == "codex"
     assert payload["agent"]["model"] == "gpt-6-luna"
     assert payload["agent"]["effort"] == "xhigh"
@@ -260,7 +264,7 @@ def test_the_named_lane_choice_is_recorded_on_the_run(repo, monkeypatch):
     result = CliRunner().invoke(cli.main, arguments)
 
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["route_mode"] == "explicit"
     assert payload["model_key"] == "luna"
     assert payload["agent"]["model"] == "gpt-6-luna"
@@ -284,7 +288,7 @@ def test_a_failed_ask_launches_the_lane_default(repo, monkeypatch, answer):
     result = CliRunner().invoke(cli.main, _arguments(repo, node=node))
 
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["backend"] == "codex"
     assert payload["agent"]["model"] == "gpt-6-sol"
 
@@ -304,7 +308,7 @@ def test_no_ask_when_a_model_is_named(repo, monkeypatch):
     )
 
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["agent"]["model"] == "gpt-6-astra"
     assert calls == []
 
