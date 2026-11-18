@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
+from unittest.mock import Mock
 
 import pytest
 
@@ -13,6 +14,8 @@ from reckon.crew import (
     open_run_index,
     pending_landing,
     recovery_repair_dispatch,
+    recovery_review_acceptance,
+    recovery_review_dispatch,
     runs,
 )
 from reckon.crew.station import SweepBeat
@@ -204,3 +207,45 @@ def test_unreadable_promotion_evidence_keeps_an_orphaned_journal(promoted_run):
     run_store.store_path().write_text("unreadable database")
     pending_landing.finish_pending_landings(only_run=run_id, now=1000000.0)
     assert pending_landing._record_path(run_id).is_file()
+
+
+@pytest.mark.parametrize("entry", ["sweep", "direct"])
+def test_a_store_promoted_delivery_gets_no_review(promoted_run, monkeypatch, entry):
+    run = promoted_run
+    pointer = run["pointer"]
+    assert pointer["phase"] == "complete"
+    composed = Mock(
+        return_value={"dispatched": True, "review_run_id": "r-probe-review"}
+    )
+    monkeypatch.setattr(
+        recovery_review_dispatch, "_dispatch_text_review_for_run", composed
+    )
+    monkeypatch.setattr(
+        recovery_review_acceptance, "_sweep_review_tier", lambda *a: "full"
+    )
+
+    def dispatch():
+        if entry == "sweep":
+            return recovery_review_acceptance.dispatch_awaiting_reviews(
+                project=PROJECT,
+                session="owner",
+                pointers=[runs.read_pointer(pointer["run_id"])],
+            )
+        return recovery_review_dispatch.dispatch_review_for_run(pointer)
+
+    before = dispatch()
+    assert before["dispatched"], before
+    composed.assert_called_once()
+    composed.reset_mock()
+    _promote(run, "store")
+    retained = runs.pointer_path(pointer["run_id"]).read_bytes()
+    result = dispatch()
+    assert not result["dispatched"], result
+    composed.assert_not_called()
+    if entry == "sweep":
+        assert result["failed"] == [], result
+    else:
+        assert result["refused"] is True, result
+        assert "promoted" in result["reason"], result
+        assert recovery_review_dispatch.review_dispatch_refusal(pointer) == result
+    assert runs.pointer_path(pointer["run_id"]).read_bytes() == retained
