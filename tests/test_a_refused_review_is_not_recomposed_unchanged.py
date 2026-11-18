@@ -55,8 +55,15 @@ REFUSAL = "the review lane refused the composed review"
 
 @pytest.fixture(autouse=True)
 def no_test_reads_another_tests_refusal() -> None:
-    """The memory of refused compositions is process-wide, so it is emptied."""
-    with reflex_dispatch._REFUSED_COMPOSITIONS_LOCK:
+    """The memory of refused compositions is process-wide, so it is emptied.
+
+    A revision that keeps no such memory has nothing to empty; the test that
+    follows still fails there on its own assertion rather than on this fixture.
+    """
+    lock = getattr(reflex_dispatch, "_REFUSED_COMPOSITIONS_LOCK", None)
+    if lock is None:
+        return
+    with lock:
         reflex_dispatch._REFUSED_COMPOSITIONS.clear()
 
 
