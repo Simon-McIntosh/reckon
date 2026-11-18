@@ -1716,6 +1716,12 @@ class RunStore:
             stamp = ledger.index_state_stamp(name, root)
             if self._membership_stamps.get(name) == stamp:
                 continue
+            # A project whose documents are absent or empty is left alone. The
+            # committed set would read as empty and the rebuild would delete
+            # rows a mount that is simply not present here still legitimately
+            # holds: no absent mount deletes a project's cached history.
+            if not ledger._ledger_holds_content(name, root):
+                continue
             indexed = {
                 str(row[0])
                 for row in self._conn.execute(
