@@ -1,0 +1,94 @@
+<section id="qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes-logs">
+<h3>A merge-repaired run is judged on its own changes: the two escape cases</h3>
+<p>The named file failed two ids against the node's base revision. Both failures
+were the same cause: the case escaped the declared write path with a mergeable
+source file (<code>outside.txt</code>) and expected a refusal that the
+declared-write-path rule <em>a declared write path fences nothing</em> (plan §4,
+status done) no longer makes. The escape class the rule still refuses — a plan
+document, which a merge cannot reconcile — refuses by name, naming only the
+run's own path and none of the twenty paths the primary merge brought. The
+verdict is <strong>test wrong</strong>: the cases now escape with
+<code>docs/plans/outside.html</code>; no assertion was removed or weakened.</p>
+
+<h4>Reproduction at the base revision (negative control)</h4>
+<pre># revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76
+# tree: /tmp/qwnw-base-TLiuXo
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py
+....F.F.                                                                 [100%]
+=========================== short test summary info ============================
+FAILED tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py::test_scope_escape_names_only_the_runs_own_file
+FAILED tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py::test_unmerged_run_keeps_its_scope_guard[True]
+2 failed, 6 passed in 5.60s
+EXIT=1
+</pre>
+<p>Both ids failed with <code>Failed: DID NOT RAISE CrewError</code>, at line 109
+of the first and line 125 of the second, each on a
+<code>with pytest.raises(crew.CrewError)</code> around the run's
+<code>outside.txt</code> commit. No other id failed, and the six passing ids
+already measure the merge-repaired scope arithmetic this file exists for. Full
+log:
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062553794779-qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes/base-gate-2f00851c.log</code>.</p>
+
+<h4>The rule the code keeps, read before editing</h4>
+<pre>def _changed_artifacts_needing_acceptance(...):
+    """Return changed paths whose class a merge cannot reconcile.
+
+    A declared write path is a hint rather than a boundary, so a run that
+    delivers a source file beside the one it declared needs no acceptance ...
+    """
+</pre>
+<p>Measured directly against the base product with a throwaway probe over the
+same fixture: a companion <code>outside.txt</code> lands with
+<code>changed_lines {"added": 2, "removed": 0, "files": 2}</code> and no
+acceptance, while a companion <code>docs/plans/outside.html</code> is refused
+with <code>run 'r-scope' changed paths outside its declared write scope:
+docs/plans/outside.html</code> — the run's own path only, none of the twenty
+primary paths.</p>
+
+<h4>The head run</h4>
+<pre>srun: task re-enters the worker fence; absolute scheduler paths bypass this guard.
+# revision: 867ee3002978c5c28d1ddc2daac6f26fdacc2c49
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-18f9fa9740ba-dxlzR3/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py'
+........                                                                 [100%]
+8 passed in 4.73s
+EXIT=0
+</pre>
+<p>This is the project's scoped-gate verb measuring the working tree at the
+committed head <code>867ee30029</code>, which carries the repaired test file.
+Its log:
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062553794779-qwnw-red-file-a-merge-repaired-run-is-judged-on-its-own-changes/scoped-gate-1794998770598446069.log</code>.
+This fragment is committed on top of that revision and changes nothing the gate
+measured.</p>
+
+<h4>The scope rule's own tests, both arms</h4>
+<pre># revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py tests/test_promotion_scope_counts_only_the_runs_commits.py tests/test_write_scope_agreement.py tests/test_a_batch_entry_faces_the_write_scope_check.py
+# measurement_module: /tmp/qwnw-arm-REmiQ7/reckon/crew.py
+...............................................                          [100%]
+47 passed in 8.54s
+EXIT=0
+</pre>
+<pre># revision: 867ee3002978c5c28d1ddc2daac6f26fdacc2c49
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_s_scope_check_reads_the_paths_at_the_head.py tests/test_promotion_scope_counts_only_the_runs_commits.py tests/test_write_scope_agreement.py tests/test_a_batch_entry_faces_the_write_scope_check.py
+# measurement_module: /tmp/qwnw-arm-IbzBYS/reckon/crew.py
+...............................................                          [100%]
+47 passed in 8.64s
+EXIT=0
+</pre>
+<p>No failure is added against the base: both arms read 47 passed, exit 0.</p>
+
+<h4>The declared suite, both arms</h4>
+<pre># revision: 2f00851c42f247cba1c81c80ed0cf7b41045de76
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+EXIT=0
+</pre>
+<pre># revision: 867ee3002978c5c28d1ddc2daac6f26fdacc2c49
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+EXIT=0
+</pre>
+<p>Both arms report zero failures; the run's own logs are
+<code>baseline_suite-1794999150127967846.log</code> and
+<code>after_suite-1794999225265515666.log</code> under the run directory.</p>
+</section>
