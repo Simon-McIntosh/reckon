@@ -751,6 +751,7 @@ class SessionScratchConfig(ConfiguredBaseModel):
     """
     max_bytes: int | None = Field(default=None, description="""Allocated file bytes above which a session owes scratch cleanup.""", ge=1)
     disk_share: float | None = Field(default=None, description="""Fraction of the local disk available to all session scratch; new sessions refuse at this share.""", ge=0.001, le=1)
+    orphan_grace_seconds: int | None = Field(default=None, description="""Minimum inactivity in seconds before an unowned crew scratch tree can be removed. Live run pointers and processes holding the tree always protect it. Defaults to two hours.""", ge=1)
 
 
 class SummaryConfig(ConfiguredBaseModel):

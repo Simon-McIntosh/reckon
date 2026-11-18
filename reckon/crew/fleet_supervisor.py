@@ -518,6 +518,25 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         or "unavailable"
     )
     qualifier = "" if sample.get("entries_complete") else " (census incomplete)"
+    scratch = sample.get("crew_scratch", {})
+    scratch_groups: dict[str, list[str]] = {"live": [], "unowned": [], "held": []}
+    for entry in scratch.get("entries", []):
+        if entry.get("removed"):
+            continue
+        withheld = entry.get("withheld", "")
+        group = (
+            "live"
+            if "live pointer" in withheld
+            else ("held" if "held by process" in withheld else "unowned")
+        )
+        scratch_groups[group].append(entry["path"])
+    scratch_detail = "".join(
+        f"; {group} crew scratch: {', '.join(paths)}"
+        for group, paths in scratch_groups.items()
+        if paths
+    )
+    if scratch.get("error") or scratch.get("withheld"):
+        scratch_detail += f"; crew scratch census unavailable: {scratch.get('error') or scratch['withheld']}"
     return {
         "kind": "node-disk-reserve",
         "run_id": "",
@@ -525,19 +544,58 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         "reason": (
             f"Fleet node {sample['node']} mount {sample['mount']} has "
             f"{sample['free_bytes']} free bytes below its {sample['reserve_bytes']} "
-            f"byte reserve. Largest entries by owner{qualifier}: {largest}"
+            f"byte reserve. Largest entries by owner{qualifier}: {largest}{scratch_detail}"
         ),
         "next_command": "Review the named entries with their owners and free local disk space",
         "disk": dict(sample),
     }
 
 
+def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Sweep on the node sampler's clock and durably record each removal.
+
+    Reuse GC's ownership and process checks; an incomplete activity census is
+    withheld. The independent disk sample still publishes when a sweep fails.
+    """
+    from reckon import flight
+    from reckon.crew.gc import garbage_collect_orphan_scratch
+    from reckon.crew.node import CrewError
+
+    grace = flight.resolve().config["session_scratch"]["orphan_grace_seconds"]
+
+    def record(entry: dict[str, Any]) -> None:
+        path = state_directory(environ) / "scratch-removals.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        row = {"utc": datetime.now(UTC).isoformat(), **entry}
+        with path.open("a") as stream:
+            stream.write(json.dumps(row, sort_keys=True) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        log(
+            f"reclaimed crew scratch: {json.dumps(row, sort_keys=True)}",
+            file=sys.stderr,
+        )
+
+    try:
+        return garbage_collect_orphan_scratch(
+            apply=True,
+            grace_seconds=grace,
+            inspect_activity=True,
+            record_removal=record,
+        )
+    except (OSError, ValueError, RuntimeError, CrewError) as exc:
+        log(f"crew scratch sweep unavailable: {exc}", file=sys.stderr)
+        return {"error": str(exc)}
+
+
 def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
     """Publish one local disk reading and emit the health series' four fields."""
     environ = os.environ if environ is None else environ
     mount = Path(environ.get(NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
+    scratch = reclaim_unowned_scratch(environ)
     try:
         sample = node_disk_snapshot(mount, reserve_bytes=node_disk_reserve_bytes())
+        sample["crew_scratch"] = scratch
         sample["job_id"] = environ.get("SLURM_JOB_ID", "")
         write_json_atomically(state_directory(environ) / NODE_DISK_RECORD, sample)
     except OSError as exc:
@@ -4020,7 +4078,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return sample_interpreter_permissions()
     if arguments == ["sample-test-processes"]:
         sample = sample_fleet_tests()
-        print(f"{sample['tree_count']}\t{sample['rss_bytes']}\t" + json.dumps(sample["trees"]))
+        print(
+            f"{sample['tree_count']}\t{sample['rss_bytes']}\t"
+            + json.dumps(sample["trees"])
+        )
         return 0
     if arguments and arguments[0] == START_MODE:
         # A stop from the request loop ends the copy as an exit rather than a

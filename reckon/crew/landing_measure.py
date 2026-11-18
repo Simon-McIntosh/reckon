@@ -1603,46 +1603,55 @@ def base_checkout(
             f"could not create a scratch tree for {base_sha}: "
             f"{type(exc).__name__}: {exc}"
         ) from exc
-    target = scratch / "tree"
-    try:
-        added = _git(
-            repo, "worktree", "add", "--detach", str(target), base_sha, timeout=timeout
-        )
-    except subprocess.TimeoutExpired as expired:
-        shutil_rmtree(scratch)
-        raise BaseCheckoutError(
-            f"could not check out {base_sha} for the base arm: "
-            f"git worktree add exceeded its {timeout:g}s bound"
-        ) from expired
-    except OSError as exc:
-        shutil_rmtree(scratch)
-        raise BaseCheckoutError(
-            f"could not check out {base_sha} for the base arm: "
-            f"{type(exc).__name__}: {exc}"
-        ) from exc
-    if added.returncode:
-        shutil_rmtree(scratch)
-        raise BaseCheckoutError(
-            f"could not check out {base_sha} for the base arm: "
-            f"{(added.stderr or added.stdout or '').strip()}"
-        )
-    _link_environment(repo, target)
-    try:
-        yield target
-    finally:
-        removed = False
-        with contextlib.suppress(OSError, subprocess.TimeoutExpired):
-            finished = _git(
-                repo, "worktree", "remove", "--force", str(target), timeout=timeout
+    # An open descriptor protects a measurement even while its parent waits
+    # outside the checkout: the scratch sweep sees this holder through /proc.
+    with (scratch / ".measurement-owner").open("w"):
+        target = scratch / "tree"
+        try:
+            added = _git(
+                repo,
+                "worktree",
+                "add",
+                "--detach",
+                str(target),
+                base_sha,
+                timeout=timeout,
             )
-            removed = finished.returncode == 0
-        shutil_rmtree(scratch)
-        if not removed:
-            # The tree is gone from disk but the repository still registers it.
-            # Prune drops that stale entry, and ``--expire now`` is what makes
-            # it act immediately rather than after the default grace period.
+        except subprocess.TimeoutExpired as expired:
+            shutil_rmtree(scratch)
+            raise BaseCheckoutError(
+                f"could not check out {base_sha} for the base arm: "
+                f"git worktree add exceeded its {timeout:g}s bound"
+            ) from expired
+        except OSError as exc:
+            shutil_rmtree(scratch)
+            raise BaseCheckoutError(
+                f"could not check out {base_sha} for the base arm: "
+                f"{type(exc).__name__}: {exc}"
+            ) from exc
+        if added.returncode:
+            shutil_rmtree(scratch)
+            raise BaseCheckoutError(
+                f"could not check out {base_sha} for the base arm: "
+                f"{(added.stderr or added.stdout or '').strip()}"
+            )
+        _link_environment(repo, target)
+        try:
+            yield target
+        finally:
+            removed = False
             with contextlib.suppress(OSError, subprocess.TimeoutExpired):
-                _git(repo, "worktree", "prune", "--expire", "now", timeout=timeout)
+                finished = _git(
+                    repo, "worktree", "remove", "--force", str(target), timeout=timeout
+                )
+                removed = finished.returncode == 0
+            shutil_rmtree(scratch)
+            if not removed:
+                # The tree is gone from disk but the repository still registers it.
+                # Prune drops that stale entry, and ``--expire now`` is what makes
+                # it act immediately rather than after the default grace period.
+                with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                    _git(repo, "worktree", "prune", "--expire", "now", timeout=timeout)
 
 
 def shutil_rmtree(path: Path) -> None:

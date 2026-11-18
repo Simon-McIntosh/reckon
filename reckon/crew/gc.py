@@ -6,6 +6,7 @@ import re
 import shlex
 import shutil
 import socket
+import stat
 import sys
 import tempfile
 import time
@@ -1505,6 +1506,35 @@ def _scratch_ctime(path: Path) -> float:
     return path.stat().st_ctime
 
 
+def _scratch_activity(path: Path, deadline: float) -> tuple[float, int]:
+    """Read the newest mutation and logical bytes without following symlinks.
+
+    Directory ctime alone misses writes to existing descendants. Both ctime
+    and mtime matter: extraction can preserve old mtimes, while a future mtime
+    must conservatively keep a tree. A partial walk never licenses removal.
+    """
+
+    def unreadable(error: OSError) -> None:
+        raise error
+
+    latest = _scratch_ctime(path)
+    size = 0
+    for directory, directories, files in os.walk(
+        path, followlinks=False, onerror=unreadable
+    ):
+        for entry in [
+            Path(directory),
+            *(Path(directory) / name for name in directories + files),
+        ]:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("scratch activity census exceeded its bound")
+            metadata = entry.lstat()
+            latest = max(latest, metadata.st_ctime, metadata.st_mtime)
+            if stat.S_ISREG(metadata.st_mode):
+                size += metadata.st_size
+    return latest, size
+
+
 def _scratch_process_holders(root: Path) -> dict[str, list[int]]:
     """Read process cwd and fd links once for every scratch child."""
     holders: dict[str, list[int]] = {}
@@ -1547,7 +1577,12 @@ def scratch_root_pairs_with_state_home(
 
 
 def garbage_collect_orphan_scratch(
-    *, apply: bool = False, now: float | None = None
+    *,
+    apply: bool = False,
+    now: float | None = None,
+    grace_seconds: float = SCRATCH_GRACE_SECONDS,
+    inspect_activity: bool = False,
+    record_removal: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     """Report aged, unclaimed scratch; remove it only after rechecking claims.
 
@@ -1571,7 +1606,10 @@ def garbage_collect_orphan_scratch(
         return {"root": str(root), "entries": [], "removed": [], "bytes_freed": 0}
     if not root.is_dir() or not Path("/proc").is_dir():
         raise CrewError(f"scratch sweep cannot safely inspect {root} and /proc")
+    if grace_seconds < 0:
+        raise ValueError("scratch grace must be nonnegative")
     stamp = time.time() if now is None else now
+    deadline = time.monotonic() + 5
     live_ids = {str(row.get("run_id") or "") for row in list_live()}
     holders = _scratch_process_holders(root)
     entries: list[dict[str, Any]] = []
@@ -1588,15 +1626,23 @@ def garbage_collect_orphan_scratch(
                 }
             )
             continue
-        size = tree_size_bytes(child)
+        size = 0 if inspect_activity else tree_size_bytes(child)
         age = max(0.0, stamp - _scratch_ctime(child))
         reason = ""
         if child.name in live_ids:
             reason = "live pointer"
-        elif age < SCRATCH_GRACE_SECONDS:
-            reason = f"ctime within {SCRATCH_GRACE_SECONDS} second grace"
+        elif age < grace_seconds:
+            reason = f"ctime within {grace_seconds} second grace"
         elif holders.get(child.name):
             reason = f"held by process {holders[child.name]}"
+        elif inspect_activity:
+            try:
+                latest, size = _scratch_activity(child, deadline)
+                age = max(0.0, stamp - latest)
+                if age < grace_seconds:
+                    reason = "descendant touched within grace"
+            except (OSError, TimeoutError) as exc:
+                reason = f"activity unreadable: {exc}"
         entry: dict[str, Any] = {
             "path": str(child),
             "bytes": size,
@@ -1619,13 +1665,27 @@ def garbage_collect_orphan_scratch(
                 entry["withheld"] = f"held by process {current_holders[child.name]}"
             elif child.is_symlink() or child.resolve().parent != root:
                 entry["withheld"] = "path left configured scratch root"
-            elif stamp - _scratch_ctime(child) < SCRATCH_GRACE_SECONDS:
+            elif stamp - _scratch_ctime(child) < grace_seconds:
                 entry["withheld"] = "ctime refreshed during sweep"
             else:
+                if inspect_activity:
+                    try:
+                        latest, size = _scratch_activity(child, deadline)
+                    except (OSError, TimeoutError) as exc:
+                        entry["withheld"] = f"activity unreadable: {exc}"
+                        continue
+                    if stamp - latest < grace_seconds:
+                        entry["withheld"] = "descendant refreshed during sweep"
+                        continue
+                    entry["bytes"] = size
+                    entry["ctime_age_seconds"] = max(0.0, stamp - latest)
                 shutil.rmtree(child)
                 entry["removed"] = True
+                entry["reason"] = "no live run or process; inactivity grace elapsed"
                 removed.append(str(child))
                 bytes_freed += entry["bytes"]
+                if record_removal is not None:
+                    record_removal(entry)
     return {
         "root": str(root),
         "entries": entries,
