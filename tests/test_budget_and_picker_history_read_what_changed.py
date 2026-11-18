@@ -57,6 +57,19 @@ def _record(index: int, *, run_id: str, completed: datetime) -> dict[str, Any]:
     }
 
 
+def _forget_history() -> None:
+    """Empty the stored-history cache a tree that keeps one carries.
+
+    The arm this test measures keeps the rows a read decoded; the arm it is
+    compared against reads the project's history every time and holds nothing
+    to empty, so the call is made only where the cache exists.
+    """
+    clear = getattr(ledger, "clear_stored_history", None)
+    if clear is not None:
+        clear()
+    file_memo.clear()
+
+
 @pytest.fixture()
 def crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A temporary crew home and checkout, with both readers' caches empty."""
@@ -65,11 +78,9 @@ def crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "repo"
     root.mkdir()
     ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=root)
-    ledger.clear_stored_history()
-    file_memo.clear()
+    _forget_history()
     yield root
-    ledger.clear_stored_history()
-    file_memo.clear()
+    _forget_history()
 
 
 def _seed(population: int) -> None:
@@ -146,7 +157,7 @@ def _verdict(root: Path) -> dict[str, Any]:
     }
 
 
-def _amend(root: Path, run_id: str, field: str, value: str) -> None:
+def _amend(root: Path, run_id: str, value: str) -> None:
     """Rewrite one promoted row in place, keeping its encoded size.
 
     A one-word field swapped for a word of the same length leaves the store's
@@ -156,6 +167,7 @@ def _amend(root: Path, run_id: str, field: str, value: str) -> None:
     assert len(value) == len("passed")
     row = _record(0, run_id=run_id, completed=NOW)
     row["gate"] = value
+    ledger.run_path(PROJECT, run_id, root).parent.mkdir(parents=True, exist_ok=True)
     ledger.write_run_file(PROJECT, row, root=root)
 
 
@@ -177,7 +189,10 @@ def test_a_repeat_read_decodes_only_what_was_promoted(
     decoded.clear()
     repeated_verdict = _verdict(root)
     repeated_rows = ledger.picker_runs(PROJECT, root=root)
-    assert sum(decoded) == 0
+    repeated_decodes = sum(decoded)
+    assert repeated_decodes == 0, (
+        f"the unchanged repeat decoded {repeated_decodes} rows"
+    )
     assert repeated_verdict == first_verdict
     assert repeated_rows == first_rows
 
@@ -185,8 +200,11 @@ def test_a_repeat_read_decodes_only_what_was_promoted(
     decoded.clear()
     promoted_verdict = _verdict(root)
     promoted_rows = ledger.picker_runs(PROJECT, root=root)
-    # Two readers, five rows each: the promotions are read once per reader.
-    assert sum(decoded) <= 2 * PROMOTED
+    # Two readers, five rows each: the promotions are pulled once per reader.
+    promoted_decodes = sum(decoded)
+    assert promoted_decodes <= 2 * PROMOTED, (
+        f"the repeat after {PROMOTED} promotions decoded {promoted_decodes} rows"
+    )
     assert len(promoted_rows) == POPULATION + PROMOTED
     assert promoted_verdict["backends"][BACKEND]["record_id"] == promoted[-1]
 
@@ -205,6 +223,6 @@ def test_an_amended_row_reaches_the_next_answer(
     root = crew_home
     _seed(POPULATION)
     assert ledger.picker_runs(PROJECT, root=root)[0]["gate"] == "passed"
-    _amend(root, "r-seed-0000", "gate", "failed")
+    _amend(root, "r-seed-0000", "failed")
     rows = {row["run_id"]: row for row in ledger.picker_runs(PROJECT, root=root)}
     assert rows["r-seed-0000"]["gate"] == "failed"
