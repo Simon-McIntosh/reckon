@@ -340,6 +340,42 @@ def test_the_census_quantiles_are_the_samples_own_rule(
     )
     assert [row["request_lag_seconds"] for row in census["rows"]] == [5.0, 100.0]
     assert census["request_lag_seconds"] == {"p50": 5.0, "p90": 100.0, "max": 100.0}
+    # Both requests landed inside the window, so no run is reported late.
+    assert census["request_window_seconds"] == WINDOW_SECONDS
+    assert census["late_requests"] == []
+
+
+def test_a_request_beyond_the_window_is_named_apart_from_the_median(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """One prompt request and one a quarter of an hour late: the median hides the second."""
+    config_home, repo = isolated_project
+    records = []
+    for run_id, lag in (("r-request-prompt", 5), ("r-request-late", 917)):
+        record = _scoring_pointer(config_home, repo, run_id)
+        stage_receipts.record_stage(
+            run_id, "delivery_recorded", at="2026-01-01T00:00:00.000000Z"
+        )
+        stage_receipts.record_stage(
+            run_id,
+            "review_requested",
+            at=(
+                datetime(2026, 1, 1, 0, 0, tzinfo=UTC) + timedelta(seconds=lag)
+            ).isoformat().replace("+00:00", "Z"),
+        )
+        records.append(record)
+
+    census = recovery_review_dispatch.review_request_census(
+        [str(record["run_id"]) for record in records], pointers=records
+    )
+    assert census["request_lag_seconds"]["p50"] == 5.0
+    assert census["request_lag_seconds"]["max"] == 917.0
+    late = census["late_requests"]
+    assert [entry["run_id"] for entry in late] == ["r-request-late"], late
+    assert late[0]["request_lag_seconds"] == 917.0
+    assert late[0]["requested_at"] == (
+        datetime(2026, 1, 1, 0, 15, 17, tzinfo=UTC).isoformat()
+    )
 
 
 def test_a_request_receipted_before_its_delivery_is_not_an_obligation(

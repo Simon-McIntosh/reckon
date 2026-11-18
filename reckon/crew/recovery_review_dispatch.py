@@ -4613,6 +4613,12 @@ def _dispatch_composed_review(
 # request nothing is going to make.
 REVIEW_REQUEST_DEADLINE_SECONDS = 600
 
+# The window a request is meant to land inside. A request that takes longer is
+# not a failure — the review still starts — but it is a delay the report names,
+# because a median inside the window and one request a quarter of an hour late
+# are compatible, and the quantiles alone let a reader conclude otherwise.
+REVIEW_REQUEST_WINDOW_SECONDS = 120
+
 
 def _stage_percentile(values: Sequence[float], quantile: float) -> float | None:
     """A quantile of the stage sample, read by the profile's own rule.
@@ -4764,17 +4770,21 @@ def review_request_census(
     *,
     now: datetime | None = None,
     deadline_seconds: int = REVIEW_REQUEST_DEADLINE_SECONDS,
+    window_seconds: int = REVIEW_REQUEST_WINDOW_SECONDS,
     pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Report the delivery, request and launch instants of delivered runs.
 
     ``rows`` carries one entry per delivered run with both intervals, so a late
     request and a slow launch are told apart by the reader rather than inferred
-    from a total. ``obligations`` carries every delivered run with no request
-    after ``deadline_seconds``, each with the reason its own record gives. A run
-    whose delivery was never recorded is not in either list: nothing is known
-    about it, and a zero-length interval would be a claim the receipts do not
-    support.
+    from a total. ``late_requests`` names every run whose request took longer
+    than ``window_seconds``, because a median inside the window and a request a
+    quarter of an hour late are compatible, and the quantiles alone let a reader
+    conclude otherwise. ``obligations`` carries every delivered run with no
+    request after ``deadline_seconds``, each with the reason its own record
+    gives. A run whose delivery was never recorded is not in either list:
+    nothing is known about it, and a zero-length interval would be a claim the
+    receipts do not support.
     """
     moment = now if now is not None else datetime.now(tz=UTC)
     live = {
@@ -4786,6 +4796,7 @@ def review_request_census(
     request_lags: list[float] = []
     launch_lags: list[float] = []
     unrecorded: list[dict[str, Any]] = []
+    late: list[dict[str, Any]] = []
     for run_id in run_ids:
         # A review is never asked for a review of itself, so a review run is not
         # a delivered run that owes a request. Without this a census of the fleet
@@ -4857,6 +4868,15 @@ def review_request_census(
                 )
             continue
         request_lags.append(request_lag)
+        if request_lag > int(window_seconds):
+            late.append(
+                {
+                    "run_id": run_id,
+                    "delivered_at": delivered_at,
+                    "requested_at": instants["requested_at"],
+                    "request_lag_seconds": request_lag,
+                }
+            )
         if launch_lag is not None:
             launch_lags.append(launch_lag)
     return {
@@ -4879,6 +4899,8 @@ def review_request_census(
             "max": max(launch_lags) if launch_lags else None,
         },
         "request_unrecorded": unrecorded,
+        "request_window_seconds": int(window_seconds),
+        "late_requests": late,
         "deadline_seconds": int(deadline_seconds),
         "obligations": obligations,
     }
