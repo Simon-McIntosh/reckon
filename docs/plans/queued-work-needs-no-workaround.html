@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="424">
+<meta name="plan-version" content="425">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1343,6 +1343,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T051445511303-review-of-qwnw-red-file-a-queued-launch-never-classifies-the-fleet-edeb8838ea9e" data-who="reckon-build" data-when="2026-11-18T05:20:42.724Z">
     <div class="r-comment-body"><p>review of r-20261118T044611596106-qwnw-red-file-a-queued-launch-never-classifies-the-fleet at reviewed_base_sha 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed and reviewed_head_sha edeb8838ea9eeca44a261fd97e69da7f99affb99 — parsed, scores goal_fidelity 19 evidence 14 scope_discipline 20 durability 19 fit 20 reuse 20, added_failure_count 0, two non-blocking findings (the fragment claims an all_debug / SLURM_JOB_ID-unset condition no cited log records; the armed suite pair covers files unrelated to the changed test).</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044611596106-qwnw-red-file-a-queued-launch-never-classifies-the-fleet" data-who="reckon-build" data-when="2026-11-18T04:50:21.635Z">
+    <div class="r-comment-body"><p>Repaired the one red test file: `test_direct_dispatch_records_the_ten_session_runs` asserted that a dispatch classifies all 50 live pointers, the fleet-wide backlog rule that scoping the fence to the dispatching session replaced, so the assertion now holds that rule exactly — the classifier sees the ten rows of the dispatching session and no peer row — and the file reads 3 passed at head (base: 1 failed, 2 passed).</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
