@@ -1,0 +1,133 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "100": "Omitting either removal record or logging a protected path fails the independently constructed expected path set.",
+    "101": "Incorrect recorded byte totals fail against the known fixture payload lengths; these lengths come from actual payload construction, not a byte count passed to the sweep.",
+    "102": "Logging an age below the independent two-hour boundary or omitting the timestamp fails.",
+    "103": "Omitting the required ownership/inactivity removal reason fails.",
+    "104,105-108": "Repeating a removal or appending duplicate records on a second pass fails.",
+    "119-121": "Restoring root-ctime-only eligibility removes a recently modified descendant tree, changing removal/withheld state or pre-sweep bytes.",
+    "134": "Fails if the test process is actually inside the checkout; validates the descriptor experiment setup.",
+    "136-138": "Removing the open measurement-owner descriptor allows deletion and loses the holder reason or marker.",
+    "139": "Removing base_checkout cleanup leaves the parent scratch directory and fails.",
+    "151,152": "Ignoring the 9000-second configured grace and keeping a fixed 7200 seconds deletes the 8000-second-old fixture and fails.",
+    "158": "Shipping any default other than the independently stated two-hour product requirement fails.",
+    "161-163": "Omitting the generated model field or minimum-one validation fails field membership or expected exception.",
+    "176,177": "Removing the disk sampler reclamation call leaves its orphan present; sampler failure also violates the return-code assertion.",
+    "180-182": "Combining live and unowned pressure categories, omitting either, or including already deleted paths fails.",
+    "183": "Changing the four-column disk CLI contract fails.",
+    "194-196": "Swallowing incomplete activity evidence and deleting anyway fails removal, withheld reason or physical survival.",
+    "213-215": "Removing the second activity walk deletes a tree touched between scans and fails removal, reason or survival.",
+    "223,224": "Following a scratch child symlink into its external target changes removal state or known payload bytes and fails.",
+    "232,233": "Removing the pre-open audit sink check permits deletion despite a directory at the log path, so error presence or survivor assertion fails; these do not cover a successful open followed by failed write.",
+    "240,241": "Accepting a symlink scratch root fails the required refusal message or preservation of the symlink.",
+    "87": "Fails when the real holder subprocess does not reach its ready marker; setup synchronization, not reclamation coverage.",
+    "89,90": "Restoring no cleanup or removing any ownership/recency guard changes the exact removed set or filesystem absence, so these fail.",
+    "91": "Deleting or mutating any of the three survivors fails comparison against bytes independently read before the sweep.",
+    "93": "Reporting an unmeasured protected live tree as zero or a measured number instead of unknown fails.",
+    "self_referential": "No assertion merely compares an echoed parameter against that same parameter; fixture paths and pre-sweep bytes represent independent expected identity/content, and the grace-override test observes deletion rather than echoing configuration."
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "bin/fleet-health:129 sample-node-disk invocation",
+    "reckon/crew/fleet_supervisor.py:604 sample_node_disk to reclaim_unowned_scratch",
+    "reckon/crew/fleet_supervisor.py:4082 main sample-node-disk branch",
+    "reckon/crew/gc.py:1463 garbage_collect to garbage_collect_orphan_scratch",
+    "reckon/crew/landing_measure.py:1559 merge candidate context to base_checkout"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T00:44:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "unowned-scratch-is-reclaimed",
+      "recorded_at": "2026-11-18T04:08:01.560628+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "1682",
+      "severity": "blocking",
+      "text": "blocking: shutil.rmtree runs before record_removal, whose write/flush/fsync can fail even after opening the log succeeds; reclaim_unowned_scratch then returns only an error, so the tree is irreversibly removed without the required durable path/size/age/reason record; persist a removal intent before deletion and reconcile completion, with a successful-open/failing-write control."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": 1612,
+      "severity": "blocking",
+      "text": "blocking: one deadline created before both process scans is reused for every candidate's initial and final activity walk; if an early tree exhausts five seconds, every later candidate and every final recheck times out, and the next minute restarts the same sorted traversal, so readable stale unowned trees can survive forever; retain bounded progress or otherwise ensure fair eventual completion and test a slow first tree followed by a small eligible tree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read c6379733f0fef892281a13c0f2e964a85ba52fdf and 7b14a9c608ee92f4516cd88d7a234f076bbcc01a against the named base; eight paths implement the sampler hook, shared GC extension, measurement holder, setting and eleven tests.",
+    "done_when": "docs/plans/the-fleet-node-stays-inside-its-memory.html:129 names the five-entry fixture and ownership mutation, both evidenced in the source run logs, while its no-added-importer-failures and 24-hour observation remain unmet.",
+    "goal": "docs/plans/the-fleet-node-stays-inside-its-memory.html:128 requires automatic owner-aware inactivity reclamation with removal records; the implementation supplies the normal path but can permanently starve candidates and delete before its record is durable.",
+    "manifest": "the source manifest records two full commits and readable base/head receipts with 58 and 69 passing tests, but still reads in-progress and explicitly reports the importer and live-observation gaps.",
+    "write_paths": "the source manifest orientation_write_paths grants all eight delivered paths, including reckon/crew/gc.py, and the base-to-head diff stays within them."
+  },
+  "justifications": {
+    "durability": "tests/test_unowned_scratch_is_reclaimed.py:89 rejects loss of the live-pointer guard and its recorded mutation fails two tests, but no test covers deadline starvation or an audit write/flush failure after a successful open.",
+    "evidence": "source-run after_suite-1794961598038939790-receipt.log records 69 passed and EXIT=0 against the exact head, but importer_head-1794961755031088611.log adds one failing ID and the plan's 24-hour reading is absent.",
+    "fit": "reckon/crew/fleet_supervisor.py:560 follows existing sampler helpers, reckon/crew/gc.py:1509 names the activity mechanism directly, and the setting is propagated through the existing schema generation surfaces.",
+    "goal_fidelity": "reckon/crew/gc.py:1612 shares one five-second deadline across all candidates and both censuses, and reckon/crew/gc.py:1682 deletes before recording, leaving two required behaviors incomplete.",
+    "reuse": "capability searches opened existing GC ownership/process mechanisms, dispatch_launch.py:952 tree_size_bytes and fleet_supervisor.py:1133 session_scratch_sample; reclamation extends its GC owner while the new activity walk uniquely combines newest descendant mutation with fail-closed sizing.",
+    "scope_discipline": "the eight paths in the reviewed diff are all granted in the source manifest orientation_write_paths and implement scratch reclamation or its verification."
+  },
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/negative-control.log",
+    "observed": "The log includes a reclaimed live-run path and both ownership-sensitive test failures.",
+    "summary": "2 failed, 9 passed in 1.04s"
+  },
+  "outside_scope": {
+    "importer_added_failure_ids": [
+      "tests/test_session_scratch_uses_bounded_node_tmp.py::test_flight_defaults_and_host_override"
+    ],
+    "importer_base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/importer_base-1794961519987247408.log",
+    "importer_head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/importer_head-1794961755031088611.log",
+    "remaining_observation": "24-hour fleet-node observation after integration has not run."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/the-fleet-node-stays-inside-its-memory.html:128 requires automatic owner-aware inactivity reclamation with removal records; the implementation supplies the normal path but can permanently starve candidates and delete before its record is durable.\nVERDICT done_when: docs/plans/the-fleet-node-stays-inside-its-memory.html:129 names the five-entry fixture and ownership mutation, both evidenced in the source run logs, while its no-added-importer-failures and 24-hour observation remain unmet.\nVERDICT write_paths: the source manifest orientation_write_paths grants all eight delivered paths, including reckon/crew/gc.py, and the base-to-head diff stays within them.\nVERDICT manifest: the source manifest records two full commits and readable base/head receipts with 58 and 69 passing tests, but still reads in-progress and explicitly reports the importer and live-observation gaps.\nVERDICT diff: read c6379733f0fef892281a13c0f2e964a85ba52fdf and 7b14a9c608ee92f4516cd88d7a234f076bbcc01a against the named base; eight paths implement the sampler hook, shared GC extension, measurement holder, setting and eleven tests.\nCALL_SITES: bin/fleet-health:129 sample-node-disk invocation, reckon/crew/fleet_supervisor.py:604 sample_node_disk to reclaim_unowned_scratch, reckon/crew/fleet_supervisor.py:4082 main sample-node-disk branch, reckon/crew/gc.py:1463 garbage_collect to garbage_collect_orphan_scratch, reckon/crew/landing_measure.py:1559 merge candidate context to base_checkout\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1612 shares one five-second deadline across all candidates and both censuses, and reckon/crew/gc.py:1682 deletes before recording, leaving two required behaviors incomplete.\nSCORE evidence: 15\nJUSTIFICATION evidence: source-run after_suite-1794961598038939790-receipt.log records 69 passed and EXIT=0 against the exact head, but importer_head-1794961755031088611.log adds one failing ID and the plan's 24-hour reading is absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the eight paths in the reviewed diff are all granted in the source manifest orientation_write_paths and implement scratch reclamation or its verification.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_unowned_scratch_is_reclaimed.py:89 rejects loss of the live-pointer guard and its recorded mutation fails two tests, but no test covers deadline starvation or an audit write/flush failure after a successful open.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:560 follows existing sampler helpers, reckon/crew/gc.py:1509 names the activity mechanism directly, and the setting is propagated through the existing schema generation surfaces.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches opened existing GC ownership/process mechanisms, dispatch_launch.py:952 tree_size_bytes and fleet_supervisor.py:1133 session_scratch_sample; reclamation extends its GC owner while the new activity walk uniquely combines newest descendant mutation with fail-closed sizing.\nFINDING reckon/crew/gc.py:1682 blocking: shutil.rmtree runs before record_removal, whose write/flush/fsync can fail even after opening the log succeeds; reclaim_unowned_scratch then returns only an error, so the tree is irreversibly removed without the required durable path/size/age/reason record; persist a removal intent before deletion and reconcile completion, with a successful-open/failing-write control.\nFINDING reckon/crew/gc.py:1612 blocking: one deadline created before both process scans is reused for every candidate's initial and final activity walk; if an early tree exhausts five seconds, every later candidate and every final recheck times out, and the next minute restarts the same sorted traversal, so readable stale unowned trees can survive forever; retain bounded progress or otherwise ensure fair eventual completion and test a slow first tree followed by a small eligible tree.\n",
+  "reproduction_evidence": {
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/reproduction.log",
+    "quote": "recent_descendant_survives= False; AssertionError: recent descendant was deleted despite being touched inside the grace period"
+  },
+  "review_run_id": "r-20261118T004303865181-review-of-unowned-scratch-is-reclaimed-7b14a9c608ee",
+  "reviewed_base_sha": "61fb9eb5113fcd38b18158ffad554f208e0ad77c",
+  "reviewed_head_sha": "7b14a9c608ee92f4516cd88d7a234f076bbcc01a",
+  "reviewed_run_id": "r-20261118T001329090851-unowned-scratch-is-reclaimed",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/after_suite-1794961598038939790-receipt.log",
+      "summary": "69 passed in 34.56s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T001329090851-unowned-scratch-is-reclaimed/baseline_suite-1794961523049792695-receipt.log",
+      "summary": "58 passed in 37.19s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:50:09.107920+00:00",
+  "total": 107
+}
