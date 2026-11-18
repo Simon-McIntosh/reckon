@@ -1524,6 +1524,10 @@ class RunStore:
         An attached-database transaction commits the copy and deletion together.
         Unknown completion times stay hot. The cutoff uses parsed instants so
         equivalent stamps with different offsets receive the same treatment.
+        The gate a caller passes sees the record the promotion wrote with the
+        project it is filed under declared from the runs column, as every other
+        identity read answers it: the payload of a row written since the append
+        stopped injecting the key carries no ``project`` of its own.
         """
         from reckon._timestamps import parse_utc
 
@@ -1544,7 +1548,14 @@ class RunStore:
                     and run_id not in protected
                     and ended
                     and ended < before
-                    and (can_retire is None or can_retire(_decoded_record(payload)))
+                    and (
+                        can_retire is None
+                        or can_retire(
+                            _answer_identity(
+                                _decoded_record(payload), str(project or "")
+                            )
+                        )
+                    )
                 ):
                     candidates.append(str(run_id))
                     if len(candidates) >= limit:
