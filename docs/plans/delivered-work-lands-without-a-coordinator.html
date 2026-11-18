@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -208,6 +208,12 @@
     <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s23" data-id="c-close-s23" data-who="reckon-build" data-when="2026-11-18T04:38:00Z">
     <div class="r-comment-body"><p>§23 landed through the crew's own promotion after its review (landing commit <code>fdb761a604</code>). The defect reproduced once the fixture matched the reported shape: a refusal stored on the pointer from an earlier attempt kept a run reading blocked after a completed resume. A completed resume now has those stored refusals rechecked against its current worktree and commits; nine focused cases pass and the archived base fails two of them.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261118T042713250746-review-of-a-resumed-run-reads-its-newest-attempt-0983265f83c0" data-who="reckon-build" data-when="2026-11-18T04:32:56Z">
+    <div class="r-comment-body"><p>Independently reviewed a29130802a7465dcbbe829e7bf514870af92c9d6..0983265f83c0d777b18f6fe377257c125349ad4f; parsed records score 20/19/20/20/20/20, no findings, zero added failures derived from source gate logs.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261118T034534047411-a-resumed-run-reads-its-newest-attempt" data-who="reckon-build" data-when="2026-11-18T04:26:40Z">
+    <div class="r-comment-body"><p>Rechecked retained orientation refusals against the current worktree and commits when a completed resume omits echoes; nine focused cases pass, armed all_debug base/head pass 58/67, archived base fails two stored-refusal checks, and 54 importer files each report 434 passed plus the same nine pre-existing failures with zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-11-17T00:02:00Z">
     <div class="r-comment-body"><p>§11 landed by direct merge at <code>8e4d75cb23</code> (head <code>a923f2f79d</code>), on the lead's instruction. Twelve code changes five minutes apart now cause two reloads of a service, or three with the immediate command, where the base reloaded twelve times with no tick exported between them. <code>reckon crew reload &lt;service&gt; --reason</code> reloads one named service at once and <code>--status</code> reads its schedule. Review 118 of 120, no blocking finding. A merged candidate passed 49 of 51 focused tests on all_debug (job 1321135); the two failures are base failures in <code>test_code_reload_never_cuts_off_a_promotion.py</code>. The worker stopped three times for write paths the section had not named: the admission service's own reload loop, the flight schema, the CLI and supervisor, and two importer tests. The live measure, no more than five station re-executions in two hours, is still to be read.</p></div>
@@ -422,11 +428,8 @@
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261118T033234426200-review-of-a-landing-group-ends-when-its-members-land-b5fcf7fe9784" data-who="reckon-build" data-when="2026-11-18T03:43:06Z">
     <div class="r-comment-body"><p>Independent review of fbcfda5a3167aacec33fe5d26fa7eec928b6a814..b5fcf7fe978415305921e0ea1fa42cdf0376e171 stores all six scores, five verdicts and production call sites; two blocking findings cover fail-open ledger evidence and 17 added importer failures.</p></div>
 </div>
-<div class="r-comment" data-section="s23" data-id="c-run-r-20261118T042713250746-review-of-a-resumed-run-reads-its-newest-attempt-0983265f83c0" data-who="reckon-build" data-when="2026-11-18T04:32:56Z">
-    <div class="r-comment-body"><p>Independently reviewed a29130802a7465dcbbe829e7bf514870af92c9d6..0983265f83c0d777b18f6fe377257c125349ad4f; parsed records score 20/19/20/20/20/20, no findings, zero added failures derived from source gate logs.</p></div>
-</div>
-<div class="r-comment" data-section="s23" data-id="c-run-r-20261118T034534047411-a-resumed-run-reads-its-newest-attempt" data-who="reckon-build" data-when="2026-11-18T04:26:40Z">
-    <div class="r-comment-body"><p>Rechecked retained orientation refusals against the current worktree and commits when a completed resume omits echoes; nine focused cases pass, armed all_debug base/head pass 58/67, archived base fails two stored-refusal checks, and 54 importer files each report 434 passed plus the same nine pre-existing failures with zero added failures.</p></div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261118T050147974349-review-of-a-resume-hold-ends-when-it-is-judged-8bec03f1ceb6" data-who="reckon-build" data-when="2026-11-18T05:08:47Z">
+    <div class="r-comment-body"><p>Independently reviewed a29130802a7465dcbbe829e7bf514870af92c9d6..8bec03f1ceb6ce8ff7b7cc8366e5f84087f8f4d5; stored canonical and revision-specific parsed records, all six dimensions 20/20, no findings, zero added failures; production callers and every added assertion examined.</p></div>
 </div>
 </section>
   </main>
