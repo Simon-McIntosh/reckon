@@ -1,0 +1,17 @@
+<section id="qwnw-red-file-goal-contract-lint-record">
+<h2>Goal contract lint: the over-fence budget refusal, shown red then green</h2>
+<p>The only failing id at the base revision was the pace row: a 90m budget against a resolved 60m fence left the node valid, because <code>validate_node</code> recorded an over-fence note and returned no finding. The product rule was wrong, not the test: the fence binds, and an overage is admitted only when the caller states a reason with <code>--over-fence</code>. The repair fails <code>bounded</code> by name when the reason is blank, and keeps both the note and the admission when it is not.</p>
+<pre># revision: 23b901694b4bfec73d95be3a082d4c336d9a4101
+# tree: $TMPDIR/base-tree-23b901694b4bfec73d95be3a082d4c336d9a4101
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_goal_contract_lint.py
+# module.__file: $TMPDIR/base-tree-23b901694b4bfec73d95be3a082d4c336d9a4101/reckon/crew/node.py
+......F...
+FAILED tests/test_goal_contract_lint.py::test_a_named_defect_still_refuses_its_property[the pace row's 90m budget beyond a 60m fence]
+1 failed, 9 passed in 0.47s
+EXIT=1</pre>
+<pre># revision: 25eb92c7709383e2baf74e8a907abcc6b6b1208c
+# partition: all_debug
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_goal_contract_lint.py
+10 passed in 1.19s
+EXIT=0</pre>
+</section>
