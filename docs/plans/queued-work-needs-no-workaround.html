@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="462">
+<meta name="plan-version" content="463">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1456,7 +1456,10 @@
     <div class="r-comment-body"><p>attached review of r-20261118T054100108947-qwnw-red-file-hold-check-leaves-the-tree-clean at f29efdc635a1b578bb4461ff90785d3be848646b..d138d59319869a261f9b419ea7a3d7a2827fbec7 — six dimensions scored goal_fidelity 19, evidence 15, scope_discipline 20, durability 17, fit 19, reuse 20 (total 110), 3 non-blocking findings (deleted stderr assertion, fragment pinning 867ead7d40 as head, gate log naming no partition), 0 added failures against 58 passed at both arms</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T101954364510-review-of-qwnw-red-file-harness-home-is-not-in-the-worktree-52e8a337940e" data-who="reckon-build" data-when="2026-11-18T10:23:32.951Z">
-    <div class="r-comment-body"><p>Reviewed node qwnw-red-file-harness-home-is-not-in-the-worktree at ef0bce316448244cae55cedef8aca7e1dbc36988..52e8a337940e09a386af092f5a4e8535889ccd3c: goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 16, added failures 0, one non-blocking finding (the location rule is applied to the claude MCP record only; omp_overlay_path at reckon/_backends.py:2002 and _omp_positional_prompt at reckon/_backends.py:2316 still guard on is_dir() alone and can write into the worktree) - record stored in the reviewed run&#x27;s review-records directory.</p></div>
+    <div class="r-comment-body"><p>Reviewed node qwnw-red-file-harness-home-is-not-in-the-worktree at ef0bce316448244cae55cedef8aca7e1dbc36988..52e8a337940e09a386af092f5a4e8535889ccd3c: goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 16, added failures 0, one non-blocking finding (the location rule is applied to the claude MCP record only; omp_overlay_path at reckon/_backends.py:2002 and _omp_positional_prompt at reckon/_backends.py:2316 still guard on is_dir() alone and can write into the worktree) - record stored in the reviewed run's review-records directory.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T054100108947-qwnw-red-file-hold-check-leaves-the-tree-clean" data-who="reckon-build" data-when="2026-11-18T08:25:01.915Z">
+    <div class="r-comment-body"><p>tests/test_hold_check_leaves_the_tree_clean.py passed 6/6 at head 867ead7d40 as an all_debug job against 4 failed, 2 passed at base f29efdc6, one cause and the test wrong: its four hold cases asserted the pre-store path where record_hold_checks rewrote and committed the aggregate and the run record it folded, superseded on 15 November when holds moved to the run store with no committed path written at all — so each case now asserts the rule the code keeps (clean tree, HEAD unmoved, byte-identical aggregate and run record, the transition read from the store) and none is weaker, the two already-green cases are unchanged, and a mutation restoring the old write fails all four.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
