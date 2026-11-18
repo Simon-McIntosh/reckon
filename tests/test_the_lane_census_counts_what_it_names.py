@@ -193,15 +193,24 @@ def test_a_claimed_path_holding_an_apostrophe_still_reads_as_shared(
     ]
     log.write_text("\n".join(json.dumps(row) for row in rows) + "\n")
 
-    figure = census.admission_holds(START, END, census.admission_span())
+    passes, _coverage = census.read_passes([log])
+    figure = census.admission_holds(passes, START, END)
 
     # The path holding an apostrophe is the second shared hold; a parser that
     # split on the quote character would silently report one.
-    assert figure == {
-        "passes": 4,
-        "passes_holding_shared_claim": 2,
-        "shared_claim_pointers": 2,
-    }
+    assert figure["passes"] == 4
+    assert figure["passes_holding_shared_claim"] == 2
+    assert figure["shared_claim_pointers"] == 2
+    assert figure["unnamed_claim_pointers"] == 0
+    # Every claim that held a request is named with the root it lies under, so
+    # a reader of a hold knows which share of the crew home it took.
+    by_path = {entry["path"]: entry for entry in figure["held_claim_paths"]}
+    assert set(by_path) == {str(shared), str(apostrophe), str(foreign)}
+    assert by_path[str(shared)]["root"] == str(crew_home)
+    assert by_path[str(shared)]["shared_root"] is True
+    assert by_path[str(shared)]["passes"] == 1
+    assert by_path[str(apostrophe)]["shared_root"] is True
+    assert by_path[str(foreign)]["shared_root"] is False
     assert census.claimed_path(rows[1]["pointers"][0]["detail"]) == str(apostrophe)
 
 
@@ -216,7 +225,8 @@ def test_a_window_the_admission_log_does_not_cover_reads_as_unmeasured(
     )
 
     earlier = (START - 3 * 24 * 60 * MINUTE, START - 2 * 24 * 60 * MINUTE)
-    figure = census.admission_holds(*earlier, census.admission_span())
+    rows, _coverage = census.read_passes([log])
+    figure = census.admission_holds(rows, *earlier)
 
     assert figure["passes"] is None
     assert figure["passes_holding_shared_claim"] is None
@@ -247,6 +257,10 @@ def test_identity_files_counts_the_directory_as_it_stood_at_the_window_end(
     assert figure["identity_files"] == 1
     assert figure["claims_entries"] == 2
     assert figure["as_of"] == ended.isoformat()
+    # The reading is of a state that has since moved on, and says so, rather
+    # than presenting what survived as what stood.
+    assert figure["reads_live_state"] is False
+    assert "survived" in figure["note"]
 
 
 def test_load_runs_reads_a_retired_run_from_the_archive(tmp_path: Path):
