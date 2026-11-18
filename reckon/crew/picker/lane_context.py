@@ -797,6 +797,31 @@ def _cached_run_time_profile(
     return profile, _profile_age_s(profile, now)
 
 
+def _stored_profile_inputs(project: str) -> dict[str, Any] | None:
+    """Picker projections of a project's stored history, or ``None``.
+
+    Every history read answers from the run store once it holds a row, so a
+    project whose index was never built — or whose index is no longer current
+    because a write it did not publish ran beside it — still has its history
+    where the reads look. The projection is selected in SQL, so a retained full
+    payload is never decoded, which is the cost the whole refresh exists to
+    avoid; samples are re-derived from the store rather than extended, so a
+    history the previous samples cannot account for needs no separate refusal.
+    """
+
+    from reckon import run_store
+
+    rows = run_store.stored_run_rows(project, fields=ledger._PICKER_FIELDS)
+    if rows is None:
+        return None
+    source = ["run-store", list(run_store.store_stamp() or ())]
+    return {
+        "source": source,
+        "documents": {str(row.get("run_id")): None for row in rows},
+        "rows": rows,
+    }
+
+
 def _indexed_profile_inputs(
     project: str, previous: Mapping[str, Any] | None = None
 ) -> dict[str, Any] | None:
@@ -806,6 +831,27 @@ def _indexed_profile_inputs(
     stamp and generation together. Those stamps must still match the source.
     Retained signatures must be unchanged: a deletion, rewrite or aggregate move
     requires a full build rather than folding a different history into a sample.
+    An index that is absent, stale or damaged is not an answer of its own: the
+    store is where the reads this profile summarises come from, so its picker
+    projections are read instead, and only a project with neither source has no
+    inputs.
+    """
+
+    inputs = _current_index_profile_inputs(project, previous)
+    if inputs is not None:
+        return inputs
+    return _stored_profile_inputs(project)
+
+
+def _current_index_profile_inputs(
+    project: str, previous: Mapping[str, Any] | None = None
+) -> dict[str, Any] | None:
+    """Picker inputs from a current index, or ``None`` when it cannot answer.
+
+    ``previous`` names the samples a prior refresh retained. They are extended
+    by the documents the index holds and those samples do not, and only while
+    every sample's own signature and the index's published source are still the
+    ones recorded beside them.
     """
 
     opened = ledger._open_current_index(project, None)
