@@ -104,7 +104,13 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         ("config", "user.name", "Worker"),
     ):
         _git(repo, *arguments)
-    _commit(repo, {"seed.txt": "seed\n"}, "chore: seed")
+    seeded = _commit(repo, {"seed.txt": "seed\n"}, "chore: seed")
+    # A run's own commits are read against the integration branch's
+    # remote-tracking ref, so the fixture is a clone of a repository that has
+    # an integration branch rather than a bare local history: the product reads
+    # a missing ref as uncomparable history, and a fixture with none asks every
+    # head-move question about a tree the crew never sees.
+    _git(repo, "update-ref", "refs/remotes/origin/main", seeded)
     reviewed = _commit(
         repo,
         {
