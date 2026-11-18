@@ -1,0 +1,86 @@
+<section id="qwnw-red-file-admission-refusal-is-named-at-current-main-landing">
+  <h2>The admission-refusal file reads its neighbours by the error rule</h2>
+
+  <p><strong>What was red.</strong> <code>tests/test_admission_refusal_is_named.py</code>
+  failed three of eight cases at the base revision
+  <code>8c7ea625091640c12d6aa56bc8997803ae470037</code>:
+  <code>test_a_refusal_missing_a_mark_does_not_reach_the_arm</code>,
+  <code>test_an_in_harness_run_with_those_marks_is_not_refused</code> and
+  <code>test_every_other_classification_is_unchanged</code>. Each asserted
+  <code>abandoned</code> for a stream whose stream itself says the run failed,
+  and the classifier answered <code>failed</code>.</p>
+
+  <p><strong>What broke it since the earlier repair.</strong> The file passed
+  8/8 at <code>54f2517aa3</code> (16 November 07:07 UTC, the fixture repair this
+  section already records) and at <code>77449f4362~1</code>. The landing at
+  <code>77449f4362</code> (16 November 22:17 UTC,
+  <em>finish a landing interrupted after its promotion</em>) carried the
+  premature-end reading — <code>b058eaa9d9</code>, <em>name a worker that ends
+  its first turn without acting</em> — onto the premature-end arm in
+  <code>reckon/crew/recovery_classification.py</code>. From that commit the file
+  reads 3 failed, 5 passed; every probe between the two revisions reads failing
+  and every probe at or before <code>77449f4362~1</code> reads passing. The
+  reproduction at base, run as a job on <code>all_debug</code> at
+  <code>8c7ea625</code>, is the log named under <em>Negative control</em>.</p>
+
+  <p><strong>The rule the code keeps.</strong> A single assistant turn that
+  ended on an error is named for that error, because the message is the cause
+  and continuing it would send the same request again — the same rule the
+  premature-end arm's own test pins as
+  <code>classification == "failed"</code>. The three cases here are that shape:
+  a refused synthetic turn whose result says <code>api_error</code>, a worked
+  turn whose result carries <code>is_error</code> with the prompt-length text,
+  and the recorded bad-model crash fixture. None of them carries both admitted
+  marks, so the admission arm declines and the error reading stands.</p>
+
+  <p><strong>Verdict: test wrong.</strong> The three expectations encoded the
+  pre-premature-end rule (<code>abandoned</code>) rather than the rule the
+  classifier keeps. They now assert <code>failed</code>, and each also asserts
+  <code>!= "refused-at-admission"</code> so the case still shows the admission
+  arm declining. The in-harness case additionally states why the stream is read
+  whatever the launch. No assertion is deleted or loosened; the neighbours test
+  is renamed to what it now asserts, because the crash's label moved from a
+  different node's rule and not from this one. Product code is untouched.</p>
+
+  <h3 id="qwnw-red-file-admission-refusal-is-named-at-current-main-arms">Measured</h3>
+
+  <table id="qwnw-red-file-admission-refusal-is-named-at-current-main-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head, as an <code>all_debug</code> job</td>
+        <td><code>10bf54ad3a4480f7c40d94457b2ecf182ffcac9e</code></td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the same file, base, as an <code>all_debug</code> job</td>
+        <td><code>8c7ea625091640c12d6aa56bc8997803ae470037</code></td>
+        <td>3 failed, 5 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>8c7ea625091640c12d6aa56bc8997803ae470037</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>10bf54ad3a4480f7c40d94457b2ecf182ffcac9e</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> The base run of the named file fails
+  three cases and passes five:
+  <code>test_a_refusal_missing_a_mark_does_not_reach_the_arm</code>,
+  <code>test_an_in_harness_run_with_those_marks_is_not_refused</code> and
+  <code>test_every_other_classification_is_unchanged</code> (the third carries
+  that name at the base revision), each with
+  <code>assert 'failed' == 'abandoned'</code>. It is the log
+  <code>arm-base.log</code> in this run's directory; the head run beside it is
+  <code>arm-head.log</code>, and the gate that measured the committed head in a
+  scratch tree is
+  <code>scoped-gate-1795029032992731814.log</code>. Both arms print the module
+  they imported and the working directory they resolved from.</p>
+
+  <p><strong>A note on the declared arm's scope.</strong> The declared suite
+  command resolves to <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>, which
+  neither this node's diff nor its file touches, so both arms are green for a
+  reason unrelated to the change. The arm that measures this node is the pair of
+  base and head runs of the named file in the first two rows.</p>
+</section>
