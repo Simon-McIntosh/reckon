@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-a-run-review-with-run-directory-records-dispatches-landing">
+  <h2>A run review's record grants are accepted by dispatch and by its fence</h2>
+
+  <p><strong>What was measured.</strong> This node's file,
+  <code>tests/test_a_run_review_with_run_directory_records_dispatches.py</code>,
+  was red on the primary branch at the revision this dispatch was composed at.
+  It was not red at the head of this worktree: the rule it asserts had already
+  landed, and the file passes at the base revision without a code change. The
+  reproduction is the file itself, run at base
+  <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code> as a job on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset: 7 passed,
+  <code>EXIT=0</code>.</p>
+
+  <p><strong>The rule.</strong> A run review delivers its record inside the
+  reviewed run's <code>review-records/</code> directory, and
+  <code>_review_record_directory_grant</code> in
+  <code>reckon/crew/dispatch_admission.py</code> admits a declared path only
+  when it lands in <em>that</em> run's directory, located through the review
+  module's own shape rule. The fence is the second reader of the same answer:
+  the granted root is the record directory alone, never the project directory —
+  the admission is worthless if the fence grants more than it. A review node
+  whose id names no live run grants nothing, because there is no directory such
+  a record could belong to.</p>
+
+  <p><strong>The guard fires.</strong> A passing suite does not show a guard
+  fires, so both directions were made to happen. Replacing the grant with the
+  negative control the file carries — any existing run's
+  <code>review-records/</code> admitted, the pre-change behaviour — turns the
+  refusal case red: a review of run A declaring run B's record path is admitted
+  (<code>_scoped</code> empty). Replacing the grant with nothing turns the
+  admission case red: the reviewed run's own record path is refused as scoped.
+  Both are recorded below with their failing ids.</p>
+
+  <h3 id="qwnw-red-file-a-run-review-with-run-directory-records-dispatches-runs">Runs</h3>
+
+  <table id="qwnw-red-file-a-run-review-with-run-directory-records-dispatches-arms">
+    <caption>Every row is a log under the run directory whose header names the
+    revision, tree and command and whose last line is a bare
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>run</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the declared file, head arm, job on <code>all_debug</code> with
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the widened grant any existing run's record
+        directory is admitted</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>1 failed, 6 passed, <code>EXIT=1</code>;
+        <code>test_review_cannot_declare_another_runs_record_directory</code></td></tr>
+      <tr><td>negative control: the grant withdrawn for the reviewed run
+        itself</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>1 failed, 6 passed, <code>EXIT=1</code>;
+        <code>test_composed_run_review_records_pass_scope_and_match_the_fence</code></td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>No code changed.</strong> The base revision here contains the
+  landing that fixed this file, so the only artifact this node adds is this
+  record; the file and the code it exercises are untouched.</p>
+</section>
