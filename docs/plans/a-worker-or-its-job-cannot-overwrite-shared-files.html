@@ -131,6 +131,9 @@
 </section>
 
     <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s12" data-id="c-s12-betelgeuse-owed" data-who="reckon-build" data-when="2026-11-18T20:39:00Z">
+    <div class="r-comment-body"><p>§12 is landed with one measure of its done-when unmet. The two <code>all_debug</code> jobs ran (1327763 and 1327767). The <code>betelgeuse</code> job did not: the worker's submission was refused with "Access/permission denied", because that partition is reached through a reservation the worker did not hold. Two probes by another project on <code>98dci4-gpu-0003</code> establish the node's state: job 1327697 found no fence program at any standard path and no module providing one, and job 1327709 found unprivileged user namespaces working. So the landed behaviour there is the refusal that names the node and the program. A fenced job on that partition, submitted under the reservation, is still owed as the measurement, and whether the partition gets a carried fence program is a decision for the lead.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-11-18T20:35:00Z">
     <div class="r-comment-body"><p>§12 landed by direct merge (head <code>0ec273d626</code>), on the lead's instruction. A fenced job now runs the fence program from the location carried in its recipe and, where that program is absent, refuses before its task starts naming the node and the program, never running unfenced. Measured in two fenced jobs on all_debug (1327763, 1327767); the betelgeuse job the section asks for was refused at submission and is still owed. Merged candidate gate: 10 passed, 2 skipped in 3.26s.</p></div>
 </div>
