@@ -1,11 +1,10 @@
-"""A granted landing path is a claim the conflict report compares like any other.
+"""A granted landing path is an exclusive claim the report names its holder for.
 
 Dispatch grants the plan file, its cumulative evidence record and its figures
-topic as written when a node declares them, because every node on the plan
-appends its own landing record to them. The refusal admits the second holder so
-the appends can meet in a merge, but the report must still name the live run
-that already holds the path — a silent second holder is how a whole-file write
-took a predecessor's landed record once.
+topic as written when a node declares them, and all three are artifacts git
+cannot reconcile: a second holder is refused, and the same report names the
+live run that already holds each path — a silent second holder is how a
+whole-file write took a predecessor's landed record once.
 
 The report is asserted through the dry-run dispatch a coordinator actually
 reads (``live_conflicts``), not by reading the pointer files back.
@@ -33,7 +32,10 @@ SHARED = (
     "docs/evidence/archive/plan-a-landed.html",
     "docs/figures/plan-a",
 )
-EXCLUSIVE = "package/target.py"
+
+# An artifact git cannot reconcile. A source path is shared by default between
+# isolated worktrees, so only an unmergeable declaration refuses a live claim.
+EXCLUSIVE = "docs/plans/plan-other.html"
 CONFIG = {
     "default_backend": "worker",
     "backends": {
@@ -177,8 +179,18 @@ def _landing_pairs(payload: dict) -> list[tuple[str, str]]:
 def test_a_granted_landing_collision_is_reported(home: Path, repo: Path) -> None:
     _live_holder(repo, "r-holder", "node-holder", SHARED)
 
-    payload = _dry_run(repo, "node-later", SHARED)
+    result = CliRunner().invoke(
+        cli_module.main, _dispatch_arguments(repo, "node-later", SHARED)
+    )
+    payload = json.loads(result.output)
 
+    # A granted landing path is an artifact git cannot reconcile, so the second
+    # holder is refused instead of being left to meet the first in a merge. The
+    # figures topic is a directory and the write-scope rule refuses it on its
+    # own, which is the finding the caller reads first.
+    assert result.exit_code == 2, result.output
+    assert payload["ok"] is False
+    assert payload["admission"]["state"] == "refused"
     rows = payload["live_conflicts"]
     assert rows, "a granted landing collision must be reported"
     assert {row["run_id"] for row in rows} == {"r-holder"}
