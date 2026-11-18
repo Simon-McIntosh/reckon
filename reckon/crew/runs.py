@@ -591,6 +591,23 @@ class QueueFull(CrewError):  # noqa: N818 - named as the refusal states it, besi
 # launched, dropped or discarded request has returned them.
 PRIORITY_HOLDING_PHASES: tuple[str, ...] = ("queued", "awaiting-upstream", "held")
 
+# The phases a run's pointer carries once its worker delivered and nothing but
+# a promotion remains. ``complete`` is the run that has just delivered; the
+# promotion phases are the same run once a request for it is queued, because
+# requesting rewrites the pointer's phase, and a coordinator reprioritising a
+# delivered run usually does it while that request waits. A run's points return
+# at launch, so a delivered run holds them again only when a coordinator spent
+# the points there: the marker below is what ``crew queue reprioritise`` writes
+# when it raises a delivered run, and the mark, never the phase alone, is what
+# charges the session. Landing retires the pointer, which returns the points the
+# same way every other departure does.
+DELIVERED_POINTER_PHASES: tuple[str, ...] = (
+    "complete",
+    "promotion-requested",
+    "promotion-waiting",
+)
+PRIORITY_DELIVERED_MARK = "priority_held_while_delivered"
+
 
 class PriorityBudgetExceeded(CrewError):  # noqa: N818 - named as the refusal states it, beside QueueFull
     """A session's unlaunched priority points would pass its declared budget.
@@ -648,6 +665,21 @@ def _stored_priority(pointer: Mapping[str, Any]) -> int:
     return _override(pointer) or 0
 
 
+def _holds_priority(pointer: Mapping[str, Any]) -> bool:
+    """Whether this pointer's points are still charged to its session.
+
+    A registered holder is a request that has not launched. A delivered run is
+    the one non-launched case the marker above opens, because its points came
+    back at launch and were spent there again by a reprioritise.
+    """
+    phase = str(pointer.get("phase") or "")
+    if phase in PRIORITY_HOLDING_PHASES:
+        return True
+    return phase in DELIVERED_POINTER_PHASES and bool(
+        pointer.get(PRIORITY_DELIVERED_MARK)
+    )
+
+
 def session_priority_in_use(
     session: str,
     *,
@@ -659,9 +691,13 @@ def session_priority_in_use(
     Returns the total and the requests holding those points.
 
     The figures are read from the live pointers rather than a running tally, so
-    a request removed by any route — launch, drop, discard — returns its points
-    with no second bookkeeping step to get wrong. A request the caller is about
-    to rewrite is excluded by run id so its own points are not counted twice.
+    a request removed by any route — launch, drop, discard, landing — returns
+    its points with no second bookkeeping step to get wrong. A request the
+    caller is about to rewrite is excluded by run id so its own points are not
+    counted twice, and a delivered run is charged only where a reprioritise
+    placed points on it, which is what the marker records: its launch returned
+    the points it was dispatched with, so a delivered run still holds them only
+    because a coordinator spent them there.
     """
     pointers = list_live() if live is None else live
     holders: list[dict[str, Any]] = []
@@ -669,7 +705,7 @@ def session_priority_in_use(
     for pointer in pointers:
         if str(pointer.get("session") or "") != str(session or ""):
             continue
-        if str(pointer.get("phase") or "") not in PRIORITY_HOLDING_PHASES:
+        if not _holds_priority(pointer):
             continue
         if exclude_run_id and str(pointer.get("run_id") or "") == exclude_run_id:
             continue
