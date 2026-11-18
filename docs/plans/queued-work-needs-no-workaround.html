@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="622">
+<meta name="plan-version" content="623">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1937,6 +1937,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063229537205-qwnw-red-file-control-gate-repairs" data-who="reckon-build" data-when="2026-11-18T15:12:51Z">
     <div class="r-comment-body"><p>tests/test_control_gate_repairs.py went from 1 failed / 4 passed at base 0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385 to 5 passed at head b45e1306bc6525bab45d3d19379122fe8b51a3bb, measured as a job on all_debug with the log on shared storage; the single cause was product-side — `crew complete` without `--wait` answered with its promotion-requested receipt before the gate-evidence guard ran, so a presentation naming a forty-character value that resolves to no commit object was queued instead of refused, and the presented-citation guard is now extracted into `require_resolvable_presentation` in `reckon/crew/promotion_evidence.py` and applied at the request boundary in `reckon/crew_run_commands.py`, so the queued path and the promotion drain refuse by one rule and one message while no test assertion was changed, deleted or weakened.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T163940471701-review-of-qwnw-red-file-a-shadow-is-reviewed-on-its-patch-64826a1bf440" data-who="reckon-build" data-when="2026-11-18T23:07:00.284Z">
+    <div class="r-comment-body"><p>A review of r-20261118T063547974644-qwnw-red-file-a-shadow-is-reviewed-on-its-patch at base 018823953e18f9b55c468663ab0c2c421428bc2c and head 64826a1bf440d60c6a248d1a7758244e95243282 scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 20 with added_failure_count 0 and two non-blocking findings (the fragment&#x27;s head-arm all_debug claim has no log header behind it; the manifest&#x27;s suite arms import neither the changed file nor the module it exercises).</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
