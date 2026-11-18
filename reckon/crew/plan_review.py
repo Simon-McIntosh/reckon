@@ -2035,9 +2035,10 @@ def _normalise_sections(sections: Iterable[Any] | None) -> tuple[str, ...]:
     prefix, the section symbol, and a bare number all name one section — and a
     repeated name is dropped rather than read twice. Each spelling resolves
     through the one section-number derivation in :mod:`reckon._plan_html`, so
-    this module owns no grammar of its own. A token naming no section is
-    refused here, because a scope that silently names nothing composes a
-    review of the whole plan while reporting itself as narrow.
+    this module owns no grammar of its own. A name that no plan section
+    carries is refused downstream by :func:`review_scope`, whose message names
+    the sections the plan does carry — a better refusal than one here could
+    give, because only that caller holds the plan.
     """
     units: list[str] = []
     for raw in sections or ():
@@ -2045,8 +2046,6 @@ def _normalise_sections(sections: Iterable[Any] | None) -> tuple[str, ...]:
         if not token:
             continue
         unit = _plan_html.section_record_id(token)
-        if not unit:
-            raise ValueError(f"{raw!r} does not name a plan section")
         if unit not in units:
             units.append(unit)
     return tuple(units)
