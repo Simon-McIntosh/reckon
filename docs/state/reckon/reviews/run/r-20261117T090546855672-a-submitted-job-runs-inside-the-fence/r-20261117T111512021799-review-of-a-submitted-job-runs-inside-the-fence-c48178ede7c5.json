@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by reading completed canonical baseline_suite and after_suite logs: 66 passed / 78 passed, 5 skipped; both have EXIT=0 and no FAILED ids. The same extraction sees the two known failures in the answering-commit reversal, providing a positive control. This is a scoped canonical comparison, not a claim about wider importer results.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T090546855672-a-submitted-job-runs-inside-the-fence/repair-after.log",
+  "assertion_analysis": [
+    {
+      "assertion": "resolved is not None",
+      "fails_if": "PATH composition loses every executable candidate; alone this does not detect the original defect because the decoy real scheduler remains executable.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 471
+    },
+    {
+      "assertion": "Path(resolved).resolve() == expected.resolve()",
+      "fails_if": "Restoring allocation-only shim provisioning makes lookup select the independently created scheduler-bin/sbatch or scheduler-bin/srun instead of nested_launch.shim_directory()/tool; both cases failed in the recorded answering-commit reversal. The expected path was not supplied as an input to launch_search_path, so the two sides do not move together.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 472
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T090546855672-a-submitted-job-runs-inside-the-fence/repair-baseline.log",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:_persisted_worker_environment:849",
+    "reckon/crew/dispatch_launch.py:supervisor specification environment:3626",
+    "reckon/crew/dispatch_launch.py:resolve_backend_command:1349",
+    "reckon/crew/dispatch_launch.py:resolve_launch_executable:1398",
+    "reckon/crew/dispatch_launch.py:placement scheduler resolution:1563",
+    "reckon/crew/dispatch_launch.py:assert_routable_backends_resolvable:1804"
+  ],
+  "completed_at": "2026-11-17T11:21:56Z",
+  "dispatched_at": "2026-11-17T11:16:41Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call sites",
+    "diff": "read the single new commit c48178ede7c58296198371678d5a9b168157ec0a against parent a4f84da5743e6e41c9ed4c0bca810680dd9d40c0; it updates the PATH condition and docstring and adds two parameterized scheduler-resolution cases.",
+    "done_when": "dispatch-detail.json names the scheduler and fence gates; repair-scheduler-gate.log records 25 passed, the answering-commit reversal records 2 failed, and completed repair-baseline.log / repair-after.log yield zero added canonical failures; wider importer qualification remains in the source manifest outside_scope.",
+    "goal": "dispatch-detail.json states same-fence scheduler tasks; the incremental repair at reckon/crew/dispatch_launch.py:777 installs scheduler interception for fenced workers outside allocations and answers the prior blocking PATH finding.",
+    "manifest": "manifest.md records answering commit c48178ede7c58296198371678d5a9b168157ec0a, readable revision-labelled gate receipts, reproduction and reversal failures, and the remaining importer assertion under outside_scope.",
+    "write_paths": "manifest.md orientation_write_paths and scope_note record the repair grant for reckon/crew/dispatch_launch.py alongside tests/test_shared_environments_are_read_only.py; the incremental diff changes exactly those two authorized paths."
+  },
+  "justifications": {
+    "durability": "tests/test_shared_environments_are_read_only.py:472 compares actual lookup against the independently owned scheduler shim path and fails for both tools when dispatch_launch.py:777 is restored to allocation-only provisioning, as the reversal log demonstrates.",
+    "evidence": "repair-scheduler-gate.log records 25 passed and repair-answering-commit-negative.log records both expected failures at tests/test_shared_environments_are_read_only.py:472, while the source manifest explicitly retains the separate importer qualification.",
+    "fit": "reckon/crew/dispatch_launch.py:777 extends the existing PATH composer in place and tests/test_shared_environments_are_read_only.py:457 names the host condition and behavior without transient identifiers.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:777-778 adds the existing scheduler shim directory whenever fenced is true, including in_allocation false, and _persisted_worker_environment at line 849 carries it into production worker launches.",
+    "reuse": "capability searches for scheduler PATH provisioning and shim resolution found launch_search_path and its _worker_shim_directory adapter at reckon/crew/dispatch_launch.py:651 plus nested_launch.shim_directory at line 371; the repair extends these owners and its new test adds no production mechanism.",
+    "scope_discipline": "the single-commit diff changes only reckon/crew/dispatch_launch.py and tests/test_shared_environments_are_read_only.py, both listed in the repair grant recorded by manifest.md orientation_write_paths and scope_note."
+  },
+  "prior_finding_resolution": {
+    "answering_commit": "c48178ede7c58296198371678d5a9b168157ec0a",
+    "evidence": "repair-reproduction.log: both lookups resolved scheduler-bin stand-ins instead of host_shims (2 failed, 23 deselected in 0.98s); repair-answering-commit-negative.log reproduces both after reversal (2 failed, 23 deselected in 0.43s).",
+    "finding": "f8d5c59a48a",
+    "state": "answered"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json states same-fence scheduler tasks; the incremental repair at reckon/crew/dispatch_launch.py:777 installs scheduler interception for fenced workers outside allocations and answers the prior blocking PATH finding.\nVERDICT done_when: dispatch-detail.json names the scheduler and fence gates; repair-scheduler-gate.log records 25 passed, the answering-commit reversal records 2 failed, and completed repair-baseline.log / repair-after.log yield zero added canonical failures; wider importer qualification remains in the source manifest outside_scope.\nVERDICT write_paths: manifest.md orientation_write_paths and scope_note record the repair grant for reckon/crew/dispatch_launch.py alongside tests/test_shared_environments_are_read_only.py; the incremental diff changes exactly those two authorized paths.\nVERDICT manifest: manifest.md records answering commit c48178ede7c58296198371678d5a9b168157ec0a, readable revision-labelled gate receipts, reproduction and reversal failures, and the remaining importer assertion under outside_scope.\nVERDICT diff: read the single new commit c48178ede7c58296198371678d5a9b168157ec0a against parent a4f84da5743e6e41c9ed4c0bca810680dd9d40c0; it updates the PATH condition and docstring and adds two parameterized scheduler-resolution cases.\nCALL_SITES: reckon/crew/dispatch_launch.py:_persisted_worker_environment:849, reckon/crew/dispatch_launch.py:supervisor specification environment:3626, reckon/crew/dispatch_launch.py:resolve_backend_command:1349, reckon/crew/dispatch_launch.py:resolve_launch_executable:1398, reckon/crew/dispatch_launch.py:placement scheduler resolution:1563, reckon/crew/dispatch_launch.py:assert_routable_backends_resolvable:1804\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:777-778 adds the existing scheduler shim directory whenever fenced is true, including in_allocation false, and _persisted_worker_environment at line 849 carries it into production worker launches.\nSCORE evidence: 19\nJUSTIFICATION evidence: repair-scheduler-gate.log records 25 passed and repair-answering-commit-negative.log records both expected failures at tests/test_shared_environments_are_read_only.py:472, while the source manifest explicitly retains the separate importer qualification.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single-commit diff changes only reckon/crew/dispatch_launch.py and tests/test_shared_environments_are_read_only.py, both listed in the repair grant recorded by manifest.md orientation_write_paths and scope_note.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_shared_environments_are_read_only.py:472 compares actual lookup against the independently owned scheduler shim path and fails for both tools when dispatch_launch.py:777 is restored to allocation-only provisioning, as the reversal log demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:777 extends the existing PATH composer in place and tests/test_shared_environments_are_read_only.py:457 names the host condition and behavior without transient identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for scheduler PATH provisioning and shim resolution found launch_search_path and its _worker_shim_directory adapter at reckon/crew/dispatch_launch.py:651 plus nested_launch.shim_directory at line 371; the repair extends these owners and its new test adds no production mechanism.\n",
+  "reuse_analysis": {
+    "conclusion": "Existing production owner extended; the new parameterized test covers outside-allocation interception rather than duplicating scheduler wrapping or directory resolution.",
+    "search": "Searched scheduler PATH/shim provisioning capability and opened existing launch_search_path, _worker_shim_directory, nested_launch.shim_directory, and the related test_a_fenced_worker_runs_git_directly coverage."
+  },
+  "review_run_id": "r-20261117T111512021799-review-of-a-submitted-job-runs-inside-the-fence-c48178ede7c5",
+  "reviewed_base_sha": "a4f84da5743e6e41c9ed4c0bca810680dd9d40c0",
+  "reviewed_head_sha": "c48178ede7c58296198371678d5a9b168157ec0a",
+  "reviewed_run_id": "r-20261117T090546855672-a-submitted-job-runs-inside-the-fence",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_baseline_sha": "0388ce623ce61f7ec604955d5e36e3e858975b63",
+  "suite_head_sha": "c48178ede7c58296198371678d5a9b168157ec0a",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T11:23:09.496078+00:00",
+  "total": 119
+}

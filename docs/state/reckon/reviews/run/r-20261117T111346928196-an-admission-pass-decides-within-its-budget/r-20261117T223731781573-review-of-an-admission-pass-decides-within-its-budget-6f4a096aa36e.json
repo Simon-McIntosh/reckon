@@ -1,0 +1,159 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "Population assertion fails when the fixture ceases to contain 240 live pointers; elapsed bound fails when the full-plan parse cost is restored (recorded base 101.47921030689031 seconds); phase-presence assertion fails if requests disappear; positive release duration fails if that stage is skipped/unrecorded; empty launched assertion fails on an unexpected launch with the zero-slot lane.",
+      "limit": "Phase presence alone does not prove correct release; timing and no-launch assertions do not measure decisions with available slots.",
+      "location": "tests/test_an_admission_pass_decides_within_its_budget.py:205-220"
+    },
+    {
+      "conditions_for_failure": "Cross-arm decisions/phases fail if reuse differs from another head sweep; both independent phase assertions fail if all derived waits are dropped or neither no-wait request is released.",
+      "independence": "The fixed fixture partition is independent of the returned phase map, so the added expected-phase assertions are not self-comparisons.",
+      "limit": "Both arms still share the optimized implementation; restoring a parser defect outside this fixture can leave both green.",
+      "location": "tests/test_an_admission_pass_decides_within_its_budget.py:284-287"
+    },
+    {
+      "conditions_for_failure": "ran assertion fails if release is throttled; queued assertion fails if the original no-wait request is not released; final awaiting-upstream assertion fails if document invalidation is removed so a between-stage edit remains queued.",
+      "limit": "The edit happens after the snapshot, so moving an edit inside the sweep does not exercise the same assertion path.",
+      "location": "tests/test_an_admission_pass_decides_within_its_budget.py:309-324"
+    },
+    {
+      "conditions_for_failure": "Metadata-vs-parsed equality fails if dependency edges differ from the independent full HTML parser; checked-count fails if the cohort is not visited; explicit nonempty read fails if a tested long-head/escaped dependency is dropped.",
+      "limit": "No whitespace-around-equals or uppercase semantic-attribute variant is included.",
+      "location": "tests/test_an_admission_pass_decides_within_its_budget.py:337-368"
+    },
+    {
+      "conditions_for_failure": "Skipped-release assertion fails if the release tick unexpectedly runs; positive wait-read assertion fails on uniform-zero measured reads; reconciliation fails when named times differ beyond 5 percent/one recorded millisecond; heaviest-read omission assertion fails if the check accepts a materially incomplete receipt.",
+      "independence": "The negative receipt is constructed by removing an observed read while retaining the independently recorded stage duration; no assertion added by this node compares a returned value only with the same value supplied as input.",
+      "location": "tests/test_an_admission_receipt_names_its_reads.py:289-321"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/admission/service.py:admit_until_stopped (once and loop branches)",
+    "reckon/crew/admission/selection.py:admit_once",
+    "reckon/crew/admission/release.py:_release_tick",
+    "reckon/crew/admission/release.py:_rederive_waits",
+    "reckon/crew/admission/wait_refs.py:derive_wait_refs",
+    "reckon/crew/plan_review.py:_readiness_inventory",
+    "reckon/crew/plan_review.py:_plan_inventory_item"
+  ],
+  "completed_at": "2026-11-17T22:45:29Z",
+  "deferred_live_measurement": "Source manifest evidence_inputs explicitly defers ten consecutive post-landing live receipts; this review does not claim the live-service portion of section s10 is satisfied.",
+  "dispatched_at": "2026-11-17T22:39:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-an-admission-pass-decides-within-its-budget-6f4a096aa36e",
+      "recorded_at": "2026-11-17T23:39:46.962323+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-an-admission-pass-decides-within-its-budget-6f4a096aa36e",
+      "recorded_at": "2026-11-17T23:39:48.405603+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "repair-of-an-admission-pass-decides-within-its-budget-6f4a096aa36e",
+      "recorded_at": "2026-11-17T23:39:49.871237+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "repair-of-an-admission-pass-decides-within-its-budget-6f4a096aa36e",
+      "recorded_at": "2026-11-17T23:39:51.164815+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "6604",
+      "severity": "blocking",
+      "text": "blocking: A short valid document containing <meta name = \"plan-depends-on\" content = \"upstream\"> loses its whole-plan waits: parse_meta uses _NAME_RE/_CONTENT_RE requiring name= and content= without intervening whitespace, and this function interprets that reader's miss as authoritative absence for files at most 16384 bytes; the previous read_state_file path uses the HTML parser and retains the dependency, so the optimized admission path can release a request before its upstream lands."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "6634",
+      "severity": "blocking",
+      "text": "blocking: The case-sensitive data-reckon substring check treats a valid body authored with DATA-RECKON=\"decisions\" or DATA-RECKON=\"followups\" as body-free and returns empty decision/followup lists; BeautifulSoup's html.parser normalizes HTML attribute names, and the previous _read_readiness_state/metadata_index.readiness_from_state path retains those records, so authored holds can disappear from readiness."
+    },
+    {
+      "file": "reckon/crew/admission/release.py",
+      "line": "476",
+      "severity": "blocking",
+      "text": "blocking: The document fingerprint is captured only after advance_waiting_requests has finished; if a plan is edited after its request was judged but before this fingerprint is taken, the stale verdict is stamped with the edited document's identity and selection.admit_once accepts it as current, skipping the second sweep that previously read the new waits; snapshot before the sweep as well and make reuse conditional on stability through the read, with a regression that edits inside the sweep rather than after _release_tick returns."
+    },
+    {
+      "file": "tests/test_an_admission_pass_decides_within_its_budget.py",
+      "line": "274",
+      "severity": "blocking",
+      "text": "blocking: Both equivalence arms execute the optimized head code and force zero worker slots through _reference_pass; independent phase expectations catch dropped waits but cannot establish the declared equality of base/head launch and release decisions, and the recorded base negative control ends its other cases in unsupported-argument/missing-helper errors rather than producing a comparable base decision result; retain decision results from the actual base and head on the same reset home, including a launchable nonzero-slot case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read the cumulative diff and the four worker commits 2ad4707fd7265240e79f0c5f977ea337725c014b, 29fd41eb4cb1795e476c1ccfed664b38e895738d, e1ed853197901e5afe3a7dac0a4a26b144253824 and 6f4a096aa36eb3873a0fd1c687dbeeef44105fcf; the final seven-file delta changes metadata reads, readiness inventory, sweep reuse and two regression test files, with the defects below remaining in that final state.",
+    "done_when": "The live docs/plans/dispatch-admission-and-landing-take-seconds.html section s10 and source node.done_when require base/head decision equality and ten post-landing live receipts; tests/test_an_admission_pass_decides_within_its_budget.py:274 compares two head-code paths with zero worker slots, the negative-control log records the base taking 101.479 seconds, and the manifest explicitly leaves live receipts for after landing.",
+    "goal": "The source node.goal in crew/live/r-20261117T111346928196-an-admission-pass-decides-within-its-budget.json requires a 240-pointer/80-request pass under 20 seconds with unchanged decisions; the fast paths in reckon/crew/plan_review.py:6592 and reckon/crew/admission/release.py:469 introduce decision-preservation gaps despite the timing improvement.",
+    "manifest": "The source manifest.md names four worker commits and completed baseline_suite/after_suite arms; logs/baseline_suite.log records 60 passed with EXIT=0 at a290999a7dd5aaf099d00cfdf918eb1fde02a878 and logs/after_suite.log records 64 passed with EXIT=0 at 6f4a096aa36eb3873a0fd1c687dbeeef44105fcf, yielding zero added failure IDs, but its artifacts line still describes an older three-test head.",
+    "write_paths": "The source pointer's node.write_paths includes all seven paths changed by the four worker commits; git diff 91edbf4e03783efb724f7a3079df6a37b6a2bff2..6f4a096aa36eb3873a0fd1c687dbeeef44105fcf contains only those paths, while the full a290999a7dd5aaf099d00cfdf918eb1fde02a878..6f4a096aa36eb3873a0fd1c687dbeeef44105fcf range includes intervening primary history."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_decides_within_its_budget.py:284-287 independently fixes the expected queued/waiting phases and :324 fails if between-stage invalidation is removed, but it misses during-sweep edits, valid HTML variants and actual base/head launch equivalence.",
+    "evidence": "Source logs/baseline_suite.log and logs/after_suite.log provide completed zero-failure arms and logs/negative-control-base-pass.log proves the 101.479-second base timing failure, but tests/test_an_admission_pass_decides_within_its_budget.py:274 is not a base-revision decision arm and the manifest supplies no post-landing live receipt cohort.",
+    "fit": "reckon/crew/plan_review.py:6592 uses the existing memoized metadata reader and reckon/crew/admission/service.py:205 extends the existing receipt tally, but :6634 adds a case-sensitive shortcut over an HTML parser that normalizes attribute names.",
+    "goal_fidelity": "reckon/crew/plan_review.py:6604 can discard a valid whole-plan wait and reckon/crew/admission/release.py:476 can reuse a stale sweep, so the recorded speedup does not establish the goal's unchanged decisions.",
+    "reuse": "Capability searches opened reckon/_plan_html.py:2625 and :2720, reckon/serve.py:2018, reckon/metadata_index.py:1545 and reckon/crew/admission/readiness.py:49; the new helpers wrap those metadata/readiness owners inside the existing inventory path, while the older newest-time/count/HEAD fingerprint does not provide the exact per-document snapshot the new sweep guard needs.",
+    "scope_discipline": "The four worker commits change only the seven authorized source/test paths listed in the source pointer's node.write_paths, and the wider a290999a..6f4a096a diff is attributable to primary history preceding worker commit 2ad4707fd7265240e79f0c5f977ea337725c014b."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node.goal in crew/live/r-20261117T111346928196-an-admission-pass-decides-within-its-budget.json requires a 240-pointer/80-request pass under 20 seconds with unchanged decisions; the fast paths in reckon/crew/plan_review.py:6592 and reckon/crew/admission/release.py:469 introduce decision-preservation gaps despite the timing improvement.\nVERDICT done_when: The live docs/plans/dispatch-admission-and-landing-take-seconds.html section s10 and source node.done_when require base/head decision equality and ten post-landing live receipts; tests/test_an_admission_pass_decides_within_its_budget.py:274 compares two head-code paths with zero worker slots, the negative-control log records the base taking 101.479 seconds, and the manifest explicitly leaves live receipts for after landing.\nVERDICT write_paths: The source pointer's node.write_paths includes all seven paths changed by the four worker commits; git diff 91edbf4e03783efb724f7a3079df6a37b6a2bff2..6f4a096aa36eb3873a0fd1c687dbeeef44105fcf contains only those paths, while the full a290999a7dd5aaf099d00cfdf918eb1fde02a878..6f4a096aa36eb3873a0fd1c687dbeeef44105fcf range includes intervening primary history.\nVERDICT manifest: The source manifest.md names four worker commits and completed baseline_suite/after_suite arms; logs/baseline_suite.log records 60 passed with EXIT=0 at a290999a7dd5aaf099d00cfdf918eb1fde02a878 and logs/after_suite.log records 64 passed with EXIT=0 at 6f4a096aa36eb3873a0fd1c687dbeeef44105fcf, yielding zero added failure IDs, but its artifacts line still describes an older three-test head.\nVERDICT diff: Read the cumulative diff and the four worker commits 2ad4707fd7265240e79f0c5f977ea337725c014b, 29fd41eb4cb1795e476c1ccfed664b38e895738d, e1ed853197901e5afe3a7dac0a4a26b144253824 and 6f4a096aa36eb3873a0fd1c687dbeeef44105fcf; the final seven-file delta changes metadata reads, readiness inventory, sweep reuse and two regression test files, with the defects below remaining in that final state.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped (once and loop branches), reckon/crew/admission/selection.py:admit_once, reckon/crew/admission/release.py:_release_tick, reckon/crew/admission/release.py:_rederive_waits, reckon/crew/admission/wait_refs.py:derive_wait_refs, reckon/crew/plan_review.py:_readiness_inventory, reckon/crew/plan_review.py:_plan_inventory_item\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:6604 can discard a valid whole-plan wait and reckon/crew/admission/release.py:476 can reuse a stale sweep, so the recorded speedup does not establish the goal's unchanged decisions.\nSCORE evidence: 14\nJUSTIFICATION evidence: Source logs/baseline_suite.log and logs/after_suite.log provide completed zero-failure arms and logs/negative-control-base-pass.log proves the 101.479-second base timing failure, but tests/test_an_admission_pass_decides_within_its_budget.py:274 is not a base-revision decision arm and the manifest supplies no post-landing live receipt cohort.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four worker commits change only the seven authorized source/test paths listed in the source pointer's node.write_paths, and the wider a290999a..6f4a096a diff is attributable to primary history preceding worker commit 2ad4707fd7265240e79f0c5f977ea337725c014b.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_an_admission_pass_decides_within_its_budget.py:284-287 independently fixes the expected queued/waiting phases and :324 fails if between-stage invalidation is removed, but it misses during-sweep edits, valid HTML variants and actual base/head launch equivalence.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/plan_review.py:6592 uses the existing memoized metadata reader and reckon/crew/admission/service.py:205 extends the existing receipt tally, but :6634 adds a case-sensitive shortcut over an HTML parser that normalizes attribute names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches opened reckon/_plan_html.py:2625 and :2720, reckon/serve.py:2018, reckon/metadata_index.py:1545 and reckon/crew/admission/readiness.py:49; the new helpers wrap those metadata/readiness owners inside the existing inventory path, while the older newest-time/count/HEAD fingerprint does not provide the exact per-document snapshot the new sweep guard needs.\nFINDING reckon/crew/plan_review.py:6604 blocking: A short valid document containing <meta name = \"plan-depends-on\" content = \"upstream\"> loses its whole-plan waits: parse_meta uses _NAME_RE/_CONTENT_RE requiring name= and content= without intervening whitespace, and this function interprets that reader's miss as authoritative absence for files at most 16384 bytes; the previous read_state_file path uses the HTML parser and retains the dependency, so the optimized admission path can release a request before its upstream lands.\nFINDING reckon/crew/plan_review.py:6634 blocking: The case-sensitive data-reckon substring check treats a valid body authored with DATA-RECKON=\"decisions\" or DATA-RECKON=\"followups\" as body-free and returns empty decision/followup lists; BeautifulSoup's html.parser normalizes HTML attribute names, and the previous _read_readiness_state/metadata_index.readiness_from_state path retains those records, so authored holds can disappear from readiness.\nFINDING reckon/crew/admission/release.py:476 blocking: The document fingerprint is captured only after advance_waiting_requests has finished; if a plan is edited after its request was judged but before this fingerprint is taken, the stale verdict is stamped with the edited document's identity and selection.admit_once accepts it as current, skipping the second sweep that previously read the new waits; snapshot before the sweep as well and make reuse conditional on stability through the read, with a regression that edits inside the sweep rather than after _release_tick returns.\nFINDING tests/test_an_admission_pass_decides_within_its_budget.py:274 blocking: Both equivalence arms execute the optimized head code and force zero worker slots through _reference_pass; independent phase expectations catch dropped waits but cannot establish the declared equality of base/head launch and release decisions, and the recorded base negative control ends its other cases in unsupported-argument/missing-helper errors rather than producing a comparable base decision result; retain decision results from the actual base and head on the same reset home, including a launchable nonzero-slot case.\n",
+  "review_method": "Read-only source and recorded-log review; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261117T223731781573-review-of-an-admission-pass-decides-within-its-budget-6f4a096aa36e",
+  "reviewed_base_sha": "a290999a7dd5aaf099d00cfdf918eb1fde02a878",
+  "reviewed_head_sha": "6f4a096aa36eb3873a0fd1c687dbeeef44105fcf",
+  "reviewed_run_id": "r-20261117T111346928196-an-admission-pass-decides-within-its-budget",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "2ad4707fd7265240e79f0c5f977ea337725c014b",
+    "29fd41eb4cb1795e476c1ccfed664b38e895738d",
+    "e1ed853197901e5afe3a7dac0a4a26b144253824",
+    "6f4a096aa36eb3873a0fd1c687dbeeef44105fcf"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_pass_decides_within_its_budget.py tests/test_an_admission_receipt_names_its_reads.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/after_suite.log",
+      "observed_summary": "64 passed in 239.12s (0:03:59)",
+      "revision": "6f4a096aa36eb3873a0fd1c687dbeeef44105fcf"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_admission_receipt_names_its_reads.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111346928196-an-admission-pass-decides-within-its-budget/logs/baseline_suite.log",
+      "observed_summary": "60 passed in 131.87s (0:02:11)",
+      "revision": "a290999a7dd5aaf099d00cfdf918eb1fde02a878"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T22:46:47.703076+00:00",
+  "total": 97
+}

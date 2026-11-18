@@ -1,0 +1,132 @@
+<section id="qwnw-s30-negative-control">
+<h3>Read-only manifest negative control</h3>
+<p>At base <code>3030c590873cf8f00c302299ab6c7729cb505734</code>, four shell-redirection cases fail and four guards pass on rigel. The redirection <code>2&gt;/dev/null</code> is reported as a missing commit, with no mention of the malformed changed-path item or its repair.</p>
+<p>The whole-field absence declaration, including its comma and parenthesised reason, already promotes with the no-commit form and through review-self. These are regression guards, not a replacement implementation. The whole-field reader was introduced by <code>abd56a80a6c00fa37fab11036a2bc13b5fa6d1e1</code>, presentation handling by <code>6664ede86aa0782244ae34099d6817cd0e3da951</code>, and acceptance of real paths outside the repository by <code>0db13b01083a0f650b34aa6fc6ae10c8a1a766fc</code>.</p>
+<p>The declared-commit reader also honours that declaration since <code>6657268850ea0e4a78273c87ae07b16823b5723b</code>; its existing guard is retained here.</p>
+<details><summary>Unmodified-base failing run: 4 failed, 4 passed; EXIT=1</summary><pre># revision: 3030c590873cf8f00c302299ab6c7729cb505734; tree: /tmp/manifest-gate-1319205-xmMG/manifest-gate-dneot3q0/source; command: PYTHONPATH=/tmp/manifest-gate-1319205-xmMG/manifest-gate-dneot3q0/source /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/manifest-gate-1319205-xmMG/manifest-gate-dneot3q0/source/tests/test_a_read_only_manifest_reason_is_read_whole.py
+# command: PYTHONPATH=/tmp/manifest-gate-1319205-xmMG/manifest-gate-dneot3q0/source /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/manifest-gate-1319205-xmMG/manifest-gate-dneot3q0/source/tests/test_a_read_only_manifest_reason_is_read_whole.py
+# measurement_module: /tmp/manifest-gate-1319205-xmMG/manifest-gate-dneot3q0/source/reckon/crew/reports.py
+# measurement_cwd: /tmp/manifest-gate-1319205-xmMG/manifest-gate-dneot3q0/source
+..FFFF..                                                                 [100%]
+=================================== FAILURES ===================================
+______ test_a_shell_redirection_is_refused_as_a_changed_path[2&gt;/dev/null] ______
+
+repository = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re0/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re0&#x27;)
+item = &#x27;2&gt;/dev/null&#x27;
+
+    @pytest.mark.parametrize(&quot;item&quot;, [&quot;2&gt;/dev/null&quot;, &quot;&gt;output.log&quot;, &quot;2&gt;&amp;1&quot;, &quot;&lt;input.txt&quot;])
+    def test_a_shell_redirection_is_refused_as_a_changed_path(
+        repository: Path, tmp_path: Path, item: str
+    ) -&gt; None:
+        manifest = _delivered_review(repository, tmp_path)
+        with manifest.open(&quot;a&quot;, encoding=&quot;utf-8&quot;) as stream:
+            stream.write(f&quot;  - {item}\n&quot;)
+        # Keep the item in changed_paths rather than appending it to the tests field.
+        text = manifest.read_text().replace(
+            f&quot;tests: /usr/bin/true\n  - {item}\n&quot;,
+            f&quot;  - {item}\ntests: /usr/bin/true\n&quot;,
+        )
+        manifest.write_text(text, encoding=&quot;utf-8&quot;)
+    
+        with pytest.raises(crew.CrewError) as refused:
+            crew.complete(review_fixture.REVIEW_RUN_ID, gate=&quot;not-run&quot;, root=repository)
+        refusal = str(refused.value)
+&gt;       assert item in refusal, refusal
+E       AssertionError: run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them
+E       assert &#x27;2&gt;/dev/null&#x27; in &quot;run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them&quot;
+
+tests/test_a_read_only_manifest_reason_is_read_whole.py:99: AssertionError
+______ test_a_shell_redirection_is_refused_as_a_changed_path[&gt;output.log] ______
+
+repository = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re1/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re1&#x27;)
+item = &#x27;&gt;output.log&#x27;
+
+    @pytest.mark.parametrize(&quot;item&quot;, [&quot;2&gt;/dev/null&quot;, &quot;&gt;output.log&quot;, &quot;2&gt;&amp;1&quot;, &quot;&lt;input.txt&quot;])
+    def test_a_shell_redirection_is_refused_as_a_changed_path(
+        repository: Path, tmp_path: Path, item: str
+    ) -&gt; None:
+        manifest = _delivered_review(repository, tmp_path)
+        with manifest.open(&quot;a&quot;, encoding=&quot;utf-8&quot;) as stream:
+            stream.write(f&quot;  - {item}\n&quot;)
+        # Keep the item in changed_paths rather than appending it to the tests field.
+        text = manifest.read_text().replace(
+            f&quot;tests: /usr/bin/true\n  - {item}\n&quot;,
+            f&quot;  - {item}\ntests: /usr/bin/true\n&quot;,
+        )
+        manifest.write_text(text, encoding=&quot;utf-8&quot;)
+    
+        with pytest.raises(crew.CrewError) as refused:
+            crew.complete(review_fixture.REVIEW_RUN_ID, gate=&quot;not-run&quot;, root=repository)
+        refusal = str(refused.value)
+&gt;       assert item in refusal, refusal
+E       AssertionError: run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them
+E       assert &#x27;&gt;output.log&#x27; in &quot;run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them&quot;
+
+tests/test_a_read_only_manifest_reason_is_read_whole.py:99: AssertionError
+_________ test_a_shell_redirection_is_refused_as_a_changed_path[2&gt;&amp;1] __________
+
+repository = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re2/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re2&#x27;)
+item = &#x27;2&gt;&amp;1&#x27;
+
+    @pytest.mark.parametrize(&quot;item&quot;, [&quot;2&gt;/dev/null&quot;, &quot;&gt;output.log&quot;, &quot;2&gt;&amp;1&quot;, &quot;&lt;input.txt&quot;])
+    def test_a_shell_redirection_is_refused_as_a_changed_path(
+        repository: Path, tmp_path: Path, item: str
+    ) -&gt; None:
+        manifest = _delivered_review(repository, tmp_path)
+        with manifest.open(&quot;a&quot;, encoding=&quot;utf-8&quot;) as stream:
+            stream.write(f&quot;  - {item}\n&quot;)
+        # Keep the item in changed_paths rather than appending it to the tests field.
+        text = manifest.read_text().replace(
+            f&quot;tests: /usr/bin/true\n  - {item}\n&quot;,
+            f&quot;  - {item}\ntests: /usr/bin/true\n&quot;,
+        )
+        manifest.write_text(text, encoding=&quot;utf-8&quot;)
+    
+        with pytest.raises(crew.CrewError) as refused:
+            crew.complete(review_fixture.REVIEW_RUN_ID, gate=&quot;not-run&quot;, root=repository)
+        refusal = str(refused.value)
+&gt;       assert item in refusal, refusal
+E       AssertionError: run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them
+E       assert &#x27;2&gt;&amp;1&#x27; in &quot;run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them&quot;
+
+tests/test_a_read_only_manifest_reason_is_read_whole.py:99: AssertionError
+______ test_a_shell_redirection_is_refused_as_a_changed_path[&lt;input.txt] _______
+
+repository = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re3/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/manifest-gate-1319205-xmMG/pytest-of-mcintos/pytest-0/test_a_shell_redirection_is_re3&#x27;)
+item = &#x27;&lt;input.txt&#x27;
+
+    @pytest.mark.parametrize(&quot;item&quot;, [&quot;2&gt;/dev/null&quot;, &quot;&gt;output.log&quot;, &quot;2&gt;&amp;1&quot;, &quot;&lt;input.txt&quot;])
+    def test_a_shell_redirection_is_refused_as_a_changed_path(
+        repository: Path, tmp_path: Path, item: str
+    ) -&gt; None:
+        manifest = _delivered_review(repository, tmp_path)
+        with manifest.open(&quot;a&quot;, encoding=&quot;utf-8&quot;) as stream:
+            stream.write(f&quot;  - {item}\n&quot;)
+        # Keep the item in changed_paths rather than appending it to the tests field.
+        text = manifest.read_text().replace(
+            f&quot;tests: /usr/bin/true\n  - {item}\n&quot;,
+            f&quot;  - {item}\ntests: /usr/bin/true\n&quot;,
+        )
+        manifest.write_text(text, encoding=&quot;utf-8&quot;)
+    
+        with pytest.raises(crew.CrewError) as refused:
+            crew.complete(review_fixture.REVIEW_RUN_ID, gate=&quot;not-run&quot;, root=repository)
+        refusal = str(refused.value)
+&gt;       assert item in refusal, refusal
+E       AssertionError: run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them
+E       assert &#x27;&lt;input.txt&#x27; in &quot;run &#x27;r-20261012T130000000000-review-of-reviewed-run&#x27; has a complete manifest with changed_paths, but the manifest field &#x27;commits&#x27; is missing. Promotion cannot verify changed repository paths without the commit that contains them&quot;
+
+tests/test_a_read_only_manifest_reason_is_read_whole.py:99: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_a_read_only_manifest_reason_is_read_whole.py::test_a_shell_redirection_is_refused_as_a_changed_path[2&gt;/dev/null]
+FAILED tests/test_a_read_only_manifest_reason_is_read_whole.py::test_a_shell_redirection_is_refused_as_a_changed_path[&gt;output.log]
+FAILED tests/test_a_read_only_manifest_reason_is_read_whole.py::test_a_shell_redirection_is_refused_as_a_changed_path[2&gt;&amp;1]
+FAILED tests/test_a_read_only_manifest_reason_is_read_whole.py::test_a_shell_redirection_is_refused_as_a_changed_path[&lt;input.txt]
+4 failed, 4 passed in 35.97s
+EXIT=1
+</pre></details>
+</section>

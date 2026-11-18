@@ -1,0 +1,118 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Read completed canonical baseline_suite and after_suite logs: 66 passed / 80 passed, 5 skipped; EXIT=0 and no FAILED ids in either. The same extractor detects both known failures in allocation-answering-commit-negative.log. The suite baseline is the source run original baseline, distinct from the incremental diff base.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T090546855672-a-submitted-job-runs-inside-the-fence/allocation-after.log",
+  "assertion_analysis": [
+    {
+      "assertion": "task_job_id is nonempty",
+      "fails_if": "The real task output lacks a nonempty TASK_JOB marker; restoring a non-task error response cannot satisfy it.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 358
+    },
+    {
+      "assertion": "task_job_id != enclosing_job_id",
+      "fails_if": "The scheduler reuses the enclosing allocation; actual task output is compared with the independently retained parent environment, not an ID handed to the task as an expectation.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 359
+    },
+    {
+      "assertion": "not remaining",
+      "fails_if": "Restoring dict(os.environ) forwards injected SLURM allocation or step metadata; both reversal failures show this assertion firing.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 528
+    },
+    {
+      "assertion": "partition is explicitly all_debug",
+      "fails_if": "The helper drops the explicit partition from either client command.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 532
+    },
+    {
+      "assertion": "time is explicitly three minutes",
+      "fails_if": "The helper drops or changes the scheduler time bound.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 533
+    },
+    {
+      "assertion": "chdir names the fixture run directory",
+      "fails_if": "The helper omits chdir or uses a node-local/unshared directory instead; fixture state independently supplies the expected run root.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 534
+    },
+    {
+      "assertion": "capture RuntimeError is raised",
+      "fails_if": "The scheduler fence invocation is never reached or bypasses the interception; this is a reachability check, not the environment-isolation oracle.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 538
+    },
+    {
+      "assertion": "parent environment retains all injected values",
+      "fails_if": "The helper deletes or changes the parent SLURM variables in place instead of filtering a child copy; although the fixture supplies these values, this assertion checks a side effect independently of the submitted child environment and does not purport to detect child inheritance.",
+      "file": "tests/test_shared_environments_are_read_only.py",
+      "line": 540
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T090546855672-a-submitted-job-runs-inside-the-fence/allocation-baseline.log",
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_note": "The diff is test-only: production code does not call the test helper or new test. Examined nested_launch.main and fenced_scheduler_task as the runtime exercised by the probes, not as production callers of changed code.",
+  "completed_at": "2026-11-17T12:12:27Z",
+  "dispatched_at": "2026-11-17T12:07:27Z",
+  "evidence_caveats": [
+    "allocation-reproduction.log is an initial scaffolding failure (capture intercepted a composition subprocess before receiving env), so it is not counted as the defect reproduction; the corrected commit-reversal log contains the actual inheritance AssertionErrors.",
+    "The canonical suite comparison uses the original source-run baseline, not the incremental diff base; no wider importer zero-failure claim is made."
+  ],
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit f220067a2fcc against its actual parent c48178ede7c5; tests/test_shared_environments_are_read_only.py adds explicit scheduler resources and chdir, strips child SLURM variables, checks task identity and adds a two-tool environment-isolation oracle.",
+    "done_when": "dispatch-detail.json requires the scheduler cases and zero added scoped failures; allocation-gate-direct.log and allocation-gate-inside-srun.log each record 27 passed, and the completed allocation-baseline.log / allocation-after.log pair records 66 passed / 80 passed, 5 skipped with EXIT=0.",
+    "goal": "dispatch-detail.json states same-fence scheduler tasks; the incremental repair in tests/test_shared_environments_are_read_only.py:291-360 makes the real scheduler probes independent of the enclosing test allocation without changing production code.",
+    "manifest": "manifest.md names the added commit, exact gate command, completed revision-labelled suite pair, separate-allocation task receipts and the two-case commit-reversal failure; earlier importer qualifications remain outside this incremental review.",
+    "write_paths": "dispatch-detail.json includes tests/test_shared_environments_are_read_only.py, and git show --stat f220067a2fcc confirms that it is the only path changed since the previous reviewed head c48178ede7c5."
+  },
+  "justifications": {
+    "durability": "tests/test_shared_environments_are_read_only.py:528 fails when the child inherits SLURM state, as allocation-answering-commit-negative.log demonstrates for both clients, while lines 532-534 and 358 separately guard resources, working directory and allocation identity.",
+    "evidence": "allocation-gate-direct.log and allocation-gate-inside-srun.log record ten real task receipts with job IDs distinct from 1322870, refusal plus unchanged decoys for the eight fenced tasks, and replacement for the two absolute-route controls.",
+    "fit": "tests/test_shared_environments_are_read_only.py:500-540 uses the surrounding pytest parameterization and existing decoy fixture, and its interception delegates non-fence subprocesses instead of interfering with composition.",
+    "goal_fidelity": "tests/test_shared_environments_are_read_only.py:310-360 isolates scheduler subprocess allocation state and verifies a distinct task job ID, allowing the existing fence preservation cases to run from an occupied scheduler step.",
+    "reuse": "tests/test_shared_environments_are_read_only.py:501 extends the existing scheduler-replay owner; capability searches found environment filtering inline in reckon/crew/landing_measure.py:912-919, which is coupled to measurement submission rather than a reusable scheduler-environment function, and no new production owner is introduced.",
+    "scope_discipline": "the single new commit changes only the declared test path tests/test_shared_environments_are_read_only.py, with no production-file delta against c48178ede7c58296198371678d5a9b168157ec0a."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T090546855672-a-submitted-job-runs-inside-the-fence/allocation-answering-commit-negative.log",
+  "negative_failure_ids": [
+    "tests/test_shared_environments_are_read_only.py::test_scheduler_replay_discards_enclosing_slurm_environment[sbatch]",
+    "tests/test_shared_environments_are_read_only.py::test_scheduler_replay_discards_enclosing_slurm_environment[srun]"
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json states same-fence scheduler tasks; the incremental repair in tests/test_shared_environments_are_read_only.py:291-360 makes the real scheduler probes independent of the enclosing test allocation without changing production code.\nVERDICT done_when: dispatch-detail.json requires the scheduler cases and zero added scoped failures; allocation-gate-direct.log and allocation-gate-inside-srun.log each record 27 passed, and the completed allocation-baseline.log / allocation-after.log pair records 66 passed / 80 passed, 5 skipped with EXIT=0.\nVERDICT write_paths: dispatch-detail.json includes tests/test_shared_environments_are_read_only.py, and git show --stat f220067a2fcc confirms that it is the only path changed since the previous reviewed head c48178ede7c5.\nVERDICT manifest: manifest.md names the added commit, exact gate command, completed revision-labelled suite pair, separate-allocation task receipts and the two-case commit-reversal failure; earlier importer qualifications remain outside this incremental review.\nVERDICT diff: read commit f220067a2fcc against its actual parent c48178ede7c5; tests/test_shared_environments_are_read_only.py adds explicit scheduler resources and chdir, strips child SLURM variables, checks task identity and adds a two-tool environment-isolation oracle.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_shared_environments_are_read_only.py:310-360 isolates scheduler subprocess allocation state and verifies a distinct task job ID, allowing the existing fence preservation cases to run from an occupied scheduler step.\nSCORE evidence: 20\nJUSTIFICATION evidence: allocation-gate-direct.log and allocation-gate-inside-srun.log record ten real task receipts with job IDs distinct from 1322870, refusal plus unchanged decoys for the eight fenced tasks, and replacement for the two absolute-route controls.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single new commit changes only the declared test path tests/test_shared_environments_are_read_only.py, with no production-file delta against c48178ede7c58296198371678d5a9b168157ec0a.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_shared_environments_are_read_only.py:528 fails when the child inherits SLURM state, as allocation-answering-commit-negative.log demonstrates for both clients, while lines 532-534 and 358 separately guard resources, working directory and allocation identity.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_shared_environments_are_read_only.py:500-540 uses the surrounding pytest parameterization and existing decoy fixture, and its interception delegates non-fence subprocesses instead of interfering with composition.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_shared_environments_are_read_only.py:501 extends the existing scheduler-replay owner; capability searches found environment filtering inline in reckon/crew/landing_measure.py:912-919, which is coupled to measurement submission rather than a reusable scheduler-environment function, and no new production owner is introduced.\n",
+  "reuse_analysis": {
+    "conclusion": "The added test and nested capture extend coverage of the existing _scheduler_replay helper; no production capability or reusable abstraction is forked.",
+    "search": "Searched SLURM filtering, scheduler allocation environments and scheduler-replay coverage in reckon/ and tests/; opened landing_measure.py:880-919 and nested_launch.py at the reviewed head."
+  },
+  "review_run_id": "r-20261117T120521313093-review-of-a-submitted-job-runs-inside-the-fence-f220067a2fcc",
+  "review_scope": [
+    "tests/test_shared_environments_are_read_only.py"
+  ],
+  "reviewed_base_sha": "c48178ede7c58296198371678d5a9b168157ec0a",
+  "reviewed_head_sha": "f220067a2fccdea72b6f589b2bc1e88db752b00f",
+  "reviewed_run_id": "r-20261117T090546855672-a-submitted-job-runs-inside-the-fence",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_baseline_sha": "0388ce623ce61f7ec604955d5e36e3e858975b63",
+  "suite_head_sha": "f220067a2fccdea72b6f589b2bc1e88db752b00f",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:23:10.281027+00:00",
+  "total": 120
+}

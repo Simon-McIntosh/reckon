@@ -1,0 +1,50 @@
+<section id="qwnw-red-file-launch-plan-fences-the-home-head-run">
+<h3>A red file on the primary branch passes</h3>
+<p><code>tests/test_launch_plan_fences_the_home.py</code> at revision <code>8d50b0333f</code> reported 3 failing or erroring tests. Reproduced at the worktree's base <code>ba3443a9ae6a2bc171c76560016a6ca24e055f02</code> and again after merging <code>origin/main</code> (<code>398015d5d5</code>): 3 failed, 4 passed, EXIT=1, with the same three ids:</p>
+<ul>
+<li><code>test_the_negative_control_deletes_the_claude_sentinel</code></li>
+<li><code>test_a_symlinked_protected_path_does_not_stop_the_launch</code></li>
+<li><code>test_the_negative_control_rebinds_a_target_inside_a_sealed_directory</code></li>
+</ul>
+
+<h3 id="qwnw-red-file-launch-plan-fences-the-home-cause-one">Cause one — the fixture home sat under the sealed node tmp. Verdict: the test was wrong</h3>
+<p>The product composes two seals in <code>reckon/_worker_fence.py</code>: each protected path gets a read-only overlay, and the node's own <code>/tmp</code> is sealed read-only as a whole (<code>node_tmp_seal_root()</code>), emitted as its own overlay so it never suppresses a protected path's own bind. pytest's base temp lives beneath <code>/tmp</code>, so the synthetic home this file builds lay inside the node tmp seal. Every observation about the protected overlays then measured the node tmp instead:</p>
+<ul>
+<li>dropping the <code>~/.claude</code> overlay left the sentinel read-only anyway, so the declared negative control deleted nothing (<code>assert not True</code>);</li>
+<li>the sealed <code>/tmp</code> was a read-only destination covering all thirteen protected overlays, so <code>_overlays_inside_another</code> reported thirteen entries where the clause guarantees none.</li>
+</ul>
+<p>Both are fixture locality, not a broken rule: the rules were verified to still hold under a node tmp placed beside the home — the overlays are composed, the redundant-overlay clause reads nothing, and the dropped overlay is load-bearing again. The repair composes the fence over a node tmp beside the home (<code>tests/test_launch_plan_fences_the_home.py::_node_tmp_beside_the_home</code>), which is what the fence's other bubblewrap tests do, and asserts the node tmp is still sealed so the fixture cannot quietly drop the seal it relies on. No assertion was deleted or weakened; one was added, and neither helper <code>_overlays_inside_another</code> nor <code>_drop_ro_bind</code> changed.</p>
+
+<details><summary>Base run at ba3443a9ae6a2bc171c76560016a6ca24e055f02 — 3 failed, 4 passed; EXIT=1</summary><pre># revision: ba3443a9ae6a2bc171c76560016a6ca24e055f02
+# tree: /tmp/reckon-crew-scratch/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/base-tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_launch_plan_fences_the_home.py
+# module.__file__: /tmp/reckon-crew-scratch/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/base-tree/reckon/_backends.py
+# cwd: /tmp/reckon-crew-scratch/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/base-tree
+FAILED tests/test_launch_plan_fences_the_home.py::test_the_negative_control_deletes_the_claude_sentinel - AssertionError: assert not True
+FAILED tests/test_launch_plan_fences_the_home.py::test_a_symlinked_protected_path_does_not_stop_the_launch - AssertionError: assert [PosixPath('.../home/.claude'), ...] == []
+FAILED tests/test_launch_plan_fences_the_home.py::test_the_negative_control_rebinds_a_target_inside_a_sealed_directory - AssertionError: assert [PosixPath('.../home/.claude'), ...] == []
+3 failed, 4 passed in 4.47s
+EXIT=1</pre></details>
+
+<details><summary>Head run at 15f0c3d4a33a as an all_debug job (1320208) with SLURM_JOB_ID unset — 7 passed; EXIT=0</summary><pre># revision: 15f0c3d4a33a (15f0c3d4a33a8c3d9a2e019c5ac97d514540aec1)
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-launch-plan-fences-the-home
+# partition: all_debug host: 98dci4-clu-3141.iter.org job: qwnw-gate-fences
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_launch_plan_fences_the_home.py
+# SLURM_JOB_ID unset for the run: yes
+# module.__file__: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-launch-plan-fences-the-home/reckon/_backends.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-launch-plan-fences-the-home
+.......                                                                  [100%]
+7 passed in 4.73s
+EXIT=0</pre></details>
+
+<details><summary>Falsifying mutation — the fixture not applying, 4 failed, 3 passed; EXIT=1</summary><pre># mutation: the fixture no longer points the fence at a node tmp beside the home
+FAILED ...::test_the_fence_seals_every_protected_class - AssertionError: assert ('--ro-bind', '.../node-tmp') in [('--ro-bind', '.../home/.claude'), ...]
+FAILED ...::test_the_negative_control_deletes_the_claude_sentinel - AssertionError: assert not True
+FAILED ...::test_a_symlinked_protected_path_does_not_stop_the_launch - AssertionError: assert [PosixPath('.../home/.claude'), ...] == []
+FAILED ...::test_the_negative_control_rebinds_a_target_inside_a_sealed_directory - AssertionError: assert [PosixPath('.../home/.claude'), ...] == []
+4 failed, 3 passed in 5.72s
+EXIT=1</pre>
+<p>The mutation reproduces the base's three failures and fails the new seal assertion, so both the fixture and the assertion are load-bearing.</p></details>
+
+<p>Logs: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104904090730-qwnw-red-file-launch-plan-fences-the-home/logs/base-arm-test_launch_plan_fences_the_home.log</code>, <code>.../logs/gate-test_launch_plan_fences_the_home.log</code>, <code>.../logs/mutation-fixture-not-applied.log</code>.</p>
+</section>

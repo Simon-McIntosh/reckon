@@ -1,0 +1,64 @@
+<pre id="wftl-the-admission-package-imports-from-any-module-codex-negative-control"># revision: a7f049093c62b22bd5f69246c292b6bbd27de6b4 tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex
+# command: PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/tests/test_admission_modules_import_alone.py
+.F.............                                                          [100%]
+=================================== FAILURES ===================================
+________________ test_admission_module_imports_first[attempts] _________________
+
+path = PosixPath(&#x27;/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/attempts.py&#x27;)
+
+    @pytest.mark.parametrize(&quot;path&quot;, MODULES, ids=lambda path: path.stem)
+    def test_admission_module_imports_first(path):
+        module = &quot;reckon.crew.admission&quot;
+        if path.stem != &quot;__init__&quot;:
+            module += f&quot;.{path.stem}&quot;
+        result = subprocess.run(
+            [
+                sys.executable,
+                &quot;-c&quot;,
+                &quot;import importlib, sys; &quot;
+                &quot;module = importlib.import_module(sys.argv[1]); print(module.__file__)&quot;,
+                module,
+            ],
+            cwd=ROOT,
+            env={**os.environ, &quot;PYTHONPATH&quot;: str(ROOT)},
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+&gt;       assert result.returncode == 0, f&quot;{module}:\n{result.stderr}&quot;
+E       AssertionError: reckon.crew.admission.attempts:
+E         Traceback (most recent call last):
+E           File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+E             import importlib, sys; module = importlib.import_module(sys.argv[1]); print(module.__file__)
+E                                             ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+E           File &quot;/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/importlib/__init__.py&quot;, line 88, in import_module
+E             return _bootstrap._gcd_import(name[level:], package, level)
+E                    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1398, in _gcd_import
+E           File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1371, in _find_and_load
+E           File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 1342, in _find_and_load_unlocked
+E           File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 938, in _load_unlocked
+E           File &quot;&lt;frozen importlib._bootstrap_external&gt;&quot;, line 759, in exec_module
+E           File &quot;&lt;frozen importlib._bootstrap&gt;&quot;, line 491, in _call_with_frames_removed
+E           File &quot;/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/attempts.py&quot;, line 8, in &lt;module&gt;
+E             from . import holds as _holds
+E           File &quot;/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/holds.py&quot;, line 5, in &lt;module&gt;
+E             from . import launching as _launching
+E           File &quot;/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/launching.py&quot;, line 6, in &lt;module&gt;
+E             from . import service as _service
+E           File &quot;/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/service.py&quot;, line 9, in &lt;module&gt;
+E             from . import selection as _selection
+E           File &quot;/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/selection.py&quot;, line 17, in &lt;module&gt;
+E             from .attempts import LaunchBatch
+E         ImportError: cannot import name &#x27;LaunchBatch&#x27; from partially initialized module &#x27;reckon.crew.admission.attempts&#x27; (most likely due to a circular import) (/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/attempts.py)
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=[&#x27;/home/ITER/mcintos/Code/reckon/.venv/bin/python&#x27;, &#x27;-c&#x27;, &#x27;import importlib, sys; module = impor...-4927-afd1-771942ebfe6a/wftl-the-admission-package-imports-from-any-module-codex/reckon/crew/admission/attempts.py)\n&#x27;).returncode
+
+tests/test_admission_modules_import_alone.py:34: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_admission_modules_import_alone.py::test_admission_module_imports_first[attempts]
+1 failed, 14 passed in 9.57s
+EXIT=1
+</pre>

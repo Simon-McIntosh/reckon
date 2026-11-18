@@ -11,6 +11,12 @@ class PickRequest:
     project: str
     node: TaskNode
     capability: dict[str, Any] = field(default_factory=dict)
+    # The section's declared effort in hours, resolved by the dispatcher before
+    # the pick. It travels beside the capability so the pick's own difficulty
+    # step resolves nothing: a request carrying both is read without a plan.
+    # Keyword-only so a caller's positional arguments keep the order they had
+    # before this field existed.
+    estimated_hours: float | None = field(default=None, kw_only=True)
     estimated_context: int = 0
     comment: str = ""
     session: str = ""
@@ -87,8 +93,8 @@ class Candidate:
     # Whether a flight policy reserves this candidate's lane, and the terms it
     # was judged on: the tier floor, the attempt threshold, the window ceiling,
     # the window's use, any lift in force and its reason, and the policy's own
-    # statement of what the lane is for. A reservation is a preference the
-    # router weighs, so it never appears in ``reasons``.
+    # statement of what the lane is for. A Claude CLI reservation withholds
+    # automatic offers through ``reasons``; other reservations are preferences.
     reserved: bool = False
     reservation: dict[str, Any] | None = None
     # The judgments that do not make a lane unable to run the node: a competence

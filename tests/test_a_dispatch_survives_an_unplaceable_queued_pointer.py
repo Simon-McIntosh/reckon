@@ -1,11 +1,12 @@
 """A dispatch's yield check survives a queued pointer with no readable arrival time.
 
 A dispatch that finds room on its lane first asks for its session's oldest
-waiting request, through the same ordering the admission pass ranks by. The
-ordering refuses a queued pointer whose ``queued_at`` cannot be read, and one
-such pointer -- a record read mid-write was enough on 14 November -- refused
-the whole order, so the dispatch crashed. The admission pass and the live view
-already leave such a pointer out; the dispatch now does the same.
+waiting request, through the same ordering the admission pass ranks by. A
+queued pointer whose ``queued_at`` cannot be read has no arrival to place it
+by, and one such pointer -- a record read mid-write was enough on 14 November
+-- used to refuse the whole order, so the dispatch crashed. The ordering now
+sets that pointer aside and ranks the rest; the dispatch, the admission pass
+and the live view all read the same split.
 """
 
 from __future__ import annotations
@@ -59,8 +60,23 @@ def test_an_unplaceable_pointer_does_not_refuse_the_dispatch(live):
     assert chosen["run_id"] == "r-placed"
 
 
-def test_the_ordering_itself_still_refuses_such_a_pointer():
-    with pytest.raises(ValueError, match="no readable queued_at"):
-        queue_order.admission_order(
-            [_queued("r-unplaceable", queued_at=None)], [], now=NOW
-        )
+def test_the_ordering_sets_such_a_pointer_aside_rather_than_refusing():
+    """The split the dispatch reads is the ordering's own, not its caller's."""
+    order = queue_order.admission_order(
+        [
+            _queued("r-unplaceable", queued_at=None),
+            _queued("r-placed", queued_at=NOW - timedelta(minutes=5)),
+        ],
+        [],
+        now=NOW,
+    )
+    assert [pointer["run_id"] for pointer in order] == ["r-placed"]
+
+    placeable, set_aside = queue_order.partition_placeable(
+        [
+            _queued("r-unplaceable", queued_at=None),
+            _queued("r-placed", queued_at=NOW - timedelta(minutes=5)),
+        ]
+    )
+    assert [pointer["run_id"] for pointer in placeable] == ["r-placed"]
+    assert [pointer["run_id"] for pointer in set_aside] == ["r-unplaceable"]

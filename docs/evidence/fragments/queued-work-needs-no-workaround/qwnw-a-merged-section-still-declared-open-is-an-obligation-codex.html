@@ -1,0 +1,41 @@
+<section id="qwnw-a-merged-section-still-declared-open-is-an-obligation-codex-landing">
+  <h3>Merged work names the declaration it still owes</h3>
+  <p>The obligations view and its published snapshot share one derivation over
+  the mounted checkout, completed run records and the live plan declaration.
+  An implementation revision reachable from that checkout while its section
+  remains implementable yields one <code>section-declaration-owed</code> duty
+  for the dispatching session. The duty names the merged runs, the section and
+  every queued request waiting on it, with versioned actions to record completion
+  or a partial delivery.</p>
+  <table>
+    <thead><tr><th>Temporary-repository case</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Merged upstream; declaration implementable</td><td>One duty for its dispatching session, naming both waiting requests; other sessions receive none</td></tr>
+      <tr><td>Declaration changed to done</td><td>Duty disappears; both requests leave awaiting-upstream on the next admission pass</td></tr>
+      <tr><td>Declaration changed to deferred</td><td>No declaration duty remains</td></tr>
+      <tr><td>Partial delivery recorded for the merged run</td><td>No duty for that run; waiters remain held; another merged run in the section owes a new duty</td></tr>
+      <tr><td>No run, or a promoted revision outside the primary branch</td><td>No merged-section duty</td></tr>
+      <tr><td>Offered completion and partial-delivery actions</td><td>Both execute through the validated plan writer and clear their duties</td></tr>
+      <tr><td>Published snapshot after the merged run's pointer is removed</td><td>The duty matches the direct obligations view and survives departure filtering</td></tr>
+    </tbody>
+  </table>
+  <p>Partial delivery uses the existing section-comment store, with the comment
+  identity <code>c-partial-&lt;run-id&gt;</code> and a non-empty explanation.
+  Its scope is one run in one section. Reachability raises a duty; it never
+  advances the section declaration or releases requests by itself.</p>
+  <p>The negative control ran the first regression against
+  <code>872191237211007bbd1b060135f3ac65f12d44c3</code>. It first asserted the
+  upstream revision was the primary head and both waiting requests existed in
+  <code>awaiting-upstream</code>, then failed on the missing duty:</p>
+  <pre>assert len(duties) == 1, duties
+E AssertionError: []
+1 failed in 1.03s
+EXIT=1</pre>
+  <p>All measurements ran on <code>all_debug</code>. The armed baseline recorded
+  <code>58 passed in 38.20s</code>. The completed focused delivery check at
+  <code>e771843ba7250309b91e1d9a3a2e079a8d505796</code> recorded
+  <code>9 passed in 3.67s</code>, with <code>EXIT=0</code>. The worker manifest
+  records the exact commands, imported module and working directory, job ids,
+  complete logs, final armed head receipt and commit list. The source and its
+  tests are committed; the coordinator owns plan writeback and integration.</p>
+</section>

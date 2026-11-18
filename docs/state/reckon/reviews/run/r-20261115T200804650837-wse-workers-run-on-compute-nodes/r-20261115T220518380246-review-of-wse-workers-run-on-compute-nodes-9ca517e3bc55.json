@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:3320",
+    "reckon/crew/dispatch_sessions.py:1344",
+    "reckon/crew/dispatch_sessions.py:1384",
+    "reckon/crew/dispatch_sessions.py:1879",
+    "reckon/crew/dispatch_sessions.py:1904",
+    "reckon/crew/dispatching/launch.py:739",
+    "reckon/crew/resumption.py:689",
+    "reckon/crew/dispatch_launch.py:4083"
+  ],
+  "completed_at": "2026-11-15T22:23:14.848Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-wse-workers-run-on-compute-nodes-9ca517e3bc55",
+      "recorded_at": "2026-11-15T23:57:24.401147+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-wse-workers-run-on-compute-nodes-9ca517e3bc55",
+      "recorded_at": "2026-11-15T23:57:37.165593+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T22:22:35Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py",
+      "line": 127,
+      "severity": "non-blocking",
+      "text": "the placed-step test passes `expected=(owned,)` to step_node_directories and then asserts that same value comes back, so both sides move together; the production wiring at reckon/crew/dispatch_launch.py:4094, which is what names the run's scratch for a real placed step, is guarded by no test and deleting that argument leaves all three tests green."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1057,
+      "severity": "non-blocking",
+      "text": "placed_step_argv restates the predicate owned at reckon/crew/process_signal.py:677 (`_run_uses_step`: basename `srun` plus any `--jobid=` word), so a change to what counts as a placed step fixes at most one of the two, and process_signal.py:677 would go on answering the old rule."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the merge 9ca517e3 against both parents for reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch_launch.py \u2014 `git diff 12d3859154 9ca517e3 -- reckon/_backends.py reckon/_worker_fence.py reckon/crew/dispatch_launch.py tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py` restates the node's own 18/40/63/150-line change byte for byte, and `git diff 2b04fe6263 9ca517e3 -- reckon/_backends.py reckon/_worker_fence.py reckon/crew/dispatch_launch.py` is primary's MCP-set and oom_priority work carried in, with the one conflict at _backends.py:94-96 and :138 resolved by keeping both import additions.",
+    "done_when": "the done_when this node was handed is the section measure \u2014 a 20-worker rehearsal through the scheduler with the fleet node's memory read before and during, a delta under 2 GB, a test reading a compute-node worker writing no file under the fleet node's local scratch, and a base-revision control rising about 0.4 GB per worker, logged to docs/evidence/fragments/work-scales-to-eighty-across-nodes/s4.html:64 \u2014 while the gate at logs/after_arm_merge.log measures only the third clause, plus a directory count of 0 vs 1: the rehearsal, the memory readings and s4.html are absent from both the run's logs and docs/evidence/fragments/work-scales-to-eighty-across-nodes/wse-workers-run-on-compute-nodes.html:39.",
+    "goal": "the node's goal is that a dispatched worker runs on a compute node while coordination stays on the fleet node; the merge at 9ca517e3 keeps the whole of that change in reckon/_worker_fence.py:2014 (`by_construction = worker_scratch_write_roots(roots)`), :2041 (`and target not in by_construction`), reckon/_backends.py:3102 and reckon/crew/dispatch_launch.py:1057/:4083/:4094, so nothing the run gained was lost, and the job-of-its-own route recorded under outside_scope is still unbuilt.",
+    "manifest": "read manifest.md at the run directory; it records status complete, commits 2b04fe6263 and 9ca517e3bc55, gate 61 passed EXIT=0 at the merge head, base arm 58 passed EXIT=0, negative control 1 failed EXIT=1, and the four log paths it names exist and match.",
+    "write_paths": "the run declares reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes and docs/figures/work-scales-to-eighty-across-nodes/wse-workers-run-on-compute-nodes; `git diff --name-only dafd87495f..2b04fe6263` lists five paths, every one inside those declarations, and the merge 9ca517e3 authored no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:110 genuinely reddens, as logs/negative_control_scratch_on_composer.log shows, wherever the pre-change rule returns, but :127 hands step_node_directories the value it then asserts, so the production argument at reckon/crew/dispatch_launch.py:4094 is guarded by no test.",
+    "evidence": "logs/after_arm_merge.log records 61 passed with EXIT=0 at 9ca517e3bc55 and logs/negative_control_scratch_on_composer.log 1 failed with EXIT=1 at the same revision, but no log carries the 20-worker rehearsal, the <2 GB fleet memory delta or the 0.4 GB-per-worker base control the done_when states.",
+    "fit": "the merge's import additions sit in the sorted re-export block at reckon/_backends.py:94-96 and :137-139 beside their siblings, and reckon/crew/dispatch_launch.py:1057 follows the module's docstring idiom.",
+    "goal_fidelity": "the merge preserves the node's rule at reckon/_worker_fence.py:2041 \u2014 an absent run scratch directory still composes its `--bind` grant \u2014 and reckon/_backends.py:3102 still excludes it from creation, but the goal's placement for a job of its own (dispatch_launch.py's step wrapper composes for srun steps only) remains unbuilt.",
+    "reuse": "reckon/crew/dispatch_launch.py:1057 re-implements the srun-step predicate owned at reckon/crew/process_signal.py:677 `_run_uses_step` rather than extending it, leaving which argvs count as a placed step decided in two modules.",
+    "scope_discipline": "the node's authored change in the merge touches only the two module paths plus reckon/crew/dispatch_launch.py inside its declared `reckon`, and the rest of the merge delta (reckon/_worker_fence.py:376-460 MCP sets, reckon/crew/dispatch_launch.py:1959/:4155 oom priority) is primary's already-reviewed content."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispatched worker runs on a compute node while coordination stays on the fleet node; the merge at 9ca517e3 keeps the whole of that change in reckon/_worker_fence.py:2014 (`by_construction = worker_scratch_write_roots(roots)`), :2041 (`and target not in by_construction`), reckon/_backends.py:3102 and reckon/crew/dispatch_launch.py:1057/:4083/:4094, so nothing the run gained was lost, and the job-of-its-own route recorded under outside_scope is still unbuilt.\nVERDICT done_when: the done_when this node was handed is the section measure \u2014 a 20-worker rehearsal through the scheduler with the fleet node's memory read before and during, a delta under 2 GB, a test reading a compute-node worker writing no file under the fleet node's local scratch, and a base-revision control rising about 0.4 GB per worker, logged to docs/evidence/fragments/work-scales-to-eighty-across-nodes/s4.html:64 \u2014 while the gate at logs/after_arm_merge.log measures only the third clause, plus a directory count of 0 vs 1: the rehearsal, the memory readings and s4.html are absent from both the run's logs and docs/evidence/fragments/work-scales-to-eighty-across-nodes/wse-workers-run-on-compute-nodes.html:39.\nVERDICT write_paths: the run declares reckon, tests, docs/evidence/fragments/work-scales-to-eighty-across-nodes and docs/figures/work-scales-to-eighty-across-nodes/wse-workers-run-on-compute-nodes; `git diff --name-only dafd87495f..2b04fe6263` lists five paths, every one inside those declarations, and the merge 9ca517e3 authored no path outside them.\nVERDICT manifest: read manifest.md at the run directory; it records status complete, commits 2b04fe6263 and 9ca517e3bc55, gate 61 passed EXIT=0 at the merge head, base arm 58 passed EXIT=0, negative control 1 failed EXIT=1, and the four log paths it names exist and match.\nVERDICT diff: read the merge 9ca517e3 against both parents for reckon/_backends.py, reckon/_worker_fence.py and reckon/crew/dispatch_launch.py \u2014 `git diff 12d3859154 9ca517e3 -- reckon/_backends.py reckon/_worker_fence.py reckon/crew/dispatch_launch.py tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py` restates the node's own 18/40/63/150-line change byte for byte, and `git diff 2b04fe6263 9ca517e3 -- reckon/_backends.py reckon/_worker_fence.py reckon/crew/dispatch_launch.py` is primary's MCP-set and oom_priority work carried in, with the one conflict at _backends.py:94-96 and :138 resolved by keeping both import additions.\nCALL_SITES: reckon/_backends.py:3320, reckon/crew/dispatch_sessions.py:1344, reckon/crew/dispatch_sessions.py:1384, reckon/crew/dispatch_sessions.py:1879, reckon/crew/dispatch_sessions.py:1904, reckon/crew/dispatching/launch.py:739, reckon/crew/resumption.py:689, reckon/crew/dispatch_launch.py:4083\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the merge preserves the node's rule at reckon/_worker_fence.py:2041 \u2014 an absent run scratch directory still composes its `--bind` grant \u2014 and reckon/_backends.py:3102 still excludes it from creation, but the goal's placement for a job of its own (dispatch_launch.py's step wrapper composes for srun steps only) remains unbuilt.\nSCORE evidence: 9\nJUSTIFICATION evidence: logs/after_arm_merge.log records 61 passed with EXIT=0 at 9ca517e3bc55 and logs/negative_control_scratch_on_composer.log 1 failed with EXIT=1 at the same revision, but no log carries the 20-worker rehearsal, the <2 GB fleet memory delta or the 0.4 GB-per-worker base control the done_when states.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the node's authored change in the merge touches only the two module paths plus reckon/crew/dispatch_launch.py inside its declared `reckon`, and the rest of the merge delta (reckon/_worker_fence.py:376-460 MCP sets, reckon/crew/dispatch_launch.py:1959/:4155 oom priority) is primary's already-reviewed content.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:110 genuinely reddens, as logs/negative_control_scratch_on_composer.log shows, wherever the pre-change rule returns, but :127 hands step_node_directories the value it then asserts, so the production argument at reckon/crew/dispatch_launch.py:4094 is guarded by no test.\nSCORE fit: 16\nJUSTIFICATION fit: the merge's import additions sit in the sorted re-export block at reckon/_backends.py:94-96 and :137-139 beside their siblings, and reckon/crew/dispatch_launch.py:1057 follows the module's docstring idiom.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:1057 re-implements the srun-step predicate owned at reckon/crew/process_signal.py:677 `_run_uses_step` rather than extending it, leaving which argvs count as a placed step decided in two modules.\nFINDING tests/test_a_worker_on_a_compute_node_leaves_no_fleet_scratch.py:127 non-blocking: the placed-step test passes `expected=(owned,)` to step_node_directories and then asserts that same value comes back, so both sides move together; the production wiring at reckon/crew/dispatch_launch.py:4094, which is what names the run's scratch for a real placed step, is guarded by no test and deleting that argument leaves all three tests green.\n\nFINDING reckon/crew/dispatch_launch.py:1057 non-blocking: placed_step_argv restates the predicate owned at reckon/crew/process_signal.py:677 (`_run_uses_step`: basename `srun` plus any `--jobid=` word), so a change to what counts as a placed step fixes at most one of the two, and process_signal.py:677 would go on answering the old rule.\n",
+  "review_run_id": "r-20261115T220518380246-review-of-wse-workers-run-on-compute-nodes-9ca517e3bc55",
+  "reviewed_base_sha": "2b04fe6263d131b553141fa4f290321974c13c94",
+  "reviewed_head_sha": "9ca517e3bc55eb2989c7eba791d56c51e54b8314",
+  "reviewed_run_id": "r-20261115T200804650837-wse-workers-run-on-compute-nodes",
+  "scores": {
+    "durability": 13,
+    "evidence": 9,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:46:20.924439+00:00",
+  "total": 75
+}

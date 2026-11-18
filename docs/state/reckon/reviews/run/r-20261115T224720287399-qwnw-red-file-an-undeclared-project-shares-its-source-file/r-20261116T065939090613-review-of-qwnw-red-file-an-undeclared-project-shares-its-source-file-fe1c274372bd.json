@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Read both raw suite logs to their 58 passed summaries and EXIT=0 terminators; positive progress markers show tests actually ran; zero added failures is the after-minus-baseline failure-id difference.",
+  "assertion_analysis": [],
+  "assertion_analysis_note": "Incremental commit adds HTML prose only: no new executable assertion, test, function, class or module exists to assess; prior test assertions are outside this re-review diff.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record:1362",
+    "reckon/evidence.py:_fragment_body_bytes:1315"
+  ],
+  "commits_reviewed": [
+    "fe1c274372bdfe1d7bfe527a0e69440db6561f03"
+  ],
+  "completed_at": "2026-11-16T07:09:00Z",
+  "dispatched_at": "2026-11-16T07:02:42Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite.command is the placeholder PYTHONPATH_SEE_MANIFEST; replace it with the literal command already recorded in logs/baseline-suite.log:3 so the repaired structured receipt satisfies the dispatched command contract and can be replayed without inference."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the sole new commit fe1c274372bdfe1d7bfe527a0e69440db6561f03 against previously reviewed 5ae25099ba7a08b6cbbee940df6974899c65d4e7; five added HTML lines create the suite-arms section and no executable definitions or assertions change.",
+    "done_when": "source prompt.txt:188-205 requires the all_debug named-file gate and both suite arms; logs/gate-all-debug-final.log records 10 passed and the two suite logs each record 58 passed EXIT=0, but manifest.md:15 still substitutes a placeholder for the baseline command.",
+    "goal": "source prompt.txt:38 requires the named test file to pass, and the incremental evidence fragment now records the companion suite result without changing the previously reviewed test repair.",
+    "manifest": "source manifest.md restores the resolvable base SHA, test logs and negative-control path requested by the earlier review, but its baseline_suite.command remains PYTHONPATH_SEE_MANIFEST rather than the command recorded in logs/baseline-suite.log:3.",
+    "write_paths": "source prompt.txt:84-89 grants the evidence-fragment directory, and fe1c274372bdfe1d7bfe527a0e69440db6561f03 changes only its assigned HTML fragment."
+  },
+  "justifications": {
+    "durability": "the raw suite logs durably establish zero added failures, but the documentation-only addition at the fragment's lines 30-33 adds no assertion that would fail if its arm account disappeared.",
+    "evidence": "the new fragment paragraph at line 33 agrees with both raw 58-passed EXIT=0 logs, but source manifest.md:15 does not record its baseline command literally as the source contract requires.",
+    "fit": "the new section and code-marked command at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 follow the fragment's existing HTML evidence idiom and introduce no source names.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 adds the missing suite-arm account and leaves the previously verified test repair intact.",
+    "reuse": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 adds only evidence prose consumed by the existing reckon/evidence.py:compose_landed_record owner and introduces no duplicated function, class or module.",
+    "scope_discipline": "the complete incremental diff changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:28-33 within the declared directory."
+  },
+  "prior_review_head_sha": "5ae25099ba7a08b6cbbee940df6974899c65d4e7",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 requires the named test file to pass, and the incremental evidence fragment now records the companion suite result without changing the previously reviewed test repair.\nVERDICT done_when: source prompt.txt:188-205 requires the all_debug named-file gate and both suite arms; logs/gate-all-debug-final.log records 10 passed and the two suite logs each record 58 passed EXIT=0, but manifest.md:15 still substitutes a placeholder for the baseline command.\nVERDICT write_paths: source prompt.txt:84-89 grants the evidence-fragment directory, and fe1c274372bdfe1d7bfe527a0e69440db6561f03 changes only its assigned HTML fragment.\nVERDICT manifest: source manifest.md restores the resolvable base SHA, test logs and negative-control path requested by the earlier review, but its baseline_suite.command remains PYTHONPATH_SEE_MANIFEST rather than the command recorded in logs/baseline-suite.log:3.\nVERDICT diff: read the sole new commit fe1c274372bdfe1d7bfe527a0e69440db6561f03 against previously reviewed 5ae25099ba7a08b6cbbee940df6974899c65d4e7; five added HTML lines create the suite-arms section and no executable definitions or assertions change.\nCALL_SITES: reckon/evidence.py:compose_landed_record:1362, reckon/evidence.py:_fragment_body_bytes:1315\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 adds the missing suite-arm account and leaves the previously verified test repair intact.\nSCORE evidence: 17\nJUSTIFICATION evidence: the new fragment paragraph at line 33 agrees with both raw 58-passed EXIT=0 logs, but source manifest.md:15 does not record its baseline command literally as the source contract requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the complete incremental diff changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:28-33 within the declared directory.\nSCORE durability: 16\nJUSTIFICATION durability: the raw suite logs durably establish zero added failures, but the documentation-only addition at the fragment's lines 30-33 adds no assertion that would fail if its arm account disappeared.\nSCORE fit: 20\nJUSTIFICATION fit: the new section and code-marked command at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 follow the fragment's existing HTML evidence idiom and introduce no source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 adds only evidence prose consumed by the existing reckon/evidence.py:compose_landed_record owner and introduces no duplicated function, class or module.\nFINDING manifest.md:15 blocking: baseline_suite.command is the placeholder PYTHONPATH_SEE_MANIFEST; replace it with the literal command already recorded in logs/baseline-suite.log:3 so the repaired structured receipt satisfies the dispatched command contract and can be replayed without inference.\n",
+  "review_run_id": "r-20261116T065939090613-review-of-qwnw-red-file-an-undeclared-project-shares-its-source-file-fe1c274372bd",
+  "review_text": "VERDICT goal: source prompt.txt:38 requires the named test file to pass, and the incremental evidence fragment now records the companion suite result without changing the previously reviewed test repair.\nVERDICT done_when: source prompt.txt:188-205 requires the all_debug named-file gate and both suite arms; logs/gate-all-debug-final.log records 10 passed and the two suite logs each record 58 passed EXIT=0, but manifest.md:15 still substitutes a placeholder for the baseline command.\nVERDICT write_paths: source prompt.txt:84-89 grants the evidence-fragment directory, and fe1c274372bdfe1d7bfe527a0e69440db6561f03 changes only its assigned HTML fragment.\nVERDICT manifest: source manifest.md restores the resolvable base SHA, test logs and negative-control path requested by the earlier review, but its baseline_suite.command remains PYTHONPATH_SEE_MANIFEST rather than the command recorded in logs/baseline-suite.log:3.\nVERDICT diff: read the sole new commit fe1c274372bdfe1d7bfe527a0e69440db6561f03 against previously reviewed 5ae25099ba7a08b6cbbee940df6974899c65d4e7; five added HTML lines create the suite-arms section and no executable definitions or assertions change.\nCALL_SITES: reckon/evidence.py:compose_landed_record:1362, reckon/evidence.py:_fragment_body_bytes:1315\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 adds the missing suite-arm account and leaves the previously verified test repair intact.\nSCORE evidence: 17\nJUSTIFICATION evidence: the new fragment paragraph at line 33 agrees with both raw 58-passed EXIT=0 logs, but source manifest.md:15 does not record its baseline command literally as the source contract requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the complete incremental diff changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:28-33 within the declared directory.\nSCORE durability: 16\nJUSTIFICATION durability: the raw suite logs durably establish zero added failures, but the documentation-only addition at the fragment's lines 30-33 adds no assertion that would fail if its arm account disappeared.\nSCORE fit: 20\nJUSTIFICATION fit: the new section and code-marked command at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 follow the fragment's existing HTML evidence idiom and introduce no source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-undeclared-project-shares-its-source-file.html:30-33 adds only evidence prose consumed by the existing reckon/evidence.py:compose_landed_record owner and introduces no duplicated function, class or module.\nFINDING manifest.md:15 blocking: baseline_suite.command is the placeholder PYTHONPATH_SEE_MANIFEST; replace it with the literal command already recorded in logs/baseline-suite.log:3 so the repaired structured receipt satisfies the dispatched command contract and can be replayed without inference.\n",
+  "reviewed_base_sha": "5ae25099ba7a08b6cbbee940df6974899c65d4e7",
+  "reviewed_head_sha": "fe1c274372bdfe1d7bfe527a0e69440db6561f03",
+  "reviewed_run_id": "r-20261115T224720287399-qwnw-red-file-an-undeclared-project-shares-its-source-file",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224720287399-qwnw-red-file-an-undeclared-project-shares-its-source-file/logs/after-suite.log",
+      "revision": "fe1c274372bdfe1d7bfe527a0e69440db6561f03"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224720287399-qwnw-red-file-an-undeclared-project-shares-its-source-file/logs/baseline-suite.log",
+      "revision": "d0d77f07e2dcc64d74713755aebe748602f9a06f"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T11:55:02.577611+00:00",
+  "total": 113
+}

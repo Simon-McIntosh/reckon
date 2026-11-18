@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline-arm.log:7 reads '58 passed in 34.16s' with EXIT=0 and after-arm.log:7 reads '60 passed in 57.96s' with EXIT=0, so the head adds two passing tests and no failing id to the baseline's set",
+  "completed_at": "2026-11-17T14:10:49.724Z",
+  "dispatched_at": "2026-11-17T14:10:07Z",
+  "findings": [
+    {
+      "file": "tests/test_an_admission_receipt_names_its_reads.py",
+      "line": 227,
+      "severity": "non-blocking",
+      "summary": "line 226 and line 227 assert nothing different \u2014 'assert receipt[\"waits_seconds\"] is not None' appears twice back to back, so the second line adds no guard while a reader counts two independent checks; one of the pair should go"
+    },
+    {
+      "file": "reckon/crew/admission/service.py",
+      "line": 181,
+      "severity": "non-blocking",
+      "summary": "_READ_SOURCES names writes as well as reads: 'reckon.crew.runs._mutate_pointer' (labelled 'pointer writes', line 181) and 'reckon.crew.admission.holds._record_pass_hold' (line 195) are writes, and their seconds are reported under a receipt field named 'reads', so a reader summing the named reads counts the time the stage spent writing, and the receipt's own vocabulary misstates what those seconds bought"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111344100542-an-admission-receipt-names-its-reads/scoped-gate-1794923248827103490.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "summary": "the gate ran on 98dci4-clu-3144, which sinfo reports on partition all_debug, while the done_when names the temporary-home run as being on rigel; the measure was taken on a host the section does not name, so the population the section fixes and the grep-able host are not the same claim"
+    }
+  ],
+  "plan": "dispatch-admission-and-landing-take-seconds",
+  "plan_section": "s7",
+  "plan_slug": "dispatch-admission-and-landing-take-seconds",
+  "project": "reckon",
+  "review_run_id": "r-20261117T140745576604-review-of-an-admission-receipt-names-its-reads-38755d08ba26",
+  "review_text": "VERDICT goal: the goal is to carry each read with its count and time inside the release and wait stages of the existing per-pass receipt, and reckon/crew/admission/service.py:207-330 adds the tally that measures them, with service.py:419 and service.py:487 opening it around the release stage and reckon/crew/admission/selection.py:128-138 around the wait stage.\nVERDICT done_when: the done_when asks one pass over a temporary crew home of 240 pointers and 80 requests whose per-read times sum to each stage's own time within 5 % with every read named, a receipt with one read omitted failing that check, ten live post-landing receipts with their largest read named, and importers adding no failure against the base; tests/test_an_admission_receipt_names_its_reads.py:220 and :238-253 assert the population, both 5 % sums and the named reads, :265-268 asserts the gate can fail on an omitted read, the arms show 58 passed at the base and 60 at the head with EXIT=0, and the ten live receipts are not collected \u2014 the run defers them under outside_scope because the live service loads the installed checkout rather than this worktree.\nVERDICT write_paths: the node's declared paths at the head revision, read from its live pointer, are reckon/crew/admission/service.py, tests/test_an_admission_receipt_names_its_reads.py, reckon/crew/admission/selection.py, reckon/crew/admission/verdicts.py, docs/evidence/fragments/dispatch-admission-and-landing-take-seconds/an-admission-receipt-names-its-reads.html and docs/figures/dispatch-admission-and-landing-take-seconds/an-admission-receipt-names-its-reads, and the diff touches exactly the four code paths, with neither docs path written.\nVERDICT manifest: read at runs/r-20261117T111344100542-an-admission-receipt-names-its-reads/manifest.md; it reports status complete, both suite arms at exit_status 0 with failure_count 0, the negative control at negative-control.log as 2 failed with EXIT=1, the single-file gate command under the absolute interpreter, and the ten deferred live receipts under outside_scope.\nVERDICT diff: read commit by commit from 4b7aa8a071ed10e619d95fdacdaa5e644d04b548 to 38755d08ba26f7d2509a360adae7a907062ff572 \u2014 fb9902880696 adds _READ_SOURCES, _ReadTally, _read_tally, _record_stage_reads plus the two stage wrappers and the 'reads' field on the pass record, and 38755d08ba grows the test fixture to the measured population and carries a formatting-only hunk in service.py; 440 lines added across four files, nothing the goal does not imply.\nCALL_SITES: reckon/crew/admission/selection.py:128, reckon/crew/admission/selection.py:138, reckon/crew/admission/service.py:419, reckon/crew/admission/service.py:487, reckon/crew/admission/verdicts.py:495\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/admission/verdicts.py:495 carries result.get(\"reads\") onto the pass record the verdict log writes, so both stages' rows reach the receipt a reader opens, and tests/test_an_admission_receipt_names_its_reads.py:168 proves one line lands.\nSCORE evidence: 15\nJUSTIFICATION evidence: the marked measure is asserted rather than claimed \u2014 scoped-gate-1794923248827103490.log:7 reads '60 passed in 61.59s' and the log ends EXIT=0 \u2014 but the done_when's ten live post-landing receipts are uncollected and its rigel host is not the all_debug host the gate log names at :3.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (service.py, selection.py, verdicts.py, tests/test_an_admission_receipt_names_its_reads.py) is inside the write_paths the run's live pointer records, and 38755d08ba's service.py hunk is a formatting pass over the same function.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_admission_receipt_names_its_reads.py:238 compares the receipt's per-read sum against release_seconds and waits_seconds, which are clocked independently of the tally, so reinstating the dropped or double-counted read reddens it \u2014 the recorded mutation at negative-control.log shows both tests failing, 2 failed, EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/admission/service.py:264 keeps the module's contextmanager idiom and private cross-module reach that selection.py:126-138 already used for _release, _verdicts and _reviews, and no added name carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/ found reckon/crew/run_time_profile.py (ledger-derived run wall times), reckon/crew/dispatch_batch.py:175-283 (module-attribute patching for caching, no timing) and reckon/crew/runs.py:1447 resolution_scope (path memoisation, no timing), and no owner records a callable's count and seconds, so _ReadTally at service.py:207 is the first.\nFINDING tests/test_an_admission_receipt_names_its_reads.py:227 non-blocking: lines 226 and 227 assert the same expression, so the second adds no guard while reading as a second independent check.\nFINDING reckon/crew/admission/service.py:181 non-blocking: _mutate_pointer and _record_pass_hold (:195) are writes reported under a field named reads, so the receipt's vocabulary misstates what the stage's seconds bought.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T111344100542-an-admission-receipt-names-its-reads/scoped-gate-1794923248827103490.log:3 non-blocking: the gate ran on 98dci4-clu-3144, which sinfo reports on all_debug, while the done_when names rigel as the host of the temporary-home run.",
+  "reviewed_base_sha": "4b7aa8a071ed10e619d95fdacdaa5e644d04b548",
+  "reviewed_head_commits": [
+    "fb99028806962fc9b2817b9e19feb5b843811f53",
+    "38755d08ba26f7d2509a360adae7a907062ff572"
+  ],
+  "reviewed_head_sha": "38755d08ba26f7d2509a360adae7a907062ff572",
+  "reviewed_run_id": "r-20261117T111344100542-an-admission-receipt-names-its-reads",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T14:23:55.076057+00:00",
+  "total": 108
+}

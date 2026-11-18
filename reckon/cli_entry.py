@@ -370,10 +370,21 @@ def _configure_crew_guards(
 
 
 
+# Crew configuration and tracked review history establish crew ownership.
+# Static-site metadata is shared by projects without a crew.
+_CREW_STATE_MARKERS = ("flight.yaml", "crew.json")
+
+
 def _crew_state_exists(docs_dir: Path, project: str) -> bool:
-    """Return whether the synced project carries repository-local crew state."""
+    """Return whether the synced project carries repository-local crew state.
+
+    Review history keeps a checkout recognisable without a run ledger;
+    project metadata written by a static build alone does not.
+    """
     state_dir = docs_dir / "state" / project
-    return (state_dir / "crew.json").is_file() or (state_dir / "flight.yaml").is_file()
+    return (state_dir / "reviews").is_dir() or any(
+        (state_dir / marker).is_file() for marker in _CREW_STATE_MARKERS
+    )
 
 
 

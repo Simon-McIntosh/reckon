@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="wftl-a-finished-workers-processes-end-codex">
+<meta name="plan-title" content="Terminal workers release their process trees">
+<meta name="plan-summary" content="Four terminal process-tree cases meet the one-minute exit bound; natural exit records no forced cleanup.">
+<meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+<meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s74">
+<meta name="plan-commits" content="bc4aae395e624cff468fb956822e96b21077801f,dd003bc93b114dd852ac2b591b7fc772391ca8f5">
+<meta name="plan-recorded-at" content="2026-11-15">
+<meta name="plan-verdict" content="recorded">
+<title>Terminal workers release their process trees | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="wftl-a-finished-workers-processes-end-codex-record" data-node="wftl-a-finished-workers-processes-end-codex" data-reckon="landed">
+<h2 id="wftl-a-finished-workers-processes-end-codex-outcome">A terminal run drains its launch tree</h2>
+<p><code>reckon/crew/dispatch_launch.py</code> caps the terminal delivery grace and the continuously rewritten manifest ceiling at 30 seconds, retaining the existing 10-second signal escalation. A terminal pointer sets a monotonic deadline for its current attempt. That deadline and the signal clock survive adoption of children, so the harness exiting after SIGTERM cannot restart the grace for its descendants. An override can shorten the grace but cannot extend the bound.</p>
+<p>A terminal harness that crashes before the supervisor signals it also drains its descendants. The supervisor retains the harness PID and wait status while collecting those children. Its exit receipt carries <code>forced_exit.reason=terminal-run</code>, the terminal phase and the signal time only when it intervened; the existing <code>ended_pids</code> and sender records identify the processes actually signalled. Natural exit leaves <code>ended_pids=[]</code> and no <code>forced_exit</code> or sender record.</p>
+<h3 id="wftl-a-finished-workers-processes-end-codex-measure">Measurements on all_debug</h3>
+<table>
+<thead><tr><th>Check</th><th>Receipt</th></tr></thead>
+<tbody>
+<tr><td>Armed base at <code>5dae31ed3697400c2bd8f12b8057f977e017d863</code></td><td>58 passed in 34.54s; EXIT=0</td></tr>
+<tr><td>Base control: complete pointer with a lingering harness, detached child and grandchild</td><td>1 failed in 63.70s (0:01:03); EXIT=1</td></tr>
+<tr><td>Crash-after-delivery control at the first product head</td><td>1 failed in 61.60s (0:01:01); EXIT=1</td></tr>
+<tr><td>Behavioral gate at <code>dd003bc93b114dd852ac2b591b7fc772391ca8f5</code></td><td>64 passed in 234.39s (0:03:54); EXIT=0</td></tr>
+<tr><td>Focused lint and format delta</td><td>2 baseline findings, the same 2 head findings, 0 added; both changed files formatted</td></tr>
+</tbody>
+</table>
+<p><code>tests/test_finished_worker_processes_end.py</code> runs a real supervisor in a temporary crew home. Each tree first proves its supervisor, harness, detached child and grandchild are present. Four cases require the entire tree gone within 60 seconds after reading a complete pointer: ignored SIGTERM, the harness exiting on SIGTERM while descendants ignore it, repeated manifest writes, and a harness crash after delivery. Each also checks physical removal of the PID entries, the harness identity in the supervisor receipt, the forced-exit reason, the signalled descendants and a delivered sender record. Separate cases verify natural exit without a forced-exit record and the cap on a 3,600-second grace override.</p>
+<p>The base control reports <q>terminal run still owns live processes after one minute</q>, naming four previously observed processes. The crash control leaves two descendants alive after the same bound. Fixture cleanup enumerates and ends only its owned survivors; peers and services are outside that set.</p>
+<p>Logs are preserved under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T104113891056-wftl-a-finished-workers-processes-end-codex/</code>: <code>baseline-suite.log</code>, <code>negative-control.log</code>, <code>crash-negative-control.log</code>, <code>product-gate.log</code> and <code>static-checks.log</code>. Every gate log names its revision, tree, command and imported module, and ends with the captured <code>EXIT=</code> receipt. The manifest binds the final armed census replay and related-test delta to their logs.</p>
+</article>
+</body>
+</html>

@@ -400,6 +400,12 @@ def test_star_import_retains_every_public_name():
 def test_modules_fit_the_worker_window():
     package = Path(queue_admission.__file__).with_name("admission")
     paths = sorted(package.glob("*.py"))
-    assert {path.stem for path in paths} == {*SURFACE, "__init__"}
+    assert {path.stem for path in paths} == {
+        *SURFACE,
+        "__init__",
+        "interrupted",
+        "attempts",
+        "review_sweep",
+    }
     for path in [Path(queue_admission.__file__), *paths]:
         assert len(path.read_text().splitlines()) <= 2000, path.name

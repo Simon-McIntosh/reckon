@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextvars
+import threading
 
 from . import holds as _holds
 from . import release as _release
@@ -83,7 +84,30 @@ def _plan_tree_fingerprint(docs_dir: str | Path | None) -> tuple[int, int, str]:
     return (newest, count, head)
 
 
+class ReadinessCache(dict):
+    """Share one derivation across concurrent launches in the same pass."""
+
+    def __init__(self):
+        super().__init__()
+        self.lock = threading.RLock()
+
+
 def _readiness_rows(
+    project,
+    docs_dir,
+    cache,
+    plan="",
+    refs=(),
+    *,
+    inventory_only=False,
+):
+    with getattr(cache, "lock", contextlib.nullcontext()):
+        return _readiness_rows_unlocked(
+            project, docs_dir, cache, plan, refs, inventory_only=inventory_only
+        )
+
+
+def _readiness_rows_unlocked(
     project: str,
     docs_dir: str | Path | None,
     cache: dict[str, Any],
@@ -161,7 +185,12 @@ def _readiness_rows(
 
         if not project:
             return {}, {}
-        discovered = _discover_project(project, None)
+        from reckon.roadmap import roadmap_build_scope
+
+        # The waits a pass judges read section verdicts, never findings, so the
+        # project build skips coordinator resolution and the landing audit.
+        with roadmap_build_scope(resolve_coordinators=False, audit_landings=False):
+            discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
         for item in items:
             if item.get("type") != "plan" or not item.get("slug"):
@@ -505,23 +534,31 @@ def _manifest_status(run_id: str, *, issues: list[str] | None = None) -> str:
 
 
 def _ledger_run_rows(
-    project: str, cache: dict[str, Any] | None
+    project: str, plan: str, cache: dict[str, Any] | None
 ) -> list[Mapping[str, Any]] | None:
-    """One project's committed run rows, or ``None`` when they cannot be read.
+    """One plan's committed run rows, or ``None`` when they cannot be read.
 
     The index is keyed on the project's write generation, which every ledger
     write path bumps, so a promotion recorded before this read is in the index
     this read gets back rather than only in the documents behind it. Reading
     through it is therefore both current and cheaper than walking the project's
     run documents on every pass.
+
+    The read names the plan it is asked about. A verdict about one section
+    matches rows by that section's plan and nothing else, so a project-wide
+    read decodes every run the project has ever recorded to reach the handful
+    that can match — a pass pays that decode once per project and keeps the
+    rows for its own length. Bounding here is what keeps a long-lived service's
+    footprint flat: the store selects the plan's rows in SQL and decodes only
+    those.
     """
     from reckon import ledger
 
-    key = (_SECTION_RUNS_CACHE_KEY, project)
+    key = (_SECTION_RUNS_CACHE_KEY, project, plan)
     if cache is not None and key in cache:
         return cache[key]
     try:
-        data, _version = ledger.load(project)
+        data, _version = ledger.load(project, plan=plan)
         rows: list[Mapping[str, Any]] | None = [
             row for row in data.get("runs") or () if isinstance(row, Mapping)
         ]
@@ -565,15 +602,20 @@ def _section_run_unlanded(
 
     wanted = section_record_id(section)
 
+    from reckon import ledger
+
     def identifies(record: Mapping[str, Any]) -> bool:
         node = record.get("node")
         if not isinstance(node, Mapping):
             node = {}
-        plan = str(node.get("plan") or record.get("plan") or "")
+        # A live pointer carries its plan on the node it names; a ledger row
+        # carries it on its own field or on the dispatch detail a brief left,
+        # and the resolver is the one owner of that answer.
+        plan = str(node.get("plan") or "") or ledger.row_plan(record)
         held = section_record_id(node.get("section") or record.get("section") or "")
         return plan == slug and held == wanted
 
-    rows = _ledger_run_rows(project, cache)
+    rows = _ledger_run_rows(project, slug, cache)
     if rows is None:
         # A ledger that cannot be read says nothing about what was promoted, so
         # a landing is unknown rather than absent. Holding is the answer

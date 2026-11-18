@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -136,7 +137,7 @@ def test_independent_functions_both_land(deliveries):
     for run in (first, second):
         result = _complete_land(run)
         assert result.exit_code == 0, result.output
-        receipt = json.loads(result.output)
+        receipt = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
         assert receipt["steps"]["land"]["pushed"], receipt
         assert_clean(run["repository"])
     content = git(second["repository"], "show", "main:" + SOURCE)
@@ -210,7 +211,7 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
     if route == "manual":
         result = _complete_land(second)
         assert result.exit_code != 0, result.output
-        receipt = json.loads(result.output)
+        receipt = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
         assert receipt["steps"]["promote"]["ok"]
         assert receipt["steps"]["land"]["outcome"] == "merge-conflict"
     else:
@@ -296,7 +297,9 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
         if route == "manual":
             refused = _complete_land(second)
             assert refused.exit_code != 0, (evidence, refused.output)
-            row = json.loads(refused.output)["pending_landings"][0]
+            row = json.loads(
+                Path(json.loads(refused.output)["record_path"]).read_text()
+            )["pending_landings"][0]
         else:
             row = queue_landing.land_once()["interrupted_landings"][0]
         assert row["status"] == "repair-gate-refused", (evidence, row)
@@ -318,7 +321,9 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
         assert git(second["origin"], "rev-parse", "main") == remote_before
         result = _complete_land(second)
         assert result.exit_code == 0, result.output
-        finished = json.loads(result.output)["pending_landings"][0]
+        finished = json.loads(
+            Path(json.loads(result.output)["record_path"]).read_text()
+        )["pending_landings"][0]
     else:
         result = queue_landing.land_once()
         finished = result["interrupted_landings"][0]

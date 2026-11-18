@@ -1,0 +1,6 @@
+<article id="wftl-two-queue-tests-set-their-own-local-lane-codex-result">
+<h3>Queue fixtures declare their own local lane</h3>
+<p>Both fixtures write a flight under their temporary crew home and bind <code>RECKON_FLIGHT_CONFIG</code> to that file. The live view resolves its queued lane there; admission uses the same locally declared configuration as its fixture. The admission-order assertion reads the stored request through <code>runs.dispatch_field</code>, which supports dispatch detail stored outside the live pointer.</p>
+<p>On <code>all_debug</code>, the base recorded <strong>2 failed, 62 passed in 40.13s</strong>; the repaired source recorded <strong>64 passed in 38.59s</strong>. Both named base failures are absent at the repaired head, with zero added failures. All 28 assertion expressions are unchanged, including the expected request order; both ordering-refusal cases pass. Ruff check and ruff format --check are clean.</p>
+<p>Base <code>c2dae66a4e0478ae6e0dc4983793c70739dda1d0</code>; repaired source <code>0957e6f9674d71d72e94c7c32f8803d8799fc70f</code>. The <a href="/reckon/evidence/fragments/work-flows-to-the-lane/queue-tests-local-lane.html">before-and-after receipts</a> preserve the failure and successful runs. Scheduler jobs: 1317960 and 1317973, both on <code>all_debug</code>.</p>
+</article>

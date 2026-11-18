@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-15T15:46:25.482Z",
+  "dispatched_at": "2026-11-15T15:31:41Z",
+  "figure": "docs/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.svg",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "cosmetic arrowhead joins in a process diagram; every branch still reads to its box",
+      "recorded_at": "2026-11-15T17:01:13.131752+00:00"
+    }
+  },
+  "findings": [
+    {
+      "disposition": "exempted",
+      "disposition_note": "Exempted: the branch still reads as gate to box and every label is whole, so the defect costs a reader nothing. The work belongs in the drawing script's arrow helper, not in this run's evidence record.",
+      "file": "docs/figures/history-persists-as-detail-washes-out/ledger-reads-the-store-s22/source-precedence.py",
+      "line": 39,
+      "severity": "non-blocking",
+      "summary": "Every bend of a branch is drawn as its own annotate call, so each of a branch's three segments carries its own arrowhead and shrinks back from its neighbour: a reader sees one head end in mid-air below the gate (pointing at the branch line rather than at a box) and another head at each elbow pointing along the horizontal into the corner, with a 4-5 px break before the short vertical stub that enters the box. Both branches are affected: on the no branch the horizontal head's tip is at x=1033 and the vertical stub runs at x 1038-1041, and on the yes branch the horizontal head's tip is at x=525 against the stub at x 518-521. The routing still reads - gate, yes/no, then the box each arm lands in - so this does not hold the node; one arrowhead per branch, placed at the path end rather than per segment, would remove it."
+    }
+  ],
+  "note": "Judged only from the attached PNG named in this review, opened with the Read tool and then measured pixel by pixel; no SVG was opened, read, searched or rendered, and no other image was opened. The attached PNG is a 1400x720 RGBA raster with alpha 255 everywhere (the figure's 14 x 7.2 in canvas at 100 dpi). Read-only review: no file was edited, created, moved, deleted, redrawn, relabelled or reformatted, including the figure, its SVG and its caption; the only files written are the two declared review records. RUBRIC legibility: Passes. RUBRIC data_ink: Passes. RUBRIC decoration: Passes. RUBRIC contrast: Passes. RUBRIC table_form: Passes. RUBRIC label_collision: Passes. Measurements behind the verdicts: every glyph renders (14,349 px of #5f5f5f note text, 5,156 px of #1a1a1a heading text, 6,855 px of #2f6fa8 accent text and 36 px of the #b23c3c failed-arm dot), so the blank-box failure the review at 4bc9d8bf1d recorded is not present at this head. Ink spans x 39-1301 and y 23-646 on the 1400x720 canvas, leaving at least 39 px to every edge, so nothing is clipped. Ink falls into eight disjoint row bands (23-198, 202-326, 335-354, 385-502, 513-534, 547-566, 587-606, 627-646), so no label overlaps another; inside the note box the four text lines occupy x 61-1087 and y 391-488 within a box spanning x 39-1260 and y 386-502, leaving 5 px above the first line and 173 px to the right of the longest line, and the three arm rows all start at x=48 with their dots at x 48-55, so the list is left-aligned as drawn. The caption in docs/evidence/fragments/history-persists-as-detail-washes-out/ledger-reads-the-store-s22.html reads 'Both sources answer one population, run id by run id. The three arms beneath the drawing are the measured runs in the second table.' - it does not merely repeat the drawing's own heading, so no caption finding is recorded. The three arms are a short dot-and-text list, not a table of columns, and the reader-coverage table the caption points at is set in the fragment rather than in the figure.",
+  "project": "reckon",
+  "review_run_id": "r-20261115T152949095586-review-of-ledger-reads-the-store-s22-34158070bdc4-figure",
+  "reviewed_base_sha": "3eee72acf0810f999bbf3a5a70e8f95a188f421a",
+  "reviewed_head_sha": "34158070bdc412fa8853e0e97becaff894859024",
+  "reviewed_image": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T152949095586-review-of-ledger-reads-the-store-s22-34158070bdc4-figure/image-0.png",
+  "reviewed_run_id": "r-20261115T102552534698-ledger-reads-the-store-s22",
+  "rubric": "figure",
+  "rubric_items": {
+    "contrast": "Passes. Every label is dark on white: headings #1a1a1a measure 17.4:1, notes #5f5f5f 6.4:1 and blue accent text #2f6fa8 5.3:1, all clear of 4.5:1 for body text, and the 'yes' branch label is #5f5f5f and the 'no' label #2f6fa8, both readable on the white ground. The grey #929292 is used only for marks (a connector, the per-run box outline and one arm's dot, 3.1:1 against white), never for text.",
+    "data_ink": "Passes. The ink carries the drawing and nothing else: two reader boxes feeding the 'any *.json in runs/ ?' gate, the yes and no branches beneath it, the two destination boxes, one explanatory sentence, a four-line note block and three dot-and-text rows for the measured arms. There is no chart chrome, no grid, no legend frame and no redundant mark; the 3 pt blue outline on the run-store box is the one highlighted path, which is the subject the figure exists to show.",
+    "decoration": "Passes. The canvas, all four boxes and the note block are plain white; the note block carries a thin #cccccc outline and nothing else. There is no gradient, background fill, shading, drop shadow or styled theme anywhere in the render, and the only filled marks are the three 8 px arm dots, which encode the reverted read, the base arm and the head arm.",
+    "label_collision": "Passes. No label is clipped and none overlaps another label or the data. Ink stays at least 39 px inside every canvas edge, the eight text bands are disjoint, the 'yes' and 'no' labels sit above their branch lines with clear space between text and stroke, and no box label touches an outline: the tightest clearance measured is 5 px between the note block's first line and its top border, with every other text-to-edge margin larger.",
+    "legibility": "Passes. Readable at a glance: 'ledger readers' over its two reader lines, an arrow into the gate question, the yes and no branches, the two titled boxes 'per-run documents + aggregate' and 'run store' with the rule each follows beneath its title, one sentence stating that both sources answer one population, and the three measured arms as a left-aligned dot-and-text list whose revisions and pass counts are legible without magnification.",
+    "table_form": "Passes. The image is a source-precedence drawing rather than a table dressed as boxes: it shows which source answers a reader and no column of values. The three arms are three one-line statements with a coloured dot, and the reader-coverage table the caption points at lives in the evidence fragment, so the figure does not reproduce tabular data."
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T17:02:21.941049+00:00",
+  "total": null
+}

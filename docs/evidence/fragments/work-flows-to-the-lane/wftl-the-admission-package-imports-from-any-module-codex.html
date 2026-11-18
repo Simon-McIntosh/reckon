@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s77">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <title>Admission modules import independently | reckon</title>
+</head>
+<body>
+<article id="wftl-the-admission-package-imports-from-any-module-codex-record" data-node="wftl-the-admission-package-imports-from-any-module-codex" data-reckon="landed">
+  <h2>Admission modules import independently</h2>
+  <p>Selection resolves <code>_attempts.LaunchBatch</code> when an admission pass runs. Importing the attempts module first can therefore finish loading its dependencies before its launch-batch class is needed.</p>
+  <p>The regression test starts a fresh interpreter for each of the 15 admission module files, imports that module first, requires exit code zero, and checks that its source path belongs to this worktree.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base inventory gate at a7f049093c62b22bd5f69246c292b6bbd27de6b4</td><td>58 passed in 36.64s; EXIT=0</td></tr>
+      <tr><td>Fresh-interpreter test against base product source</td><td>1 failed, 14 passed in 9.57s; EXIT=1</td></tr>
+      <tr><td>Armed head gate at cdd4f9dc176c55e02970ef8d07dfc48a57b40f39</td><td>73 passed in 48.18s; EXIT=0; all 15 import cases pass</td></tr>
+      <tr><td>Free-slot and bounded-pass compatibility files</td><td>12 passed in 36.64s; EXIT=0</td></tr>
+      <tr><td>Ruff on the two changed Python paths</td><td>All checks passed; 2 files already formatted; EXIT=0</td></tr>
+    </tbody>
+  </table>
+  <p>The <a href="/reckon/evidence/fragments/work-flows-to-the-lane/admission-imports.html#wftl-the-admission-package-imports-from-any-module-codex-negative-control">negative-control runner log</a> records <code>test_admission_module_imports_first[attempts]</code> failing with <code>ImportError: cannot import name 'LaunchBatch' from partially initialized module 'reckon.crew.admission.attempts'</code>. The other 14 cases establish that the instrument reaches working module imports.</p>
+  <p>Tests ran in separate <code>all_debug</code> jobs. Durable logs are under <code>~/.config/reckon/crew/runs/r-20261115T141001803536-wftl-the-admission-package-imports-from-any-module-codex/</code>: <code>baseline.log</code>, <code>negative-control.log</code>, <code>head.log</code>, <code>compatibility.log</code>, and <code>lint.log</code>. The delivery manifest records the literal commands, revisions and completed receipts.</p>
+  <p>This record covers the import repair and its focused checks. Coordinator integration, merged-result verification and the broader fleet occupancy measure remain separate work.</p>
+</article>
+</body>
+</html>

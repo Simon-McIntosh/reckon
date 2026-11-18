@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:carry_review_forward",
+    "reckon/clones.py:own_changed_paths",
+    "reckon/crew/runs.py:read_pointer"
+  ],
+  "completed_at": "2026-11-16T14:45:40.643Z",
+  "dispatched_at": "2026-11-16T14:45:21Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_is_not_carried_over_its_own_deliverable.py",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture docstring calls the checkout \"a clone of a bare origin\" while lines 95-97 initialise a repository and push it to a bare origin they create, so the sentence written to explain the precondition names a provenance the test never has."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states ruff check and ruff format --check report nothing new on the changed path, but the run directory holds no ruff log and manifest.md test_logs names only the four pytest logs, so that clause of the done_when is asserted rather than measured."
+    },
+    {
+      "file": "manifest.md",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's first step, merge the current origin/main and rerun, was not taken, so the gate at a8fdea6d2c sits on base 52f2055b, 167 commits behind primary HEAD 655a2be, and the recorded pass does not cover the branch the goal names, though no module the file exercises changed for the symbols it calls."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 52f2055b, where a8fdea6d2c adds a docstring and a bare origin with its push at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:61,95-97 and 33b2491e0e adds 42 lines of fragment; no product file and no assertion changed.",
+    "done_when": "the done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, no weakened assertion, an arm adding no failure, a negative control beside the head run and ruff reporting nothing new; I read logs/head-gate-a8fdea6d2c.log at \"4 passed\" EXIT=0 and logs/negative-control-base-52f2055b.log at \"4 failed\" EXIT=1 with the four ids, and found no ruff receipt.",
+    "goal": "the goal is that tests/test_a_review_is_not_carried_over_its_own_deliverable.py pass in full on the primary branch, and the landed commits change only that file's fixture (tests/test_a_review_is_not_carried_over_its_own_deliverable.py:91-97) plus a docs fragment, with the gate reading 4 passed at a8fdea6d2c.",
+    "manifest": "read at the run's manifest.md; it states one cause with verdict test-wrong, commits a8fdea6d2c and 33b2491e0e, the gate command with its log, both arms at 58 passed EXIT=0 on either side, and 0 added failures.",
+    "write_paths": "the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both changed files \u2014 tests/test_a_review_is_not_carried_over_its_own_deliverable.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable.html \u2014 sit inside them."
+  },
+  "justifications": {
+    "durability": "removing the origin push added at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:95-97 is exactly the state logs/negative-control-base-52f2055b.log measures at 4 failed, and every path assertion at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:184,192,232,238 compares a git-derived value against a literal.",
+    "evidence": "the pytest gate, the base negative control and both arms are logged and reconcile with manifest.md, but the ruff clause of the done_when has no log at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable.html:36.",
+    "fit": "the added fixture lines follow the inline bare-origin idiom of tests/test_a_review_reads_only_its_runs_changes.py:60, but the docstring at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:61 calls the checkout a clone of a bare origin, and no clone is made.",
+    "goal_fidelity": "the file reads 4 passed EXIT=0 at a8fdea6d2c in the run's logs/head-gate-a8fdea6d2c.log, and the repair is the fixture at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:95-97 rather than a product rule.",
+    "reuse": "the search over tests/helpers and tests/conftest.py found no general owner for a repository with an integration ref, since tests/helpers/landing_repository.py:24 builds one only for landing fixtures, so the four added lines extend the inline convention of tests/test_a_review_reads_only_its_runs_changes.py:60 rather than duplicating an owner.",
+    "scope_discipline": "the two files the diff changes are both inside the declared write paths, and a8fdea6d2c touches no product file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT call_sites: verified 3 production call site(s)\nVERDICT diff: read both commits against base 52f2055b, where a8fdea6d2c adds a docstring and a bare origin with its push at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:61,95-97 and 33b2491e0e adds 42 lines of fragment; no product file and no assertion changed.\nVERDICT done_when: the done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, a per-cause verdict, no weakened assertion, an arm adding no failure, a negative control beside the head run and ruff reporting nothing new; I read logs/head-gate-a8fdea6d2c.log at \"4 passed\" EXIT=0 and logs/negative-control-base-52f2055b.log at \"4 failed\" EXIT=1 with the four ids, and found no ruff receipt.\nVERDICT goal: the goal is that tests/test_a_review_is_not_carried_over_its_own_deliverable.py pass in full on the primary branch, and the landed commits change only that file's fixture (tests/test_a_review_is_not_carried_over_its_own_deliverable.py:91-97) plus a docs fragment, with the gate reading 4 passed at a8fdea6d2c.\nVERDICT manifest: read at the run's manifest.md; it states one cause with verdict test-wrong, commits a8fdea6d2c and 33b2491e0e, the gate command with its log, both arms at 58 passed EXIT=0 on either side, and 0 added failures.\nVERDICT write_paths: the node was fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both changed files \u2014 tests/test_a_review_is_not_carried_over_its_own_deliverable.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable.html \u2014 sit inside them.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:carry_review_forward, reckon/clones.py:own_changed_paths, reckon/crew/runs.py:read_pointer\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the file reads 4 passed EXIT=0 at a8fdea6d2c in the run's logs/head-gate-a8fdea6d2c.log, and the repair is the fixture at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:95-97 rather than a product rule.\nSCORE evidence: 15\nJUSTIFICATION evidence: the pytest gate, the base negative control and both arms are logged and reconcile with manifest.md, but the ruff clause of the done_when has no log at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable.html:36.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two files the diff changes are both inside the declared write paths, and a8fdea6d2c touches no product file.\nSCORE durability: 19\nJUSTIFICATION durability: removing the origin push added at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:95-97 is exactly the state logs/negative-control-base-52f2055b.log measures at 4 failed, and every path assertion at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:184,192,232,238 compares a git-derived value against a literal.\nSCORE fit: 17\nJUSTIFICATION fit: the added fixture lines follow the inline bare-origin idiom of tests/test_a_review_reads_only_its_runs_changes.py:60, but the docstring at tests/test_a_review_is_not_carried_over_its_own_deliverable.py:61 calls the checkout a clone of a bare origin, and no clone is made.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over tests/helpers and tests/conftest.py found no general owner for a repository with an integration ref, since tests/helpers/landing_repository.py:24 builds one only for landing fixtures, so the four added lines extend the inline convention of tests/test_a_review_reads_only_its_runs_changes.py:60 rather than duplicating an owner.\nFINDING tests/test_a_review_is_not_carried_over_its_own_deliverable.py:61 non-blocking: the fixture docstring calls the checkout \"a clone of a bare origin\" while lines 95-97 initialise a repository and push it to a bare origin they create, so the sentence written to explain the precondition names a provenance the test never has.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable.html:36 non-blocking: the fragment states ruff check and ruff format --check report nothing new on the changed path, but the run directory holds no ruff log and manifest.md test_logs names only the four pytest logs, so that clause of the done_when is asserted rather than measured.\nFINDING manifest.md:3 non-blocking: the done_when's first step, merge the current origin/main and rerun, was not taken, so the gate at a8fdea6d2c sits on base 52f2055b, 167 commits behind primary HEAD 655a2be, and the recorded pass does not cover the branch the goal names, though no module the file exercises changed for the symbols it calls.\n",
+  "review_run_id": "r-20261116T134034977662-review-of-qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable-33b2491e0e99",
+  "reviewed_base_sha": "52f2055b65a61a81b796c7e5e315e5a003801a59",
+  "reviewed_head_sha": "33b2491e0e9924ab26481027443e96e9cb3fac26",
+  "reviewed_run_id": "r-20261116T104613229366-qwnw-red-file-a-review-is-not-carried-over-its-own-deliverable",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T15:30:00Z",
+  "total": 109
+}

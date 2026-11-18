@@ -40,6 +40,7 @@ import json
 import sqlite3
 import sys
 import threading
+import uuid
 from collections.abc import Iterable, Mapping
 from contextlib import closing
 from datetime import UTC, date, datetime, timedelta
@@ -61,6 +62,14 @@ DAY_FILE_SUFFIX = ".sqlite3"
 # changed while its offset stayed put is recognised rather than missed.
 ANCHOR_BYTES = 64
 
+# How many stored documents one handle keeps decoded. Each is keyed by the text
+# it was decoded from, so a pass decodes a document only when that text moved;
+# the station reads the same fleet's documents on every tick, and decoding them
+# again was a measured per-tick read of the whole fleet. The cache is cleared
+# whole at its bound rather than evicted one entry at a time, because a fleet
+# that outgrew it is read once more and the next pass starts clean.
+DECODED_DOCUMENTS_LIMIT = 8192
+
 # How many UTC days of events the store keeps. A configuration value: the
 # station reads it once and hands it to the store.
 RETENTION_DAYS = 7
@@ -69,6 +78,11 @@ RETENTION_DAYS = 7
 HEARTBEAT_KEY = "heartbeat"
 CODE_IDENTITY_KEY = "code_identity"
 STARTED_AT_KEY = "started_at"
+# The name this store gave itself when it was opened, so a reader can tell a
+# store it has been reading from a different one opened at the same path. A
+# copy of a store carries it; a store created after the last one was lost does
+# not, and only the second case means the rows a reader already read are gone.
+STORE_IDENTITY_KEY = "store_identity"
 EVENT_COUNTER_KEY = "events_counter"
 EVENT_GENERATION_KEY = "events_generation"
 # The crew home this station reads from. A follower whose own home is not this
@@ -102,7 +116,10 @@ CREATE TABLE IF NOT EXISTS pointers (
     project    TEXT,
     session    TEXT,
     phase      TEXT,
-    fields     TEXT NOT NULL
+    fields     TEXT NOT NULL,
+    log_path   TEXT,
+    backend    TEXT,
+    dialect    TEXT
 );
 CREATE TABLE IF NOT EXISTS streams (
     path        TEXT PRIMARY KEY,
@@ -260,6 +277,15 @@ def _read_pointer_record(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _pointer_fields(raw: Any) -> Mapping[str, Any]:
+    """A stored pointer's fields as a mapping; an unreadable row has none."""
+    try:
+        record = json.loads(str(raw))
+    except ValueError:
+        return {}
+    return record if isinstance(record, Mapping) else {}
+
+
 def _unreadable_snapshot(
     record: Mapping[str, Any], error: BaseException
 ) -> dict[str, Any]:
@@ -381,6 +407,14 @@ class StationStore:
         self.database = self.root / DATABASE_NAME
         self.day_directory = self.root / DAY_DIRECTORY
         self._connection: sqlite3.Connection | None = None
+        # The decoded text of each stored document this handle has read, keyed
+        # by the document's kind and identity. A tick reads the same pointer
+        # fields, stored verdicts and fleet image on every pass, and only the
+        # documents that moved are decoded again.
+        self._decoded_documents: dict[tuple[str, str], tuple[str, Any]] = {}
+        # The device and inode of the database file this handle opened, so a
+        # reader can tell that the store at this path was replaced under it.
+        self._database_identity: tuple[int, int] | None = None
 
     @classmethod
     def at_runtime_root(
@@ -428,11 +462,79 @@ class StationStore:
         connection.execute("PRAGMA synchronous=NORMAL")
         connection.executescript(_SCHEMA)
         self._ensure_stream_columns(connection)
+        self._ensure_pointer_columns(connection)
         self._ensure_cursor_columns(connection)
         connection.commit()
         self._connection = connection
+        self._database_identity = self.database_identity()
         self._ensure_station_identity()
         return connection
+
+    def _decoded_document(self, kind: str, identity: str, text: str) -> Any:
+        """The decoded form of one stored document, decoded only when it moved.
+
+        ``kind`` and ``identity`` name the document — a pointer's path, a run's
+        id, a project's fleet image — and ``text`` is what the store holds for
+        it now. A tick reads these documents on every pass, and one whose text
+        is unchanged is the same document: decoding it again was a per-tick
+        read of the whole fleet that answered nothing new.
+        """
+        key = (kind, identity)
+        kept = self._decoded_documents.get(key)
+        if kept is not None and kept[0] == text:
+            return kept[1]
+        value = json.loads(text)
+        if len(self._decoded_documents) >= DECODED_DOCUMENTS_LIMIT:
+            self._decoded_documents.clear()
+        self._decoded_documents[key] = (text, value)
+        return value
+
+    def _remember_decoded(
+        self, kind: str, identity: str, text: str, value: Any
+    ) -> None:
+        """Keep a document this handle wrote already decoded.
+
+        A document the store itself just wrote was decoded before it was
+        written, so recording it here is what keeps a pass from decoding its
+        own output back on the next tick.
+        """
+        if len(self._decoded_documents) >= DECODED_DOCUMENTS_LIMIT:
+            self._decoded_documents.clear()
+        self._decoded_documents[(kind, identity)] = (text, value)
+
+    def database_identity(self) -> tuple[int, int] | None:
+        """The device and inode of the database file at this store's path now.
+
+        ``None`` when the path holds no file, which names no store rather than a
+        replaced one: the station may not have created its new one yet.
+        """
+        try:
+            status = self.database.stat()
+        except OSError:
+            return None
+        return (status.st_dev, status.st_ino)
+
+    def reconnect_if_replaced(self) -> bool:
+        """Reopen the store when the file at its path is no longer the one opened.
+
+        The store is node-local, so a runtime directory that was re-created
+        leaves a long-lived reader holding a connection to an unlinked
+        database. The station's new file is a different inode at the same path,
+        and ``PRAGMA data_version`` -- which moves only when another connection
+        commits to the database *this* connection has open -- never moves again,
+        so a generation gate reading it answers "nothing moved" for the reader's
+        whole life. Reopening is what lets it see the store that is there.
+
+        The probe is one ``stat`` beside the pragma the gate already pays for. A
+        file that is absent names no replacement, so nothing is reopened and the
+        next poll asks again.
+        """
+        current = self.database_identity()
+        if current is None or current == self._database_identity:
+            return False
+        self.close()
+        self.connect()
+        return True
 
     @staticmethod
     def _ensure_stream_columns(connection: sqlite3.Connection) -> None:
@@ -447,6 +549,48 @@ class StationStore:
             )
         if "anchor" not in columns:
             connection.execute("ALTER TABLE streams ADD COLUMN anchor BLOB")
+
+    @staticmethod
+    def _ensure_pointer_columns(connection: sqlite3.Connection) -> None:
+        """Add the fold's own columns to a store written before them.
+
+        A tick naming the streams it must fold read each pointer's fields to
+        learn the stream and the dialect to read it in, so a tick over an
+        unchanged fleet decoded the whole fleet's fields again for an answer it
+        already held. The three scalars the fold needs are columns, written
+        beside the fields by the one pass that decodes them -- the pointer's own
+        ingest, which happens only when the pointer moved. Rows written before
+        these columns existed are decoded here, once, so a store already on disk
+        never pays that decode per tick.
+        """
+        columns = {
+            str(row["name"])
+            for row in connection.execute("PRAGMA table_info(pointers)").fetchall()
+        }
+        added = False
+        if "log_path" not in columns:
+            connection.execute("ALTER TABLE pointers ADD COLUMN log_path TEXT")
+            added = True
+        if "backend" not in columns:
+            connection.execute("ALTER TABLE pointers ADD COLUMN backend TEXT")
+            added = True
+        if "dialect" not in columns:
+            connection.execute("ALTER TABLE pointers ADD COLUMN dialect TEXT")
+            added = True
+        if not added:
+            return
+        for row in connection.execute("SELECT path, fields FROM pointers").fetchall():
+            record = _pointer_fields(row["fields"])
+            connection.execute(
+                "UPDATE pointers SET log_path = ?, backend = ?, dialect = ? "
+                "WHERE path = ?",
+                (
+                    str(record.get("log_path") or ""),
+                    record.get("backend"),
+                    record.get("dialect"),
+                    str(row["path"]),
+                ),
+            )
 
     @staticmethod
     def _ensure_cursor_columns(connection: sqlite3.Connection) -> None:
@@ -518,17 +662,52 @@ class StationStore:
             connection.execute(
                 "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)", (key, value)
             )
+        seed = self._opening_sequence(connection)
+        for key in (EVENT_COUNTER_KEY, EVENT_GENERATION_KEY):
+            connection.execute(
+                "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)",
+                (key, "0" if seed is None else str(seed)),
+            )
         connection.execute(
-            "INSERT OR IGNORE INTO station (key, value) VALUES (?, '0')",
-            (EVENT_COUNTER_KEY,),
-        )
-        connection.execute(
-            "INSERT OR IGNORE INTO station (key, value) VALUES (?, '0')",
-            (EVENT_GENERATION_KEY,),
+            "INSERT OR IGNORE INTO station (key, value) VALUES (?, ?)",
+            (STORE_IDENTITY_KEY, uuid.uuid4().hex),
         )
         connection.commit()
 
+    def _opening_sequence(self, connection: sqlite3.Connection) -> int | None:
+        """The id a store with no counter yet opens at, or None when it has one.
+
+        A new store's first event is numbered after the highest id its day files
+        hold. The counter lives in the main database and the events live in one
+        day file per day, so a store whose database was lost while its day files
+        survived would otherwise number its first event below the ids already
+        written, collide with one of them on the day file's primary key, and
+        leave every reader's cursor -- an id in that space -- naming a row it
+        had already read.
+        """
+        held = connection.execute(
+            "SELECT 1 FROM station WHERE key = ?", (EVENT_COUNTER_KEY,)
+        ).fetchone()
+        if held is not None:
+            return None
+        highest = 0
+        for path in self.day_files():
+            try:
+                with closing(sqlite3.connect(str(path), timeout=1.0)) as day:
+                    found = day.execute(
+                        "SELECT COALESCE(MAX(id), 0) FROM events"
+                    ).fetchone()
+            except sqlite3.Error:
+                continue
+            if found is not None:
+                highest = max(highest, int(found[0] or 0))
+        return highest
+
     def station_value(self, key: str) -> str | None:
+        if key == HEARTBEAT_KEY:
+            from reckon.crew.obligation_snapshot import _station_markers
+
+            return _station_markers(self.connect()).get(key)
         row = (
             self.connect()
             .execute("SELECT value FROM station WHERE key = ?", (key,))
@@ -581,28 +760,48 @@ class StationStore:
             ],
         )
         connection.commit()
-        for stream in self._pointer_streams(root):
-            self.ingest_stream(stream)
+        for stream, record in self._pointer_streams(root).items():
+            self.ingest_stream(stream, record=record)
         self.heartbeat()
 
-    def _pointer_streams(self, home: Path) -> list[Path]:
-        """Every stream named by a pointer already ingested."""
-        streams: list[Path] = []
-        for row in self.pointer_rows():
-            record = json.loads(str(row["fields"]))
-            recorded = str(record.get("log_path") or "").strip()
+    def _pointer_streams(self, home: Path) -> dict[Path, dict[str, Any]]:
+        """Every stream named by a pointer already ingested, with the fold's scalars.
+
+        One query answers both the stream paths and the backend and dialect each
+        pointer was ingested under, so this pass decodes no stored document at
+        all; the scalars ride beside the stream into :meth:`ingest_stream`. A
+        fold that scanned the stored pointers again for each stream it read
+        decoded the whole fleet's fields once per stream -- the pass that set a
+        tick's peak -- for a lookup this pass already answers.
+        """
+        streams: dict[Path, dict[str, Any]] = {}
+        rows = self.connect().execute(
+            "SELECT path, run_id, log_path, backend, dialect FROM pointers "
+            "ORDER BY path"
+        )
+        for row in rows:
+            recorded = str(row["log_path"] or "").strip()
             if recorded:
                 candidate = Path(recorded)
-            elif record.get("run_id"):
-                candidate = home / "runs" / str(record["run_id"]) / "stream.jsonl"
+            elif row["run_id"]:
+                candidate = home / "runs" / str(row["run_id"]) / "stream.jsonl"
             else:
                 continue
             if candidate not in streams:
-                streams.append(candidate)
+                streams[candidate] = {
+                    "backend": row["backend"],
+                    "dialect": row["dialect"],
+                }
         return streams
 
     def pointer_is_current(self, path: Path) -> bool:
-        """Whether the stored signature matches the pointer's identity now."""
+        """Whether the stored signature matches the pointer's identity now.
+
+        The signature is compared as the text it was stored as, not decoded
+        back into a list: both sides are ``json.dumps`` of the same integers, so
+        the comparison answers the same question without a decode per pointer
+        per tick -- which is what a tick over an unchanged fleet was paying.
+        """
         try:
             signature = list(file_memo.file_signature(path))
         except OSError:
@@ -612,7 +811,7 @@ class StationStore:
             .execute("SELECT signature FROM pointers WHERE path = ?", (str(path),))
             .fetchone()
         )
-        return row is not None and json.loads(str(row["signature"])) == signature
+        return row is not None and str(row["signature"]) == json.dumps(signature)
 
     def ingest_pointer(self, path: Path) -> bool:
         """Parse and store one pointer, returning whether it was re-parsed."""
@@ -635,12 +834,13 @@ class StationStore:
     ) -> None:
         connection = self.connect()
         connection.execute(
-            "INSERT INTO pointers (path, signature, run_id, project, session, phase, fields) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "INSERT INTO pointers (path, signature, run_id, project, session, phase, "
+            "fields, log_path, backend, dialect) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(path) DO UPDATE SET signature = excluded.signature, "
             "run_id = excluded.run_id, project = excluded.project, "
             "session = excluded.session, phase = excluded.phase, "
-            "fields = excluded.fields",
+            "fields = excluded.fields, log_path = excluded.log_path, "
+            "backend = excluded.backend, dialect = excluded.dialect",
             (
                 str(path),
                 json.dumps(signature),
@@ -649,11 +849,16 @@ class StationStore:
                 str(record.get("session") or ""),
                 str(record.get("phase") or ""),
                 json.dumps(record, sort_keys=True),
+                str(record.get("log_path") or ""),
+                record.get("backend"),
+                record.get("dialect"),
             ),
         )
         connection.commit()
 
-    def ingest_stream(self, path: Path) -> None:
+    def ingest_stream(
+        self, path: Path, *, record: Mapping[str, Any] | None = None
+    ) -> None:
         """Fold one stream from its stored offset, storing the new observation.
 
         A stream whose size has not moved since the last read is not read at
@@ -664,6 +869,11 @@ class StationStore:
         or below its stored last-read size, or whose anchor no longer matches
         is folded from its start, so a rewrite is refolded rather than folded
         on top of bytes that no longer exist.
+
+        ``record`` is the pointer whose fields name this stream's backend, as
+        :meth:`tick` already decoded it. A caller holding no record is answered
+        by a scan of the stored pointers, which is what a tick over the whole
+        fleet must never do once per stream.
         """
         self.guard.check()
         try:
@@ -694,7 +904,7 @@ class StationStore:
                     state = json.loads(str(row["fold_state"])) or None
         payload = _read_range(path, consumed) if size > consumed else b""
         lines, advanced = _whole_lines(payload)
-        observation = self._fold_stream(path, lines, state)
+        observation = self._fold_stream(path, lines, state, record=record)
         new_consumed = consumed + advanced
         anchor = (prefix + payload[:advanced])[-ANCHOR_BYTES:]
         connection.execute(
@@ -722,9 +932,15 @@ class StationStore:
         return _read_range(path, start, offset - start)
 
     def _fold_stream(
-        self, path: Path, lines: Iterable[str], state: Mapping[str, Any] | None
+        self,
+        path: Path,
+        lines: Iterable[str],
+        state: Mapping[str, Any] | None,
+        *,
+        record: Mapping[str, Any] | None = None,
     ) -> Any:
-        record = self._pointer_for_stream(path)
+        if record is None:
+            record = self._pointer_for_stream(path)
         dialect = str(record.get("dialect") or "claude").strip() or "claude"
         return _backends.observe_stream(
             backend_name=str(record.get("backend") or dialect),
@@ -767,7 +983,11 @@ class StationStore:
                 "run_id": str(row["run_id"]),
                 "path": str(row["path"]),
                 "reuse_key": str(row["reuse_key"]),
-                "snapshot": json.loads(str(row["snapshot"])),
+                "snapshot": dict(
+                    self._decoded_document(
+                        "verdict", str(row["run_id"]), str(row["snapshot"])
+                    )
+                ),
             }
             for row in rows
         ]
@@ -782,19 +1002,16 @@ class StationStore:
         self, run_id: str, path: Path, reuse_key: str, snapshot: Mapping[str, Any]
     ) -> None:
         connection = self.connect()
+        text = json.dumps(dict(snapshot), sort_keys=True)
         connection.execute(
             "INSERT INTO classifications (run_id, path, reuse_key, snapshot) "
             "VALUES (?, ?, ?, ?) ON CONFLICT(run_id) DO UPDATE SET "
             "path = excluded.path, reuse_key = excluded.reuse_key, "
             "snapshot = excluded.snapshot",
-            (
-                run_id,
-                str(path),
-                reuse_key,
-                json.dumps(dict(snapshot), sort_keys=True),
-            ),
+            (run_id, str(path), reuse_key, text),
         )
         connection.commit()
+        self._remember_decoded("verdict", run_id, text, dict(snapshot))
 
     def _drop_absent_classifications(self, present: set[str]) -> None:
         connection = self.connect()
@@ -851,16 +1068,11 @@ class StationStore:
         cache = self._classification_cache()
         verdicts: dict[str, dict[str, Any]] = {}
         present: set[str] = set()
-        parsed_rows: list[tuple[Path, Mapping[str, Any]]] = []
-        for row in self.pointer_rows():
-            path = Path(str(row["path"]))
-            try:
-                record = json.loads(str(row["fields"]))
-            except ValueError:
-                continue
-            if not isinstance(record, Mapping) or not record.get("run_id"):
-                continue
-            parsed_rows.append((path, record))
+        parsed_rows: list[tuple[Path, Mapping[str, Any]]] = [
+            (Path(path), record)
+            for path, record in self.pointer_fields().items()
+            if record.get("run_id")
+        ]
         records = [record for _, record in parsed_rows]
         # Every run classified here reads the review store, so the pass shares
         # one enumeration of each store directory across all of them, as the
@@ -1020,6 +1232,35 @@ class StationStore:
         return int(self.station_value(EVENT_GENERATION_KEY) or "0")
 
     # ── readers ──────────────────────────────────────────────────────────
+
+    def pointer_fields(self) -> dict[str, dict[str, Any]]:
+        """Each live pointer's decoded fields, keyed by the pointer's path.
+
+        A tick reads every pointer's fields to classify it and again to sort the
+        fleet into projects. Both reads decode a row only when its fields text
+        differs from the one last decoded, so a pass over an unchanged fleet
+        decodes nothing at all: the text a tick stores is rewritten only when
+        the pointer itself moved.
+
+        The key is the row's path, and a row that carries none is keyed by its
+        run id instead: a caller folding rows it built itself supplies the
+        fields and the identity but no path, and the pass reads every row it is
+        handed rather than only the rows the store's own query shaped.
+        """
+        fields: dict[str, dict[str, Any]] = {}
+        for row in self.pointer_rows():
+            identity = str(row.get("path") or row.get("run_id") or "")
+            try:
+                kept = self._decoded_document(
+                    "pointer", identity, str(row["fields"] or "")
+                )
+            except ValueError:
+                # One unreadable row costs its own pointer and never the pass.
+                continue
+            if not isinstance(kept, Mapping):
+                continue
+            fields[identity] = dict(kept)
+        return fields
 
     def pointer_rows(self) -> list[dict[str, Any]]:
         rows = (
@@ -1216,7 +1457,7 @@ class StationStore:
         raw = self.station_value(f"fleet:{project}")
         if raw is None:
             return {}
-        known = json.loads(raw)
+        known = dict(self._decoded_document("fleet", project, raw))
         for run_id, snapshot in self.classifications().items():
             if (
                 run_id not in known
@@ -1251,6 +1492,7 @@ class StationStore:
         """
         self.guard.check()
         rows = list(events)
+        image = json.dumps(dict(fleet), sort_keys=True)
         connection = self.connect()
         with closing(self._open_day(at.astimezone(UTC).date())):
             pass
@@ -1293,9 +1535,12 @@ class StationStore:
             connection.execute(
                 "INSERT INTO station (key, value) VALUES (?, ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                (f"fleet:{project}", json.dumps(dict(fleet), sort_keys=True)),
+                (f"fleet:{project}", image),
             )
             connection.commit()
+            # The image this tick committed is one it had already built, so the
+            # next pass reads it back without decoding it again.
+            self._remember_decoded("fleet", project, image, dict(fleet))
         except BaseException:
             connection.rollback()
             raise

@@ -12,7 +12,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from reckon import budget, capabilities, capability, flight, ledger
+from reckon import _backends, budget, capabilities, capability, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_group,
@@ -340,7 +340,8 @@ def _candidates_scan(
     moved_off: dict[tuple[str, str | None], int] = {}
     for row in records:
         if attempts_out is not None and (
-            row.get("node") == request.node.id and row.get("plan") == request.node.plan
+            row.get("node") == request.node.id
+            and ledger.row_plan(row) == request.node.plan
         ):
             attempts_out["attempts"] = attempts_out.get("attempts", 0) + 1
         stamp = parse_utc(
@@ -1187,6 +1188,7 @@ def _effective_budget_block(
     *,
     now: datetime,
     session: str | None,
+    project: str | None = None,
 ) -> Mapping[str, Any]:
     """The budget block in force for a declared group, or the config's own.
 
@@ -1202,7 +1204,12 @@ def _effective_budget_block(
     if not group:
         return config.get("budget") or {}
     return budget_group_module.effective_block(
-        config, str(group), readings=None, now=now, session=session or None
+        config,
+        str(group),
+        readings=None,
+        now=now,
+        session=session or None,
+        project=project,
     )
 
 
@@ -1231,6 +1238,7 @@ def _budget_exclusion_reasons(
     utilisation: float | None,
     now: datetime,
     session: str | None,
+    project: str | None = None,
 ) -> tuple[list[str], list[str]]:
     """The lane's budget as an exclusion and as a preference, in that order.
 
@@ -1260,7 +1268,9 @@ def _budget_exclusion_reasons(
     """
     if not fresh:
         return [], []
-    block = _effective_budget_block(config, group, now=now, session=session)
+    block = _effective_budget_block(
+        config, group, now=now, session=session, project=project
+    )
     judged = budget.policy({**config, "budget": block})
     credit_lift = "credit_lift" in judged
     verdict = budget.decide(
@@ -1664,7 +1674,7 @@ def candidates(
     variants = []
     lanes = config.get("lanes") or {}
     for name, declared in config.get("backends", {}).items():
-        if declared.get("derived_from"):
+        if declared.get("derived_from") and name != config.get("local_backend"):
             continue
         lane = lanes.get(name) if isinstance(lanes, Mapping) else None
         models = lane.get("models") if isinstance(lane, Mapping) else None
@@ -1693,6 +1703,25 @@ def candidates(
         )
         model = backend.get("model")
         reasons = []
+        try:
+            dialect = _backends.dialect_for(backend)
+        except _backends.BackendError:
+            dialect = None
+        local_backend = config.get("local_backend")
+        local_settings = config.get("backends", {}).get(local_backend, {})
+        shared_endpoints = backend.get("endpoints_document") and (
+            Path(str(backend["endpoints_document"])).expanduser()
+            == Path(str(local_settings.get("endpoints_document") or "")).expanduser()
+        )
+        local_wrapper = (
+            dialect is not None
+            and dialect.name == "claude"
+            and not dialect.subscription_login
+        )
+        if local_backend and not local and (shared_endpoints or local_wrapper):
+            reasons.append(
+                f"local-backend: local work is offered through {local_backend}"
+            )
         if name in review_excluded:
             reasons.append("review-excluded-backend")
         # A routed CLI dispatch cannot execute an in-harness backend: nothing
@@ -1742,6 +1771,7 @@ def candidates(
             utilisation=utilisation,
             now=now,
             session=request.session,
+            project=request.project,
         )
         reasons.extend(budget_reasons)
         preferences: list[str] = list(budget_preferences)
@@ -1771,23 +1801,23 @@ def candidates(
         if lane_lift:
             congestion = {**(congestion or {}), "lift": lane_lift}
         family = dispatch_picker.lane_family(config, name, backend)
-        # A lane a policy reserves is offered to a non-review node only at the
-        # tier the policy names and only while the lane's own window has
-        # headroom, and it is removed here rather than left for Jev to weigh:
-        # the policy is a rule about when the orchestrators' lane may be spent,
-        # not a pressure signal, and a candidate carrying it is never offered as
-        # a fallback either. The reading is the window percentage this candidate
-        # already carries, so a reserved lane and the lane's own block are
-        # judged on one figure. Whether any lift governs the lane's group is
-        # resolved here, for the pick's session, whatever the freshness of the
-        # reading: the no-window case is exactly where the release matters, and
-        # a stale reading is the one the budget gate declines to judge.
-        if family in reserved and request.node.role != "review":
+        # A Claude CLI reservation gates automatic offers, including a local
+        # wrapper and reviews. Other lane reservations remain router evidence.
+        # Resolve the policy from the harness even when the candidate's family
+        # is local, so selecting that wrapper cannot bypass the reservation.
+        # The window and lift use the same account facts as the budget gate.
+        policy_family = dispatch_picker.reservation_family(config, name, backend)
+        enforce_reservation = policy_family == "claude"
+        reservation_applies = policy_family in reserved and (
+            enforce_reservation or request.node.role != "review"
+        )
+        if reservation_applies:
             lift_in_force = "lift_id" in _effective_budget_block(
                 config,
                 group.get("group") if isinstance(group, Mapping) else None,
                 now=now,
                 session=request.session,
+                project=request.project,
             )
             reserved_utilisation = (
                 utilisation
@@ -1795,29 +1825,36 @@ def candidates(
                 else _reserved_fill_window_utilisation(group, view, config, now=now)
             )
             withheld = _reserved_lane_exclusion(
-                family,
-                reserved[family],
+                policy_family,
+                reserved[policy_family],
                 declared=declared_requirements,
                 attempts=attempts,
                 utilisation=reserved_utilisation,
                 lift_in_force=lift_in_force,
             )
             if withheld:
-                excluded_reasons, evidence = _reserved_lane_evidence(withheld)
+                excluded_reasons, evidence = (
+                    ([withheld], [])
+                    if enforce_reservation
+                    else _reserved_lane_evidence(withheld)
+                )
                 reasons.extend(excluded_reasons)
                 preferences.extend(evidence)
             reservation = {
-                "family": family,
+                "family": policy_family,
                 "floor": sorted(
-                    reserved[family].get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
+                    reserved[policy_family].get(flight.PICKER_RESERVED_LANE_FLOOR_KEY)
+                    or {}
                 ),
-                "attempts_threshold": reserved[family].get(
+                "attempts_threshold": reserved[policy_family].get(
                     flight.PICKER_RESERVED_LANE_ATTEMPTS_KEY
                 ),
                 "attempts": attempts,
                 "ceiling_pct": (
                     float(
-                        reserved[family].get(flight.PICKER_RESERVED_LANE_CEILING_KEY)
+                        reserved[policy_family].get(
+                            flight.PICKER_RESERVED_LANE_CEILING_KEY
+                        )
                         or 0
                     )
                     * 100
@@ -1929,7 +1966,7 @@ def candidates(
                 moved_in=_outcome_counts(moved_in_counts.get((name, model), Counter())),
                 moved_off=moved_off_counts.get((name, model), 0),
                 reasons=reasons,
-                reserved=bool(family in reserved and request.node.role != "review"),
+                reserved=reservation_applies,
                 reservation=reservation,
                 preferences=preferences,
                 budget_reason=budget_reason,

@@ -1,0 +1,67 @@
+<section id="guards-without-tracked-ledger-s25-record">
+  <h2>Presence checks read the project configuration, not the ledger</h2>
+
+  <p><strong>What this is.</strong> Four presence checks decided a repository
+  was crew-managed by finding <code>docs/state/&lt;project&gt;/crew.json</code>.
+  The two pre-tool-use guards fail open, so the untracking would have turned
+  both silently off in every checkout. Each now recognises a crew project by
+  the project configuration its state directory carries, which stays tracked
+  after the run ledger leaves git.</p>
+
+  <p><strong>The rule.</strong> A project is crew-managed when
+  <code>docs/state/&lt;project&gt;/</code> contains <code>index.json</code>,
+  <code>flight.yaml</code> or <code>crew.json</code>. The ledger and the flight
+  configuration are still honoured while a tree has not migrated; neither is
+  required, because a migrated checkout carries only the project's own
+  configuration. All four call sites use the same three markers:
+  <code>native_agent_guard.crew_managed_projects</code>,
+  <code>worker_message_guard.crew_managed_projects</code>,
+  <code>cli_entry._crew_state_exists</code> and the shadow-dispatch fallback
+  in <code>crew/dispatching/comparisons.py</code>.</p>
+
+  <p><strong>Why <code>project.json</code> is not a marker.</strong> It is
+  written into <code>docs/state/&lt;project&gt;/</code> by every
+  <code>reckon sync</code>, crew-managed or not, so keying on it would install
+  the guards into repositories that have no crew project. Measured by running
+  the sync CLI on a project state directory holding nothing else: it leaves
+  <code>project.json</code> and <code>timeline.html</code> behind, and the
+  existing sync case that requires the refusal be skipped still passes with
+  <code>project.json</code> excluded from the marker set.</p>
+
+  <table id="guards-without-tracked-ledger-s25-call-sites">
+    <caption>What each call site decides, and the file it now reads.</caption>
+    <thead><tr><th>call site</th><th>decision</th><th>marker read</th></tr></thead>
+    <tbody>
+      <tr><td><code>native_agent_guard.crew_managed_projects</code></td>
+        <td>refuse a harness-native background spawn in a crew repository</td>
+        <td>state directory markers, read repository-locally</td></tr>
+      <tr><td><code>worker_message_guard.crew_managed_projects</code></td>
+        <td>refuse a peer send addressed to a live crew worker</td>
+        <td>state directory markers, read repository-locally</td></tr>
+      <tr><td><code>cli_entry._crew_state_exists</code></td>
+        <td>install the guards while syncing a project</td>
+        <td>state directory markers</td></tr>
+      <tr><td><code>comparisons.shadow_source</code> fallback</td>
+        <td>find a committed run's project when the mounts registry is silent</td>
+        <td>state directory markers</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Evidence.</strong> <code>tests/test_guards_hold_without_a_tracked_ledger.py</code>
+  builds a project whose state directory holds <code>index.json</code>, creates
+  both ledger files and removes them, then requires the refusal from both
+  guards and recognition from the CLI and the shadow fallback. A control case
+  asserts a repository with no project state is still allowed by both guards,
+  so the check is shown to see something rather than merely to be quiet.</p>
+
+  <p><strong>Arms.</strong> Base <code>2bf8e6947d</code>, the node's test absent
+  from that tree: <strong>58 passed</strong>. Head with the new test:
+  <strong>63 passed</strong>. The declared mutation — restoring the
+  <code>crew.json</code> presence test in both guards — fails
+  <strong>2</strong> cases,
+  <code>test_native_agent_guard_refuses_a_project_with_no_tracked_ledger</code>
+  and
+  <code>test_worker_message_guard_refuses_a_send_with_no_tracked_ledger</code>,
+  and passes the other three; the log is the run directory's
+  <code>negative-control.log</code>.</p>
+</section>

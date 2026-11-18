@@ -33,6 +33,7 @@ RECOVERY_CLASSES = (
     "failed",
     "unreadable",
     "exited-unfinished",
+    "cut-off",
     "abandoned",
     "lane-event",
 )
@@ -87,6 +88,7 @@ RECOVERY_VERBS = {
     "promotable": "promote",
     "unreadable": "repair",
     "exited-unfinished": "repair",
+    "cut-off": "resume",
     "unwritten": "resume",
     "ready": "resume",
     "abandoned": "recover",
@@ -109,6 +111,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "scoring",
         "unreadable",
         "exited-unfinished",
+        "cut-off",
         "unwritten",
         "ready",
         "abandoned",
@@ -139,7 +142,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
 # read the resolution since the escape hatch was built; the two disposal arms
 # are what this set adds.
 RESUMPTION_READING_CLASSIFICATIONS = frozenset(
-    {"blocked", INTERRUPTED_RUN_PHASE, "stopped", "abandoned"}
+    {"blocked", INTERRUPTED_RUN_PHASE, "stopped", "abandoned", "cut-off"}
 )
 
 

@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "Reverting the memo reddens this only at a pre-merge tree: with both file_memo.memoized wrappers replaced by their compute calls at b290e02 the case still passes (3 passed), so the assertion holds whether or not the memo exists.",
+      "lines": "79-88"
+    },
+    {
+      "failure_condition": "Removing the grown-stream re-read leaves the appended stream unopened, so the first assertion reddens; naming any other stream reddens the set equality.",
+      "lines": "91-105"
+    },
+    {
+      "failure_condition": "A memo that answers from a stored value without re-reading a rewritten stream leaves the final assertion returning None instead of ('Bash', 'sleep 5').",
+      "lines": "108-132"
+    }
+  ],
+  "assertion_independence": "The quiet-tick case carries its own control (cold > 0) before asserting zero opens, so the count is measured against files actually opened rather than echoing an input; the grown-tail case asserts an independently written tool call, not a value passed to the code under test.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_wait.py:357",
+    "reckon/crew/recovery_wait.py:1793",
+    "reckon/crew/recovery_repair_dispatch.py:388",
+    "reckon/crew/recovery_repair_dispatch.py:2212",
+    "reckon/crew/recovery_cut_off.py:34",
+    "reckon/crew/recovery.py:356"
+  ],
+  "completed_at": "2026-11-17T16:36:10.411Z",
+  "dispatched_at": "2026-11-17T16:35:34Z",
+  "findings": [
+    {
+      "file": "tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py",
+      "line": "88",
+      "severity": "non-blocking",
+      "text": "non-blocking: at the merged head this guard is green with the shipped memo removed -- a git archive of b290e02's reckon/ and tests/ with both file_memo.memoized wrappers replaced by their compute calls reports 3 passed -- because _StreamScan.assistant_seen at reckon/crew/recovery_wait.py:144 answers without a read, so the node's own regression test no longer fails when its mechanism regresses and the recorded negative control (logs/negative-control.log, header revision 4d188b0) measures a pre-merge tree."
+    },
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "line": "1729",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-stream memo duplicates the per-stream cached answer _StreamScan keeps in the same module after the merge, and the wrapper at :310 covers only the cold tail read while the incremental path at :195 still opens every stream per call, so the memo layer is narrower and more redundant than its own docstring claims."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the re-runnable tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which exercise neither the station tick nor the memo, while the three guarding cases this node added ran only in the five-file log cited by gate_receipt at manifest.md:19, so a receipt filled from this line records a command that cannot observe a regression in this change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call sites",
+    "diff": "pass: read all ten commits against 0f51931; mechanism and tests match the goal.",
+    "evidence": "fail: the done_when's control at prompt.txt:164 did not reproduce and s5.html:40 records the verdict as qualified.",
+    "goal_fidelity": "pass: prompt.txt:38's bound holds at logs/tick-head-all_debug.json (max 6.856 s, 87 MB).",
+    "manifest": "pass: names commits, arms, logs and the merge head, though its tests line omits the guarding cases.",
+    "write_paths": "pass: every non-merge commit stays inside the declared paths; the rest is the primary merge."
+  },
+  "justifications": {
+    "durability": "A scratch extraction of b290e02 with both file_memo.memoized wrappers at reckon/crew/recovery_wait.py:310 and :1729 replaced by their compute calls leaves all three cases in tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py green (3 passed), so the change's own guard does not fail when its shipped memo regresses.",
+    "evidence": "The gate records both arms and their logs, but the base-revision control the done_when names did not reproduce and s5.html:40 says so, so the recorded measure satisfies the bound and not the control.",
+    "fit": "The change memoises through the repository's own reckon/file_memo.py:362 idiom and its docstrings follow the surrounding style of reckon/crew/recovery_wait.py:270.",
+    "goal_fidelity": "Against the goal's bound, logs/tick-head-all_debug.json records max 6.856 s and 87 MB over 20 ticks at 230 live runs, and the base arm's 15.410 s shows the bound already held before the change.",
+    "reuse": "The memo at reckon/crew/recovery_wait.py:1729 caches a per-stream answer that _StreamScan.assistant_seen at reckon/crew/recovery_wait.py:144, merged from primary, already keeps for the same fact.",
+    "scope_discipline": "Every non-merge commit in the ten at manifest.md:6 stays inside reckon, tests and the two evidence paths, and the remaining 1868 paths of the delivered diff are the primary merge at 6be89a6."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the reviewed run's prompt.txt:38 and plan section s5; the landed change keeps a 230-run tick at 6.856 s and 87 MB at the merge head (logs/tick-head-all_debug.json), under the 30 s and 2 GiB bounds the goal names, so the goal's bound holds though the base arm's 15.410 s was already inside it.\nVERDICT done_when: Read prompt.txt:164-165 and the run's logs; both arms record 20 consecutive ticks and RSS on all_debug (logs/tick-base-all_debug.json, logs/tick-head-all_debug.log, 0 of 20 readings over bound in either arm), but the done_when's control clause -- the base revision recording ticks over 30 s -- did not reproduce, and docs/evidence/fragments/work-scales-to-eighty-across-nodes/s5.html:40 declares the record qualified rather than passed.\nVERDICT write_paths: Read prompt.txt FENCE-SCOPE and the ten commits at manifest.md:6; every non-merge commit touches only reckon/, tests/ or the two evidence paths, and the 1868 other paths in the delivered diff arrive through the merge of primary at 6be89a6, so the node stayed inside its declared scope.\nVERDICT manifest: Read the reviewed run's manifest.md; it names all ten commits, both tick arms, the five-file gate receipt and a red negative-control log, but its re-runnable tests line at manifest.md:17 names the two-file arm, which touches neither the tick nor the memo.\nVERDICT diff: Read commits 4d188b0, 325e19a, 11491f7, 1b8e50f, 893e743, 285e73a, 5c276ef, f8a5b0d, 6be89a6 and b290e02 against base 0f51931 commit by commit; the mechanism is two file_memo.memoized wrappers at reckon/crew/recovery_wait.py:310 and :1729, three test files and two evidence pages, and the merge resolves main's _StreamScan beside the memo.\nCALL_SITES: reckon/crew/recovery_wait.py:357 (_last_tool_call), reckon/crew/recovery_wait.py:1793 (_stream_holds_assistant_record), reckon/crew/recovery_repair_dispatch.py:388, reckon/crew/recovery_repair_dispatch.py:2212, reckon/crew/recovery_cut_off.py:34, reckon/crew/recovery.py:356 (re-export)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: Against the goal's bound, logs/tick-head-all_debug.json records max 6.856 s and 87 MB over 20 ticks at 230 live runs, and the base arm's 15.410 s shows the bound already held before the change.\nSCORE evidence: 10\nJUSTIFICATION evidence: The gate records both arms and their logs, but the base-revision control the done_when names did not reproduce and s5.html:40 says so, so the recorded measure satisfies the bound and not the control.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: Every non-merge commit in the ten at manifest.md:6 stays inside reckon, tests and the two evidence paths, and the remaining 1868 paths of the delivered diff are the primary merge at 6be89a6.\nSCORE durability: 8\nJUSTIFICATION durability: A scratch extraction of b290e02 with both file_memo.memoized wrappers at reckon/crew/recovery_wait.py:310 and :1729 replaced by their compute calls leaves all three cases in tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py green (3 passed), so the change's own guard does not fail when its shipped memo regresses.\nSCORE fit: 18\nJUSTIFICATION fit: The change memoises through the repository's own reckon/file_memo.py:362 idiom and its docstrings follow the surrounding style of reckon/crew/recovery_wait.py:270.\nSCORE reuse: 12\nJUSTIFICATION reuse: The memo at reckon/crew/recovery_wait.py:1729 caches a per-stream answer that _StreamScan.assistant_seen at reckon/crew/recovery_wait.py:144, merged from primary, already keeps for the same fact.\nFINDING tests/test_a_quiet_tick_at_fleet_scale_reads_no_stream.py:88 non-blocking: at the merged head this guard is green with the shipped memo removed -- a git archive of b290e02's reckon/ and tests/ with both file_memo.memoized wrappers replaced by their compute calls reports 3 passed -- because _StreamScan.assistant_seen at reckon/crew/recovery_wait.py:144 answers without a read, so the node's own regression test no longer fails when its mechanism regresses and the recorded negative control (logs/negative-control.log, header revision 4d188b0) measures a pre-merge tree.\nFINDING reckon/crew/recovery_wait.py:1729 non-blocking: the per-stream memo duplicates the per-stream cached answer _StreamScan keeps in the same module after the merge, and the wrapper at :310 covers only the cold tail read while the incremental path at :195 still opens every stream per call, so the memo layer is narrower and more redundant than its own docstring claims.\nFINDING manifest.md:17 non-blocking: the re-runnable tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which exercise neither the station tick nor the memo, while the three guarding cases this node added ran only in the five-file log cited by gate_receipt at manifest.md:19, so a receipt filled from this line records a command that cannot observe a regression in this change.",
+  "review_run_id": "r-20261117T163320010872-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-b290e023ef9f",
+  "reviewed_base_sha": "0f519315992f429fae018708f84eba960b99fb15",
+  "reviewed_head_sha": "b290e023ef9fb78d2d34d0e2f42bab5827d3f27f",
+  "reviewed_run_id": "r-20261115T200323420839-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs",
+  "reviewer": {
+    "backend": "omp",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T163320010872-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-b290e023ef9f"
+  },
+  "reviewer_run_id": "r-20261117T163320010872-review-of-wse-the-station-tick-stays-under-30-seconds-at-230-live-runs-b290e023ef9f",
+  "scores": {
+    "durability": 8,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:56:17.826929+00:00",
+  "total": 83
+}

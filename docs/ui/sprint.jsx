@@ -92,6 +92,10 @@ function derivedFlowChainHours(inventory, runs, project, now = new Date()) {
   return window.ReckonCrewSchedule.farEnd(inventory, runs, project, now);
 }
 
+// Every figure the sprint table states is served on the sprint row by the
+// roadmap walk that owns sprint state. A payload without them is a payload
+// that has not been composed, and the table says so rather than deriving the
+// same fact a second time in the browser.
 function sprintStateRows(sprints, inventory) {
   return (sprints || []).map(sprint => {
     const members = sprintMembers(sprint, inventory);
@@ -325,27 +329,32 @@ function SprintDetail({ sprint, inventory, onBack, onNav }) {
 
 function Sprint({ sprintId, onNav }) {
   const M = window.STATE;
-  if (!M) return null;
-  const review = M.review || null;
-  const allSprints = useMemo(() => orderedSprints(M.sprints, review), [M.sprints, review]);
+  const review = M?.review || null;
+  const sprints = M?.sprints || [];
+  const inventory = M?.inventory || [];
+  const allSprints = useMemo(() => orderedSprints(sprints, review), [sprints, review]);
   const reviewFindings = useMemo(() => openReviewFindings(review), [review]);
+  const activeSprintId = M?.active_sprint_id;
   const idx = useMemo(() => {
     const requested = allSprints.findIndex(sprint => sprint.id === sprintId);
-    return requested >= 0 ? requested : allSprints.findIndex(sprint => sprint.id === M.active_sprint_id);
-  }, [sprintId, allSprints]);
+    return requested >= 0 ? requested : allSprints.findIndex(sprint => sprint.id === activeSprintId);
+  }, [sprintId, allSprints, activeSprintId]);
   const sprint = allSprints[idx];
-  if (!sprint) return <div className="r-page">No sprint.</div>;
+  const items = sprintInventoryItems(sprint || {}, inventory);
+  const project = M?.project || document.querySelector('meta[name="docs-project"]')?.content || "";
 
+  // Every hook runs on every render. The index answers the first paint with rows
+  // only, and the derived sprint list arrives behind it; an early return above
+  // these hooks turned that pass into more hooks on a mounted component, which
+  // React rejects and which unmounted the whole sprint surface.
   const [surface, setSurface] = useState("overview");
   const [foldClosed, setFoldClosed] = useState(true);
   const [showSprintPrompt, setShowSprintPrompt] = useState(false);
   const [sprintPromptText, setSprintPromptText] = useState(null);
   const [detailSprintId, setDetailSprintId] = useState(null);
-  const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
-  const items = sprintInventoryItems(sprint, M.inventory);
 
   useEffect(() => {
-    if (!showSprintPrompt) { setSprintPromptText(null); return; }
+    if (!showSprintPrompt || !sprint) { setSprintPromptText(null); return; }
     let alive = true;
     const windowLabel = (sprint.starts || "") + (sprint.ends ? ` → ${sprint.ends}` : "");
     const options = { sprint: { id: sprint.id, window: windowLabel } };
@@ -354,22 +363,26 @@ function Sprint({ sprintId, onNav }) {
       : window.buildFleetPrompt(items, window.STATE, sprint.theme, options)
     ).then(text => { if (alive) setSprintPromptText(text); });
     return () => { alive = false; };
-  }, [showSprintPrompt, sprint.id]);
+  }, [showSprintPrompt, sprint?.id]);
 
   const readyLanes = useMemo(
-    () => readyLaneRows(M.ready_set, M.sprints, M.inventory),
-    [M.ready_set, M.sprints, M.inventory]
+    () => readyLaneRows(M?.ready_set, sprints, inventory),
+    [M?.ready_set, sprints, inventory]
   );
+  const stateRows = useMemo(() => sprintStateRows(allSprints, inventory), [allSprints, inventory]);
+
+  if (!M) return null;
+  if (!sprint) return <div className="r-page">No sprint.</div>;
+
   const decisions = items.flatMap(plan => {
     const rows = Array.isArray(plan.decisions) ? plan.decisions.filter(decision => !decision.choice) : [];
     if (rows.length) return rows.map(decision => ({ plan, label: decision.question || decision.key || "Open decision" }));
     return Array.from({ length: plan.dec_open || 0 }, (_, index) => ({ plan, label: `Open decision ${index + 1}` }));
   });
-  const stateRows = useMemo(() => sprintStateRows(allSprints, M.inventory), [allSprints, M.inventory]);
   const foldedCount = stateRows.filter(row => row.closed).length;
   const activeConflict = activeSprintConflict(M.active_sprints, M.active_sprint_id);
   const detailSprint = detailSprintId ? allSprints.find(candidate => candidate.id === detailSprintId) : null;
-  const projectPlans = M.inventory.filter(plan => (plan.type || "plan") === "plan");
+  const projectPlans = inventory.filter(plan => (plan.type || "plan") === "plan");
   const projectHours = sprintHoursSummary(projectPlans);
   const chainHours = derivedFlowChainHours(projectPlans, M.runs || M.crew_runs || [], project);
   const heldPlans = projectPlans.filter(plan => plan.status === "blocked").length;
@@ -409,7 +422,11 @@ function Sprint({ sprintId, onNav }) {
               <div><span className="r-eyebrow">Project state</span><h2 id="sprint-state-heading">Every sprint</h2></div>
               <div className="r-sprint-state-summary">
                 <span>{stateRows.length} total</span>
-                {activeConflict && <strong className="r-sprint-conflict">Active pointer conflict</strong>}
+                {activeConflict && (
+                  <strong className="r-sprint-conflict" role="alert">
+                    Active pointer conflict: {(M.active_sprints || []).map(row => typeof row === "string" ? row : row.id).filter(Boolean).join(", ") || "none"} active, pointer {M.active_sprint_id || "unset"}
+                  </strong>
+                )}
                 <label><input type="checkbox" checked={foldClosed} onChange={event => setFoldClosed(event.target.checked)} /> Fold closed</label>
               </div>
             </header>

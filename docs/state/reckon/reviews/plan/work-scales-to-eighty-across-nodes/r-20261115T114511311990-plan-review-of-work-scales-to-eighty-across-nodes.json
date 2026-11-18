@@ -1,0 +1,204 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-15T13:02:18.976Z",
+  "dispatched_at": "2026-11-15T13:02:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:47",
+      "id": "done_when-1",
+      "reason": "a done-when whose only tolerance is undefined is unfalsifiable, so the node could be closed on any reading; the plan has to state the number.",
+      "text": "\u00a71's measure is \"no more live workers than the router's worker slots plus the margin\" and \"every reading is within the margin\", but no figure for that margin appears in the deliverable, the done-when or anywhere else in the plan, so the test and the fleet measurement both accept an arbitrary allowance and cannot fail on the quantity they claim to bound",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:72",
+      "id": "done_when-2",
+      "reason": "the plan would otherwise declare the scale rehearsal met by an instrument that cannot observe the scale it is named for, so either the real router is required or the count must come from live workers.",
+      "text": "\u00a76's window may run \"against the B300 router or a stand-in router of width 80\" and then reads the router's in-flight count for a median of at least 72, so with a stand-in the median is the stand-in's own bookkeeping rather than evidence about the lane it stands for and can pass without 80 real workers in flight, leaving the node's headline claim resting only on the OOM and admission-pass sub-criteria",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:52",
+      "id": "done_when-3",
+      "reason": "the tolerance has to be restated against the server's own observed variance or taken against a matched baseline, because as written the node's verdict turns on noise rather than on the property it names.",
+      "text": "\u00a72 caps growth at \"the last reading no more than 20 percent above the first\" over one hour with 40 workers, while the plan's own table (:36) records that same reckon MCP server at \"0.42 GB mean, 2.7 GB at most\", a spread far wider than 20 percent of the mean, so a first reading taken low and a last near the server's normal upper range fails the node with no per-worker growth present and the measure cannot separate the two",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:47",
+      "id": "done_when-4",
+      "reason": "if the guard already exists, \u00a71 must cite the observed pre-slot launch that justifies the node or be dropped and its capacity claim folded into \u00a76, which changes what the plan delivers.",
+      "text": "\u00a71's negative control asserts that \"at the base revision the test reads more live workers than the slots allow\", yet the repository already holds a dispatch the lane's router grants no worker slot (reckon/crew/dispatch_admission.py:1288) and reads the published worker-slot figure when resolving a dispatch's allowance (reckon/crew/dispatch_plan.py:1495-1508), and the plan cites no observation of a launch past the slots nor any observation of a queued request holding a process, so the control may hold at the base revision and the node would measure nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:22",
+      "id": "wiring-1",
+      "reason": "\u00a72 already declares its dependence on \u00a73, so \u00a76's wait set is transitively complete and only the prose overstates it; recorded because a gate built from :71 alone would queue \u00a76 behind a node its wiring does not name.",
+      "text": "the declared depends-on for s6 is [s1, s2, s4, s5] and the followup agrees (\u00a76 \"waits on \u00a71, \u00a72, \u00a74 and \u00a75\"), but \u00a76's own deliverable at :71 says \"With \u00a71 to \u00a75 landed\", naming all five",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/work-scales-to-eighty-across-nodes.html:44",
+      "id": "reasoning-1",
+      "reason": "a wrong root cause aims the node at queue-side holding when the cited data implicates per-worker memory, so the author must either cite a pre-slot launch or restate \u00a71 against the measured cause.",
+      "text": "\u00a71's stated cause is that a request starts its worker's harness before it holds a slot, but the plan's cited evidence (:11-40) measures memory per holder and the failure of one fleet node at a gate of 12, which shows that 12 concurrent workers do not fit beside the coordinators and says nothing about pre-slot launches; the section therefore argues past its own data, and the shape of the fix it implies (hold the harness until a slot) is aimed at a defect its evidence never exhibits",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "51009b41d600f0f7c0d9d8b447431938e4b0bf18",
+  "plan_fingerprint": "f13afa0fccf2051ae342588123a04ba62c53a9aa1b42ef7fed1bb21595cf3a3e",
+  "plan_slug": "work-scales-to-eighty-across-nodes",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "section 1 now bounds live workers at the published worker slots plus two, in the deliverable and both measures.",
+      "reason": "",
+      "when": "2026-11-15T14:36:53.877132+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "section 6 now requires at least 175 live worker processes at every reading, whether the router is the B300 or a stand-in.",
+      "reason": "",
+      "when": "2026-11-15T14:37:00.838307+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "section 2 now compares the server's median resident memory at 40 workers with its median at 5, allowing 0.5 GB.",
+      "reason": "",
+      "when": "2026-11-15T14:37:06.921854+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "finding": "done_when-4",
+      "note": "section 1's control is now a named mutation that starts a queued request's worker before a slot, and a base census is recorded first.",
+      "reason": "",
+      "when": "2026-11-15T14:37:13.250898+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "section 6 now waits on sections 1 to 5, matching its deliverable.",
+      "reason": "",
+      "when": "2026-11-15T14:37:19.025916+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "section 1 now states that base behaviour is unmeasured and makes the base census its first record.",
+      "reason": "",
+      "when": "2026-11-15T14:37:24.745042+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "note": "section 1 now bounds live workers at the published worker slots plus two, in the deliverable and both measures.",
+      "reason": "",
+      "when": "2026-11-15T14:36:53.877132+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "note": "section 6 now requires at least 175 live worker processes at every reading, whether the router is the B300 or a stand-in.",
+      "reason": "",
+      "when": "2026-11-15T14:37:00.838307+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "note": "section 2 now compares the server's median resident memory at 40 workers with its median at 5, allowing 0.5 GB.",
+      "reason": "",
+      "when": "2026-11-15T14:37:06.921854+00:00"
+    },
+    "done_when-4": {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "note": "section 1's control is now a named mutation that starts a queued request's worker before a slot, and a base census is recorded first.",
+      "reason": "",
+      "when": "2026-11-15T14:37:13.250898+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "note": "section 1 now states that base behaviour is unmeasured and makes the base census its first record.",
+      "reason": "",
+      "when": "2026-11-15T14:37:24.745042+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "412873d2ab5ba6525363c6c9d3a42b6487379e70",
+      "commit_basis": "edit",
+      "note": "section 6 now waits on sections 1 to 5, matching its deliverable.",
+      "reason": "",
+      "when": "2026-11-15T14:37:19.025916+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-scales-to-eighty-across-nodes/r-20261115T114511311990-plan-review-of-work-scales-to-eighty-across-nodes.json",
+  "review_run_id": "r-20261115T114511311990-plan-review-of-work-scales-to-eighty-across-nodes",
+  "reviewed_blob_sha": "cf7b0df798307551570fafd1499c390c998808d7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 work-flows-to-the-lane#s71 resolves (docs/plans/work-flows-to-the-lane.html:344), \"speaks stdio only\" holds (reckon/mcp.py:3948 runs transport=\"stdio\"), the cited library version is installed (mcp 1.28.1 with a streamable_http server module), and \"workers already run as scheduler steps\" holds (reckon/crew/placement.py:1-14); extensionless hrefs resolve as <path>.html per the house convention.",
+    "done_when": "a finding \u2014 \u00a71's threshold is \"the router's published worker slots plus a stated margin\" and no margin is stated anywhere, so any reading satisfies it; \u00a76 admits a stand-in router in place of the counter it measures; \u00a72's 20 percent bound sits inside the server's own cited variance.",
+    "evidence_paths": "pass \u2014 every section names docs/evidence/fragments/work-scales-to-eighty-across-nodes/sN.html under the repository's evidence tree, the convention used at docs/plans/a-session-spends-a-priority-budget.html:73, and no gate writes to a node-local or session path.",
+    "naming": "pass \u2014 no symbol, file, function or module name reaches the plan, and the version \"1.28\" appears only in prose as a capability statement about the installed dependency, not as a tag carried into code.",
+    "reasoning": "a finding \u2014 \u00a71 names a root cause its cited evidence does not support and the repository contradicts, and \u00a72's growth threshold sits below the variance the plan itself cites; the prescribes-implementation check is clean, since no section names a code path, step sequence, formula or function, and \u00a74's \"run state on GPFS, scratch on local disk\" states where a section's state lives, which is an endpoint.",
+    "single_goal": "pass \u2014 s1 queued requests hold no process, s2 one server per node, s3 named MCP sets, s4 workers on compute nodes, s5 the station's tick at 230 runs, s6 the lane at 80; each names one deliverable, and s5's two thresholds both measure that one endpoint.",
+    "wiring": "a finding \u2014 s6's declared depends-on omits s3 while \u00a76's own deliverable says \"With \u00a71 to \u00a75 landed\" (docs/plans/work-scales-to-eighty-across-nodes.html:22 vs :71)."
+  },
+  "section_digests": {
+    "_document": "f80e8d0e62711f6920ae07001a7b272c25d3e38028b40ada9c41ed23b1860ac3",
+    "s1": "58d3e1b57d1ac25f60ec7b8b9a017766cdb0cf7d02d5f62e630ee809732fac62",
+    "s2": "eecd18421c9cfd28d3f81c7e9ce6f554a766876ef2b66293e78625c7c1bd3e20",
+    "s3": "f22248790479287f695147e18c4f3e13dd8f0b03f1cda6b3a77b5284feb852b0",
+    "s4": "ae154a71092b8f6272d33272371402d5b554e801d16353fcc09ca8a7e4cf014d",
+    "s5": "33b3b4524304e6061af49372e1982dd0563e5a3234ea869bda7623c10cd2fc7f",
+    "s6": "6fd82125b924d39ac26251304306dc72905c51a159b3738d10456e81e52a6b34"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T13:13:02.664554+00:00",
+  "total": null
+}

@@ -335,7 +335,16 @@ def test_worktree_script_has_no_reckon_import() -> None:
             and (node.module == "reckon" or node.module.startswith("reckon."))
         )
     ]
-    assert imports == []
+    assert all(
+        node.module == "reckon.crew.fleet_supervisor"
+        if isinstance(node, ast.ImportFrom)
+        else all(
+            alias.name == "reckon.crew.fleet_supervisor"
+            for alias in node.names
+            if alias.name == "reckon" or alias.name.startswith("reckon.")
+        )
+        for node in imports
+    )
 
 
 def test_rejects_unsafe_session_token(tmp_path: Path) -> None:

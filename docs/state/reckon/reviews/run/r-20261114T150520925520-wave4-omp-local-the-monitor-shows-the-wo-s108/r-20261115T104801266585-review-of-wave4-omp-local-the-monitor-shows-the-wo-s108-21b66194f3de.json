@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: head-arm.log at 9c27fc7098 records 60 passed EXIT=0 with no FAILED line and base-arm.log at bb45282b57 records 55 passed EXIT=0 with no FAILED line, so the after-minus-base set difference is empty (0); the 60 is 55 importer tests plus the 5 new cases, which reconciles the two arms. obligation-importers-head.log and obligation-importers-base.log carry no summary and no EXIT line, so neither is read as an arm.",
+  "completed_at": "2026-11-15T12:14:11.282Z",
+  "dispatched_at": "2026-11-15T12:13:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "wave4-omp-local-the-monitor-shows-the-wo-s108",
+      "recorded_at": "2026-11-15T12:47:25.990187+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "6",
+      "severity": "blocking",
+      "text": "blocking: status complete rests on a measure its own checkpoint calls pending, obligation-importers-base.log:3 records that its cd into the extracted base tree failed and srun was cancelled with no EXIT line, and obligation-importers-head.log:1-3 has no summary, so the done_when's importer clause has no measurement."
+    },
+    {
+      "file": "head-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate's revision header names 9c27fc7098, not the reviewed head 21b66194f3, so the gate never ran at the revision being promoted; the intervening commit reformats four lines of the new test only."
+    },
+    {
+      "file": "tests/test_a_refused_reflex_review_names_its_remedy.py",
+      "line": "255",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the duty's command against dispatch_module._finding_dispose_commands, the same helper the production code calls at reckon/crew/obligations.py:893, so a regression inside that helper passes and the call omits the review argument the production path passes at line 880."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1155",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new kind is absent from REVIEW_DUTY_KINDS, so a stored row of that kind is not settled against the run's pointer when a review of that head is dispatched, and a tick-served answer keeps naming dispose for work already done."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against base bb45282b57; 9c27fc7098 changes 82 lines of obligations.py and 22 of recovery_review_dispatch.py plus the 267-line test, and 21b66194f3 reformats four lines of that test only.",
+    "done_when": "the new tests/test_a_refused_reflex_review_names_its_remedy.py carries the five cases the done_when names at lines 180, 199, 214, 226 and 259, and head-arm.log records 60 passed EXIT=0 over that file plus two importer files, but the done_when's final clause about test files importing reckon.crew.obligations is measured over two files of the population while obligation-importers-head.log is header-only and obligation-importers-base.log carries no summary or EXIT.",
+    "goal": "the node goal is to deliver section s108, whose deliverable is that a refused reflex review names its remedy; reckon/crew/obligations.py:2643 sets REVIEW_DISPATCH_REFUSED_DUTY_KIND on the duty _review_duty_item builds, with the refusal's own dispose command, so the goal is met.",
+    "manifest": "read at the reviewed run directory; it is eight lines, states status complete, and carries no tests, test_logs, baseline_suite or after_suite keys while its own checkpoint names the obligation-importer population as still pending.",
+    "write_paths": "the fence declares reckon/crew/obligations.py, reckon/crew/recovery_review_dispatch.py and the new test; git diff bb45282b57..21b66194f3 spans exactly those three files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_refused_reflex_review_names_its_remedy.py:189 reddens at negative-control.log when _review_dispatch_refusal ignores the recorded dispatch, but line 255 compares the duty's command against the same helper the production code calls.",
+    "evidence": "head-arm.log:1 records its run at 9c27fc70 while the reviewed head is 21b66194f3, and obligation-importers-head.log:1-3 carries header lines only with no summary or EXIT for the clause the done_when names.",
+    "fit": "the kind constant at reckon/crew/obligations.py:243 and the pointer entry at reckon/crew/recovery_review_dispatch.py:682 follow the file's naming, though reckon/crew/obligations.py:815 breaks a docstring sentence mid-phrase.",
+    "goal_fidelity": "reckon/crew/obligations.py:2643 sets the refused-dispatch kind and its dispose command on the duty that previously told the coordinator the reflex owned the dispatch.",
+    "reuse": "reckon/crew/obligations.py:880 reuses recovery_review_dispatch._finding_dispose_commands rather than re-deriving the dispose command, and the kind is deliberately distinct from review-refused at reckon/crew/obligations.py:2566.",
+    "scope_discipline": "git diff bb45282b57..21b66194f3 touches only reckon/crew/obligations.py, reckon/crew/recovery_review_dispatch.py and the new test, the three fenced paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver section s108, whose deliverable is that a refused reflex review names its remedy; reckon/crew/obligations.py:2643 sets REVIEW_DISPATCH_REFUSED_DUTY_KIND on the duty _review_duty_item builds, with the refusal's own dispose command, so the goal is met.\nVERDICT done_when: the new tests/test_a_refused_reflex_review_names_its_remedy.py carries the five cases the done_when names at lines 180, 199, 214, 226 and 259, and head-arm.log records 60 passed EXIT=0 over that file plus two importer files, but the done_when's final clause about test files importing reckon.crew.obligations is measured over two files of the population while obligation-importers-head.log is header-only and obligation-importers-base.log carries no summary or EXIT.\nVERDICT write_paths: the fence declares reckon/crew/obligations.py, reckon/crew/recovery_review_dispatch.py and the new test; git diff bb45282b57..21b66194f3 spans exactly those three files.\nVERDICT manifest: read at the reviewed run directory; it is eight lines, states status complete, and carries no tests, test_logs, baseline_suite or after_suite keys while its own checkpoint names the obligation-importer population as still pending.\nVERDICT diff: read both commits against base bb45282b57; 9c27fc7098 changes 82 lines of obligations.py and 22 of recovery_review_dispatch.py plus the 267-line test, and 21b66194f3 reformats four lines of that test only.\nCALL_SITES: reckon/crew/obligations.py:4060 (_review_duty_item called from the derivation), reckon/crew/obligation_snapshot.py:1881 (slice recompute of the same duty), reckon/crew/station_subscriber.py:155 (station item), reckon/hooks/coordinator_obligations.py:864 (hook row keyed on kind and next_command, no kind allow-list), reckon/crew/recovery_review_dispatch.py:3108 (_open_review_refusal writes the refusal)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2643 sets the refused-dispatch kind and its dispose command on the duty that previously told the coordinator the reflex owned the dispatch.\nSCORE evidence: 10\nJUSTIFICATION evidence: head-arm.log:1 records its run at 9c27fc70 while the reviewed head is 21b66194f3, and obligation-importers-head.log:1-3 carries header lines only with no summary or EXIT for the clause the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff bb45282b57..21b66194f3 touches only reckon/crew/obligations.py, reckon/crew/recovery_review_dispatch.py and the new test, the three fenced paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_refused_reflex_review_names_its_remedy.py:189 reddens at negative-control.log when _review_dispatch_refusal ignores the recorded dispatch, but line 255 compares the duty's command against the same helper the production code calls.\nSCORE fit: 17\nJUSTIFICATION fit: the kind constant at reckon/crew/obligations.py:243 and the pointer entry at reckon/crew/recovery_review_dispatch.py:682 follow the file's naming, though reckon/crew/obligations.py:815 breaks a docstring sentence mid-phrase.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/obligations.py:880 reuses recovery_review_dispatch._finding_dispose_commands rather than re-deriving the dispose command, and the kind is deliberately distinct from review-refused at reckon/crew/obligations.py:2566.\nFINDING manifest.md:6 blocking: status complete rests on a measure its own checkpoint calls pending, obligation-importers-base.log:3 records that its cd into the extracted base tree failed and srun was cancelled with no EXIT line, and obligation-importers-head.log:1-3 has no summary, so the done_when's importer clause has no measurement.\nFINDING head-arm.log:1 non-blocking: the gate's revision header names 9c27fc7098, not the reviewed head 21b66194f3, so the gate never ran at the revision being promoted; the intervening commit reformats four lines of the new test only.\nFINDING tests/test_a_refused_reflex_review_names_its_remedy.py:255 non-blocking: the assertion compares the duty's command against dispatch_module._finding_dispose_commands, the same helper the production code calls at reckon/crew/obligations.py:893, so a regression inside that helper passes and the call omits the review argument the production path passes at line 880.\nFINDING reckon/crew/obligation_snapshot.py:1155 non-blocking: the new kind is absent from REVIEW_DUTY_KINDS, so a stored row of that kind is not settled against the run's pointer when a review of that head is dispatched, and a tick-served answer keeps naming dispose for work already done.\n",
+  "review_node": "review-of-wave4-omp-local-the-monitor-shows-the-wo-s108-21b66194f3de",
+  "review_run_id": "r-20261115T104801266585-review-of-wave4-omp-local-the-monitor-shows-the-wo-s108-21b66194f3de",
+  "reviewed_base_sha": "bb45282b57f827630da06fea40073de11631f69f",
+  "reviewed_head_sha": "21b66194f3deab61151d2f814ff2f8c7d24b8719",
+  "reviewed_run_id": "r-20261114T150520925520-wave4-omp-local-the-monitor-shows-the-wo-s108",
+  "scores": {
+    "durability": 16,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T12:57:18.198808+00:00",
+  "total": 101
+}

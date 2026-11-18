@@ -1,0 +1,109 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own baseline_suite and after_suite logs (logs/suite-base.log, logs/suite-after.log), which returns (0, []): both arms report 58 passed and no FAILED id. The wider importer arm agrees by hand \u2014 157 failing ids on each of logs/importers-base-0{0,1,2,3}.log and 157 on logs/importers-after-0{0,1,2,3}.log, the first head pass's two extra ids in after-head-only.ids rerun to 2 passed EXIT=0 in logs/importers-after-00-rerun.log.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reinstating the module-level `from reckon.crew_dispatch_commands import crew` in reckon/crew/resume.py reddens it, because the subprocess exit code comes back 1 with the ImportError \u2014 exactly what logs/gate-head-first.log shows for the same three ids at cd6f85d1db.",
+      "lines": "tests/test_modules_import_alone.py:91"
+    },
+    {
+      "failure_condition": "The session fixture asserts no file is left in the temporary home, so an import that wrote outside the tree reddens it; it compares filesystem leftovers rather than a value the test handed to the test subject.",
+      "lines": "tests/test_modules_import_alone.py:75"
+    },
+    {
+      "failure_condition": "The subprocess prints the imported module's resolved __file__ and asserts it lies under the repository root, so a pass that came from an installed copy reddens instead of reading as success.",
+      "lines": "tests/test_modules_import_alone.py:37"
+    }
+  ],
+  "assertion_analysis_note": "No assertion is added by this diff: the change edits two product modules and one evidence fragment, and the guard read below is the pre-existing test the repair makes pass.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:3422",
+    "reckon/cli.py:124",
+    "reckon/cli.py:130",
+    "reckon/crew_run_commands.py:22",
+    "reckon/crew_follow_commands.py:33",
+    "reckon/crew/recovery_repair_dispatch.py:30",
+    "reckon/crew/recovery_review_acceptance.py:16",
+    "reckon/crew/queue_landing.py:24"
+  ],
+  "completed_at": "2026-11-16T16:03:33.570Z",
+  "dispatched_at": "2026-11-16T16:03:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "3422",
+      "severity": "non-blocking",
+      "text": "No test fails if this call is deleted: nothing invokes or asserts the hold and release verbs (the only CLI hold coverage is crew queue hold/release at tests/test_queue_hold_release.py:199), and tests/test_crew_families_fold.py:589 compares help text against the same crew.commands mapping, so both sides shrink together. The import-order repair beside it is guarded; the attach is not."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-modules-import-alone.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "The goal table's head row names 4ff35cd7dc at 257 passed in 129.42s and the importer table at line 57 names the same revision, while the delivered head 9f7f53b35a has its own gate run (logs/gate-head-final.log, job 1320220, 257 passed, EXIT=0) the fragment does not carry; a reader comparing the fragment to the promoted commit sees a revision one commit behind, safe only because 9f7f53b35a is docs-only."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104856876718-qwnw-red-file-modules-import-alone/manifest.md",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither changed module; 58 passed on both sides is a real pair but not a measurement of this change, so the suite receipt reads as coverage the node does not have."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-modules-import-alone/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104856876718-qwnw-red-file-modules-import-alone/logs/suite-after.log",
+      "revision": "9f7f53b35a0c428dbe8eb70a6d16f2d2043fbea3"
+    },
+    "baseline_suite": {
+      "command": "env -u SLURM_JOB_ID PYTHONPATH=/tmp/reckon-crew-scratch/r-20261116T104856876718-qwnw-red-file-modules-import-alone/base-clone2 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T104856876718-qwnw-red-file-modules-import-alone/logs/suite-base.log",
+      "revision": "cd6f85d1db7153433ef395e52746bffc98f64639"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew_dispatch_commands.py:3422 is the only caller of register_hold_commands, reckoned cli.py:130 imports the group whose registration now runs at import time, cli.py:124 imports reckon.crew.resume for guard_resume_command at :670, crew_run_commands.py:22 and crew_follow_commands.py:33 import the group, and recovery_repair_dispatch.py:30, recovery_review_acceptance.py:16, queue_landing.py:24 import other names from resume the change does not touch; a probe in the reviewed tree imported reckon.crew.resume alone and printed True True for hold and release on the group.",
+    "diff": "Read 5b1d51557c, 4ff35cd7dc and 9f7f53b35a against cd6f85d1db commit by commit: 5b1d51557c turns the module-level _register_commands into register_hold_commands(group) and attaches it from the group's own module, 4ff35cd7dc re-sorts the new import line only, and 9f7f53b35a adds the evidence fragment only.",
+    "done_when": "Read the done-when at prompt.txt:277-278 against the logs: logs/gate-head-final.log is sbatch job 1320220 with --partition=all_debug and env -u SLURM_JOB_ID reading 257 passed EXIT=0 at 9f7f53b35a; logs/gate-head-first.log reads 3 failed, 254 passed EXIT=1 at cd6f85d1db and names test_module_imports_alone[reckon.crew_dispatch_commands], [reckon.project_maintenance_commands] and [reckon.project_setup_commands], the same three at revision 8d50b0333f in /home/ITER/mcintos/.cache/reckon-suite-at-head/suite-at-8d50b0333f.log; the importer arm reads 157 failed, 1,528 passed on base and on head with the two head-only ids rerun to 2 passed EXIT=0.",
+    "goal": "Read the node goal in prompt.txt and section s29 of docs/plans/queued-work-needs-no-workaround.html:331; reckon/crew/resume.py:383 now takes the group as an argument and reckon/crew_dispatch_commands.py:3422 calls it, so no module inside reckon/crew imports the group back and tests/test_modules_import_alone.py reads 257 passed at the delivered head.",
+    "manifest": "Read manifest.md: it records the two product files plus the fragment in changed_paths, 257 passed EXIT=0 at 9f7f53b35a in landing and artifacts, 58 passed EXIT=0 on each suite arm, the 157-versus-157 importer arm with an explicit tmp-headroom attribution for the two head-only ids, and six rubric lines.",
+    "write_paths": "Read the declared write paths at prompt.txt:68-73 (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's fragment, docs/figures/queued-work-needs-no-workaround/qwnw-red-file-modules-import-alone); git diff --stat cd6f85d1db 9f7f53b35a lists three files and every one is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_modules_import_alone.py:91 reddens on the reinstated regression at cd6f85d1db (logs/gate-head-first.log names all three ids), so the import-order fix is guarded, but no test invokes or asserts the hold and release verbs, so deleting reckon/crew_dispatch_commands.py:3422 is silent.",
+    "evidence": "logs/gate-head-final.log is sbatch job 1320220 on --partition=all_debug with env -u SLURM_JOB_ID reading 257 passed EXIT=0 at 9f7f53b35a beside logs/gate-head-first.log reading 3 failed, 254 passed EXIT=1 with the three ids at the base, but the fragment's head row and importer arm name 4ff35cd7dc rather than the delivered head and the promotion arm runs two files unrelated to the change.",
+    "fit": "reckon/crew/resume.py:383 follows the module's docstringed-definition style and the comment at reckon/crew_dispatch_commands.py:3417 explains why the attach lives there, departing from the decorate-the-imported-group direction at reckon/crew_run_commands.py:22 only where the import cycle forces it.",
+    "goal_fidelity": "reckon/crew/resume.py:383 takes the group as an argument and reckon/crew_dispatch_commands.py:3422 attaches both hold verbs, so the ImportError the goal names is gone and logs/gate-head-final.log reads 257 passed EXIT=0 for tests/test_modules_import_alone.py.",
+    "reuse": "A capability search over reckon found no owner for attaching a verb declared inside reckon/crew \u2014 only the decorator idiom and the eager-import facade at reckon/crew.py:211 that caused the cycle \u2014 so the change extends the group's owner rather than forking a mechanism.",
+    "scope_discipline": "The three paths in the diff \u2014 reckon/crew/resume.py, reckon/crew_dispatch_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-modules-import-alone.html \u2014 are all inside the declared write paths, no test file was edited and the plan was not touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the node goal in prompt.txt and section s29 of docs/plans/queued-work-needs-no-workaround.html:331; reckon/crew/resume.py:383 takes the group as an argument and reckon/crew_dispatch_commands.py:3422 attaches the hold and release verbs, so no module inside reckon/crew imports the group back and tests/test_modules_import_alone.py reads 257 passed at 9f7f53b35a.\nVERDICT done_when: Read the done-when at prompt.txt:277-278 against the logs; logs/gate-head-final.log is sbatch job 1320220 on --partition=all_debug with env -u SLURM_JOB_ID reading 257 passed EXIT=0 at 9f7f53b35a; logs/gate-head-first.log reads 3 failed, 254 passed EXIT=1 at cd6f85d1db with the three ids also present at 8d50b0333f; the importer arm reads 157 failed, 1,528 passed on base and on head with the two head-only ids rerun green after a tmp-headroom attribution.\nVERDICT write_paths: Read the declared paths at prompt.txt:68-73; git diff --stat cd6f85d1db 9f7f53b35a lists reckon/crew/resume.py, reckon/crew_dispatch_commands.py and the node's own evidence fragment, every one inside the declaration, with no test file and no plan edit.\nVERDICT manifest: Read manifest.md; it records the three changed paths, the 257-passed gate at 9f7f53b35a, 58 passed on each suite arm, the 157-versus-157 importer delta with its scaffolding attribution and six rubric lines.\nVERDICT diff: Read all three commits against cd6f85d1db commit by commit: 5b1d51557c replaces the module-level _register_commands call with register_hold_commands(group) invoked from the group's own module at reckon/crew_dispatch_commands.py:3422, 4ff35cd7dc re-sorts that import, 9f7f53b35a adds the evidence fragment only.\nCALL_SITES: reckon/crew_dispatch_commands.py:3422, reckon/cli.py:124, reckon/cli.py:130, reckon/crew_run_commands.py:22, reckon/crew_follow_commands.py:33, reckon/crew/recovery_repair_dispatch.py:30, reckon/crew/recovery_review_acceptance.py:16, reckon/crew/queue_landing.py:24\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resume.py:383 and reckon/crew_dispatch_commands.py:3422 move the registration out of the verb module, and logs/gate-head-final.log reads 257 passed EXIT=0 for the file the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head-final.log records the all_debug batch job with SLURM_JOB_ID unset at the delivered head and logs/gate-head-first.log records the base's three failing ids, but the fragment's head row and importer arm name 4ff35cd7dc rather than 9f7f53b35a and the promotion arm runs two unrelated files.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The diff's two product files and one fragment are all inside the declared write paths, with no test edit, no plan edit and no figure the done-when does not name.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_modules_import_alone.py:91 reddens with the ImportError when the cycle is reinstated as at cd6f85d1db, but reckon/crew_dispatch_commands.py:3422 is unguarded because no test invokes or asserts the hold and release verbs.\nSCORE fit: 17\nJUSTIFICATION fit: The new docstringed register_hold_commands at reckon/crew/resume.py:383 follows the module's own style and the comment at reckon/crew_dispatch_commands.py:3417 explains the direction, departing from the decorator idiom at reckon/crew_run_commands.py:22 only where the cycle forces it.\nSCORE reuse: 18\nJUSTIFICATION reuse: A capability search over reckon found no owner for attaching a verb declared inside reckon/crew, only the decorator idiom and the eager-import facade at reckon/crew.py:211 that caused the cycle, so the change extends the group's owner rather than forking a mechanism.\nFINDING reckon/crew_dispatch_commands.py:3422 non-blocking: no test fails if this call is deleted, since nothing invokes or asserts the hold and release verbs.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-modules-import-alone.html:28 non-blocking: the fragment's head row names 4ff35cd7dc rather than the delivered head 9f7f53b35a whose own gate log exists.\nFINDING manifest.md:40 non-blocking: both suite arms run two test files that import neither changed module, so the receipt is not a measurement of this change.",
+  "review_run_id": "r-20261116T154159545620-review-of-qwnw-red-file-modules-import-alone-9f7f53b35a0c",
+  "reviewed_base_sha": "cd6f85d1db7153433ef395e52746bffc98f64639",
+  "reviewed_head_sha": "9f7f53b35a0c428dbe8eb70a6d16f2d2043fbea3",
+  "reviewed_run_id": "r-20261116T104856876718-qwnw-red-file-modules-import-alone",
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:14:43.404957+00:00",
+  "total": 106
+}

@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: logs/after-suite.log records 55 passed with a bare EXIT=0 line at revision a113100d5b and logs/base-suite.log records 55 passed with EXIT=0 at base 3dbd3bf6e1, no FAILED line in either, so the set difference is empty (0).",
+  "call_site_count": 0,
+  "completed_at": "2026-11-15T08:49:41.381Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "wftl-the-lane-is-fed-while-coordinators-land",
+      "recorded_at": "2026-11-15T09:47:00.018523+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "wftl-the-lane-is-fed-while-coordinators-land",
+      "recorded_at": "2026-11-15T09:47:02.440796+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-15T08:01:38Z",
+  "findings": [
+    {
+      "file": "scripts/lane_window_census.py",
+      "id": "f0ae3cadcd3",
+      "line": "71",
+      "severity": "non-blocking",
+      "text": "load_runs reads only the live runs table in run_store.db and never attaches run_store.archive.db, where retirement moves rows into a separate file (12,385 retired ids today); the 7-11 November baseline currently holds 0 archived rows so no figure in the record is wrong, but a census over an older window silently loses rows and states no population for that boundary. [non-blocking]"
+    },
+    {
+      "file": "scripts/lane_window_census.py",
+      "id": "f553ebf5c36",
+      "line": "238",
+      "severity": "non-blocking",
+      "text": "claimed_path takes the fourth quote-delimited field of a hold's detail, so a claimed path whose own text contains an apostrophe shifts the field and the hold silently counts as unshared instead of raising; both detail forms present in admission-verdicts.jsonl parse correctly today. [non-blocking]"
+    },
+    {
+      "file": "scripts/lane_window_census.py",
+      "id": "f44b8580b7f",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "nothing guards the instrument \u2014 there is no test for concurrency(), promotion_latency(), admission_holds() or identity_files(), so a change to the span fallback at :100 or the cohort filter at :180 leaves every figure plausible and wrong. [non-blocking]"
+    },
+    {
+      "file": "scripts/lane_window_census.py",
+      "id": "ff48a6fe5d6",
+      "line": "32",
+      "severity": "non-blocking",
+      "text": "RUN_STORE is opened directly and read with raw SQL, duplicating the ledger read that reckon/run_store.py:284 RunStore.records() and durable_rows() own, and dropping the archive-attachment capability the owner carries. [non-blocking]"
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html",
+      "id": "fca944a8a9e",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the headline prose states a mean of 20.05 while its own table at :40 and the committed census JSON state 20.72, and the instrument list at :205 states 10,959 run rows and 1,090 landing records where the same JSON reads 10,966 and 1,097 \u2014 earlier-read figures left in prose beside the final ones. [non-blocking]"
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html",
+      "id": "f9ec64efd92",
+      "line": "130",
+      "severity": "non-blocking",
+      "text": "three of the four criteria in the dispatch's FENCE-EVIDENCE read not met and the record still closes complete; \u00a79's own done-when asks only for a mean of 12 with the other three reported as measured, so whether \u00a768 to \u00a770 absorb them or the status changes is the coordinator's call rather than a gap for the reader to find. [non-blocking]"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: no production module imports or invokes scripts/lane_window_census.py; the stores it reads (run_store.db, admission-verdicts.jsonl, claims/) are data, not call sites",
+    "diff": "read commit a113100d5b against base 3dbd3bf6e1; three files and 764 insertions with no deletions \u2014 scripts/lane_window_census.py at 425 lines, the HTML record at 215 and its census JSON output at 124, which the plan requires committed beside the record; no product or test source is touched.",
+    "done_when": "the dispatch's FENCE-EVIDENCE asserts four criteria plus a control below 12; the fragment's gate table at :121 records each against its own criterion (20.72 workers, 90.9 min median, 5 of 8 admit passes, 27,855 identity files) and my re-run reproduced the baseline mean 3.71 and the control 6.83 exactly, so the gate measures the stated figures and three of the four read not met.",
+    "goal": "the node goal is to deliver work-flows-to-the-lane \u00a79's measured window; scripts/lane_window_census.py:24 measures the four figures the plan names and the record at docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:1 reports the window, the 7-11 November baseline and the negative control, so the deliverable exists; the plan's named archive anchor (docs/evidence/archive/work-flows-to-the-lane-landed.html, which carries no s9 anchor yet) is the coordinator's splice of this fragment, not this node's write.",
+    "manifest": "read; it states both suite arms green at 55 passed each, names both gate logs, and declares scripts/lane_window_census.py to be outside the dispatch's fence list for ratification; I confirmed both logs' revision header lines and their EXIT=0 tails.",
+    "write_paths": "the dispatch's FENCE-SCOPE lists reckon, tests, skills, the plan's fragments directory and its figures directory; all three paths in the diff are inside that list except scripts/lane_window_census.py, which the plan's \u00a79 clause \"a script under scripts/\" names and which the manifest declares in its scope_note."
+  },
+  "justifications": {
+    "durability": "no test file exists for scripts/lane_window_census.py:1, and the two files both gate arms run (tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py) exercise none of it, so a regression in concurrency() at :119 or promotion_latency() at :169 reddens nothing.",
+    "evidence": "logs/after-suite.log ends \"55 passed\" and \"EXIT=0\" beside its revision header, and re-running scripts/lane_window_census.py with --baseline --negative-control reproduced 3.71 and 6.83 exactly from the ledger.",
+    "fit": "the module's docstring and argparse shape follow scripts/census/monitor_census.py:242 and ruff check and format are clean on it, but it sits at scripts/ root while every sibling census module and its test live under scripts/census/.",
+    "goal_fidelity": "scripts/lane_window_census.py:375 reports every figure \u00a79 names, and the fragment at docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:121 puts each beside its criterion rather than reporting only the one that passes.",
+    "reuse": "reckon/run_store.py:284 RunStore already owns reading the ledger these rows come from, and scripts/lane_window_census.py:71 queries the runs table with raw SQL rather than extending it.",
+    "scope_discipline": "scripts/lane_window_census.py:1 lands outside the dispatch's FENCE-SCOPE list although \u00a79's write-paths clause names \"a script under scripts/\", and the manifest flags the discrepancy for ratification rather than leaving it undisclosed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver work-flows-to-the-lane \u00a79's measured window; scripts/lane_window_census.py:24 measures the four figures the plan names and the record at docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:1 reports the window, the 7-11 November baseline and the negative control, so the deliverable exists; the plan's named archive anchor (docs/evidence/archive/work-flows-to-the-lane-landed.html, which carries no s9 anchor yet) is the coordinator's splice of this fragment, not this node's write.\nVERDICT done_when: the dispatch's FENCE-EVIDENCE asserts four criteria plus a control below 12; the fragment's gate table at :121 records each against its own criterion (20.72 workers, 90.9 min median, 5 of 8 admit passes, 27,855 identity files) and my re-run reproduced the baseline mean 3.71 and the control 6.83 exactly, so the gate measures the stated figures and three of the four read not met.\nVERDICT write_paths: the dispatch's FENCE-SCOPE lists reckon, tests, skills, the plan's fragments directory and its figures directory; all three paths in the diff are inside that list except scripts/lane_window_census.py, which the plan's \u00a79 clause \"a script under scripts/\" names and which the manifest declares in its scope_note.\nVERDICT manifest: read; it states both suite arms green at 55 passed each, names both gate logs, and declares scripts/lane_window_census.py to be outside the dispatch's fence list for ratification; I confirmed both logs' revision header lines and their EXIT=0 tails.\nVERDICT diff: read commit a113100d5b against base 3dbd3bf6e1; three files and 764 insertions with no deletions \u2014 scripts/lane_window_census.py at 425 lines, the HTML record at 215 and its census JSON output at 124, which the plan requires committed beside the record; no product or test source is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: scripts/lane_window_census.py:375 reports every figure \u00a79 names, and the fragment at docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:121 puts each beside its criterion rather than reporting only the one that passes.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after-suite.log ends \"55 passed\" and \"EXIT=0\" beside its revision header, and re-running scripts/lane_window_census.py with --baseline --negative-control reproduced 3.71 and 6.83 exactly from the ledger.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: scripts/lane_window_census.py:1 lands outside the dispatch's FENCE-SCOPE list although \u00a79's write-paths clause names \"a script under scripts/\", and the manifest flags the discrepancy for ratification rather than leaving it undisclosed.\nSCORE durability: 4\nJUSTIFICATION durability: no test file exists for scripts/lane_window_census.py:1, and the two files both gate arms run (tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py) exercise none of it, so a regression in concurrency() at :119 or promotion_latency() at :169 reddens nothing.\nSCORE fit: 15\nJUSTIFICATION fit: the module's docstring and argparse shape follow scripts/census/monitor_census.py:242 and ruff check and format are clean on it, but it sits at scripts/ root while every sibling census module and its test live under scripts/census/.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/run_store.py:284 RunStore already owns reading the ledger these rows come from, and scripts/lane_window_census.py:71 queries the runs table with raw SQL rather than extending it.\nFINDING scripts/lane_window_census.py:71 non-blocking: load_runs reads only the live runs table in run_store.db and never attaches run_store.archive.db, where retirement moves rows into a separate file (12,385 retired ids today); the 7-11 November baseline currently holds 0 archived rows so no figure in the record is wrong, but a census over an older window silently loses rows and states no population for that boundary.\nFINDING scripts/lane_window_census.py:238 non-blocking: claimed_path takes the fourth quote-delimited field of a hold's detail, so a claimed path whose own text contains an apostrophe shifts the field and the hold silently counts as unshared instead of raising; both detail forms present in admission-verdicts.jsonl parse correctly today.\nFINDING scripts/lane_window_census.py:1 non-blocking: nothing guards the instrument \u2014 there is no test for concurrency(), promotion_latency(), admission_holds() or identity_files(), so a change to the span fallback at :100 or the cohort filter at :180 leaves every figure plausible and wrong.\nFINDING scripts/lane_window_census.py:32 non-blocking: RUN_STORE is opened directly and read with raw SQL, duplicating the ledger read that reckon/run_store.py:284 RunStore.records() and durable_rows() own, and dropping the archive-attachment capability the owner carries.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:17 non-blocking: the headline prose states a mean of 20.05 while its own table at :40 and the committed census JSON state 20.72, and the instrument list at :205 states 10,959 run rows and 1,090 landing records where the same JSON reads 10,966 and 1,097 \u2014 earlier-read figures left in prose beside the final ones.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/wftl-the-lane-is-fed-while-coordinators-land.html:130 non-blocking: three of the four criteria in the dispatch's FENCE-EVIDENCE read not met and the record still closes complete; \u00a79's own done-when asks only for a mean of 12 with the other three reported as measured, so whether \u00a768 to \u00a770 absorb them or the status changes is the coordinator's call rather than a gap for the reader to find.",
+  "review_node": "review-of-wftl-the-lane-is-fed-while-coordinators-land-a113100d5b95",
+  "review_run_id": "r-20261115T075755723876-review-of-wftl-the-lane-is-fed-while-coordinators-land-a113100d5b95",
+  "reviewed_base_sha": "3dbd3bf6e139fbd09437fc75539047fb9c837731",
+  "reviewed_head_sha": "a113100d5b95542e39adcbc2cb878184c4a65f1a",
+  "reviewed_run_id": "r-20261114T222338072670-wftl-the-lane-is-fed-while-coordinators-land",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261115T075755723876-review-of-wftl-the-lane-is-fed-while-coordinators-land-a113100d5b95"
+  },
+  "scores": {
+    "durability": 4,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T08:51:36.764080+00:00",
+  "total": 70
+}

@@ -1,0 +1,16 @@
+<section id="alro-s5-close-page" data-node="alro-s5">
+  <h2>Closing a sprint writes one page</h2>
+  <p>Closing a sprint now writes <code>docs/evidence/archive/&lt;sprint&gt;-closing.html</code>
+  with one row per member plan. A row states the plan's status, sections landed,
+  runs, worker time and headline result, all taken from
+  <code>reckon.evidence.read_section_landings</code> — the reading each plan's
+  closure overview renders — so the page and the overview cannot state different
+  counts for the same plan. Figures come from the reading's landed figures, whose
+  <code>src</code> is the figure inventory's own row builder, and a row links the
+  plan document only when one exists; a plan with no overview is listed with its
+  status and no link to a record that was never written.</p>
+  <p>The close guard that refuses a plan over an unlanded section now reads the
+  run ledger once per close rather than once per unanswered section, and refuses
+  a plan state naming no project or slug instead of reading it as a plan with no
+  run record.</p>
+</section>

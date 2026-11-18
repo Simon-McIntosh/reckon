@@ -1,0 +1,119 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+      "digests": {
+        "s16": "db93a926eff2f88334e8dabc68b058e0ab8b51ba7f71799bb31ae04079aea964"
+      },
+      "reason": "the only edit since the review renames \u00a716's write path from crew_run_commands.py to promotion_records.py, which is exactly what both findings asked for",
+      "units": [
+        "s16"
+      ],
+      "when": "2026-11-17T12:50:45.919319+00:00"
+    }
+  ],
+  "completed_at": "2026-11-17T12:39:27.067Z",
+  "dispatched_at": "2026-11-17T12:38:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:141",
+      "id": "anchors_resolve-1",
+      "reason": "the write-path list is the fence's grant, so as written the node either blocks on a refusal it may not edit or edits nothing, and the fix is one line of plan text naming the module `_evaluate_suite_delta` lives in.",
+      "text": "\u00a716's write paths name `reckon/crew_run_commands.py`, \"which raises `suite-delta-refused`\", but that module does not own the refusal: it catches `ledger.SuiteDeltaError` from `crew_module.complete` and re-emits it (`reckon/crew_run_commands.py:3929-3945`), while the added-failure refusal is raised in `reckon/crew/promotion_records.py:1600` inside `_evaluate_suite_delta` (called from `reckon/crew/promotion.py:1387`, with `added = ledger.added_failure_ids(...)` at `reckon/crew/promotion_records.py:1579` and the row column `suite_delta` at `reckon/ledger.py:176`) \u2014 none of those modules are in \u00a716's write paths, and the dispatch fence grants writes only from that list, so the node cannot change the check it is told to exempt. Confirmed against the cited run: `~/.config/reckon/crew/runs/r-20261117T105839201656-replay-codex-anchored-bk-s6/promotion.json` carries `\"error\": \"suite-delta-refused\"` with the six added ids the plan states",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:141",
+      "id": "reasoning-1",
+      "reason": "the endpoint sentence and the fence disagree about which module the change touches, and only the fence decides whether work can land.",
+      "text": "the Deliverable states the endpoint as \"promotion records the added suite failures as the run's measured outcome instead of refusing\", which is right, but pairs it with a write-path list naming the one module that merely reports refusal: the plan's own reasoning about where the check sits (the Why names `suite-delta-refused` as the refusal, and the write-path note says this module raises it) does not match the code, where the check returns a `suite_delta` mapping whose `added_failure_ids` the row records (`reckon/crew/obligations.py`-independent; `reckon/ledger.py:176` column, written at `reckon/crew/promotion.py:2730`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d60cd8a833173fdad6c7c070b934f5b5b1d9ab1a",
+  "plan_fingerprint": "4b62f933b3dcb18cc38d5e08cbb20c7c50933298d8e231783483d4d7052ab898",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 85,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d60cd8a833173fdad6c7c070b934f5b5b1d9ab1a",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a716's write paths now name reckon/crew/promotion_records.py, where _evaluate_suite_delta raises the added-failure refusal, in place of crew_run_commands.py, which only re-emits it",
+      "reason": "",
+      "when": "2026-11-17T12:48:13.728041+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "d60cd8a833173fdad6c7c070b934f5b5b1d9ab1a",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the Deliverable's exemption now sits in the module that owns the check, reckon/crew/promotion_records.py, so a worker fenced to the write paths can change it",
+      "reason": "",
+      "when": "2026-11-17T12:48:17.530146+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "d60cd8a833173fdad6c7c070b934f5b5b1d9ab1a",
+      "commit_basis": "edit",
+      "note": "\u00a716's write paths now name reckon/crew/promotion_records.py, where _evaluate_suite_delta raises the added-failure refusal, in place of crew_run_commands.py, which only re-emits it",
+      "reason": "",
+      "when": "2026-11-17T12:48:13.728041+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "d60cd8a833173fdad6c7c070b934f5b5b1d9ab1a",
+      "commit_basis": "edit",
+      "note": "the Deliverable's exemption now sits in the module that owns the check, reckon/crew/promotion_records.py, so a worker fenced to the write paths can change it",
+      "reason": "",
+      "when": "2026-11-17T12:48:17.530146+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-workers-spend-fewer-tokens-per-landed-node.v85.json",
+  "review_run_id": "r-20261117T123341233241-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "ea023ca71ecaf0e6082d80125dde276a56c61bb0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a716's write paths name `reckon/crew_run_commands.py` as the module \"which raises suite-delta-refused\", but `reckon/crew_run_commands.py` only catches `ledger.SuiteDeltaError` and emits the error key; the added-failure refusal itself is raised in `reckon/crew_run_commands.py`'s callee `reckon/crew/promotion_records.py:1600` (`_evaluate_suite_delta`) with the comparison in `reckon/crew/promotion.py:1387` and the row field `suite_delta` in `reckon/ledger.py:176`, none of which are in the write paths.",
+    "done_when": "pass \u2014 \u00a716's done-when states two synthesised-repository cases and a negative control that can fail (the exemption removed, the first case must be refused `suite-delta-refused`), and the six added failure ids and the `suite_delta` row field are obtainable through the promotion path the plan cites.",
+    "evidence_paths": "pass \u2014 \u00a716's logs land under the run directory and its test cases build a temporary home with a synthesised repository, so no gate log sits on a path that dies with the node.",
+    "naming": "pass \u2014 \u00a716 names no plan label, stage name or ticket number; the marker `measure_only`, the outcome `measured` and the refusal `suite-delta-refused` are mechanisms the code names \u2014 \u00a716 names the endpoint of a failed measurement run becoming a recorded one, and its two remaining refusals are the endpoint's own binary distinction rather than a second deliverable.",
+    "reasoning": "a finding \u2014 \u00a716's Deliverable is framed as an exemption inside the refusal the plan attributes to `reckon/crew_run_commands.py`, while the module that owns the added-failure check is not in its write paths, so a worker fenced to the declared paths cannot make the refusal it is asked to change.",
+    "single_goal": "pass \u2014 \u00a716 names one deliverable: a failed measurement run's added suite failures are recorded as its measured outcome instead of refused, with the two refusal cases that must keep refusing.",
+    "wiring": "pass \u2014 \u00a716 is a new declaration in `plan-section-declarations` (s16: implementable) with no `plan-section-depends-on` entry, and no ordering constraint remains: the marker reading \u00a716 relies on is the one \u00a715 landed (done), and the check it amends is the same added-failure check."
+  },
+  "section_digests": {
+    "_document": "36b066d4eb027683d407ec9f75f6897c2d746bc8dfd8d358041644d7c8313deb",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s10": "57c0e4bc790984e6470018cb7d1d811c93595c29bd68880d123ca24701f03432",
+    "s11": "1875a6d7d71c4631394fabd2dff8760a85b806148eac48ac293dabf4ad0940a8",
+    "s12": "48a1b1ca3c1b9a452478d7a70d3068987dfb74666027f6d7f9b5fc1f22a5f307",
+    "s13": "1fdf25a5901018059232952887c4d521293830773f8d0666b04c8e3e993fa897",
+    "s14": "23692a87196bb7d7cc64f865074e6922c8407bcc8e7e1f6b62f37bfa7b270f9d",
+    "s15": "d85c997f58dd382815a756c274472252162e6d054324b7424c49ae60c236922e",
+    "s16": "e3f48535e90d46a03515fb8e3f4352ff05409b56c3a44c50a2d12c4448b74628",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "66f3d05813353c3b9b7232c9a3f26c9cb8635cd0a0f84b70d4c0bd390630c805",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:48:11.434671+00:00",
+  "total": null
+}

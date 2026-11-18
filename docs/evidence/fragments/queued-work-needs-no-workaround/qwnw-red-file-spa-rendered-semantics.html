@@ -1,0 +1,170 @@
+<section id="qwnw-red-file-spa-rendered-semantics-landing">
+  <h2>The rendered-semantics red file passes in full again</h2>
+
+  <p><strong>What was red.</strong> At the base revision
+  <code>d0d77f07</code> the file reported 8 failing cases of 10. Seven were
+  reported by the harness as <code>navigation-never-completed</code>, which
+  reads as a browser fault, and one asserted a snapshot receipt reading
+  <code>Sourcelegacy-indexResources0 resources</code>.</p>
+
+  <p><strong>The harness message was not the cause.</strong> A selector probe
+  over the live shell separated the two: on the plans route the index renders
+  <code>{"rList": false, "compact": false, "artifactIndex": true}</code>, so a
+  case waiting for <code>.r-list</code>, <code>.r-compact-signal.pct</code> or
+  <code>.r-titlebar .gen-prompt</code> waits for a device the cockpit
+  retirement removed and reports it as a navigation that never completed. Each
+  cause below therefore got a verdict on whether the product rule the case
+  states still holds.</p>
+
+  <table id="qwnw-red-file-spa-rendered-semantics-causes">
+    <caption>Each failing case, its verdict, and what changed. No assertion was
+    deleted or weakened; every rewritten case asserts a fact the live shell
+    serves.</caption>
+    <thead><tr><th>case</th><th>verdict</th><th>what changed</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_overview_renders_every_active_sprint_and_focus_conflict</code></td>
+        <td>test wrong</td>
+        <td>The cockpit's <code>.r-overview-project-row</code> is gone. The case
+        reads the sprint table's rows and the conflict banner, which names the
+        active sprints and the pointer (the banner gained
+        <code>role="alert"</code> so the case's alert requirement still holds).</td></tr>
+      <tr><td><code>test_sprint_view_renders_composed_metrics_findings_order_and_priority</code></td>
+        <td>product wrong and test wrong</td>
+        <td>The table rendered <code>unknown</code> and <code>0%</code> for a
+        sprint whose payload carried <code>metrics.mean_impl 0.42</code> and
+        <code>implementation_pct</code> absent: <code>sprintStateRows</code> read
+        only the flat fields. It now falls back to the served
+        <code>metrics</code> block. The case reads the sprint table, the review
+        priority list, the finding anchors and the detail card.</td></tr>
+      <tr><td><code>test_sprint_view_without_review_has_no_review_affordances</code></td>
+        <td>test wrong</td>
+        <td>Nothing to repair: the case passed once the hook order below was
+        fixed.</td></tr>
+      <tr><td><code>test_plan_row_renders_authored_to_effective_transition_and_open_gate_count</code></td>
+        <td>product wrong</td>
+        <td>The index row stated the authored status only. It now carries
+        <code>.r-status-transition</code> with the authored and effective
+        statuses and the open gate count, and the progress bar carries the
+        percent as its title as well as its label.</td></tr>
+      <tr><td><code>test_shell_renders_snapshot_source_resource_count_load_time_and_refresh</code></td>
+        <td>test wrong</td>
+        <td>The case opened the retired cockpit route, where no discovery
+        request is made, so the receipt stated the index-only reading by
+        design. It now opens the plans index the revalidation runs behind and
+        waits for the receipt to carry the served figures.</td></tr>
+      <tr><td><code>test_refresh_revalidates_discovery_without_document_navigation</code></td>
+        <td>product wrong and test wrong</td>
+        <td>Revealing a held arrival cleared the pending list without inserting
+        the row into the inventory the list is drawn from, so the row was
+        <em>dropped</em>: the reveal could never show it. The loader now adopts
+        the revealed rows. The case states the arrival contract it keeps — the
+        refresh issues one discovery request with no navigation, the new plan is
+        held behind the banner, and opening the banner renders it.</td></tr>
+      <tr><td><code>test_handoff_renders_live_source_and_loaded_plan_version</code></td>
+        <td>product wrong and test wrong</td>
+        <td>The plan route renders no titlebar, and with it went the control
+        that opened a plan's handoff prompt; the prompt was reachable only by a
+        keyboard event. The reader's control row now owns it
+        (<code>.r-reading-prompt</code>). The prompt text also captured the plan
+        version at open, so a version arriving later left the text saying
+        <em>unavailable</em> beside a footer naming the loaded version; the text
+        now follows the prompt it was designed from until the reader edits
+        it.</td></tr>
+      <tr><td><code>test_compact_progress_renders_label_tooltip_and_navigation_target</code></td>
+        <td>test wrong</td>
+        <td>The compact signal is the index row's <code>.r-artifact-progress</code>:
+        the case reads its aria-label and title and clicks it to reach the plan.</td></tr>
+      <tr><td>the whole shell unmounting on the sprint route</td>
+        <td>product wrong</td>
+        <td>Reported by no assertion directly: <code>Sprint</code> returned its
+        <code>allSprints[idx]</code> guards before five hooks, so the background
+        discovery merge made React 310 fire and unmounted the surface. Every
+        hook is now unconditional and the guards follow them. The discovery
+        merge also dropped <code>review</code> from the derived blocks, which
+        made the ranked priority list and the open findings unreachable.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-spa-rendered-semantics-arms">The gates</h3>
+
+  <table id="qwnw-red-file-spa-rendered-semantics-gates">
+    <caption>Each log's first lines name its revision, tree and command and its
+    last line is a bare <code>EXIT=&lt;code&gt;</code>. Browser cases ran as
+    jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the file, base</td><td><code>d0d77f07</code>, extraction</td>
+        <td>8 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the file, host head before the fixes</td>
+        <td><code>96308682</code></td>
+        <td>4 failed, 6 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the three cases the harness reported as navigation faults, alone</td>
+        <td><code>65b3cd83</code></td>
+        <td>3 failed in 146 s — so they were selectors, not the browser</td></tr>
+      <tr><td>the same three after the repairs</td><td><code>961a97b7</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the file, head</td><td><code>2efb56b1</code></td>
+        <td><strong>10 passed, <code>EXIT=0</code></strong></td></tr>
+      <tr><td>suite arm, base</td><td><code>d0d77f07</code>, extraction whose
+        tree is <code>bff3a503</code></td>
+        <td>58 passed in 59 s, <code>EXIT=0</code></td></tr>
+      <tr><td>suite arm, head</td><td><code>2efb56b1</code></td>
+        <td>58 passed in 64 s, <code>EXIT=0</code> — the same file set, so the
+        change adds no failure against the base</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-spa-rendered-semantics-control">Negative control</h3>
+
+  <p>The base run is the control: the same file at
+  <code>d0d77f07</code> fails 8 of its 10 cases, and the head run fails none.
+  Five of those eight ids names a device or a route the cockpit retirement
+  removed, so the base failure is the rule the code no longer keeps rather than
+  a missing product feature; the remaining three name product defects this node
+  repaired, each with a case that fails at base and passes at head.</p>
+
+  <p>The reproduction was confirmed before each repair rather than assumed. The
+  retained diagnostic on a compute node read
+  <code>rows: [{"text": "Rendered contractrendered-contract3.25h · focus…
+  active→blocked1 open gate"}]</code> after the index row was changed and
+  <code>chips: []</code> before it, and the refresh probe read
+  <code>{"hold": {"newPlanVisible": false, "rows": ["rendered-contract"]}}</code>
+  before the reveal repair and
+  <code>{"rows": ["created-while-open", "rendered-contract"]}</code> after it.</p>
+
+  <h3 id="qwnw-red-file-spa-rendered-semantics-repair">Review repair</h3>
+
+  <p>The sprint table derived a headline state from the served
+  <code>metrics.by_effective_status</code> whenever the flat fields were absent.
+  That is a second implementation of a fact
+  <code>reckon/roadmap.py</code>'s sprint walk owns and serves as
+  <code>derived_state</code> and <code>implementation_pct</code>, and a
+  precedence list no Python reader can see. The derivation is gone: the table
+  states the served fields, and the fixture now carries the row shape the walk
+  emits.</p>
+
+  <p>The control is a case, not a scratch probe:
+  <code>test_sprint_table_states_only_the_figures_the_payload_serves</code>
+  supplies a payload that carries the <code>metrics</code> block a derivation
+  would read and omits the derived fields. The table states
+  <code>{"state": "unknown", "implementation": "0%"}</code> — the payload's
+  answer. With the derivation put back in place the same case fails reading
+  <code>{"state": "active", "implementation": "42%"}</code>: the browser
+  inventing the figure. Reverting the sprint change therefore reds the file,
+  which is what the earlier scratch probe could not show.</p>
+
+  <p>The sprint fixture carried the derived fields beside a
+  <code>metrics</code> block with identical figures, so no assertion in the
+  composed case could tell a served answer from a derived one. The fixture now
+  carries the row the roadmap walk emits and nothing else; the payload-only case
+  above then supplies the block deliberately.</p>
+
+  <p>The sprint module is outside this node's granted write paths; see
+  <code>over_fence_reason</code> in the manifest, which names the grant this
+  repair needs.</p>
+
+  <p>The compact-progress case now reports the hash it observed rather than
+  whether the hash matched, so a red run prints the destination a reader needs.
+  The changed test file's lint and format checks are logged beside the gates
+  (<code>ruff.log</code>, <code>EXIT=0</code>).</p>
+</section>

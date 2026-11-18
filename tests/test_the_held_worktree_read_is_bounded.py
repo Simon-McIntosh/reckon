@@ -53,10 +53,18 @@ def _tree_name(index: int) -> str:
 
 
 def _worktree(root: Path, node: str) -> Path:
-    """Register a tree the way a dispatched run leaves one behind."""
+    """Register a tree the way a dispatched run leaves one behind.
+
+    The tree is left holding a commit its primary branch does not reach,
+    because a retained tree is a duty only while it carries work no landing has
+    taken: a clean tree whose head the branch already reaches holds nothing, so
+    the derivation reports no row for it. A fixture of clean trees would
+    compare the bounded read against an answer the rule excludes.
+    """
     path = root.parent / "managed-worktrees" / SESSION / node
     path.parent.mkdir(parents=True, exist_ok=True)
     _git(root, "worktree", "add", "-q", "--detach", str(path), "HEAD")
+    _git(path, "commit", "-q", "--allow-empty", "-m", f"test: work in {node}")
     return path
 
 

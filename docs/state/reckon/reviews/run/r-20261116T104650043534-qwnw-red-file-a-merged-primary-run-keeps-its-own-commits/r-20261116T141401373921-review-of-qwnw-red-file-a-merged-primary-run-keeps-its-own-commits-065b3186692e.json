@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-16T15:25:22.542Z",
+  "dispatched_at": "2026-11-16T15:25:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html",
+      "line": 39,
+      "severity": "non-blocking",
+      "text": "the head-arm row states the gate ran a job on all_debug with SLURM_JOB_ID unset, but logs/head-gate.log records only host 98dci4-clu-4074 and a SLURM_JOB_ID env count of 0, logs/head-gate.slurm.log is 0 bytes, and no job id or partition is written anywhere in the run, so the done_when's condition is supported only by the different host the gate ran on."
+    },
+    {
+      "file": "tests/test_a_merged_primary_run_keeps_its_own_commits.py",
+      "line": 76,
+      "severity": "non-blocking",
+      "text": "the fixture still records the bare command python -m pytest tests/test_history.py, so the four landing ids go red on any host whose PATH has no python and nothing in the landed diff guards the dependency the fragment defers."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_merged_primary_run_keeps_its_own_commits.py pass in full on the primary branch; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html:38-40 records 7 passed and EXIT=0 for that file at head 065b318669, and no product or test file was changed because the fence's first branch says to deliver a passing run and stop once the merged head already passes.\nVERDICT done_when: the done_when asks for the file green at head as a job on all_debug with SLURM_JOB_ID unset and for the four recorded ids to be explained against revision 8d50b0333f; logs/head-gate.log opens with revision 065b318669, 7 passed and EXIT=0 with a SLURM_JOB_ID env count of 0, and logs/negative-control.log reproduces exactly those four ids as 4 failed, 3 passed, EXIT=1, though no log names the partition all_debug.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html and a figures directory; the node's own diff 5c4ff3492998..065b3186692e touches only that fragment, one file and 75 lines, all inside the declared fragment path, and the worktree is clean at the head.\nVERDICT manifest: read; it reports the head gate 7 passed EXIT=0, the base arm 7 passed, the environment control 4 failed 3 passed, and both suite arms 58 passed EXIT=0 with a log path for each, and each of those figures reconciles with the log it cites.\nVERDICT diff: read all three authored commits against their parent 5c4ff3492998; b2c3f0aafc adds the 75-line fragment, 7f88095dea corrects the fixture line citation from :96 to :76 and names the revision each head arm ran at, and 065b3186692e replaces the pinned head with the arm's own log header so a later docs commit cannot outdate the citation.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1970\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html:26-28 certifies the file green at the merged head while the same file stays red on any host without python on PATH, so the file passes in full for the host measured rather than unconditionally.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-gate.log:13-14 and logs/negative-control.log:473-474 carry the arms' own summary lines and EXIT codes and the control reproduces the four ids at 8d50b0333f, but no artefact names the all_debug partition the done_when requires and logs/head-gate.slurm.log is 0 bytes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5c4ff3492998 065b3186692e lists exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html, and it is the one declared fragment path the manifest names.\nSCORE durability: 13\nJUSTIFICATION durability: the fragment adds no assertion, and the claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html:65-74 that a host dependency is all that stands between the file and red is backed by one PATH control and no test, so nothing reddens if tests/test_a_merged_primary_run_keeps_its_own_commits.py:76 keeps or loses that dependency.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment repeats the shape of its sibling docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-declared-write-path-fences-nothing.html:1,31-44, with a section id of the node id plus -landing, matching headings, and every id prefixed by the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all; the arms reuse pytest through the run-local run-arm.sh and the fragment extends the existing owner of fragment composition at reckon/evidence.py:1618 rather than adding a parallel reader.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-merged-primary-run-keeps-its-own-commits.html:39 non-blocking: the head-arm row states the gate ran a job on all_debug with SLURM_JOB_ID unset, but logs/head-gate.log records only host 98dci4-clu-4074 and a SLURM_JOB_ID env count of 0, logs/head-gate.slurm.log is 0 bytes, and no job id or partition is written anywhere in the run, so the done_when's condition is supported only by the different host the gate ran on.\nFINDING tests/test_a_merged_primary_run_keeps_its_own_commits.py:76 non-blocking: the fixture still records the bare command python -m pytest tests/test_history.py, so the four landing ids go red on any host whose PATH has no python and nothing in the landed diff guards the dependency the fragment defers at lines 65-74.\n",
+  "review_run_id": "r-20261116T141401373921-review-of-qwnw-red-file-a-merged-primary-run-keeps-its-own-commits-065b3186692e",
+  "reviewed_base_sha": "827719105952d26737ec2c5da31433132664e0b6",
+  "reviewed_head_sha": "065b3186692efb6cb616e6f276cceffb67319a92",
+  "reviewed_run_id": "r-20261116T104650043534-qwnw-red-file-a-merged-primary-run-keeps-its-own-commits",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:05:58.150694+00:00",
+  "total": 104
+}

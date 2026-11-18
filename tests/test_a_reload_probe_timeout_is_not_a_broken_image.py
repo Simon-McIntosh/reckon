@@ -131,14 +131,18 @@ def test_a_moved_stamp_starts_the_gap_afresh(reloader, monkeypatch, capsys):
     assert len(calls) == 1
 
     # The code moves again: the checkout now on disk is probed at once rather
-    # than waiting out the gap the previous one earned.
+    # than waiting out the gap the previous one earned. The deferral was said
+    # for the checkout that timed out, and a landing under it is not news.
     monkeypatch.setattr(runs, "follower_code_stamp", lambda: "moved-again")
     _advance(clock, 2.0)
     instance.poll({})
 
-    line = capsys.readouterr().out
-    assert "timed out" in line, line
+    assert capsys.readouterr().out == "", "the moved checkout reprinted the deferral"
     assert len(calls) == 2, "a moved stamp waited out the previous checkout's gap"
+    assert (
+        instance.probe_retry_at - clock[0]
+        == follow.FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+    ), "the moved checkout inherited the previous one's gap"
     assert execs == []
 
 

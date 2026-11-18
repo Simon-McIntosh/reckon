@@ -1,0 +1,94 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-17T16:24:51.779Z",
+  "dispatched_at": "2026-11-17T16:08:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "unreadable-queued-pointer-never-fails-ordering",
+      "recorded_at": "2026-11-17T22:40:24.623263+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Non-blocking and not addressed by the repair: the dispatch yield check still partitions the queue inline instead of taking queue_order's partition. Left for a later consolidation of the two partitions.",
+      "recorded_at": "2026-11-17T22:40:59.090061+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "unreadable-queued-pointer-never-fails-ordering",
+      "recorded_at": "2026-11-17T22:40:31.820644+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "unreadable-queued-pointer-never-fails-ordering",
+      "recorded_at": "2026-11-17T22:40:36.389882+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "Non-blocking and not addressed by the repair: the every-writer case is a static scan, not a driven write. Stands as a known weakness of that test.",
+      "recorded_at": "2026-11-17T22:41:04.031081+00:00"
+    },
+    "5": {
+      "kind": "exempted",
+      "reason": "Non-blocking and not addressed by the repair: no test drives _restore_queued, so its stamp is unpinned. Stands as an open gap.",
+      "recorded_at": "2026-11-17T22:41:07.465238+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py",
+      "line": 63,
+      "severity": "blocking",
+      "summary": "this case, on main since d0949f5e6f and carried into the landing by the merge of primary, asserts that queue_order.admission_order raises ValueError on a pointer with no readable queued_at; the change removes that raise and running the file at the reviewed head reproduces 'Failed: DID NOT RAISE ValueError' at line 63 while the sibling case passes, so the landing adds a suite failure on main that neither arm of the run's gate covers."
+    },
+    {
+      "file": "reckon/crew/dispatching/requests.py",
+      "line": 482,
+      "severity": "non-blocking",
+      "summary": "the dispatch yield check still partitions the queue inline on parse_utc(pointer.get('queued_at')) rather than taking queue_order.partition_placeable, and its comment at lines 473-478 still says 'the ordering keeps its refusal', which the set-aside ordering removed."
+    },
+    {
+      "file": "reckon/crew/admission/selection.py",
+      "line": 236,
+      "severity": "non-blocking",
+      "summary": "the comment above the call the change rewrote still reads 'the ordering refuses such a pointer outright', which reckon/crew/queue_order.py:385-412 no longer does, so it misdescribes the partition_placeable call at selection.py:242 beneath it."
+    },
+    {
+      "file": "tests/test_a_queued_pointer_without_its_time_reads_no_place.py",
+      "line": 4,
+      "severity": "non-blocking",
+      "summary": "the module docstring's opening paragraph still says the ordering 'refuses a pointer with none', contradicting the closing paragraph this change rewrote and the set-aside behaviour its own cases assert."
+    },
+    {
+      "file": "tests/test_unreadable_queued_pointer_never_fails_ordering.py",
+      "line": 158,
+      "severity": "non-blocking",
+      "summary": "the case standing in for the done_when's 'every path that writes a queued pointer' is a static AST scan for a queued_at value copied from another record, so a writer that stamped an unreadable literal, or dropped its stamp, would leave it green."
+    },
+    {
+      "file": "reckon/crew/admission/launching.py",
+      "line": 974,
+      "severity": "non-blocking",
+      "summary": "_restore_queued stamps its restored pointer through readable_queued_at but no test drives _restore_queued, so deleting the stamp would leave every gate green while a restored pointer could be queued unplaceable."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one unreadable queued pointer never fails admission ordering or a review compose; at the reviewed head reckon/crew/queue_order.py:385-412 sets the unreadable pointers aside through partition_placeable and warns with their run ids, reckon/crew/runs.py:1000-1002 stamps every pointer the queue writer stores, and the compose route (reckon/crew/recovery_review_dispatch.py:1130 and :1194 call queue_dispatch) no longer raises, so the goal holds.\nVERDICT done_when: the done_when asks for three cases, a negative control and an all_debug gate logged to the evidence fragment; the ordering case and its set-aside assertion are at tests/test_unreadable_queued_pointer_never_fails_ordering.py:71-84 with the malformed-stamp sibling at :94-112, the review case is at :116-130, while the third case at :158 is a copy-forward AST scan rather than a read of every writer, neither arm log names the all_debug partition, and the run's own logs read 2 failed / 55 passed at cd5e68ec (EXIT=1) and 64 passed at 62ac485bd3 (EXIT=0).\nVERDICT write_paths: the node was dispatched with reckon, tests/test_unreadable_queued_pointer_never_fails_ordering.py and the evidence fragment, and the coordinator widened it to tests/test_the_admission_pass_survives_a_pointer_without_its_time.py, tests/test_a_queued_pointer_without_its_time_reads_no_place.py and reckon/crew/admission/ordering.py; every path the node's own commits touch lies inside that widened set.\nVERDICT manifest: read in full; it names the commits with full 40-character revisions, both arms with their literal commands, completed flags and log paths, a negative_control_log, and its recorded counts reconcile with logs/baseline-arm-record.log and logs/after-arm-merge4.log read directly from disk.\nVERDICT diff: read the node's own commits one at a time from the base: e83916f17f replaces the raise with the set-aside split and adds readable_queued_at at reckon/crew/queue_order.py:269 with its three writer calls, 7fec441677 records the fragment, 1be6d4692b moves the split into partition_placeable and repairs two widened cases, d25fdd2314, de99d812f9 and a768372456 finish the case repairs and take the split at reckon/crew/admission/ordering.py:408, 9c76e49f2f updates the evidence, b1c5ab974a restores the parse_utc import the merge of primary made necessary, and 62ac485bd3 merges primary main.\nCALL_SITES: reckon/crew/admission/selection.py:242, reckon/crew/admission/ordering.py:408, reckon/crew/admission/ordering.py:414, reckon/crew/runs.py:1002, reckon/crew/runs.py:1021, reckon/crew/dispatching/requests.py:486, reckon/crew/admission/launching.py:819, reckon/crew/admission/launching.py:974, reckon/crew/recovery_review_dispatch.py:1130\nSCORE goal_fidelity: 19\nSCORE evidence: 14\nSCORE scope_discipline: 18\nSCORE durability: 15\nSCORE fit: 14\nSCORE reuse: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:385-412 ranks the placeable pointers and sets the unreadable one aside by run id, and reckon/crew/runs.py:1000-1002 stamps an arrival at the queue writer, which are the two halves the goal names.\nJUSTIFICATION evidence: logs/baseline-arm-record.log and logs/after-arm-merge4.log are on disk and read 2 failed / 55 passed at cd5e68ec and 64 passed at 62ac485bd3, but the after arm covers four named files and the landing fails tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py:63, a failure no arm of this run measures.\nJUSTIFICATION scope_discipline: every path in the node's own commits is inside the widened fence, including the evidence fragment at docs/evidence/fragments/work-flows-to-the-lane/unreadable-queued-pointer-never-fails-ordering.html.\nJUSTIFICATION durability: tests/test_unreadable_queued_pointer_never_fails_ordering.py:71-84 reddens if the raise is reinstated at reckon/crew/queue_order.py:385-412, but the landing also breaks tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py:63 and no case drives reckon/crew/admission/launching.py:974, so the change's own guard is real while its landing state is not green.\nJUSTIFICATION fit: the helpers follow the module's docstring idiom at reckon/crew/queue_order.py:249-282 and add no forbidden name, but reckon/crew/admission/selection.py:236 and tests/test_a_queued_pointer_without_its_time_reads_no_place.py:4 still describe the removed refusal.\nJUSTIFICATION reuse: a search over reckon for partition_placeable, readable_queued_at and parse_utc(pointer.get('queued_at')) finds queue_order as the owner with four readers taking the split, but reckon/crew/dispatching/requests.py:482 re-implements the same predicate inline, so the split has two implementations.\nFINDING tests/test_a_dispatch_survives_an_unplaceable_queued_pointer.py:63 blocking: this case, on main since d0949f5e6f and carried into the landing by the merge of primary, asserts that queue_order.admission_order raises ValueError on a pointer with no readable queued_at; the change removes that raise and running the file at the reviewed head in the source worktree reproduces 'Failed: DID NOT RAISE ValueError' at line 63 while the sibling case passes, so landing this node adds a suite failure on main that neither arm of its gate covers.\nFINDING reckon/crew/dispatching/requests.py:482 non-blocking: the dispatch yield check still partitions the queue inline and the comment at lines 473-478 still says 'the ordering keeps its refusal', so a reader the change did not convert describes behaviour the change removed and can disagree with partition_placeable.\nFINDING reckon/crew/admission/selection.py:236 non-blocking: the comment above the rewritten call still reads 'the ordering refuses such a pointer outright', which reckon/crew/queue_order.py:385-412 no longer does, so it misdescribes the partition_placeable call at selection.py:242 directly beneath it.\nFINDING tests/test_a_queued_pointer_without_its_time_reads_no_place.py:4 non-blocking: the module docstring's opening paragraph still says the ordering 'refuses a pointer with none', contradicting the closing paragraph this change rewrote and the set-aside behaviour its own cases assert.\nFINDING tests/test_unreadable_queued_pointer_never_fails_ordering.py:158 non-blocking: the case standing in for the done_when's 'every path that writes a queued pointer' is a static AST scan for a queued_at value copied from another record, so a writer that stamped an unreadable literal, or dropped its stamp, would leave it green.\nFINDING reckon/crew/admission/launching.py:974 non-blocking: _restore_queued stamps its restored pointer through readable_queued_at but no test drives _restore_queued, so deleting the stamp would leave every gate green while a restored pointer could be queued unplaceable.\n",
+  "review_run_id": "r-20261117T160656162308-review-of-unreadable-queued-pointer-never-fails-ordering-62ac485bd3fd",
+  "reviewed_base_sha": "cd5e68ecbd2b48d24a8bd5b0037f042a2de84810",
+  "reviewed_head_sha": "62ac485bd3fd3e3d5d66b4a24d998985b6644a08",
+  "reviewed_run_id": "r-20261114T112555787298-unreadable-queued-pointer-never-fails-ordering",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T16:25:55.791088+00:00",
+  "total": 95
+}

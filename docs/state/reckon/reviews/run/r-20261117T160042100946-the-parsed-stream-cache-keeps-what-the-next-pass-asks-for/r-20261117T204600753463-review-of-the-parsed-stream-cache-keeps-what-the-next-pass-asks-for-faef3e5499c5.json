@@ -1,0 +1,89 @@
+{
+  "added_assertions": "each added assertion is read against the regression it would catch: :178 (recorder.bytes <= SECOND_PASS_ALLOWANCE) reddens if either _STREAM_CURSORS or cursor.grows_from is removed, which negative-control-base.log demonstrates at 125,562,900 B; :163 (population > _PARSED_STREAM_LIMIT) reddens if the fixture shrinks under the 32 MB bound and the second pass stops being an eviction case; :171 and :183 (recorder.records bounds) redden if the reader stops going through parse_events, which is what makes the byte count an instrument rather than a self-report; :186-190 (summary == _whole_reading(path)) reddens if a resumed fold drops an earlier record or a render disagrees, and compares against a fresh parse of the file rather than against the events the cache returned. tests/test_watch_stream_parse_is_cached.py:234 is the exception: its suffix form holds for a stale prefix of the right length and for an empty answer.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite (b3a277e1, exit 1, completed true) fails exactly tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py::test_a_second_pass_pays_only_for_what_each_stream_gained, and after_suite (faef3e54, exit 0, completed true) fails nothing, so the after-minus-baseline set is empty. Independent of that arm, I re-ran the named gate test at the extracted head tree ($TMPDIR/review-probe-2): 1 passed in 7.95s, and the changed sibling file tests/test_watch_stream_parse_is_cached.py at head: 3 passed in 5.78s (logs/sibling-test-head.log), which adds no failing id either. The reviewed run's all_debug suite arms never started (scoped-gate-1794937385958432499.log and after_suite-1794937494935348818.log are 0 bytes with .scheduler lines reading 'bwrap: Can't find source path /tmp/39486-fleet-1319168'), so no arm log states a failure id for the test files importing the changed modules.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:_observe_run_stream",
+    "reckon/_backends.py:_summarised_observation",
+    "reckon/_backends.py:_stream_summary",
+    "reckon/_backends.py:_events_timestamp_bounds",
+    "reckon/crew/dispatch_sessions.py:_latest_attempt_capacity_refusal",
+    "reckon/crew/recovery_stream.py:_admission_refusal"
+  ],
+  "completed_at": "2026-11-17T20:49:04.119Z",
+  "dispatched_at": "2026-11-17T20:48:12Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "3773",
+      "severity": "non-blocking",
+      "text": "non-blocking: the identity early-return in _cached_stream_entry ignores the new whole flag, so a whole-stream caller is handed a tail-only entry when the cache holds one. Reproduced at the head tree: a 43-record stream read once, its events cache cleared, three records appended, cached_stream_events(path) returning the 3 growth records at cursor offset 6680, then cached_stream_events(path, whole=True) returned the same 3 records rather than 43 (logs/probe-whole-entry-head.log). Every production caller passes whole=True (reckon/crew/dispatch_sessions.py:1197, reckon/crew/recovery_stream.py:837, reckon/_backends.py:4117, 4154, 4629) and the docstring at reckon/_backends.py:3847 promises a whole read when the cache no longer holds the stream, so a default-path caller anywhere in the process makes those scans answer over a tail; it is latent only because no production caller takes the default path today, and _stream_summary:4038 builds a summary from whatever that early return yields."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3689",
+      "severity": "non-blocking",
+      "text": "non-blocking: _StreamCursor.covers is added and never called; `git grep .covers(` over the head tree's reckon and tests returns nothing, so the class carries a fourth identity comparison beside grows_from and identity that no reader uses and no test exercises."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "4613",
+      "severity": "non-blocking",
+      "text": "non-blocking: the caller-carried resume branch in _observe_run_stream dropped the base revision's `offset <= size` guard and now resumes on _stream_head_intact alone, so a resume whose offset is past the end of a truncated stream seeks past EOF and returns the carried state with an unchanged offset instead of the whole-stream read observe_log:4535 still documents. I probed it at head (219,000-byte stream truncated to 21,900 with the 8 KiB recorded opening intact, resume offset 219,000): the offset came back 21,900 with PAST_EOF False, because _summarised_observation answers before this branch, so the guard's absence is shielded by the summary path today rather than exercised."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "556",
+      "severity": "non-blocking",
+      "text": "non-blocking: the live figure 157.3 MB -> 2.4 MB -> 1.4 MB is attributed to cached_stream_events, but it can only have been taken on the new default (non-whole) path, and every production call site passes whole=True (reckon/crew/dispatch_sessions.py:1197, reckon/crew/recovery_stream.py:837, reckon/_backends.py:4629), while the tick itself reaches the cache through _summarised_observation and the unchanged _STREAM_SUMMARIES resume. The table therefore does not show the reader s13 censused (reckon/_backends.py:_cached_stream_entry at 42.7 % of a tick's bytes) moving, and the station's own parsed-byte count may not follow the table; the prose at line 566-572 already declines to claim the after-window result, but the first two rows are read as that reader's cost."
+    },
+    {
+      "file": "tests/test_watch_stream_parse_is_cached.py",
+      "line": "234",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sibling test's exact-equality guard was loosened to a suffix check (assert events == whole[len(whole) - len(events):]) plus `malformed == 0`, so a cache that answers a stale prefix ending at the right length, or drops the appended record and returns an empty list, still passes; the assertion no longer fails on the regression it was written for, only on an answer that is not a suffix of the file at all."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against b3a277e1: 0b2bab9385 rewrites reckon/_backends.py (232 insertions, 95 deletions) around _StreamCursor, adds the 193-line test, and flips the three cached_stream_events call sites to whole=True; faef3e5499 adds 39 lines to the RCA. No other path changed.",
+    "done_when": "the done_when's fixture clause is met and measured: tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py builds 60 x 2 MB streams past the 32 MB bound, counts bytes through a RecordingParse stand-in, and asserts the second pass parses at most 36,000 bytes and each summary equals a fresh whole-stream parse, with after-suite-local.log EXIT=0 and the base arm red at 125,562,900 B; the live-bound clause (under 20 MB/min and under 5 % of one core over 60 s with 30 live runs on the reloaded fleet node) is not measured and is declared deferred in docs/research/monitor-storage-load-rca.html:566-572; the matched all_debug arms for the test files importing the changed modules were never run, both scheduler logs holding only 'bwrap: Can't find source path /tmp/39486-fleet-1319168'.",
+    "goal": "the node goal is to keep every live stream's resume state in the parsed-stream cache so a steady tick re-parses only grown streams; reckon/_backends.py:3661-3710 adds _StreamCursor as the one identity-and-offset owner, reckon/_backends.py:3739 _STREAM_CURSORS records it per path across byte-bound eviction, and reckon/_backends.py:3776-3800 resumes an evicted stream from cursor.offset, so the goal is met at the unit the test drives; what is not demonstrated is the steady tick's post-landing cost, since the census reader named in the RCA reaches the cache with whole=True.",
+    "manifest": "read; it reports status complete, the gate after-suite-local.log, the base arm baseline-suite-local.log and negative-control-base.log, and it names the missing all_debug arms and three pre-existing failures in tests/test_admission_refusal_is_named.py under outside_scope rather than claiming them; its landing line quotes 27,120 B against 125,562,900 B.",
+    "write_paths": "the declared paths are reckon/_backends.py, tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py, docs/research/monitor-storage-load-rca.html and the fragment and figure under docs/evidence/fragments and docs/figures; the delivered diff b3a277e1..faef3e54 changes six paths, of which reckon/crew/dispatch_sessions.py:1197, reckon/crew/recovery_stream.py:837 and tests/test_watch_stream_parse_is_cached.py:234 lie outside them, and the declared fragment and figure were not written at all."
+  },
+  "justifications": {
+    "durability": "tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py:178 fails on exactly the regression at issue (restoring the base's whole re-parse reddens it at 125,562,900 B, shown by negative-control-base.log), and :186-190 compares each summary against a fresh observe_stream over the file rather than against anything the test handed the cache; the loosened sibling assertion at tests/test_watch_stream_parse_is_cached.py:234 and the untested whole=True early return at reckon/_backends.py:3773 are the gaps.",
+    "evidence": "after-suite-local.log ends EXIT=0 and negative-control-base.log ends EXIT=1 at b3a277e1 with 125,562,900 B against the 36,000 B allowance, so the fixture clause is measured rather than claimed; the done_when's live bound has no window and the all_debug arms for the changed test files hold no receipt (scoped-gate-1794937385958432499.log is 0 bytes), and the 27,120 B head figure in the landing line appears in no log.",
+    "fit": "reckon/_backends.py:3635-3710 follows the module's own idioms (frozen dataclass with a docstring, classmethod constructors, an OrderedDict with a count bound and a _remember_* helper), the names stay inside the module's underscore convention, and the only newcomer without a reader is covers at :3689.",
+    "goal_fidelity": "reckon/_backends.py:3698 grows_from plus :3783-3793 makes an evicted-but-grown stream parse only cursor.offset onward, which is the goal's stated mechanism, but the census reader the RCA names reaches the cache with whole=True at reckon/_backends.py:4629, so the tick's own saving is not the path the landed cursor serves.",
+    "reuse": "the change extends the owners it should: _StreamCursor becomes the single identity-and-offset encoding that _ParsedStream:3711, _StreamSummary:3894 and the caller-carried resume at :3666 all speak, and it reuses the pre-existing stream_head_fingerprint and _stream_head_intact at :4278 rather than adding a second rewrite check; the one duplicate I found is the value-only _STREAM_WATCH_LIMIT = 2048 at :3742 beside the existing _STREAM_SUMMARY_LIMIT = 2048 at :3875, which is a constant, not a capability.",
+    "scope_discipline": "git diff --stat b3a277e1 faef3e54 lists reckon/_backends.py, docs/research/monitor-storage-load-rca.html and the new test inside the declared paths, plus reckon/crew/dispatch_sessions.py, reckon/crew/recovery_stream.py and tests/test_watch_stream_parse_is_cached.py outside them, and the declared fragment and figure were left unwritten."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to keep every live stream's resume state in the parsed-stream cache so a steady tick re-parses only grown streams; reckon/_backends.py:3661 adds _StreamCursor, :3739 _STREAM_CURSORS survives byte-bound eviction, and :3776-3793 resumes an evicted stream from cursor.offset, so the mechanism is landed even though the reader the RCA censuses reaches the cache with whole=True.\nVERDICT done_when: the fixture clause is measured (after-suite-local.log EXIT=0, negative-control-base.log EXIT=1 at 125,562,900 B against the 36,000 B allowance), the live 60 s window is deferred in docs/research/monitor-storage-load-rca.html:566-572, and the all_debug arms for the changed test files never ran (empty logs, bwrap source-path refusal).\nVERDICT write_paths: three of the six changed paths are outside the declared set (reckon/crew/dispatch_sessions.py:1197, reckon/crew/recovery_stream.py:837, tests/test_watch_stream_parse_is_cached.py:234) and the declared fragment and figure were not written.\nVERDICT manifest: read; it records the two arms and the negative control with log paths, names the pre-existing tests/test_admission_refusal_is_named.py failures under outside_scope, and states the missing all_debug arms rather than claiming them.\nVERDICT diff: two commits, 0b2bab9385 (reckon/_backends.py +232/-95, the new test, three whole=True call sites) and faef3e5499 (39 RCA lines), with no other path touched.\nCALL_SITES: reckon/_backends.py:_observe_run_stream, reckon/_backends.py:_summarised_observation, reckon/_backends.py:_stream_summary, reckon/_backends.py:_events_timestamp_bounds, reckon/crew/dispatch_sessions.py:_latest_attempt_capacity_refusal, reckon/crew/recovery_stream.py:_admission_refusal\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3783 resumes an evicted stream from cursor.offset, but the censused reader at reckon/_backends.py:4629 asks for whole=True, so the tick's saving is not shown on that path.\nSCORE evidence: 12\nJUSTIFICATION evidence: after-suite-local.log EXIT=0 and negative-control-base.log EXIT=1 at 125,562,900 B measure the fixture clause, while the live bound and the all_debug matched arms (empty scoped-gate-1794937385958432499.log) carry no receipt.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff adds whole=True at reckon/crew/dispatch_sessions.py:1197 and reckon/crew/recovery_stream.py:837 and edits tests/test_watch_stream_parse_is_cached.py:234, none declared, and left the declared fragment unwritten.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_parsed_stream_cache_keeps_what_the_next_pass_asks_for.py:178 reddens on the base re-parse (negative-control-base.log) and :186 compares against a fresh parse, while :234 was loosened and the whole=True early return at reckon/_backends.py:3773 is untested.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:3635 follows the module's frozen-dataclass and count-bounded-OrderedDict idiom, with only the unused covers at :3689 outside it.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckoning's existing owners are extended, not forked: _StreamCursor at reckon/_backends.py:3635 becomes the one identity encoding for _ParsedStream, _StreamSummary and the carried resume, and stream_head_fingerprint at :4386 is reused.\nFINDING reckon/_backends.py:3773 non-blocking: the identity early return ignores whole, so cached_stream_events(whole=True) returns a 3-record tail for a 43-record stream (logs/probe-whole-entry-head.log), which every production whole-stream caller would receive.\nFINDING reckon/_backends.py:3689 non-blocking: _StreamCursor.covers is never called anywhere in the head tree.\nFINDING reckon/_backends.py:4613 non-blocking: the carried-resume branch lost the base's offset <= size guard; the truncation probe shows the summary path answers first, so it is shielded rather than exercised.\nFINDING docs/research/monitor-storage-load-rca.html:556 non-blocking: the 157.3 MB -> 2.4 MB live figure can only come from the non-whole path, which no production caller takes.\nFINDING tests/test_watch_stream_parse_is_cached.py:234 non-blocking: the exact-equality guard became a suffix check plus malformed == 0, so a stale prefix of the right length still passes.",
+  "review_node": "review-of-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for-faef3e5499c5",
+  "review_run_id": "r-20261117T204600753463-review-of-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for-faef3e5499c5",
+  "reviewed_base_sha": "b3a277e1a63c181bf0deb2a7127b43e37bbc3718",
+  "reviewed_head_sha": "faef3e5499c58173edb83dc66a5923be798430a5",
+  "reviewed_run_id": "r-20261117T160042100946-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261117T204600753463-review-of-the-parsed-stream-cache-keeps-what-the-next-pass-asks-for-faef3e5499c5"
+  },
+  "rubric_note": "six dimension lines emitted; the dimension most at risk is evidence, because two of the done_when's clauses carry no receipt and the one live figure quoted for the reader the RCA names was taken on a path no production caller takes. The node's own fixture measure is sound and its negative control is a real red log.",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T21:04:09.495517+00:00",
+  "total": 94
+}

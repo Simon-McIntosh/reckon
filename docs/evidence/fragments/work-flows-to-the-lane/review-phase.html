@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="review-phase">
+  <meta name="plan-title" content="A working review rejects an early phase transition">
+  <meta name="plan-summary" content="The delivered regression fails twice against base source while its reviewer is alive.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-verifies" content="work-flows-to-the-lane#s70">
+  <meta name="plan-recorded-at" content="2026-11-15">
+  <meta name="plan-verdict" content="failed">
+  <meta name="plan-environment" content="all_debug; base extraction plus delivered regression test">
+  <title>A working review rejects an early phase transition</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body><main class="plan-doc">
+<section id="wftl-a-working-review-keeps-its-working-phase-codex-negative-control">
+<h1>Negative control: an early review promotion request</h1>
+<p>The delivered regression ran against source extracted from base <code>922e3ba81a02ea9644838b4855b5d6173b656d2b</code> on <code>all_debug</code>. Both manifest cases fail at the live pointer assertion: <code>promotion-requested</code> was observed where <code>working</code> was required. The worker had written stream progress and its process was still alive. This receipt retains the full command, imported module, resolved working directory, failing test identities and exit status.</p>
+<pre># revision: 922e3ba81a02ea9644838b4855b5d6173b656d2b tree: /tmp/review-phase-base.AnNE3w (base extraction plus delivered regression test)
+# command: PYTHONPATH=/tmp/review-phase-base.AnNE3w /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/review-phase-base.AnNE3w/tests/test_a_working_review_keeps_its_working_phase.py
+# host: 98dci4-clu-3143.iter.org job: 1318143
+# module: /tmp/review-phase-base.AnNE3w/reckon/crew/promotion_requests.py
+# cwd: /tmp/review-phase-base.AnNE3w
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_a_working_review_keeps_its_phase_until_the_same_request_promotes[in-progress] _
+
+repository = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-230/test_a_working_review_keeps_it0/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-230/test_a_working_review_keeps_it0&#x27;)
+manifest_status = &#x27;in-progress&#x27;
+
+    @pytest.mark.parametrize(&quot;manifest_status&quot;, [&quot;in-progress&quot;, &quot;complete&quot;])
+    def test_a_working_review_keeps_its_phase_until_the_same_request_promotes(
+        repository: Path, tmp_path: Path, manifest_status: str
+    ) -&gt; None:
+        run_id = fixtures.FIRST_RUN_ID
+        reviewed_run_id = fixtures.FIRST_REVIEWED_RUN_ID
+        fixtures._write_pointer(repository, tmp_path, run_id, reviewed_run_id, pid=None)
+        manifest = Path(read_pointer(run_id)[&quot;manifest_path&quot;])
+        manifest.write_text(f&quot;status: {manifest_status}\n&quot;, encoding=&quot;utf-8&quot;)
+        stream = tmp_path / &quot;reviewer.jsonl&quot;
+        finish = tmp_path / &quot;finish&quot;
+        script = (
+            &quot;import pathlib, sys, time\n&quot;
+            &quot;stream, finish = map(pathlib.Path, sys.argv[1:])\n&quot;
+            &quot;deadline = time.monotonic() + 60\n&quot;
+            &quot;with stream.open(&#x27;a&#x27;) as output:\n&quot;
+            &quot;    while not finish.exists():\n&quot;
+            &#x27;        output.write(\&#x27;{&quot;type&quot;:&quot;progress&quot;}\\n\&#x27;)\n&#x27;
+            &quot;        output.flush()\n&quot;
+            &quot;        if time.monotonic() &gt; deadline: sys.exit(2)\n&quot;
+            &quot;        time.sleep(0.01)\n&quot;
+        )
+        worker = subprocess.Popen([sys.executable, &quot;-c&quot;, script, str(stream), str(finish)])
+        pointer = read_pointer(run_id)
+        pointer.update(pid=worker.pid, log_path=str(stream))
+        requests.runs._write_json(pointer_path(run_id), pointer)
+        service = requests.PromotionService(width=1)
+        if manifest_status == &quot;complete&quot;:
+            fixtures._store_record(run_id, reviewed_run_id)
+        try:
+            deadline = time.monotonic() + 10
+            while not stream.exists() or stream.stat().st_size == 0:
+                assert worker.poll() is None
+                assert time.monotonic() &lt; deadline, &quot;reviewer wrote no progress&quot;
+                time.sleep(0.01)
+            observed_size = stream.stat().st_size
+    
+            requested = requests.request_promotion(run_id, kind=&quot;review-self&quot;)
+            assert worker.poll() is None
+&gt;           assert read_pointer(run_id)[&quot;phase&quot;] == &quot;working&quot;
+E           AssertionError: assert &#x27;promotion-requested&#x27; == &#x27;working&#x27;
+E             
+E             - working
+E             + promotion-requested
+
+tests/test_a_working_review_keeps_its_working_phase.py:60: AssertionError
+_ test_a_working_review_keeps_its_phase_until_the_same_request_promotes[complete] _
+
+repository = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-230/test_a_working_review_keeps_it1/repo&#x27;)
+tmp_path = PosixPath(&#x27;/tmp/pytest-of-mcintos/pytest-230/test_a_working_review_keeps_it1&#x27;)
+manifest_status = &#x27;complete&#x27;
+
+    @pytest.mark.parametrize(&quot;manifest_status&quot;, [&quot;in-progress&quot;, &quot;complete&quot;])
+    def test_a_working_review_keeps_its_phase_until_the_same_request_promotes(
+        repository: Path, tmp_path: Path, manifest_status: str
+    ) -&gt; None:
+        run_id = fixtures.FIRST_RUN_ID
+        reviewed_run_id = fixtures.FIRST_REVIEWED_RUN_ID
+        fixtures._write_pointer(repository, tmp_path, run_id, reviewed_run_id, pid=None)
+        manifest = Path(read_pointer(run_id)[&quot;manifest_path&quot;])
+        manifest.write_text(f&quot;status: {manifest_status}\n&quot;, encoding=&quot;utf-8&quot;)
+        stream = tmp_path / &quot;reviewer.jsonl&quot;
+        finish = tmp_path / &quot;finish&quot;
+        script = (
+            &quot;import pathlib, sys, time\n&quot;
+            &quot;stream, finish = map(pathlib.Path, sys.argv[1:])\n&quot;
+            &quot;deadline = time.monotonic() + 60\n&quot;
+            &quot;with stream.open(&#x27;a&#x27;) as output:\n&quot;
+            &quot;    while not finish.exists():\n&quot;
+            &#x27;        output.write(\&#x27;{&quot;type&quot;:&quot;progress&quot;}\\n\&#x27;)\n&#x27;
+            &quot;        output.flush()\n&quot;
+            &quot;        if time.monotonic() &gt; deadline: sys.exit(2)\n&quot;
+            &quot;        time.sleep(0.01)\n&quot;
+        )
+        worker = subprocess.Popen([sys.executable, &quot;-c&quot;, script, str(stream), str(finish)])
+        pointer = read_pointer(run_id)
+        pointer.update(pid=worker.pid, log_path=str(stream))
+        requests.runs._write_json(pointer_path(run_id), pointer)
+        service = requests.PromotionService(width=1)
+        if manifest_status == &quot;complete&quot;:
+            fixtures._store_record(run_id, reviewed_run_id)
+        try:
+            deadline = time.monotonic() + 10
+            while not stream.exists() or stream.stat().st_size == 0:
+                assert worker.poll() is None
+                assert time.monotonic() &lt; deadline, &quot;reviewer wrote no progress&quot;
+                time.sleep(0.01)
+            observed_size = stream.stat().st_size
+    
+            requested = requests.request_promotion(run_id, kind=&quot;review-self&quot;)
+            assert worker.poll() is None
+&gt;           assert read_pointer(run_id)[&quot;phase&quot;] == &quot;working&quot;
+E           AssertionError: assert &#x27;promotion-requested&#x27; == &#x27;working&#x27;
+E             
+E             - working
+E             + promotion-requested
+
+tests/test_a_working_review_keeps_its_working_phase.py:60: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_a_working_review_keeps_its_working_phase.py::test_a_working_review_keeps_its_phase_until_the_same_request_promotes[in-progress]
+FAILED tests/test_a_working_review_keeps_its_working_phase.py::test_a_working_review_keeps_its_phase_until_the_same_request_promotes[complete]
+2 failed in 0.60s
+EXIT=1
+</pre>
+</section>
+</main></body></html>

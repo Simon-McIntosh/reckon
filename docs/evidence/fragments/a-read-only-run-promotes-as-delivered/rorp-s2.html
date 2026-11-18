@@ -1,0 +1,41 @@
+<section id="rorp-s2" data-reckon="evidence-fragment">
+  <h2 id="rorp-s2-heading">A commitless manifest promotes as delivered</h2>
+  <p id="rorp-s2-summary">An investigate or plan-review run whose role delivers no
+  commit states <code>commits: none</code> — bare or with a reason in parentheses —
+  passes the write-time manifest check, and promotes with the no-commit form while
+  its run record names the base revision and no commit; a stated <code>none</code>
+  over a worktree head ahead of its base is still refused, naming that commit; and
+  the composed prompt for those roles now states the declaration form.</p>
+  <p id="rorp-s2-defect">The four promote shapes the plan reports pass at the base
+  revision <code>e0626c295a</code>, so the refusal they met was removed before this
+  node started: the behaviour change since 2026-11-14 is <code>6657268850</code>,
+  which made a read-only run's <code>commits</code> line be read as the declaration
+  it is, and it is an ancestor of the base. This node's base arm shows all four
+  passing at the base revision. What this node did find and remove is a separate
+  live branch: the early return in <code>_require_gate_evidence</code> returned on any
+  stated <code>--no-commit</code> reason before the worktree-at-its-base guard, so a
+  run that <em>had</em> committed and declared <code>none</code> promoted with its
+  work in no commit and nothing on the record naming it. The guard now runs on both
+  paths, and the base arm shows that case failing there as
+  <code>DID NOT RAISE CrewError</code>. The prompt gap was the manifest template
+  carrying <code>commits: &lt;sha list&gt;</code> instead of a declaration for those
+  roles.</p>
+  <table id="rorp-s2-cases">
+    <thead><tr><th>Case</th><th>At base revision</th><th>At head</th></tr></thead>
+    <tbody>
+      <tr><td>investigate / plan-review, <code>none (read-only sandbox; nothing committed)</code>, promote</td><td>pass</td><td>pass</td></tr>
+      <tr><td>investigate / plan-review, bare <code>none</code>, promote</td><td>pass</td><td>pass</td></tr>
+      <tr><td><code>none</code> over a commit beyond the base, refused naming it</td><td><strong>fail</strong> — <code>DID NOT RAISE CrewError</code></td><td>pass</td></tr>
+      <tr><td>composed prompt states the line (investigate, review)</td><td><strong>fail</strong> — <code>assert "commits: none" in prompt</code></td><td>pass</td></tr>
+    </tbody>
+  </table>
+  <p id="rorp-s2-gate">Gate at head: <code>8 passed in 74.82s</code>; base arm of the same
+  file: <code>3 failed, 5 passed in 223.80s</code>. Suite arms at those revisions:
+  <code>55 passed</code> at the base and <code>63 passed</code> at the head, the extra
+  eight being this file. Ruff over the three staged paths reports one finding at each
+  revision — the pre-existing <code>S608</code>, at <code>prompts.py:960</code> at base
+  and <code>:988</code> at head; no finding is added, and
+  <code>ruff format --check</code> reports all three files formatted. A mutant of the
+  new file carrying two imports in the wrong order reproduces <code>I001</code> at
+  <code>22:1</code>, so the check is live rather than merely quiet.</p>
+</section>

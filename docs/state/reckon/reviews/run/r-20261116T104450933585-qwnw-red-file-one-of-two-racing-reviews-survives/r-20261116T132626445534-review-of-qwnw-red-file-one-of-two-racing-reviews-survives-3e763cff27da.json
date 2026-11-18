@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: after_suite at 3e763cff27 (logs/gate_head_final-1319807.log) records 8 passed, no FAILED line, EXIT=0; baseline_suite at 24bc79d8ee (logs/base_arm_24bc79d8ee.log) records 4 failed / 4 passed whose short test summary names tests/test_one_of_two_racing_reviews_survives.py::test_the_claim_registered_second_is_refused_naming_the_first, ::test_a_launched_claim_refuses_a_newcomer_whatever_the_order, ::test_a_running_owner_is_never_outranked_by_a_newcomer and ::test_a_running_owner_in_the_same_second_is_not_outranked; the after-minus-base set difference is empty (0).",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-16T13:51:42.350Z",
+  "dispatched_at": "2026-11-16T13:51:22Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-of-two-racing-reviews-survives.html",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "the fragment states \"14 passed\" for tests/test_a_source_file_is_shared_by_default.py but no log of that run exists in logs/, so the figure is claimed rather than recorded; the cause it supports is independently verifiable at reckon/crew/runs.py:2043 (default_share=True for a project with no sharing declaration), which is why this is recorded here and does not hold the node."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: 2a53ba59e5 replaces src/claimed.py with RACED_PATH at tests/test_one_of_two_racing_reviews_survives.py:136,178,274,392-394 with no other change, and 3e763cff27 appends the 93-line evidence fragment; the commits between 24bc79d8ee and 2a53ba59e5 are fast-forwarded upstream main work, not this run's.",
+    "done_when": "the done_when asks for the file green at head as a job on all_debug with SLURM_JOB_ID unset, the four base failing ids logged beside it, a per-cause verdict and clean ruff; logs/gate_head_final-1319807.log (env -u SLURM_JOB_ID) and logs/base_arm_24bc79d8ee.log record exactly those, sacct places jobs 1319807 and 1319776 on all_debug as COMPLETED, and the fragment states the one cause with the verdict test-wrong.",
+    "goal": "the node goal is to make tests/test_one_of_two_racing_reviews_survives.py pass in full on the primary branch; commit 2a53ba59e5 makes the fixture race on a path the sharing policy keeps exclusive and logs/gate_head_final-1319807.log records 8 passed EXIT=0 at 3e763cff27.",
+    "manifest": "read; it reports status complete, baseline_suite at 24bc79d8ee with failure_count 4 and four ids, after_suite at 3e763cff27 with failure_count 0, and three log paths that all exist on disk carrying the summary lines it quotes.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two run commits touch only tests/test_one_of_two_racing_reviews_survives.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-of-two-racing-reviews-survives.html."
+  },
+  "justifications": {
+    "durability": "tests/test_one_of_two_racing_reviews_survives.py:270,305,342,376 assert ScopeConflict for the four refuse cases, and logs/base_arm_24bc79d8ee.log shows each reddening at 24bc79d8ee with DID NOT RAISE ScopeConflict, so the guard is shown to fire rather than merely passing.",
+    "evidence": "logs/gate_head_final-1319807.log reads 8 passed EXIT=0 at 3e763cff27 and logs/base_arm_24bc79d8ee.log reads 4 failed / 4 passed with the four ids, while sacct -j 1319807,1319776 places both jobs on all_debug as COMPLETED; only the fragment's 14-passed side figure is unlogged.",
+    "fit": "the change is one module constant RACED_PATH beside NODE_ID at tests/test_one_of_two_racing_reviews_survives.py:42, matching the file's existing UPPER_CASE constant idiom, and the fragment follows the sibling evidence fragments' section structure.",
+    "goal_fidelity": "tests/test_one_of_two_racing_reviews_survives.py:42 now declares docs/evidence/archive/race-landed.html and logs/gate_head_final-1319807.log records the whole file green (8 passed, EXIT=0) at 3e763cff27, which is the node goal.",
+    "reuse": "the diff adds no definition beyond that constant; it points the fixture at the exclusive class the repository already owns at reckon/crew/runs.py:1823 (docs/evidence/archive/) instead of writing a second sharing rule.",
+    "scope_discipline": "the worker's own commits 2a53ba59e5 and 3e763cff27 touch only tests/test_one_of_two_racing_reviews_survives.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-of-two-racing-reviews-survives.html, both inside the declared tests and fragment directories."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_one_of_two_racing_reviews_survives.py pass in full on the primary branch; commit 2a53ba59e5 makes the fixture race on a path the sharing policy keeps exclusive and logs/gate_head_final-1319807.log records 8 passed EXIT=0 at 3e763cff27.\nVERDICT done_when: the done_when asks for the file green at head as a job on all_debug with SLURM_JOB_ID unset, the four base failing ids logged beside it, a per-cause verdict and clean ruff; logs/gate_head_final-1319807.log (env -u SLURM_JOB_ID) and logs/base_arm_24bc79d8ee.log record exactly those, sacct places jobs 1319807 and 1319776 on all_debug as COMPLETED, and the fragment states the one cause with the verdict test-wrong.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two run commits touch only tests/test_one_of_two_racing_reviews_survives.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-of-two-racing-reviews-survives.html.\nVERDICT manifest: read; it reports status complete, baseline_suite at 24bc79d8ee with failure_count 4 and four ids, after_suite at 3e763cff27 with failure_count 0, and three log paths that all exist on disk carrying the summary lines it quotes.\nVERDICT diff: read commit by commit: 2a53ba59e5 replaces src/claimed.py with RACED_PATH at tests/test_one_of_two_racing_reviews_survives.py:136,178,274,392-394 with no other change, and 3e763cff27 appends the 93-line evidence fragment; the commits between 24bc79d8ee and 2a53ba59e5 are fast-forwarded upstream main work, not this run's.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_one_of_two_racing_reviews_survives.py:42 now declares docs/evidence/archive/race-landed.html and logs/gate_head_final-1319807.log records the whole file green (8 passed, EXIT=0) at 3e763cff27, which is the node goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate_head_final-1319807.log reads 8 passed EXIT=0 at 3e763cff27 and logs/base_arm_24bc79d8ee.log reads 4 failed / 4 passed with the four ids, while sacct places both jobs on all_debug as COMPLETED; only the fragment's 14-passed side figure is unlogged.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the worker's own commits 2a53ba59e5 and 3e763cff27 touch only tests/test_one_of_two_racing_reviews_survives.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-of-two-racing-reviews-survives.html, both inside the declared tests and fragment directories.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_one_of_two_racing_reviews_survives.py:270,305,342,376 assert ScopeConflict for the four refuse cases, and logs/base_arm_24bc79d8ee.log shows each reddening at 24bc79d8ee with DID NOT RAISE ScopeConflict, so the guard is shown to fire rather than merely passing.\nSCORE fit: 19\nJUSTIFICATION fit: the change is one module constant RACED_PATH beside NODE_ID at tests/test_one_of_two_racing_reviews_survives.py:42, matching the file's existing UPPER_CASE constant idiom, and the fragment follows the sibling evidence fragments' section structure.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition beyond that constant; it points the fixture at the exclusive class the repository already owns at reckon/crew/runs.py:1823 (docs/evidence/archive/) instead of writing a second sharing rule.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-of-two-racing-reviews-survives.html:68 non-blocking: the fragment states \"14 passed\" for tests/test_a_source_file_is_*_default.py but no log of that run exists in logs/, so the figure is claimed rather than recorded.\n",
+  "review_node": "review-of-qwnw-red-file-one-of-two-racing-reviews-survives-3e763cff27da",
+  "review_run_id": "r-20261116T132626445534-review-of-qwnw-red-file-one-of-two-racing-reviews-survives-3e763cff27da",
+  "reviewed_base_sha": "24bc79d8ee8e73d6d262d0879a27cd27d5a4048c",
+  "reviewed_head_sha": "3e763cff27da25daac77085ac2d0cd38ab20846a",
+  "reviewed_run_id": "r-20261116T104450933585-qwnw-red-file-one-of-two-racing-reviews-survives",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T20:39:51.470825+00:00",
+  "total": 115
+}

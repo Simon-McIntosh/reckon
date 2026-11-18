@@ -1,0 +1,90 @@
+<section id="qwnw-red-file-a-queued-request-is-stamped-at-queue-time-landing">
+  <h2>A queued request is stamped at queue time — the red file passes</h2>
+
+  <p><strong>What changed.</strong> No product change. The file's fixtures now
+  describe a request the queue writer accepts: the config declares the role and
+  the backend the request names, and the node states its done-when, write path,
+  time budget and specification level. Every assertion and every case is
+  unchanged; <code class="qwnw-red-file-a-queued-request-is-stamped-at-queue-time-path">tests/test_a_queued_request_is_stamped_at_queue_time.py</code>
+  passes in full at head.</p>
+
+  <p><strong>The cause, and which side was wrong.</strong> All six tests failed
+  before reaching the contract they assert, inside
+  <code class="qwnw-red-file-a-queued-request-is-stamped-at-queue-time-symbol">reckon/crew/dispatching/requests.py</code>
+  — <code>queue_requests</code>. That function gained a whole-node-contract
+  judgement in <code>b9fd18a621</code> (<em>judge every node by the whole
+  contract on every path</em>, 8 November), after this file landed
+  (28 October), and the file's fixtures were never brought up to it. That
+  judgement contributes both refusals below.</p>
+
+  <table id="qwnw-red-file-a-queued-request-is-stamped-at-queue-time-causes">
+    <caption>Each failure of the base arm, its message, and the verdict.</caption>
+    <thead><tr><th>cause</th><th>reproduction at the base revision
+  <code>ee93819a0d</code></th><th>verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>the config names no <code>roles</code> and no <code>backends</code></td>
+        <td><code>CrewError: role 'implement' is not configured (configured
+        roles: none)</code> from <code>_role_overlay</code>, reached by
+        <code>queue_requests</code> through
+        <code>resolve_role_override</code></td>
+        <td>test wrong. The same config is refused by the dispatch's own
+        resolver, <code>routing.resolve_role</code>, with the identical
+        message, so a direct dispatch of this node was never valid either: the
+        fixture was incomplete, not the product</td>
+      </tr>
+      <tr>
+        <td>the node states no done-when, time budget or specification level</td>
+        <td><code>CrewError: node 'build-s2' is refused at queue time: no
+        done-when measure is stated; no time budget is set; no specification
+        level is declared</code></td>
+        <td>test wrong. The refusal is the queue-time half of a rule the launch
+        already enforced, and every other queueing fixture in the suite states
+        these fields</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The second cause is reached only after the first is repaired, which is why
+  the base arm reports one message six times rather than two. Each was read from
+  the run that hit it — the first from the base arm, the second from the run
+  after the config was completed — before that cause was touched.</p>
+
+  <h3 id="qwnw-red-file-a-queued-request-is-stamped-at-queue-time-arms">Measured</h3>
+
+  <p>Every run below is an <code>all_debug</code> batch job with
+  <code>SLURM_JOB_ID</code> unset inside the job, logging its revision, command
+  and a final <code>EXIT=</code> line. Logs are in the run directory under
+  <code>logs/</code>.</p>
+
+  <table id="qwnw-red-file-a-queued-request-is-stamped-at-queue-time-runs">
+    <caption>The node's file and the armed arm, each at base and at head.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's six tests</td><td><code>ee93819a0d</code> (base)</td>
+        <td>6 failed, <code>EXIT=1</code> — the negative control</td></tr>
+      <tr><td>the node's six tests</td><td><code>d67a1a6c02</code> (head)</td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>armed arm, <code>test_staged_write_inventory.py</code> and
+        <code>test_every_shared_home_lock_holds_across_nodes.py</code>
+        (the test files the fence names, neither touched here)</td>
+        <td><code>ee93819a0d</code> (base)</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the same armed arm</td><td><code>d67a1a6c02</code> (head)</td>
+        <td>58 passed, <code>EXIT=0</code> — no failure added</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> on the one changed path report nothing:
+  <code>All checks passed!</code> and <code>1 file already formatted</code>.</p>
+
+  <p><strong>Two notes on the environment.</strong> The shared
+  <code>/tmp</code> on the run's node was 100% full at 09:31, so pytest could
+  not create its base temp tree near the start of the run; every arm was
+  therefore run with <code>--basetemp</code> under the run's own scratch
+  directory, named in each log's <code># command:</code> line. And the base arm
+  swaps the base revision's copy of the test file into the worktree for the
+  length of the run and restores it from <code>HEAD</code> afterwards; the
+  worktree was verified clean after it.</p>
+</section>

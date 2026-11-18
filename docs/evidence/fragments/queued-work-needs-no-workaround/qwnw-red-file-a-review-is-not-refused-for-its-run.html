@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-a-review-is-not-refused-for-its-run-record">
+<h3>A terminal manifest ends the pre-spawn reading</h3>
+<p>Base revision <code>69fab1372f16686ce6acdb6094a357c6f6bfe18d</code> (current <code>origin/main</code>) failed this file: <strong>2 failed, 2 passed</strong>. Both failures have one cause, and the cause is a product rule that broke, not a test that encoded a stale rule: <code>classify_pointer</code> consulted its pre-spawn arm — a pointer whose phase is one of the launcher's pre-spawn labels reads as <code>running</code> — ahead of the manifest arms and bounded that reading only by the stranded-launch bound. A run whose worker had finished and whose manifest read <code>status: complete</code> therefore stayed <code>running</code> for as long as its pointer's phase was never rewritten, so it never read as awaiting review. The first failure is that reading refused to dispatch its review (<code>the run is not awaiting review (running)</code>); the second is its consequence, a direct dispatch whose recorded backlog was <code>None</code> because the session's overdue terminal runs were empty (<code>TypeError: 'NoneType' object is not subscriptable</code> at <code>backlog["requested"]</code>). Nothing was deleted or weakened: the file passes in full at head with all four assertions intact.</p>
+<p>The repair names the terminal verdict once (<code>manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome</code>) and uses it both to date the terminal age and to end the pre-spawn reading. The deferral that keeps a live, superseded or completion-unproven manifest classifying from its pointer is unchanged, so a run still being launched reads <code>running</code> exactly as before; only a verdict written after the phase label now outranks it.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-negative-control">Negative control — base run of the named file</h4>
+<pre># revision: 69fab1372f16686ce6acdb6094a357c6f6bfe18d
+# tree: /tmp/reckon-crew-scratch/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/base-69fab137
+# command env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_is_not_refused_for_its_run.py
+# module /tmp/reckon-crew-scratch/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/base-69fab137/reckon/crew/recovery_classification.py
+# cwd /tmp/reckon-crew-scratch/r-20261116T105135011731-qwnw-red-file-a-review-is-not-refused-for-its-run/base-69fab137
+FAILED tests/test_a_review_is_not_refused_for_its_run.py::test_a_queued_reflex_review_carries_the_waiver_and_launches - AssertionError: {'run_id': 'r-delivered-awaiting-review', 'dispatched': False, 'reason': 'the run is not awaiting review (running)'}
+FAILED tests/test_a_review_is_not_refused_for_its_run.py::test_an_implementation_dispatch_in_the_same_state_records_the_backlog - TypeError: 'NoneType' object is not subscriptable
+2 failed, 2 passed in 2.67s
+EXIT=1</pre>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-gate">Head run of the named file — job 1320258 on all_debug</h4>
+<pre># revision: 4fcb673bca60ac75f508c2da70a95e43e3a1757e
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-is-not-refused-for-its-run
+# host 98dci4-clu-3141.iter.org
+# slurm_job 1320258
+# command env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_review_is_not_refused_for_its_run.py
+# module /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-is-not-refused-for-its-run/reckon/crew/recovery_classification.py
+# cwd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-review-is-not-refused-for-its-run
+....                                                                     [100%]
+4 passed in 2.71s
+EXIT=0</pre>
+<p>The same file passes again at the node's final head <code>894e759a352a</code>, which differs from the code revision above only in this record's own commit: job 1320281 on all_debug reads <code>4 passed in 2.83s</code>, <code>EXIT=0</code>, with the module imported from the worktree.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-arm">Arm over the files that import the changed module</h4>
+<p>The 216 test modules naming <code>recovery_classification</code> or <code>classify_pointer</code> were run at both revisions with the same command. The head adds <strong>no</strong> failure: its 98 failing-or-erroring ids are exactly the base arm's own, and the base arm carries <strong>16 further ids</strong> that the head passes. Those sixteen are in the review-reflex and review-role files — <code>tests/test_review_reflex_sweep.py</code>, <code>tests/test_review_role_is_not_reviewed.py</code>, <code>tests/test_a_queued_launch_never_classifies_the_fleet.py</code> and <code>tests/test_a_tier_none_run_owes_no_review.py</code> — and they were red at base for the same cause this node repaired: a completed run whose pointer still carried a pre-spawn phase was classified <code>running</code>, so no review was dispatched for the run awaiting one. The arm ran in a scratch extraction of base and in the worktree at head, concurrently on the node.</p>
+<pre># base   105 failed, 1675 passed, 13 errors in 1094.93s
+# head    89 failed, 1691 passed, 13 errors in 1172.09s
+# ids only at head: (none)
+# ids only at base: 16 (listed above)</pre>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-merge">Merge with primary at ef83af75fa</h4>
+<p>The landing collided with primary <code>ef83af75fa</code> in one path, <code>reckon/crew/recovery_classification.py</code>. Primary had bounded the same pre-spawn arm with <code>_spawn_evidence(record)</code>, because a stale launcher label was holding refused, unreadable or dead runs at <code>running</code> while the fleet verdict called the same row abandoned. This node had bounded it with the terminal verdict. Both changes state one rule — the label written at launch cannot outrank evidence written after it — so the merge keeps both bounds, in this order: no spawn evidence, no terminal verdict, no stranded launch. Neither side was dropped and no conflict marker was committed.</p>
+<pre># merge commit 44b546bde9f33c5941a9cdbc39c22f9f87ac527e
+# parents 5e2d47e0034bb4de6fb7ca820ae73dc3bac98161 ef83af75fa7a3e8c065efcea4dcc9e63e5b26727
+# path reckon/crew/recovery_classification.py — resolved by keeping both bounds
+# gate, merged head 44b546bde9, job 1320667 on all_debug:
+4 passed in 2.92s
+EXIT=0
+# suite arm at the merged head (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py):
+58 passed in 55.63s
+EXIT=0</pre>
+<p>The twenty-one pre-spawn lines are the only change either side carries in that path, so the merged file differs from primary only by the terminal-verdict bound and its comment. <code>ruff check</code> reports the same single pre-existing SIM102 finding at line 3254 that base and primary both carry, and <code>ruff format --check</code> is clean.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-arm-merge">Arm at the merge head</h4>
+<p>The same 216 modules were run again at the merge head <code>44b546bde9</code>. The base arm keeps 114 failing-or-erroring ids and the merge head keeps 74, so 42 ids that were red at base are green. Two ids are green at base and red at the merge head, and neither is this node&#x27;s:</p>
+<pre># merge head 63 failed, 1717 passed, 13 errors in 1542.91s
+# base   105 failed, 1675 passed, 13 errors
+# ids only at merge head: 2
+# ids only at base:        42
+EXIT=1</pre>
+<p>Both added ids live in <code>tests/test_a_classification_read_creates_no_run_directory.py</code>, and both fail in a tree of primary <code>ef83af75fa</code> alone, with neither side of this node applied: the read leaves <code>classification.json</code> and <code>launcher-host-observation.json</code> in the run directory. Primary&#x27;s own spawn-evidence bound introduced that write, so the pair is reported under outside scope.</p>
+<p>One id that is red at base and red at the merge head changed its failure mode rather than its verdict: <code>tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence</code> reports <code>dispatched: []</code> at primary alone, and at the merge head it dispatches its review and then reads no <code>unreconciled_override</code> on the review run&#x27;s pointer (<code>KeyError</code>). It fails at base too, so the arm adds no failure; the remaining gap is the reflex path&#x27;s own record and it is left under outside scope.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-merge2">Second merge: primary promotes this repair and grows the same arm</h4>
+<p>Primary advanced to <code>72af0d13dd</code>, whose history contains the promotion of this very run (<code>5fb05aaca2</code>), so the product code it carries already holds the terminal-verdict bound. It also grew the same pre-spawn arm, bounding it by the process reading (<code>alive is not False</code>) and adding <code>pre_spawn_reads_as_claim</code>, which ends the pre-spawn reading once the manifest carries a verdict word. One comment block conflicted and both sides described the same rule.</p>
+<p>The merge keeps both changes&#x27; intent rather than either text wholesale: the arm now requires a claim without spawn evidence, without a terminal verdict and not past the stranded bound, and primary&#x27;s claim guard is kept beside it, so a terminal word still contradicted by a live or superseded reading stays deferred. The conflicted comment is resolved to primary&#x27;s wording because its next paragraph already states the manifest precedence this run&#x27;s sentence described, so nothing is dropped. The merged file differs from primary by two hunks only: the named <code>terminal_verdict</code> and its use inside that arm.</p>
+<pre># merge commit 8c734a9ae34ee657b370d2c725bde823afdd439f
+# parents fa2df5da897ca703d3ec7c35c38a886a72436a98 72af0d13dd12ad600d035237d8dd93164250df0d
+# conflict reckon/crew/recovery_classification.py — resolved inside primary&#x27;s arm, no marker committed
+# gate at the merge head, job 1321714 on all_debug:
+4 passed in 3.03s
+EXIT=0</pre>
+<p>The suite arm at this head reads 58 passed and exits zero; <code>ruff check</code> reports the one pre-existing SIM102 that primary&#x27;s own copy of the file carries at line 3565, and <code>ruff format --check</code> is clean.</p>
+<h4 id="qwnw-red-file-a-review-is-not-refused-for-its-run-arm-merge2">Arm at the second merge head, attributed</h4>
+<p>The arm adds failures against base, because primary advanced eight commits in the meantime. Attribution is therefore taken against primary rather than against base: the same 216 modules were run in a tree of <code>72af0d13dd</code> alone.</p>
+<pre># base 69fab1372f        105 failed, 1675 passed, 13 errors   114 ids
+# primary 72af0d13dd      67 failed, 1716 passed, 10 errors    77 ids
+# merge head 8c734a9ae3   65 failed, 1718 passed, 10 errors    75 ids
+# ids only at the merge head: 0
+# ids only at primary alone:  2
+#   test_a_queued_launch_never_classifies_the_fleet.py::test_the_launch_inputs_equal_the_base_except_for_backlog
+#   test_crew_recover.py::test_the_follow_loop_sweeps_on_a_cadence_not_every_iteration
+EXIT=1</pre>
+<p>So the merge adds no failing id, and the two ids it clears are exactly the ones the residual bound addresses: a queued launch whose manifest already carries a verdict, and a follow loop whose pointer its own launcher had left on a pre-spawn phase. The twenty-two ids that are red against base and green in both the primary tree and the merge head belong to primary&#x27;s own advance, since the primary tree reproduces every one of them with neither side of this node applied.</p>
+</section>

@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:478 _section_texts (only production caller read_section_landings)",
+    "reckon/evidence.py:1202 read_section_landings inside _render_document",
+    "reckon/evidence.py:1491 synthesize_landed_record",
+    "reckon/project_maintenance_commands.py:1483 reckon evidence synthesize"
+  ],
+  "completed_at": "2026-11-15T16:32:21.034Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-15T16:31:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-alro-s3b-2baf8e9fe8d8",
+      "recorded_at": "2026-11-15T16:52:28.345861+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T144907963448-alro-s3b/manifest.md",
+      "line": 19,
+      "severity": "blocking",
+      "text": "the recorded baseline arm runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, dropping tests/test_a_closing_plan_gets_one_sourced_overview.py, which exists at de9cb49 with 13 tests; the manifest's artifacts line (manifest.md:31) justifies the drop by saying the file 'does not exist at that revision', and that statement is false, while the repair round's done-when requires both arms with exactly the three-file command. The recorded pair therefore measures the gate at the head only: added failures for the gate file are unmeasured rather than zero."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T144907963448-alro-s3b/manifest.md",
+      "line": 14,
+      "severity": "non-blocking",
+      "text": "every arm recorded at the repair head covers tests/test_a_closing_plan_gets_one_sourced_overview.py alone among the seventeen test files that import reckon.evidence; tests/test_a_resynthesis_keeps_appended_anchors.py, which the brief names as must-still-pass, was last measured at 492a890 (importer-head-1318012.log, '5 failed, 144 passed', the same five ids as importer-base2-1318029.log '5 failed, 139 passed' at de9cb49), so the repair's effect on the files importing reckon.evidence is unmeasured at 2baf8e9."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 492a890: 5d300cc replaces the paragraph list in reckon/evidence.py:252 _section_texts with p/li/td outermost blocks and drops the flattening fallback, rewrites check_a_review_comment_is_not_the_landing at tests/test_a_closing_plan_gets_one_sourced_overview.py:457 against a promotion-only section, and adds :597 test_a_body_with_no_paragraph_yields_no_done_when; 2baf8e9 adds one fragment paragraph.",
+    "done_when": "the done_when at prompt.txt:175 lists the overview clauses plus 'the test files that import reckon.evidence add no failure against the base revision'; repair-final-head-1318150.log records 77 passed EXIT=0 at 2baf8e9 and both negative-control logs show the repaired guards red, but the base arm measured two of the three files and no importer file at the repair head.",
+    "goal": "the node goal is 'Complete the closure overview to the full deliverable of its section'; the gained commits repair the two guards the earlier review named, with reckon/evidence.py:252 _section_texts keeping only p/li/td block boundaries and the fragment paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:16 recording both.",
+    "manifest": "read; it records status complete, commits 492a890/5d300cc/2baf8e9, the head arm '77 passed in 77.29s' EXIT=0, the base arm '56 passed, 2 errors' EXIT=1 at de9cb49 with both failures attributed to a base extraction carrying no git directory, and two negative-control logs.",
+    "write_paths": "the manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html and docs/figures/a-landing-is-recorded-once/alro-s3b; every path in 492a890..2baf8e9 is inside that set."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed run: r-20261115T144907963448-alro-s3b\nReviewed base: 492a890facaf7024c2d21109d70feb6e6d5317a1\nReviewed head: 2baf8e9fe8d8be3a16a08c1570439b5baf829d69\nRange: commits gained since the review at 492a890 (5d300cc, 2baf8e9), 3 files, 47 insertions / 8 deletions.\n\nVERDICT goal: the node goal is \"Complete the closure overview to the full deliverable of its section\"; the gained commits repair the two guards the earlier review named, with reckon/evidence.py:252 _section_texts now keeping only p/li/td block boundaries and the fragment paragraph at docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html:16 recording both, so the deliverable the earlier commits built is not altered and its two failing guards are made real.\nVERDICT done_when: the node's done_when (prompt.txt:175) requires one paragraph per section, a source on every fact, three attempts in one row, each run's gate figures, the unlanded section's declaration, the figure with project-absolute src, no fragment text, audit-doc, plus \"the test files that import reckon.evidence add no failure against the base revision\"; the head arm repair-final-head-1318150.log records 77 passed EXIT=0 at 2baf8e9 and the two negative-control logs show each repaired guard's case red, but the base arm measured only two of the three files and no importer file at the repair head.\nVERDICT write_paths: the manifest declares reckon/evidence.py, tests/test_a_closing_plan_gets_one_sourced_overview.py, docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html and docs/figures/a-landing-is-recorded-once/alro-s3b; every path in 492a890..2baf8e9 is inside that set and the figure directory is untouched, which the goal does not require it to be.\nVERDICT manifest: read; it records status complete, commits 492a890/5d300cc/2baf8e9, the head arm \"77 passed in 77.29s\" EXIT=0 at 2baf8e9, the base arm \"56 passed, 2 errors\" EXIT=1 at de9cb49 with both failures attributed to a base extraction carrying no git directory, and two negative-control logs with the test ids they redden.\nVERDICT diff: read commit by commit against 492a890: 5d300cc replaces the paragraph list in reckon/evidence.py:252 _section_texts with p/li/td outermost blocks and drops the flattening fallback, rewrites tests/test_a_closing_plan_gets_one_sourced_overview.py:457 check_a_review_comment_is_not_the_landing against a section whose only comments are the landed run's and a review's, and adds :597 test_a_body_with_no_paragraph_yields_no_done_when; 2baf8e9 adds one fragment paragraph naming both guards.\nCALL_SITES: reckon/evidence.py:478 _section_texts (its only production caller is read_section_landings), reckon/evidence.py:1202 read_section_landings inside _render_document, reckon/evidence.py:1491 synthesize_landed_record, reckon/project_maintenance_commands.py:1483 the `reckon evidence synthesize` command entry\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/evidence.py:252 now refuses to hand a div-authored body to _done_when, which the earlier review's third finding asked for, and the two guards are made real without touching what the overview renders otherwise.\nSCORE evidence: 10\nJUSTIFICATION evidence: the manifest's baseline_suite at manifest.md:19 omits tests/test_a_closing_plan_gets_one_sourced_overview.py although that file exists at de9cb49 with 13 tests, so the recorded pair measures the gate on the head side only.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 47-line diff touches only reckon/evidence.py:252, tests/test_a_closing_plan_gets_one_sourced_overview.py and docs/evidence/fragments/a-landing-is-recorded-once/alro-s3b.html, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control-repair-landing.log reddens test_a_section_landed_by_promotion_quotes_its_run_comment and test_a_reviews_last_comment_is_not_the_landing under the last-comment rule, and negative-control-repair-donewhen.log reddens test_a_body_with_no_paragraph_yields_no_done_when under the flattening fallback, so both added guards fail on the regression they name.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/evidence.py:265 keeps the module's commented local-rule style and the new case at tests/test_a_closing_plan_gets_one_sourced_overview.py:597 follows the file's check-function idiom, calling the private reader as tests/test_a_commit_lists_scope_is_measured_once.py:42 already does.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no function, class or module \u2014 5d300cc only narrows the block population inside the existing reckon/evidence.py:252 _section_texts \u2014 and the repository's owner of per-section prose, reckon/_plan_html.py:517 section_prose, is not forked by this change.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T144907963448-alro-s3b/manifest.md:19 blocking: the recorded baseline arm runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, dropping tests/test_a_closing_plan_gets_one_sourced_overview.py, which exists at de9cb49 with 13 tests \u2014 the manifest's artifacts line (manifest.md:31) justifies the drop by saying the file \"does not exist at that revision\", and that statement is false, while the repair round's done-when requires both arms with exactly the three-file command. The recorded pair therefore measures the gate at the head only: added failures for the gate file are unmeasured rather than zero, and the arm meant to show the base revision's result shows the result of two unrelated files.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T144907963448-alro-s3b/manifest.md:14 non-blocking: every arm recorded at the repair head covers tests/test_a_closing_plan_gets_one_sourced_overview.py alone among the seventeen test files that import reckon.evidence; tests/test_a_resynthesis_keeps_appended_anchors.py, which the brief names as must-still-pass, was last measured at 492a890 (importer-head-1318012.log, \"5 failed, 144 passed\", the same five ids as importer-base2-1318029.log \"5 failed, 139 passed\" at de9cb49), so the repair's effect on the files importing reckon.evidence is unmeasured at 2baf8e9 even though the repair changed a reader those files exercise.\n",
+  "review_run_id": "r-20261115T162840143480-review-of-alro-s3b-2baf8e9fe8d8",
+  "reviewed_base_sha": "492a890facaf7024c2d21109d70feb6e6d5317a1",
+  "reviewed_head_sha": "2baf8e9fe8d8be3a16a08c1570439b5baf829d69",
+  "reviewed_run_id": "r-20261115T144907963448-alro-s3b",
+  "scores": {
+    "durability": 19,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T16:41:01.599327+00:00",
+  "total": 105
+}

@@ -99,11 +99,19 @@ def test_a_stranded_launch_with_no_queued_request_is_released(crew_home):
 
 def test_the_release_fences_the_abandoned_attempt_for_an_hour(crew_home):
     pointer, now = _stranded(with_handover=True)
+    abandoned = json.loads(
+        (runs.run_dir(RUN_ID) / "claim.json").read_text(encoding="utf-8")
+    )
     queue_admission._release_stranded_launches([pointer], now_seconds=now)
     with pytest.raises(CrewError, match="released as a stranded launch"):
         dispatch_refusals.refuse_a_released_launch(RUN_ID)
     path = dispatch_refusals.launch_refusal_path(RUN_ID)
     record = json.loads(path.read_text(encoding="utf-8"))
+    # The fence names the attempt the release took, not the run: the request
+    # this launch came from goes back to the queue under the same run id, and
+    # its own next attempt publishes a claim of its own.
+    assert record["attempt"]["claim_registered_at"] == abandoned["claim_registered_at"]
+    assert record["attempt"]["holder_pid"] == abandoned["holder_pid"]
     lapsed = datetime.now(UTC) - timedelta(
         seconds=dispatch_refusals.RELEASED_LAUNCH_FENCE_SECONDS + 60
     )

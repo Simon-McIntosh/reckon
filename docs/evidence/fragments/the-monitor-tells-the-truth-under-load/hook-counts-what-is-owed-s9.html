@@ -1,0 +1,110 @@
+<section id="hook-counts-what-is-owed-s9-landing">
+  <h2>The hook's figures count the obligations it lists</h2>
+
+  <p><strong>What changed.</strong> <code>format_checklist</code> in
+  <code>reckon/hooks/coordinator_obligations.py</code> took its header count from
+  the payload's <code>summary.count</code> and its closing figure from
+  <code>summary.unreconciled_runs</code>, and printed the instruction to work the
+  list unconditionally. Both figures now come from the rows the render prints:
+  the header counts the obligations it lists, and the trailer appears only when
+  the list holds a row a coordinator can act on, counting those obligations
+  rather than the closure's run figure.</p>
+
+  <p><strong>The reproduction, at the base revision.</strong> A session that
+  dispatched nothing, and a session whose only row is a request awaiting
+  upstream, on a synthesised configuration home:</p>
+
+  <pre id="hook-counts-what-is-owed-s9-before"><code>summary: {'count': 0, 'oldest_age_seconds': 0, 'unreconciled_runs': 3}
+items: []
+--- rendered
+reckon obligations for session probe-session (project probe-derive): 0 outstanding
+unreconciled runs: 3; work the list to empty before ending the turn.
+
+summary: {'count': 1, 'oldest_age_seconds': 0, 'unreconciled_runs': 1}
+items: [('run-queued', 'run-upstream-request')]
+--- rendered
+reckon obligations for session probe-session (project probe-derive): 1 outstanding, oldest 0s
+- [1 waiting, no action shortens them] run-queued 1 (oldest 0s)
+unreconciled runs: 1; work the list to empty before ending the turn.</code></pre>
+
+  <p>That is the reported reading: the closure's run figure printed beside a list
+  that does not hold those runs. A worker in flight is work already moving, and a
+  request awaiting upstream starts by itself when its last ref lands, so neither
+  is a duty and a trailer asking the list be worked to empty names work nobody can
+  do. After the change the first render says nothing at all and the second lists
+  its wait without the trailer.</p>
+
+  <p><strong>The second reading.</strong> A registered session with no pointer
+  and no producer was answered at every prompt with
+  <code>are not current: no producer; run `reckon crew watch --ensure …</code>.
+  The prompt path now reads the session's own pointers before warning:
+  <code>session_holds_live_work</code> walks the pointer directory, an unreadable
+  pointer counts as work so the silence is only ever taken on evidence, and a
+  pointer that never reached a worker or ended owing nothing is not work at all
+  &mdash; an unpromoted delivery manifest, or a review dispatch not withdrawn,
+  keeps an ended run speaking. A session with one live run still names the
+  remedy, and a session due a limit reset is still told it, so the silence is the
+  fleet's answer rather than a hook that stopped speaking. The <em>no-follower</em>
+  reading is untouched; the reading this change silences, for a registered
+  session holding no pointer, is the <em>no-producer</em> line, and five
+  expectation cases pinning its old wording are red at head (see
+  <em>Not done here</em>).</p>
+
+  <p><strong>Two statements of one rule, compared.</strong> The phase sets and
+  the ended-pointer rule are stated in the hook itself, because the modules that
+  own them cost 2.0&ndash;3.0&nbsp;s and 521&ndash;525 modules to import,
+  <code>reckon.ledger</code> and <code>reckon._plan_html</code> among them &mdash;
+  the derivation cost this hook exists to keep off a turn's opening. So
+  <code>tests/test_the_hook_counts_only_what_is_owed.py</code> compares the hook
+  with its owners: the phase sets against
+  <code>reckon.crew.node._TERMINAL_RUN_PHASES</code> and
+  <code>dispatch_launch.LAUNCH_FAILED_PHASE</code>, and
+  <code>_pointer_owes_its_session</code> against
+  <code>station_subscriber._record_has_pending_work</code> over eight pointer
+  shapes. A rename or a new terminal phase in either owner fails there instead of
+  becoming a hook that reads an ended pointer as live work.</p>
+
+  <table id="hook-counts-what-is-owed-s9-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>this node's cases against the base source</td>
+        <td><code>fd2fe9c1</code>, scratch clone with the test file copied in</td>
+        <td>9 failed, 1 passed, <code>EXIT=1</code> &mdash; every done-when case
+        red; the passing case is the control that a completed run owing a
+        promotion still speaks</td></tr>
+      <tr><td>baseline suite (as the base tree resolves the node's write paths)</td>
+        <td><code>fd2fe9c1</code>, fresh clone</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (node's files, the new test present)</td>
+        <td>this node's head <code>cf04a0b4</code>, this worktree</td>
+        <td><strong>77 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: count the closure's runs again</td>
+        <td>head with the trailer mutated back</td>
+        <td>5 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control: read every pointer again</td>
+        <td>head with the settled-pointer exclusion removed</td>
+        <td>3 failed, 7 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control: restate one phase differently</td>
+        <td>head with one terminal phase dropped from the hook's set</td>
+        <td>the parity case red, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the figures mean now.</strong> The header counts rows; the
+  trailer counts the same rows and prints only while at least one of them is
+  actionable.</p>
+
+  <p><strong>Not done here.</strong> The payload's
+  <code>summary.unreconciled_runs</code> is unchanged and still published, so the
+  unreconciled-run fence still reads it; only the checklist's rendering stopped
+  quoting it as if it were the list's size. Five expectation
+  cases still pin the old no-producer wording for a registered session with no
+  pointer: two in
+  <code>tests/test_a_missing_snapshot_names_a_live_seat.py</code>, two in
+  <code>tests/test_a_quiet_foreign_producer_reads_live.py</code> and one in
+  <code>tests/test_obligations_hook_reads_the_snapshot.py</code>. They are red at
+  head and green at the base, and editing them is outside this node's write
+  paths, so they are recorded as an out-of-scope answer for the coordinator.</p>
+</section>

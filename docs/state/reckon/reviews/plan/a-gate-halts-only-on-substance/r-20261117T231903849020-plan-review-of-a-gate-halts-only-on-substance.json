@@ -1,0 +1,126 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T23:20:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:79",
+      "id": "single_goal-1",
+      "reason": "the node cannot be closed on one verdict while two further behaviours may or may not land inside it, and a worker omitting them records prose instead of a result.",
+      "text": "the section names a second and third change (\"a gate log's terminal status may be named by the project's flight (an exit-line pattern) rather than only `EXIT=`\", \"a pre-existing failure declared on the run can be cited as such in a passed gate\") with no assertion in the done-when and an explicit opt-out (\"if left out, the reason is recorded here\"), so the node's one verdict covers either one behaviour or three depending on what the worker chose, and its gate proves none of the optional two; `reckon/crew/promotion_records.py:1781 already drops an entry naming a pre-existing failure`, so the second of these is a real behaviour change smuggled in as an aside",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:79",
+      "id": "done_when-1",
+      "reason": "a worker told to accept a brief-named waiver either invents a brief-parsing mechanism the plan gives no evidence for or ships half the stated acceptance condition with no test that fails when it is absent.",
+      "text": "the Deliverable widens the waiver source to \"whether it was recorded at completion or named in its brief\", but the only suite-delta waiver in the tree is the one `crew complete --waive-suite-delta` writes onto the run record (`reckon/crew_run_commands.py:344,425`, `reckon/crew/promotion.py:967,1391`) and nothing reads a waiver out of a brief, while the done-when's cases (a)\u2013(d) exercise only the completion-recorded waiver \u2014 so the brief-named half is either an unbuildable condition or an unmeasured one",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:84",
+      "id": "wiring-1",
+      "reason": "the followup is how the next build is invoked, and as written it dispatches completed sections while leaving \u00a79 unqueued, which is the carried wiring defect this change made stale in a new way.",
+      "text": "the sole open followup still titles the route \"Build \u00a72 to \u00a76\" and its body still says \"\u00a72 waits on the promotion-evidence plan's \u00a78; \u00a74 waits on \u00a73; the rest are independent\", but the declared states now read \u00a71\u2013\u00a78 `done` with \u00a79 the only `implementable` section, so the one dispatch route on the plan names a range with nothing left in it and omits the only buildable work",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e2f73e93069e93342837067dfa2e92774cb7f594",
+  "plan_fingerprint": "8b4f1312e8ddb8ade419c901036eb2e226228826b43cc4144e54c855b6cc3a09",
+  "plan_slug": "a-gate-halts-only-on-substance",
+  "plan_version": 42,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e2f73e93069e93342837067dfa2e92774cb7f594",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "s9 is narrowed to the waived failure count alone; the EXIT= line and the declared pre-existing failure are out of its scope, recorded in a comment on s9: the second already exists at reckon/crew/promotion_records.py:1781, and the first is answered by the launcher writing a literal EXIT= line",
+      "reason": "",
+      "when": "2026-11-17T23:41:48.463613+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e2f73e93069e93342837067dfa2e92774cb7f594",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the brief-named waiver is removed; s9 accepts a waived count only against a waiver crew complete --waive-suite-delta recorded on the run, the one the done-when's cases exercise",
+      "reason": "",
+      "when": "2026-11-17T23:41:54.883508+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e2f73e93069e93342837067dfa2e92774cb7f594",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-aghoos-001 is resolved naming the landed sections, and a new followup carries the s9 invocation",
+      "reason": "",
+      "when": "2026-11-17T23:42:01.141211+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e2f73e93069e93342837067dfa2e92774cb7f594",
+      "commit_basis": "edit",
+      "note": "the brief-named waiver is removed; s9 accepts a waived count only against a waiver crew complete --waive-suite-delta recorded on the run, the one the done-when's cases exercise",
+      "reason": "",
+      "when": "2026-11-17T23:41:54.883508+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e2f73e93069e93342837067dfa2e92774cb7f594",
+      "commit_basis": "edit",
+      "note": "s9 is narrowed to the waived failure count alone; the EXIT= line and the declared pre-existing failure are out of its scope, recorded in a comment on s9: the second already exists at reckon/crew/promotion_records.py:1781, and the first is answered by the launcher writing a literal EXIT= line",
+      "reason": "",
+      "when": "2026-11-17T23:41:48.463613+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "e2f73e93069e93342837067dfa2e92774cb7f594",
+      "commit_basis": "edit",
+      "note": "f-aghoos-001 is resolved naming the landed sections, and a new followup carries the s9 invocation",
+      "reason": "",
+      "when": "2026-11-17T23:42:01.141211+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-gate-halts-only-on-substance.v42.json",
+  "review_run_id": "r-20261117T231903849020-plan-review-of-a-gate-halts-only-on-substance",
+  "reviewed_blob_sha": "2ebf6f46d4a85604fb23ec14a47dd907d745e646",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/review.py:1239` is where a non-integer `added_failure_count` is refused (verified by running `review_record_refusals` on a record carrying `\"waived\"`, which returned `missing or invalid added_failure_count`), `reckon/crew/promotion_gate.py:54` is the `_PARTITION_RECEIPT` `EXIT=` regex, and `crew repair --review --set`, `crew check --review` and `--waive-suite-delta` all exist in `reckon/crew_run_commands.py`; the nova-side citations (`inverse-equilibrium-baseline` \u00a72, run ids) sit outside this repository root and were not opened.",
+    "done_when": "a finding \u2014 \u00a79's done-when asserts four cases but leaves the Deliverable's clause \"whether it was recorded at completion or named in its brief\" unmeasured; no brief-carried suite-delta waiver exists to measure.",
+    "evidence_paths": "pass \u2014 \u00a79 puts each arm's log under the run directory and the test on a temporary crew home, not a scratchpad; the write paths it names are repository paths plus the node's fragment.",
+    "naming": "pass \u2014 \u00a79's record fields (`added_failure_count`, `added_failure_ids`, `added_failure_waiver`) state the mechanism with no plan label, ticket number or stage name, and its title carries no tracker identifier.",
+    "reasoning": "pass on the root cause it states \u2014 the refusal \u00a79 blames is the one that fires at the cited line, shown by an executed probe; the two smaller frictions are raised as a single_goal defect because they are optional rather than because their cause is wrong.",
+    "single_goal": "a finding \u2014 \u00a79 carries one declared deliverable plus two further behaviours (\"a gate log's terminal status may be named by the project's flight ... and a pre-existing failure declared on the run can be cited as such in a passed gate\") whose inclusion is optional and asserted by nothing, so one verdict cannot close it.",
+    "wiring": "a finding \u2014 the plan's only open followup still reads \"Build \u00a72 to \u00a76\" with the body \"\u00a72 waits on the promotion-evidence plan's \u00a78; \u00a74 waits on \u00a73; the rest are independent\", while \u00a72\u2013\u00a78 are all `done` and the newly added \u00a79 is the one `implementable` section and is named nowhere in the route."
+  },
+  "section_digests": {
+    "_document": "99d7d70f085d6d484ccb4105df35eafea24b99d95567d4a14a1224259006b65f",
+    "s1": "da96e9775c5ac3c922e7c9262b6c95659f8a63dd7ecaefbf9c9ea72c3d506b61",
+    "s2": "34659f8a9f7d766af00602047920116071d6c4a45beb59504f09c79856fe4449",
+    "s3": "7d5900898dccbca711f2ba5f009a9d77a8106e6c95850afa29ea353bee133ea1",
+    "s4": "0e123dd962d8cd12c2e71ad44abb85e97ccaf736d952b19140641c3426beab23",
+    "s5": "8693ffa47dece4b7d7becaed1cc17e2eae2192270529686416237848fcfe3d7d",
+    "s6": "c1a4e9a4b81527a7a273e421018eb3a5b58b491f8eb6afe57798b77df653c903",
+    "s7": "02f674f3ab07d57d2a9a4a13805c075967cd59e063bf39eb470a940c1e9e9897",
+    "s8": "6a840e82c44d918c74c527bb0bc07eed5fa4efdfb5dc69fc1e3b7dfbe1ff477f",
+    "s9": "e742c8055e839dbf557cab7416e336ac1bec2522b443e17f0a125017262798fc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T23:27:28.148518+00:00",
+  "total": null
+}

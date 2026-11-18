@@ -1,0 +1,49 @@
+<section id="qwnw-red-file-a-successful-launch-is-recorded-landing">
+  <h3>A launch's argv is read back through the dispatch-detail accessor</h3>
+  <p>The file failed in nine cases on the primary branch, all from one cause:
+  dispatch-time detail moved out of the live pointer and into each run's own
+  <code>dispatch-detail.json</code>, and these cases still compared
+  <code>argv</code> against a pointer that no longer carries it. The verdict is
+  <strong>test wrong</strong>; no product rule was repaired.</p>
+  <table id="qwnw-red-file-a-successful-launch-is-recorded-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>record.get("argv")</code> is <code>None</code> after a successful spawn: nine cases, in
+        <code>_assert_identity</code>, <code>test_publication_preserves_a_supervisors_newer_state</code>
+        and <code>test_a_refused_dispatch_cannot_restore_over_another_launch</code></td>
+        <td>test wrong</td>
+        <td>A live pointer names <code>dispatch_detail</code> and answers for <code>argv</code> only
+        through <code>runs.dispatch_field</code> / <code>runs.read_dispatch_detail</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The product change that introduced the rule is <code>b8217ec486</code> ("move dispatch detail
+  into run records"), whose own message records that tests reading live pointers directly still
+  needed migration. The three passing cases are the ones that never read <code>argv</code> off a
+  record.</p>
+  <p>The assertions keep their strength and gain one. The identity check now reads
+  <code>argv</code> through the accessor at both ends — the value read while the worker was being
+  spawned and the value the pointer still answers for after a competing refusal write — and compares
+  each to the argv the launcher was handed. It also asserts the pointer does <em>not</em> carry
+  <code>argv</code> inline, so a record that starts doing so again is noticed rather than silently
+  accepted. No assertion was deleted or weakened.</p>
+  <p>Arms, both as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> unset, both running
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_successful_launch_is_recorded.py</code>:
+  at base <code>d0d77f07e2dcc64d74713755aebe748602f9a06f</code> the file reads
+  <code>9 failed, 3 passed in 10.37s</code> with <code>EXIT=1</code>; at head
+  <code>ba9cc94a1b33177114c1518ec41b465242e3a396</code> it reads <code>12 passed in 11.05s</code>
+  with <code>EXIT=0</code>, and at the delivered head
+  <code>ee486f08213a817430fd72a901077d296d07a84e</code> it reads
+  <code>12 passed in 16.44s</code> with <code>EXIT=0</code>. The nine base ids are listed in the
+  red-file record beside this one. <code>ruff check</code> and <code>ruff format --check</code>
+  report no finding on the changed path at either revision.</p>
+  <p id="qwnw-red-file-a-successful-launch-is-recorded-mutation">Negative control for the added
+  assertion: with <code>_split_dispatch_detail</code> mutated to keep <code>argv</code> on the pointer
+  while the detail file also holds it, the file reads
+  <code>6 failed, 6 passed in 116.26s</code> and the failing assertion is the new
+  <code>assert "argv" not in record</code> in all six cases that compare identity
+  after a spawn, so the guard this change adds is shown to fire rather than merely
+  to pass.</p>
+  <p><a href="/reckon/evidence/fragments/queued-work-needs-no-workaround/red-file-a-successful-launch-is-recorded.html">Red-file record: base arm and head arm</a></p>
+</section>

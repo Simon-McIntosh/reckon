@@ -117,6 +117,25 @@ class _SupersededLaunchError(CrewError):
     """
 
 
+def worker_mcp_record(plan: _backends.LaunchPlan) -> dict[str, dict[str, Any]]:
+    """The run-record entry naming the MCP set this launch connected under.
+
+    Read from the composed plan rather than re-derived from the flight, so a
+    later reader sees what this worker could reach even after the configuration
+    moved. A launch that resolved no set and no server writes no entry: an
+    empty one would read as a worker that asked for servers and was refused
+    them, which is a different fact from a node that named none.
+    """
+    if not plan.mcp_set and not plan.worker_mcp_servers:
+        return {}
+    return {
+        "worker_mcp": {
+            "set": plan.mcp_set,
+            "servers": list(plan.worker_mcp_servers),
+        }
+    }
+
+
 def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) -> None:
     """Stop a dispatch whose attempt another launch has taken from it.
 
@@ -742,6 +761,7 @@ def _launch_dispatch(
                         images=node.images,
                         fence=compose_fence,
                         fence_config=config,
+                        worker_mcp_set=node.mcp_set,
                         fence_waiver=fence_waiver or None,
                         # A node with no declared write paths is free of its
                         # whole worktree, so the paths git cannot merge are
@@ -791,6 +811,7 @@ def _launch_dispatch(
                     # asked for the fence is recorded as fenced while any launch
                     # that composed none is not.
                     "fenced": _plan_composed_the_fence(plan),
+                    **worker_mcp_record(plan),
                     **(
                         {
                             "fence_unprotected_paths": [

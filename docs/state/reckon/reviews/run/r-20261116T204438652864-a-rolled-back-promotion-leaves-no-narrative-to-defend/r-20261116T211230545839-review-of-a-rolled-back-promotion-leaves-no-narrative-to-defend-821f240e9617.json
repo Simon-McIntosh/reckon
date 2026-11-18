@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "baa6e8307b454f36655ac6d25f42480243619f99",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:2542 _complete_locked (no-row promotion path this change alters)",
+    "reckon/crew/promotion.py:1965 _complete_locked (retry with a row present)",
+    "reckon/crew/promotion_scope.py:3546 re-export of _record_landing_comment"
+  ],
+  "completed_at": "2026-11-16T21:18:48.171Z",
+  "dispatched_at": "2026-11-16T21:17:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the declared write path for this section's evidence fragment was never written, so the node lands with no fragment beside the 74 sibling fragments under docs/evidence/fragments/the-monitor-reads-each-fact-once/ and the landed narrative survives only as the promotion's plan comment."
+    }
+  ],
+  "head_log_revision": "821f240e9617a91f55e7f12f023ea633fa0f9331",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/promotion.py:2542 and :1965 inside _complete_locked and the re-export at reckon/crew/promotion_scope.py:3546; only the no-row route reaches the changed branch",
+    "diff": "read the single commit 821f240e96 against baa6e8307b: promotion_scope.py swaps the CrewError refusal for an in-place comment rewrite through _store.write_plan with the row-present branch untouched, and adds a 112-line two-case test file.",
+    "done_when": "the done_when names tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py for cases (a) and (b), a base-revision negative control and matched arms; the manifest records 58 passed at baa6e8307b, 60 passed at 821f240e96, and '1 failed, 1 passed' EXIT=1 for the control.",
+    "goal": "the goal is 'Let a promotion with no ledger row replace a landing comment left by a failed attempt'; reckon/crew/promotion_scope.py:1547-1580 supersedes the comment under the same id and returns recorded True with superseded_narrative, and the caller in reckon/crew/promotion.py:2542 then writes the run's row.",
+    "manifest": "read; status complete, commits 821f240e9617a91f55e7f12f023ea633fa0f9331, changed_paths the two landed files, tests the literal three-file pytest command recorded in tests, test_logs naming the base, after and negative-control logs.",
+    "write_paths": "the fence was reckon/crew/promotion_scope.py, tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html; the commit touches the first two only, inside the fence, and the declared fragment was not written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py:79-88 asserts the single comment reads CORRECTED and not STALE, which reddens on both the reinstated base raise (proven: logs/negative-control.log FAILED with 'different narrative') and on an implementation that appends a second comment or leaves the stale body.",
+    "evidence": "logs/base-suite.log reads '58 passed' EXIT=0 at baa6e8307b and logs/after-suite.log reads '60 passed' EXIT=0 at 821f240e96, both matching the manifest's baseline_suite and after_suite; the declared negative control is logs/negative-control.log '1 failed, 1 passed' EXIT=1.",
+    "fit": "the new branch at reckon/crew/promotion_scope.py:1547-1580 reuses the payload/_store.write_plan/VersionConflict shape of the append branch at :1605-1628 and adds no new symbol, so the file keeps one idiom.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:1547-1556 replaces the differing body in place under the same comment id when _ledger_holds_row is false, which is exactly the goal for a run with no row.",
+    "reuse": "searched reckon for an existing owner of replacing a comment body by id and found only reckon/mcp_edit_plan.py:139 _append_comment and reckon/_plan_html.py:2085 merge_comment_collections, neither of which rewrites an existing body; the change reuses reckon/crew/promotion_scope.py's own _store.write_plan write rather than forking a writer.",
+    "scope_discipline": "git diff --stat baa6e8307b..821f240e96 lists only reckon/crew/promotion_scope.py and tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py, both inside the fence, and no hunk outside the differing-narrative guard."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Let a promotion with no ledger row replace a landing comment left by a failed attempt'; reckon/crew/promotion_scope.py:1547-1580 supersedes the comment under the same id and returns recorded True with superseded_narrative, and the caller in reckon/crew/promotion.py:2542 then writes the run's row.\nVERDICT done_when: the done_when names tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py for cases (a) and (b), a base-revision negative control and matched arms; the manifest records 58 passed at baa6e8307b, 60 passed at 821f240e96, and '1 failed, 1 passed' EXIT=1 for the control.\nVERDICT write_paths: the fence was reckon/crew/promotion_scope.py, tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html; the commit touches the first two only, inside the fence, and the declared fragment was not written.\nVERDICT manifest: read; status complete, commits 821f240e9617a91f55e7f12f023ea633fa0f9331, changed_paths the two landed files, tests the literal three-file pytest command recorded in tests, test_logs naming the base, after and negative-control logs.\nVERDICT diff: read the single commit 821f240e96 against baa6e8307b: promotion_scope.py swaps the CrewError refusal for an in-place comment rewrite through _store.write_plan with the row-present branch untouched, and adds a 112-line two-case test file.\nCALL_SITES: reckon/crew/promotion.py:2542 _complete_locked (no-row promotion path this change alters), reckon/crew/promotion.py:1965 _complete_locked (retry with a row present), reckon/crew/promotion_scope.py:3546 re-export of _record_landing_comment\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1547-1556 replaces the differing body in place under the same comment id when _ledger_holds_row is false, which is exactly the goal for a run with no row.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base-suite.log reads '58 passed' EXIT=0 at baa6e8307b and logs/after-suite.log reads '60 passed' EXIT=0 at 821f240e96, both matching the manifest's baseline_suite and after_suite; the declared negative control is logs/negative-control.log '1 failed, 1 passed' EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat baa6e8307b..821f240e96 lists only reckon/crew/promotion_scope.py and tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py, both inside the fence, and no hunk outside the differing-narrative guard.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_rolled_back_promotion_leaves_no_narrative_to_defend.py:79-88 asserts the single comment reads CORRECTED and not STALE, which reddens on both the reinstated base raise (proven: logs/negative-control.log FAILED with 'different narrative') and on an implementation that appends a second comment or leaves the stale body.\nSCORE fit: 19\nJUSTIFICATION fit: the new branch at reckon/crew/promotion_scope.py:1547-1580 reuses the payload/_store.write_plan/VersionConflict shape of the append branch at :1605-1628 and adds no new symbol, and the comment block names no plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: searched reckon for an existing owner of replacing a comment body by id and found only reckon/mcp_edit_plan.py:139 _append_comment and reckon/_plan_html.py:2085 merge_comment_collections, neither of which rewrites an existing body; the change reuses reckon/crew/promotion_scope.py's own _store.write_plan write rather than forking a writer.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-rolled-back-promotion-leaves-no-narrative-to-defend.html:1 non-blocking: the declared write path for this section's evidence fragment was never written, so the node lands with no fragment beside the 74 sibling fragments under docs/evidence/fragments/the-monitor-reads-each-fact-once/ and the landed narrative survives only as the promotion's plan comment.\n\nReviewed run: r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend\nReviewed head: 821f240e9617a91f55e7f12f023ea633fa0f9331\n",
+  "review_run_id": "r-20261116T211230545839-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-821f240e9617",
+  "reviewed_base_sha": "baa6e8307b454f36655ac6d25f42480243619f99",
+  "reviewed_head_sha": "821f240e9617a91f55e7f12f023ea633fa0f9331",
+  "reviewed_run_id": "r-20261116T204438652864-a-rolled-back-promotion-leaves-no-narrative-to-defend",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261116T211230545839-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-821f240e9617"
+  },
+  "reviewer_run_id": "r-20261116T211230545839-review-of-a-rolled-back-promotion-leaves-no-narrative-to-defend-821f240e9617",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T21:41:16.483422+00:00",
+  "total": 116
+}

@@ -1,0 +1,540 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": {
+    "assertions_read": 62,
+    "exception_assertions": "pytest.raises checks at lines 175,192,216,281,315,368,423,448,512,636,668,683,695 fail when the named real refusal is swallowed, skipped, or has the wrong preservation/restoration verdict; snapshot assertions separately verify state.",
+    "explanation": "Before/after snapshots, merged_bytes and peer_snapshot capture observed filesystem and Git state, not expected bytes passed to the snapshot helper under test; the callback injections independently make writes before refusal. Event, fixture and receipt-text assertions are identified as setup or reporting checks and are not the sole durability evidence. The owner-prefix assertion observes a real writer output, and the adjacent original-snapshot assertion verifies rollback after that owner change.",
+    "self_referential_assertions": []
+  },
+  "assertion_review": [
+    {
+      "assertion": "_plan_snapshot(repository)[1] > 0",
+      "failure_condition": "The pending-state fixture failed to increase the independently read plan version; setup assertion, not rollback coverage.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 120
+    },
+    {
+      "assertion": "(repository / PLAN_PATH).read_bytes() != before",
+      "failure_condition": "The forced boundary is reached before a real comment write; this validates that rollback has work to undo.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 133
+    },
+    {
+      "assertion": "'Delivered the change' in (repository / PLAN_PATH).read_text()",
+      "failure_condition": "The comment writer did not write the requested narrative before the injected refusal; setup reachability check.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 134
+    },
+    {
+      "assertion": "(repository / PLAN_PATH).read_bytes() != before",
+      "failure_condition": "The stop injection ran before plan bytes changed; setup reachability check.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 156
+    },
+    {
+      "assertion": "_plan_snapshot(repository) == before",
+      "failure_condition": "Remove the snapshot guard or its file/index restoration: the post-refusal digest, version, mode, index, status or HEAD differs from the independently captured preimage.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 178
+    },
+    {
+      "assertion": "'restored' in str(error.value)",
+      "failure_condition": "The refusal stops reporting a completed restoration.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 179
+    },
+    {
+      "assertion": "'index' in str(error.value)",
+      "failure_condition": "The refusal stops naming index restoration.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 180
+    },
+    {
+      "assertion": "pointer_path(RUN_ID).exists()",
+      "failure_condition": "A refused promotion incorrectly deletes its live pointer.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 181
+    },
+    {
+      "assertion": "git(repository, 'ls-files', '--stage', '--', 'unrelated.txt') == unrelated_index",
+      "failure_condition": "Plan restoration replaces the whole index and discards independently staged unrelated content.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 182
+    },
+    {
+      "assertion": "_dispatch_visibility(repository) == head",
+      "failure_condition": "Restore the base behavior that leaves the plan dirty: require_plan_section_visible raises instead of returning the previously observed committed revision.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 195
+    },
+    {
+      "assertion": "result['plan_comment']['recorded'] is True",
+      "failure_condition": "Successful completion skips recording the landing comment.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 202
+    },
+    {
+      "assertion": "'Delivered the change' in git(repository, 'show', f'HEAD:{PLAN_PATH}')",
+      "failure_condition": "Successful completion reports a comment without putting its narrative in the committed Git blob.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 203
+    },
+    {
+      "assertion": "after[1] == before[1] + 1",
+      "failure_condition": "Successful completion omits or duplicates the version increment.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 204
+    },
+    {
+      "assertion": "after[4] == ''",
+      "failure_condition": "Successful completion leaves the plan dirty.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 205
+    },
+    {
+      "assertion": "_dispatch_visibility(repository) == after[5]",
+      "failure_condition": "The successful landing leaves dispatch visibility inconsistent with the independently observed HEAD.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 206
+    },
+    {
+      "assertion": "'Delivered the change' in git(repository, 'show', f'HEAD:{PLAN_PATH}')",
+      "failure_condition": "Remove the committed-entry check: cleanup failure rewinds the committed comment or loses it.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 218
+    },
+    {
+      "assertion": "git(repository, 'status', '--porcelain', '--', PLAN_PATH) == ''",
+      "failure_condition": "Cleanup failure writes the preimage over an already committed plan and leaves a reversal dirty.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 219
+    },
+    {
+      "assertion": "'Delivered the change' in path.read_text()",
+      "failure_condition": "The interleaved-edit injection is reached without the landing narrative; setup reachability assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 233
+    },
+    {
+      "assertion": "peer_snapshot[-1] != before",
+      "failure_condition": "The peer edit injection did not produce a distinct observed state; setup assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 265
+    },
+    {
+      "assertion": "peer_snapshot",
+      "failure_condition": "Promotion never reached the injected peer edit; reachability assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 283
+    },
+    {
+      "assertion": "_plan_snapshot(repository) == peer_snapshot[-1]",
+      "failure_condition": "Remove content/index ownership checks: restoration overwrites the observed peer file or staging.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 284
+    },
+    {
+      "assertion": "'preserv' in str(error.value).lower()",
+      "failure_condition": "The refusal stops saying foreign content was preserved.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 285
+    },
+    {
+      "assertion": "'restored plan document' not in str(error.value)",
+      "failure_condition": "The refusal falsely claims successful restoration after declining to overwrite peer content.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 286
+    },
+    {
+      "assertion": "_plan_snapshot(repository) == peer_snapshot[0]",
+      "failure_condition": "Restoration uses its older snapshot despite a peer edit preceding the comment and overwrites that observed state.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 317
+    },
+    {
+      "assertion": "start.wait(5)",
+      "failure_condition": "The harness never signals the editor to attempt acquisition; synchronization assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 336
+    },
+    {
+      "assertion": "attempted.wait(5)",
+      "failure_condition": "The harness fails to start the contending editor before staging refuses; synchronization assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 358
+    },
+    {
+      "assertion": "not worker.is_alive()",
+      "failure_condition": "A changed lock or rollback path leaves the editor thread stuck after promotion finishes.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 373
+    },
+    {
+      "assertion": "not errors",
+      "failure_condition": "The contending editor raises instead of completing its write and staging.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 374
+    },
+    {
+      "assertion": "'Peer delivery' in path.read_text()",
+      "failure_condition": "Rollback loses the waiting editor prose write.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 375
+    },
+    {
+      "assertion": "'Peer delivery' in git(repository, 'show', f':{PLAN_PATH}')",
+      "failure_condition": "Rollback loses the waiting editor independently read Git staging.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 376
+    },
+    {
+      "assertion": "path.read_bytes() == merged_bytes[0]",
+      "failure_condition": "Remove the separate merged-comment checkpoint: staging rollback replaces the complete observed merged bytes with HEAD or the stale snapshot.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 427
+    },
+    {
+      "assertion": "\"A peer's independently delivered comment\" in path.read_text()",
+      "failure_condition": "Merged-peer rollback loses the independently introduced peer narrative.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 428
+    },
+    {
+      "assertion": "git(repository, 'diff', '--cached', '--name-only', '--', PLAN_PATH) == ''",
+      "failure_condition": "Merged-peer rollback leaves a staged reversal at the plan path.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 429
+    },
+    {
+      "assertion": "state['comments']['delivery'][0]['id'] == f'c-delivered-{RUN_ID}'",
+      "failure_condition": "Reintroduce local comment construction instead of using the owner: changing the owner prefix no longer appears in the actually written comment.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 444
+    },
+    {
+      "assertion": "_plan_snapshot(repository) == before",
+      "failure_condition": "Reintroduce duplicated snapshot prediction: the legitimate owner-prefix change makes exact ownership validation refuse restoration.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 450
+    },
+    {
+      "assertion": "start.wait(5)",
+      "failure_condition": "The harness never asks the editor to contend; synchronization assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 470
+    },
+    {
+      "assertion": "attempted.wait(5)",
+      "failure_condition": "The editor never attempts acquisition before the injected refusal; synchronization assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 490
+    },
+    {
+      "assertion": "not finished.wait(0.2)",
+      "failure_condition": "Release the plan lock between snapshot and refusal: the editor finishes inside the transaction.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 491
+    },
+    {
+      "assertion": "not worker.is_alive()",
+      "failure_condition": "The transaction lock remains held after refusal and the editor cannot terminate.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 519
+    },
+    {
+      "assertion": "not errors",
+      "failure_condition": "The waiting editor or its staging errors.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 520
+    },
+    {
+      "assertion": "observed == [before]",
+      "failure_condition": "Narrow the plan lock so an editor observes the intermediate landing comment instead of the original preimage.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 521
+    },
+    {
+      "assertion": "'Peer delivery' in path.read_text()",
+      "failure_condition": "Rollback overwrites the editor write after it finally acquires the lock.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 522
+    },
+    {
+      "assertion": "'Peer delivery' in git(repository, 'show', f':{PLAN_PATH}')",
+      "failure_condition": "Rollback discards the editor staged plan.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 523
+    },
+    {
+      "assertion": "attempted.wait(5)",
+      "failure_condition": "The copied-context editor never attempts acquisition; synchronization assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 560
+    },
+    {
+      "assertion": "not acquired.wait(0.2)",
+      "failure_condition": "Use shared ContextVar ownership: a copied context borrows the original thread hold and acquires while it is still held.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 561
+    },
+    {
+      "assertion": "not worker.is_alive()",
+      "failure_condition": "Copied-context lock handling leaves a stuck worker.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 567
+    },
+    {
+      "assertion": "not errors",
+      "failure_condition": "Copied-context editor fails instead of waiting and writing.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 568
+    },
+    {
+      "assertion": "acquired.is_set()",
+      "failure_condition": "The editor never acquires after the outer lock releases.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 569
+    },
+    {
+      "assertion": "'Peer delivery' in path.read_text()",
+      "failure_condition": "Copied-context lock handling loses the editor prose.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 570
+    },
+    {
+      "assertion": "'Peer delivery' in git(repository, 'show', f':{PLAN_PATH}')",
+      "failure_condition": "Copied-context lock handling loses the editor staged write.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 571
+    },
+    {
+      "assertion": "release.wait(5)",
+      "failure_condition": "The release timer or test harness fails to release the editor; synchronization assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 593
+    },
+    {
+      "assertion": "written.is_set()",
+      "failure_condition": "Use a stale copied-context hold marker: a reader bypasses the currently live editor lock before its write.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 608
+    },
+    {
+      "assertion": "'Peer delivery' in path.read_text()",
+      "failure_condition": "The stale context reads pre-editor text instead of the serialized editor result.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 609
+    },
+    {
+      "assertion": "holding.wait(5)",
+      "failure_condition": "The editor never establishes the contended lock; synchronization assertion.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 615
+    },
+    {
+      "assertion": "not worker.is_alive()",
+      "failure_condition": "Stale-context handling leaves a stuck editor.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 624
+    },
+    {
+      "assertion": "not errors",
+      "failure_condition": "Stale-context handling raises from the editor.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 625
+    },
+    {
+      "assertion": "_plan_snapshot(repository) == before",
+      "failure_condition": "Reinstate unconditional git show HEAD:path or omit untracked restoration: the preexisting untracked plan fails or changes after refusal.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 638
+    },
+    {
+      "assertion": "result['plan_comment']['recorded']",
+      "failure_condition": "Successful promotion of an untracked plan incorrectly skips its comment.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 647
+    },
+    {
+      "assertion": "'Delivered the change' in git(repository, 'show', f'HEAD:{PLAN_PATH}')",
+      "failure_condition": "Successful promotion of an untracked plan fails to place the narrative in HEAD.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 648
+    },
+    {
+      "assertion": "_plan_snapshot(repository) == before",
+      "failure_condition": "Reverse the receipt-owned removed-plan repair: the real staging refusal deletes the untracked plan, so the independent snapshot read raises FileNotFoundError.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 670
+    },
+    {
+      "assertion": "not path.exists()",
+      "failure_condition": "Restore a deletion with no owner receipt: the deleted plan is incorrectly recreated.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 685
+    },
+    {
+      "assertion": "_plan_snapshot(repository) == before",
+      "failure_condition": "Weaken the existing staged-untracked-plan refusal or its preservation: it no longer leaves the independently observed file and staging unchanged.",
+      "file": "tests/test_a_failed_promotion_restores_its_plan.py",
+      "line": 697
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:1399 complete calls decorated _complete_locked",
+    "reckon/crew/promotion.py:2303 existing-row completion calls _record_comment_with_snapshot",
+    "reckon/crew/promotion.py:2319 existing-row completion calls _commit_with_plan_snapshot",
+    "reckon/crew/promotion.py:2882 new completion calls _record_comment_with_snapshot",
+    "reckon/crew/promotion.py:3027 new completion calls _commit_with_plan_snapshot",
+    "reckon/crew/promotion_scope.py:1485 _record_landing_comment calls shared _landing_comment_update and public write_plan",
+    "reckon/_store.py:1626 _write_state enters the now-reentrant _serialized_path_lock"
+  ],
+  "checkout_observation": {
+    "review_worktree_head": "c0265207168ee6b24cd3c43e19f9b5aee45c0f6c",
+    "source_read_method": "git show at reviewed_head_sha, not the newer checkout HEAD",
+    "tests_rerun": false,
+    "tracked_worktree_status": "clean"
+  },
+  "completed_at": "2026-11-17T12:08:36Z",
+  "diff_scope": {
+    "aggregate_diff_note": "The base-to-head diff includes 532 files imported from primary. Scope scoring assesses each non-merge worker commit; it does not claim those imported primary changes are worker-authored or reviewed here.",
+    "authorization": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/resume-4-advice.txt",
+    "authorized_merge": "4b9f3fb34d068530fbcf5faa11eaf036bfa16a0d",
+    "authorized_merge_parent": "488e2b6279e1cb0b12752e9011bd05234a4ffba1",
+    "worker_changed_paths": [
+      "reckon/crew/promotion.py",
+      "reckon/crew/promotion_scope.py",
+      "reckon/_store.py",
+      "tests/test_a_failed_promotion_restores_its_plan.py"
+    ]
+  },
+  "dispatched_at": "2026-11-17T12:02:16Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/receipt-head-scope.log",
+      "revision": "f3662210f69ee18cf7367978f276f4b2428496fb"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-original-base.log",
+      "revision": "891a4e54f19486e82117d68826044be51d2e0a8d"
+    },
+    "behavior_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/receipt-head-gate.log",
+    "behavior_summary": "128 passed in 67.79s (0:01:07)",
+    "log_observations": {
+      "after_suite": {
+        "completed": true,
+        "exit_status": 0,
+        "failure_ids": [],
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/receipt-head-scope.log",
+        "revision": "f3662210f69ee18cf7367978f276f4b2428496fb",
+        "summary": "108 passed in 56.16s"
+      },
+      "baseline_suite": {
+        "completed": true,
+        "exit_status": 0,
+        "failure_ids": [],
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/repair-original-base.log",
+        "revision": "891a4e54f19486e82117d68826044be51d2e0a8d",
+        "summary": "58 passed in 34.78s"
+      }
+    }
+  },
+  "importer_caveat": {
+    "base_id_adjudication": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/resume-6-advice.txt",
+    "base_id_reproduction": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/boundary-merge-base.json",
+    "note": "The zero added_failure_count field derives only from the explicitly required baseline_suite and after_suite logs; it does not erase or re-label the three historical raw importer additions.",
+    "raw_added_failure_count": 3,
+    "raw_added_failure_ids": [
+      "tests/test_crew_promotion_scope.py::test_main_checkout_source_write_allows_promotion",
+      "tests/test_crew_promotion_scope.py::test_peer_worktree_source_write_allows_promotion",
+      "tests/test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits"
+    ],
+    "raw_delta": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/final-original-importers-delta.json",
+    "settle_repeat_receipt": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/settle-repeat-comparison.json",
+    "settle_summary": "base 3/3 passed; head 3/3 passed; the earlier timeout was not reproduced"
+  },
+  "item_verdicts": {
+    "diff": "Read seven worker commits separately against their parents from 891a4e54f19486e82117d68826044be51d2e0a8d to f3662210f69ee18cf7367978f276f4b2428496fb; the authorized merge 4b9f3fb34d068530fbcf5faa11eaf036bfa16a0d imports primary work and is excluded from worker scope attribution.",
+    "done_when": "Read source prompt.txt:250 and the final resume-6-advice.txt; repair-original-base.log records 58 passed, receipt-head-scope.log 108 passed, receipt-head-gate.log 128 passed, and recorded reversals fail; the wider importer exceptions carry the requested base attribution and paired settle checks.",
+    "goal": "Read source prompt.txt:38 and live docs/plans/delivered-work-lands-without-a-coordinator.html section s15; promotion.py:2139-2175 captures and restores the pre-promotion bytes, mode and path-specific index while preserving committed landings.",
+    "manifest": "Read source manifest.md including both completed suite arms and their actual logs; the recorded head is f3662210f69ee18cf7367978f276f4b2428496fb and the armed pair adds zero failure IDs, with historical wider failures retained explicitly.",
+    "write_paths": "Read the source live pointer node.write_paths and scope extensions; all seven worker commits touch only reckon/crew/promotion.py, reckon/crew/promotion_scope.py, reckon/_store.py and tests/test_a_failed_promotion_restores_its_plan.py, all granted."
+  },
+  "justifications": {
+    "durability": "tests/test_a_failed_promotion_restores_its_plan.py:178,195,521,638,670 independently observe rollback, dispatch and editor state; restoring the base implementation leaves 17 failures and reversing the latest receipt repair produces two failures in receipt-reversed.log.",
+    "evidence": "Source repair-original-base.log and receipt-head-scope.log record completed 58/108-pass arms at the exact revisions; receipt-head-gate.log records 128 passes, while final-original-importers-delta.json retains three raw additions subsequently adjudicated or not reproduced in settle-repeat-comparison.json.",
+    "fit": "reckon/crew/promotion.py:1901-2004 follows the existing atomic-write and bounded index-lock retry idioms, and reckon/_store.py:400-429 extends its existing resource lock using process and thread ownership with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/promotion.py:2139-2175 protects the snapshot-to-restore interval, and :2094-2112 uses the commit owner receipt to recover removed untracked plans without claiming unreported deletions.",
+    "reuse": "reckon/crew/promotion.py:2020 uses the extracted transformation in its existing owner promotion_scope.py:1448, :2061 uses _store._comment_append_onto_current, and :2093 wraps the existing commit owner; the existing HEAD-based restore and text-comment splice owners do not supply arbitrary byte-and-index preimage recovery.",
+    "scope_discipline": "The source live pointer node.write_paths grants all four paths changed by the seven worker commits; resume-4-advice.txt explicitly authorizes the primary merge, and repaired-scope-check.json confirms the excluded boundary guard and legacy tests remain unchanged by the repair."
+  },
+  "negative_controls": [
+    {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/negative-control.log",
+      "observed_refusal": "PlanVisibilityError: plan file docs/plans/promotion-target.html differs from base HEAD; commit the plan before dispatching",
+      "revision": "891a4e54f19486e82117d68826044be51d2e0a8d",
+      "summary": "17 failed, 2 passed in 4.85s"
+    },
+    {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T233459980246-a-failed-promotion-restores-its-plan/receipt-reversed.log",
+      "observed_defect": "FileNotFoundError reading the removed untracked plan at test line 670; deletion-preservation refusal message also fails at line 683.",
+      "revision": "f3662210f69ee18cf7367978f276f4b2428496fb",
+      "summary": "2 failed, 1 passed in 1.74s"
+    }
+  ],
+  "plan_source": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html#s15",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and live docs/plans/delivered-work-lands-without-a-coordinator.html section s15; promotion.py:2139-2175 captures and restores the pre-promotion bytes, mode and path-specific index while preserving committed landings.\nVERDICT done_when: Read source prompt.txt:250 and the final resume-6-advice.txt; repair-original-base.log records 58 passed, receipt-head-scope.log 108 passed, receipt-head-gate.log 128 passed, and recorded reversals fail; the wider importer exceptions carry the requested base attribution and paired settle checks.\nVERDICT write_paths: Read the source live pointer node.write_paths and scope extensions; all seven worker commits touch only reckon/crew/promotion.py, reckon/crew/promotion_scope.py, reckon/_store.py and tests/test_a_failed_promotion_restores_its_plan.py, all granted.\nVERDICT manifest: Read source manifest.md including both completed suite arms and their actual logs; the recorded head is f3662210f69ee18cf7367978f276f4b2428496fb and the armed pair adds zero failure IDs, with historical wider failures retained explicitly.\nVERDICT diff: Read seven worker commits separately against their parents from 891a4e54f19486e82117d68826044be51d2e0a8d to f3662210f69ee18cf7367978f276f4b2428496fb; the authorized merge 4b9f3fb34d068530fbcf5faa11eaf036bfa16a0d imports primary work and is excluded from worker scope attribution.\nCALL_SITES: reckon/crew/promotion.py:1399 complete calls decorated _complete_locked, reckon/crew/promotion.py:2303 existing-row completion calls _record_comment_with_snapshot, reckon/crew/promotion.py:2319 existing-row completion calls _commit_with_plan_snapshot, reckon/crew/promotion.py:2882 new completion calls _record_comment_with_snapshot, reckon/crew/promotion.py:3027 new completion calls _commit_with_plan_snapshot, reckon/crew/promotion_scope.py:1485 _record_landing_comment calls shared _landing_comment_update and public write_plan, reckon/_store.py:1626 _write_state enters the now-reentrant _serialized_path_lock\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2139-2175 protects the snapshot-to-restore interval, and :2094-2112 uses the commit owner receipt to recover removed untracked plans without claiming unreported deletions.\nSCORE evidence: 19\nJUSTIFICATION evidence: Source repair-original-base.log and receipt-head-scope.log record completed 58/108-pass arms at the exact revisions; receipt-head-gate.log records 128 passes, while final-original-importers-delta.json retains three raw additions subsequently adjudicated or not reproduced in settle-repeat-comparison.json.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The source live pointer node.write_paths grants all four paths changed by the seven worker commits; resume-4-advice.txt explicitly authorizes the primary merge, and repaired-scope-check.json confirms the excluded boundary guard and legacy tests remain unchanged by the repair.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_failed_promotion_restores_its_plan.py:178,195,521,638,670 independently observe rollback, dispatch and editor state; restoring the base implementation leaves 17 failures and reversing the latest receipt repair produces two failures in receipt-reversed.log.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion.py:1901-2004 follows the existing atomic-write and bounded index-lock retry idioms, and reckon/_store.py:400-429 extends its existing resource lock using process and thread ownership with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion.py:2020 uses the extracted transformation in its existing owner promotion_scope.py:1448, :2061 uses _store._comment_append_onto_current, and :2093 wraps the existing commit owner; the existing HEAD-based restore and text-comment splice owners do not supply arbitrary byte-and-index preimage recovery.\n",
+  "reuse_search": {
+    "judgement": "Comment preparation is extracted in its existing owner; wrappers call the owner and commit path. Exact arbitrary preimage and independent index restoration was not supplied by the existing HEAD restoration or text-comment splicer. Nested path ownership extends the store lock owner without replacing cross-node/thread exclusion.",
+    "owners_read": [
+      "reckon/crew/promotion_scope.py:_record_landing_comment",
+      "reckon/crew/promotion_scope.py:_restore_landing_writes",
+      "reckon/crew/promotion_scope.py:_restore_one_landing_write",
+      "reckon/crew/promotion_scope.py:_remove_text_landing_comment",
+      "reckon/_store.py:_comment_append_onto_current",
+      "reckon/_store.py:_write_state",
+      "reckon/node_exclusive_lock.py:exclusive_lock"
+    ],
+    "search": "Searched added definitions and repository mechanisms for snapshot/restore, landing comment updates, comment merging and path locking; opened production owners at the reviewed head."
+  },
+  "review_run_id": "r-20261117T120051998024-review-of-a-failed-promotion-restores-its-plan-f3662210f69e",
+  "reviewed_base_sha": "891a4e54f19486e82117d68826044be51d2e0a8d",
+  "reviewed_commits": [
+    "f3662210f69ee18cf7367978f276f4b2428496fb",
+    "53e9f0cfd3a01e8f8f0e6ccd25f0a6cb876f1d16",
+    "cce0b2d5d85db571b86ee85bf0971756a5b27dbf",
+    "4b9f3fb34d068530fbcf5faa11eaf036bfa16a0d",
+    "a87cc6fce2b48e19b617493e448d48fe43dbe8b8",
+    "935996ceabfae1086d0d43cb92f8316f4da61616",
+    "cd4c942c2c85af675343f2487285ab5875cb5ab2",
+    "b8dc50aa168d697d3c8201c5a213282c8d610641"
+  ],
+  "reviewed_head_sha": "f3662210f69ee18cf7367978f276f4b2428496fb",
+  "reviewed_run_id": "r-20261116T233459980246-a-failed-promotion-restores-its-plan",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-17T12:21:27.940491+00:00",
+  "total": 119
+}

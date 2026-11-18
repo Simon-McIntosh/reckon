@@ -132,6 +132,11 @@ enums:
 # ── Slots ───────────────────────────────────────────────────────────────────
 
 slots:
+  service_reload_window_seconds:
+    description: Minimum automatic standing-service reload interval in seconds; 1800 by default.
+    range: integer
+    minimum_value: 1
+
   version:
     description: Schema version of this configuration document.
     range: integer
@@ -1090,6 +1095,32 @@ slots:
   cleanup:
     range: WorktreeCleanup
 
+  node_tmp_reserve_bytes:
+    description: Minimum usable bytes on the fleet node local disk; lower free space holds new launches and raises an obligation. Defaults to 8 GiB.
+    range: integer
+    minimum_value: 0
+
+  node_tmp_sample_max_age_seconds:
+    description: Maximum age in seconds of a published fleet local disk reading. Missing, unreadable or older samples hold remote admission and raise a distinct reading obligation. Defaults to 180 seconds, three default one-minute sampling periods.
+    range: integer
+    minimum_value: 1
+
+  session_scratch:
+    description: Per-session scratch bound and aggregate share of the local disk.
+    range: SessionScratchConfig
+    inlined: true
+
+  max_bytes:
+    description: Allocated file bytes above which a session owes scratch cleanup.
+    range: integer
+    minimum_value: 1
+
+  disk_share:
+    description: Fraction of the local disk available to all session scratch; new sessions refuse at this share.
+    range: float
+    minimum_value: 0.001
+    maximum_value: 1
+
   scratch_min_free_bytes:
     description: Minimum free bytes on the worker scratch filesystem before a dispatch.
     range: integer
@@ -1237,6 +1268,7 @@ classes:
     tree_root: true
     description: A complete flight configuration, or one layer of one.
     slots:
+      - service_reload_window_seconds
       - version
       - default_backend
       - local_backend
@@ -1258,6 +1290,7 @@ classes:
       - fences
       - capability_raise
       - worktree
+      - session_scratch
       - summary
       - ticker
       - domain
@@ -1622,8 +1655,16 @@ classes:
     description: Worktree lifecycle policy.
     slots:
       - cleanup
+      - node_tmp_reserve_bytes
+      - node_tmp_sample_max_age_seconds
       - scratch_min_free_bytes
       - scratch_min_free_pct
+
+  SessionScratchConfig:
+    description: Sampled bounds on the node-local disk used by interactive sessions.
+    slots:
+      - max_bytes
+      - disk_share
 
   SummaryConfig:
     description: When and how workers report.

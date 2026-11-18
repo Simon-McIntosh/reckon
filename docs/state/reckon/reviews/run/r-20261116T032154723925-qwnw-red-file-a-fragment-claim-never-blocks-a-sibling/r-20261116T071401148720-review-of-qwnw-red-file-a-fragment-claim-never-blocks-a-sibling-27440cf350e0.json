@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatching/launch.py:892 _raise_repository_scope_conflict",
+    "reckon/crew/dispatching/preparation.py:1622 _raise_repository_scope_conflict",
+    "reckon/crew/dispatch_plan.py:1196 _raise_repository_scope_conflict",
+    "reckon/crew/runs.py:2152 _raise_repository_scope_conflict",
+    "reckon/crew/dispatch_plan.py:1124 _live_conflict_rows"
+  ],
+  "completed_at": "2026-11-16T07:54:04.470Z",
+  "dispatched_at": "2026-11-16T07:53:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "2196",
+      "severity": "non-blocking",
+      "text": "non-blocking: _is_fragment_record duplicates the fragment-document predicate owned at reckon/crew/reports.py:2706 _fragment_plan_of (with reckon/resources.py:246 _is_evidence_fragment holding the subtree test), and is laxer - len(parts) >= 5 accepts any depth and any .html name, and the plan segment is unchecked - so the claim rule here and the composition reader there can disagree when the shape is refined."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032154723925-qwnw-red-file-a-fragment-claim-never-blocks-a-sibling/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names the gate as a job on all_debug with SLURM_JOB_ID unset, but the recorded gate and both arms ran in place inside the worker worktree - logs/head-test-file.log names that tree, no sbatch invocation appears in the run's session logs, and the delivered head gate therefore measures the same file under a condition the done_when did not state."
+    }
+  ],
+  "head_log_revision": "0e07032c60f464fd172f59de9f20f487766fa0af",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites",
+    "diff": "read commit by commit against base 6fa76c49: 0e07032c60 adds _is_fragment_record and _claim_shares_overlap and routes the enforcer and the conflict report through the helper, 27440cf350 adds only the landing fragment, and the reckon/ tree at reviewed head equals the gate revision's code tree.",
+    "done_when": "the done_when asks for that file passing in full at head beside a base red run and an importer arm adding no failure, and logs/head-test-file.log carries 9 passed with EXIT=0 at revision 0e07032c against logs/base-test-file.log 5 failed, 4 passed EXIT=1 at 6fa76c49, with the arms comparing base 23 failed and head 17 failed at zero added ids.",
+    "goal": "the node's goal is that tests/test_a_fragment_claim_never_blocks_a_sibling.py passes in full, and the landed change at reckon/crew/dispatch_claims.py:2196 makes a fragment record on either side of an overlap unshareable, which is the rule the file's five refused-case tests assert.",
+    "manifest": "read; status complete, two commits, changed_paths naming the two landed paths, the literal gate command, four test logs, revision-pinned baseline_suite and after_suite with failure ids, and negative_control_log naming logs/base-test-file.log whose last line is EXIT=1.",
+    "write_paths": "the node is fenced to reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's only two paths, reckon/crew/dispatch_claims.py and that directory's qwnw-red-file-a-fragment-claim-never-blocks-a-sibling.html, both sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fragment_claim_never_blocks_a_sibling.py:47 raises ScopeConflict on the same fragment file and fails at base with DID NOT RAISE, so reverting _claim_shares_overlap to the bare _claim_paths_share reddens it, and the sibling case at :25 reddens if the exemption is dropped for siblings or blanket-refuses.",
+    "evidence": "logs/head-test-file.log records 9 passed and EXIT=0 at 0e07032c and logs/base-test-file.log records 5 failed, 4 passed and EXIT=1 at 6fa76c49, but the gate ran in place in the worker worktree rather than as the all_debug job with SLURM_JOB_ID unset the done_when names.",
+    "fit": "reckon/crew/dispatch_claims.py:2196 and :2215 follow the module's private-helper-with-docstring idiom and its existing fragment spelling at :2162, though the len(parts) >= 5 depth test is looser than the exact plan/file shape.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:2231 refuses the sharing exemption whenever either compared path is a fragment record, so the same fragment file is refused while the sibling at tests/test_a_fragment_claim_never_blocks_a_sibling.py:25 is still admitted.",
+    "reuse": "the added _is_fragment_record re-implements the fragment-document predicate the repository already owns at reckon/crew/reports.py:2706, without extending it.",
+    "scope_discipline": "git diff 6fa76c49..27440cf350 changes only reckon/crew/dispatch_claims.py and its landing fragment, both inside the declared reckon and docs/evidence/fragments/queued-work-needs-no-workaround paths, with no test assertion touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_fragment_claim_never_blocks_a_sibling.py passes in full, and the landed change at reckon/crew/dispatch_claims.py:2196 makes a fragment record on either side of an overlap unshareable, which is the rule the file's five refused-case tests assert.\nVERDICT done_when: the done_when asks for that file passing in full at head beside a base red run and an importer arm adding no failure, and logs/head-test-file.log carries \"9 passed in 9.73s\" with EXIT=0 at revision 0e07032c against logs/base-test-file.log \"5 failed, 4 passed in 10.99s\" EXIT=1 at 6fa76c49, with the arms comparing base 23 failed and head 17 failed at zero added ids.\nVERDICT write_paths: the node is fenced to reckon, tests and docs/evidence/fragments are inside it and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's only two paths, reckon/crew/dispatch_claims.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-fragment-claim-never-blocks-a-sibling.html, both sit inside them.\nVERDICT manifest: read; status complete, two commits, changed_paths naming the two landed paths, the literal gate command, four test logs, revision-pinned baseline_suite and after_suite with failure ids, and negative_control_log naming logs/base-test-file.log whose last line is EXIT=1.\nVERDICT diff: read commit by commit against base 6fa76c49, 0e07032c60 adding _is_fragment_record and _claim_shares_overlap and routing the enforcer and the conflict report through the helper, 27440cf350 adding only the landing fragment; the reckon/ tree at reviewed head 27440cf350 is identical to the gate revision 0e07032c.\nCALL_SITES: reckon/crew/dispatching/launch.py:892, reckon/crew/dispatching/preparation.py:1622, reckon/crew/dispatch_plan.py:1196, reckon/crew/runs.py:2152, reckon/crew/dispatch_plan.py:1124\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:2231 refuses the sharing exemption whenever either compared path is a fragment record, so the same fragment file is refused while the sibling at tests/test_a_fragment_claim_never_blocks_a_sibling.py:25 is still admitted.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-test-file.log records 9 passed and EXIT=0 at 0e07032c and logs/base-test-file.log records 5 failed, 4 passed and EXIT=1 at 6fa76c49, but the gate ran in place in the worker worktree rather than as the all_debug job with SLURM_JOB_ID unset the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 6fa76c49..27440cf350 changes only reckon/crew/dispatch_claims.py and its landing fragment, both inside the declared reckon and docs/evidence/fragments/queued-work-needs-no-workaround paths, with no test assertion touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_fragment_claim_never_blocks_a_sibling.py:47 raises ScopeConflict on the same fragment file and fails at base with DID NOT RAISE, so reverting _claim_shares_overlap to the bare _claim_paths_share reddens it, and the sibling case at :25 reddens if the exemption is dropped for siblings or blanket-refused.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/dispatch_claims.py:2196 and :2215 follow the module's private-helper-with-docstring idiom and its existing fragment spelling at :2162, though the len(parts) >= 5 depth test is looser than the exact <plan>/<file>. Any other tight wording still fits.\nSCORE reuse: 5\nJUSTIFICATION reuse: the added _is_fragment_record re-implements the fragment-document predicate the repository already owns at reckon/crew/reports.py:2706, without extending it.\nFINDING reckon/crew/dispatch_claims.py:2196 non-blocking: _is_fragment_record duplicates the fragment-document predicate owned at reckon/crew/reports.py:2706 _fragment_plan_of (with reckon/resources.py:246 _is_evidence_fragment holding the subtree test), and is laxer - len(parts) >= 5 accepts any depth and any .html name, and the plan segment is unchecked - so the claim rule here and the composition reader there can disagree when the shape is refined.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T032154723925-qwnw-red-file-a-fragment-claim-never-blocks-a-sibling/manifest.md:13 non-blocking: the done_when names the gate as a job on all_debug with SLURM_JOB_ID unset, but the recorded gate and both arms ran in place inside the worker worktree - logs/head-test-file.log names that tree, no sbatch invocation appears in the run's session logs, and the delivered head gate therefore measures the same file under a condition the done_when did not state.",
+  "review_run_id": "r-20261116T071401148720-review-of-qwnw-red-file-a-fragment-claim-never-blocks-a-sibling-27440cf350e0",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "27440cf350e0e1913a7a7665359fa54c3211f21b",
+  "reviewed_run_id": "r-20261116T032154723925-qwnw-red-file-a-fragment-claim-never-blocks-a-sibling",
+  "reviewer_run_id": "r-20261116T071401148720-review-of-qwnw-red-file-a-fragment-claim-never-blocks-a-sibling-27440cf350e0",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T12:07:33.864726+00:00",
+  "total": 92
+}

@@ -1,0 +1,83 @@
+<section id="qwnw-red-file-an-admission-pass-reads-the-roadmap-once-landing">
+  <h2>The admission-pass readiness measurement queues no section declared done</h2>
+
+  <p><strong>What changed.</strong> Nothing in the product. The file
+  <code>tests/test_an_admission_pass_reads_the_roadmap_once.py</code> is the only
+  file this node changes, and its repair is a fixture fix.</p>
+
+  <p><strong>The cause, and its verdict: the test was wrong.</strong> The
+  fixture declared <code>s1</code> <em>done</em> and then queued a request for
+  section <code>s1</code>, while <code>reckon/crew/dispatching/preparation.py</code>
+  refuses a dispatch of a section declared done unless it is a measurement run:
+  a done section is the plan saying its work is already on the branch. The
+  product rule is deliberate and is the one the code keeps; the fixture
+  contradicted it. Three failures came from that one contradiction:</p>
+
+  <ul>
+    <li><strong>the pass builds the readiness once</strong> &mdash; <code>r-s1</code>
+    was refused, so two of the three requests launched and the assertion
+    <code>['r-s2', 'r-s3'] == ['r-s1', 'r-s2', 'r-s3']</code> failed. The refusal
+    recorded for it reads <q>section '\u00a71' of plan 'plan-a' is declared done,
+    so its work is already on the branch; it is dispatchable only as a
+    measurement run</q>.</li>
+    <li><strong>a plan touched between two launches forces a rebuild</strong>
+    &mdash; the test makes the <em>first</em> launch edit the plan's mtime. That
+    first launch was <code>r-s1</code>, which never ran, so nothing edited the
+    plan and the other two launches died on
+    <code>assert edited.wait(10)</code>; the pass launched nothing and built no
+    readiness.</li>
+    <li><strong>the launches read the waits an uncached computation gives</strong>
+    &mdash; the same <code>r-s1</code> refusal, with the same two-of-three
+    assertion.</li>
+  </ul>
+
+  <p><strong>The repair.</strong> The done section the waits point at is now a
+  separate upstream, <code>s0</code>, so all three queued sections
+  (<code>s1</code>, <code>s2</code>, <code>s3</code>) are implementable and
+  launch, and the fourth test's waits name <code>plan-a#s0</code> instead of
+  <code>plan-a#s1</code>. The fixture's docstring states why the upstream is not
+  one of the queued sections. No assertion was deleted or weakened: every count,
+  every launched-id list and every readiness-build count in the file is
+  unchanged, and the gate is still asked for its own section's verdict.</p>
+
+  <p>The fourth test still passed at the base revision, which is why the base
+  run reads three failures and not four; the dispatch it makes is faithful and
+  was left alone.</p>
+
+  <h3 id="qwnw-red-file-an-admission-pass-reads-the-roadmap-once-arms">Measured</h3>
+
+  <table id="qwnw-red-file-an-admission-pass-reads-the-roadmap-once-arms-table">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. Each arm
+    was submitted with <code>sbatch --partition=all_debug --wait</code> and ran
+    with <code>SLURM_JOB_ID</code> unset.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node tests, base (negative control)</td>
+        <td><code>52e0ad93</code> extracted tree</td>
+        <td>3 failed, 1 passed, <code>EXIT=1</code> &mdash; the readiness build,
+        the mid-pass rebuild and the uncached waits comparison; the base run log
+        is on the sibling page
+        <a href="red-file-an-admission-pass-reads-the-roadmap-once.html">the
+        base run</a></td></tr>
+      <tr><td>node tests, after (the node's gate)</td>
+        <td><code>b7bf2203</code> working tree</td>
+        <td><strong>4 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>node suite gate, base</td>
+        <td><code>52e0ad93</code> extracted tree</td>
+        <td>3 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>node suite gate, after</td>
+        <td><code>b7bf2203</code> working tree</td>
+        <td><strong>4 passed</strong>, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>No test file imports the file this node changed, so the arm over the test
+  files that import it is empty. The nearest arm runs the fixture module the
+  changed file imports, <code>tests/test_a_queued_request_waits_on_its_dependencies.py</code>,
+  beside it: 7 failed and 18 passed at the base revision, 4 failed and 21 passed
+  at the head, and the four ids that fail at the head are the same four that
+  fail at the base, all in that neighbouring file. That file is a separate red
+  file at the base revision and not this node's to repair; its ids are recorded
+  as outside this node's scope.</p>
+</section>

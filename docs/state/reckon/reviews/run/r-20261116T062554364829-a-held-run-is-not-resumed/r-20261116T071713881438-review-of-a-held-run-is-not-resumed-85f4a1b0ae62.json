@@ -1,0 +1,91 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "286": "Fails if the repair pass launches for a held run; the negative-control log reddens exactly here with attempt-2.reservation.",
+    "287,288": "Hold at base as well, so they are documented absences rather than guards.",
+    "295,297,298": "Fail if the run directory records no hold, records the wrong reason, or records a release stamp before the release.",
+    "300,301": "Fail if release_hold does not rewrite the run directory's record with released_at and the release reason.",
+    "306,325": "Fails if the pass after a release, or a head-scoped hold superseded by a new head, reserves no attempt \u2014 a predicate that treats every hold as covering fails it."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:1803",
+    "reckon/crew/resume.py:283",
+    "reckon/crew/resume.py:353",
+    "reckon/crew/resume.py:370"
+  ],
+  "completed_at": "2026-11-16T07:42:15.773Z",
+  "dispatched_at": "2026-11-16T07:41:57Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_held_run_is_not_resumed.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T062554364829-a-held-run-is-not-resumed/logs/arm-head.log",
+      "revision": "85f4a1b0ae626b61e6064f41604ce8f44934a3ea",
+      "summary": "60 passed in 36.62s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261116T062554364829-a-held-run-is-not-resumed/logs/arm-base.log",
+      "revision": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+      "summary": "58 passed in 52.47s"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "id": "f17e498c6a6",
+      "line": "3484",
+      "severity": "non-blocking",
+      "text": "non-blocking: dispatch_review_for_run consults no delivery hold, so a held run whose review is missing at its head is still dispatched one; the node goal says no station pass reviews a held run and the worker recorded this door under outside_scope. It is outside this node's write paths and the recorded shape does not reach it, so it is recorded rather than repaired here."
+    },
+    {
+      "file": "tests/test_a_held_run_is_not_resumed.py",
+      "id": "f793cd56c54",
+      "line": "287",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert harness.reservations() == [] cannot fail for the guard \u2014 dispatch_launch unlinks the attempt reservation once the worker exists, so the assertion holds after any launch and therefore at base too; the negative control reddens on line 286 instead."
+    },
+    {
+      "file": "tests/test_a_held_run_is_not_resumed.py",
+      "id": "f731e8750f5",
+      "line": "288",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert _dispatched_reviews(reports) == [] holds whatever the hold guard does, because both reviews are stored at the heads they cover so the review door composes none; the review half of the done_when is asserted but not guarded by a case that reaches the review door."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "id": "f7fb74d240a",
+      "line": "1160",
+      "severity": "non-blocking",
+      "text": "non-blocking: the diff reformats an untouched advice-hold condition in supersede_a_held_repair_round, which the goal does not imply and which adds lines to the review surface."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to keep station passes off a run under a coordinator's delivery hold and record the hold durably; reckon/crew/recovery_repair_dispatch.py:1444-1452 guards the repair door and reckon/crew/resume.py:138-153 writes hold.json, while reckon/crew/recovery_review_dispatch.py:3484 leaves the review door unguarded.\nVERDICT done_when: the done_when names tests/test_a_held_run_is_not_resumed.py over a temporary repository and crew home; the manifest records that gate green and the gate log carries 2 passed, EXIT=0.\nVERDICT write_paths: read the declared paths from the manifest; the diff touches exactly those four paths, though reckon/crew/recovery_repair_dispatch.py:1160 carries an unrelated reformat.\nVERDICT manifest: read; it reports status complete, two commits, a green gate at 2a55518cd5, a red negative control at 6fa76c49f4, and matched arms at 58/60 passed.\nVERDICT diff: read commit by commit against 6fa76c49f4; 2a55518cd5 changes two production modules and adds the test, 85f4a1b0ae adds the evidence fragment, and the second commit is docs-only.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:1803, reckon/crew/resume.py:283, reckon/crew/resume.py:353, reckon/crew/resume.py:370\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:1444 keeps the repair pass off a held run and reckon/crew/resume.py:151 records the hold, but the goal's review half is unguarded at reckon/crew/recovery_review_dispatch.py:3484.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate.log records 2 passed EXIT=0 for the literal gate, logs/negative-control.log reddens with attempt-2.reservation at base, and logs/arm-base.log 58 passed against logs/arm-head.log 60 passed.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is one the manifest declares, and the only excess is the reformat at reckon/crew/recovery_repair_dispatch.py:1160.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_held_run_is_not_resumed.py:286 reddens on the reinstated regression, but lines 287-288 hold at base too, so the reservation and review halves of the done_when rest on assertions that cannot fail for the guard.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/resume.py:111 and :138 follow the surrounding hold helpers' docstring idiom and constant style, and the private runs._write_json use has a precedent at reckon/crew/review_landing.py:154.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/resume.py:111 extends the delivery_hold/covers_delivery owner and wraps hold_reason at :105 rather than forking it, with only the reason f-string repeated.\nFINDING reckon/crew/recovery_review_dispatch.py:3484 non-blocking: dispatch_review_for_run consults no delivery hold, so a held run whose review is missing at its head is still dispatched one; the node goal says no station pass reviews a held run and the worker recorded this door under outside_scope. It is outside this node's write paths and the recorded shape does not reach it, so it is recorded rather than repaired here.\nFINDING tests/test_a_held_run_is_not_resumed.py:287 non-blocking: assert harness.reservations() == [] cannot fail for the guard \u2014 dispatch_launch unlinks the attempt reservation once the worker exists, so the assertion holds after any launch and therefore at base too; the negative control reddens on line 286 instead.\nFINDING tests/test_a_held_run_is_not_resumed.py:288 non-blocking: assert _dispatched_reviews(reports) == [] holds whatever the hold guard does, because both reviews are stored at the heads they cover so the review door composes none; the review half of the done_when is asserted but not guarded by a case that reaches the review door.\nFINDING reckon/crew/recovery_repair_dispatch.py:1160 non-blocking: the diff reformats an untouched advice-hold condition in supersede_a_held_repair_round, which the goal does not imply and which adds lines to the review surface.\n",
+  "reuse_search": "searched reckon/crew for an existing delivery-hold predicate and for a run-directory record writer; resume.py holds hold_reason/covers_delivery (the owner the predicate extends) and review_landing.py:154 writes a run-directory JSON through runs._write_json, the precedent record_hold_in_run_dir follows.",
+  "review_run_id": "r-20261116T071713881438-review-of-a-held-run-is-not-resumed-85f4a1b0ae62",
+  "reviewed_base_sha": "6fa76c49f48e1d4fe4f104431f85f519ce92aae0",
+  "reviewed_head_sha": "85f4a1b0ae626b61e6064f41604ce8f44934a3ea",
+  "reviewed_run_id": "r-20261116T062554364829-a-held-run-is-not-resumed",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T07:49:11.254537+00:00",
+  "total": 97
+}

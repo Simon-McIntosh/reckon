@@ -1,0 +1,323 @@
+{
+ "seed": 20261117,
+ "extends": "paired-replay-assignment.json (seed 20261116)",
+ "population_query": "implement ledger rows in the run store whose session is 829e5a4a-6870-4aec-876d-ba2efb1b5ecf, whose plan is one of the six named in the section, whose gate is passed and whose last listed commit is an ancestor of origin/main; grouped by (plan, section); base is the dispatch base (base_sha) of the section's earliest original run, the rule the first assignment's base_correction adopted; excluding measurement runs, every section the first assignment drew and every section it excluded",
+ "population_sections": 56,
+ "strata": {
+  "1-2h": 20,
+  "<=1h": 35,
+  ">2h": 1
+ },
+ "allocation": {
+  "1-2h": 4,
+  "<=1h": 6,
+  ">2h": 0
+ },
+ "arms": [
+  "clive",
+  "clive-anchored",
+  "omp-local",
+  "codex",
+  "codex-anchored",
+  "clive-replicate",
+  "codex-replicate"
+ ],
+ "sections": [
+  {
+   "plan": "lane-and-model-routing",
+   "section": "s53",
+   "effort_hours": 1.5,
+   "runs": [
+    "r-20261114T150629720223-wave4-codex-lane-and-model-routing-s53"
+   ],
+   "base": "fa53583e86a7077e7e9774e07140eef7495933d0",
+   "base_source_run": "r-20261114T150629720223-wave4-codex-lane-and-model-routing-s53",
+   "original_head": "383e6c740f03aa12a389fa04fb0812eaf05f53f1",
+   "changed_paths": [
+    "reckon/crew/budget_group.py",
+    "reckon/crew/budget_lift.py",
+    "reckon/crew/lift_watch.py",
+    "reckon/crew/picker/snapshot.py",
+    "reckon/crew/routing.py",
+    "reckon/crew_run_commands.py",
+    "tests/test_a_lift_can_be_scoped_to_a_project.py"
+   ],
+   "stratum": "1-2h"
+  },
+  {
+   "plan": "a-landing-never-waits-on-a-shared-index",
+   "section": "s10",
+   "effort_hours": 1.5,
+   "runs": [
+    "r-20261114T145817665395-wave4-clive-a-landing-never-waits-on-s10"
+   ],
+   "base": "b86ccb867412708cda163b3ff57933494f45079e",
+   "base_source_run": "r-20261114T145817665395-wave4-clive-a-landing-never-waits-on-s10",
+   "original_head": "4279b8eff2f9f64f015bf92dd58301e9a98154cf",
+   "changed_paths": [
+    "reckon/_plan_html.py",
+    "reckon/_store.py",
+    "reckon/_worker_fence.py",
+    "reckon/compliance.py",
+    "reckon/crew/admission/readiness.py",
+    "reckon/crew/admission/selection.py",
+    "reckon/crew/admission/service.py",
+    "reckon/crew/budget_reset.py",
+    "reckon/crew/dispatch_admission.py",
+    "reckon/crew/dispatch_batch.py",
+    "reckon/crew/dispatch_claims.py",
+    "reckon/crew/dispatch_peer.py",
+    "reckon/crew/dispatch_plan.py",
+    "reckon/crew/dispatching/preparation.py",
+    "reckon/crew/host_lease.py",
+    "reckon/crew/live_worker_census.py",
+    "reckon/crew/merge.py",
+    "reckon/crew/model_catalogue.py",
+    "reckon/crew/node.py",
+    "reckon/crew/obligations.py",
+    "reckon/crew/open_run_index.py",
+    "reckon/crew/paid_lanes.py",
+    "reckon/crew/picker/outcomes.py",
+    "reckon/crew/placement.py",
+    "reckon/crew/promotion.py",
+    "reckon/crew/promotion_scope.py",
+    "reckon/crew/queue_landing.py",
+    "reckon/crew/recovery_classification.py",
+    "reckon/crew/recovery_review_acceptance.py",
+    "reckon/crew/recovery_review_dispatch.py",
+    "reckon/crew/recovery_watch.py",
+    "reckon/crew/reports.py",
+    "reckon/crew/resumption.py",
+    "reckon/crew/review_records.py",
+    "reckon/crew/routing.py",
+    "reckon/crew/runs.py",
+    "reckon/crew/station.py",
+    "reckon/crew/station_store.py",
+    "reckon/crew/station_subscriber.py",
+    "reckon/crew/summary.py",
+    "reckon/crew/ticker.py",
+    "reckon/crew_dispatch_commands.py",
+    "reckon/crew_follow_commands.py",
+    "reckon/crew_run_commands.py",
+    "reckon/file_memo.py",
+    "reckon/hooks/coordinator_obligations.py",
+    "reckon/ledger.py",
+    "tests/test_a_busy_lease_holder_keeps_its_lease.py",
+    "tests/test_a_completed_reload_is_not_reported_as_a_stop.py",
+    "tests/test_a_control_log_is_judged_at_write.py",
+    "tests/test_a_dispatch_reaps_idle_members_at_most_every_interval.py",
+    "tests/test_a_duty_for_a_gone_run_is_not_shown.py",
+    "tests/test_a_full_roster_is_a_wait_not_a_duty.py",
+    "tests/test_a_lander_clears_a_stale_index_lock.py",
+    "tests/test_a_launch_reads_a_plan_and_the_mounts_once.py",
+    "tests/test_a_limit_reset_reaches_every_pane.py",
+    "tests/test_a_live_producer_reads_live.py",
+    "tests/test_a_named_lane_keeps_seats_the_local_queue_cannot_take.py",
+    "tests/test_a_peer_file_is_parsed_once_until_it_changes.py",
+    "tests/test_a_queued_row_names_its_own_hold.py",
+    "tests/test_a_read_only_view_is_built_once_per_stored_value.py",
+    "tests/test_a_refused_set_names_the_paths_that_work.py",
+    "tests/test_a_reload_lets_derivations_land.py",
+    "tests/test_a_requeued_refusal_draws_no_dropped_row.py",
+    "tests/test_a_resume_reports_its_own_launch.py",
+    "tests/test_a_resumed_run_s_old_manifest_status_is_unknown_until_the_worker_rewrit.py",
+    "tests/test_a_review_row_knows_the_producer_is_down.py",
+    "tests/test_a_staleness_verdict_reads_its_rows_source.py",
+    "tests/test_a_starting_run_is_classified.py",
+    "tests/test_a_text_mode_plan_edit_counts_as_a_store_write_at_promotion.py",
+    "tests/test_a_tick_walks_the_process_table_once.py",
+    "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+    "tests/test_an_admission_pass_resolves_a_path_once.py",
+    "tests/test_an_admitted_request_continues_its_row.py",
+    "tests/test_an_advisory_lane_allowance_never_holds.py",
+    "tests/test_an_unchanged_index_is_parsed_once.py",
+    "tests/test_an_unlanded_section_check_reads_only_its_own_rows.py",
+    "tests/test_an_unlaunched_review_is_not_requested.py",
+    "tests/test_backend_carries_no_worker_cap.py",
+    "tests/test_composed_review_waits_for_a_roster_slot.py",
+    "tests/test_concurrency_bound_refuses_by_name.py",
+    "tests/test_crew_binding_bound.py",
+    "tests/test_crew_placement_reservation.py",
+    "tests/test_crew_ticker.py",
+    "tests/test_dispatch_reads_only_its_node_runs.py",
+    "tests/test_dispatch_returns_without_worker.py",
+    "tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py",
+    "tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "tests/test_fenced_worker_tmp_is_its_scratch.py",
+    "tests/test_fleet_counter_launch_failure.py",
+    "tests/test_lane_and_picker_locks_hold_across_nodes.py",
+    "tests/test_live_worker_census.py",
+    "tests/test_obligations_read_the_station.py",
+    "tests/test_one_run_never_fails_a_projects_obligations.py",
+    "tests/test_one_unreadable_pointer_never_stops_the_tick.py",
+    "tests/test_open_run_index_rebuilt_once_per_pass.py",
+    "tests/test_over_fence_budget_recorded_not_refused.py",
+    "tests/test_recovery_store_locks_hold_across_nodes.py",
+    "tests/test_reservation_is_shared_across_projects.py",
+    "tests/test_reservation_reach_reaches_dispatch.py",
+    "tests/test_review_dispatch_lock_holds_across_nodes.py",
+    "tests/test_run_and_landing_locks_hold_across_nodes.py",
+    "tests/test_skill_contracts.py",
+    "tests/test_store_and_review_index_locks_hold_across_nodes.py",
+    "tests/test_the_cores_bound_reads_the_reservation.py",
+    "tests/test_the_obligations_snapshot_is_fresh_or_says_why_it_is_not.py",
+    "tests/test_the_pane_counts_parked_work.py",
+    "tests/test_the_pane_speaks_seven_words.py",
+    "tests/test_the_roster_counts_live_placed_workers.py",
+    "tests/test_the_row_reads_in_one_order.py",
+    "tests/test_the_station_sweeps_run_under_a_bound.py"
+   ],
+   "stratum": "1-2h"
+  },
+  {
+   "plan": "the-crew-does-its-own-bookkeeping",
+   "section": "s1",
+   "effort_hours": 1.5,
+   "runs": [
+    "r-20261115T075735569432-review-promotion-derives-gate-s1"
+   ],
+   "base": "39c52edbf709fb345de519ffbdd6d477aa2a88ef",
+   "base_source_run": "r-20261115T075735569432-review-promotion-derives-gate-s1",
+   "original_head": "81260d12cb2c86a028919c4ffd6edf8c808d2e20",
+   "changed_paths": [
+    "reckon/crew/promotion_evidence.py",
+    "reckon/crew/promotion_records.py",
+    "tests/test_a_review_runs_promotion_derives_its_own_gate.py"
+   ],
+   "stratum": "1-2h"
+  },
+  {
+   "plan": "lane-and-model-routing",
+   "section": "s58",
+   "effort_hours": 1.5,
+   "runs": [
+    "r-20261113T013546126553-ready-lane-and-model-routing-s58"
+   ],
+   "base": "68ebb1ff1fce0febf3f6bb1b57bec608136cd92b",
+   "base_source_run": "r-20261113T013546126553-ready-lane-and-model-routing-s58",
+   "original_head": "df6607a835657105acb53eda7cd9aaa4ab0f923a",
+   "changed_paths": [
+    "reckon/_flight_schema.py",
+    "reckon/crew/admission/launching.py",
+    "reckon/crew/dispatch_picker.py",
+    "reckon/flight.py",
+    "reckon/schema/flight.yaml",
+    "tests/test_a_stale_route_is_picked_again_at_launch.py"
+   ],
+   "stratum": "1-2h"
+  },
+  {
+   "plan": "the-crew-does-its-own-bookkeeping",
+   "section": "s9",
+   "effort_hours": 1.0,
+   "runs": [
+    "r-20261114T095038268141-wave3-codex-the-crew-does-its-own-bookke-s9"
+   ],
+   "base": "e6a503b649948c21917054fdd3a09999a99d84f6",
+   "base_source_run": "r-20261114T095038268141-wave3-codex-the-crew-does-its-own-bookke-s9",
+   "original_head": "8237042ec39f0a46f18cec46654fd23467a9edb0",
+   "changed_paths": [
+    "reckon/crew/promotion.py",
+    "reckon/crew/recovery_classification.py",
+    "tests/test_a_repair_round_keeps_the_manifest_s_commits_and_commits_beyond_base_ar.py"
+   ],
+   "stratum": "<=1h"
+  },
+  {
+   "plan": "the-monitor-shows-the-work-it-watches",
+   "section": "s139",
+   "effort_hours": 1.0,
+   "runs": [
+    "r-20261114T165711969303-station-tick-survives-one-unreadable-pointer-s139"
+   ],
+   "base": "53c4c5238e06f1dfbe160fa870cd3417b34ebc7b",
+   "base_source_run": "r-20261114T165711969303-station-tick-survives-one-unreadable-pointer-s139",
+   "original_head": "4934628faeb3b6ddfb373e1169f0723eeed7832f",
+   "changed_paths": [
+    "reckon/crew/resumption.py",
+    "reckon/crew/station_store.py",
+    "tests/test_one_unreadable_pointer_never_stops_the_tick.py"
+   ],
+   "stratum": "<=1h"
+  },
+  {
+   "plan": "the-monitor-shows-the-work-it-watches",
+   "section": "s135",
+   "effort_hours": 1.0,
+   "runs": [
+    "r-20261114T174816059241-full-the-monitor-shows-the-work-it--s135"
+   ],
+   "base": "191db600fea89eeceb839c5e8a4f259a0f5ecf54",
+   "base_source_run": "r-20261114T174816059241-full-the-monitor-shows-the-work-it--s135",
+   "original_head": "0efc69dbeca56627d2e07e9aed9e7e2fa05b9273",
+   "changed_paths": [
+    "reckon/crew_follow_commands.py",
+    "tests/test_a_replayed_row_shows_its_transition_time.py",
+    "tests/test_follow_rearm_continues.py"
+   ],
+   "stratum": "<=1h"
+  },
+  {
+   "plan": "workers-spend-fewer-tokens-per-landed-node",
+   "section": "s5",
+   "effort_hours": 1.0,
+   "runs": [
+    "r-20261111T003925615270-anchored-edit-codex-arm"
+   ],
+   "base": "acfbdab8c1bb3d0ac8027ed85658a8344f82621a",
+   "base_source_run": "r-20261111T003925615270-anchored-edit-codex-arm",
+   "original_head": "353de281cc4698c5015889fd62834a423fae2d83",
+   "changed_paths": [
+    "reckon/_backends.py",
+    "reckon/capabilities.py",
+    "reckon/crew/dispatch.py",
+    "reckon/crew/dispatch_sessions.py",
+    "reckon/crew/prompts.py",
+    "tests/test_anchored_edit_codex_arm.py"
+   ],
+   "stratum": "<=1h"
+  },
+  {
+   "plan": "the-crew-does-its-own-bookkeeping",
+   "section": "s7",
+   "effort_hours": 1.0,
+   "runs": [
+    "r-20261114T095145591291-wave3-codex-anchored-the-crew-does-its-own-bookke-s7"
+   ],
+   "base": "ea71db9a33c6510de336bfba4626d5a4e8ee777b",
+   "base_source_run": "r-20261114T095145591291-wave3-codex-anchored-the-crew-does-its-own-bookke-s7",
+   "original_head": "b9f493202a75620626153571fd5e79a5b0a894e6",
+   "changed_paths": [
+    "reckon/crew/resumption.py",
+    "reckon/crew_run_commands.py",
+    "tests/test_resume_and_reopen_take_a_halted_run_and_need_no_new_write_path.py"
+   ],
+   "stratum": "<=1h"
+  },
+  {
+   "plan": "the-monitor-shows-the-work-it-watches",
+   "section": "s100",
+   "effort_hours": 1.0,
+   "runs": [
+    "r-20261114T150124690549-wave4-clive-the-monitor-shows-the-wo-s100"
+   ],
+   "base": "b4700c0d20e70b117969d8c907af78d11014ad72",
+   "base_source_run": "r-20261114T150124690549-wave4-clive-the-monitor-shows-the-wo-s100",
+   "original_head": "8ef926cae63aad006ba9ea42a64ca9eaa38e2e4d",
+   "changed_paths": [
+    "reckon/crew/recovery_watch.py",
+    "reckon/crew/runs.py",
+    "reckon/crew/ticker.py",
+    "tests/test_a_limit_reset_reaches_every_pane.py",
+    "tests/test_a_requeued_refusal_draws_no_dropped_row.py",
+    "tests/test_an_admitted_request_continues_its_row.py",
+    "tests/test_crew_ticker.py",
+    "tests/test_fleet_counter_launch_failure.py",
+    "tests/test_the_pane_counts_parked_work.py",
+    "tests/test_the_pane_speaks_seven_words.py",
+    "tests/test_the_row_reads_in_one_order.py"
+   ],
+   "stratum": "<=1h"
+  }
+ ]
+}

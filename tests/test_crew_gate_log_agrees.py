@@ -18,7 +18,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon.cli import main as cli_main
-from reckon.crew.runs import _write_json, pointer_path, run_dir
+from reckon.crew.runs import _write_json, pointer_path, resolve_run_path, run_dir
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -115,6 +115,10 @@ def _complete_arguments(
     return [
         "crew",
         "complete",
+        # Completion queues a promotion request by default; --wait carries it
+        # out in this call, which is what makes the verdict and its refusal
+        # observable to the assertion below.
+        "--wait",
         "--run",
         run_id,
         "--gate",
@@ -141,11 +145,18 @@ def _assert_cites_the_recorded_copy(
     path that outlives the worktree and the reaper, rather than the citation the
     caller supplied. The durable claim is both halves together: the path lies
     inside that directory, and the bytes at it are the ones that were cited.
+
+    A completed promotion archives the run's own directory, so the stored
+    citation names the live directory the copy was written into while that
+    directory now sits under ``archive/runs``. ``resolve_run_path`` is how every
+    reader follows that move, so the citation is resolved that way here before
+    the directory it names is compared.
     """
     citation = Path(record["gate_check"]["log_path"])
-    assert citation.parent == run_dir(run_id)
-    assert citation.name == "gate.log"
-    assert citation.read_text(encoding="utf-8") == source.read_text(encoding="utf-8")
+    resolved = resolve_run_path(citation)
+    assert resolved.parent == run_dir(run_id)
+    assert resolved.name == "gate.log"
+    assert resolved.read_text(encoding="utf-8") == source.read_text(encoding="utf-8")
 
 
 # ── An empty cited log refuses a passing gate ───────────────────────────────
@@ -519,6 +530,7 @@ def test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",

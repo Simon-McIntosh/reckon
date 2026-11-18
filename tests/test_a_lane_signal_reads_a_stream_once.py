@@ -9,6 +9,7 @@ identity and parsed again only after a write.
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 
 import pytest
 
@@ -17,7 +18,7 @@ from reckon.crew import recovery_memo
 
 @pytest.fixture()
 def opened(monkeypatch) -> list[str]:
-    monkeypatch.setattr(recovery_memo, "_NEWEST_RESULTS", {}, raising=False)
+    monkeypatch.setattr(recovery_memo, "_NEWEST_RESULTS", OrderedDict(), raising=False)
     names: list[str] = []
     real = recovery_memo.Path.open
 

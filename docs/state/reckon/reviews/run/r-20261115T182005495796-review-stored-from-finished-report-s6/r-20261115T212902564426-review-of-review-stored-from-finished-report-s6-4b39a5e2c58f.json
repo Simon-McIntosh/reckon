@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "af516b3ac95301b84b0958cad3c7d93db776c98b",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:3010 store_delivered_reviews after a composed review",
+    "reckon/crew_dispatch_commands.py:3072 store_delivered_reviews on the dispatch path",
+    "reckon/crew/routing.py:3126 store_delivered_reviews its refusals reach routing",
+    "reckon/crew/promotion_checks.py:1782 store_delivered_reviews the promotion refusals read",
+    "reckon/crew/promotion_checks.py:3104 store_delivered_reviews before the plan-review gate",
+    "reckon/crew/review.py:4187 read_review applies with_figure_verdicts",
+    "reckon/crew/recovery_review_delivery.py:443 _review_delivery_verdict applies with_figure_verdicts"
+  ],
+  "completed_at": "2026-11-15T21:54:42.148Z",
+  "dispatched_at": "2026-11-15T21:53:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-stored-from-finished-report-s6.html",
+      "line": "74",
+      "severity": "non-blocking",
+      "text": "non-blocking: the population paragraph attributes the 20-file head arm's counts, 2 failed and 191 passed and 1 error, to the base, while population-base-attributed.log ran two files and reports 3 failed, 70 passed, 1 error, so the sentence states a measurement no arm produced."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-stored-from-finished-report-s6.html",
+      "line": "79",
+      "severity": "non-blocking",
+      "text": "non-blocking: the population error is attributed to a stale helper in tests/test_a_producer_tick_reads_live_pointers_once.py, a file outside the 20-file population, whereas the failing id in population-head.log is tests/test_a_delivered_review_stop_reads_the_tick_pointers.py::test_delivered_reviews_share_the_ticks_single_live_read, whose cause is recovery_watch.watch_ticker reading a watch_lease_renewed_at that module no longer defines."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182005495796-review-stored-from-finished-report-s6/population-base-attributed.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base population arm's header carries a truncated command and a second command line with an unsubstituted interpreter token, so the run's command cannot be re-run from the log and the manifest names no literal command for that arm."
+    }
+  ],
+  "head_log_revision": "affba710b8926a3a541b707b19ce79c77baf239c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against af516b3: affba710 changes the report grammar at reckon/crew/review.py:490-595 and :1755, the delivered-report store at reckon/crew/plan_review.py:5220, :5395, :5423 and :5474, and the delivery verdict at reckon/crew/recovery_review_delivery.py:443; d5b6d73 and 4b39a5e change only the 85-line evidence fragment, so the source the gate ran at affba710 is the source at the landed head.",
+    "done_when": "the done_when states four behaviours plus a population clause; after-arm.log reads 63 passed EXIT=0 for the new file with tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, base-arm-full.log reads 6 failed, 55 passed, 2 errors EXIT=1 at af516b3 with all five new tests among the failures, and negative-control.log reads 3 failed, 2 passed EXIT=1, so every behavioural clause but the population clause is asserted by a test that is red at the base revision.",
+    "goal": "the node's goal is to store a review record only from a finished report in either shape; reckon/crew/plan_review.py:5220 raises UnfinishedReviewReportError when a parsed report still carries the brief's placeholders and plan_review.py:5474 holds it while plan_review.py:5423 reads the writing crew run as live, and reckon/crew/review.py:550 folds a figure record's per-figure verdicts into the item map the completeness rule reads.",
+    "manifest": "read at the reviewed run's manifest.md; it records status complete, commits affba710, d5b6d73 and 4b39a5e, the three-file armed gate at 63 passed EXIT=0, the base arm at 6 failed and 2 errors with three failures attributed to the scratch extraction, the negative control at EXIT=1, and baseline_suite and after_suite both completed true with 6 and 0 failures.",
+    "write_paths": "the declared fence is reckon/crew/plan_review.py, reckon/crew/recovery_review_delivery.py, reckon/crew/review.py, tests/test_a_review_is_stored_only_from_a_finished_report.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-stored-from-finished-report-s6.html; git diff --stat af516b3..4b39a5e touches exactly those five files and nothing else."
+  },
+  "justifications": {
+    "durability": "the mutation recorded in negative-control.log makes report_placeholders inert and reddens the three placeholder cases at 3 failed, 2 passed, EXIT=1 while the head arm passes them, and tests/test_a_review_is_stored_only_from_a_finished_report.py:362 reddens at af516b3 with the unanswered figure in the refusal.",
+    "evidence": "after-arm.log reports 63 passed EXIT=0 for the armed gate and base-arm-full.log reports 6 failed, 55 passed, 2 errors EXIT=1 with all five new tests among its failures, but the head arm ran at affba710 rather than the landed head 4b39a5e and the population clause rests on an arm over two files whose own header at population-base-attributed.log:3-4 carries a truncated command and an unsubstituted interpreter token.",
+    "fit": "the additions follow review.py's own section-banner and docstring idiom at reckon/crew/review.py:486-499, and the error type at reckon/crew/plan_review.py:5395 states the reason the store records, with no plan or ticket identifier in any added name.",
+    "goal_fidelity": "reckon/crew/plan_review.py:5220 refuses a parsed report whose placeholders are non-empty and :5474 holds it while :5423 reads the writing crew run as live, and reckon/crew/review.py:550 folds a figure record's per-figure verdicts into the rubric item map, which are the two shapes the goal names.",
+    "reuse": "reckon/crew/plan_review.py:5423 composes review._plan_review_crew_run_id (:3974), runs.read_pointer and process_liveness.record_process_alive rather than forking a liveness read, and the folded map is the one recovery_review_subject._figure_missing_measures (:1642) already reads; the nearest sibling, recovery_review_dispatch._recorded_review_is_live (:415), asks whether a pointer is readable rather than whether its process is alive.",
+    "scope_discipline": "git diff --stat af516b3..4b39a5e lists exactly the five declared files and no other path, so nothing outside the fence landed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to store a review record only from a finished report in either shape; reckon/crew/plan_review.py:5220 raises UnfinishedReviewReportError when a parsed report still carries the brief's placeholders and plan_review.py:5474 holds it while plan_review.py:5423 reads the writing crew run as live, and reckon/crew/review.py:550 folds a figure record's per-figure verdicts into the item map the completeness rule reads.\nVERDICT done_when: the done_when states four behaviours plus a population clause; after-arm.log reads 63 passed EXIT=0 for the new file with tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, base-arm-full.log reads 6 failed, 55 passed, 2 errors EXIT=1 at af516b3 with all five new tests among the failures, and negative-control.log reads 3 failed, 2 passed EXIT=1, so every behavioural clause but the population clause is asserted by a test that is red at the base revision.\nVERDICT write_paths: the declared fence is reckon/crew/plan_review.py, reckon/crew/recovery_review_delivery.py, reckon/crew/review.py, tests/test_a_review_is_stored_only_from_a_finished_report.py and docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-stored-from-finished-report-s6.html; git diff --stat af516b3..4b39a5e touches exactly those five files and nothing else.\nVERDICT manifest: read at the reviewed run's manifest.md; it records status complete, commits affba710, d5b6d73 and 4b39a5e, the three-file armed gate at 63 passed EXIT=0, the base arm at 6 failed and 2 errors with three failures attributed to the scratch extraction, the negative control at EXIT=1, and baseline_suite and after_suite both completed true with 6 and 0 failures.\nVERDICT diff: read commit by commit against af516b3: affba710 changes the report grammar at reckon/crew/review.py:490-595 and :1755, the delivered-report store at reckon/crew/plan_review.py:5220, :5395, :5423 and :5474, and the delivery verdict at reckon/crew/recovery_review_delivery.py:443; d5b6d73 and 4b39a5e change only the 85-line evidence fragment, so the source the gate ran at affba710 is the source at the landed head.\nCALL_SITES: reckon/crew_dispatch_commands.py:3010 store_delivered_reviews after a composed review, reckon/crew_dispatch_commands.py:3072 store_delivered_reviews on the dispatch path, reckon/crew/routing.py:3126 store_delivered_reviews its refusals reach routing, reckon/crew/promotion_checks.py:1782 store_delivered_reviews the promotion refusals read, reckon/crew/promotion_checks.py:3104 store_delivered_reviews before the plan-review gate, reckon/crew/review.py:4187 read_review applies with_figure_verdicts, reckon/crew/recovery_review_delivery.py:443 _review_delivery_verdict applies with_figure_verdicts\nSCORE goal_fidelity: 19\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 19\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:5220 refuses a parsed report whose placeholders are non-empty and :5474 holds it while :5423 reads the writing crew run as live, and reckon/crew/review.py:550 folds a figure record's per-figure verdicts into the rubric item map, which are the two shapes the goal names.\nJUSTIFICATION evidence: after-arm.log reports 63 passed EXIT=0 for the armed gate and base-arm-full.log reports 6 failed, 55 passed, 2 errors EXIT=1 with all five new tests among its failures, but the head arm ran at affba710 rather than the landed head 4b39a5e and the population clause rests on an arm over two files whose own header at population-base-attributed.log:3-4 carries a truncated command and an unsubstituted interpreter token.\nJUSTIFICATION scope_discipline: git diff --stat af516b3..4b39a5e lists exactly the five declared files and no other path, so nothing outside the fence landed.\nJUSTIFICATION durability: the mutation recorded in negative-control.log makes report_placeholders inert and reddens the three placeholder cases at 3 failed, 2 passed, EXIT=1 while the head arm passes them, and tests/test_a_review_is_stored_only_from_a_finished_report.py:362 reddens at af516b3 with the unanswered figure in the refusal.\nJUSTIFICATION fit: the additions follow review.py's own section-banner and docstring idiom at reckon/crew/review.py:486-499, and the error type at reckon/crew/plan_review.py:5395 states the reason the store records, with no plan or ticket identifier in any added name.\nJUSTIFICATION reuse: reckon/crew/plan_review.py:5423 composes review._plan_review_crew_run_id (:3974), runs.read_pointer and process_liveness.record_process_alive rather than forking a liveness read, and the folded map is the one recovery_review_subject._figure_missing_measures (:1642) already reads; the nearest sibling, recovery_review_dispatch._recorded_review_is_live (:415), asks whether a pointer is readable rather than whether its process is alive.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-stored-from-finished-report-s6.html:74 non-blocking: the population paragraph attributes the 20-file head arm's counts, 2 failed and 191 passed and 1 error, to the base, while population-base-attributed.log ran two files and reports 3 failed, 70 passed, 1 error, so the sentence states a measurement no arm produced.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/review-stored-from-finished-report-s6.html:79 non-blocking: the population error is attributed to a stale helper in tests/test_a_producer_tick_reads_live_pointers_once.py, a file outside the 20-file population, whereas the failing id in population-head.log is tests/test_a_delivered_review_stop_reads_the_tick_pointers.py::test_delivered_reviews_share_the_ticks_single_live_read, whose cause is recovery_watch.watch_ticker reading a watch_lease_renewed_at that module no longer defines.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T182005495796-review-stored-from-finished-report-s6/population-base-attributed.log:3 non-blocking: the base population arm's header carries a truncated command and a second command line with an unsubstituted interpreter token, so the run's command cannot be re-run from the log and the manifest names no literal command for that arm.",
+  "review_run_id": "r-20261115T212902564426-review-of-review-stored-from-finished-report-s6-4b39a5e2c58f",
+  "reviewed_base_sha": "af516b3ac95301b84b0958cad3c7d93db776c98b",
+  "reviewed_head_sha": "4b39a5e2c58ffa5c096f9392f693981e0070304d",
+  "reviewed_run_id": "r-20261115T182005495796-review-stored-from-finished-report-s6",
+  "reviewer": {
+    "backend": "omp-local",
+    "reviewer_run_id": "r-20261115T212902564426-review-of-review-stored-from-finished-report-s6-4b39a5e2c58f"
+  },
+  "reviewer_run_id": "r-20261115T212902564426-review-of-review-stored-from-finished-report-s6-4b39a5e2c58f",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T22:25:32.276217+00:00",
+  "total": 112
+}

@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:2234",
+    "reckon/crew/promotion.py:2279"
+  ],
+  "completed_at": "2026-11-15T11:46:03.422Z",
+  "dispatched_at": "2026-11-15T11:27:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-store-write-is-load-bearing-s21-58784d730312",
+      "recorded_at": "2026-11-15T12:29:43.477939+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_crew_promotion.py",
+      "line": 613,
+      "severity": "blocking",
+      "summary": "the landed refusal turns test_a_failing_store_write_is_reported_on_the_ordinary_success_payload red, and the node's gate omits that file",
+      "text": "tests/test_crew_promotion.py:584-620 injects a raising run_store.append and asserts the complete CLI exits 0 with payload[\"store\"][\"status\"] == \"failed\" (line 613) and ledger.index_lag == 1 (line 620); at the reviewed head ledger.append_run raises LedgerError and unlinks the run file so promotion.py:2236-2241 re-raises instead, and the after-suite gate never runs this file, so landing the change alone leaves a red test on main; fold a node to invert this test with the change."
+    },
+    {
+      "file": "tests/test_a_failed_store_write_leaves_no_row.py",
+      "line": 60,
+      "severity": "non-blocking",
+      "summary": "the new test asserts append_run, one layer below the promotion the done_when names",
+      "text": "tests/test_a_failed_store_write_leaves_no_row.py:60 calls ledger.append_run directly, so it proves the ledger seam refuses but not that a promotion surfaces the refusal and its store-path and repair-verb message; the done_when's subject is a promotion, so a promotion-level assertion is still owed."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 2277,
+      "severity": "non-blocking",
+      "summary": "the comment describing a silently failing shadow is now false and its store_status branch is dead",
+      "text": "reckon/crew/promotion.py:2277-2286 still describes a \"silently failing shadow\" and keeps a store_outcome.get(\"status\") == \"written\" branch, but at the reviewed head a store failure raises before a payload exists, so store_outcome is always {\"status\": \"written\"} on success and the comment tells a later reader the opposite of what the code now does."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Reckon/crew/promotion.py:2234 append_run and 2279 store_outcome consumption are the only production call sites; promotion.py:2236-2241 re-raises a LedgerError when no existing row is found, so the refusal reaches the complete path.",
+    "diff": "Read commit by commit from 9530fe3d48ea to 58784d7303; 7a8fdac445 inverts _index_append and moves the store write ahead of the projections, 58784d7303 adds the 54-line evidence fragment; nothing outside the declared paths.",
+    "done_when": "The done_when asks for a promotion-level injection and run_store.compare 0/0/0; tests/test_a_failed_store_write_leaves_no_row.py:60 asserts both at the append_run layer, with 60 passed EXIT=0 recorded at after-suite.log and the injected-raise case red at base in baseline-injected.log.",
+    "goal": "The source node's goal is that a promotion whose run-store write raises refuses and leaves no row in either store; reckon/ledger.py:3521-3536 raises and unlinks the per-run file, and reckon/crew/promotion.py:2236-2241 re-raises when no existing row is found.",
+    "manifest": "Read; it records status complete, the two commits, the gate command, the 58-vs-60 arms, the negative control and three outside_scope entries including the promotion test this change turns red.",
+    "write_paths": "Read the manifest's five declared paths; all four paths in the diff are inside them, and the fifth (the figure directory) carries nothing."
+  },
+  "justifications": {
+    "durability": "tests/test_a_failed_store_write_leaves_no_row.py:80-81 reddens when _index_append returns the swallowed failure that negative-control.log reinstates, but no test guards the promotion-level refusal the goal names.",
+    "evidence": "tests/test_a_failed_store_write_leaves_no_row.py:60-83 asserts the refusal at the append_run seam, one layer below the promotion the done_when names, and the gate at after-suite.log does not run tests/test_crew_promotion.py, which the change turns red.",
+    "fit": "reckon/ledger.py:3332 reuses the file's own LedgerError and _run_store_location helper and follows the docstring style of the surrounding functions.",
+    "goal_fidelity": "reckon/ledger.py:3332 raises LedgerError from _index_append, and reckon/crew/promotion.py:2234-2241 re-raises it when no existing row is found, so a promotion whose store write raises refuses.",
+    "reuse": "the diff adds no definition; a search of reckon/ for rollback and unlink helpers found only the existing temporary-file unlink at reckon/ledger.py:2191, and this change extends no duplicated capability.",
+    "scope_discipline": "every path in the diff (reckon/ledger.py, reckon/run_store.py, tests/test_a_failed_store_write_leaves_no_row.py, the evidence fragment) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a promotion whose run-store write raises refuses and leaves no row in either store; reckon/ledger.py:3521-3536 raises and unlinks the per-run file, and reckon/crew/promotion.py:2236-2241 re-raises when no existing row is found.\nVERDICT done_when: the done_when asks for a promotion-level injection and run_store.compare 0/0/0; tests/test_a_failed_store_write_leaves_no_row.py:60 asserts both at the append_run layer, with 60 passed EXIT=0 recorded at after-suite.log and the injected-raise case red at base in baseline-injected.log.\nVERDICT write_paths: read the manifest's five declared paths; all four paths in the diff are inside them, and the fifth (the figure directory) carries nothing.\nVERDICT manifest: read; it records status complete, the two commits, the gate command, the 58-vs-60 arms, the negative control and three outside_scope entries, and it names the promotion test this change turns red.\nVERDICT diff: read commit by commit from 9530fe3d48ea to 58784d7303; 7a8fdac445 inverts _index_append and moves the store write ahead of the projections, 58784d7303 adds the 54-line evidence fragment; nothing outside the declared paths.\nCALL_SITES: reckon/crew/promotion.py:2234, reckon/crew/promotion.py:2279\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/ledger.py:3332 raises LedgerError from _index_append and reckon/crew/promotion.py:2234-2241 re-raises it, so the promotion refuses instead of reporting a landed run.\nSCORE evidence: 12\nJUSTIFICATION evidence: after-suite.log records 60 passed EXIT=0 but runs no promotion-level test, and tests/test_a_failed_store_write_leaves_no_row.py:60 asserts the append_run seam rather than the promotion the done_when names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/ledger.py, reckon/run_store.py, tests/test_a_failed_store_write_leaves_no_row.py, the fragment) is inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_failed_store_write_leaves_no_row.py:80-81 reddens when _index_append returns the swallowed failure that negative-control.log reinstates, but no test guards the promotion-level refusal.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:3332 reuses the module's own LedgerError and _run_store_location helper and matches the docstring style of the surrounding functions.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and a search of reckon/ for rollback and unlink helpers found only the existing temporary-file unlink at reckon/ledger.py:2191, so nothing is forked.\nFINDING tests/test_crew_promotion.py:613 blocking: the landed refusal turns test_a_failing_store_write_is_reported_on_the_ordinary_success_payload red, and the node's gate omits that file, so landing this change alone leaves a red test on main; fold a node to invert it.\nFINDING tests/test_a_failed_store_write_leaves_no_row.py:60 non-blocking: the new test calls ledger.append_run directly, so it never shows that a promotion surfaces the refusal and its store-path and repair-verb message the done_when names.\nFINDING reckon/crew/promotion.py:2277 non-blocking: the comment describing a silently failing shadow is now false and its store_status branch is dead, so it tells a later reader the opposite of what the code does.",
+  "review_run_id": "r-20261115T112603411014-review-of-store-write-is-load-bearing-s21-58784d730312",
+  "reviewed_base_sha": "9530fe3d48ea6083d9f6b07e4491c2aafeb39f22",
+  "reviewed_head_sha": "58784d73031283dd7f4daef13a8666cb44df491a",
+  "reviewed_run_id": "r-20261115T102529193137-store-write-is-load-bearing-s21",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-15T11:59:09.260232+00:00",
+  "total": 101
+}

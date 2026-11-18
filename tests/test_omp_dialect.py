@@ -570,3 +570,49 @@ def test_a_stream_in_another_dialects_vocabulary_is_refused_by_name() -> None:
 
     assert "codex" in str(excinfo.value)
     assert "refused" in str(excinfo.value)
+
+
+def test_a_brief_too_long_for_one_argument_is_handed_over_as_a_file(
+    tmp_path: Path,
+) -> None:
+    """A brief past the kernel's per-argument cap still reaches the worker.
+
+    The kernel refuses an exec whose single argument exceeds 128 KiB, so a
+    long brief on the command line meant the worker never spawned. The brief
+    is written into the run and the argument names that file, while the run's
+    own record of what it was told keeps the full text.
+    """
+    run = tmp_path / "run"
+    run.mkdir()
+    brief = "review this plan section carefully. " * 20_000
+    plan = _backends.launch_plan(
+        backend_name="probe",
+        backend=OMP,
+        prompt=brief,
+        worktree="/wt",
+        manifest_path=str(run / "manifest.md"),
+    )
+
+    handed = plan.argv[-1]
+    assert len(handed.encode("utf-8")) < _backends.OMP_ARGV_PROMPT_BYTES
+    written = run / _backends.OMP_LONG_BRIEF_NAME
+    assert str(written) in handed
+    assert written.read_text(encoding="utf-8") == brief
+    assert plan.prompt == brief
+    assert plan.stdin_text == ""
+
+
+def test_a_brief_that_fits_rides_on_the_command_line_unchanged(
+    tmp_path: Path,
+) -> None:
+    run = tmp_path / "run"
+    run.mkdir()
+    plan = _backends.launch_plan(
+        backend_name="probe",
+        backend=OMP,
+        prompt="the brief",
+        worktree="/wt",
+        manifest_path=str(run / "manifest.md"),
+    )
+    assert plan.argv[-1] == "the brief"
+    assert not (run / _backends.OMP_LONG_BRIEF_NAME).exists()

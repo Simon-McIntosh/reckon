@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/holds.py:456",
+    "reckon/crew/recovery_watch.py:2635",
+    "reckon/crew/recovery_watch.py:2646",
+    "reckon/crew/recovery_watch.py:3220",
+    "reckon/crew/runs.py:4208"
+  ],
+  "completed_at": "2026-11-15T23:09:30.054Z",
+  "dispatched_at": "2026-11-15T23:08:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "held-drawn-by-its-owner-s3",
+      "recorded_at": "2026-11-16T04:28:36.072251+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html",
+      "line": "56",
+      "severity": "blocking",
+      "text": "blocking: the fragment states the new test is red at base 98b7fdd4 with 11 failed, but no log under logs/ records an eleven-failure arm of that file, and the manifest's two suite arms report failure_count 0 over populations that exclude it; the only recorded base-shaped arm is logs/negative-control.log (a) at 10 failed and 1 passed, so the figure is claimed rather than measured."
+    },
+    {
+      "file": "tests/test_a_held_request_is_drawn_by_its_owner.py",
+      "line": "186",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares row next_action against classify_pointer of the pointer the test itself wrote, so both sides move with the fixture, and reinstating the composition at recovery_watch.py:1102 leaves it green because the strings coincide; logs/negative-control.log (b) fails 6 of 11 with this case among the 5 that pass."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "952",
+      "severity": "non-blocking",
+      "text": "non-blocking: _bucket_of accepts *older and discards it, so a caller passing a classification contradicting the state word (tests/test_fleet_counter_launch_failure.py:114 and tests/test_a_live_run_never_reads_dead.py:639 still do) gets no signal its argument is ignored."
+    },
+    {
+      "file": "tests/test_the_pane_counts_parked_work.py",
+      "line": "122",
+      "severity": "non-blocking",
+      "text": "non-blocking: the change adds one failure the base arm does not fail, test_every_parked_phase_counts_once_in_the_waiting_cell reading waiting 3 where the fixture expects 4, so the done_when clause of no added failure against the base is unmet for that id; logs/per-file-head5 against logs/per-file-base4 name it as the only head-only failing id, and the file is outside the node's declared write paths."
+    },
+    {
+      "file": "manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line quotes baseline-arm.log as 58 passed in 51.02s EXIT_PLACEHOLDER, a literal unsubstituted placeholder where that log ends EXIT=0, so a reader cannot reconcile the figure with the log it cites."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 9b0584ae76, 5c88fcbe46, a161eb0994 and 31ac0fac against dd6df313; the code edits are confined to recovery_watch.py and ticker.py plus the new test, the remainder landing-fragment prose.",
+    "done_when": "read from dispatch-detail.json, the measure asks for new tests red at base, word and bucket agreeing per hold kind, and no added failure among ticker/recovery_watch importers; logs/gate.log records 11 passed EXIT=0 at c8561d0034 and logs/after-arm.log 69 passed EXIT=0 at 5c88fcbe46, while logs/per-file-head5 against logs/per-file-base4 show one head-only failure.",
+    "goal": "the node's goal is that a queue-held request is drawn waiting and a coordinator-held one needs-you; recovery_watch.py:1254-1267 finishes it by deciding one next_action per row, withholding it from a queue-lifted row and taking the classifier's own act for a coordinator hold.",
+    "manifest": "read manifest.md; it carries status in-progress for the live fourth attempt, commits 7244ebffa6 through 31ac0fac38, the literal gate command, four logs, both suite arms at failure_count 0, and an artifacts line quoting baseline-arm.log as 58 passed in 51.02s EXIT_PLACEHOLDER where that log ends EXIT=0.",
+    "write_paths": "the fence is ticker.py, recovery_watch.py, tests/test_a_held_request_is_drawn_by_its_owner.py and the landing fragment; git diff --stat dd6df313c0..31ac0fac38 lists exactly those four files, +103/-37."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_is_drawn_by_its_owner.py:164 reddens on the behavioural revert in logs/negative-control.log (b) at 6 failed and 5 passed, while the equality at :186 stays green through it.",
+    "evidence": "logs/gate.log records 11 passed EXIT=0 and logs/after-arm.log 69 passed EXIT=0, but the fragment's base figure has no log and the recorded suite pair excludes the importer population.",
+    "fit": "ticker.py:952 widens the signature to (state, *older) and discards the extra argument, where the module's other readers name the one argument they take.",
+    "goal_fidelity": "recovery_watch.py:1254-1267 decides one next_action per row, so a queue-lifted row hands no command and a coordinator hold names the classifier's own act.",
+    "reuse": "recovery_watch.py:1102 reads the classifier's own next_action instead of composing it, and :2133 reads ticker._bucket_of, so both additions extend the owning modules.",
+    "scope_discipline": "git diff --stat dd6df313c0..31ac0fac38 touches only recovery_watch.py, ticker.py, the new test and the landing fragment, all inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a queue-held request is drawn waiting and a coordinator-held one needs-you; recovery_watch.py:1254-1267 finishes it by deciding one next_action per row, withholding it from a queue-lifted row and taking the classifier's own act for a coordinator hold.\nVERDICT done_when: read from dispatch-detail.json, the measure asks for new tests red at base, word and bucket agreeing per hold kind, and no added failure among ticker/recovery_watch importers; logs/gate.log records 11 passed EXIT=0 at c8561d0034 and logs/after-arm.log 69 passed EXIT=0 at 5c88fcbe46, while logs/per-file-head5 against logs/per-file-base4 show one head-only failure.\nVERDICT write_paths: the fence is ticker.py, recovery_watch.py, tests/test_a_held_request_is_drawn_by_its_owner.py and the landing fragment; git diff --stat dd6df313c0..31ac0fac38 lists exactly those four files, +103/-37.\nVERDICT manifest: read manifest.md; it carries status in-progress for the live fourth attempt, commits 7244ebffa6 through 31ac0fac38, the literal gate command, four logs, both suite arms at failure_count 0, and an artifacts line quoting baseline-arm.log as 58 passed in 51.02s EXIT_PLACEHOLDER where that log ends EXIT=0.\nVERDICT diff: read 9b0584ae76, 5c88fcbe46, a161eb0994 and 31ac0fac against dd6df313; the code edits are confined to recovery_watch.py and ticker.py plus the new test, the remainder landing-fragment prose.\nCALL_SITES: reckon/crew/admission/holds.py:456, reckon/crew/recovery_watch.py:2635, reckon/crew/recovery_watch.py:2646, reckon/crew/recovery_watch.py:3220, reckon/crew/runs.py:4208\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: recovery_watch.py:1254-1267 decides one next_action per row, so a queue-lifted row hands no command and a coordinator hold names the classifier's own act.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/gate.log records 11 passed EXIT=0 and logs/after-arm.log 69 passed EXIT=0, but the fragment's base figure has no log and the recorded suite pair excludes the importer population.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat dd6df313c0..31ac0fac38 touches only recovery_watch.py, ticker.py, the new test and the landing fragment, all inside the declared paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_held_request_is_drawn_by_its_owner.py:164 reddens on the behavioural revert in logs/negative-control.log (b) at 6 failed and 5 passed, while the equality at :186 stays green through it.\nSCORE fit: 16\nJUSTIFICATION fit: ticker.py:952 widens the signature to (state, *older) and discards the extra argument, where the module's other readers name the one argument they take.\nSCORE reuse: 18\nJUSTIFICATION reuse: recovery_watch.py:1102 reads the classifier's own next_action instead of composing it, and :2133 reads ticker._bucket_of, so both additions extend the owning modules.\nFINDING docs/evidence/fragments/the-monitor-tells-the-truth-under-load/held-drawn-by-its-owner-s3.html:56 blocking: the fragment states the new test is red at base 98b7fdd4 with 11 failed, but no log under logs/ records an eleven-failure arm of that file, and the manifest's two suite arms report failure_count 0 over populations that exclude it; the only recorded base-shaped arm is logs/negative-control.log (a) at 10 failed and 1 passed, so the figure is claimed rather than measured.\nFINDING tests/test_a_held_request_is_drawn_by_its_owner.py:186 non-blocking: the assertion compares row next_action against classify_pointer of the pointer the test itself wrote, so both sides move with the fixture, and reinstating the composition at recovery_watch.py:1102 leaves it green because the strings coincide; logs/negative-control.log (b) fails 6 of 11 with this case among the 5 that pass.\nFINDING reckon/crew/ticker.py:952 non-blocking: _bucket_of accepts *older and discards it, so a caller passing a classification contradicting the state word (tests/test_fleet_counter_launch_failure.py:114 and tests/test_a_live_run_never_reads_dead.py:639 still do) gets no signal its argument is ignored.\nFINDING tests/test_the_pane_counts_parked_work.py:122 non-blocking: the change adds one failure the base arm does not fail, test_every_parked_phase_counts_once_in_the_waiting_cell reading waiting 3 where the fixture expects 4, so the done_when clause of no added failure against the base is unmet for that id; logs/per-file-head5 against logs/per-file-base4 name it as the only head-only failing id, and the file is outside the node's declared write paths.\nFINDING manifest.md:22 non-blocking: the artifacts line quotes baseline-arm.log as 58 passed in 51.02s EXIT_PLACEHOLDER, a literal unsubstituted placeholder where that log ends EXIT=0, so a reader cannot reconcile the figure with the log it cites.\n",
+  "review_run_id": "r-20261115T230741377711-review-of-held-drawn-by-its-owner-s3-31ac0fac388a",
+  "reviewed_base_sha": "dd6df313c008be0317424386d35a01a7484ce6bc",
+  "reviewed_head_sha": "31ac0fac388aa32d5508a33c5774d64a654fe507",
+  "reviewed_run_id": "r-20261115T145426280351-held-drawn-by-its-owner-s3",
+  "reviewer_run_id": "r-20261115T230741377711-review-of-held-drawn-by-its-owner-s3-31ac0fac388a",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-16T00:20:17.572021+00:00",
+  "total": 98
+}

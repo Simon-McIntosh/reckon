@@ -1,0 +1,52 @@
+<article class="landed-report" data-node="router-decides-on-preferences-s57">
+  <h3 id="router-decides-on-preferences-s57-summary">The router decides on preferences; only a hard constraint excludes a lane</h3>
+  <p id="router-decides-on-preferences-s57-record">
+    The section's behaviour, its test and the two landed tests it rewrites are
+    present at revision <code>70f907c330</code>, so this node re-measured them
+    rather than rebuilding them.
+    <code>reckon/crew/picker/snapshot.py</code> offers a reserved lane with a
+    <code>reservation</code> block (intent, tier floor, attempt threshold,
+    window ceiling and use, any lift in force with its reason) and the policy's
+    own words in <code>preferences</code>, and
+    <code>_reserved_lane_evidence</code> returns no exclusion, so a node below
+    the reservation's floor still reaches the router. The hard constraints that
+    still remove a candidate are context fit, a competence verdict that is a
+    context overflow, availability, an in-harness launch, a paused or unreadable
+    lane gate, a budget verdict the account would refuse, and the lead's
+    review exclusion. <code>tests/test_a_reserved_lane_reads_its_published_window.py</code>
+    near line 367 and
+    <code>tests/test_an_oversize_node_reaches_a_reserved_lane.py</code> at its
+    offered-and-reserved cases assert the lane is offered with the reservation
+    stated, rather than asserting its removal.
+  </p>
+  <p id="router-decides-on-preferences-s57-measure">
+    Measure: <code>tests/test_the_router_decides_on_preferences.py</code> ran
+    <code>8 passed</code> in 1.29 s at <code>70f907c330</code>. Restoring the
+    reserved-lane exclusion with <code>RECKON_PICKER_MUTATION=reserved-exclusion</code>
+    ran <code>4 failed, 4 passed, EXIT=1</code>, failing
+    <code>test_a_lifted_reserved_lane_reaches_the_router</code> first; offering a
+    lane that fails context fit with <code>RECKON_PICKER_MUTATION=offer-unfit-lane</code>
+    ran <code>1 failed, 7 passed, EXIT=1</code>, failing
+    <code>test_a_node_too_large_for_local_is_never_offered_it</code>. The suite
+    arm over the three picker-importing tests plus the two inventory and
+    cross-node lock tests ran <code>79 passed, EXIT=0</code>, and
+    <code>PYTHONPATH=. .venv/bin/python -m ruff check --no-cache --output-format=concise</code>
+    reports <code>All checks passed!</code> on the six declared source and test
+    paths.
+  </p>
+  <p id="router-decides-on-preferences-s57-arm">
+    Timing arm, on the fleet node, with the host's resolved flight
+    configuration, the reservation declared on codex and an uncapped lift on the
+    budget block: two live picks reached the router and neither answered
+    <code>hold</code>. Codex appears in the router's candidate set for both a
+    guided implement node that declares no reasoning requirement and a low-think
+    node, marked <code>reserved</code> with <code>lift_in_force</code> true and
+    the policy's own words in <code>preferences</code>. The run's own execution
+    share read zero local worker slots during the fully live arm, so the
+    low-think node was routed to a metered lane there. In a second arm whose
+    only substitutions are the lane document's worker count and the ledger and
+    budget inputs the contended ledger index would otherwise be read for, the
+    live router placed the low-think node on the local lane
+    (<code>clive</code>) when the document reported room.
+  </p>
+</article>
