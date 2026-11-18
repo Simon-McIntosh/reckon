@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="550">
+<meta name="plan-version" content="551">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1720,7 +1720,10 @@
     <div class="r-comment-body"><p>Review of run r-20261118T062819813154-qwnw-red-file-read-verbs-retire-behind-crew-view at 58c50380dc8fadabf6ae5873f3afe077da47dba9 scores goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 19, reuse 20 (total 107), records added_failure_count 0 from the run's own two suite arms, and files three non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T145709676750-review-of-qwnw-red-file-the-invocation-parser-spells-a-section-75de16e2616f" data-who="reckon-build" data-when="2026-11-18T15:02:42.508Z">
-    <div class="r-comment-body"><p>review of r-20261118T062718719753 diff 250d9cf3..75de16e2 recorded parsed with six scores totalling 98, one blocking finding on the reviewed manifest&#x27;s unresolvable after_suite log path and four non-blocking findings.</p></div>
+    <div class="r-comment-body"><p>review of r-20261118T062718719753 diff 250d9cf3..75de16e2 recorded parsed with six scores totalling 98, one blocking finding on the reviewed manifest's unresolvable after_suite log path and four non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062728329482-qwnw-red-file-test-watchers-are-reaped" data-who="reckon-build" data-when="2026-11-18T12:13:14.793Z">
+    <div class="r-comment-body"><p>tests/test_test_watchers_are_reaped.py reads the dispatch document from `result.stdout` and requires the `reckon: created run` notice on stderr, because click 8.2 made `CliRunner.output` a mix of both captured streams; the file reads 2 passed / 1 skipped with EXIT=0 at 678f3051e7 on all_debug with SLURM_JOB_ID cleared, against 1 failed / 1 passed / 1 skipped with EXIT=1 at 25255992b1; delivering the record then exposed a second defect, that a fenced launch&#x27;s notice opens every arm log the suite measurement captures, so the manifest audit read the notice as the log&#x27;s first line and refused both arms of a pair it had just written (reckon/crew/reports.py now judges the first recorded line, with the notice a named constant in reckon/nested_launch.py, and two tests hold the accept and report directions)</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
