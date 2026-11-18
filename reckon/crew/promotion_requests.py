@@ -298,6 +298,8 @@ def promotion_queue_report(
             {
                 "run_id": request["run_id"],
                 "session": request.get("session", ""),
+                "project": str(request.get("project") or ""),
+                "requested_at": str(request.get("requested_at") or ""),
                 "position": position,
                 "reason": request["ordering_reason"],
             }

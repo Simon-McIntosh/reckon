@@ -180,6 +180,11 @@ its node `awaiting-upstream` until the upstream has passed its review and gate
 and landed, with no further coordinator dispatch, so nothing builds on work
 that has not passed. Bring urgent work to the top with
 `reckon crew queue reprioritise`, and steer the queue as earlier results come back. The queue orders only waits declared in `plan-section-depends-on`.
+Read where the waiting work stands with `reckon crew view queue --project <project>`
+(the same document as `crew(view="queue")`): every queued and awaiting-upstream
+request in the order admission launches by, with its place, its reason, its wait
+and the hold that stops it, beside each session's priority budget and the points
+free. Narrow it to one session with `--session <id>`.
 Read progress through `crew view live` and steer the queue rather than feeding it:
 change a queued request's brief, done-when, write paths, time budget or route with
 `reckon crew queue edit --run <id>`; pause it with
@@ -298,7 +303,7 @@ reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <pr
 reckon crew supersede-review --project <project> --run <id> --reason <text>    # call it when a promoted row's review block names another round: it appends a correction the readers honour and leaves the recorded fields in place
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>
-reckon crew view <name> [--project <project>] [--since <iso>] [--until <iso>] [--fields <block>] [--pretty]    # the one transport for every crew read view the crew MCP tool serves: summary, flight, live, scopes, drain, records, ledger, budget, lanes, routing, directory, fleet, runs, obligations, velocity, scores, plan-review, findings
+reckon crew view <name> [--project <project>] [--since <iso>] [--until <iso>] [--fields <block>] [--pretty]    # the one transport for every crew read view the crew MCP tool serves: summary, flight, live, scopes, drain, queue, records, ledger, budget, lanes, routing, directory, fleet, runs, obligations, velocity, scores, plan-review, findings
 reckon crew widen --run <id> --write-path <path>
 reckon flight --project <project>    reckon audit-doc    reckon crew suite
 ```
