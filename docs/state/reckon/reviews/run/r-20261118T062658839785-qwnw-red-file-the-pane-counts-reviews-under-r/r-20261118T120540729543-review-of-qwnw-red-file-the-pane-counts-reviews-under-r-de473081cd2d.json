@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:40:52Z",
+  "findings": [
+    {
+      "file": "tests/test_the_pane_counts_reviews_under_r.py",
+      "line": "212",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected cell text is formatted with ticker_module.STAT_DIGITS read from the module under test at :194, the same constant reckon/crew/ticker.py:3946 uses, so a regression of the fixed-width rule the docstring claims (STAT_DIGITS changed from 2) leaves both this comparison and the length check at :216 green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062658839785-qwnw-red-file-the-pane-counts-reviews-under-r/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing line asserts the head pass ran as an all_debug job with SLURM_JOB_ID unset, while head-arm-5c088ac290.log names only revision, host and tree; SLURM_JOB_ID is unset in arm.sh but the partition is never recorded, so the job class the done_when requires cannot be re-checked."
+    }
+  ],
+  "head_log_revision": "5c088ac290755d7168e439d81b61d6490dbe5e5e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; 5c088ac290 rewrites one case, ccfa9d6a9d adds the evidence fragment, de473081cd fixes one filename in it, and no assertion is deleted.",
+    "done_when": "base-arm-250d9cf3e6.log records \"1 failed, 9 passed\" EXIT=1 at 250d9cf3e6, head-arm-5c088ac290.log records \"10 passed\" EXIT=0 at 5c088ac29, and the manifest's suite pair carries full-length revisions, but no log records the all_debug partition the measure names.",
+    "goal": "the node's goal is to make tests/test_the_pane_counts_reviews_under_r.py pass in full; at the delivered head that file's ten cases pass (head-arm-5c088ac290.log reads \"10 passed\", EXIT=0) and the diff touches no product module.",
+    "manifest": "read; status complete, three commits, literal pytest gate command, three existing logs with EXIT= lines, both suite arms at 0 failures, outside_scope naming the sibling files and the mis-fenced suite pair.",
+    "write_paths": "git diff 250d9cf3e6..de473081 touches only tests/test_the_pane_counts_reviews_under_r.py and the declared evidence fragment, both inside reckon/tests/docs fragments."
+  },
+  "justifications": {
+    "durability": "restoring six cells in reckon/crew/ticker.py:783 reddens the _MAX_CELLS and regex assertions in tests/test_the_pane_counts_reviews_under_r.py:156-186, as base-arm-250d9cf3e6.log shows, but the width at :212 is generated from the module's own STAT_DIGITS and so cannot fail on a width regression.",
+    "evidence": "base-arm-250d9cf3e6.log:65 carries the failing id and assertion text at the base revision and head-arm-5c088ac290.log ends \"10 passed\" EXIT=0, but the all_debug partition the done_when names appears only in manifest.md:11, not in any arm log.",
+    "fit": "the repaired case keeps the file's existing style of asserting module constants and producer-built readings, as tests/test_the_pane_counts_reviews_under_r.py:186-210 does, and introduces no new name.",
+    "goal_fidelity": "tests/test_the_pane_counts_reviews_under_r.py passes 10/10 at the delivered head per head-arm-5c088ac290.log:1-9, while the diff leaves every product module unchanged.",
+    "reuse": "the diff adds no definition at all; it reads the constants reckon/crew/ticker.py:742-790 already owns and no helper is forked.",
+    "scope_discipline": "both changed paths in git diff 250d9cf3e6..de473081 lie inside the declared write paths, and the two sibling files red for the same cause are reported under outside_scope, not edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_the_pane_counts_reviews_under_r.py pass in full; at the delivered head that file's ten cases pass (head-arm-5c088ac290.log reads \"10 passed\", EXIT=0) and the diff touches no product module.\nVERDICT done_when: the done_when asks for a base run first, the named file passing in full at head as an all_debug job with SLURM_JOB_ID unset, no deleted or weakened assertion, a no-added-failure arm with both arms carrying full 40-character revisions, and a red base log; base-arm-250d9cf3e6.log records \"1 failed, 9 passed\" EXIT=1 at 250d9cf3e6, head-arm-5c088ac290.log records \"10 passed\" EXIT=0 at 5c088ac29, and the manifest's baseline_suite and after_suite are full-length JSON pairs both at 0 failures, but no log records the batch partition, so the all_debug half of the measure rests on the manifest's own claim in landing: at manifest.md:11.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 250d9cf3e6..de473081 touches only tests/test_the_pane_counts_reviews_under_r.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-counts-reviews-under-r.html, both inside the declared set.\nVERDICT manifest: read; status complete, three commits 5c088ac290/ccfa9d6a9d/de473081cd, the gate as a literal pytest command, three test_logs paths that all exist with EXIT= lines, baseline_suite and after_suite both completed at 0 failures with 40-character revisions, and outside_scope naming the two sibling files red for the same cause plus the mis-fenced declared suite pair.\nVERDICT diff: read commit by commit against 250d9cf3e6; 5c088ac290 rewrites one case in tests/test_the_pane_counts_reviews_under_r.py (renamed to seven cells, adds the promotion-queue field, letter, position suffix and stats expectation), ccfa9d6a9d adds the 92-line evidence fragment, de473081cd corrects one log filename in that fragment; nothing else changed and no assertion was deleted.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_pane_counts_reviews_under_r.py passes 10/10 at the delivered head per head-arm-5c088ac290.log:1-9, while the diff leaves every product module unchanged.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-arm-250d9cf3e6.log:65 carries the failing id and assertion text at the base revision and head-arm-5c088ac290.log ends \"10 passed\" EXIT=0, but the all_debug partition the done_when names appears only in manifest.md:11, not in any arm log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths in git diff 250d9cf3e6..de473081 lie inside the declared write paths, and the two sibling files red for the same cause are reported under outside_* not edited.\nSCORE durability: 16\nJUSTIFICATION durability: restoring six cells in reckon/crew/ticker.py:783 reddens the _MAX_CELLS and regex assertions in tests/test_the_pane_counts_reviews_under_r.py:156-186, as base-arm-250d9cf3e6.log shows, but the width at :212 is generated from the module's own STAT_DIGITS and so cannot fail on a width regression.\nSCORE fit: 19\nJUSTIFICATION fit: the repaired case keeps the file's existing style of asserting module constants and producer-built readings, as tests/test_the_pane_counts_reviews_under_r.py:186-210 does, and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all; it reads the constants reckon/crew/ticker.py:742-790 already owns and no helper is forked.\nFINDING tests/test_the_pane_counts_reviews_under_r.py:212 non-blocking: the expected cell text is formatted with ticker_module.STAT_DIGITS read from the module under test at :194, the same constant reckon/crew/ticker.py:3946 uses, so a regression of the fixed-width rule the docstring claims (STAT_DIGITS changed from 2) leaves both this comparison and the length check at :216 green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062658839785-qwnw-red-file-the-pane-counts-reviews-under-r/manifest.md:11 non-blocking: the landing line asserts the head pass ran \"as an all_debug job with SLURM_JOB_ID unset\", while head-arm-5c088ac290.log names only revision, host and tree (SLURM_JOB_ID is unset in arm.sh but the partition is never recorded), so a reader cannot re-check the job class the done_when requires.\n",
+  "review_run_id": "r-20261118T120540729543-review-of-qwnw-red-file-the-pane-counts-reviews-under-r-de473081cd2d",
+  "reviewed_base_sha": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "reviewed_head_sha": "de473081cd2d3e899fe14e58678457c3d730cfac",
+  "reviewed_run_id": "r-20261118T062658839785-qwnw-red-file-the-pane-counts-reviews-under-r",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T120540729543-review-of-qwnw-red-file-the-pane-counts-reviews-under-r-de473081cd2d"
+  },
+  "reviewer_run_id": "r-20261118T120540729543-review-of-qwnw-red-file-the-pane-counts-reviews-under-r-de473081cd2d",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:46:34.409908+00:00",
+  "total": 108
+}
