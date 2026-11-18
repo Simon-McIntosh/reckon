@@ -72,7 +72,6 @@ from reckon.crew.node import (
     parse_duration,
 )
 from reckon.crew.runs import runs_dir
-from reckon.nested_launch import SCHEDULER_FENCE_NOTICE
 
 # ── Worker reports ──────────────────────────────────────────────────────────
 
@@ -1506,13 +1505,24 @@ def _names_the_same_revision(left: str, right: str) -> bool:
 # the launch's prologue only when a scheduler's own name stands in front of the
 # notice's text rather than merely quoting it.
 _FENCE_NOTICE_TOOLS = frozenset({"salloc", "sbatch", "srun"})
-_FENCE_NOTICE_TEXT = SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
+
+
+def _fence_notice_text() -> str:
+    """The fence notice with its tool prefix removed.
+
+    Read at call time: the launcher imports ``reckon.nested_launch`` first, and
+    that module reaches this one while it is still initialising, so a
+    module-level import of the notice here would close an import cycle.
+    """
+    from reckon.nested_launch import SCHEDULER_FENCE_NOTICE
+
+    return SCHEDULER_FENCE_NOTICE.split("{tool}", 1)[1].lstrip(": ").strip()
 
 
 def _is_fence_prologue(line: str) -> bool:
     """Whether a log line is the launch fence's notice rather than a record."""
     tool, _, rest = line.partition(":")
-    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() == _FENCE_NOTICE_TEXT
+    return tool.strip() in _FENCE_NOTICE_TOOLS and rest.strip() == _fence_notice_text()
 
 
 def _first_recorded_line(text: str) -> str:
