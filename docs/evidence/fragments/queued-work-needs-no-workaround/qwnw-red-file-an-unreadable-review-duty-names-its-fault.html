@@ -1,32 +1,32 @@
 <section id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-landing">
-  <h2>An unreadable review duty keeps its fault on the second reading</h2>
+  <h2>An unreadable record named</h2>
 
-  <p><strong>What changed.</strong> One obligation row exists per review record
-  the sweep cannot use, and its remedy is read from the fault the reader
-  reported: a record met mid-write is read again once its writer finishes, and
-  a record that parses but holds a finding stating no claim is rewritten or its
-  reviewing run resumed. That finding was produced by the read that first met
-  the record, and the review reads this derivation memoises answered a second
-  derivation without touching the file — so the finding was dropped, and a
-  derivation published fewer duties than the snapshot written beside it. The
-  same record then disappeared from the view on the sweep after the one that
-  reported it.</p>
+  <p><strong>What changed.</strong> A review record the reader cannot use
+  becomes a duty row, and the row's remedy comes from the fault that read
+  reported. That fault was produced by the first read, and the review reads
+  this derivation memoises answered every later derivation without touching the
+  file, so the fault was dropped: the second derivation published fewer duties
+  than the snapshot written beside it, and the record disappeared from the view
+  on the sweep after the one that reported it.</p>
 
-  <p>The skips a read reported now travel with the memoised answer and are
-  replayed into the region the current derivation opened
-  (<code>review_records.memoised_read</code>, used by the presence, selection,
-  rounds and headless review memos in <code>reckon/crew/obligations.py</code> and
-  by the stored-review memo in <code>reckon/crew/recovery_memo.py</code>), so a
-  cached answer says what the read that filled it said about the same bytes.
-  The unreadable row also states the id list the view's own projection gives it
+  <p>The skips a read reported now travel with the memoised answer
+  (<code>review_records.memoised_read</code>) and are replayed into the region
+  the current derivation opened. It is used by the four obligation memos whose
+  keys name the store's current entries — presence, selection, rounds and the
+  headless read — in <code>reckon/crew/obligations.py</code>. The replay drops
+  a skip whose file has gone, because a store index that has not revalidated
+  can answer for a removed record and a duty naming a path nobody can open is
+  worse than no duty. The stored-review memo is deliberately not wrapped: its
+  key is the run's classification inputs, not the store's entries, so an answer
+  held there outlives a deletion. The unreadable row also states the id list the
+  view's own projection gives it
   (<code>obligation_snapshot._unreadable_record_items</code>), which is what
-  makes the row a snapshot reader rebuilds from the stored finding equal to the
-  row the writer derived.</p>
+  makes the row a snapshot reader rebuilds equal to the row the writer derived.</p>
 
   <h3 id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-reproduced">Reproduced before repair</h3>
 
-  <p>At the base revision the writer's own derivation and a second one disagree
-  about the same record, in one process:</p>
+  <p>At the base revision one process produced the writer's rows and a second
+  derivation of the same fleet, and the second carried no row:</p>
 
   <pre id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-repro">snapshot rows: [{'kind': 'unreadable-review-record', 'run_id': '.../r-reviewed.at-236d4ed0....json',
                  'next_command': '1 claimless finding(s) in this record: rewrite the record or resume ...'}]
@@ -36,11 +36,15 @@ second derivation rows: []</pre>
   <p>Clearing only the <code>obligation_*</code> memos restored the row while
   the stored-review memo stayed warm, which names the cache as the cause rather
   than the record or the reader. The verdict is <strong>product wrong</strong>:
-  no assertion was weakened or deleted.</p>
+  no assertion was weakened or deleted. The base run of the node's own file is
+  the negative control, and its failing id is
+  <code>tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot</code>.</p>
 
-  <p>Disabling the replay alone (<code>review_records.report_read_failures</code>
-  replaced with a no-op) makes the node's file read 3 failed / 2 passed, so the
-  guard is what carries the cases rather than the surrounding change.</p>
+  <p>A second control disables the replay alone
+  (<code>review_records.report_read_failures</code> replaced with a no-op) and
+  runs the same file at the head revision: it reads <code>1 failed, 4 passed</code>
+  on that same failing id, so the replay is what carries the case rather than
+  the surrounding change.</p>
 
   <h3 id="qwnw-red-file-an-unreadable-review-duty-names-its-fault-measured">Measured</h3>
 
@@ -54,24 +58,30 @@ second derivation rows: []</pre>
     promotion resolves for the run.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>the node's file, head arm (job 1327167)</td>
-        <td><code>e276fccb4d066f4ba173f8c56cc3aab2ed3b676f</code></td>
-        <td>5 passed, <code>EXIT=0</code></td></tr>
-      <tr><tr><td>the node's file, base arm — the negative control (job 1327169)</td>
+      <tr><td>the node's file, base arm — the negative control (job 1327169)</td>
         <td><code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code></td>
-        <td>1 failed, 4 passed, <code>EXIT=1</code>; the failing id is
-        <code>tests/test_an_unreadable_review_duty_names_its_fault.py::test_the_duty_is_the_same_row_read_back_from_the_snapshot</code></td></tr>
+        <td>1 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head arm (job 1327487)</td>
+        <td><code>175c772e163ab00c07b841982fede10d2ff932b1</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
       <tr><td>the standing suite, base arm (job 1327176)</td>
         <td><code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code></td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>the standing suite, after arm (job 1327179)</td>
-        <td><code>e276fccb4d066f4ba173f8c56cc3aab2ed3b676f</code></td>
+      <tr><td>the standing suite, after arm (job 1327488)</td>
+        <td><code>175c772e163ab00c07b841982fede10d2ff932b1</code></td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
     </tbody>
   </table>
 
-  <p>The six adjacent obligations and snapshot test files read
-  <code>4 failed, 49 passed</code> at the head and the same four ids at the base
-  revision, extracted from <code>60ecc274</code> into a temporary tree: the
-  failures are already on the primary branch and no failure is added.</p>
+  <p>The arm over the test files that mention a changed module is 226 files,
+  run once per revision: base at job 1327316 and head at job 1327361. The base
+  arm reads <code>56 failed, 1466 passed</code> and the head arm
+  <code>52 failed, 1470 passed</code>, and the head adds no failing id. Four ids
+  the base names and the head does not are this node's
+  <code>test_the_duty_is_the_same_row_read_back_from_the_snapshot</code>,
+  <code>test_skipped_record_reaches_the_checklist</code>'s
+  <code>test_the_reader_reproduces_the_findings_the_writer_carried</code>, and
+  two that failed only on the base run: a settle that timed out after 20s in
+  <code>test_the_pane_carries_counts_not_names.py</code> and an age assertion in
+  <code>test_obligations_read_the_station.py</code>.</p>
 </section>
