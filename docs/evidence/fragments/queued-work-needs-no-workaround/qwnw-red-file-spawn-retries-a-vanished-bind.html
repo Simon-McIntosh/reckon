@@ -4,11 +4,12 @@
   <p><strong>What was wrong.</strong> At the base revision
   <code>00e5bd109e44209141475c852cd5490b8bef9be3</code>,
   <code>tests/test_spawn_retries_a_vanished_bind.py</code> read 1 failed and 6
-  passed in the worktree, and 2 failed and 5 passed as a job on
-  <code>all_debug</code>. Both causes are the test's, and neither is the rule
-  the file asserts: the retry of a spawn refused over a vanished protected bind
-  source is present and stays unchanged. <code>reckon/crew/dispatch_launch.py</code>
-  is untouched by this node.</p>
+  passed in the worktree; the second cause below surfaced only once the first
+  was repaired and the file was measured as a job on <code>all_debug</code>,
+  where the first head read 2 failed and 5 passed. Both causes are the test's,
+  and neither is the rule the file asserts: the retry of a spawn refused over a
+  vanished protected bind source is present and stays unchanged.
+  <code>reckon/crew/dispatch_launch.py</code> is untouched by this node.</p>
 
   <p><strong>Cause 1 — a supervisor spec with no run directory.</strong>
   <code>test_the_supervisor_seam_retries_the_spawn</code> built the spec it
