@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The run store retires old runs — base and head runs</title>
+<meta name="docs-project" content="reckon">
+<style>
+  body { font: 15px/1.55 system-ui, sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1rem; }
+  pre { background: #f5f5f4; padding: .8rem; overflow-x: auto; font-size: 13px; }
+  h2 { margin-top: 2rem; }
+</style>
+</head>
+<body>
+<h1 id="qwnw-red-file-the-run-store-retires-old-runs-title">The run store retires old runs out of its hot tables</h1>
+
+<p id="qwnw-red-file-the-run-store-retires-old-runs-summary">
+The measured check is <code>tests/test_the_run_store_retires_old_runs.py</code>. At the base
+revision one test failed; at the head revision the file passes in full. The two runs below are
+the negative control: the base run's failing id, and the head run of the same command.
+</p>
+
+<h2 id="qwnw-red-file-the-run-store-retires-old-runs-cause">The defect</h2>
+
+<p id="qwnw-red-file-the-run-store-retires-old-runs-cause-prose">
+<code>RunStore._refresh</code> rebuilds the store's rows from the committed ledger, and it decided
+whether to rebuild by comparing the ids its own tables hold with <code>ledger.run_ids()</code>.
+Every reader answers through the store once it holds a row, so <code>run_ids()</code> returns
+the store's own ids: both sides of the comparison were the same set. The rebuild could therefore
+never fire, and a ledger that changed after a retirement left the archived run holding the durable
+fields it was retired with — <code>tool_steps</code> stayed 7 where the file said 19 — and left a
+run the ledger no longer carries in the archive.
+</p>
+
+<p id="qwnw-red-file-the-run-store-retires-old-runs-fix">
+<code>ledger.file_run_ids()</code> answers membership from the committed documents alone (the
+published index while it matches the files, otherwise a reading of the sources), and the refresh
+compares that against its own ids. <code>run_ids()</code> keeps its store-first answer and is built
+on the new reader, so document membership has one owner.
+</p>
+
+<h2 id="qwnw-red-file-the-run-store-retires-old-runs-base">Base run at 97dec20bfb8603ab71c4e9deeefddab685e0a42e — 1 failed, 17 passed</h2>
+
+<pre id="qwnw-red-file-the-run-store-retires-old-runs-base-log"># revision: 97dec20bfb8603ab71c4e9deeefddab685e0a42e
+# tree: /tmp/reckon-crew-scratch/r-20261118T044650649792-qwnw-red-file-the-run-store-retires-old-runs/redfile-base
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py
+FAILED tests/test_the_run_store_retires_old_runs.py::test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_fields - assert 7 == 19
+1 failed, 17 passed in 5.97s
+EXIT=1
+</pre>
+
+<h2 id="qwnw-red-file-the-run-store-retires-old-runs-head">Head run at c54a59d4b6e7dc61000c893929a1910ca322ca0d — 18 passed</h2>
+
+<pre id="qwnw-red-file-the-run-store-retires-old-runs-head-log"># revision: c54a59d4b6e7dc61000c893929a1910ca322ca0d
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-the-run-store-retires-old-runs
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py
+18 passed in 4.35s
+EXIT=0
+</pre>
+
+</body>
+</html>
