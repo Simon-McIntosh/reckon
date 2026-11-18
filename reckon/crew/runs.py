@@ -4024,6 +4024,22 @@ def drain_unreconciled_by_session(
     return counts
 
 
+def unreconciled_for_session(counts: Mapping[str, int], session: str) -> int:
+    """One session's unreconciled count, read from the map one pass derived.
+
+    An ownerless row counts toward every session, but a map can only name the
+    owners it saw, so :func:`drain_unreconciled_by_session` cannot hold a key
+    for a session that owns no row of its own: its population is ownerless
+    runs alone. Reading the requested session's absence as zero therefore
+    reported no unreconciled run to a session the closure counted one for,
+    while another of its sessions was told the same population numbered one.
+    The ownerless partition is the answer for any session the map does not
+    name, because the owners it does name are the only rows that partition
+    leaves out.
+    """
+    return int(counts.get(session, counts.get("", 0)))
+
+
 # The producer's lease registration. It is separate from the seat record because
 # the seat is an advisory lock held on its own file's inode for the producer's
 # whole life: a follower that had to renew the lease could never take that lock,

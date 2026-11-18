@@ -2195,8 +2195,8 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
         "oldest_age_seconds": max(
             (int(item["age_seconds"]) for item in items), default=0
         ),
-        "unreconciled_runs": int(
-            state.unreconciled.get(session, state.unreconciled.get("", 0))
+        "unreconciled_runs": module.runs.unreconciled_for_session(
+            state.unreconciled, session
         ),
     }
     delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
