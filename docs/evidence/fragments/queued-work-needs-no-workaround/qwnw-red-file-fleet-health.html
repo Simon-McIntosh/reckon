@@ -18,9 +18,11 @@ EXIT=0</pre>
 <h4 id="qwnw-red-file-fleet-health-falsified">The green run is not vacuous</h4>
 <p>The file drives <code>bin/fleet-health --once</code> against a fixture <code>/proc</code>, cgroup, state directory and stub <code>ps</code>/<code>scontrol</code> on PATH, so a green run could in principle mean the assertions never reach the sampler. Deleting the one D-state trigger condition from a copy of the script
 (<code>[ "${dstate:-0}" -gt "$DSTATE_ALERT" ] &amp;&amp; reason=…</code>, line 145) and running the same file against it reads
-<strong>5 failed, 10 passed</strong>, with <code>test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns</code>,
-<code>test_dstate_threshold_is_overridable</code>, <code>test_two_crossing_passes_without…</code> and
-<code>test_memory_kills_bypass_the_pressure_snapshot_interval</code> among the failing ids. The file therefore fails when the behaviour is removed and passes when it is present.</p>
+<strong>5 failed, 10 passed</strong>, with all five failing ids named in the committed log beside this fragment
+(<code>…-mutation-dstate.log</code>): <code>test_dstate_trigger_writes_a_snapshot_with_thread_and_wait_columns</code>,
+<code>test_dstate_threshold_is_overridable</code>, <code>test_two_crossing_passes_within_the_bound_write_one_snapshot</code>,
+<code>test_a_pass_after_the_bound_writes_a_second_snapshot</code> and
+<code>test_memory_kills_bypass_the_pressure_snapshot_interval</code>; those five pass in the head run. The file therefore fails when the behaviour is removed and passes when it is present.</p>
 <h4 id="qwnw-red-file-fleet-health-scope">Change scope</h4>
-<p>No product or test file is modified: the deliverable for a file that is already green is the passing run. The arm over the test files that import what changed is consequently the same command at the same revision, run once and recorded in the manifest as both arms.</p>
+<p>No product or test file is modified: the deliverable for a file that is already green is the passing run, and <code>tests/test_fleet_health.py</code> is byte-identical to the base. The suite pairs the run resolves for its write scope are <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>; both arms run green (0 failures) at <code>b99d5f2c</code> and at the node head <code>0fc4124926</code>, so the change adds no failure and removes none.</p>
 </section>
