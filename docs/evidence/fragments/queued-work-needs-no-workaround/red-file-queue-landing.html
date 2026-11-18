@@ -1,0 +1,31 @@
+<section id="qwnw-red-file-queue-landing-arms">
+<h3>Both arms of the named file</h3>
+<p>The named file carries nine cases. At the base revision <code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code> two of them fail; at the head <code>29feee366be6dfce2258ee15470ba5abae09a04d</code> all nine pass. Each arm ran as a job on <code>all_debug</code>, from its own archived tree, and each log names its revision, tree and command on its header lines and ends with a bare <code>EXIT=</code> line.</p>
+<table>
+<thead><tr><th>arm</th><th>revision</th><th>command</th><th>summary</th><th>exit</th></tr></thead>
+<tbody>
+<tr><td>base</td><td><code>97dec20bfb</code></td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_landing.py</code></td><td><code>2 failed, 7 passed in 2.94s</code></td><td><code>1</code></td></tr>
+<tr><td>head</td><td><code>29feee366b</code></td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_landing.py</code></td><td><code>9 passed in 3.62s</code></td><td><code>0</code></td></tr>
+</tbody>
+</table>
+<p>The base arm's two failing ids, which are the ones the node was dispatched against:</p>
+<pre>FAILED tests/test_queue_landing.py::test_land_invokes_the_shared_path_through_the_scheduler_shim - AssertionError: assert (True, 'promotion-requested') == (True, '')
+FAILED tests/test_queue_landing.py::test_accepted_delivery_uses_the_real_crew_land_path - AssertionError: ({'landed': [], 'obligations': [], 'deferred': [], 'promotion_requested': ['r-20261024T090000000000-accepted-delivery']}, [])</pre>
+<p>The logs are <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054346153569-qwnw-red-file-queue-landing/negative-control-1794994939144401676.log</code> and <code>.../scoped-gate-1794994811266877089.log</code>.</p>
+</section>
+
+<section id="qwnw-red-file-queue-landing-causes">
+<h3>Two causes, both of them in the cases, and one product rule behind them</h3>
+<p><strong>The product rule now kept.</strong> A measured delivery is not promoted inside the landing pass. The pass records a durable promotion request carrying the shared completion command's own parameters, and the admission service drains it under its own leases; <code>_land</code> returns <code>(True, "promotion-requested")</code> and <code>land_once</code> reports the run under <code>promotion_requested</code> rather than <code>landed</code>. This rule is pinned by <code>tests/test_no_caller_waits_on_a_promotion.py::test_the_landing_pass_requests_without_waiting</code>, and the product tree is untouched by this node.</p>
+<p><strong>Cause 1 — the case asserted an inline land through the scheduler shim.</strong> <em>Verdict: test wrong.</em> <code>test_land_invokes_the_shared_path_through_the_scheduler_shim</code> expected <code>_land</code> to run the completion command through <code>_run_srun</code> and to return <code>(True, "")</code>. The pass now records the request, so no subprocess is created and the case read an empty capture. It is now <code>test_land_records_the_shared_completion_command_as_a_request</code>, and it asserts the same substance against the durable record: the request's kind is <code>command</code>, and its options carry <code>run_id</code>, <code>gate=passed</code>, the delivered commit, the measured candidate, the landing beat reason and <code>land=True</code>.</p>
+<p><strong>Cause 2 — the accepted-delivery case expected the pass to publish in the same call.</strong> <em>Verdict: test wrong.</em> <code>test_accepted_delivery_uses_the_real_crew_land_path</code> called <code>land_once</code> and asserted the primary and origin had already moved. Under the rule above the pass only queues; the promotion happens when the service drains it. The case keeps every assertion about the real land path — the merged file on <code>main</code>, the origin agreeing, the pointer removed — and reaches them through the drain (<code>PromotionService().tick()</code> then <code>settle()</code>), asserting the request first.</p>
+<p>No assertion was deleted or weakened. The fixture's scheduler-shim helper, which only existed to observe the inline command, is replaced by the drain helper it now needs; the unarmed-delivery case gains the request-level assertion that stands in for the empty-receipt one it already carried.</p>
+</section>
+
+<section id="qwnw-red-file-queue-landing-suite">
+<h3>The armed suite pair reads the same at both revisions</h3>
+<p>The flight arms this node's suite as its fenced test paths plus the project's census tests, and no fenced write path here is itself a test file, so the command resolves to the census pair. Both arms ran as <code>all_debug</code> jobs:</p>
+<pre># revision 97dec20bfb  tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py  58 passed in 37.06s  EXIT=0
+# revision 29feee366b  tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py  58 passed in 35.62s  EXIT=0</pre>
+<p>Neither arm carries a failure, so the change adds none. The logs are <code>baseline_suite-1794995006270553058.log</code> and <code>after_suite-1794995049169977900.log</code> in the same run directory.</p>
+</section>
