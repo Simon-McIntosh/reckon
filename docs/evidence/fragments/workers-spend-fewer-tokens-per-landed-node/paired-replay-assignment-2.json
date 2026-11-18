@@ -170,7 +170,8 @@
    "stratum": "1-2h",
    "replays": {
     "codex": "r-20261117T232509753000-replay-codex-land-s10",
-    "clive-replicate": "r-20261118T053831988950-replay-clive-replicate-land-s10"
+    "clive-replicate": "r-20261118T053831988950-replay-clive-replicate-land-s10",
+    "omp-local": "r-20261118T103309418835-replay-omp-local-land-s10"
    }
   },
   {
@@ -277,7 +278,8 @@
    "stratum": "<=1h",
    "replays": {
     "clive": "r-20261118T040036096543-replay-clive-mon-s135",
-    "clive-anchored": "r-20261118T062910935854-replay-clive-anchored-mon-s135"
+    "clive-anchored": "r-20261118T062910935854-replay-clive-anchored-mon-s135",
+    "codex": "r-20261118T103424915495-replay-codex-mon-s135"
    }
   },
   {
@@ -353,6 +355,22 @@
     "clive-anchored": "r-20261118T034034262940-replay-clive-anchored-mon-s100",
     "clive-replicate": "r-20261118T034417947005-replay-clive-replicate-mon-s100"
    }
+  }
+ ],
+ "exclusions": [
+  {
+   "plan": "lane-and-model-routing",
+   "section": "s53",
+   "orders": [
+    79,
+    98,
+    101,
+    111,
+    113,
+    114,
+    121
+   ],
+   "reason": "the local lane's dispatch refused the first lane s53 replay (order 79, clive-replicate) on context fit: estimated 231351 usable input tokens against a 230144 token window, dominated by reckon/crew_run_commands.py (66503 tokens) and reckon/crew/routing.py (52399 tokens) in its write paths. Every local arm (clive, clive-anchored, clive-replicate, omp-local) shares that window, so the section has no local pair; it is excluded whole, as s14 excluded s4, and none of its replays was dispatched."
   }
  ]
 }
