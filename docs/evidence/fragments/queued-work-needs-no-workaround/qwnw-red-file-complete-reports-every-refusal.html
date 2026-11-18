@@ -1,0 +1,64 @@
+<article class="landed-report" data-run-id="r-20261118T063243827188-qwnw-red-file-complete-reports-every-refusal" data-node="qwnw-red-file-complete-reports-every-refusal">
+<h3 id="qwnw-red-file-complete-reports-every-refusal-summary">A red test file on the primary branch passes in full</h3>
+
+<p id="qwnw-red-file-complete-reports-every-refusal-change"><strong>Change.</strong>
+<code>tests/test_complete_reports_every_refusal.py</code> was red on the primary
+branch at <code>0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385</code>: one failed, three
+passed. The failing test,
+<code>test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes</code>,
+encoded two rules the product no longer keeps. No product module changed.
+
+<strong>Cause 1 — four refusals, not three. Verdict: test wrong.</strong>
+<code>reckon/crew/promotion_evidence.py</code> (<code>_require_gate_log_agrees</code>,
+landed in <code>4665b678c4</code>) refuses a passing gate whose cited log carries
+no terminal <code>EXIT=&lt;n&gt;</code> line, beside the gate-check refusal the same
+missing record causes. The fixture cites a log holding one prose line and no
+exit record, so <code>complete_dry_run</code> reports four refusals:
+<code>impl did not move</code>, the absent review, <code>a passing gate requires the
+check that produced it; missing exit_status</code> and <code>carries no terminal
+EXIT=&lt;n&gt; line</code>. The test asserted <code>refusal_count == 3</code> and did
+not read the log refusal at all; it now asserts <code>4</code> and both gate
+refusals, so the guard that fires is named rather than the count alone.
+
+<strong>Cause 2 — the emitted invocation requests a promotion. Verdict: test
+wrong.</strong> <code>reckon/crew_run_commands.py</code> (<code>b4840067ad</code>,
+the durable promotion-request change) makes <code>crew complete</code> file a
+promotion request for the fleet's admission service to drain, and
+<code>--wait</code> the flag that performs the promotion in the call. The test
+ran the emitted line and asserted the pointer was gone, which was true when
+completion was synchronous. Run as it stands the line is accepted and the
+receipt reads <code>"phase": "promotion-requested"</code>, so the pointer lives
+until the service drains the request; the test asserts that receipt and the
+live pointer, and then runs the same line with <code>--wait</code> and asserts
+the run is <em>refused</em> for the log it cannot be read from. The remedy the
+dry run offers (<code>--gate-exit-status 0</code>) answers the check and cannot
+write the log's missing exit record, which is the refusal's own subject.</p>
+
+<p id="qwnw-red-file-complete-reports-every-refusal-measure"><strong>Measure.</strong>
+The node's named file, run as a job on <code>all_debug</code> with
+<code>SLURM_JOB_ID</code> unset: at the base revision one failed and three
+passed; at the head revision four passed.
+
+<table id="qwnw-red-file-complete-reports-every-refusal-arms">
+<thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+<tbody>
+<tr><td>base</td><td><code>0d0e1c9410b1</code></td><td>1 failed, 3 passed</td><td><code>base-test_complete_reports_every_refusal.log</code></td></tr>
+<tr><td>head</td><td><code>COMMIT</code></td><td>4 passed</td><td><code>head-test_complete_reports_every_refusal.log</code></td></tr>
+</tbody>
+</table>
+
+<strong>Negative control.</strong> The base run left the pointer assertion red
+with the failing id
+<code>test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes</code>
+and <code>EXIT=1</code>. Its first failure was
+<code>AssertionError: assert 4 == 3</code>, whose message lists the four
+refusals quoted above; with the count relaxed, the run failed next on
+<code>assert not pointer_path(run_id).exists()</code>, the promotion having been
+recorded as a request. Both facts are what the test now asserts.</p>
+
+<p id="qwnw-red-file-complete-reports-every-refusal-scope"><strong>Scope.</strong>
+One test module. The rules the file now states are the rules the product keeps;
+no assertion was deleted or weakened, and two were added: the log refusal is
+named, and the <code>--wait</code> refusal of a run whose log records no exit
+status is exercised end to end.</p>
+</article>
