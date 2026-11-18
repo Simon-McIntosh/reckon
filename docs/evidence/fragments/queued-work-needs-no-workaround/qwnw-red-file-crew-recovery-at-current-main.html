@@ -94,4 +94,11 @@
   run of the same file reads 86 passed, <code>EXIT=0</code>, as an
   <code>all_debug</code> batch job with <code>SLURM_JOB_ID</code> unset for the
   pytest step; both logs sit beside this fragment's run record.</p>
+
+  <p>The run's delivered head is one commit later than the revision the arms
+  measured, and that commit adds this fragment alone — 97 lines in one file,
+  no product or test source — because every later scheduler launch under this
+  worker failed before pytest started, the sandbox unable to bind its temp
+  directory. The code measured at <code>67d2d6890d</code> is the code at the
+  delivered head.</p>
 </section>
