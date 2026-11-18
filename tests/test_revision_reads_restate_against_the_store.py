@@ -446,3 +446,43 @@ def test_a_store_row_counts_as_landed_from_the_record_the_branch_committed(histo
         transcript_root=None,
     )
     assert cost["sessions"][0]["landed_nodes"] == 0
+
+
+def test_the_fallback_answers_the_project_of_a_row_whose_record_named_none(
+    history,
+):
+    """A promotion the graph names, whose record never entered the tree.
+
+    The store files a row under the project its caller passes to the append, so
+    the fallback that reads such a row back must take the project from the runs
+    column: a record a promotion writes names none of its own. The tree here
+    still carries its documents, which is what leaves the promoted run missing
+    from the records read and hands it to the fallback.
+    """
+    promoted = {
+        "run_id": "r-20260905T000000000000-uncommitted",
+        "member": "worker-a",
+        "node": "task",
+        "plan": "work",
+        "role": "worker",
+        "backend": "claude",
+        "dispatched_at": _iso(5),
+        "completed_at": _iso(5),
+        "wall_seconds": 60,
+        "gate": "passed",
+    }
+    with run_store.RunStore(history.store) as store:
+        store.append(PROJECT, promoted)
+    _commit(
+        history.repo,
+        f"promote({promoted['run_id']}): land the run",
+        5,
+        {"reckon/sample.py": "VALUE = 2\n"},
+    )
+
+    snapshot = history.capture(_iso(9))
+    rows = {row["run_id"]: row for row in snapshot["projects"][0]["runs"]}
+    assert rows, "the reading recovered no runs at all"
+    recovered = rows[promoted["run_id"]]
+    assert recovered["record_source"] == "sqlite_fallback_for_reachable_promotion"
+    assert recovered["project"] == PROJECT

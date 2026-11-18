@@ -172,7 +172,9 @@ def test_writes_keep_the_readers_plan_identity(tmp_path, identity):
     if selected:
         _assert_reference(
             run_store.stored_run_rows("project", path=path, plan=selected),
-            [{"project": "project", **row}],
+            # The project files the row in its column rather than adding a field
+            # to it, so the record answered is the one the writer passed.
+            [dict(row)],
         )
     assert run_store.stored_run_rows("project", path=path, plan="ignored") == []
 
@@ -246,9 +248,12 @@ def test_migration_indexes_derived_identity_in_hot_and_archive(tmp_path, monkeyp
                     "INSERT INTO run_details VALUES (?, ?)",
                     (row["run_id"], json.dumps(detail)),
                 )
-    expected = _reference(path)
+    # A store that owes its schema migration is refused at the read, so the
+    # open that performs the migration comes first; the reference is then the
+    # indexed answer the migrated store holds, which is what this case asks.
     with run_store.RunStore(path):
         pass
+    expected = _reference(path)
     _assert_reference(
         run_store.stored_run_rows("project", path=path, plan="selected"), expected
     )
