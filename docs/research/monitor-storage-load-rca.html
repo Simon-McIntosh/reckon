@@ -506,9 +506,14 @@
     <p>The figure is the shared sample size, not a smaller one of this node's choosing: the rewrite check
     reads the same opening <code>_backends.stream_head_fingerprint</code> records for the
     parsed-stream cache, so one sample governs both and a stream whose opening moved is caught by the
-    same bytes in either reader. That sample was 8&nbsp;KiB here; the population measurement below put a
-    cost on it and the constant (<code>_backends._STREAM_HEAD_SAMPLE</code>) is now 1&nbsp;KiB; the
-    figure this section reports was taken at 8&nbsp;KiB and is left as measured.</p>
+    same bytes in either reader. That sample was 8&nbsp;KiB here, and it is 8&nbsp;KiB again: the
+    population measurement below put a cost on reading it once per stream per tick, and the answer was
+    to stop reading it on the growth path rather than to shrink it. A cursor now also records a
+    512&nbsp;byte sample of the bytes immediately before its offset
+    (<code>_backends._STREAM_BOUNDARY_SAMPLE</code>), which is what a growth read verifies — an offset
+    is an index into a sequence and stays valid only while the bytes before it do. The sample the
+    opening digest covers is therefore no longer paid per tick, so its size is free to stay at the
+    base revision's.</p>
     <h3 id="station-read-live-window-after-the-cursor">The live window: the bound is still not met</h3>
     <p>Two windows, each of one station alone at <code>--interval 1</code> over the same 147 live pointers,
     measured with §2's instruments — <code>/proc/&lt;pid&gt;/io</code> <code>rchar</code> deltas over the
@@ -626,17 +631,26 @@
           <td>yes</td><td>yes</td></tr>
       </tbody>
     </table>
-    <p>The 1,524&nbsp;B per stream is the 500&nbsp;byte append plus the 1,024&nbsp;byte bound the rewrite
-    check reads to confirm the opening it recorded still holds. That sample is what the population pays
-    per stream per tick, which is why it is bounded at one record's opening rather than 8&nbsp;KiB, and
-    why a growth read carries the fingerprint it just verified instead of reading those bytes again.
+    <p>The 1,524&nbsp;B per stream is the 500&nbsp;byte append plus the two 512&nbsp;byte boundary
+    samples: one read before the resumed read to confirm the bytes the cursor consumed still end where
+    it recorded them, and one taken from the bytes just read to record the new offset. The 8&nbsp;KiB
+    opening sample is not re-read here — it is carried from the version it was taken at, which the
+    boundary has just certified — so what the population pays per stream per tick is the bytes it
+    gained plus a fixed 1&nbsp;KiB, not its opening.
     The instrument is a stand-in over <code>Path.open</code> that counts every byte the reader hands
     back, keyed by the resolved stream path; it is shown seeing the first pass's whole reads
     (83,957,120&nbsp;B and more) and, on the second pass, at least the 20,000 appended bytes, so a zero
     or a small figure cannot be an instrument that stopped counting.</p>
-    <p>The fixture is <code>tests/test_no_steady_reader_reads_a_whole_stream.py</code>. Its negative
-    control runs the same test against an extracted tree at <code>5b784ef</code>, where the second pass
-    reads 85,307,840&nbsp;B and the test fails. Its sibling control runs
+    <p>The fixture is <code>tests/test_no_steady_reader_reads_a_whole_stream.py</code>. Its parity arm
+    is independent of the path it checks: each tick's answer is compared to a whole
+    <code>_backends.observe_stream</code> read of the same records at the same elapsed time, and one of
+    the appended records reports tokens with no duration, so the rate it forces is the caller's clock's.
+    A fold that carries a rate rather than the inputs a rate is computed from answers <code>None</code>
+    there, which is how the repair's blocking defect was found: the reviewed head fails this arm with
+    <code>wall_tokens_per_second</code> <code>None</code> against the whole read's 0.0. Its negative
+    control runs the same file against an extracted tree at <code>5b784ef</code>, where the second pass
+    reads 85,307,840&nbsp;B and the test fails; a second control runs it against the reviewed head,
+    where both the parity arm and the in-place-rewrite arm fail. Its sibling control runs
     <code>tests/test_watch_stream_parse_is_cached.py</code> against a growth read that drops the first
     appended record; the test fails on both the watcher's single-append check and the concurrent
     reader's owed-record check. Both logs are in the run directory of
