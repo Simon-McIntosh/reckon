@@ -3003,6 +3003,60 @@ def sweep(
         "reviews": reviews,
         "swept_at": _utc_now(),
     }
+    # The request's own reading, taken on the same pass that makes the request.
+    # A delivered run whose review was never asked for is an obligation with the
+    # reason its record gives, and the interval between the delivery and the
+    # request is reported apart from the interval between the request and its
+    # launch, so a late request and a slow launch are told apart. Only the
+    # obligations ride the sweep's report: the intervals are the census's own
+    # reading, and a sweep that printed them on every tick would be reporting a
+    # distribution nobody asked it for.
+    review_requests: dict[str, Any] = {}
+    if not dry_run:
+        try:
+            from reckon.crew.recovery_review_dispatch import review_request_census
+
+            census = review_request_census(
+                [str(pointer.get("run_id") or "") for pointer in live],
+                pointers=live,
+            )
+            # Both readings travel on the report: a request that took four
+            # minutes is a fact about the fleet whether or not the run owes an
+            # obligation, and the returned report is where a reader of a sweep
+            # receives the census's own fields rather than a retelling of them.
+            review_requests = {
+                "obligations": census["obligations"],
+                "deadline_seconds": census["deadline_seconds"],
+                "late_requests": census["late_requests"],
+                "request_window_seconds": census["request_window_seconds"],
+            }
+        except Exception as exc:  # noqa: BLE001 - a reading must not fail a sweep
+            review_requests = {"error": str(exc)}
+    if review_requests.get("obligations") or review_requests.get("late_requests"):
+        report["review_requests"] = review_requests
+    if review_requests.get("obligations"):
+        # The obligation has to reach the row a coordinator reads, not only this
+        # pass's return value: the station keeps the review pass's owed rows per
+        # session and turns each into a duty, which is the one channel from a
+        # sweep to the pane and to the obligations view. The row says what the
+        # pass failed to do — request the review — and carries the run's own
+        # reason, so the duty names both.
+        owed = [
+            {
+                "run_id": str(obligation["run_id"]),
+                "error": (
+                    "the review pass requested no review for this delivered run "
+                    f"within {review_requests['deadline_seconds']} s: "
+                    f"{obligation['reason']}"
+                ),
+            }
+            for obligation in review_requests["obligations"]
+            if obligation.get("run_id")
+        ]
+        if owed:
+            block = reviews if isinstance(reviews, dict) else {}
+            block["failed"] = [*(block.get("failed") or ()), *owed]
+            report["reviews"] = block
     if any(
         plan_reviews.get(key)
         for key in ("composed", "skipped", "notes", "failed", "error")
