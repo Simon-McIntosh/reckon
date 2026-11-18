@@ -246,7 +246,10 @@ def _recent_drained(moment: datetime, window_seconds: float) -> list[dict[str, A
 
 
 def promotion_queue_report(
-    *, now: datetime | None = None, window_seconds: float = 3600.0
+    *,
+    now: datetime | None = None,
+    window_seconds: float = 3600.0,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """What the queue holds now and how fast it has drained recently.
 
@@ -261,7 +264,7 @@ def promotion_queue_report(
     waiting: list[dict[str, Any]] = []
     running = 0
     parked = 0
-    for request in _pending_requests(now=moment):
+    for request in _pending_requests(now=moment, pointers=pointers):
         phase = request.get("phase")
         if phase == REQUESTED:
             waiting.append(request)
@@ -655,33 +658,52 @@ def _reviewed_run_id(
 
 def _reviewed_request_runs(
     requests: Iterable[Mapping[str, Any]],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> Iterator[tuple[Mapping[str, Any], str]]:
-    """Resolve a pass lazily, sharing one listing across source-node reviews."""
+    """Resolve a pass lazily, sharing one listing across source-node reviews.
+
+    ``pointers`` is a reading the caller already holds, so a pass composed
+    inside a fleet read does not list the fleet again. A reading answers only
+    the projects it carries: a request naming a project it does not hold is
+    still resolved against a listing, because one project's scoped reading must
+    not narrow another project's review to the durable fallback.
+    """
     from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
     from reckon.crew.repair import round_node_source
 
-    pointers = None
+    held = None if pointers is None else list(pointers)
+    covered = {str(pointer.get("project") or "") for pointer in held or ()}
+    listed = None
     listing_failed = False
     for request in requests:
         source = round_node_source(str(request.get("node") or ""), REVIEW_NODE_PREFIX)
         needs_population = bool(source and not source.startswith("r-"))
-        if needs_population and pointers is None:
-            try:
-                pointers = runs.list_live()
-            except Exception:  # noqa: BLE001 — ordering must never stop the drain
-                pointers, listing_failed = [], True
+        population = held
+        if needs_population and (
+            population is None or str(request.get("project") or "") not in covered
+        ):
+            if listed is None:
+                try:
+                    listed = runs.list_live()
+                except Exception:  # noqa: BLE001 — ordering must never stop the drain
+                    listed, listing_failed = [], True
+            population = listed
         yield (
             request,
             (
                 ""
                 if needs_population and listing_failed
-                else _reviewed_run_id(request, pointers=pointers)
+                else _reviewed_run_id(request, pointers=population)
             ),
         )
 
 
 def _pending_requests(
-    *, now: datetime | None = None, window_seconds: float = 3600.0
+    *,
+    now: datetime | None = None,
+    window_seconds: float = 3600.0,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Reviews, aged requests and priorities precede fair session turns.
 
@@ -709,7 +731,7 @@ def _pending_requests(
     waiting = {str(request.get("run_id") or "") for request in pending}
     review_first = {
         str(request.get("run_id") or "")
-        for request, reviewed in _reviewed_request_runs(pending)
+        for request, reviewed in _reviewed_request_runs(pending, pointers=pointers)
         if reviewed in waiting
     }
     served = Counter(
