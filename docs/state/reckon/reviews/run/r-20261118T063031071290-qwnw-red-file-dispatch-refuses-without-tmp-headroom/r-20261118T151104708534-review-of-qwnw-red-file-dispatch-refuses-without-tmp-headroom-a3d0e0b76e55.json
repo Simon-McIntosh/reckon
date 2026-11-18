@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own armed arms on disk: logs/suite-base-arm.log at 94359be6ce0d3f31fd31f0ac4d4b7437f2835832 reads '58 passed in 36.24s' EXIT=0 and logs/suite-head-arm.log at 3bb6847427baa0d3d48fb19d3a6512602ea7351b reads '58 passed in 35.82s' EXIT=0, so the set difference of failure ids is empty (0).",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1748",
+    "reckon/crew_dispatch_commands.py:2330",
+    "reckon/crew/dispatch_plan.py:604",
+    "reckon/crew/dispatch_launch.py:925"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T20:42:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-refuses-without-tmp-headroom.html",
+      "line": "32",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Measured table names no log path for any of its three rows, so a reader holding the fragment alone cannot open the log a row's result came from, and the third row ran in a landing-replay tree rather than either tree the other rows name without saying so, which leaves that arm's tree unrecoverable from the artefact the plan reads."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 94359be6, 3bb68474 adds the \"--section\" and \"s1\" arguments to one invocation at tests/test_dispatch_refuses_without_tmp_headroom.py:87-88 and changes no assertion, and a3d0e0b7 adds the 64-line evidence fragment, with no product module in either.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, one cause with a product-or-test verdict, an arm pair carrying full 40-character revisions, a base negative control naming its failing ids and clean ruff; the manifest records each clause, logs/head-run.log and logs/base-run.log carry the two arms, sacct shows jobs 1326800 and 1326803 COMPLETED on all_debug, both arm records carry 40-character shas, and ruff check plus ruff format --check on the head blob reproduce the claimed result.",
+    "goal": "dispatch-detail.json records the node goal as \"Make tests/test_dispatch_refuses_without_tmp_headroom.py pass in full on the primary branch\", and logs/head-run.log at 3bb68474 records \"3 passed in 0.75s\" EXIT=0 over that file, so the deliverable is met by the two added arguments at tests/test_dispatch_refuses_without_tmp_headroom.py:87-88.",
+    "manifest": "read; it reports status complete, head \"3 passed EXIT=0\" at 3bb6847427baa0d3d48fb19d3a6512602ea7351b against base \"1 failed, 2 passed\" EXIT=1 at 94359be6ce0d3f31fd31f0ac4d4b7437f2835832, and every log it cites that I opened carries the revision, command and EXIT line it claims.",
+    "write_paths": "the dispatch declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the delivered diff touches only tests/test_dispatch_refuses_without_tmp_headroom.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-refuses-without-tmp-headroom.html, both inside them."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, and the assertions it rests on are demonstrably failable \u2014 reinstating the whole-plan invocation at tests/test_dispatch_refuses_without_tmp_headroom.py:87 reddens line 100 with \"assert 2 == 75\" as logs/base-run.log shows, and dropping the exit-75 answer at reckon/crew_dispatch_commands.py:2330 would redden that same line.",
+    "evidence": "logs/base-run.log records \"1 failed, 2 passed\" with \"assert 2 == 75\" and logs/head-run.log \"3 passed\" EXIT=0 at full revisions, both confirmed as all_debug jobs 1326800 and 1326803 by sacct, though the ruff clause at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-refuses-without-tmp-headroom.html:58 is prose with no log.",
+    "fit": "the two added arguments at tests/test_dispatch_refuses_without_tmp_headroom.py:87-88 use exactly the invocation form the CLI's own gate at reckon/crew_dispatch_commands.py:1751 names and introduce no new name.",
+    "goal_fidelity": "logs/head-run.log records \"3 passed in 0.75s\" EXIT=0 over tests/test_dispatch_refuses_without_tmp_headroom.py at 3bb68474, so the file the goal names passes in full and only its merge to the primary branch is outstanding.",
+    "reuse": "the diff defines no function, class or module, and a search over reckon/ for the scratch-headroom capability found one owner at reckon/crew/dispatch_launch.py:925 with callers at reckon/crew/dispatch_plan.py:604 and reckon/crew_dispatch_commands.py:2330, which the change does not duplicate.",
+    "scope_discipline": "git diff --stat 94359be6..a3d0e0b7 lists exactly tests/test_dispatch_refuses_without_tmp_headroom.py and the evidence fragment, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json records the node goal as \"Make tests/test_dispatch_refuses_without_tmp_headroom.py pass in full on the primary branch\", and logs/head-run.log at 3bb68474 records \"3 passed in 0.75s\" EXIT=0 over that file, so the deliverable is met by the two added arguments at tests/test_dispatch_refuses_without_tmp_headroom.py:87-88.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, one cause with a product-or-test verdict, an arm pair carrying full 40-character revisions, a base negative control naming its failing ids and clean ruff; the manifest records each clause, logs/head-run.log and logs/base-run.log carry the two arms, sacct shows jobs 1326800 and 1326803 COMPLETED on all_debug, both arm records carry 40-character shas, and ruff check plus ruff format --check on the head blob reproduce the claimed result.\nVERDICT write_paths: the dispatch declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the delivered diff touches only tests/test_dispatch_refuses_without_tmp_headroom.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-refuses-without-tmp-headroom.html, both inside them.\nVERDICT manifest: read; it reports status complete, head \"3 passed EXIT=0\" at 3bb6847427baa0d3d48fb19d3a6512602ea7351b against base \"1 failed, 2 passed\" EXIT=1 at 94359be6ce0d3f31fd31f0ac4d4b7437f2835832, and every log it cites that I opened carries the revision, command and EXIT line it claims.\nVERDICT diff: read both commits against base 94359be6, 3bb68474 adds the \"--section\" and \"s1\" arguments to one invocation at tests/test_dispatch_refuses_without_tmp_headroom.py:87-88 and changes no assertion, and a3d0e0b7 adds the 64-line evidence fragment, with no product module in either.\nCALL_SITES: reckon/crew_dispatch_commands.py:1748, reckon/crew_dispatch_commands.py:2330, reckon/crew/dispatch_plan.py:604, reckon/crew/dispatch_launch.py:925\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: logs/head-run.log records \"3 passed in 0.75s\" EXIT=0 over tests/test_dispatch_refuses_without_tmp_headroom.py at 3bb68474, so the file the goal names passes in full and only its merge to the primary branch is outstanding.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-run.log records \"1 failed, 2 passed\" with \"assert 2 == 75\" and logs/head-run.log \"3 passed\" EXIT=0 at full revisions, both confirmed as all_debug jobs 1326800 and 1326803 by sacct, though the ruff clause at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-refuses-without-tmp-headroom.html:58 is prose with no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 94359be6..a3d0e0b7 lists exactly tests/test_dispatch_refuses_without_tmp_headroom.py and the evidence fragment, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the diff adds no assertion, and the assertions it rests on are demonstrably failable \u2014 reinstating the whole-plan invocation at tests/test_dispatch_refuses_without_tmp_headroom.py:87 reddens line 100 with \"assert 2 == 75\" as logs/base-run.log shows, and dropping the exit-75 answer at reckon/crew_dispatch_commands.py:2330 would redden that same line.\nSCORE fit: 20\nJUSTIFICATION fit: the two added arguments at tests/test_dispatch_refuses_without_tmp_headroom.py:87-88 use exactly the invocation form the CLI's own gate at reckon/crew_dispatch_commands.py:1751 names and introduce no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff defines no function, class or module, and a search over reckon/ for the scratch-headroom capability found one owner at reckon/crew/dispatch_launch.py:925 with callers at reckon/crew/dispatch_plan.py:604 and reckon/crew_dispatch_commands.py:2330, which the change does not duplicate.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-refuses-without-tmp-headroom.html:32 non-blocking: the Measured table names no log path for any of its three rows, so a reader holding the fragment alone cannot open the log a row's result came from, and the third row ran in a landing-replay tree rather than either tree the other rows name without saying so, which leaves that arm's tree unrecoverable from the artefact the plan reads.",
+  "review_node": "review-of-qwnw-red-file-dispatch-refuses-without-tmp-headroom-a3d0e0b76e55",
+  "review_run_id": "r-20261118T151104708534-review-of-qwnw-red-file-dispatch-refuses-without-tmp-headroom-a3d0e0b76e55",
+  "reviewed_base_sha": "94359be6ce0d3f31fd31f0ac4d4b7437f2835832",
+  "reviewed_head_sha": "a3d0e0b76e558e5575cdfe115b3650b5d3316a58",
+  "reviewed_run_id": "r-20261118T063031071290-qwnw-red-file-dispatch-refuses-without-tmp-headroom",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T21:17:32.706094+00:00",
+  "total": 116
+}
