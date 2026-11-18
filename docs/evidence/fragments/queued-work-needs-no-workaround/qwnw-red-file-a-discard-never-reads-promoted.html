@@ -1,0 +1,20 @@
+<section id="qwnw-red-file-a-discard-never-reads-promoted-base-and-head">
+<h2>A recorded promotion reads promoted only once its head is landed</h2>
+<p>Base revision <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code> ran the file as a job on all_debug over an extraction of that revision: one failure, <code>test_a_recorded_promotion_reads_promoted</code>, <code>EXIT=1</code>. Head revision <code>0b6e221a9362b625be11c3d250af9340263e4889</code> ran the same file through the scoped gate on all_debug: <code>4 passed</code>, <code>EXIT=0</code>.</p>
+<p><strong>Cause and verdict: test wrong.</strong> The case wrote a ledger row naming no checkout (<code>{"run_id": …, "commits": ["HEAD"]}</code>), so no primary branch could be asked whether the delivered head had reached it. The departure word reads such a row as delivered (<code>complete</code>) rather than promoted, failing closed by design — the rule <code>tests/test_crew_discard_reads_discarded.py</code> already pins, that a row whose head no branch carries is a landing still owed. The case predates that rule and asserted the older one, that the case's row alone settles the run as promoted. The repair promotes the fixture into a real checkout whose primary branch carries the head. The assertion is unchanged, and so is the bar for reading a departure promoted rather than withdrawn or discarded.</p>
+<pre># base arm — revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
+# host: 98dci4-clu-3142.iter.org
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044631088399-qwnw-red-file-a-discard-never-reads-promoted/base-arm/tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_discard_never_reads_promoted.py
+.F..                                                                      [100%]
+FAILED tests/test_a_discard_never_reads_promoted.py::test_a_recorded_promotion_reads_promoted - AssertionError: assert 'complete' == 'promoted'
+1 failed, 3 passed in 1.34s
+EXIT=1</pre>
+<pre># head arm — revision: 0b6e221a9362b625be11c3d250af9340263e4889
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-daf305c7501a-mPK6hZ/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_discard_never_reads_promoted.py'
+....                                                                      [100%]
+4 passed in 0.77s
+EXIT=0</pre>
+</section>
