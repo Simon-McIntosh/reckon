@@ -44,12 +44,12 @@ EXIT=1
 <h4 id="qwnw-red-file-a-spent-global-lift-head-gate">Head gate: an all_debug job with SLURM_JOB_ID stripped</h4>
 <p>The gate harness passes the scheduler variable through: a probe inside it read <code>SLURM_JOB_ID=[1325825]</code>. The gate therefore strips it, and a second probe under the same prefix read the variable as unset. The log below is the run at the delivered head.</p>
 <pre>
-# revision: 2072bb49fec38648837f203e621f84f5a19c03fa
+# revision: 9e47ddce84727c3115afab42798b35b9f67fd17f
 # host: 98dci4-clu-3141.iter.org
-# tree: /tmp/mcintos-landing-25f06890103c-cG6mPF/tree
+# tree: /tmp/mcintos-landing-1eedb0f4c8df-InSMHq/tree
 # command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py'
 ....                                                                     [100%]
-4 passed in 1.31s
+4 passed in 1.38s
 EXIT=0
 </pre>
 
@@ -59,7 +59,7 @@ EXIT=0
 <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
 <tbody>
 <tr><td>baseline</td><td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td><td>58 passed in 42.27s, exit 0</td></tr>
-<tr><td>after</td><td><code>2072bb49fec38648837f203e621f84f5a19c03fa</code></td><td>58 passed in 40.79s, exit 0</td></tr>
+<tr><td>after</td><td><code>9e47ddce84727c3115afab42798b35b9f67fd17f</code></td><td>58 passed in 43.77s, exit 0</td></tr>
 </tbody>
 </table>
 </section>
