@@ -91,7 +91,7 @@ if TYPE_CHECKING:
     from reckon import served_code
 
 from reckon import service
-from reckon._store import write_json_atomically
+from reckon._store import _fsync_directory, write_json_atomically
 from reckon.crew import follower_reload, oom_priority
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
@@ -554,6 +554,8 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
         )
     if scratch.get("live_entries_complete") is False:
         scratch_detail += "; live-run scratch census incomplete"
+    if scratch.get("entries_complete") is False:
+        scratch_detail += "; crew scratch census incomplete"
     return {
         "kind": "node-disk-reserve",
         "run_id": "",
@@ -570,41 +572,102 @@ def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
 
 
 def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[str, Any]:
-    """Sweep on the node sampler's clock and durably record each removal.
+    """Durably journal removal intents and reconcile interrupted operations.
 
-    Reuse GC's ownership and process checks; an incomplete activity census is
-    withheld. The independent disk sample still publishes when a sweep fails.
+    A pending receipt survives even a partial audit-log write. Deletion starts
+    only after both that receipt and the intent log row are flushed to disk;
+    completion retires the pending receipt only after its log row is durable.
     """
     from reckon import flight
+    from reckon.crew.dispatch_launch import worker_scratch_root
     from reckon.crew.gc import garbage_collect_orphan_scratch
     from reckon.crew.node import CrewError
 
     grace = flight.resolve().config["session_scratch"]["orphan_grace_seconds"]
+    directory = state_directory(environ)
+    path = directory / "scratch-removals.jsonl"
+    pending = directory / "scratch-removal-intents" / _short_hostname()
+    reconciled: list[dict[str, Any]] = []
 
-    def record(entry: dict[str, Any]) -> None:
-        row = {"utc": datetime.now(UTC).isoformat(), **entry}
-        stream.write(json.dumps(row, sort_keys=True) + "\n")
+    def append(row: dict[str, Any]) -> None:
+        # Separate an interrupted partial write from the next complete row.
+        stream.seek(0, os.SEEK_END)
+        size = stream.tell()
+        prefix = b""
+        if size:
+            stream.seek(-1, os.SEEK_END)
+            if stream.read(1) != b"\n":
+                prefix = b"\n"
+        payload = prefix + (json.dumps(row, sort_keys=True) + "\n").encode()
+        if stream.write(payload) != len(payload):
+            raise OSError("short scratch audit write")
         stream.flush()
         os.fsync(stream.fileno())
+        _fsync_directory(directory)
+
+    def record(entry: dict[str, Any]) -> None:
+        identity = str(entry.get("removal_id") or "")
+        if re.fullmatch(r"[a-f0-9]{32}", identity) is None:
+            raise ValueError("scratch removal intent has no valid identity")
+        receipt = pending / f"{identity}.json"
+        row = {**entry, "utc": datetime.now(UTC).isoformat(), "node": _short_hostname()}
+        if row["state"] == "intent":
+            write_json_atomically(receipt, row, fsync_directory=True)
+        append(row)
+        if row["state"] != "intent":
+            receipt.unlink()
+            _fsync_directory(pending)
         log(
-            f"reclaimed crew scratch: {json.dumps(row, sort_keys=True)}",
+            f"crew scratch removal {row['state']}: {json.dumps(row, sort_keys=True)}",
             file=sys.stderr,
         )
 
+    def read_intent(receipt: Path) -> dict[str, Any]:
+        if receipt.is_symlink():
+            raise ValueError("scratch removal intent is a symlink")
+        row = json.loads(receipt.read_text())
+        required = {"path", "bytes", "ctime_age_seconds", "reason", "removal_id"}
+        if not isinstance(row, dict) or not required <= row.keys():
+            raise ValueError("scratch removal intent is unreadable")
+        if row["removal_id"] != receipt.stem:
+            raise ValueError("scratch removal intent identity differs from its file")
+        if Path(row["path"]).parent != worker_scratch_root().absolute():
+            raise ValueError("scratch removal intent belongs to another root")
+        return row
+
     try:
-        path = state_directory(environ) / "scratch-removals.jsonl"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # Refuse removal before touching a tree if its audit sink cannot open.
-        with path.open("a") as stream:
-            return garbage_collect_orphan_scratch(
+        pending.mkdir(parents=True, exist_ok=True)
+        _fsync_directory(pending.parent)
+        _fsync_directory(directory)
+        with path.open("a+b") as stream:
+            for number, receipt in enumerate(pending.glob("*.json")):
+                if number >= 32:
+                    break
+                row = read_intent(receipt)
+                target = Path(row["path"])
+                exists = target.exists() or target.is_symlink()
+                row.update(
+                    state="interrupted" if exists else "complete",
+                    removed=not exists,
+                    reconciled=True,
+                    outcome="path still present; retained"
+                    if exists
+                    else "path absent after interrupted removal",
+                )
+                record(row)
+                reconciled.append(row)
+            report = garbage_collect_orphan_scratch(
                 apply=True,
                 grace_seconds=grace,
                 inspect_activity=True,
                 record_removal=record,
+                cursor_path=directory / f"scratch-sweep-{_short_hostname()}.json",
             )
+            report["reconciled_removals"] = reconciled
+            return report
     except (OSError, ValueError, RuntimeError, CrewError) as exc:
         log(f"crew scratch sweep unavailable: {exc}", file=sys.stderr)
-        return {"error": str(exc)}
+        return {"error": str(exc), "reconciled_removals": reconciled}
 
 
 def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:

@@ -98,13 +98,21 @@ def test_pass_removes_only_two_old_unowned_entries_and_records_each(scratch):
             .splitlines()
         ]
         assert {row["path"] for row in rows} == {str(orphan), str(ended)}
-        assert sum(row["bytes"] for row in rows) == len(orphan.name) + len(ended.name)
+        assert sum(row["bytes"] for row in rows if row["state"] == "complete") == len(
+            orphan.name
+        ) + len(ended.name)
+        assert [row["state"] for row in rows] == [
+            "intent",
+            "complete",
+            "intent",
+            "complete",
+        ]
         assert all(row["ctime_age_seconds"] >= 7200 and row["utc"] for row in rows)
         assert all("no live run or process" in row["reason"] for row in rows)
         assert supervisor.reclaim_unowned_scratch()["removed"] == []
         assert (
             len((scratch.state / "scratch-removals.jsonl").read_text().splitlines())
-            == 2
+            == 4
         )
     finally:
         holder.communicate(timeout=5)
@@ -304,3 +312,208 @@ def test_disk_pressure_names_stale_entries_retained_for_a_live_runs_owner(
         assert len(capsys.readouterr().out.split()) == 4
     finally:
         holder.communicate(timeout=5)
+
+
+@pytest.mark.parametrize("failure", ["write", "flush", "fsync"])
+def test_open_audit_sink_that_refuses_write_preserves_the_tree(
+    scratch, monkeypatch, failure
+):
+    path = entry(scratch, "landing-needs-durable-intent")
+    before = contents(path)
+    original_open = Path.open
+    original_fsync = os.fsync
+    opened = []
+    audit_fds = set()
+
+    class RefusedWrite:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return self.stream.__exit__(*args)
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+        def write(self, data):
+            if failure == "write":
+                raise OSError("decoy audit write refused after successful open")
+            return self.stream.write(data)
+
+        def flush(self):
+            if failure == "flush":
+                raise OSError("decoy audit flush refused after successful open")
+            return self.stream.flush()
+
+    def open_sink(candidate, mode="r", *args, **kwargs):
+        stream = original_open(candidate, mode, *args, **kwargs)
+        if candidate.name == "scratch-removals.jsonl" and "a" in mode:
+            opened.append(candidate)
+            audit_fds.add(stream.fileno())
+            return RefusedWrite(stream)
+        return stream
+
+    def fsync(descriptor):
+        if failure == "fsync" and descriptor in audit_fds:
+            raise OSError("decoy audit fsync refused after successful open")
+        return original_fsync(descriptor)
+
+    monkeypatch.setattr(Path, "open", open_sink)
+    monkeypatch.setattr(supervisor.os, "fsync", fsync)
+    report = supervisor.reclaim_unowned_scratch()
+    assert opened
+    assert f"{failure} refused" in report["error"]
+    assert path.exists(), "a successful open must not license unaudited deletion"
+    assert contents(path) == before
+
+
+def test_slow_first_tree_cannot_starve_a_small_eligible_tree(scratch, monkeypatch):
+    slow = entry(scratch, "a-slow-tree")
+    small = entry(scratch, "z-small-tree")
+    clock = [0.0]
+    original_activity = gc._scratch_activity
+    monkeypatch.setattr(gc.time, "monotonic", lambda: clock[0])
+
+    def activity(path, deadline):
+        if path == slow:
+            clock[0] += 6
+            raise TimeoutError("decoy slow tree exhausted its walk budget")
+        return original_activity(path, deadline)
+
+    monkeypatch.setattr(gc, "_scratch_activity", activity)
+    reports = [supervisor.reclaim_unowned_scratch() for _ in range(2)]
+    assert slow.exists()
+    assert not small.exists(), "a slow first tree must not starve later eligible work"
+    assert any(str(small) in report["removed"] for report in reports)
+
+
+def test_final_activity_walk_receives_a_fresh_candidate_budget(scratch, monkeypatch):
+    path = entry(scratch, "landing-slow-readable")
+    clock = [0.0]
+    deadlines = []
+    original_activity = gc._scratch_activity
+    monkeypatch.setattr(gc.time, "monotonic", lambda: clock[0])
+
+    def activity(candidate, deadline):
+        deadlines.append(deadline)
+        clock[0] += 4
+        return original_activity(candidate, deadline)
+
+    monkeypatch.setattr(gc, "_scratch_activity", activity)
+    report = supervisor.reclaim_unowned_scratch()
+    assert report["removed"] == [str(path)]
+    assert deadlines[1] > deadlines[0]
+
+
+def test_intent_is_durable_before_the_tree_is_removed(scratch, monkeypatch):
+    path = entry(scratch, "landing-durable-record")
+    original_remove = gc.shutil.rmtree
+    original_fsync = os.fsync
+    synced = []
+
+    def fsync(descriptor):
+        synced.append(os.readlink(f"/proc/self/fd/{descriptor}"))
+        return original_fsync(descriptor)
+
+    def remove(target, *args, **kwargs):
+        if Path(target) == path:
+            log = scratch.state / "scratch-removals.jsonl"
+            row = json.loads(log.read_text().splitlines()[-1])
+            assert row["state"] == "intent" and not row["removed"]
+            assert row["path"] == str(path)
+            assert row["bytes"] == len(path.name)
+            assert row["ctime_age_seconds"] >= 7200 and row["reason"]
+            assert str(log) in synced
+            receipts = list((scratch.state / "scratch-removal-intents").rglob("*.json"))
+            assert len(receipts) == 1
+            assert (
+                json.loads(receipts[0].read_text())["removal_id"] == row["removal_id"]
+            )
+        return original_remove(target, *args, **kwargs)
+
+    monkeypatch.setattr(supervisor.os, "fsync", fsync)
+    monkeypatch.setattr(gc.shutil, "rmtree", remove)
+    report = supervisor.reclaim_unowned_scratch()
+    assert report["removed"] == [str(path)]
+    rows = [
+        json.loads(line)
+        for line in (scratch.state / "scratch-removals.jsonl").read_text().splitlines()
+    ]
+    assert [row["state"] for row in rows] == ["intent", "complete"]
+    assert not list((scratch.state / "scratch-removal-intents").rglob("*.json"))
+
+
+def test_failed_completion_is_reconciled_from_the_durable_intent(scratch, monkeypatch):
+    path = entry(scratch, "landing-needs-reconciliation")
+    original_open = Path.open
+    writes = [0]
+
+    class RefusedCompletion:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return self.stream.__exit__(*args)
+
+        def __getattr__(self, name):
+            return getattr(self.stream, name)
+
+        def write(self, data):
+            writes[0] += 1
+            if writes[0] == 2:
+                raise OSError("decoy completion write refused")
+            return self.stream.write(data)
+
+    def open_sink(candidate, mode="r", *args, **kwargs):
+        stream = original_open(candidate, mode, *args, **kwargs)
+        if candidate.name == "scratch-removals.jsonl" and "a" in mode:
+            return RefusedCompletion(stream)
+        return stream
+
+    monkeypatch.setattr(Path, "open", open_sink)
+    report = supervisor.reclaim_unowned_scratch()
+    assert "completion write refused" in report["error"]
+    assert not path.exists()
+    pending = list((scratch.state / "scratch-removal-intents").rglob("*.json"))
+    assert len(pending) == 1
+    intent = json.loads(pending[0].read_text())
+    assert intent["path"] == str(path) and intent["state"] == "intent"
+    assert intent["bytes"] == len(path.name) and intent["reason"]
+    monkeypatch.setattr(Path, "open", original_open)
+    recovered = supervisor.reclaim_unowned_scratch()
+    assert len(recovered["reconciled_removals"]) == 1
+    row = recovered["reconciled_removals"][0]
+    assert row["removed"] and row["state"] == "complete"
+    assert row["removal_id"] == intent["removal_id"]
+    assert not list((scratch.state / "scratch-removal-intents").rglob("*.json"))
+
+
+def test_pointer_appearing_during_intent_publication_prevents_deletion(
+    scratch, monkeypatch
+):
+    path = entry(scratch, "landing-reclaimed-by-live-run")
+    original_fsync = os.fsync
+
+    def fsync(descriptor):
+        target = os.readlink(f"/proc/self/fd/{descriptor}")
+        result = original_fsync(descriptor)
+        if target.endswith("scratch-removals.jsonl"):
+            pointer(scratch, path.name)
+        return result
+
+    monkeypatch.setattr(supervisor.os, "fsync", fsync)
+    report = supervisor.reclaim_unowned_scratch()
+    assert path.exists()
+    assert report["removed"] == []
+    rows = [
+        json.loads(line)
+        for line in (scratch.state / "scratch-removals.jsonl").read_text().splitlines()
+    ]
+    assert [row["state"] for row in rows] == ["intent", "retained"]
+    assert "live pointer" in rows[-1]["withheld"]
