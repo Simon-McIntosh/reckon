@@ -1,0 +1,69 @@
+<section id="qwnw-red-file-promotion-checks-read-only-what-moved-landing">
+  <h2>The working-tree-read instrument reads a revision range as two commits</h2>
+
+  <p><strong>What was red.</strong> At the base revision
+  <code>3d6255122828c0e4a4ef5a2dfb093668da7eb02b</code> the module
+  <code>tests/test_promotion_checks_read_only_what_moved.py</code> was red with
+  one id:
+  <code>test_a_full_promotion_reads_no_unbounded_working_tree</code>. The
+  promotion's own range read —
+  <code>git diff --numstat --no-renames &lt;base&gt;..&lt;head&gt;</code> from
+  <code>reckon/crew/recovery_review_subject.py</code> — was charged as an
+  unbounded working-tree read.</p>
+
+  <p><strong>Cause and verdict: the test was wrong.</strong> The instrument
+  counted revision <em>tokens</em> rather than the commits they name, so
+  <code>A..B</code> read as a single revision and fell to the
+  <code>len(revisions) &lt; 2</code> branch that means "diffs the working tree
+  against a commit". A two-endpoint range compares two tree objects and touches
+  no working tree at all — the distinction the helper's own docstring states.
+  The product rule was right and is untouched; the test now asserts the rule the
+  code keeps. No assertion was deleted or weakened: a single-revision diff, a
+  bare <code>status</code>, an unbounded <code>ls-tree</code>/<code>ls-files</code>
+  and a diff with no revision still count as unbounded reads.</p>
+
+  <p><strong>The change.</strong> Each revision token is split on
+  <code>..</code> and its non-empty endpoints summed, so <code>A..B</code> and
+  <code>A...B</code> contribute two; revision collection stops at a
+  <code>--</code> bound, so a path named after it cannot be mistaken for a
+  revision. One file changed, <code>tests/test_promotion_checks_read_only_what_moved.py</code>,
+  no product source.</p>
+
+  <h3 id="qwnw-red-file-promotion-checks-read-only-what-moved-arms">Arms</h3>
+
+  <table id="qwnw-red-file-promotion-checks-read-only-what-moved-arms-table">
+    <thead>
+      <tr><th>arm</th><th>exit</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base <code>3d6255122828</code>, <code>all_debug</code> job</td>
+        <td><code>EXIT=1</code></td>
+        <td>1 failed, 3 passed — <code>test_a_full_promotion_reads_no_unbounded_working_tree</code></td>
+      </tr>
+      <tr>
+        <td>head <code>c5d9c88a43ab</code>, <code>all_debug</code> job</td>
+        <td><code>EXIT=0</code></td>
+        <td>4 passed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-promotion-checks-read-only-what-moved-control">Negative control</h3>
+
+  <p>The base run is the same command over the same file, extracted at
+  <code>3d6255122828</code> with <code>git archive</code> into a scratch tree and
+  run with the root interpreter, and it fails on the id the head run passes:</p>
+
+  <pre><code># revision: 3d6255122828c0e4a4ef5a2dfb093668da7eb02b
+# command: PYTHONPATH=&lt;scratch&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_promotion_checks_read_only_what_moved.py
+FAILED tests/test_promotion_checks_read_only_what_moved.py::test_a_full_promotion_reads_no_unbounded_working_tree
+1 failed, 3 passed in 13.46s
+EXIT=1</code></pre>
+
+  <p>Its failing argv names the range the instrument misread:
+  <code>git diff --numstat --no-renames 9a6a97bd…..9a6a97bd….</code> The head run
+  of the same file collected four tests and printed <code>4 passed</code> with
+  <code>EXIT=0</code>, in a job on <code>all_debug</code> with its log on shared
+  storage.</p>
+</section>
