@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-gate-halts-only-on-substance#s9&quot;]}">
 </head>
@@ -105,6 +105,15 @@
 </section>
 
 <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s10" data-id="c-20261118T032322721651" data-who="reckon-96" data-when="2026-11-18">
+    <div class="r-comment-body"><p>Two smaller findings from §9's review are out of §10's scope. The case near line 303 of <code>tests/test_a_waived_review_lands_a_waived_run.py</code> accepts any non-zero exit where it could name the refusal it expects. The <code>suite_delta_waiver</code> parameter of the review predicate has no production caller and stays as a test seam. Neither changes what a reviewer or a landing can do.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261118T043327098226-review-of-a-waived-review-is-reachable-27776268f3aa" data-who="reckon-build" data-when="2026-11-18T04:34:57.010Z">
+    <div class="r-comment-body"><p>The review of r-20261118T032634298279-a-waived-review-is-reachable at base fcbaea0087d81a41f552d2e8cda3eb77ba4584d2 -&gt; head 27776268f3aa6f3595b25561751d0212121d947f is stored as a parsed record scoring goal_fidelity 20, evidence 20, scope_discipline 19, durability 16, fit 18, reuse 20 (total 113) with added_failure_count 0 and added_failure_ids [] derived from the run's own baseline_suite (0 failed) and after_suite (0 failed) arms, and two non-blocking findings at reckon/crew/recovery_review_subject.py:1528 (the dispatch waived clause is unasserted) and :1528 (the clause is not gated on the figure rubric its own brief block is).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261118T032634298279-a-waived-review-is-reachable" data-who="reckon-build" data-when="2026-11-18T03:40:20.267Z">
+    <div class="r-comment-body"><p>The review brief and the review dispatch condition now name the waived added-failure form with its reason field exactly for a run whose record holds a suite-delta waiver, and the committed-row fallback reads a waiver under either spelling, so a matched pair landed clean-with-reason authorises a waived count once the pointer is gone; measure tests/test_a_waived_review_is_reachable.py, 3 passed at head against 2 failed / 1 passed at base.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261108T022523786266-review-of-negative-control-from-runner-record-0da707fa244a" data-who="reckon-build" data-when="2026-11-08T02:49:02.753Z">
     <div class="r-comment-body"><p>Independent review of r-20261108T012541385234-negative-control-from-runner-record at base 7f41f27119b349046e1591f412cbf60de2bb5036 -&gt; head 0da707fa244a78bc2387bc86c708ef8c5209ccd7: a parsed record scoring all six dimensions (goal_fidelity 17, evidence 15, scope_discipline 12, durability 16, fit 18, reuse 18), added_failure_count 0 with added_failure_ids [], and four non-blocking findings — the inert `_RUNNER_FAILURE_SUMMARY` branch at promotion_evidence.py:1082, an after_suite/baseline_suite arm pair that measures two different populations, three changed paths outside the dispatch fence, and one assertion at test line 139 that survives the regression it sits beside. No blocking findings.</p></div>
 </div>
@@ -224,12 +233,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261117T234307925423-a-waived-review-lands-a-waived-run" data-who="reckon-build" data-when="2026-11-17T23:44:55Z">
     <div class="r-comment-body"><p>A review now files added_failure_count as the literal "waived" with an empty id list and a written added_failure_waiver, and that form is accepted only against a run carrying the suite-delta waiver `crew complete --waive-suite-delta` records on it (a null count is still refused, an integer count files and lands unchanged), with the landed row keeping the review's waived count and reason beside the run's waiver reason; tests/test_a_waived_review_lands_a_waived_run.py passes 4 of 4 at head against 1 of 4 at base, where case (a) is refused with "missing or invalid added_failure_count".</p></div>
-</div>
-<div class="r-comment" data-section="s10" data-id="c-20261118T032322721651" data-who="reckon-96" data-when="2026-11-18">
-    <div class="r-comment-body"><p>Two smaller findings from §9's review are out of §10's scope. The case near line 303 of <code>tests/test_a_waived_review_lands_a_waived_run.py</code> accepts any non-zero exit where it could name the refusal it expects. The <code>suite_delta_waiver</code> parameter of the review predicate has no production caller and stays as a test seam. Neither changes what a reviewer or a landing can do.</p></div>
-</div>
-<div class="r-comment" data-section="s10" data-id="c-run-r-20261118T043327098226-review-of-a-waived-review-is-reachable-27776268f3aa" data-who="reckon-build" data-when="2026-11-18T04:34:57.010Z">
-    <div class="r-comment-body"><p>The review of r-20261118T032634298279-a-waived-review-is-reachable at base fcbaea0087d81a41f552d2e8cda3eb77ba4584d2 -&gt; head 27776268f3aa6f3595b25561751d0212121d947f is stored as a parsed record scoring goal_fidelity 20, evidence 20, scope_discipline 19, durability 16, fit 18, reuse 20 (total 113) with added_failure_count 0 and added_failure_ids [] derived from the run&#x27;s own baseline_suite (0 failed) and after_suite (0 failed) arms, and two non-blocking findings at reckon/crew/recovery_review_subject.py:1528 (the dispatch waived clause is unasserted) and :1528 (the clause is not gated on the figure rubric its own brief block is).</p></div>
 </div>
 </section>
 </main>
