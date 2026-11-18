@@ -801,16 +801,67 @@ def _canonical_identity_is_unique(
     return True
 
 
-def _identity_listing(
-    directory: Path, docs_dir: Path, project: str
-) -> tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]:
+#: One directory's HTML entries, each with the stamp that identifies it.
+_Listing = tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]
+#: A directory's own stat identity, whose modification stamp moves exactly when
+#: an entry is added to, removed from or renamed inside it.
+_DirectoryStamp = tuple[int, int, int, int, int]
+
+#: Listings held between resolves. Resolving a slug revalidates a held identity
+#: index against its directory's listing, and the listing — one glob and one
+#: stat per sibling — was rebuilt on every resolve although the directory had
+#: not moved. The entry is keyed on the directory's own stamp, so a directory
+#: whose entry set changed is listed again and an unchanged one costs one
+#: ``stat`` instead of a glob and a stat per sibling. The key matches
+#: ``_INDEX_MEMO``'s, so both memos describe the same directory.
+_LISTING_MEMO: dict[tuple[str, str, str], tuple[_DirectoryStamp, _Listing]] = {}
+
+
+def _directory_stamp(directory: Path) -> _DirectoryStamp | None:
+    """Return the stamp that moves when ``directory``'s entry set changes."""
+    try:
+        status = os.stat(directory)
+    except OSError:
+        return None
+    return (
+        status.st_dev,
+        status.st_ino,
+        status.st_mtime_ns,
+        status.st_ctime_ns,
+        status.st_size,
+    )
+
+
+def _identity_listing(directory: Path, docs_dir: Path, project: str) -> _Listing:
     """Return each HTML entry of ``directory`` with the stamp that identifies it.
 
     The listing is the key a held index is revalidated against: an entry added
     or removed changes the set of names, and a sibling written in place changes
     its own stamp. A file that cannot be stat'ed keeps its place in the listing
-    with no stamp, so the index is rebuilt rather than trusted.
+    with no stamp. The listing is keyed on the directory's own stamp: an
+    entry set that has not moved is answered from the listing taken for it
+    rather than paying the glob and one stat per sibling again. The stamp is
+    read before the listing, so a change landing during the read leaves the
+    stored stamp behind the directory and the next call lists it again. Only an
+    entry set can hide behind this: the resolved file's own head is read fresh
+    on every resolve, so a document written in place is still current.
     """
+    key = (str(docs_dir), project, str(directory))
+    stamp = _directory_stamp(directory)
+    if stamp is not None:
+        with _INDEX_LOCK:
+            held = _LISTING_MEMO.get(key)
+        if held is not None and held[0] == stamp:
+            return held[1]
+    listing = _list_identity_entries(directory, docs_dir, project)
+    if stamp is not None:
+        with _INDEX_LOCK:
+            _LISTING_MEMO[key] = (stamp, listing)
+    return listing
+
+
+def _list_identity_entries(directory: Path, docs_dir: Path, project: str) -> _Listing:
+    """List ``directory``'s HTML entries and stamp each one."""
     from reckon import metadata_index
 
     reused = metadata_index._reuse_covered(docs_dir, project)
