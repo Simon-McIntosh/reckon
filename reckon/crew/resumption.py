@@ -74,6 +74,8 @@ from reckon.crew.dispatch import (
     resume_plan,
 )
 from reckon.crew.node import CrewError
+from reckon.crew.open_run_index import operational_read
+from reckon.crew.open_run_index import pointers as scoped_pointers
 from reckon.crew.process_liveness import _process_start_time as process_start_time
 from reckon.crew.recovery import (
     LAUNCH_WINDOW_SECONDS,  # noqa: F401 -- re-exported: resume doors read it here
@@ -1119,7 +1121,8 @@ def _claimed_write_paths(record: Mapping[str, Any]) -> list[str]:
     run_id = str(record.get("run_id") or "")
     repo = str(record.get("repo") or "")
     claimed: set[str] = set()
-    for other in list_live():
+    snapshot = scoped_pointers()
+    for other in list_live() if snapshot is None else snapshot:
         if str(other.get("run_id") or "") == run_id:
             continue
         if str(other.get("repo") or "") != repo:
@@ -2697,6 +2700,7 @@ def writer_sweep_status(project: str, writer: Any) -> dict[str, Any] | None:
     return read_sweep_status(project).get("writers", {}).get(_writer_key(kind, key))
 
 
+@operational_read(live_reader=lambda: list_live(project=None))
 def sweep(
     project: str,
     *,
@@ -2753,6 +2757,8 @@ def sweep(
     skipped: list[dict[str, Any]] = []
     considered = 0
 
+    if pointers is None:
+        pointers = scoped_pointers(project=project)
     live = list_live(project=project) if pointers is None else pointers
     for pointer in runs._tick_pointers(live):
         # A session-scoped sweep resumes only the runs that session owns: a

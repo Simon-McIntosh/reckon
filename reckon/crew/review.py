@@ -718,8 +718,14 @@ def _reviewed_run_pointer(reviewed_run_id: str) -> Mapping[str, Any] | None:
     if not reviewed_run_id:
         return None
     from reckon.crew.node import CrewError
+    from reckon.crew.open_run_index import pointers
     from reckon.crew.runs import read_pointer
 
+    snapshot = pointers()
+    if snapshot is not None:
+        return next(
+            (row for row in snapshot if row.get("run_id") == reviewed_run_id), None
+        )
     try:
         return read_pointer(reviewed_run_id)
     except (CrewError, OSError, ValueError):
@@ -1258,10 +1264,8 @@ def recorded_suite_delta_waiver(reviewed_run_id: object, project: object = "") -
     run_id = str(reviewed_run_id or "").strip()
     if not run_id:
         return ""
-    from reckon.crew import runs as runs_module
-
     try:
-        pointer = runs_module.read_pointer(run_id)
+        pointer = _reviewed_run_pointer(run_id) or {}
     except Exception:  # noqa: BLE001 - an unread pointer is a run with no waiver
         pointer = {}
     reason = _recorded_waiver_reason(pointer.get("suite_delta_waiver"))

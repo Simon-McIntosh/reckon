@@ -26,7 +26,7 @@ from reckon.crew.node import (
     CrewError,
     WatcherRequired,
 )
-from reckon.crew.open_run_index import operational_read
+from reckon.crew.open_run_index import operational_read, pointers as scoped_pointers
 from reckon.crew.reports import (
     ManifestParseError,
     parse_manifest,
@@ -1004,6 +1004,8 @@ def _review_in_flight(
     if not project:
         return ""
     run_id = str(record.get("run_id") or "")
+    if pointers is None:
+        pointers = scoped_pointers(project=project)
     candidates = list_live(project=project) if pointers is None else pointers
     return _review_index(candidates).standing_review(run_id, head, rubric, project)
 
@@ -3051,6 +3053,8 @@ def _standing_plan_review(
         runs inside every session's obligations reading, and one malformed pointer
         on disk must not raise the reader out of listing everything else.
     """
+    if pointers is None:
+        pointers = scoped_pointers(project=project)
     live = list_live(project=project) if pointers is None else pointers
     wanted = str(rubric or "").strip().lower()
     for pointer in live:
@@ -3884,7 +3888,7 @@ def _resume_superseded_refusal(
     }
 
 
-@operational_read
+@operational_read(live_reader=lambda: list_live(project=None))
 def dispatch_review_for_run(
     record: Mapping[str, Any],
     *,
