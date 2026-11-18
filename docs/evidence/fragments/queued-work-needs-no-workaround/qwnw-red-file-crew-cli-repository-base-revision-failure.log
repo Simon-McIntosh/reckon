@@ -1,0 +1,77 @@
+# revision: 0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385 (base, git archive extraction)
+# tree: /tmp/reckon-crew-scratch/r-20261118T063220000168-qwnw-red-file-crew-cli-repository/qwnw-base
+# command: PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T063220000168-qwnw-red-file-crew-cli-repository/qwnw-base /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-cli-repository/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_cli_repository.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063220000168-qwnw-red-file-crew-cli-repository/qwnw-base
+# module.__file__: /tmp/reckon-crew-scratch/r-20261118T063220000168-qwnw-red-file-crew-cli-repository/qwnw-base/reckon/__init__.py
+# SLURM_JOB_ID: unset
+
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_a_command_line_dispatch_without_repo_cuts_from_the_mount _________
+
+mounts = {'amber': PosixPath('/tmp/reckon-crew-scratch/r-20261118T063220000168-qwnw-red-file-crew-cli-repository/pytest-of-mcin...118T063220000168-qwnw-red-file-crew-cli-repository/pytest-of-mcintos/pytest-5/test_a_command_line_dispatch_w0/config')}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f859c504c30>
+
+    def test_a_command_line_dispatch_without_repo_cuts_from_the_mount(
+        mounts: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The shell is not consulted: the working directory is another checkout."""
+        monkeypatch.chdir(mounts["basalt"])
+        monkeypatch.setattr(
+            dispatch_module,
+            "_spawn",
+            lambda plan, **kwargs: 4242,
+        )
+        monkeypatch.setattr(
+            dispatch_module,
+            "watch_state",
+            lambda project, *, session=None: {
+                "arming_line": f"reckon crew watch --project {project}",
+                "attach_line": runs._watch_attach_line(project, session=session),
+                "watcher": {},
+                "watcher_live": True,
+                "session": session,
+                "session_attached": None,
+                "follower": {},
+            },
+        )
+    
+        result = CliRunner().invoke(cli_module.main, _arguments())
+        assert result.exit_code == 0, result.output
+>       payload = json.loads(result.output)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/reckon-crew-scratch/r-20261118T063220000168-qwnw-red-file-crew-cli-repository/qwnw-base/tests/test_crew_cli_repository.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/__init__.py:352: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:345: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <json.decoder.JSONDecoder object at 0x7f859f7038c0>
+s = 'reckon: created run r-20261118T152240249843-cli-node\n{"admitted_from": null, "agent": {"backend": "worker", "effort"...ntos/pytest-5/test_a_command_line_dispatch_w0/.reckon-worktrees/amber-8d376aafbb2d/cli-repository-session/cli-node"}\n'
+idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+/home/ITER/mcintos/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:363: JSONDecodeError
+=========================== short test summary info ============================
+FAILED tests/test_crew_cli_repository.py::test_a_command_line_dispatch_without_repo_cuts_from_the_mount - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed in 3.70s
+EXIT=1
