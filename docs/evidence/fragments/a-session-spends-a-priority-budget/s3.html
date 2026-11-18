@@ -43,3 +43,18 @@ EXIT=1
 # log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/baseline_suite-1794982741644851249.log
 # after (b7dd46560df6): 58 passed in 35.59s
 # log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/after_suite-1794982816757458583.log
+#
+# REPAIR ROUND (finding f9663c6726f: the raise was charged twice)
+# defect: reprioritise marked the delivered run and also wrote the same points
+#   onto its queued review, so runs.session_priority_in_use read 8 with holders
+#   ['r-delivered', 'review-of-delivered'] after a 4-point raise, and a session
+#   at its budget was refused a raise it already held.
+# fix (637e28986c): the review is the record admission ranks, so where one is
+#   queued the raise is charged there — the review is excluded from the budget
+#   judgement and the run's marker is cleared. A run whose review has started,
+#   or was never composed, still charges itself.
+# gate: 7 passed in 0.60s, EXIT=0 at 637e28986c
+# log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/scoped-gate-1794998924291726900.log
+# NEGATIVE CONTROL: the two production files reverted to b7884a4b93
+# control: 2 failed, 5 passed, EXIT=1 — "assert 8 == 4", both holders named
+# log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/repair-negative-control.log
