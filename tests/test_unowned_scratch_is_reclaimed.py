@@ -219,7 +219,7 @@ def test_recent_write_during_sizing_prevents_removal(scratch, monkeypatch):
     monkeypatch.setattr(gc, "_scratch_activity", activity)
     report = supervisor.reclaim_unowned_scratch()
     assert report["removed"] == []
-    assert report["entries"][0]["withheld"] == "descendant refreshed during sweep"
+    assert report["entries"][0]["withheld"] == "descendant refreshed after intent"
     assert path.exists()
 
 
@@ -517,3 +517,89 @@ def test_pointer_appearing_during_intent_publication_prevents_deletion(
     ]
     assert [row["state"] for row in rows] == ["intent", "retained"]
     assert "live pointer" in rows[-1]["withheld"]
+
+
+@pytest.mark.parametrize("refresh_time", [False, True])
+def test_closed_descendant_write_after_intent_is_retained_and_recorded(
+    scratch, monkeypatch, refresh_time
+):
+    path = entry(scratch, "landing-written-after-intent")
+    payload = path / "payload"
+    root_ctime = path.stat().st_ctime_ns
+    original_sweep = gc.garbage_collect_orphan_scratch
+    published = []
+
+    def sweep(**kwargs):
+        durable_record = kwargs["record_removal"]
+
+        def publish(row):
+            durable_record(row)
+            if row["state"] == "intent":
+                published.append(row["removal_id"])
+                with payload.open("wb") as stream:
+                    assert not stream.closed
+                    stream.write(b"written and closed during intent publication")
+                assert stream.closed
+                if refresh_time:
+                    os.utime(payload, (scratch.now, scratch.now))
+                assert path.stat().st_ctime_ns == root_ctime
+                assert not gc.pointer_path(path.name).exists()
+
+        kwargs["record_removal"] = publish
+        return original_sweep(**kwargs)
+
+    monkeypatch.setattr(gc, "garbage_collect_orphan_scratch", sweep)
+    report = supervisor.reclaim_unowned_scratch()
+    assert published
+    assert report["removed"] == []
+    assert payload.read_bytes() == b"written and closed during intent publication"
+    assert path.stat().st_ctime_ns == root_ctime
+    rows = [
+        json.loads(line)
+        for line in (scratch.state / "scratch-removals.jsonl").read_text().splitlines()
+    ]
+    assert [row["state"] for row in rows] == ["intent", "retained"]
+    assert rows[-1]["removal_id"] == published[0]
+    assert "descendant" in rows[-1]["withheld"]
+    assert not list((scratch.state / "scratch-removal-intents").rglob("*.json"))
+
+
+@pytest.mark.parametrize("failure", [OSError, TimeoutError])
+def test_unreadable_post_intent_activity_is_retained_and_recorded(
+    scratch, monkeypatch, failure
+):
+    path = entry(scratch, "landing-unreadable-after-intent")
+    before = contents(path)
+    original_sweep = gc.garbage_collect_orphan_scratch
+    original_activity = gc._scratch_activity
+    acknowledged = []
+
+    def sweep(**kwargs):
+        durable_record = kwargs["record_removal"]
+
+        def publish(row):
+            durable_record(row)
+            if row["state"] == "intent":
+                acknowledged.append(row["removal_id"])
+
+        kwargs["record_removal"] = publish
+        return original_sweep(**kwargs)
+
+    def activity(candidate, deadline):
+        if acknowledged:
+            raise failure("decoy post-intent activity unavailable")
+        return original_activity(candidate, deadline)
+
+    monkeypatch.setattr(gc, "garbage_collect_orphan_scratch", sweep)
+    monkeypatch.setattr(gc, "_scratch_activity", activity)
+    report = supervisor.reclaim_unowned_scratch()
+    assert acknowledged and report["removed"] == []
+    assert contents(path) == before
+    rows = [
+        json.loads(line)
+        for line in (scratch.state / "scratch-removals.jsonl").read_text().splitlines()
+    ]
+    assert [row["state"] for row in rows] == ["intent", "retained"]
+    assert "activity unreadable after intent" in rows[-1]["withheld"]
+    assert rows[-1]["reason"] == rows[-1]["withheld"]
+    assert not list((scratch.state / "scratch-removal-intents").rglob("*.json"))

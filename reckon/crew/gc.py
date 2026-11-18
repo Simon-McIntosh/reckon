@@ -1738,29 +1738,39 @@ def garbage_collect_orphan_scratch(
         entry["withheld"] = refusal(child)
         if entry["withheld"]:
             return
-        if inspect_activity:
+        entry["reason"] = "no live run or process; inactivity grace elapsed"
+        entry["removal_id"] = uuid.uuid4().hex
+        if record_removal is not None:
+            record_removal({**entry, "state": "intent"})
+        # Publication can block on storage. Claims and every descendant must
+        # be checked after its acknowledgement, with no further writes between
+        # a successful activity walk and removal.
+        entry["withheld"] = refusal(child)
+        if not entry["withheld"] and inspect_activity:
+            before = (entry["ctime_age_seconds"], entry["bytes"])
             try:
                 latest, size = _scratch_activity(
                     child, time.monotonic() + SCRATCH_ACTIVITY_SECONDS
                 )
             except (OSError, TimeoutError) as exc:
-                entry["withheld"] = f"activity unreadable: {exc}"
-                return
-            if stamp - latest < grace_seconds:
-                entry["withheld"] = "descendant refreshed during sweep"
-                return
-            entry["bytes"] = size
-            entry["ctime_age_seconds"] = max(0.0, stamp - latest)
-        entry["reason"] = "no live run or process; inactivity grace elapsed"
-        entry["removal_id"] = uuid.uuid4().hex
-        if record_removal is not None:
-            record_removal({**entry, "state": "intent"})
-        # Publishing an intent can block on storage; claims can change while
-        # it does, so recheck them after the durable acknowledgement as well.
-        entry["withheld"] = refusal(child)
+                entry["withheld"] = f"activity unreadable after intent: {exc}"
+            else:
+                age = max(0.0, stamp - latest)
+                entry["bytes"] = size
+                entry["ctime_age_seconds"] = age
+                if stamp - latest < grace_seconds:
+                    entry["withheld"] = "descendant refreshed after intent"
+                elif (age, size) != before:
+                    entry["withheld"] = "descendant activity changed after intent"
         if entry["withheld"]:
             if record_removal is not None:
-                record_removal({**entry, "state": "retained"})
+                record_removal(
+                    {
+                        **entry,
+                        "state": "retained",
+                        "reason": entry["withheld"],
+                    }
+                )
             return
         shutil.rmtree(child)
         entry["removed"] = True
