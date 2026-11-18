@@ -737,10 +737,7 @@ def _queued_hold(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
     pass's own verdict row and the request's stored hold cannot disagree about
     what holds one request.
     """
-    named = _verdicts.failure_hold(pointer)
-    if named is not None:
-        return named
-    return queue_admission.recorded_pass_hold(pointer)
+    return _verdicts.queued_hold(pointer)
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:

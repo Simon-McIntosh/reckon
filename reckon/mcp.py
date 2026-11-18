@@ -2868,6 +2868,14 @@ def _crew(
     ``obligations`` derives the duties one coordinator session still owes — each
     with its kind, run, age and next command — from the live pointers, the
     review store and the ledger, and needs ``session``.
+    ``queue`` answers where the queue's work stands: every queued and
+    awaiting-upstream request of ``project`` in the order admission launches by,
+    each with its place, its session, plan section and lane, its priority, the
+    wait it has served, the reason the admission ordering records for its place,
+    and the hold that stops it where one does; then every pending review and
+    every pending promotion, and each session's priority budget beside the
+    points in use and the points free. Pass ``session`` to narrow it to one
+    session's rows.
     ``velocity`` reports what the fleet delivered over the window ``since`` to
     ``until`` — promotions split implementation against review, landed lines in
     six classes, the seven-day deletion share, dispatch-to-completion and
