@@ -463,6 +463,8 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
         workspace = str(current.get("worktree") or "")
         if workspace and Path(workspace).exists():
             return False
+        if _promoted_run_worker_state(current) == WORKER_ALIVE:
+            return False
         row = _promoted_row(project, run_id)
         if row is None or row.get("run_id") != run_id:
             return False
@@ -1139,23 +1141,77 @@ def landed_workspace_refusal(
     return ""
 
 
-def _promoted_run_worker_is_live(pointer: Mapping[str, Any]) -> bool:
-    """Whether any process the promoted run records for its worker is alive.
+# A promoted run is released only on proof that its worker stopped: the kernel
+# answers dead, or the scheduler reports an in-flight job gone. Anything else —
+# a pointer naming no process, a scheduler that cannot be queried, an unreadable
+# worker record — leaves the run kept, because silence about a process is not
+# proof of its death.
+WORKER_DEAD = "dead"
+WORKER_ALIVE = "alive"
+WORKER_UNKNOWN = "unknown"
 
-    The release decision rests on processes, not on streams. A resumed turn that
-    ended leaves its unfinished stream behind, and a stream is evidence about a
-    turn only while the process that wrote it is there — but a promoted run held
-    by a leftover stream could never be released, which is what the fleet showed
-    on 18 November: three promoted pointers whose recorded workers were all dead
-    were held for ever. A repair dispatch still reads the stream, because there
-    silence about a process is genuinely the only evidence it has; a release
-    asks the narrower question its own decision needs.
+WORKER_STATE_REASONS = {
+    WORKER_ALIVE: "the reviewed run's worker is live",
+    WORKER_UNKNOWN: "the run's worker liveness cannot be established",
+}
+
+# What a record naming a process contributes, keyed by the liveness primitive.
+_NAMED_PROCESS_STATES = {True: WORKER_ALIVE, False: WORKER_DEAD}
+
+
+def _named_process_state(record: Mapping[str, Any]) -> str:
+    """The state of the process one record names, or unknown when it names none.
+
+    The read keeps the identity the record wrote — pid, kernel start tick,
+    launch and session id — because that identity is what separates the
+    registered process from a later holder of the same number, and it asks the
+    process table rather than the scheduler. A placement is dropped first: its
+    job is a different subject from the attempt's own pid, and a scheduler that
+    cannot be queried must not answer for a pid the kernel can.
     """
-    from reckon.crew.recovery_liveness import _worker_record_liveness, process_alive
+    from reckon.crew.recovery_liveness import process_alive
 
-    if runs.record_process_alive(pointer, process_alive) is True:
-        return True
-    return _worker_record_liveness(pointer) is True
+    if not isinstance(record, Mapping) or record.get("pid") in (None, ""):
+        return WORKER_UNKNOWN
+    identity = {
+        key: record[key]
+        for key in ("pid", "pid_start_time", "launch", "session_id")
+        if record.get(key) not in (None, "")
+    }
+    return _NAMED_PROCESS_STATES.get(
+        runs.record_process_alive(identity, process_alive), WORKER_UNKNOWN
+    )
+
+
+def _promoted_run_worker_state(pointer: Mapping[str, Any]) -> str:
+    """Which of alive, dead or unknown the promoted run's worker reads as.
+
+    The subject is the attempt the pointer names: its own recorded process, and
+    the worker that attempt registered for itself. Only proof that this process
+    stopped releases the pointer, which is what a pid the kernel reports gone
+    under the start tick written at registration is.
+
+    A pointer naming no process cannot be proved either way and stays unknown,
+    whatever an earlier attempt's repair mark names: the mark describes an
+    attempt that already ended, and the later attempt is judged by its own
+    record. An unreadable process record and a scheduler that was never asked
+    for this pid are unknown for the same reason. A live worker record outranks
+    a dead recorded pid, because a supervisor that exited before its worker
+    keeps a live worker while the process the pointer names is gone; a dead
+    worker record proves nothing about a later attempt that has not registered
+    yet, so it never releases.
+
+    The stream a resumed turn left behind is not part of this reading: a turn is
+    finished when its process is proved dead, and a promoted run held by a
+    leftover stream could never be released — measured on the fleet on
+    18 November, where a pointer naming a long-dead pid still read from its
+    stream as a turn in progress.
+    """
+    from reckon.crew.recovery_liveness import _worker_record_liveness
+
+    if _worker_record_liveness(pointer) is True:
+        return WORKER_ALIVE
+    return _named_process_state(pointer)
 
 
 def _measured_workspace_refusal(
@@ -1291,23 +1347,21 @@ def release_merged_promotions(
         if not head or _promotion_lease_held(run_id):
             continue
         # A repair mark names the attempt that wrote it, and the pointer may
-        # since belong to a later one: that is not a reason to keep the pointer,
-        # because the attempt the mark names ended and the later attempt is
-        # judged by its own process. A recorded worker process still alive is
-        # the one fact that holds the pointer, whichever attempt the mark
-        # names, and an ended turn's leftover stream does not hold it. A marked
-        # pointer held for a live worker is reported once, so an owner sees why
-        # it stays; an unmarked live run is the ordinary in-flight case and is
-        # left silent.
-        if _promoted_run_worker_is_live(pointer):
-            if pointer.get("pending_landing_repair"):
-                results.append(
-                    {
-                        "run_id": run_id,
-                        "status": "release-held",
-                        "reason": "the reviewed run's worker is live",
-                    }
-                )
+        # since belong to a later one: that is not a promoted run's business
+        # here, because the attempt the mark names ended and the later attempt
+        # is judged by its own process. Only proof that the worker stopped
+        # releases the pointer; a live worker and a record that cannot prove
+        # either answer keep it, each reported once with the reason so an owner
+        # reading the pointer sees why it stays.
+        state = _promoted_run_worker_state(pointer)
+        if state != WORKER_DEAD:
+            results.append(
+                {
+                    "run_id": run_id,
+                    "status": "release-held",
+                    "reason": WORKER_STATE_REASONS[state],
+                }
+            )
             continue
         try:
             repository = merge.project_repository(run_project)

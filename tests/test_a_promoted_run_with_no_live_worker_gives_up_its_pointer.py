@@ -81,6 +81,7 @@ def cohort(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         "stale-turn",
         "measured",
         "live-attempt",
+        "unnamed-attempt",
         "dirty",
         "beyond",
     ):
@@ -96,22 +97,28 @@ def cohort(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         manifest = directory / "manifest.md"
         manifest.write_text(f'status: complete\ncommits: ["{head}"]\nblockers: none\n')
         extra: dict = {}
-        if name in {"marked-earlier", "stale-turn", "live-attempt"}:
+        if name in {
+            "marked-earlier",
+            "stale-turn",
+            "live-attempt",
+            "unnamed-attempt",
+        }:
             # The measured shape: the mark names the attempt that wrote it and
             # the pointer has since moved on to a later one.
             extra["attempt"] = 3
             extra["attempt_kind"] = "resume"
             if name == "live-attempt":
                 extra["pid"] = live
-            elif name == "stale-turn":
-                # The pointer names no process at all, so liveness is unknown
-                # and the leftover resume below is the only mark of a turn.
-                pass
+            elif name == "unnamed-attempt":
+                # The later attempt registers no process, so nothing proves its
+                # worker stopped: the run is kept, whatever its mark names.
+                extra["attempt"] = 4
             else:
                 extra["pid"] = dead
+                extra["pid_start_time"] = "950634665"
             extra["pending_landing_repair"] = True
             extra["pending_landing_repair_attempt"] = {
-                "attempt": 2,
+                "attempt": 3 if name == "unnamed-attempt" else 2,
                 "phase": "working",
                 "pid": dead,
                 "pid_start_time": "951113889",
@@ -184,13 +191,13 @@ def test_a_promoted_run_with_no_live_worker_gives_up_its_pointer(
     repo = cohort["repo"]
     members = cohort["members"]
     released = ("marked-earlier", "stale-turn", "measured")
-    kept = ("live-attempt", "dirty", "beyond")
     for name in released:
         assert runs.pointer_path(f"r-{name}").exists()
         assert members[name]["tree"].is_dir()
     assert not _is_ancestor(repo, members["measured"]["head"], "main"), (
         "the measurement run's head is by design never merged"
     )
+    kept = ("live-attempt", "unnamed-attempt", "dirty", "beyond")
     for name in kept:
         assert _is_ancestor(repo, members[name]["head"], "main"), name
 
@@ -211,6 +218,7 @@ def test_a_promoted_run_with_no_live_worker_gives_up_its_pointer(
         assert row["release"]["worktree_released"] is True, name
     for name, reason in (
         ("live-attempt", "live"),
+        ("unnamed-attempt", "cannot be established"),
         ("dirty", "uncommitted"),
         ("beyond", "cannot be released"),
     ):
