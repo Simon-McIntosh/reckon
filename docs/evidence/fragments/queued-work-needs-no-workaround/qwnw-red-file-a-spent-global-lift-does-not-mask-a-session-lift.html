@@ -44,22 +44,22 @@ EXIT=1
 <h4 id="qwnw-red-file-a-spent-global-lift-head-gate">Head gate: an all_debug job with SLURM_JOB_ID stripped</h4>
 <p>The gate harness passes the scheduler variable through: a probe inside it read <code>SLURM_JOB_ID=[1325825]</code>. The gate therefore strips it, and a second probe under the same prefix read the variable as unset. The log below is the run at the delivered head.</p>
 <pre>
-# revision: 67493d8fa0d1f9a8210e51cdde55cdf74c86b735
+# revision: 2072bb49fec38648837f203e621f84f5a19c03fa
 # host: 98dci4-clu-3141.iter.org
-# tree: /tmp/mcintos-landing-2cd634aa3bd3-mdUmWj/tree
+# tree: /tmp/mcintos-landing-25f06890103c-cG6mPF/tree
 # command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py'
 ....                                                                     [100%]
-4 passed in 1.30s
+4 passed in 1.31s
 EXIT=0
 </pre>
 
 <h4 id="qwnw-red-file-a-spent-global-lift-arms">Suite arms: the armed command, resolved over each arm's own tree</h4>
-<p>This node's write scope names a directory, so the resolved node-test list is the armed census pair, and the changed file is in neither arm: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>, run on <code>all_debug</code> over each revision's own exported tree.</p>
+<p>This node's write scope names a directory, so the resolved node-test list is the armed census pair, and the changed file is not among either arm's files: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>. The baseline arm ran in a scratch extraction of the base commit (HEAD rebuilt by <code>git init</code> plus one commit over those bytes, because the census reader lists a checkout's revision); the after arm ran in this worktree.</p>
 <table>
 <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
 <tbody>
-<tr><td>baseline</td><td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td><td>58 passed, exit 0</td></tr>
-<tr><td>after</td><td><code>67493d8fa0d1f9a8210e51cdde55cdf74c86b735</code></td><td>58 passed, exit 0</td></tr>
+<tr><td>baseline</td><td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td><td>58 passed in 42.27s, exit 0</td></tr>
+<tr><td>after</td><td><code>2072bb49fec38648837f203e621f84f5a19c03fa</code></td><td>58 passed in 40.79s, exit 0</td></tr>
 </tbody>
 </table>
 </section>
