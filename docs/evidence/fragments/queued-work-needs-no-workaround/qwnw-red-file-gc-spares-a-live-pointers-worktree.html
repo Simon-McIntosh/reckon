@@ -79,10 +79,13 @@ EXIT=0</pre>
   against the base. Those four failures are already red on the primary branch and
   are outside this node's declared file.</p>
 
-  <p><strong>The gate.</strong> The project's suite arms ran at
-  <code>23b901694b</code> and at <code>890fd711e1</code> over
-  <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>,
-  both collecting 58 tests and both <code>EXIT=0</code>. The scoped gate on this
+  <p><strong>The gate.</strong> The project's suite arms ran over
+  <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>
+  at <code>23b901694b</code> (<code>baseline-suite-arm.log</code>) and at
+  <code>9f8adfd603</code> (<code>after-suite-arm.log</code>), each collecting 58
+  tests with <code>EXIT=0</code>. The base arm runs a <code>git archive</code>
+  extraction that is committed, because one of those two suites reads the tree's
+  own <code>HEAD</code> and an uncommitted extraction errors at setup. The scoped gate on this
   file's own command read 3 passed with <code>EXIT=0</code> at
   <code>890fd711e1</code>. <code>ruff check</code> and
   <code>ruff format --check</code> report nothing new on the changed path.</p>
