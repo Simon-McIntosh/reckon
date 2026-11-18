@@ -1,5 +1,5 @@
 {
- "purpose": "Coordinator observations on the paired replay population that the run store fields do not carry. Each entry names the replay's order in paired-replay-assignment.json and its run id; the run directory (crew/archive/runs/<run>/ or crew/runs/<run>/) holds the artefacts named.",
+ "purpose": "Coordinator observations on the paired replay population that the run store fields do not carry. Each entry names the replay's order in the assignment it belongs to (paired-replay-assignment.json, or paired-replay-assignment-2.json where the entry carries assignment 2) and its run id; the run directory (crew/archive/runs/<run>/ or crew/runs/<run>/) holds the artefacts named.",
  "observations": [
   {
    "order": 12,
@@ -84,6 +84,48 @@
    "run_id": "r-20261117T163703987811-replay-clive-anchored-lane-s59",
    "kind": "manifest-repair",
    "note": "tests: field was prose, and both suite log paths named annotated copies with no pytest result line; replaced with the after_suite command and repointed to the raw logs (base 58 passed, head 62 passed; manifest.md.asdelivered kept)."
+  },
+  {
+   "assignment": 2,
+   "order": 81,
+   "run_id": "r-20261118T111258034182-replay-codex-bk-s7",
+   "kind": "stopped-on-repeated-gate-failure",
+   "note": "Implemented the reopen change, then its development gate failed twice on attempt-number assertions (2 failed, 11 passed) and it stopped for coordinator advice before its suite arms. Recorded failed, work-rejected, without advice, as orders 48, 50 and 53. Coordinator arms on rigel (job 1326058, git worktrees): base collects no test because the three files do not exist there; head 2 failed / 11 passed."
+  },
+  {
+   "assignment": 2,
+   "order": 82,
+   "run_id": "r-20261118T112123154209-replay-codex-anchored-bk-s9",
+   "kind": "stopped-on-stale-wording",
+   "note": "Delivered passing code, then stopped because bk s9's done-when names crew CLI options that do not exist (verify-gate --worker, suite run --run); the clive and omp-local arms substituted equivalent sbatch measurements. Recorded passed with a note, as order 32 was. Coordinator arms on rigel (job 1326087): head 8 passed; the test file does not exist at base."
+  },
+  {
+   "assignment": 2,
+   "order": 67,
+   "run_id": "r-20261118T033545310949-replay-codex-anchored-bk-s1",
+   "kind": "required-failure",
+   "note": "Its after arm keeps one failure (case5_an_explicit_gate_check_is_kept) because bk s1's done-when requires that case to keep failing on an out-of-scope guard; base had 3 failures, head 1, a subset. Recorded passed."
+  },
+  {
+   "assignment": 2,
+   "order": 60,
+   "run_id": "r-20261118T001652762824-replay-codex-anchored-ab-s5",
+   "kind": "accepted-path",
+   "note": "Edited reckon/crew/dispatch_claims.py outside its listed write paths because prompt composition moved there after ab s5 landed; accepted at completion. Order 64 (r-20261118T002036912236-replay-clive-anchored-ab-s5) made the same accepted edit."
+  },
+  {
+   "assignment": 2,
+   "order": 73,
+   "run_id": "r-20261118T060841111887-replay-codex-mon-s139",
+   "kind": "manifest-repair",
+   "note": "tests: named an interpreter in a temporary /tmp tree that no longer exists; rewritten to the same three files relative to the checkout (manifest.md.asdelivered kept). The worker's own logs stand (base 55 passed, head 57 passed). Order 78 (r-20261118T103424915495-replay-codex-mon-s135) received the same repair, and order 77 (r-20261118T103309418835-replay-omp-local-land-s10) had a cd into its own worktree removed from tests:."
+  },
+  {
+   "assignment": 2,
+   "order": 66,
+   "run_id": "r-20261118T034417947005-replay-clive-replicate-mon-s100",
+   "kind": "manifest-repair",
+   "note": "commits listed each sha with its subject; rewritten to bare shas. Order 68 (r-20261118T034034262940-replay-clive-anchored-mon-s100) had pytest's FAILED/ERROR prefixes stripped from its failure ids so they matched its logs; its head carried 28 failures against base 30, all present at base."
   }
  ]
 }
