@@ -1,0 +1,124 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_when": "Move the measurement guard back after plan_review_hold; the recorded pre-repair control expected --measure-only but received the missing-design-review hold, so the refusal match fails.",
+      "path": "tests/test_a_measurement_run_never_lands.py:701"
+    },
+    {
+      "fails_when": "Publish a queued or held request despite refusing the landed section; the independent live-pointer inventory is nonempty.",
+      "path": "tests/test_a_measurement_run_never_lands.py:711"
+    },
+    {
+      "fails_when": "Remove pending-seat waiting and the delayed fake launchers overlap up to the pool width instead of the fixed one- or two-seat fixture; serializing every setup also fails the two-seat case.",
+      "path": "tests/test_a_pass_sets_up_few_launches_at_once.py:86"
+    },
+    {
+      "fails_when": "Drop a submission while waiting or fail to settle its result; the output launch count is less than the requested pool-width-times-two count.",
+      "path": "tests/test_a_pass_sets_up_few_launches_at_once.py:87"
+    },
+    {
+      "fails_when": "Return a different completion refusal or success instead of suite-delta-refused; the decoded stdout error differs.",
+      "path": "tests/test_a_measurement_run_never_lands.py:514"
+    },
+    {
+      "fails_when": "Persist no suite refusal explanation, or a different explanation, in the receipt the production command returns.",
+      "path": "tests/test_a_measurement_run_never_lands.py:515"
+    },
+    {
+      "fails_when": "Drop, alter or add a failure ID while persisting the computed suite delta; the independently opened receipt differs from the fixture failure written by _record_added_failure_arms.",
+      "path": "tests/test_a_measurement_run_never_lands.py:516"
+    },
+    {
+      "fails_when": "Let a passing measurement bypass the added-failure guard or persist an incorrect delta; the stdout refusal and opened receipt no longer match the two independently required results.",
+      "path": "tests/test_a_measurement_run_never_lands.py:532-533"
+    }
+  ],
+  "assertion_independence": "No newly added assertion is a vacuous self-comparison. free_seats sets fixture occupancy while peak is measured inside concurrently executed fake launches; failure_id is written to synthetic suite arms while receipt IDs are read back through the production completion command. These are input/output checks that fail if the claimed guard or persistence changes. They do not establish execution of the synthetic suite itself, and that is not their stated purpose.",
+  "call_sites": [
+    "reckon/crew/admission/selection.py:351",
+    "reckon/crew/admission/selection.py:643",
+    "reckon/crew/dispatching/preparation.py:732",
+    "reckon/crew/dispatching/preparation.py:749",
+    "reckon/crew/dispatching/requests.py:317",
+    "reckon/crew/dispatch_batch.py:1144",
+    "reckon/crew_dispatch_commands.py:446"
+  ],
+  "commits_examined": [
+    "4a23200b5472aa0f75771dff8644ff28a223aab1",
+    "f17618875600586a7a7992ab2e5fab777141511f",
+    "0821b1fd60d1fd6fc35c4bf34678f2399826ecad",
+    "a36c2e70c490d8775f02fdccbfdd160de9afc228",
+    "1614f0d54a2311651b1b87412ece6bd8d6d7ea99",
+    "cbf666c0ab7f98d81580eb559f1b836eb0c7c7f9",
+    "7c45312878ae7ad976a7f26aad2e8b382cab630b"
+  ],
+  "completed_at": "2026-11-14T22:15:20Z",
+  "dispatched_at": "2026-11-18T00:13:35Z",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_a_measurement_run_never_lands.py:701-711 fails if the review hold precedes the measurement guard, tests/test_a_pass_sets_up_few_launches_at_once.py:44-87 fails if pending setups overspend seats or lose launches, and receipt assertions at tests/test_a_measurement_run_never_lands.py:514-533 require the actual refusal and precise failure IDs.",
+    "evidence": "pending-delivery-focused-gate.log:7-8 records 197 passed with EXIT=0, pending-merge-measurement-control.log records the wrong refusal before repair, and the completed source suite logs independently yield zero added failure IDs.",
+    "fit": "reckon/crew/admission/attempts.py:118-161 extends the existing LaunchBatch future bookkeeping and uses the established placement selectors, while reckon/crew/dispatching/preparation.py:732 moves the existing measurement mechanism without adding forbidden source names.",
+    "goal_fidelity": "reckon/crew/dispatching/preparation.py:732-766 retains review-debt queueing while placing the measurement refusal first, and reckon/crew_dispatch_commands.py:453 preserves explicit held acceptance beside the merged created-request signal.",
+    "reuse": "Capability searches for reservation seat accounting and pending launches found reckon/crew/placement.py:1371 and reckon/crew/dispatch_admission.py:235; the new LaunchBatch method delegates occupant selection to that owner and adds batch-local pending accounting, while the merge preserves newest_design_review reuse in reckon/crew/admission/reviews.py:276.",
+    "scope_discipline": "Source manifest.md scope_note authorizes the two primary merges and reckon/tests repairs; authored additions at reckon/crew/admission/attempts.py:118 and tests/test_a_measurement_run_never_lands.py:697 repair interactions of that merge within the granted paths."
+  },
+  "limitations": [
+    "No product test was rerun; review used the source run logs as instructed.",
+    "The focused gate ran at cbf666c0ab7f98d81580eb559f1b836eb0c7c7f9; the final commit changes only the two evidence fragments. The after-suite ran at the exact final head.",
+    "The assigned review tree HEAD is 61fb9eb5113fcd38b18158ffad554f208e0ad77c; reviewed code and owner content were read with git show at the target revision, not inferred from the assigned tree."
+  ],
+  "project": "reckon",
+  "reproduction_quotes": [
+    "pending-merge-base-negative-control.log: PlanReviewMissingError: carries no stored review under the design rubric; FAILED tests/test_owed_plan_reviews_queue_held.py::test_single_dispatch_queues_instead_of_refusing_review_debt; 1 failed in 1.74s; EXIT=1.",
+    "pending-merge-measurement-control.log: Expected regex: --measure-only; Actual message: plan plan-a carries no stored review under the design rubric; 1 failed in 0.87s; EXIT=1.",
+    "pending-merge-reservation-observation.log: counted r-codex, r-local-a, r-local-b and seven r-occupant pointers (10 occupants after freeing one of a cap of 8). This diagnostic passed because it printed the observation; the final focused gate supplies the repaired assertion evidence."
+  ],
+  "review_run_id": "r-20261118T001139479307-review-of-bpq-owed-review-queues-held-7c45312878ae",
+  "review_text": "VERDICT goal: Read source prompt.txt:38 and live docs/plans/building-a-plan-queues-all-of-it.html section s3; the incremental merges preserve held review-debt queueing, with new measurement and reservation interaction repairs in reckon/crew/dispatching/preparation.py:732 and reckon/crew/admission/attempts.py:118.\nVERDICT done_when: Read source prompt.txt:160-161; pending-delivery-focused-gate.log:7 records 197 passed, including the original hold, release, findings and composition cases, while pending-merge-base-negative-control.log records the required dispatch refusal with one failing case and EXIT=1.\nVERDICT write_paths: Read the source declared grants, manifest.md changed_paths and scope_note; the named incremental authored paths stay within reckon/, tests/ and the granted evidence-fragment directory, and the large repository-wide delta comes from the two explicitly authorized primary merges.\nVERDICT manifest: Read source manifest.md in full; its seven newly gained commits resolve to the target head, its final 197-case gate is recorded at the preceding code-identical revision, and completed baseline_suite/after_suite agree with their 55-pass and 58-pass logs and zero added failures.\nVERDICT diff: Read the seven first-parent commits after 9da61f8b8d0f2aa6d4e09f2667ea3b8d9ea0451f, both merges' combined conflict resolutions, the named files' retained branch changes against primary 14327953c585f5848bbba9f778689a8756e7a848, and each repair diff; no defect was found in the node's incremental authored changes.\nCALL_SITES: reckon/crew/admission/selection.py:351, reckon/crew/admission/selection.py:643, reckon/crew/dispatching/preparation.py:732, reckon/crew/dispatching/preparation.py:749, reckon/crew/dispatching/requests.py:317, reckon/crew/dispatch_batch.py:1144, reckon/crew_dispatch_commands.py:446\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/preparation.py:732-766 retains review-debt queueing while placing the measurement refusal first, and reckon/crew_dispatch_commands.py:453 preserves explicit held acceptance beside the merged created-request signal.\nSCORE evidence: 20\nJUSTIFICATION evidence: pending-delivery-focused-gate.log:7-8 records 197 passed with EXIT=0, pending-merge-measurement-control.log records the wrong refusal before repair, and the completed source suite logs independently yield zero added failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Source manifest.md scope_note authorizes the two primary merges and reckon/tests repairs; authored additions at reckon/crew/admission/attempts.py:118 and tests/test_a_measurement_run_never_lands.py:697 repair interactions of that merge within the granted paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_measurement_run_never_lands.py:701-711 fails if the review hold precedes the measurement guard, tests/test_a_pass_sets_up_few_launches_at_once.py:44-87 fails if pending setups overspend seats or lose launches, and receipt assertions at tests/test_a_measurement_run_never_lands.py:514-533 require the actual refusal and precise failure IDs.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/admission/attempts.py:118-161 extends the existing LaunchBatch future bookkeeping and uses the established placement selectors, while reckon/crew/dispatching/preparation.py:732 moves the existing measurement mechanism without adding forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for reservation seat accounting and pending launches found reckon/crew/placement.py:1371 and reckon/crew/dispatch_admission.py:235; the new LaunchBatch method delegates occupant selection to that owner and adds batch-local pending accounting, while the merge preserves newest_design_review reuse in reckon/crew/admission/reviews.py:276.",
+  "reviewed_base_sha": "9da61f8b8d0f2aa6d4e09f2667ea3b8d9ea0451f",
+  "reviewed_head_sha": "7c45312878ae7ad976a7f26aad2e8b382cab630b",
+  "reviewed_run_id": "r-20261114T194828404887-bpq-owed-review-queues-held",
+  "scope": "Incremental review since the last stored reviewed head, limited to the fourteen named targets. Imported primary history was separated using combined merge diffs and the final diff against the merged primary; no unrelated peer implementation was rescored. No suite rerun or product edits.",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T194828404887-bpq-owed-review-queues-held/pending-delivery-after-suite.log",
+      "revision": "7c45312878ae7ad976a7f26aad2e8b382cab630b"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T194828404887-bpq-owed-review-queues-held/pending-merge-baseline-suite.log",
+      "revision": "bc316766333df704e7a671de195467dc836ab4b1"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:20:23.039994+00:00",
+  "total": 120,
+  "verdicts": {
+    "diff": "Read the seven first-parent commits after 9da61f8b8d0f2aa6d4e09f2667ea3b8d9ea0451f, both merges' combined conflict resolutions, the named files' retained branch changes against primary 14327953c585f5848bbba9f778689a8756e7a848, and each repair diff; no defect was found in the node's incremental authored changes.",
+    "done_when": "Read source prompt.txt:160-161; pending-delivery-focused-gate.log:7 records 197 passed, including the original hold, release, findings and composition cases, while pending-merge-base-negative-control.log records the required dispatch refusal with one failing case and EXIT=1.",
+    "goal": "Read source prompt.txt:38 and live docs/plans/building-a-plan-queues-all-of-it.html section s3; the incremental merges preserve held review-debt queueing, with new measurement and reservation interaction repairs in reckon/crew/dispatching/preparation.py:732 and reckon/crew/admission/attempts.py:118.",
+    "manifest": "Read source manifest.md in full; its seven newly gained commits resolve to the target head, its final 197-case gate is recorded at the preceding code-identical revision, and completed baseline_suite/after_suite agree with their 55-pass and 58-pass logs and zero added failures.",
+    "write_paths": "Read the source declared grants, manifest.md changed_paths and scope_note; the named incremental authored paths stay within reckon/, tests/ and the granted evidence-fragment directory, and the large repository-wide delta comes from the two explicitly authorized primary merges."
+  }
+}
