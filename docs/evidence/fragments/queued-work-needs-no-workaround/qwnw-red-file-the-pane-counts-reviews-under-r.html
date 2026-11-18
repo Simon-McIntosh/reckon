@@ -1,0 +1,92 @@
+<section id="qwnw-red-file-the-pane-counts-reviews-under-r-landing">
+  <h2>The pane counts reviews under r, and the block it pins is seven cells</h2>
+
+  <p><strong>Verdict: the test was wrong.</strong> The named file failed one of
+  its ten cases at the base revision <code>250d9cf3e6</code>: the case that pins
+  the shape of the counter block asserted six cells in the order
+  <code>w r h d q s</code>. The product had gained a seventh cell since that case
+  was written — <code>130499dbb3</code> added a promotion-queue counter with the
+  letter <code>p</code> between <code>q</code> and the stuck figure, so
+  <code>_MAX_CELLS</code> reads <code>("working", "in review", "help",
+  "delivered", "waiting", "promotion queue", "stuck")</code>. The pane's rule is
+  that a delivered run waiting on the coordinator and a promotion request waiting
+  on the queue that runs it are different facts, and each keeps its own cell.</p>
+
+  <p>No product repair was needed and none was made. The case now asserts the
+  rule the code keeps: seven cells in the order <code>w r h d q p s</code>, the
+  promotion cell's count field <code>promotion_queued</code> and its letter
+  <code>p</code>, and a <code>_stats</code> case that carries the queue's count
+  beside the oldest request position, which the cell prints as
+  <code>6p@ 5</code>. The block's fixed-width assertion
+  (<code>len(join) == STATS</code>) now measures the seven-cell block, whose
+  separators and suffix <code>STATS</code> already counts. No assertion was
+  deleted, and the case gained coverage rather than losing it: this file carried
+  no assertion on the promotion cell before.</p>
+
+  <h3 id="qwnw-red-file-the-pane-counts-reviews-under-r-arms">Measured</h3>
+
+  <p>Each arm is a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+  unset inside it, over a tree extracted from the worktree at that revision, so
+  the arm measures committed content rather than the working tree.</p>
+
+  <table id="qwnw-red-file-the-pane-counts-reviews-under-r-arm-rows">
+    <caption>Log paths are under the run directory
+    <code>~/.config/reckon/crew/runs/r-20261118T062658839785-qwnw-red-file-the-pane-counts-reviews-under-r/</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code></td>
+        <td>1 failed, 9 passed, <code>EXIT=1</code></td>
+        <td><code>base-arm-250d9cf3e6.log</code></td></tr>
+      <tr><td>head</td><td><code>5c088ac290755d7168e439d81b61d6490dbe5e5e</code></td>
+        <td>10 passed, <code>EXIT=0</code></td>
+        <td><code>head-arm-5c088ac290755d.log</code></td></tr>
+      <tr><td>scoped gate</td><td><code>5c088ac290755d7168e439d81b61d6490dbe5e5e</code></td>
+        <td>10 passed, <code>EXIT=0</code></td>
+        <td><code>scoped-gate-1795002606291425889.log</code></td></tr>
+      <tr><td>declared suite, base arm</td><td><code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code></td>
+        <td>0 failed, <code>EXIT=0</code></td>
+        <td><code>baseline_suite-1795002811889744616.log</code></td></tr>
+      <tr><td>declared suite, after arm</td><td><code>5c088ac290755d7168e439d81b61d6490dbe5e5e</code></td>
+        <td>0 failed, <code>EXIT=0</code></td>
+        <td><code>after_suite-1795002854755461098.log</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The change touches no product module and no other test file, so the files
+  that import what changed are the suites of the modules this file reads:
+  <code>reckon/crew/recovery.py</code>, <code>reckon/crew/ticker.py</code> and
+  <code>reckon/crew/recovery_review_dispatch.py</code> are unmodified, and the
+  declared suite pair reads 0 failures at both revisions, so the node adds no
+  failure against its base.</p>
+
+  <h3 id="qwnw-red-file-the-pane-counts-reviews-under-r-control">Negative control</h3>
+
+  <p>The base arm's failing id is
+  <code>tests/test_the_pane_counts_reviews_under_r.py::test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s</code>,
+  and its refusal quotes the extra cell the product draws:</p>
+
+  <pre><code>assert ('working', '...n queue', ...) == ('working', '...ing', 'stuck')
+At index 5 diff: 'promotion queue' != 'stuck'
+Left contains one more item: 'stuck'</code></pre>
+
+  <p>The head arm does not fail that id: the case is renamed to
+  <code>test_the_row_carries_seven_right_aligned_cells_in_the_order_w_r_h_d_q_p_s</code>
+  and passes, so the base's only failing id is absent at head and no other id
+  fails there. <code>ruff check</code> and <code>ruff format --check</code>
+  report nothing on the changed path.</p>
+
+  <h3 id="qwnw-red-file-the-pane-counts-reviews-under-r-outside">Outside scope</h3>
+
+  <p>Two other test files pin the same six-cell rule and are red for the same
+  cause, each owned by its own node of this section:
+  <code>tests/test_the_row_reads_in_one_order.py</code> (its
+  <code>STAT_LETTER</code> map omits <code>promotion queue</code>) and
+  <code>tests/test_fleet_counter_launch_failure.py</code> (its block regex reads
+  six letters). Neither was touched here.</p>
+
+  <p>The dispatch's suite fence substituted another node's test files
+  (<code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>) for this
+  node's, so the declared suite arms measure files this node did not change; the
+  node's own file is measured by the base and head arms above.</p>
+</section>
