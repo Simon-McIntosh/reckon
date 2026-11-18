@@ -1,0 +1,61 @@
+<section id="qwnw-red-file-session-resumes-only-its-own-task-landing">
+  <h2>A session resumes only its own task's conversation</h2>
+
+  <p><strong>What was red.</strong> At base <code>00e5bd109e</code> the file
+  <code>tests/test_session_resumes_only_its_own_task.py</code> read
+  <em>1 failed, 9 passed</em>, <code>EXIT=1</code>. The single failing id was
+  <code>test_a_new_node_does_not_continue_the_members_other_node_session</code>,
+  and it died at its first statement rather than on the rule it states:
+  <code>FileNotFoundError: ... test_a_new_node_does_not_conti0/repo/docs/state/proj/crew.json</code>.</p>
+
+  <p><strong>Cause and verdict: test wrong.</strong> The case snapshotted the
+  roster as a file in the checkout and compared the bytes before and after each
+  dispatch. Registration became a store-only transaction —
+  <code>reckon/ledger.py</code> <code>register_member</code> persists through
+  <code>run_store.auxiliary</code> and its own docstring says so — so
+  <code>docs/state/&lt;project&gt;/crew.json</code> is never created and the
+  snapshot the case wanted is the roster the store serves. The product rule the
+  case exists for (a task's session is keyed by project, plan and node id, never
+  by the member that carried it) is correct at base and stayed untouched: cases
+  2–5 covering it already passed.</p>
+
+  <p><strong>What changed.</strong> Only the test. The case now reads
+  <code>ledger.members("proj", root=repo)</code> before and after each dispatch,
+  and asserts the snapshot holds the registered <code>worker-a</code> member, so
+  the comparison cannot pass by comparing two empty rosters. No assertion was
+  deleted or weakened; the byte-equality on a file that no longer exists became
+  roster-equality on the store that replaced it.</p>
+
+  <h3 id="qwnw-red-file-session-resumes-only-its-own-task-arms">Arms, each resolved over its own tree</h3>
+
+  <table>
+    <thead><tr><th>Revision</th><th>Command</th><th>Result</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>00e5bd109e44209141475c852cd5490b8bef9be3</code> (base)</td>
+        <td><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_session_resumes_only_its_own_task.py</code></td>
+        <td>1 failed, 9 passed, <code>EXIT=1</code> — ids: <code>test_a_new_node_does_not_continue_the_members_other_node_session</code></td>
+        <td><code>arm-00e5bd109e.log</code></td>
+      </tr>
+      <tr>
+        <td><code>6e45b299929c971d8c1664e06f328a4124a38e6a</code> (head)</td>
+        <td><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_session_resumes_only_its_own_task.py</code></td>
+        <td>10 passed, <code>EXIT=0</code></td>
+        <td><code>arm-6e45b29992.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> The base arm above is the red log,
+  reported beside the head arm. The head arm's pass is not vacuous: the case
+  first proves the store roster names <code>worker-a</code> before asserting
+  the dispatch leaves that roster unchanged.</p>
+
+  <h3 id="qwnw-red-file-session-resumes-only-its-own-task-checks">Remaining checks</h3>
+
+  <p><code>ruff check</code> reports <em>All checks passed</em> and
+  <code>ruff format --check</code> reports <em>1 file already formatted</em> on
+  the one changed path, <code>tests/test_session_resumes_only_its_own_task.py</code>.
+  Nothing in <code>reckon/</code> changed, so no other test file's import graph
+  moved.</p>
+</section>
