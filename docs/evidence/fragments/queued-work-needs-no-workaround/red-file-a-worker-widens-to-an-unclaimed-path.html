@@ -1,0 +1,81 @@
+<section id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-landing">
+  <h2>A widening to a source path a peer declared is not refused, and is not a held path</h2>
+
+  <p><strong>What was red.</strong> At <code>8a9d873cb9</code> two of the six
+  cases in <code>tests/test_a_worker_widens_to_an_unclaimed_path.py</code>
+  failed, both parametrised cases of
+  <code>test_a_self_widen_to_a_peer_held_path_is_refused_naming_the_peer</code>.
+  The widen succeeded and added the peer's path, which the running case below
+  quotes in full. The fixture had written its peer's claim on
+  <code>reckon/crew/queue_admission.py</code>.</p>
+
+  <p><strong>Verdict: the test, not the product.</strong> Path claims were
+  reserved for the artifacts git cannot reconcile in
+  <code>5695689722</code> (<code>fix(crew): reserve path claims for
+  nonmergeable artifacts</code>): a claim on a source path no longer fences,
+  because two runs edit one source file in their own worktrees and the merge
+  reconciles them. <code>_claim_paths_share</code> and
+  <code>_shared_write_paths</code> in <code>reckon/crew/runs.py</code> therefore
+  share every source path whatever the sharing declaration says, and
+  <code>_default_class</code> keeps <code>docs/plans/*.html</code>,
+  <code>docs/evidence/archive/</code>, <code>docs/state/</code>,
+  <code>docs/figures/</code>, <code>pyproject.toml</code>, <code>uv.lock</code>,
+  <code>*.receipt</code> and binary content exclusive. The fixture was written
+  on 2026-10-27, before that change, so its peer path stopped denoting a held
+  path while the assertion still read as one.</p>
+
+  <p><strong>What changed.</strong> <code>PEER_HELD</code> now names
+  <code>docs/plans/sample.html</code>, an artifact class a claim still keeps,
+  with a comment on the constant naming the rule it obeys. The refusal the case
+  asserts is unchanged in substance and now holds a path a claim actually
+  fences: the peer's run id is in the widen's refusal for both a launched and a
+  queued holder, and the pointer's bytes are byte-identical afterwards.</p>
+
+  <p><strong>The two parameters measure different rules, which a mutation
+  shows.</strong> With <code>regard_waiting</code> in
+  <code>reckon/crew/claims.py</code> forced to <code>False</code> — its only
+  caller being the self-widen — the launched-holder case still refuses (its
+  record's own disposition binds) and the queued-holder case widens and adds
+  the peer's path. The queued parameter therefore measures the rule that a
+  self-widen regards a waiting claim, and the launched one measures the claim's
+  disposition. <code>reckon/crew/claims.py</code> was restored before the
+  commits recorded here.</p>
+
+  <h3 id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-measured">Measured</h3>
+
+  <p>Every arm is a log whose first lines name the revision, the tree and the
+  command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-arms">
+    <caption>The named file, the project's armed suite, and the negative
+    control.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base</td>
+        <td><code>8a9d873cb91d05af20ae5c6530880c260e1c5dbe</code>, extraction</td>
+        <td>2 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head gate</td>
+        <td><code>06cb0def3aab1c031af9ce03113fdd4a4db27009</code>, gate tree</td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>armed suite, base</td>
+        <td><code>8a9d873cb91d05af20ae5c6530880c260e1c5dbe</code>, gate tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>armed suite, after</td>
+        <td><code>06cb0def3aab1c031af9ce03113fdd4a4db27009</code>, gate tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>delta</td><td>after arm against base arm</td>
+        <td>0 added failures</td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-basearm">The base
+  arm's failing ids, as the runner printed them:</p>
+  <pre id="qwnw-red-file-a-worker-widens-to-an-unclaimed-path-baseids"><code>FAILED tests/test_a_worker_widens_to_an_unclaimed_path.py::test_a_self_widen_to_a_peer_held_path_is_refused_naming_the_peer[working-r-20261027T130000000000-self-widen-peer]
+FAILED tests/test_a_worker_widens_to_an_unclaimed_path.py::test_a_self_widen_to_a_peer_held_path_is_refused_naming_the_peer[queued-r-20261027T130000000000-self-widen-queued]</code></pre>
+
+  <p><strong>Found outside this node's scope.</strong>
+  <code>tests/test_fence_widening.py::test_a_peer_held_path_refuses_without_changing_pointer_bytes</code>
+  fails at head with <code>DID NOT RAISE ScopeConflict</code> for the same
+  cause: its holder declares <code>reckon/crew/node.py</code>, a source path.
+  It is another node's file and was not edited here.</p>
+</section>
