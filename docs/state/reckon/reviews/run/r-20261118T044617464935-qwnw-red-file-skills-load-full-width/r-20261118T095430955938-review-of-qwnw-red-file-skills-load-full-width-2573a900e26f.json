@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:862 -> _fragment_href (resolves docs/evidence/fragments/<plan_slug>/<node>.html)",
+    "reckon/resources.py:65 -> EVIDENCE_FRAGMENTS_SUBTREE (discovery walk over the fragments subtree)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T09:57:16Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-skills-load-full-width.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the landing fragment is filed as red-file-skills-load-full-width.html while reckon/evidence.py:866 composes docs/evidence/fragments/<plan_slug>/<node>.html from the node id qwnw-red-file-skills-load-full-width, so _fragment_href finds no file and the plan's closing overview links nothing for this node"
+    },
+    {
+      "file": "tests/test_skills_load_full_width.py",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "the absence guard 'Never load a plan wholesale' not in build is evaluated only against BUILD (skills/reckon-build/SKILL.md) and the same function reads REFERENCE at line 12 without barring the retired rule there, which still says 'A coordinator chooses each section rather than loading a plan wholesale' at skills/reckon-build/references/sprint-orchestration.md:783; the guard therefore cannot redden on the carrier the reviewed run logged under outside_scope"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044617464935-qwnw-red-file-skills-load-full-width/manifest.md",
+      "line": 14,
+      "severity": "non-blocking",
+      "text": "the tests: line quotes the inner pytest command, while the gate log's '# command:' header records the landed command as 'env PYTHONPATH=. sh -c ...' and no artefact records SLURM_JOB_ID unset, so the done_when's all_debug/unset-job condition is claimed in the landing line rather than read from the recorded run"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 97dec20bfb: c7efa46ac0 replaces three assertion targets in tests/test_skills_load_full_width.py with no assertion deleted, and 2573a900e2 adds the 118-line evidence fragment.",
+    "done_when": "the done_when requires the named file green at head on all_debug with SLURM_JOB_ID unset, each cause given a product-or-test verdict, and base and head suite arms as inline JSON; the manifest records the 9-passed gate, both causes as test-wrong, and 58-passed arms, but the all_debug/SLURM_JOB_ID-unset condition is asserted in prose rather than read from a log header.",
+    "goal": "the source node's goal is 'Make tests/test_skills_load_full_width.py pass in full on the primary branch'; the head tree's file passes 9 of 9 per the scoped gate log, and the base arm at 97dec20bfb fails exactly the two stale assertions.",
+    "manifest": "read; manifest.md:13-14 records the gate command, the 9-passed head result, the 2-failed base arm with its two ids, both suite arms as 40-character inline JSON, and the outside_scope contradiction in the reference.",
+    "write_paths": "the declared paths are reckon, tests, the fragments directory and its named qwnw- file, and the figures directory; the two-path diff lies inside tests/ and the fragments directory."
+  },
+  "justifications": {
+    "durability": "tests/test_skills_load_full_width.py:23-24 reddens when the retired sentence is reinstated or the full-width instruction is reworded away, and :53 reddens if the guidance clause reverts, but the same retired rule survives unguarded at skills/reckon-build/references/sprint-orchestration.md:783.",
+    "evidence": "scoped-gate-1794994020241470562.log and base-arm-skills-load-full-width.log carry revision, tree, command and a terminal EXIT line, but the gate ran at c7efa46ac0 rather than the delivered head and no log header records the done_when's all_debug partition or an unset SLURM_JOB_ID.",
+    "fit": "the changed assertions extend the existing test functions and reuse tests/test_skill_contracts.py:22 normalized(), matching the file's existing presence and absence assertions at tests/test_skills_load_full_width.py:34-36.",
+    "goal_fidelity": "the scoped gate log records 9 passed and EXIT=0 at c7efa46ac0 while the base arm at 97dec20bfb records 2 failed, 7 passed and EXIT=1, so the delivered test file passes in full and the two stale assertions are what moved.",
+    "reuse": "the diff adds no function, class or module; it reuses test_skill_contracts.normalized and the file's existing test functions, and no repository mechanism for document-contract assertions is duplicated.",
+    "scope_discipline": "git diff --stat 97dec20bfb..2573a900e2 lists only tests/test_skills_load_full_width.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared paths, though the fragment's filename departs from the exact granted name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Make tests/test_skills_load_full_width.py pass in full on the primary branch'; the head tree's file passes 9 of 9 in scoped-gate-1794994020241470562.log, and the base arm at 97dec20bfb fails exactly the two stale assertions at tests/test_skills_load_full_width.py:23 and :52.\nVERDICT done_when: the done_when requires the named file green at head on all_debug with SLURM_JOB_ID unset, each cause given a product-or-test verdict, and base and head suite arms as inline JSON; manifest.md:13-14 and :14 records the 9-passed gate, both causes as test-wrong and 58-passed arms, but the all_debug/unset-job condition is asserted in prose rather than read from a log header.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named qwnw- file, and the figures directory; git diff --stat 97dec20bfb..2573a900e2 shows the diff staying inside tests/ and the fragments directory.\nVERDICT manifest: read; manifest.md:13-15 records the gate command, the 9-passed head result with EXIT=0, the base arm's 2 failed and 7 passed with its two ids, both suite arms as inline JSON carrying 40-character revisions, and the reference contradiction under outside_scope.\nVERDICT diff: read both commits against 97dec20bfb; c7efa46ac0 changes three assertion targets in tests/test_skills_load_full_width.py (+3 -2, no assertion deleted and four added-rule lines), and 2573a900e2 adds the 118-line evidence fragment.\nCALL_SITES: reckon/evidence.py:862 -> _fragment_href, reckon/resources.py:65 -> EVIDENCE_FRAGMENTS_SUBTREE\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the scoped gate log records 9 passed and EXIT=0 at c7efa46ac0 whereas the base arm at 97dec20bfb records 2 failed, 7 passed and EXIT=1, so tests/test_skills_load_full_width.py passes in full and only the two stale assertions moved.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1794994020241470562.log and base-arm-skills-load-full-width.log each carry revision, tree, command and a terminal EXIT line, but the gate ran at c7efa46ac0 rather than the delivered head and no header records the all_debug partition or an unset SLURM_JOB_ID.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 97dec20bfb..2573a900e2 lists only tests/test_skills_load_full_width.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared paths, though the fragment's filename departs from the exact granted name.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_skills_load_full_width.py:23-24 reddens if the retired sentence returns or the full-width instruction is reworded away and :53 reddens if the guidance clause reverts, but the same retired rule survives unguarded at skills/reckon-build/references/sprint-orchestration.md:783.\nSCORE fit: 19\nJUSTIFICATION fit: the changed assertions extend the file's existing functions and reuse tests/test_skill_contracts.py:22 normalized(), matching the absence assertion already at tests/test_skills_load_full_width.py:36.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it reuses test_skill_contracts.normalized and the file's own test functions, and no existing owner of document-contract assertions is duplicated.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-skills-load-full-width.html:1 non-blocking: the fragment filename omits the node id, and reckon/evidence.py:866 composes docs/evidence/fragments/<plan_slug>/<node>.html from the node id qwnw-red-file-skills-load-full-width, so _fragment_href finds no file and the plan overview links nothing for this node.\nFINDING tests/test_skills_load_full_width.py:24 non-blocking: the absence guard is evaluated only against BUILD and the same function reads REFERENCE at :12 without barring the retired rule, which still stands at skills/reckon-build/references/sprint-orchestration.md:783, so the carrier the reviewed run logged under outside_scope cannot redden the file.\nFINDING manifest.md:14 non-blocking: the tests: line quotes the inner pytest command while the gate log's '# command:' records 'env PYTHONPATH=. sh -c ...' and no artefact records SLURM_JOB_ID unset, so the done_when's all_debug/unset-job condition is claimed in the landing line rather than read from the recorded run.\n",
+  "review_run_id": "r-20261118T095430955938-review-of-qwnw-red-file-skills-load-full-width-2573a900e26f",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "2573a900e26f6248993224f512d9f1230951937a",
+  "reviewed_run_id": "r-20261118T044617464935-qwnw-red-file-skills-load-full-width",
+  "reviewed_worker_commits": [
+    "c7efa46ac05a2d5ca2faea2dc9207659a8080bc1",
+    "2573a900e26f6248993224f512d9f1230951937a"
+  ],
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "revision": "c7efa46ac05a2d5ca2faea2dc9207659a8080bc1"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "revision": "97dec20bfb8603ab71c4e9deeefddab685e0a42e (labelled; the log header itself names this revision)"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:15:27.450621+00:00",
+  "total": 108
+}
