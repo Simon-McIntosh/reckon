@@ -219,3 +219,61 @@ def test_a_reprioritised_delivered_run_moves_its_review_ahead(
         "review-raised",
         "review-other",
     ]
+
+
+def test_a_raise_on_a_delivered_run_is_charged_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One raise, two records, one charge.
+
+    The run is the record a coordinator reads and the review is the record
+    admission ranks, so both name the points. A raise charged to both would make
+    a session at its budget refuse a raise it can neither avoid paying for nor
+    afford twice, so the session's own figure is the check here rather than
+    either record's.
+    """
+    _charge_with_budget(monkeypatch, budget=4)
+    pointer = _delivered("r-delivered", SESSION)
+    _queued(
+        "review-of-delivered",
+        SESSION,
+        role="review",
+        node_id="review-of-r-delivered",
+    )
+    promotion_requests.request_promotion(str(pointer["run_id"]))
+    assert runs.session_priority_in_use(SESSION)[0] == 0
+
+    queue_edit.reprioritise(str(pointer["run_id"]), 4, project=PROJECT)
+
+    total, holders = runs.session_priority_in_use(SESSION)
+    assert total == 4, holders
+    assert [holder["run_id"] for holder in holders] == ["review-of-delivered"], holders
+    assert runs.read_pointer("r-delivered")["priority"] == 4
+    assert runs.read_pointer("review-of-delivered")["priority_override"] == 4
+
+    # The second raise replaces the charge rather than adding to it.
+    queue_edit.reprioritise(str(pointer["run_id"]), 4, project=PROJECT)
+    assert runs.session_priority_in_use(SESSION)[0] == 4
+
+
+def test_withdrawing_a_raise_stops_the_charge_on_both_records(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A raise that is withdrawn must stop being charged, on both records."""
+    _charge_with_budget(monkeypatch)
+    pointer = _delivered("r-delivered", SESSION)
+    _queued(
+        "review-of-delivered",
+        SESSION,
+        role="review",
+        node_id="review-of-r-delivered",
+    )
+    queue_edit.reprioritise(str(pointer["run_id"]), 1, project=PROJECT)
+    assert runs.session_priority_in_use(SESSION)[0] == 1
+
+    queue_edit.reprioritise(str(pointer["run_id"]), 0, project=PROJECT)
+
+    assert runs.session_priority_in_use(SESSION)[0] == 0
+    assert not runs.read_pointer("review-of-delivered").get("priority_override")
+    assert runs.read_pointer("review-of-delivered")["priority"] == 0
+    assert not runs.read_pointer("r-delivered").get(runs.PRIORITY_DELIVERED_MARK)

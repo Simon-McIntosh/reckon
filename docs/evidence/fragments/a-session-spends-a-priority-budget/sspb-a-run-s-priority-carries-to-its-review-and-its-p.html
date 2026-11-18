@@ -25,7 +25,11 @@ the session's budget and marked on the pointer with
 <code>runs.PRIORITY_DELIVERED_MARK</code>, which is what
 <code>runs._holds_priority</code> reads: a delivered run's points returned at launch, so
 only a mark saying they were spent again charges them. Landing retires the live pointer,
-and the budget is read from the pointers, so the points come back with no second ledger.</li>
+and the budget is read from the pointers, so the points come back with no second ledger.
+The mark charges the run only where nothing else holds the same raise. Where the run's
+review is still queued, the review is the record admission ranks, so the raise is judged
+against the session once — the review's points are excluded from that judgement and the
+run's mark is cleared — and the session reads the raise once rather than twice.</li>
 <li id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-carry">A raise is also written onto the queued review and the queued promotion
 request for that run, because both queues rank their own records rather than the run's
 pointer. Without that write the raise would move nothing a queue reads.</li>

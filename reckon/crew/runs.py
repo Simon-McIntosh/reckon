@@ -685,6 +685,7 @@ def session_priority_in_use(
     *,
     live: Sequence[Mapping[str, Any]] | None = None,
     exclude_run_id: str = "",
+    exclude_run_ids: Iterable[str] = (),
 ) -> tuple[int, list[dict[str, Any]]]:
     """The priority points a session holds on its unlaunched requests.
 
@@ -694,12 +695,21 @@ def session_priority_in_use(
     a request removed by any route — launch, drop, discard, landing — returns
     its points with no second bookkeeping step to get wrong. A request the
     caller is about to rewrite is excluded by run id so its own points are not
-    counted twice, and a delivered run is charged only where a reprioritise
-    placed points on it, which is what the marker records: its launch returned
-    the points it was dispatched with, so a delivered run still holds them only
+    counted twice. A delivered run is charged only where a reprioritise placed
+    points on it, which is what the marker records: its launch returned the
+    points it was dispatched with, so a delivered run still holds them only
     because a coordinator spent them there.
+
+    More than one request may be excluded, because one raise can be written
+    under two names. A delivered run and the review composed for it are one
+    charge: the raise is stored on the run so a reader sees what the
+    coordinator asked for, and on the review because the review is the record
+    admission ranks. The caller excludes both, so the session is charged once
+    however many records carry the same points.
     """
     pointers = list_live() if live is None else live
+    excluded = {str(exclude_run_id)} if exclude_run_id else set()
+    excluded.update(str(run_id) for run_id in exclude_run_ids)
     holders: list[dict[str, Any]] = []
     total = 0
     for pointer in pointers:
@@ -707,7 +717,7 @@ def session_priority_in_use(
             continue
         if not _holds_priority(pointer):
             continue
-        if exclude_run_id and str(pointer.get("run_id") or "") == exclude_run_id:
+        if excluded and str(pointer.get("run_id") or "") in excluded:
             continue
         points = _stored_priority(pointer)
         if points <= 0:
@@ -726,6 +736,7 @@ def require_priority_budget(
     *,
     live: Sequence[Mapping[str, Any]] | None = None,
     exclude_run_id: str = "",
+    exclude_run_ids: Iterable[str] = (),
 ) -> None:
     """Refuse a priority that would take a session past its declared budget.
 
@@ -737,7 +748,10 @@ def require_priority_budget(
     if budget is None or asked <= 0:
         return
     in_use, holders = session_priority_in_use(
-        session, live=live, exclude_run_id=exclude_run_id
+        session,
+        live=live,
+        exclude_run_id=exclude_run_id,
+        exclude_run_ids=exclude_run_ids,
     )
     if in_use + asked > budget:
         raise PriorityBudgetExceeded(

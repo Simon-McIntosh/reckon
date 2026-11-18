@@ -646,9 +646,10 @@ admission pass, so raise or lower it whenever needs change while the request
 waits, queued or awaiting its upstream. The points a run launched with carry to
 the review composed for it and to its promotion request, so both queues order by
 them — and a delivered run can be raised with the same verb while it waits to
-land, so its review and its promotion move ahead. A raise on a delivered run is
-charged to the session's budget again, and those points return when the run
-lands or is discarded.
+land, so its review and its promotion move ahead. A raise on a delivered run
+costs the session its points once, whichever record carries them: while the
+review is still queued it is the review that is charged, and the charge returns
+when the run lands or is discarded.
 
 ```text
 reckon crew queue reprioritise --run <delivered-run-id> --priority 90 --reason "this run's landing gates the next wave"
