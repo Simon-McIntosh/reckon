@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s93">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-18">
+  <meta name="evidence-commit" content="5f8c0a43a3">
+  <title>Lane reference rates refresh from the rows that changed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="lane-reference-rates-read-history-once">
+  <h2>Lane reference rates refresh from the rows that changed</h2>
+
+  <p><strong>The defect.</strong> A lane's reference rate is the median
+  measured rate of its runs completed in the last seven days, cached per
+  project and five-minute bucket. Every bucket roll decoded the whole window
+  again: <code>recovery_stream._lane_reference_rates</code> read the ledger with
+  <code>activity_since=start</code> for the full seven days, 14.6% of the
+  station's profile samples, once per project every five minutes.</p>
+
+  <p><strong>The change.</strong> The function keeps each project's per-run
+  contributions — completion instant and measured rate per lane — beside the
+  bucket that answered. A roll onto the bucket after the one it answered reads
+  only the rows whose newest stamp reaches past the previous bucket's end,
+  folds them in, and drops the rows the new window's start has passed. A run id
+  identifies a row, so a boundary row returned again by the narrow bound
+  replaces its entry rather than counting twice. A project the process holds no
+  previous bucket for, including one whose bucket was skipped, still reads its
+  window once, and a failed narrow read widens to that same window read.</p>
+
+  <p><strong>The measure.</strong> In a temporary crew home holding 2,000
+  promoted rows across three lanes, the opening bucket decoded 2,000 rows and
+  the roll over five newly promoted rows decoded 6 (the five promoted rows plus
+  the one boundary row), inside the test's ceiling of 10. The base revision
+  decodes 2,002 in the same arm: the whole window, as recorded in
+  <code>negative-control.log</code>. Every lane's rates and the
+  <code>_budget_overrun_cause</code> of 20 live runs equal the whole-window
+  read's in both buckets; three aged rows leave one lane's cohort between the
+  buckets and the boundary row stays in it.</p>
+</section>
+</main>
+</body>
+</html>
