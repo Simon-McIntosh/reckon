@@ -8,13 +8,22 @@ therefore held the supervisor alive about 45 s after the stop was recorded
 (measured on ``r-20261002T052254559858``).
 
 These cases drive a real detached supervisor for a stub worker that ignores
-SIGTERM, stop the run through ``dispatch.terminate`` -- the call ``crew stop``
-makes -- and measure how long the supervisor's pid survives. The supervisor is
-expected to give the worker the configured stop grace to end on its own, then
-SIGKILL it and write the exit record. Each case waits, bounded, on the observed
-condition (the supervisor's pid is gone) under a ceiling generous for a loaded
-node; the ceiling sits under the worker's own sleep, so an exit inside it can
-only be the supervisor's escalation, not the worker finishing.
+SIGTERM, send the run the group SIGTERM ``crew stop`` sends first, and measure
+how long the supervisor's pid survives. The supervisor is expected to give the
+worker the configured stop grace to end on its own, then SIGKILL it and write
+the exit record. Each case waits, bounded, on the observed condition (the
+supervisor's pid is gone) under a ceiling generous for a loaded node; the
+ceiling sits under the worker's own sleep, so an exit inside it can only be the
+supervisor's escalation, not the worker finishing.
+
+The stop is the group SIGTERM and not ``dispatch.terminate``, because the call
+``crew stop`` makes runs a second escalator: its own settle window is shorter
+than one supervisor poll plus the stop grace, so its whole-tree SIGKILL ends the
+run before the supervisor's drain runs and the kill the run's own directory
+would attribute to the supervisor is sent by the stop instead. That pre-emption
+is the stop's own rule and is covered by
+``tests/test_a_worker_never_outlives_its_supervisor.py``; measured from here,
+it would leave this file's bound assertions with nothing to observe.
 
 Two declared mutations withhold the stop-grace escalation through one
 environment hook, and each reddens a different assertion. The ceiling control
@@ -274,7 +283,16 @@ def _launch(
 
 
 def _stop(fixture: dict[str, Any]) -> float:
-    """Wait for the stub to be up, stop the run, return the stop instant."""
+    """Wait for the stub to be up, send the run its group stop, return the stop instant.
+
+    The signal is the group SIGTERM ``crew stop`` sends first, addressed to the
+    supervisor's own session: the supervisor and the worker both receive it, and
+    the supervisor's grace escalation is the only escalator that runs. The
+    whole-tree SIGKILL ``crew stop`` follows with is not sent here, because its
+    settle window is shorter than a poll plus the grace -- it would end the run
+    itself, and the supervisor's drain, which is what these cases measure, would
+    never be reached.
+    """
     run_id = fixture["run_id"]
     _wait_until(
         lambda: _worker_pid(run_id) is not None,
@@ -287,7 +305,7 @@ def _stop(fixture: dict[str, Any]) -> float:
         detail="the stub worker's manifest",
     )
     started = time.monotonic()
-    dispatch_module.terminate(run_id)
+    os.killpg(os.getpgid(fixture["supervisor_pid"]), signal.SIGTERM)
     return started
 
 
