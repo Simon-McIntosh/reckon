@@ -25,8 +25,8 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="491">
-<meta name="plan-modified" content="2026-11-18">
+<meta name="plan-version" content="492">
+<meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
   <main class="plan-doc">
@@ -1851,6 +1851,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s95" data-id="c-run-r-20261118T203118478212-review-of-the-review-reflex-recomposes-only-on-change-df52b278f758" data-who="reckon-build" data-when="2026-11-18T20:55:09.958Z">
     <div class="r-comment-body"><p>Review of r-20261118T185308531119-the-review-reflex-recomposes-only-on-change at df52b278f758c9d37dbbd797b1f571ac507f593c against 96e3c4b8a3957e2624866e0dc773042892239333: scores goal_fidelity 15, evidence 14, scope_discipline 19, durability 13, fit 16, reuse 17; one blocking finding — the claim-refusal exclusion at recovery_review_dispatch.py:3842 tests a report key the only caller never sets, so a claim-naming refusal stays remembered after the holder releases and the run's review is never composed again.</p></div>
+</div>
+<div class="r-comment" data-section="s95" data-id="c-run-r-20261118T223235150032-review-of-the-review-reflex-recomposes-only-on-change-d238c29ffc09" data-who="reckon-build" data-when="2026-11-18T22:40:28.973Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261118T185308531119-the-review-reflex-recomposes-only-on-change over the three commits gained since df52b278f758 (c128bcb775, 104161b18b, d238c29ffc): parsed, six dimensions scored goal_fidelity 15, evidence 16, scope_discipline 20, durability 18, fit 17, reuse 16, zero added failures derived from the run&#x27;s own arms (58 passed at 96e3c4b8, 62 passed at d238c29ffc), three non-blocking findings and no blocking one: the claim exclusion and the minute bound both carry a red arm (EXIT=1 with the failing id), while lane-paused and roster-full refusals are still composed on every sweep.</p></div>
 </div>
 <div class="r-comment" data-section="s96" data-id="c-run-r-20261118T200331029792-review-of-an-unchanged-live-listing-decodes-nothing-19e85cef66b1" data-who="reckon-build" data-when="2026-11-18T20:09:22.658Z">
     <div class="r-comment-body"><p>Reviewed r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing at 96e3c4b8a3957e2624866e0dc773042892239333..19e85cef66b1599f2d175f34bd62b4f1639651a8: the decoded-record cache at reckon/crew/runs.py:1482 meets the goal and is read through both readers, the gate asserts the done_when with a base red control quoted, scope is the two declared files; scores goal_fidelity 20, evidence 16, scope_discipline 19, durability 19, fit 16, reuse 5 (total 95), three non-blocking findings — the file_memo capability is duplicated, the unchanged listing still pays a deepcopy per record (measured 1.7-2.0x the decode it replaces), and one assertion compares two listings to each other.</p></div>
