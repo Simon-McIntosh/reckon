@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-a-promotion-releases-waiters-however-spelled-log">
+<h3>A promotion releases its waiters however the section is spelled: measured runs</h3>
+<p><strong>Verdict: no cause remains at this node's base, so nothing was repaired.</strong>
+<code>tests/test_a_promotion_releases_waiters_however_spelled.py</code> passes in full at
+<code>6699d0257d</code> and at the head the run merged (<code>3349de93d8</code>, the primary
+branch at dispatch), so the node is delivered as a passing run rather than as a repair. The
+failure §29 records for this file was repaired before the node started: <code>d675c26964</code>
+(&quot;fix(crew): release section waiters by normalized identity&quot;, 6 November) adds the test
+and the normalisation it asserts together — in the file, in
+<code>promotion._release_waiters_of_the_landed_section</code> and in
+<code>queue_admission._release_waiters</code> — and that commit is an ancestor of both the base
+revision and the head.</p>
+
+<h4 id="qwnw-red-file-a-promotion-releases-waiters-however-spelled-head">Head run, all_debug job: 7 passed</h4>
+<pre># revision: 3349de93d8ff1aed3524df18b505bec5174ff791
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-95231a7b1141-ofzc6J/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_releases_waiters_however_spelled.py'
+.......                                                                  [100%]
+7 passed in 1.06s
+EXIT=0</pre>
+
+<h4 id="qwnw-red-file-a-promotion-releases-waiters-however-spelled-base">Base run of the same file at 6699d0257d: also 7 passed</h4>
+<p>No red exists at this node's base, so the negative control is the mutation below rather than a
+base failure. Both runs are all_debug jobs; the base run measured the base revision through the
+same partition runner the worker gate uses.</p>
+<pre># revision: 6699d0257dd54f67be1f09ce02d9d6cc9ab117ed
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-c47cfa0755f9-M2SdVm/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_releases_waiters_however_spelled.py'
+.......                                                                  [100%]
+7 passed in 0.92s
+EXIT=0</pre>
+
+<h4 id="qwnw-red-file-a-promotion-releases-waiters-however-spelled-mutation">Mutation: the file does guard the rule</h4>
+<p>A green run does not by itself show that its assertions bind. Reverting
+<code>d675c26964</code>'s four-line hunk in <code>reckon/crew/promotion.py</code> in a tree
+extracted at <code>6699d0257d</code> makes three of the seven fail, all three on the
+spelling-tolerant match this node is named for.</p>
+<pre># revision: 6699d0257d (tree at 6699d0257d with d675c26964 reverted in reckon/crew/promotion.py)
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_releases_waiters_however_spelled.py
+FAILED tests/test_a_promotion_releases_waiters_however_spelled.py::test_section_spellings_release_in_both_directions[\xa78-s8] - AssertionError: assert [] == ['r-waiter']
+FAILED tests/test_a_promotion_releases_waiters_however_spelled.py::test_section_spellings_release_in_both_directions[s8-\xa78] - AssertionError: assert [] == ['r-waiter']
+FAILED tests/test_a_promotion_releases_waiters_however_spelled.py::test_project_qualified_wait_matches_the_promoted_project - AssertionError: assert [] == ['r-waiter']
+3 failed, 4 passed in 1.24s
+EXIT=1</pre>
+
+<h4 id="qwnw-red-file-a-promotion-releases-waiters-however-spelled-arms">Arms over the declared suite</h4>
+<p>Base arm at <code>6699d0257dd54f67be1f09ce02d9d6cc9ab117ed</code> and after arm at
+<code>3349de93d8ff1aed3524df18b505bec5174ff791</code>, each resolved over its own tree and run
+as an all_debug job: 58 passed in both, no failure ids added. The file this node names is not
+among those 58; its own head run is the first block above.</p>
+
+<h4 id="qwnw-red-file-a-promotion-releases-waiters-however-spelled-provenance">Provenance</h4>
+<ul>
+<li>No product change and no test change: <code>reckon/</code> and <code>tests/</code> are
+untouched by this node; the diff is this record only.</li>
+<li>The head measured was reached by fast-forwarding the worktree onto <code>origin/main</code>
+(<code>3349de93d8</code>) as the dispatch requires; <code>6699d0257d</code> is the base revision
+the dispatch names.</li>
+<li>Ruff: <code>ruff check</code> and <code>ruff format --check</code> pass on
+<code>tests/test_a_promotion_releases_waiters_however_spelled.py</code> and
+<code>reckon/crew/promotion.py</code>.</li>
+</ul>
+</section>
