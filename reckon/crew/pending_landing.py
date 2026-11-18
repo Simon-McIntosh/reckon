@@ -449,36 +449,27 @@ def retire_pointer_if(run_id: str, matches: Callable[[Mapping[str, Any]], bool])
 
 
 def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
-    """Retire a proved promotion, keeping its merge journal independent of liveness.
+    """Retire a proved promotion with no journal, group or live workspace owner.
 
-    A repair mark, group membership or a rewritten phase does not undo a
-    promotion. The row must name this run; an unreadable row proves nothing.
-    The pointer lock serialises retirement with the observers that replace it.
-    Pending journals and group snapshots remain the owners of unmerged work.
+    Retirement never creates merge work. Journals keep their cited head, and
+    existing workspaces finish through the integrated release path so its
+    safety checks, receipts and section waiters precede pointer removal.
     """
     run_id = str(pointer.get("run_id") or "")
     project = str(pointer.get("project") or "")
-    if not run_id or not project:
+    if not run_id or not project or pointer.get("landing_group"):
         return POINTER_HELD
 
     def promoted(current: Mapping[str, Any]) -> bool:
-        if dict(current) != pointer:
+        if dict(current) != pointer or _record_path(run_id).exists():
+            return False
+        workspace = str(current.get("worktree") or "")
+        if workspace and Path(workspace).exists():
             return False
         row = _promoted_row(project, run_id)
         if row is None or row.get("run_id") != run_id:
             return False
-        if not row.get("promoted_revision") and not row.get("promoted_by"):
-            return False
-        head = _reviewed_head(row)
-        if (
-            head
-            and not current.get("landing_group")
-            and not _record_path(run_id).exists()
-        ):
-            write_pending(run_id, project, pointer=current, head=head)
-            if _read(_record_path(run_id)) is None:
-                return False
-        return True
+        return bool(row.get("promoted_revision") or row.get("promoted_by"))
 
     return retire_pointer_if(run_id, promoted)
 
@@ -486,34 +477,49 @@ def retire_promoted_pointer(pointer: Mapping[str, Any]) -> str:
 def retire_promoted_pointers(
     *, project: str | None = None, session: str | None = None, only_run: str = ""
 ) -> list[dict[str, Any]]:
-    """Retire proved rows before a pass can rewrite their leftover pointers."""
+    """Release integrated group members, then retire ownerless promoted pointers."""
     from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
     retired = []
-    groups = set()
     live = runs.list_live() if project is None else runs.list_live(project=project)
-    for pointer in live:
-        run_id = str(pointer.get("run_id") or "")
-        if only_run and only_run != run_id:
-            continue
-        if session is not None and pointer.get("session") != session:
-            continue
-        if retire_promoted_pointer(pointer) == POINTER_RETIRED:
-            retired.append({"run_id": run_id, "status": "retired-promoted-pointer"})
-            if pointer.get("landing_group"):
-                groups.add(str(pointer["landing_group"]))
+    selected = [
+        pointer
+        for pointer in live
+        if (not only_run or pointer.get("run_id") == only_run)
+        and (session is None or pointer.get("session") == session)
+    ]
+    groups = {
+        str(pointer["landing_group"])
+        for pointer in selected
+        if pointer.get("landing_group")
+    }
     for group_id in sorted(groups):
         path = group_path(group_id)
         try:
             with exclusive_lock(path.with_suffix(".lock"), blocking=False):
                 group = _read(path)
                 if group is not None:
+                    present = {
+                        run_id
+                        for run_id in group["members"]
+                        if runs.pointer_path(run_id).exists()
+                    }
                     retire_integrated_group_members(group)
+                    retired.extend(
+                        {"run_id": run_id, "status": "retired-promoted-pointer"}
+                        for run_id in sorted(present)
+                        if not runs.pointer_path(run_id).exists()
+                    )
         except LockHeld:
             continue
         except (runs.CrewError, OSError, ValueError) as exc:
             retired.append(
                 {"run_id": group_id, "status": "group-refused", "error": str(exc)}
+            )
+    for pointer in selected:
+        if retire_promoted_pointer(pointer) == POINTER_RETIRED:
+            retired.append(
+                {"run_id": str(pointer["run_id"]), "status": "retired-promoted-pointer"}
             )
     return retired
 

@@ -1,5 +1,7 @@
 """A promoted row ends a live pointer without losing pending landing work."""
 
+# ruff: noqa: F811 - imported pytest fixtures are named by test parameters
+
 from __future__ import annotations
 
 import json
