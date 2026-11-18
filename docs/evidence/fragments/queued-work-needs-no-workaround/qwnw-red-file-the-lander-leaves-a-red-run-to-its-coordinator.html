@@ -1,0 +1,56 @@
+<section id="qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator-measure">
+<h2>The lander leaves a red run to its coordinator: one failing id at base, none at head</h2>
+<p>The named file read 13 collected, 1 failed and 12 passed at base
+<code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code>, and 14 passed at head
+<code>99fbf09becfd22adc16fa92b526a0c339f621a3d</code>. Both runs were jobs on
+<code>all_debug</code>, and the base arm's one failing id is
+<code>tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted</code>;
+the head run prints <code>SLURM_JOB_ID=None</code> from
+inside the job, so the measurement is a job whose own identifier the runner
+does not see.</p>
+
+<h3 id="qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator-cause">The cause: a case asserting a rule the landing pass stopped keeping</h3>
+<p>One cause, and the verdict is <strong>test wrong</strong>. The case accepted a
+review carrying a non-blocking finding with no disposition and expected the
+landing to refuse it. The pass has admitted that run and recorded the finding
+as <code>deferred</code> naming the run it was deferred over since the deferral
+rule replaced the blanket refusal, and the rule is read in four places at head:
+the guard's own selector (<code>findings.undisposed_finding_indexes</code>, whose
+holding half is a blocking finding or one with no stated severity), the landing
+comment that states non-blocking findings do not hold the landing, the
+<code>deferred:&lt;run&gt;</code> renderer, and the writer that records the deferral once
+the landing succeeds. A blocking finding is still refused, by the review
+acceptance gate that reads the stored record as not accepted before the
+red-suite guard behind it is reached.</p>
+<p>The case is now split by what a finding withholds: a blocking finding is
+refused with the guard this pass records for it, and a non-blocking finding
+lands with the deferral the pass writes into the stored record. The negative
+control for the refusal removes both arms that decline it in the order they
+fire, because removing either alone leaves the case refused. No assertion was
+dropped: the refusal case still asserts the run is left to its coordinator with
+the guard recorded on its pointer, and the deferred case adds the answer the
+pass writes.</p>
+
+<h3 id="qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator-base">Base run: the failing id</h3>
+<pre># revision: 250d9cf3e68ee9d9119f29956780bde9fe480a10
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py
+FAILED tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted - Failed: a run with red evidence was promoted
+1 failed, 12 passed in 3.74s
+EXIT=1</pre>
+
+<h3 id="qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator-head">Head run: the measure satisfied</h3>
+<pre># revision: 99fbf09becfd22adc16fa92b526a0c339f621a3d
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py
+SLURM_JOB_ID=None
+module=/tmp/mcintos-landing-7f2567dabcfc-dbq5cc/tree/reckon/__init__.py
+cwd=/tmp/mcintos-landing-7f2567dabcfc-dbq5cc/tree
+14 passed in 3.42s
+EXIT=0</pre>
+
+<h3 id="qwnw-red-file-the-lander-leaves-a-red-run-to-its-coordinator-arms">Armed suite arms</h3>
+<p>The node's armed command over <code>tests/test_staged_write_inventory.py
+tests/test_every_shared_home_lock_holds_across_nodes.py</code> reads 58 passed,
+<code>EXIT=0</code> at both revisions: <code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code>
+in the baseline arm and <code>99fbf09becfd22adc16fa92b526a0c339f621a3d</code> in
+the after arm. No failure is added.</p>
+</section>
