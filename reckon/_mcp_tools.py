@@ -94,6 +94,7 @@ class CrewArgs(BaseModel):
         "live",
         "scopes",
         "drain",
+        "queue",
         "records",
         "ledger",
         "budget",
@@ -110,6 +111,7 @@ class CrewArgs(BaseModel):
         "review-need",
         "plan-review",
         "findings",
+        "decisions",
     ] = "summary"
     refresh: bool | None = None
     checkout_path: str | None = None
