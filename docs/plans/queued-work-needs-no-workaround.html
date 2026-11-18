@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="544">
+<meta name="plan-version" content="545">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1702,7 +1702,10 @@
     <div class="r-comment-body"><p>review of r-20261118T062905982563-qwnw-red-file-one-refusal-on-main stored as parsed at reviewed_base_sha 23b901694b4bfec73d95be3a082d4c336d9a4101 and reviewed_head_sha 7facf5a4f37b03d10bd368facf903ca2b7f07be9; six scores total 112 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20); one non-blocking finding at reckon/crew/promotion_records.py:477; added_failure_count 0 with no added failure ids, derived from the reviewed run's own suite arms</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062741801862-qwnw-red-file-session-resumes-only-its-own-task" data-who="reckon-build" data-when="2026-11-18T12:28:59.719Z">
-    <div class="r-comment-body"><p>tests/test_session_resumes_only_its_own_task.py goes from 1 failed / 9 passed (EXIT=1) at base 00e5bd109e to 10 passed (EXIT=0) at head 11973773, one cause and its verdict test wrong — the case snapshotted the roster as docs/state/&lt;project&gt;/crew.json, which registration no longer writes now that the roster is store-only (register_member persists through run_store.auxiliary and its docstring says so), so it died at that read with FileNotFoundError; it now compares ledger.members(&quot;proj&quot;, root=repo) before and after each dispatch and asserts the snapshot names the registered worker-a, no assertion deleted or weakened, and the product rule it states (a task&#x27;s session is keyed by project, plan and node id, never by the member) is correct at base where the other nine cases passed</p></div>
+    <div class="r-comment-body"><p>tests/test_session_resumes_only_its_own_task.py goes from 1 failed / 9 passed (EXIT=1) at base 00e5bd109e to 10 passed (EXIT=0) at head 11973773, one cause and its verdict test wrong — the case snapshotted the roster as docs/state/&lt;project&gt;/crew.json, which registration no longer writes now that the roster is store-only (register_member persists through run_store.auxiliary and its docstring says so), so it died at that read with FileNotFoundError; it now compares ledger.members("proj", root=repo) before and after each dispatch and asserts the snapshot names the registered worker-a, no assertion deleted or weakened, and the product rule it states (a task's session is keyed by project, plan and node id, never by the member) is correct at base where the other nine cases passed</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T134217517183-review-of-qwnw-red-file-promotion-checks-read-only-what-moved-13baa02b884e" data-who="reckon-build" data-when="2026-11-18T14:36:29.279Z">
+    <div class="r-comment-body"><p>Independent review of r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved from base 3d6255122828 to head 13baa02b884e: parsed, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 20 (total 112), 0 added failures from the run&#x27;s own arms, and three non-blocking findings (a fragment quoting a revision its log does not contain, an unasserted reject direction on the changed predicate, and no artefact recording the gate&#x27;s partition or job id).</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
