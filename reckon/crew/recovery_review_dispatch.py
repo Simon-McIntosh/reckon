@@ -3733,6 +3733,7 @@ def _promoted_delivery_refusal(record: Mapping[str, Any]) -> dict[str, Any] | No
     from reckon import ledger
     from reckon.crew import merge, pending_landing
 
+    unreadable = False
     try:
         row = pending_landing._promotion_evidence(
             project, run_id, root=str(record.get("repo") or "") or None
@@ -3744,6 +3745,7 @@ def _promoted_delivery_refusal(record: Mapping[str, Any]) -> dict[str, Any] | No
         ledger.LedgerError,
         merge.MergeError,
     ) as exc:
+        unreadable = True
         reason = f"promotion evidence is unreadable: {exc}; no review is composed"
     else:
         if row is None:
@@ -3762,6 +3764,7 @@ def _promoted_delivery_refusal(record: Mapping[str, Any]) -> dict[str, Any] | No
         "dispatched": False,
         "refused": True,
         "reason": reason,
+        "promotion_evidence_unreadable": unreadable,
     }
 
 
@@ -3938,6 +3941,16 @@ def dispatch_review_for_run(
         record = {**lifecycle, **record}
     refusal = _promoted_delivery_refusal(lifecycle)
     if refusal is not None:
+        if refusal.get("promotion_evidence_unreadable") and not dry_run:
+            # A standing review has its own launch lifecycle even when its
+            # source run's promotion evidence cannot be read. Keep a young
+            # launch in flight and release a stranded claim before refusing
+            # composition; neither outcome starts another review.
+            standing = _standing_review_report(
+                record, run_id=str(record.get("run_id") or "")
+            )
+            if standing is not None:
+                return standing
         return refusal
     refusal = _measurement_run_refusal(lifecycle, dry_run=dry_run)
     if refusal is not None:
