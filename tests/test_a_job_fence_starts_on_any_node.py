@@ -6,6 +6,7 @@ import base64
 import json
 import os
 import shlex
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -266,3 +267,148 @@ def test_missing_seal_alone_is_not_materialized(rehearsal):
     assert result.returncode == 0, result.stderr
     assert "Read-only file system" in result.stderr
     assert not case["sealed"].exists()
+
+
+# The status a task exits with when the fence program its recipe carries cannot
+# run where the task landed. Written out rather than imported so a job that
+# never started is told apart by what the job did, not by an attribute the
+# product happens to export.
+NOT_STARTED = 127
+
+# A search path with no fence program on it: the program's name cannot be found
+# by name there, and nothing the job runs may fall back to looking for it.
+NO_SEARCH_PATH = {"PATH": ""}
+
+
+def test_prepare_runs_the_carried_program_with_an_empty_search_path(rehearsal):
+    case = rehearsal
+    recipe = case["recipe"]
+    report = case["run"] / "report.json"
+    # The outer fence hides the worker's local directory, so the task's own
+    # prepare step has to build the grant. That step runs with an empty search
+    # path, so only a location carried in the recipe can start the fence
+    # program it runs.
+    outer = shutil.which(fence.FENCE_BINARY)
+    assert outer, "the fence program is missing from this node"
+    command = [
+        outer,
+        "--dev-bind",
+        "/",
+        "/",
+        "--tmpfs",
+        str(case["local"]),
+        "--",
+        *nested_launch._task_command(recipe, _task(case, report)),
+    ]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == 0, result.stderr
+    receipt = json.loads(report.read_text())
+    assert receipt["empty"] and receipt["redirect_refused"], receipt
+    # The product built this recipe, and the location it carries is the one the
+    # composition resolved: absolute, and the program itself.
+    program = recipe.get("program")
+    assert program and Path(program).is_absolute(), program
+    assert Path(program).name == fence.FENCE_BINARY
+
+
+def test_absent_carried_program_refuses_the_task_and_names_where_it_looked(rehearsal):
+    case = rehearsal
+    recipe = case["recipe"]
+    absent = case["run"] / "absent-bwrap"
+    recipe["program"] = str(absent)
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == NOT_STARTED, result
+    assert socket.gethostname() in result.stderr
+    assert str(absent) in result.stderr and fence.FENCE_BINARY in result.stderr
+    assert not marker.exists()
+
+
+def test_recipe_without_a_carried_program_refuses_rather_than_searching(rehearsal):
+    case = rehearsal
+    recipe = case["recipe"]
+    recipe.pop("program", None)
+    marker = case["run"] / "command-ran"
+    # The program is exactly where a job node would find it by name, so a
+    # refusal here is the difference between searching and not searching.
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env={"PATH": "/usr/bin:/bin"},
+    )
+    assert result.returncode == NOT_STARTED, result
+    assert "was not searched" in result.stderr
+    assert not marker.exists()
+
+
+def test_program_that_exists_only_at_the_carried_location_starts_the_task(rehearsal):
+    case = rehearsal
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(case["recipe"], ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == 0, result.stderr
+    assert marker.exists()
+
+
+def test_program_that_exists_but_cannot_run_refuses_before_the_task(rehearsal):
+    case = rehearsal
+    recipe = case["recipe"]
+    inert = case["run"] / "inert-bwrap"
+    inert.write_text("#!/bin/sh\nexit 0\n")
+    inert.chmod(0o644)
+    recipe["program"] = str(inert)
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == NOT_STARTED, result
+    assert "not executable" in result.stderr and str(inert) in result.stderr
+    assert not marker.exists()
+
+
+def test_program_is_read_from_its_field_and_never_from_the_recipe_head(rehearsal):
+    case = rehearsal
+    recipe = case["recipe"]
+    # The head of the carried argv is not a program name. A task that reads the
+    # head as one runs an option as a program; a task that reads the field runs
+    # the fence the dispatching node resolved.
+    recipe["argv"][0] = "--dev-bind"
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == 0, result.stderr
+    assert marker.exists()
