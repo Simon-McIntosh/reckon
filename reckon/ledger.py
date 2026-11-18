@@ -1234,17 +1234,15 @@ def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
     return ids
 
 
-def run_ids(project: str, root: str | Path | None = None) -> set[str]:
-    """Read store membership without decoding any run payload.
+def file_run_ids(project: str, root: str | Path | None = None) -> set[str]:
+    """Read membership from the committed documents alone, never a store.
 
-    The document index remains available when no store exists, for projects
-    awaiting import. An existing store is authoritative even when empty.
+    The document index answers while it matches the files; a stale or absent
+    one falls back to a reading of the sources. This is the membership the
+    ledger's own files carry, so a caller that has to notice those files
+    moving — a store deciding whether its rows still agree with them — asks
+    here rather than at :func:`run_ids`, whose answer is the store's.
     """
-    from reckon import run_store
-
-    stored = run_store.indexed_run_ids(project)
-    if stored is not None:
-        return stored
     current = _indexed_run_ids(project, root)
     if current is not None:
         return current
@@ -1257,6 +1255,20 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
         for record in data["runs"]
         if isinstance(record, Mapping) and record.get("run_id")
     } | {path.stem for path in _run_files(project, root)}
+
+
+def run_ids(project: str, root: str | Path | None = None) -> set[str]:
+    """Read store membership without decoding any run payload.
+
+    The document index remains available when no store exists, for projects
+    awaiting import. An existing store is authoritative even when empty.
+    """
+    from reckon import run_store
+
+    stored = run_store.indexed_run_ids(project)
+    if stored is not None:
+        return stored
+    return file_run_ids(project, root)
 
 
 # The index stores file-derived values only. Every access checks file metadata,

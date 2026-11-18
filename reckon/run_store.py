@@ -1715,7 +1715,12 @@ class RunStore:
                     "SELECT run_id FROM runs WHERE project = ?", (name,)
                 )
             } | self._archived_ids(name)
-            if indexed != ledger.run_ids(name, root):
+            # The store's own rows are one side of this comparison, so the
+            # other side must be the committed documents: asking run_ids() here
+            # answers through the store whenever one exists and leaves the
+            # check comparing the store with itself, so a ledger that moved
+            # would never rebuild the rows it outgrew.
+            if indexed != ledger.file_run_ids(name, root):
                 data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
                 stale |= indexed
