@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/resumption.py:3052 -> plan_review.compose_owed_plan_reviews"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T07:55:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1714",
+      "severity": "non-blocking",
+      "text": "non-blocking: _record_files re-implements the committed-then-staging enumeration and identity dedupe that list_plan_reviews owns at plan_review.py:1885-1917, and _records_carrying duplicates its _collect annotation, so two enumerators of one store now drift independently; extract the enumeration from the owner and have both call it."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "4420/4453",
+      "severity": "non-blocking",
+      "text": "non-blocking: _PLAN_LISTINGS and _PLAN_FACTS are keyed by project name alone while _RECORD_SUMMARIES is keyed by (project, store root); a process that serves a second home or mount for the same project name answers from the first tree's paths and statuses, reporting plans that no longer exist as present-but-unreadable rather than listing the second tree."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/an-owed-review-pass-reads-what-changed.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure table's header row is malformed ('<th>pass</th>records decoded</th>'), so the row carries a stray closing cell and leaked text and the three columns no longer align with their headings."
+    },
+    {
+      "file": "tests/test_an_owed_review_pass_reads_what_changed.py",
+      "line": "263",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parity assertion compares reading.reports against fresh.reports, both produced by the head code with only the two change-detection memories flushed, so a composition defect common to both arms passes it and the done_when's 'as the base revision' clause is not measured against base; the base-revision reports were never compared."
+    },
+    {
+      "file": "tests/test_an_owed_review_pass_reads_what_changed.py",
+      "line": "244",
+      "severity": "non-blocking",
+      "text": "non-blocking: no pass adds or removes a document from the tree, so nothing fails if the directory-identity comparison in plan_review.py:4514 wrongly answers from the held listing for a moved tree; count a fifth pass whose tree gains one plan and assert it is read."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against base c54a15a657da: 0ed05f0071e6 lands the change detection in plan_review.py plus the test and fragment, 156f3343617c rewrites the test's cache clearing through getattr so the same file runs against base; the change stays inside the three declared paths and adds no unrelated edit.",
+    "done_when": "The done_when names a 40-plan/400-record temporary project with four real passes and read counters asserting 0/0/0 unchanged, at most one record after a record rewrite, zero records and at most one plan after a plan edit, plus parity with the base revision; tests/test_an_owed_review_pass_reads_what_changed.py:237-265 builds that fixture and asserts those literals, but its parity arm (line 259-263) replays head code with flushed memories rather than reading base.",
+    "goal": "The goal is that an owed-plan-review pass decodes only reviews and plans changed since the previous pass; compose_owed_plan_reviews now takes _stored_record_summaries (plan_review.py:1739) instead of list_plan_reviews, returns the cached listing when the tree's directory identity is unchanged (plan_review.py:4516), and answers an unmoved plan's status from _PLAN_FACTS (plan_review.py:4466), so the pass's record, plan and resource-directory reads are all conditioned on a change.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054243717205-an-owed-review-pass-reads-what-changed/manifest.md; it records status complete, the two commits, the scoped gate command, baseline_suite and after_suite JSON with zero failures either side at c54a15a657da and 156f3343617c, and negative_control_log ending EXIT=1 at 400 records / 40 plans / 1 directory.",
+    "write_paths": "The declared paths are reckon/crew/plan_review.py, tests/test_an_owed_review_pass_reads_what_changed.py and the fragment under docs/evidence/fragments/the-monitor-reads-each-fact-once/; git diff c54a15a657da..156f3343617c lists exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_an_owed_review_pass_reads_what_changed.py:249 fails at base (proved by negative-control.log's 400-record failure) and lines 251-256 redden if the record or plan caches stop being consulted, but nothing there fails if the directory-identity comparison wrongly answers from a stale listing.",
+    "evidence": "after-arm.log and baseline-arm.log record 59 passed / EXIT=0 at 156f3343617c and 58 passed / EXIT=0 at c54a15a657da with empty failure sets, and negative-control.log reproduces the defect at 400/40/1 with EXIT=1, but the done_when's base-revision parity is asserted against flushed-memory head at tests/test_an_owed_review_pass_reads_what_changed.py:259-263.",
+    "fit": "plan_review.py:4411-4420 declares its cache with the module's existing '#:' block-comment idiom and plan_review.py:4430 reuses metadata_index._reuse_covered exactly as reckon/resources.py:816 does, though _after_cursor at plan_review.py:4924 is the one added function with no return annotation in a module that annotates the rest.",
+    "goal_fidelity": "plan_review.py:1739 derives each record's run id from a stat-keyed summary and plan_review.py:4516-4526 answers from the held listing when the tree's identity is unchanged, which is the deliverable the goal names.",
+    "reuse": "plan_review.py:1714 _record_files re-implements the committed-then-staging enumeration that list_plan_reviews owns at plan_review.py:1885-1917 rather than extending it, and _records_carrying at plan_review.py:1782 re-implements its _collect annotation, while _plan_tree_identity correctly wraps the metadata_index owner.",
+    "scope_discipline": "Every hunk in c54a15a657da..156f3343617c lies in reckon/crew/plan_review.py, tests/test_an_owed_review_pass_reads_what_changed.py and the declared fragment, and the declared figures directory was left untouched rather than filled with unrelated output."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is that an owed-plan-review pass decode only reviews and plans changed since the previous pass; reckon/crew/plan_review.py:1739 now summarises each record by stat identity and run id and plan_review.py:4516 answers the tree listing from a directory identity, so each of the pass's three read classes is conditioned on a change.\nVERDICT done_when: The done_when names tests/test_an_owed_review_pass_reads_what_changed.py with four real passes over 40 plans and 400 records and literal read counts; that file asserts them at lines 244-265, but its parity arm compares head against flushed-memory head rather than the base revision the done_when names.\nVERDICT write_paths: The declared paths are reckon/crew/plan_review.py, tests/test_an_owed_review_pass_reads_what_changed.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/an-owed-review-pass-reads-what-changed.html; the diff c54a15a657da..156f3343617c contains exactly those three paths.\nVERDICT manifest: Read; it records complete status, commits 0ed05f0071e6 and 156f3343617c, the scoped gate command, baseline 58 passed and after 59 passed both EXIT=0, and a negative control whose log ends EXIT=1 at 400 records / 40 plans / 1 directory.\nVERDICT diff: Read both commits against base c54a15a657da; the first lands the change detection in plan_review.py with the test and the evidence fragment, the second makes the test's cache clearing tolerate a revision that keeps no cache, and every hunk stays inside the declared scope.\nCALL_SITES: reckon/crew/resumption.py:3052 -> plan_review.compose_owed_plan_reviews\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: plan_review.py:1739 derives the stored run ids from stat-keyed summaries rather than record bodies and plan_review.py:4516 returns the held listing when the tree identity is unchanged, which is the deliverable the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: after-arm.log records 59 passed / EXIT=0 at 156f3343617c, baseline-arm.log 58 passed / EXIT=0 at c54a15a657da, and negative-control.log ends EXIT=1 at 400 records / 40 plans / 1 directory, but the done_when's base-revision parity is asserted against flushed-memory head at tests/test_an_owed_review_pass_reads_what_changed.py:259-263.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every hunk in c54a15a657da..156f3343617c lies in reckon/crew/plan_review.py, tests/test_an_owed_review_pass_reads_what_changed.py or the declared fragment.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_an_owed_review_pass_reads_what_changed.py:249 reddens at base as negative-control.log shows, and lines 251-256 redden if the record or plan caches stop being consulted, but no pass adds or removes a document so a never-rescanning listing cache survives line 257.\nSCORE fit: 17\nJUSTIFICATION fit: plan_review.py:4411-4420 declares its cache with the module's existing '#:' idiom and plan_review.py:4430 reuses metadata_index._reuse_covered as reckon/resources.py:816 does.\nSCORE reuse: 5\nJUSTIFICATION reuse: plan_review.py:1714 _record_files re-implements the committed-then-staging enumeration owned by list_plan_reviews at plan_review.py:1885-1917 rather than extending it.\nFINDING reckon/crew/plan_review.py:1714 non-blocking: _record_files re-implements list_plan_reviews' committed-then-staging enumeration and identity dedupe (plan_review.py:1885-1917) and _records_carrying duplicates its _collect annotation, leaving two enumerators of one store to drift; extract the enumeration from the owner and have both call it.\nFINDING reckon/crew/plan_review.py:4420 non-blocking: _PLAN_LISTINGS and _PLAN_FACTS are keyed by project name alone while _RECORD_SUMMARIES is keyed by (project, store root), so a process serving a second home or mount for the same project name answers from the first tree's paths and statuses instead of listing the second tree.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/an-owed-review-pass-reads-what-changed.html:27 non-blocking: the measure table's header row is malformed, carrying '<th>pass</th>records decoded</th>', so the cells no longer align with their headings.\nFINDING tests/test_an_owed_review_pass_reads_what_changed.py:263 non-blocking: the parity assertion compares two reports both produced by the head code with only the two memories flushed, so a composition defect common to both arms passes it and the done_when's 'as the base revision' clause is never measured against base.\nFINDING tests/test_an_owed_review_pass_reads_what_changed.py:244 non-blocking: no pass adds or removes a document from the tree, so nothing fails if the identity comparison at plan_review.py:4514 wrongly answers from the held listing for a moved tree; add a fifth pass whose tree gains one plan and assert it is read.\n",
+  "review_run_id": "r-20261118T074740303345-review-of-an-owed-review-pass-reads-what-changed-156f3343617c",
+  "reviewed_base_sha": "c54a15a657da7d5abd88ee0d0a54b940c650a11f",
+  "reviewed_head_sha": "156f3343617c7eb3ce357dcbc6c63d15be6aefd3",
+  "reviewed_run_id": "r-20261118T054243717205-an-owed-review-pass-reads-what-changed",
+  "reviewed_worker_commits": [
+    "0ed05f0071e6154fb8b815cfd46e0ac660be23e1",
+    "156f3343617c7eb3ce357dcbc6c63d15be6aefd3"
+  ],
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T08:09:46.018398+00:00",
+  "total": 86
+}
