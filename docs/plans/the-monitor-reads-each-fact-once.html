@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="474">
+<meta name="plan-version" content="475">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -1794,6 +1794,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s91" data-id="c-run-r-20261118T080204763674-review-of-a-transition-reads-one-run-row-730a29a8e95e" data-who="reckon-build" data-when="2026-11-18T08:05:13.064Z">
     <div class="r-comment-body"><p>Review of r-20261118T054122485303-a-transition-reads-one-run-row at 730a29a8e95e9879b97e44881546b90f5fdc326b (base 4c169dca728fefcf22dc55c936480478fb4181e0) stored parsed: scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20; 4 non-blocking findings, 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s91" data-id="c-run-r-20261118T054122485303-a-transition-reads-one-run-row" data-who="reckon-build" data-when="2026-11-18T05:56:39.061Z">
+    <div class="r-comment-body"><p>A transition&#x27;s recorded spend now selects its run&#x27;s row by key in the run store instead of walking the project&#x27;s history: 51 calls over a 2,000-row store decode 50 rows (50 sampled runs plus one absent run) against 102,000 for the same calls at the base revision, and every answer equals the base revision answer for the same run.</p></div>
 </div>
 </section>
 </main>
