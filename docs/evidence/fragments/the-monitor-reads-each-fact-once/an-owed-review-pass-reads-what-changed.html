@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>An owed-review pass reads only what changed</title>
+</head>
+<body>
+
+<section data-reckon="fragment" id="an-owed-review-pass-reads-what-changed">
+<h1>An owed-review pass reads only what changed</h1>
+
+<p>The station's owed-plan-review pass ran three whole-store reads on every
+tick: the resource walk that lists a project's plans, the listing that decodes
+every stored plan review, and, per weighed plan, a fresh read of the plan file.
+None of them asked whether anything had moved since the tick before.</p>
+
+<h2 id="an-owed-review-pass-reads-what-changed-measure">Measure</h2>
+
+<p><code>tests/test_an_owed_review_pass_reads_what_changed.py</code> builds a
+temporary project of forty plans and four hundred stored plan reviews, then
+drives four real passes (<code>dry_run=False</code>) with dispatch replaced by a
+recorder. It counts genuine reads — the uncached decoders and the resource walk,
+with <code>file_memo</code> cleared before every pass — so a count is a read and
+not a cache hit. Measured figures, from the test's own counters:</p>
+
+<table>
+<thead><tr><th>pass</th>records decoded</th><th>plan files read</th><th>resource directories scanned</th></tr></thead>
+<tbody>
+<tr><td>cold</td><td>430</td><td>40</td><td>1</td></tr>
+<tr><td>unchanged</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>one review rewritten</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>one plan edited</td><td>0</td><td>1</td><td>0</td></tr>
+</tbody>
+</table>
+
+<p>The cold figure is above the store's four hundred because the one weighed
+plan's own ten records are read again for the coverage and burst checks, which
+is the plan's own work rather than the store's. The unchanged pass reads
+nothing. A pass after one review record is rewritten reads that record and no
+other. A pass after one plan file is edited reads that plan and no stored
+review.</p>
+
+<p>A parity arm replays the same four passes with the store's change detection
+flushed before each pass: every pass composes byte-identical reports, same
+composed reviews and same skip reasons.</p>
+
+<h2 id="an-owed-review-pass-reads-what-changed-change">What changed</h2>
+
+<ul>
+<li><strong>The plan listing is remembered against the tree's directory
+identity.</strong> A pass whose tree has gained or lost no document answers from
+the listing it already holds instead of walking the resources; a plan written in
+place does not move a directory's identity, so an edit costs no walk.</li>
+<li><strong>The stored-review listing carries run ids, not record bodies.</strong>
+Each record's <code>(mtime_ns, size)</code> is kept beside its identity and review
+run id, so a pass knows which runs the store holds without reading any record; a
+new or rewritten record is read once and its summary kept.</li>
+<li><strong>Only the records a pass asks about are decoded.</strong> The
+would-not-change notes now resolve the reviews this reflex dispatched — read from
+the summaries' run ids — instead of walking every stored record to find them, and
+the burst refusal reads the weighed plan's own records rather than the project's
+whole store.</li>
+<li><strong>A plan's status is kept beside its edit.</strong> The pass persists
+the edit each plan carried when it last looked at the tree, so a plan whose file
+has not moved is weighed from the recorded facts and never opened, and the plan
+that has moved is weighed first — the one thing the tick knows changed.</li>
+</ul>
+
+<p>The pass still weighs one plan per tick and still rotates through the plans
+that have not moved, so a plan whose reason never settles cannot starve the ones
+behind it.</p>
+
+<h2 id="an-owed-review-pass-reads-what-changed-negative">Negative control</h2>
+
+<p>At the base revision the unchanged second pass decodes all four hundred stored
+reviews and rescans the resource directories, because the pass listed the store
+and walked the tree before looking at any plan. The same test run against the
+base revision fails on that pass's zero.</p>
+
+</section>
+
+</body>
+</html>
