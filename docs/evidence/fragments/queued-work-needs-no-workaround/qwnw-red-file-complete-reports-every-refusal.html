@@ -43,7 +43,7 @@ passed; at the head revision four passed.
 <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
 <tbody>
 <tr><td>base</td><td><code>0d0e1c9410b1</code></td><td>1 failed, 3 passed</td><td><code>base-test_complete_reports_every_refusal.log</code></td></tr>
-<tr><td>head</td><td><code>COMMIT</code></td><td>4 passed</td><td><code>head-test_complete_reports_every_refusal.log</code></td></tr>
+<tr><td>head</td><td>the run's head, as the manifest's <code>after_suite.revision</code> names it</td><td>4 passed</td><td><code>head-test_complete_reports_every_refusal.log</code></td></tr>
 </tbody>
 </table>
 
@@ -60,5 +60,13 @@ recorded as a request. Both facts are what the test now asserts.</p>
 One test module. The rules the file now states are the rules the product keeps;
 no assertion was deleted or weakened, and two were added: the log refusal is
 named, and the <code>--wait</code> refusal of a run whose log records no exit
-status is exercised end to end.</p>
+status is exercised end to end.
+
+The arms are resolved over the file this node changes. The run's stored
+<code>suite_command_resolved</code> names <code>tests/test_staged_write_inventory.py</code>
+and <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>, which
+this node neither writes nor imports and which no path in its write scope
+reaches; the dispatcher's scoped-suite substitution produced that pair rather
+than the node's own file, so it is recorded under <code>outside_scope</code>
+rather than measured here.</p>
 </article>
