@@ -1,0 +1,133 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertions": "Both sampler generations have rows; rows do not interleave; delivery rows are 1..2; exactly one old stop event; stop-to-first sample is 0..2 slots; missed slots <=2.",
+      "fails_if": "No replacement removes after rows; overlaps/restarts interleave rows or repeat stops; excess incumbent rows fail delivery_rows; slow post-stop launch fails elapsed_slots; skipped emissions fail missed slots. No assertion here observes the re-execution instant: the blocking finding gives a late trace all checks accept.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:54-67"
+    },
+    {
+      "assertions": "Replacement PID is present and differs; earlier history remains padded; active sampler set is singleton and ends at replacement.",
+      "fails_if": "Restoring prior pathname-based ownership gives None and fails :164 (observed in answer-reversal-final.log); retaining the old sampler fails PID/new-column wait; dropping earlier rows fails padding equality; overlap fails the event-derived active set. Values come from independently published rows/events, not a mocked return echoed as an oracle.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:164-188"
+    },
+    {
+      "assertions": "Manual handover retains earlier history, records counts, stops the incumbent cleanly, leaves its group peer alive and runs the current checkout script.",
+      "fails_if": "Restoring ownership/path restriction records None (observed control); restoring group signalling kills the peer; wrong script selection fails live argv/new-column checks; history loss fails padded prefix. These existing assertions remain meaningful after counter plumbing changes.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:375-392"
+    },
+    {
+      "assertions": "Literal accepted trace returns explicit counts; three independent violating traces raise specific AssertionErrors.",
+      "fails_if": "Off-by-one counter changes break fixed expected counts; deleting or relaxing each bound prevents its pytest.raises from firing; wrong refusal attribution fails message matching. The accepted literal trace tests counter arithmetic, not elapsed time from re-execution.",
+      "path": "tests/test_the_sampler_runs_the_current_script.py:433-469"
+    }
+  ],
+  "assertion_independence": "No new regression assertion uses a mocked return value as its own expected oracle. PID arguments identify separately emitted row/event provenance; the expected counter dictionary is literal. The defect is the missing request-time observable, not a tautological equality.",
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T23:54:48Z",
+  "findings": [
+    {
+      "file": "tests/test_the_sampler_runs_the_current_script.py",
+      "line": "61",
+      "severity": "blocking",
+      "text": "blocking: elapsed_slots starts at the incumbent stop event, while delivery_rows only bounds additional rows; together they do not enforce first replacement delivery within two periods of re-execution. The accepted fixture at lines 433-445 has snapshot row slot 6 (earlier_count=1), another incumbent row at 7, stop at 8 and replacement at 10: it passes every bound even if re-execution was requested just after slot 6, almost four periods earlier. Record the request/re-execution instant and first replacement emission independently of the observer, then bound their elapsed time; retain missed-slot and row-count assertions separately."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none; only a test module changed, and no production code imports or calls its new helpers",
+    "diff": "Read commits 22cb996bfbbf1b93cf49fb0fc1a808f82fd7a991 and 9cc306b9d7de49e82efb90c85e4027624e3e75bc individually; the one-file delta adds lifecycle slots, row provenance, observer-delay cases, retained measurements and counter boundary tests.",
+    "done_when": "Read live plan section 12 and source node.done_when; scoped-gate-1794959109160900260.receipt.log records 120 passed and the source suite logs add zero failure IDs, but tests/test_the_sampler_runs_the_current_script.py:61 measures from incumbent stop rather than re-execution.",
+    "goal": "The source live pointer node.goal requires current-script replacement on supervisor re-execution; the incremental tests in tests/test_the_sampler_runs_the_current_script.py:50-192 retain replacement coverage but weaken its elapsed-time bound.",
+    "manifest": "Read source manifest.md and its named receipts; its seven commit objects resolve, final scoped result is 120 passed, final baseline/head share eight failure IDs, and live-fleet observation remains coordinator work.",
+    "write_paths": "The source node.write_paths grants tests/test_the_sampler_runs_the_current_script.py, the sole path changed since the previous reviewed head 2409c5a0767d27e05f60bf8c95c7da66d49de1fa."
+  },
+  "justifications": {
+    "durability": "tests/test_the_sampler_runs_the_current_script.py:433-469 independently tests accepted and rejected counter boundaries and :164 catches restored ownership failure, but :61 can accept a late handover because its clock starts only when the incumbent stops.",
+    "evidence": "The completed source scoped-gate-1794959109160900260.receipt.log records 120 passed and answer-reversal-final.log records three ownership-regression failures, while tests/test_the_sampler_runs_the_current_script.py:50-67 does not measure the full two-period deadline.",
+    "fit": "tests/test_the_sampler_runs_the_current_script.py:21-83 uses descriptive constants and local helpers consistent with the existing _wait/_rows/_script test fixtures and preserves enumerated fixture-process cleanup.",
+    "goal_fidelity": "tests/test_the_sampler_runs_the_current_script.py:163-188 still detects absent replacement, lost history and overlap, but :61 excludes the re-execution-to-stop interval required by the goal's rehearsal.",
+    "reuse": "Capability searches for lifecycle events, handover counters and series readers found tests/test_fleet_health.py:322 sample_rows and tests/test_a_sampler_outlives_the_fleet_job.py:35 rows; neither owns handover timing, and the new helpers extend the existing sampler test owner rather than duplicate a production mechanism.",
+    "scope_discipline": "The entire 2409c5a0767d27e05f60bf8c95c7da66d49de1fa..9cc306b9d7de49e82efb90c85e4027624e3e75bc delta is tests/test_the_sampler_runs_the_current_script.py, a declared path directly covering sampler handover."
+  },
+  "limitations": [
+    "Incremental test-only review; prior production review is preserved in the at-2409c5a0767d27e05f60bf8c95c7da66d49de1fa record.",
+    "No suite rerun or mutation performed in review; original completed logs and retained raw measurements read.",
+    "Source baseline_suite is original base 3845a12fe055e3b175e74f47984d4ecee9262d4e; review diff base is prior reviewed head 2409c5a0767d27e05f60bf8c95c7da66d49de1fa.",
+    "Runtime context verified at reviewed head: fleet_supervisor.py:3961 calls start_health_sampler at :1471; new test helpers have no production call sites.",
+    "Live-fleet confirmation remains coordinator integration work."
+  ],
+  "negative_control_evidence": {
+    "observer": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/observer-negative.log",
+      "result": "Prior reviewed tests failed twice solely after a five-second observer delay: assert monotonic observation elapsed <= 4 seconds, proving the original observer-sensitive defect."
+    },
+    "ownership": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/answer-reversal-final.log",
+      "result": "3 failed, 14 deselected in 5.58s; EXIT=1; restored ownership restriction produced zero identified owners and None replacement PIDs."
+    }
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source live pointer node.goal requires current-script replacement on supervisor re-execution; the incremental tests in tests/test_the_sampler_runs_the_current_script.py:50-192 retain replacement coverage but weaken its elapsed-time bound.\nVERDICT done_when: Read live plan section 12 and source node.done_when; scoped-gate-1794959109160900260.receipt.log records 120 passed and the source suite logs add zero failure IDs, but tests/test_the_sampler_runs_the_current_script.py:61 measures from incumbent stop rather than re-execution.\nVERDICT write_paths: The source node.write_paths grants tests/test_the_sampler_runs_the_current_script.py, the sole path changed since the previous reviewed head 2409c5a0767d27e05f60bf8c95c7da66d49de1fa.\nVERDICT manifest: Read source manifest.md and its named receipts; its seven commit objects resolve, final scoped result is 120 passed, final baseline/head share eight failure IDs, and live-fleet observation remains coordinator work.\nVERDICT diff: Read commits 22cb996bfbbf1b93cf49fb0fc1a808f82fd7a991 and 9cc306b9d7de49e82efb90c85e4027624e3e75bc individually; the one-file delta adds lifecycle slots, row provenance, observer-delay cases, retained measurements and counter boundary tests.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_sampler_runs_the_current_script.py:163-188 still detects absent replacement, lost history and overlap, but :61 excludes the re-execution-to-stop interval required by the goal's rehearsal.\nSCORE evidence: 17\nJUSTIFICATION evidence: The completed source scoped-gate-1794959109160900260.receipt.log records 120 passed and answer-reversal-final.log records three ownership-regression failures, while tests/test_the_sampler_runs_the_current_script.py:50-67 does not measure the full two-period deadline.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The entire 2409c5a0767d27e05f60bf8c95c7da66d49de1fa..9cc306b9d7de49e82efb90c85e4027624e3e75bc delta is tests/test_the_sampler_runs_the_current_script.py, a declared path directly covering sampler handover.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_sampler_runs_the_current_script.py:433-469 independently tests accepted and rejected counter boundaries and :164 catches restored ownership failure, but :61 can accept a late handover because its clock starts only when the incumbent stops.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_the_sampler_runs_the_current_script.py:21-83 uses descriptive constants and local helpers consistent with the existing _wait/_rows/_script test fixtures and preserves enumerated fixture-process cleanup.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for lifecycle events, handover counters and series readers found tests/test_fleet_health.py:322 sample_rows and tests/test_a_sampler_outlives_the_fleet_job.py:35 rows; neither owns handover timing, and the new helpers extend the existing sampler test owner rather than duplicate a production mechanism.\nFINDING tests/test_the_sampler_runs_the_current_script.py:61 blocking: elapsed_slots starts at the incumbent stop event, while delivery_rows only bounds additional rows; together they do not enforce first replacement delivery within two periods of re-execution. The accepted fixture at lines 433-445 has snapshot row slot 6 (earlier_count=1), another incumbent row at 7, stop at 8 and replacement at 10: it passes every bound even if re-execution was requested just after slot 6, almost four periods earlier. Record the request/re-execution instant and first replacement emission independently of the observer, then bound their elapsed time; retain missed-slot and row-count assertions separately.\n",
+  "retained_measurements": {
+    "cases": 50,
+    "known_present_control": "Boundary fixture explicitly includes missed slots 8 and 9 and excess-slot cases require refusal; actual traces contain separately recorded old/new PIDs and lifecycle events.",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/stability-final-handovers.json",
+    "rows": 120
+  },
+  "review_run_id": "r-20261117T235259508618-review-of-the-sampler-runs-the-current-script-9cc306b9d7de",
+  "reviewed_base_sha": "2409c5a0767d27e05f60bf8c95c7da66d49de1fa",
+  "reviewed_head_sha": "9cc306b9d7de49e82efb90c85e4027624e3e75bc",
+  "reviewed_run_id": "r-20261117T211039288247-the-sampler-runs-the-current-script",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 8,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/after_suite_samples-1794959109223543607.receipt.log",
+      "revision": "9cc306b9d7de49e82efb90c85e4027624e3e75bc",
+      "summary": "8 failed, 179 passed in 232.72s (0:03:52)"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 8,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_lapsed_lease_is_restarted",
+        "tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_each_health_sample_repairs_a_later_install",
+        "tests/test_an_installed_interpreter_refuses_a_write.py::test_unreadable_registry_is_unknown_in_the_health_series",
+        "tests/test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound",
+        "tests/test_gc_bounds_a_run_file.py::test_gc_skips_files_the_run_directory_does_not_own",
+        "tests/test_no_caller_waits_on_a_promotion.py::test_a_failure_is_durable_and_is_a_session_obligation",
+        "tests/test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261117T211039288247-the-sampler-runs-the-current-script/baseline_suite-1794951749253646711.receipt.log",
+      "revision": "3845a12fe055e3b175e74f47984d4ecee9262d4e",
+      "summary": "8 failed, 162 passed in 203.78s (0:03:23)"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T00:01:16.426301+00:00",
+  "total": 111
+}
