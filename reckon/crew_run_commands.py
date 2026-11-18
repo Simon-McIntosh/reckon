@@ -3912,6 +3912,15 @@ def crew_complete(
     from reckon.crew.promotion_requests import COMMAND_REPLY
 
     public_reply = COMMAND_REPLY.get() is None and _COMPLETION_REPLIES.get() is None
+    if land and not dry_run and (isinstance(run_id, (tuple, list)) or public_reply):
+        # The guard runs over every named run before the reply path below,
+        # which writes one receipt per run: a refusal must leave the crew home
+        # untouched rather than file a receipt for a landing the run cannot
+        # name a live pointer for. The check inside the body below still runs
+        # for the queued replay, where the pointer can go between the two.
+        named = run_id if isinstance(run_id, (tuple, list)) else (run_id,)
+        for each in named:
+            _refuse_a_landing_without_its_pointer(str(each))
     if isinstance(run_id, (tuple, list)) or public_reply:
         if not isinstance(run_id, (tuple, list)):
             run_id = (run_id,)
