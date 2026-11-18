@@ -1,0 +1,69 @@
+<section id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-landing">
+  <h2>The held-tree fallback resolves each row once: the file is green at the current primary branch</h2>
+
+  <p><strong>What changed.</strong> Nothing in the product or the test. The node's
+  measure is the file itself, so its first step is a base run, and at
+  <code>e9dffe5259e14aac4f921e6ee6e63ce03e43ad86</code> the file passes in full:
+  five cases, no failure, exit 0. The red this node was queued against does not
+  reproduce, so no cause was stated as <em>product wrong</em> or <em>test
+  wrong</em> and nothing was repaired, weakened or reimplemented.</p>
+
+  <p><strong>Why the red is not current.</strong> The file carries its own two
+  repairs in the base revision — <code>c6bbfcc737</code> (resolve a held tree's
+  fallback rows once each) and <code>e2ea5a4f40</code> (file a run-less
+  aggregate row when holding a retained tree) — and sixty later commits touched
+  <code>reckon/crew/obligations.py</code> and <code>reckon/crew/routing.py</code>
+  without moving either property the file asserts. A recorded red is a claim
+  about the revision it was read at; this one is answered by the run below rather
+  than by a second repair.</p>
+
+  <h3 id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-measured">Measured</h3>
+
+  <p>The run is a job on <code>all_debug</code> in this worker's worktree, with
+  <code>SLURM_JOB_ID</code> unset in the job's own environment and the log under
+  the run directory on shared storage:</p>
+
+  <pre id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-base-run"># revision: e9dffe5259e14aac4f921e6ee6e63ce03e43ad86
+# host: 98dci4-clu-3143.iter.org
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_fallback_resolves_each_row_once.py
+.....                                                                    [100%]
+5 passed in 15.43s
+EXIT=0</pre>
+
+  <p>The base run has no failing id, so the negative control is not a red base
+  arm: it is a mutation of the product, which shows the bounded-resolution
+  assertion fires when the behaviour it describes is put back. The old per-tree
+  pass — every filed row's retained path resolved once per inspected tree — was
+  restored in a scratch copy of <code>reckon/crew/obligations.py</code> at the
+  same revision and the file at the same path run against it:</p>
+
+  <pre id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-negative-control">FAILED tests/test_held_worktree_fallback_resolves_each_row_once.py::test_the_fallback_resolves_each_row_a_bounded_number_of_times - AssertionError: 21042 path resolutions over 500 records; the test's own instrument printed "held-worktree fallback: 21042 path resolutions over 500 records and 20 trees no record names"
+assert 21042 &lt;= (2 * 500)
+1 failed, 4 passed in 19.07s
+EXIT=1</pre>
+
+  <p>So the reading the green run reports is a measurement, not a dead
+  instrument: the same test counts 21,042 resolutions against the old pass and
+  passes below the bound with the shipped one.</p>
+
+  <h3 id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-scaffolding">The composed gate verbs could not run in this worker's fence</h3>
+
+  <p><code>reckon crew verify-gate --worker</code> and <code>reckon crew suite
+  run</code> both failed at submission, on five attempts and on a command as
+  small as <code>hostname</code>, before the command ran:</p>
+
+  <pre id="qwnw-red-file-held-worktree-fallback-resolves-each-row-once-at-current-main-fence-failure">bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on /newroot/tmp/auto2I1S9T: No such file or directory</pre>
+
+  <p>The error is the fence's task re-entry, not the measured command: the
+  landing runner's job runs its script through an <code>srun</code> step, and
+  the step's re-entry prepares the recipe's missing node-local directory sources
+  by masking <code>/tmp</code>. A control job through the same shim with a plain
+  wrapped command on the same partition and node ran and printed
+  <code>EXIT=0</code>, which is how the two paths were separated. The
+  measurement above was therefore taken by submitting the same command as its
+  own <code>sbatch --wait --partition=all_debug</code> job — the route the brief
+  names for work that does not belong in the held allocation — with the job's
+  revision, host, tree and command written on the log's header lines and
+  <code>SLURM_JOB_ID</code> unset before pytest, which is the condition the
+  done-when names.</p>
+</section>
