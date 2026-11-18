@@ -56,6 +56,14 @@
   record against the clean-with-reason row is refused with
   <code>added_failure_count is waived but the reviewed run records no
   suite-delta waiver</code>. 2 failed, 1 passed, <code>EXIT=1</code>; at head
-  the same three cases pass, <code>EXIT=0</code>. Ruff <code>check</code> and
-  <code>format --check</code> add no finding on the three staged paths.</p>
+  the same three cases pass, <code>EXIT=0</code>. The test files importing the
+  two changed modules ran as matched arms: every <code>tests/*.py</code> naming
+  <code>recovery_review_subject</code> or the review module ran on
+  <code>all_debug</code>, one job per arm, base <code>97 failed, 1931 passed,
+  2 errors</code> and head <code>97 failed, 1934 passed, 2 errors</code>. The
+  failing id sets are identical &mdash; the 97 are pre-existing here, and the
+  two errors are sandboxed scheduler verbs both arms hit &mdash; so the added
+  passes are the three new cases and nothing the change touches.
+  Ruff <code>check</code> and <code>format --check</code> add no finding on the
+  three staged paths.</p>
 </section>
