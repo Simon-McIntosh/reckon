@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="506">
+<meta name="plan-version" content="507">
 <meta name="plan-modified" content="2026-11-18">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1588,7 +1588,10 @@
     <div class="r-comment-body"><p>The red cases read click 8.2's mixed `Result.output` instead of stdout, so the run notice printed ahead of the JSON; the payload is now parsed from `result.stdout` and the file passes 4 of 4 at head (was 2 failed, 2 passed), with no product line touched because `_governing_lift` already orders lifts by scope specificity before grant time.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T111705790491-review-of-qwnw-red-file-a-released-review-is-composed-again-b20dc0938310" data-who="reckon-build" data-when="2026-11-18T12:56:46.739Z">
-    <div class="r-comment-body"><p>Independent review of r-20261118T062537416281-qwnw-red-file-a-released-review-is-composed-again at base 2f00851c42f247cba1c81c80ed0cf7b41045de76 and head b20dc09383100d6c0d09d13793f3638c50d6b218: parsed, scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 17 (total 106); added_failure_count 0 with no added ids from the reviewed run&#x27;s own arms (baseline_suite and after_suite both 0 failures, the importing arms 12 failed at base to 10 at head with the head&#x27;s set a strict subset); three non-blocking findings — the composed-budget placeholder direction is pinned but the measured-budget direction is not, the predicate restates unknown_budget&#x27;s field list instead of deriving it, and the fragment&#x27;s both-directions probe has no log behind it</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261118T062537416281-qwnw-red-file-a-released-review-is-composed-again at base 2f00851c42f247cba1c81c80ed0cf7b41045de76 and head b20dc09383100d6c0d09d13793f3638c50d6b218: parsed, scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 17 (total 106); added_failure_count 0 with no added ids from the reviewed run's own arms (baseline_suite and after_suite both 0 failures, the importing arms 12 failed at base to 10 at head with the head's set a strict subset); three non-blocking findings — the composed-budget placeholder direction is pinned but the measured-budget direction is not, the predicate restates unknown_budget's field list instead of deriving it, and the fragment's both-directions probe has no log behind it</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062537416281-qwnw-red-file-a-released-review-is-composed-again" data-who="reckon-build" data-when="2026-11-18T10:25:06.437Z">
+    <div class="r-comment-body"><p>Repaired the pre-spawn evidence rule so a composed placeholder budget no longer reads as a spawned worker (`recovery_liveness._budget_reports_a_reading`), which had left every real dispatch pointer un-releasable; measure: tests/test_a_released_review_is_composed_again.py 2 passed, EXIT=0 at e27681fb7237f4712be4a05d7a225b45e05d46a8 on all_debug, against a base arm at 2f00851c42f247cba1c81c80ed0cf7b41045de76 of 2 failed.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
