@@ -1234,22 +1234,33 @@ def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
     return ids
 
 
-def run_ids(project: str, root: str | Path | None = None) -> set[str]:
+def run_ids(
+    project: str, root: str | Path | None = None, *, use_index: bool = True
+) -> set[str]:
     """Read store membership without decoding any run payload.
 
     The document index remains available when no store exists, for projects
     awaiting import. An existing store is authoritative even when empty.
+
+    ``use_index=False`` reads membership from the committed sources alone —
+    the aggregate and the run documents — because a cache rebuild compares its
+    own membership against what the ledger holds. Asking a cache what its
+    sources hold, through that cache, answers with the cache's own claim and
+    can never detect that it is stale.
     """
     from reckon import run_store
 
-    stored = run_store.indexed_run_ids(project)
-    if stored is not None:
-        return stored
-    current = _indexed_run_ids(project, root)
-    if current is not None:
-        return current
-    if _run_index_path(project, root).is_file():
-        data, _version = load(project, root, headers_only=True)
+    if use_index:
+        stored = run_store.indexed_run_ids(project)
+        if stored is not None:
+            return stored
+        current = _indexed_run_ids(project, root)
+        if current is not None:
+            return current
+        if _run_index_path(project, root).is_file():
+            data, _version = load(project, root, headers_only=True)
+        else:
+            data, _version = _load_aggregate(project, root)
     else:
         data, _version = _load_aggregate(project, root)
     return {
@@ -2517,6 +2528,21 @@ def _selected_rows(data: dict[str, Any], run_ids: set[str] | None) -> dict[str, 
     }
 
 
+def _reader_row(row: Any) -> Any:
+    """One run record as a ledger reader answers it.
+
+    ``store_write`` records what happened at one promotion rather than what
+    the run is, so the store has never held it and a store-backed read has
+    never returned it. The projection is applied on the document path as
+    well, so a reader's row does not gain a field merely because the cache
+    that answered it was absent. The committed file keeps the field for the
+    document readers that write, split and compare it.
+    """
+    if not isinstance(row, Mapping):
+        return row
+    return {name: value for name, value in row.items() if name != "store_write"}
+
+
 def load(
     project: str,
     root: str | Path | None = None,
@@ -2534,6 +2560,12 @@ def load(
     :func:`write`. ``auxiliary_version`` belongs to the projected roster and
     holds; mutations pair the state and version from :func:`load_auxiliary`
     with :func:`write_members` or the hold writer instead.
+
+    A row is the record a reader answers, which is the record the store holds:
+    the promotion's own ``store_write`` is not part of it, and the answer does
+    not gain that field when a document rather than the store answers the
+    read. ``use_index=False`` is the document read, verbatim, for the callers
+    that import, split or compare what was committed.
     """
     data, aggregate_version = _load_file_history(
         project,
@@ -2552,6 +2584,8 @@ def load(
         {"members": data["members"], "holds": data["holds"]},
         aggregate_version,
     )
+    if use_index:
+        data["runs"] = [_reader_row(row) for row in data["runs"]]
     return {
         **data,
         **auxiliary,
