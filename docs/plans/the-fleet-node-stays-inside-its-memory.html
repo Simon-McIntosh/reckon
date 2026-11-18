@@ -25,7 +25,7 @@
   <title>The Fleet Node Stays Inside Its Memory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-11-18">
 </head>
 <body>
@@ -137,12 +137,6 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-11-18T04:46:00Z">
-    <div class="r-comment-body"><p>§12 landed by direct merge (head <code>646561afbc</code>), on the lead's instruction. After the supervisor re-executes on moved code the running sampler is the one started from the checkout&#x27;s current script, with at most one sampler at a time and the series carried over; a previous sampler is found whatever path it was started from; every interpreter fallback in the script defaults to the repository environment; and a reader with no published disk sample names its owner and says launches are held only when admission holds them. Merged candidate gate: 88 passed in 28.88s.</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-11-18T04:44:00Z">
-    <div class="r-comment-body"><p>§13 landed by direct merge (head <code>9c13eabdcc</code>), on the lead's instruction. An entry in the crew scratch root that belongs to no live run and no running measurement is removed once untouched past the stated time, with its removal recorded durably and a last check of everything inside it immediately before it goes; a live run&#x27;s directory is never removed, and a live run&#x27;s entry untouched past that time with no process inside is reported to its owner by name. Merged candidate gate: 36 passed in 9.70s.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-17T12:12:00Z">
     <div class="r-comment-body"><p>§10 landed by direct merge (head <code>d8e0a90d94</code>), on the lead's instruction. Each service the supervisor runs may declare a memory limit, applied as an address-space limit on its own process; one that reaches it is restarted under the existing backoff with the event recorded and no other service affected. Review 120 of 120 with no finding. Merged candidate gate: 12 passed, 1 skipped in 13.38s.</p></div>
 </div>
@@ -154,6 +148,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261117T111120978029-a-service-over-its-limit-restarts-alone" data-who="reckon-build" data-when="2026-11-17T11:36:33Z">
     <div class="r-comment-body"><p>Optional memory_limit_bytes now applies per-process RLIMIT_AS before service exec with fail-closed refusal and existing isolated restart backoff; 70 scoped checks passed (1 dedicated-allocation check skipped), a 768 MiB service restarted in a 2 GiB all_debug job with peer PID unchanged and oom_kill 0→0, while the unbounded control killed both stand-ins and raised oom_kill 0→2; importer comparison added zero failure IDs. Aggregate child-tree memory is not bounded.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-11-18T04:46:00Z">
+    <div class="r-comment-body"><p>§12 landed by direct merge (head <code>646561afbc</code>), on the lead's instruction. After the supervisor re-executes on moved code the running sampler is the one started from the checkout's current script, with at most one sampler at a time and the series carried over; a previous sampler is found whatever path it was started from; every interpreter fallback in the script defaults to the repository environment; and a reader with no published disk sample names its owner and says launches are held only when admission holds them. Merged candidate gate: 88 passed in 28.88s.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-not-landed-0034" data-who="reckon-build" data-when="2026-11-18T00:34:00Z">
     <div class="r-comment-body"><p>§12 is delivered and not landed: head <code>5312b01ff5</code> passed its merged-candidate gate and the merge was refused at the promotion dry run. The landing record written before the merge attempt is withdrawn.</p></div>
@@ -182,6 +179,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261118T043607373965-review-of-the-sampler-runs-the-current-script-646561afbcd3" data-who="reckon-build" data-when="2026-11-18T04:42:53Z">
     <div class="r-comment-body"><p>Incremental independent review answers the previous fractional-overrun blocker; six scores 20/20, no new findings, zero added failures; prior production review remains at its own revision.</p></div>
 </div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-11-18T04:44:00Z">
+    <div class="r-comment-body"><p>§13 landed by direct merge (head <code>9c13eabdcc</code>), on the lead's instruction. An entry in the crew scratch root that belongs to no live run and no running measurement is removed once untouched past the stated time, with its removal recorded durably and a last check of everything inside it immediately before it goes; a live run's directory is never removed, and a live run's entry untouched past that time with no process inside is reported to its owner by name. Merged candidate gate: 36 passed in 9.70s.</p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261118T004303865181-review-of-unowned-scratch-is-reclaimed-7b14a9c608ee" data-who="reckon-build" data-when="2026-11-18T00:49:28Z">
     <div class="r-comment-body"><p>Independent exact-revision review stored parsed with six scores, two blocking findings, and zero added failure IDs from the source run own completed suite arms; broader importer delta and live observation remain recorded separately.</p></div>
 </div>
@@ -190,6 +190,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261118T043259833944-review-of-unowned-scratch-is-reclaimed-9c13eabdcc27" data-who="reckon-build" data-when="2026-11-18T04:40:30Z">
     <div class="r-comment-body"><p>Parsed independent review of 49e735191c789aa23791614fb56a9fed1e5ae199..9c13eabdcc278a1b8a3679238132e6260a783e5c stored with scores 20/18/20/20/20/20, no findings and zero added suite failure IDs; prior post-intent activity finding answered.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261118T001329090851-unowned-scratch-is-reclaimed" data-who="reckon-build" data-when="2026-11-18T04:31:54Z">
+    <div class="r-comment-body"><p>After durable intent acknowledgement, reclamation now repeats the fail-closed descendant activity walk immediately before deletion and records a retained refusal for changed, fresh or unreadable activity. The reviewed closed-write race reproduced before repair; both closed-write controls retain their payload with unchanged root ctime, no live pointer and no open writer. All 36 focused tests and both 94-test gates pass; the 93-file importer head has the same 22 failing IDs as baseline (1147 head passes versus 1123 baseline), adding zero failures. The declared ownership mutation fails four tests.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-17T10:53:00Z">
     <div class="r-comment-body"><p>§2 landed through the crew's own promotion after its review (landing commit <code>859a28b2a1</code>). A memory kill in the fleet job is recorded with its time and victim; reviewed 120 of 120.</p></div>
