@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T08:08:31Z",
+  "findings": [
+    {
+      "file": "reckon/_mcp_tools.py",
+      "line": 92,
+      "severity": "blocking",
+      "text": "CrewArgs.view's Literal omits \"queue\" while reckon/mcp_views.py:4018 adds it to CREW_VIEWS and reckon/mcp_views.py:4894 serves it, so the typed MCP surface does not advertise the view the dispatcher answers. The repository's own guards name the omission: at head a0bf002e72, tests/test_crew_view_serves_every_view.py::test_the_tool_and_the_dispatcher_declare_the_same_views reports \"the crew view dispatcher serves these views and the crew tool does not advertise: ['decisions', 'queue']\" against ['decisions'] at base 8d870f62598f, and tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface reports 'queue' as an extra documented view (runs preserved in the review run's logs/parity-tests-head.log and logs/parity-tests-base.log). The 'decisions' and 'review-need' drift pre-dates this node; 'queue' is this change's. The node's goal names the MCP surface, so the third surface is incomplete until the Literal carries the view."
+    },
+    {
+      "file": "tests/test_the_queue_reads_as_a_queue.py",
+      "line": 74,
+      "severity": "non-blocking",
+      "text": "The MCP arm of the parity assertion calls mcp._crew(project=project, view=\"queue\") directly and never goes through CrewArgs, so it exercises the dispatcher rather than the typed surface the repository compares, and the omission at reckon/_mcp_tools.py:92 shipped green behind it. Drive CrewArgs(project=..., view=\"queue\") in _surfaces so the file reddens on that omission."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "_wait_reason re-composes the reason an unplaced request is under - \"waiting upstream: <refs>\" and \"blocked upstream: a section this request waits on was closed unfinished (<refs>)\" - that reckon/crew/obligation_snapshot.py:1998-2003 already composes for the same request's duty row, and the two wordings differ (the obligation appends the redispatch advice). One fact now has two compositions that can drift, where a helper beside section_waits_for would keep one."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "line": 145,
+      "severity": "non-blocking",
+      "text": "\"free\" is computed as budget - in_use and asserted nowhere: tests/test_the_queue_reads_as_a_queue.py:121 asserts only in_use, and the free figure appears only inside a print at tests/test_the_queue_reads_as_a_queue.py:128, so a regression returning a constant or None still leaves the gate green although the plan makes the points free part of the deliverable document."
+    },
+    {
+      "file": "docs/evidence/fragments/a-session-spends-a-priority-budget/s4.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The fragment's header names revision e278c21f39 and its command carries -s -rP, while the measure paragraph of docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html attributes the same figures to d6b78b4d98; no retained log carries the MEASURE lines (all four scoped-gate logs run -q without -s), so the recorded measures are transcription with no on-disk receipt. Cite one revision and keep the -s run's log."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'the queue reads as a queue, from the CLI, MCP and Python'; reckon/crew/queue_view.py:194 derives one document for every waiting request, review and promotion, and reckon/mcp_views.py:4894 serves it on both transports, but reckon/_mcp_tools.py:92 leaves 'queue' out of CrewArgs.view, so the typed MCP surface does not advertise the view.\nVERDICT done_when: the done_when asks for the same order and reasons from the function, the CLI and the MCP tool plus one admission pass reading the request the view places first; tests/test_the_queue_reads_as_a_queue.py:85-160 asserts exactly that, and scoped-gate-1794983462299208144.log records 2 passed EXIT=0 at a0bf002e72 on all_debug (host 98dci4-clu-3141, which sinfo places in all_debug).\nVERDICT write_paths: the manifest declares reckon, tests, skills, docs/evidence/fragments/a-session-spends-a-priority-budget and docs/figures/a-session-spends-a-priority-budget; all 10 paths of 8d870f62598f..a0bf002e72 fall inside them.\nVERDICT manifest: read; it states the scoped gate 2 passed EXIT=0 at a0bf002e72 and names its log, both suite arms 58 passed EXIT=0 at 8d870f62598f and d6b78b4d98, and the base control 2 failed EXIT=1; the crew check run against it answers ok true with no findings.\nVERDICT diff: read all four commits (9579aa15 feature, e278c21f test, d6b78b4d evidence, a0bf002e landing): one new module, the hold composition factored into reckon/crew/admission/verdicts.py:95 with reckon/crew/obligations.py:739 delegating to it, two fields widened on the promotion report at reckon/crew/promotion_requests.py:301, the view registered at reckon/mcp_views.py:4018 and served at reckon/mcp_views.py:4894, one tool docstring, one skill paragraph, one test file and two evidence paths.\nCALL_SITES: reckon/mcp_views.py:4894, reckon/mcp.py:2978, reckon/crew_run_commands.py:725, reckon/crew/obligations.py:739, reckon/crew/promotion_requests.py:301\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_view.py:194 delivers the rows, holds, promotions, budgets and filters, but reckon/_mcp_tools.py:92 leaves the view out of the typed MCP surface the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1794983462299208144.log reads 2 passed EXIT=0 at a0bf002e72 on all_debug and s4.html logs the base control at 2 failed EXIT=1, but no retained log carries the MEASURE lines both evidence files cite and they attribute them to different revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 8d870f62598f..a0bf002e72 is inside the declared write paths, and no plan, index or shared state file is touched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_the_queue_reads_as_a_queue.py:112-121 reddens if the ordering, the reason, the priority or the coordinator hold are dropped (the base arm fails 2 of 2), yet tests/test_the_queue_reads_as_a_queue.py:74 calls mcp._crew directly so the CrewArgs omission shipped green and the free figure at reckon/crew/queue_view.py:145 is asserted nowhere.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_view.py:73 imports queue_order._priority exactly as reckon/crew/admission/ordering.py:322 and reckon/crew/runs.py:646 already do, and the module follows the surrounding shape and naming; the widened report row at reckon/crew/promotion_requests.py:301 is additive.\nSCORE reuse: 14\nJUSTIFICATION reuse: places, holds, promotions and points come from their owners (queue_admission.queued_placements, verdicts.queued_hold, promotion_queue_report, runs.session_priority_in_use), but reckon/crew/queue_view.py:44 re-composes the upstream-wait wording owned by reckon/crew/obligation_snapshot.py:1998 instead of extending it.\nFINDING reckon/_mcp_tools.py:92 blocking: CrewArgs.view omits \"queue\" while reckon/mcp_views.py:4018 serves it, so the typed MCP surface does not advertise the view and the repository's parity guards report ['decisions', 'queue'] at head against ['decisions'] at base.\nFINDING tests/test_the_queue_reads_as_a_queue.py:74 non-blocking: the MCP parity arm calls mcp's dispatcher function directly, bypassing CrewArgs, so the schema omission it should have caught stays green.\nFINDING reckon/crew/queue_view.py:44 non-blocking: _wait_reason reproduces the unplaced-request wording owned by reckon/crew/obligation_snapshot.py:1998-2003 with different punctuation, giving one fact two compositions that can drift.\nFINDING reckon/crew/queue_view.py:145 non-blocking: the free figure appears only in a print at tests/test_the_queue_reads_as_a_queue.py:128 and is never asserted, so a regression to a wrong free value leaves the gate green.\nFINDING docs/evidence/fragments/a-session-spends-a-priority-budget/s4.html:1 non-blocking: the fragment's header names e278c21f39 while the landing fragment attributes the measures to d6b78b4d98 and no retained log carries the MEASURE lines.",
+  "review_run_id": "r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc",
+  "reviewed_base_sha": "8d870f62598f1d922ceed7015b570a65c61d8283",
+  "reviewed_head_sha": "a0bf002e72bcb5d4275feb5335cd7515002fda50",
+  "reviewed_run_id": "r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T09:30:00+00:00",
+  "total": 95
+}
