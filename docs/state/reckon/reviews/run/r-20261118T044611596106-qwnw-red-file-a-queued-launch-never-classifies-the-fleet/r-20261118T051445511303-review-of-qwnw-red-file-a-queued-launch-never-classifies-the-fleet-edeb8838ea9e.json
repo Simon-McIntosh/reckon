@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite gate logs: both arms completed with failure_count 0 and empty failure_ids, so no failure is added.",
+  "after_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044611596106-qwnw-red-file-a-queued-launch-never-classifies-the-fleet/after_suite-1794978467576666304.log",
+    "revision": "f1dbee11debb14117d65917f1be52b25b67a0f66"
+  },
+  "assertions_audit": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T051445511303-review-of-qwnw-red-file-a-queued-launch-never-classifies-the-fleet-edeb8838ea9e/assertion-audit.md",
+  "baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044611596106-qwnw-red-file-a-queued-launch-never-classifies-the-fleet/baseline_suite-1794978393397291285.log",
+    "revision": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatching/fences.py:_recorded_backlog",
+    "reckon/crew/recovery_watch.py:overdue_unreconciled_runs"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T05:20:11Z",
+  "evidence_caveats": [
+    "The head gate is the landing verify harness at f1dbee11 (scoped-gate-1794978331201874660.log, host 98dci4-clu-3141); no log records the all_debug partition or an unset SLURM_JOB_ID that the done_when names, and the fragment claims both.",
+    "The armed suite pair covers tests unrelated to the changed file, which the manifest discloses under rubric.evidence; the primary measure is the named file's own base/head pair."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-queued-launch-never-classifies-the-fleet.html",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "the fragment states both arms ran 'as a job on the all_debug partition with SLURM_JOB_ID unset', but neither cited log records a partition, a job id or an unset SLURM_JOB_ID, so the done_when's environment condition is claimed rather than measured."
+    },
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "both suite arms ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import the changed test, so the armed pair cannot show the change adds no failure; it is disclosed under rubric.evidence and no product code changed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read f1dbee11 and edeb8838 against 6699d025; one assertion rewritten in the named test file and one 76-line evidence fragment added.",
+    "done_when": "Read dispatch-detail.json's done_when; scoped-gate-1794978331201874660.log gives 3 passed EXIT=0 at f1dbee11 and logs/base-file-6699d025.log gives 1 failed EXIT=1 at 6699d025 with failing id test_direct_dispatch_records_the_ten_session_runs, but no arm records the all_debug partition or an unset SLURM_JOB_ID.",
+    "goal": "Read dispatch-detail.json:13; tests/test_a_queued_launch_never_classifies_the_fleet.py:99 now holds the session-scoped backlog rule that reckon/crew/recovery_watch.py:751-755 keeps, so the named file reads 3 passed at f1dbee11.",
+    "manifest": "Read manifest.md; it records the head gate, the base control, both suite arms at 58 passed, the two commits, and states no product file changed.",
+    "write_paths": "Read dispatch-detail.json's write_paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround); both delivered paths sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_launch_never_classifies_the_fleet.py:99 fails if reckon/crew/recovery_watch.py:751-755 stops skipping peer-owned pointers, and logs/base-file-6699d025.log shows that exact failure at the base revision.",
+    "evidence": "scoped-gate-1794978331201874660.log records '3 passed in 4.02s' and EXIT=0 at f1dbee11 while logs/base-file-6699d025.log records '1 failed, 2 passed' and EXIT=1 at 6699d025, but neither log records the all_debug job the done_when names.",
+    "fit": "the rewrite matches the message-carrying assertion form used by the sibling case at tests/test_a_queued_launch_never_classifies_the_fleet.py:86-95 and names the fixture's own session set.",
+    "goal_fidelity": "tests/test_a_queued_launch_never_classifies_the_fleet.py:99 now asserts the session-scoped backlog rule that reckon/crew/recovery_watch.py:751-755 implements, so the named file passes at head without a weakened assertion.",
+    "reuse": "the diff adds no definition; it reuses the existing fixture wrapper around recovery.classify_pointer and the existing dispatch record field, and reckon/crew/recovery_watch.py:721 already owns the overdue-run classifier.",
+    "scope_discipline": "the diff touches only tests/test_a_queued_launch_never_classifies_the_fleet.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-queued-launch-never-classifies-the-fleet.html, both declared, with no reckon/ path in 6699d025..edeb8838."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the node goal in dispatch-detail.json:13 (make tests/test_a_queued_launch_never_classifies_the_fleet.py pass in full on the primary branch); the diff rewrites the assertion at tests/test_a_queued_launch_never_classifies_the_fleet.py:99 to the rule reckon/crew/recovery_watch.py keeps and scoped-gate-1794978331201874660.log reads 3 passed at f1dbee11.\nVERDICT done_when: Read dispatch-detail.json's done_when and the recorded arms; the head gate log reads '3 passed in 4.02s / EXIT=0' at f1dbee11 and the base control logs/base-file-6699d025.log reads '1 failed, 2 passed / EXIT=1 at :101', but neither log records the all_debug partition or an unset SLURM_JOB_ID that the done_when and the fragment require.\nVERDICT write_paths: Read the declared paths in dispatch-detail.json (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround; the review scope adds the fragment file and docs/figures); both delivered paths \u2014 tests/test_a_queued_launch_never_classifies_the_fleet.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-queued-launch-never-classifies-the-fleet.html \u2014 are inside them.\nVERDICT manifest: Read the run's manifest.md; it records the 3-passed head gate at f1dbee11, the 1-failed base control at 6699d025, both suite arms at 58 passed EXIT=0, the two commits, and states no product file changed.\nVERDICT diff: Read both commits (f1dbee11 test(queue): assert the dispatch backlog is the session's own rows; edeb8838 docs(evidence): record the red file's base failure beside its head run) against 6699d025; they land one rewritten assertion in the named test file and a 76-line evidence fragment, with no reckon/ path touched.\nCALL_SITES: reckon/crew/dispatching/fences.py:_recorded_backlog, reckon/crew/recovery_watch.py:overdue_unreconciled_runs\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_queued_launch_never_classifies_the_fleet.py:99 now asserts the session-scoped rule that reckon/crew/recovery_watch.py:751-755 implements. Reaching that sentence was mechanical; the judgement here is that the rule asserted is the code's, not a weakened one.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head/base pair and both suite arms are recorded with full revisions in scoped-gate-1794978331201874660.log and logs/base-file-6699d025.log, but no cited log records the all_debug job or an unset SLURM_JOB_ID that the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two delivered paths are the named test file and one fragment under docs/evidence/fragments/queued-work-needs-no-workaround, and no reckon/ file appears in 6699d025..edeb8838.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_launch_never_classifies_the_fleet.py:99 compares the classifier traffic the fixture's wrapper at :44-55 observes against a set derived from the fixture's own construction at :39-42, and logs/base-file-6699d025.log shows the pre-change code failing it with the 40 'r-delivered-10..49' peer ids, so reinstating the fleet-wide rule reddens the assertion.\nSCORE fit: 20\nJUSTIFICATION fit: the rewrite follows the sibling assertion style in the same test at :86-95 (`assert ..., calls` message form with a named set), and names `session_runs`, matching the field names in reckon/crew/dispatching/fences.py:346.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module \u2014 only the local set at :98 \u2014 and reuses the existing fixture wrapper around recovery.classify_pointer; a capability search over reckon/crew for the overdue-run classifier and the dispatch backlog found reckon/crew/recovery_watch.py:721 as the owner both sides already call.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-queued-launch-never-classifies-the-fleet.html:13 non-blocking: the fragment states both arms ran 'as a job on the all_debug partition with SLURM_JOB_ID unset', but neither cited log records a partition, a job id or an unset SLURM_JOB_ID (scoped-gate-1794978331201874660.log:2 names only host 98dci4-clu-3141 and a /tmp landing tree; logs/base-file-6699d025.log:2-4 name only a scratch tree), so the done_when's environment condition is claimed rather than measured.\nFINDING manifest.md:18 non-blocking: both suite arms ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py \u2014 files that do not import the changed test \u2014 so the armed pair cannot show the change adds no failure; it is disclosed under rubric.evidence, and no product code changed, so the arms are vacuous rather than misleading.",
+  "review_run_id": "r-20261118T051445511303-review-of-qwnw-red-file-a-queued-launch-never-classifies-the-fleet-edeb8838ea9e",
+  "reviewed_base_sha": "6699d0257dd54f67be1f09ce02d9d6cc9ab117ed",
+  "reviewed_head_sha": "edeb8838ea9eeca44a261fd97e69da7f99affb99",
+  "reviewed_run_id": "r-20261118T044611596106-qwnw-red-file-a-queued-launch-never-classifies-the-fleet",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T05:43:32.623420+00:00",
+  "total": 112
+}
