@@ -509,8 +509,11 @@ def test_an_ordinary_failed_run_still_refuses_added_suite_failures(
     result = _complete(run, measurement_repo, tmp_path, gate="failed")
 
     assert result.exit_code != 0, result.output
-    assert "armed promotion added suite failures" in result.output, result.output
-    assert failure_id in result.output, result.output
+    reply = json.loads(result.stdout)
+    receipt = json.loads(Path(reply["record_path"]).read_text())
+    assert reply["error"] == "suite-delta-refused", reply
+    assert "armed promotion added suite failures" in receipt["detail"], receipt
+    assert receipt["added_failure_ids"] == [failure_id], receipt
     assert open_run_index.row_for_run(PROJECT, run["run_id"], measurement_repo) is None
 
 
@@ -524,8 +527,10 @@ def test_a_passing_measurement_still_refuses_added_suite_failures(
     result = _complete(run, measurement_repo, tmp_path, gate="passed")
 
     assert result.exit_code != 0, result.output
-    assert "suite-delta-refused" in result.output, result.output
-    assert failure_id in result.output, result.output
+    reply = json.loads(result.stdout)
+    receipt = json.loads(Path(reply["record_path"]).read_text())
+    assert reply["error"] == "suite-delta-refused", reply
+    assert receipt["added_failure_ids"] == [failure_id], receipt
     assert open_run_index.row_for_run(PROJECT, run["run_id"], measurement_repo) is None
 
 
