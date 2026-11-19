@@ -113,6 +113,4 @@ def test_no_live_process_and_stale_output_is_halted(
     )
     assert row["process_alive"] is False
     assert row["liveness_proven"] is True
-    assert row["fleet_verdict"]["state"] in PANE_STATES["needs you"], row[
-        "fleet_verdict"
-    ]
+    assert row["fleet_verdict"]["state"] in PANE_STATES["help"], row["fleet_verdict"]
