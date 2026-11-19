@@ -49,9 +49,14 @@
   id is a load-dependent reading of the suite run rather than a rule the code
   has since stopped keeping.</p>
 
-  <p>Because a green run alone cannot show the file's checks bite, its arms were
-  also exercised under load: twelve copies of the file run concurrently against
-  the same working tree all read <code>7 passed in 18.5s</code>, and no case
-  moved off its assertion, so the run above is a stable reading of the file and
-  not an instrument that returned early.</p>
+  <p>Because a green run alone cannot show the file's checks bite, a deliberate
+  mutation of my own was applied in a scratch extraction of the head: the stop
+  hook's snapshot read was disabled, and the file then reads
+  <code>1 failed, 6 passed</code>, <code>EXIT=1</code>, with
+  <code>test_a_fresh_snapshot_decides_the_stop</code> the failing id. The log is
+  <code>negative-control-head-mutated-snapshot-read.log</code> in the run
+  directory. The arms were also exercised under load: twelve copies of the file
+  run concurrently against the same working tree all read
+  <code>7 passed in 18.5s</code>, so the run above is a stable reading of the
+  file and not an instrument that returned early.</p>
 </section>
