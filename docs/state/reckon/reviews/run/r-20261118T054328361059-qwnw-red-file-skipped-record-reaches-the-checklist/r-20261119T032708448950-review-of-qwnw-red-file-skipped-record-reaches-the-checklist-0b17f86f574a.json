@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own arms: baseline_suite-1795055625317770724.log records 58 passed with EXIT=0 at 42fe90d0b0a46060bafde2490dda7d4002cda478, and after_suite-1795055670383175897.log records 58 passed with EXIT=0 at 0b17f86f574a01b0d2429e73bf1341a97c2b3ad7; neither carries a FAILED line, so both failing-id sets are empty and their difference is empty. The instrument is shown able to report a failure present: negative-control-base-42fe90d0b0a46060bafde2490dda7d4002cda478.log, the same runner over the named file, records 2 FAILED ids and EXIT=1.",
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1345 (format_checklist call)",
+    "reckon/hooks/coordinator_obligations.py:1443 (format_checklist on the prompt path)",
+    "reckon/crew/obligation_snapshot.py:1250",
+    "reckon/crew/obligation_snapshot.py:2172 (_unreadable_record_items consumers)",
+    "reckon/crew/recovery_review_subject.py:145",
+    "reckon/crew/recovery_review_subject.py:158",
+    "reckon/crew/recovery_review_subject.py:1801 (_read_review_once callers)",
+    "reckon/crew/recovery_watch.py:757 (classify_pointer)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:22:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "4526",
+      "severity": "non-blocking",
+      "text": "note_read_failure is added to the curated store re-export list although no caller resolves it through this module \u2014 both consumers import it from reckon.crew.review_records (recovery_classification.py:3814, recovery_memo.py:1019) \u2014 so the entry names a resolution path nothing uses and would keep a dead name alive if the function were retired."
+    },
+    {
+      "file": "tests/test_stop_hook_honours_late_state.py",
+      "line": "272",
+      "severity": "non-blocking",
+      "text": "the rewritten case deletes the assertion that the collapsed line still carries the unreadable-review-record count, and no case asserts a non-named wait is counted rather than printed, so a change that printed every wait row in full \u2014 the bulk the collapsed line exists to suppress \u2014 would leave the suite green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054328361059-qwnw-red-file-skipped-record-reaches-the-checklist/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the done_when requires each cause listed with a product-wrong or test-wrong verdict, but the manifest compresses both causes to 'two product defects' and never records that tests/test_stop_hook_honours_late_state.py was rewritten to the rule the code now keeps, which is the test-wrong verdict the diff earns."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 42fe90d0 \u2014 3573a365 touches seven files (+118/-22), adding the finding-carrying memo answer, the run_ids projection and the printed-row predicate, and 0b17f86f adds only the 70-line evidence fragment; nothing outside the declared paths and nothing the goal does not imply.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each cause listed with a product-or-test verdict, both suite arms as inline JSON with full revisions, a base negative control carrying its failing ids, ruff clean and plain commit ids; scoped-gate-1795055324889546562.log records 5 passed with EXIT=0 on host 98dci4-clu-3141 (an all_debug node) at revision 3573a365, negative-control-base-42fe90d0.log records 2 failed and 1 passed with EXIT=1, and both suite arms record 58 passed with EXIT=0.",
+    "goal": "the node goal is to make tests/test_skipped_record_reaches_the_checklist.py pass in full, and at head its three cases pass in head-tree-run-3573a365ae9d2585d81de95436e6b09a466bbc57.log, while the two causes the diff repairs are the two cases that file reds on at base \u2014 a memoised answer dropping the findings of the read it served (reckon/crew/recovery_memo.py:687) and a derived row carrying no run-id projection (reckon/crew/obligation_snapshot.py:1229).",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054328361059-qwnw-red-file-skipped-record-reaches-the-checklist/manifest.md \u2014 it reads complete, names the gate and its log, records the base extraction as 2 failed and 1 passed, and records both suite arms at full 40-character revisions with failure_count 0, though its cause list is compressed to a single line at manifest.md:21.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's fragment file and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-skipped-record-reaches-the-checklist; all eight paths in the diff sit inside them, and docs/figures is simply unused."
+  },
+  "justifications": {
+    "durability": "tests/test_stop_hook_honours_late_state.py:273 reddens if _row_is_printed is dropped or merged back into _row_is_actionable, and the base extraction reds the memo fix, but the collapse assertion deleted at :272 leaves the collapsed-line path unguarded.",
+    "evidence": "scoped-gate-1795055324889546562.log records 5 passed and EXIT=0 at revision 3573a365, but its header names no environment, so the done_when's SLURM_JOB_ID-unset clause rests on the manifest's word alone.",
+    "fit": "reckon/crew/review_records.py:609 extends the _note_skipped_record idiom above it, and reckon/hooks/coordinator_obligations.py:274 follows the _NON_BLOCKING_KINDS frozenset beside it.",
+    "goal_fidelity": "reckon/crew/recovery_memo.py:687 carries the findings a served answer was read past, and negative-control-base-42fe90d0.log reds exactly the two cases that pass at 3573a365.",
+    "reuse": "the additions live in reckon/crew/review_records.py:567-609, the owner of collect_read_failures and the read-failure collector, rather than a second collector; the only unused copy is the facade re-export at reckon/crew/review.py:4526.",
+    "scope_discipline": "all eight changed paths are under reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround, and the unused re-export at reckon/crew/review.py:4526 is the only weight the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_skipped_record_reaches_the_checklist.py pass in full, and at head its three cases pass in head-tree-run-3573a365ae9d2585d81de95436e6b09a466bbc57.log, while the two causes the diff repairs are the two cases that file reds on at base \u2014 a memoised answer dropping the findings of the read it served (reckon/crew/recovery_memo.py:687) and a derived row carrying no run-id projection (reckon/crew/obligation_snapshot.py:1229).\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each cause listed with a product-or-test verdict, both suite arms as inline JSON with full revisions, a base negative control carrying its failing ids, ruff clean and plain commit ids; scoped-gate-1795055324889546562.log records 5 passed with EXIT=0 on host 98dci4-clu-3141 (an all_debug node) at revision 3573a365, negative-control-base-42fe90d0.log records 2 failed and 1 passed with EXIT=1, and both suite arms record 58 passed with EXIT=0.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's fragment file and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-skipped-record-reaches-the-checklist; all eight paths in the diff sit inside them, and docs/figures is simply unused.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054328361059-qwnw-red-file-skipped-record-reaches-the-checklist/manifest.md \u2014 it reads complete, names the gate and its log, records the base extraction as 2 failed and 1 passed, and records both suite arms at full 40-character revisions with failure_count 0, though its cause list is compressed to a single line at manifest.md:21.\nVERDICT diff: read commit by commit from 42fe90d0 \u2014 3573a365 touches seven files (+118/-22), adding the finding-carrying memo answer, the run_ids projection and the printed-row predicate, and 0b17f86f adds only the 70-line evidence fragment; nothing outside the declared paths and nothing the goal does not imply.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1345 (format_checklist call), reckon/hooks/coordinator_obligations.py:1443 (format_checklist on the prompt path), reckon/crew/obligation_snapshot.py:1250, reckon/crew/obligation_snapshot.py:2172 (_unreadable_record_items consumers), reckon/crew/recovery_review_subject.py:145, reckon/crew/recovery_review_subject.py:158, reckon/crew/recovery_review_subject.py:1801 (_read_review_once callers), reckon/crew/recovery_watch.py:757 (classify_pointer).\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_memo.py:687 carries the findings a served answer was read past, and negative-control-base-42fe90d0.log reds exactly the two cases that pass at 3573a365.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795055324889546562.log records 5 passed and EXIT=0 at revision 3573a365, but its header names no environment, so the done_when's SLURM_JOB_ID-unset clause rests on the manifest's word alone.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: all eight changed paths are under reckon, tests or docs/evidence/fragments/queued-work-needs-no-workaround, and the unused re-export at reckon/crew/review.py:4526 is the only weight the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_stop_hook_honours_late_state.py:273 reddens if _row_is_printed is dropped or merged back into _row_is_actionable, and the base extraction reds the memo fix, but the collapse assertion deleted at :272 leaves the collapsed-line path unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review_records.py:609 extends the _note_skipped_record idiom above it, and reckon/hooks/coordinator_obligations.py:274 follows the _NON_BLOCKING_KINDS frozenset beside it.\nSCORE reuse: 18\nJUSTIFICATION reuse: the additions live in reckon/crew/review_records.py:567-609, the owner of collect_read_failures and the read-failure collector, rather than a second collector; the only unused copy is the facade re-export at reckon/crew/review.py:4526.\nFINDING reckon/crew/review.py:4526 non-blocking: note_read_failure is added to the curated store re-export list although no caller resolves it through this module \u2014 both consumers import it from reckon.crew.review_records (recovery_classification.py:3814, recovery_memo.py:1019) \u2014 so the entry names a resolution path nothing uses and would keep a dead name alive if the function were retired.\nFINDING tests/test_stop_hook_honours_late_state.py:272 non-blocking: the rewritten case deletes the assertion that the collapsed line still carries the unreadable-review-record count, and no case asserts a non-named wait is counted rather than printed, so a change that printed every wait row in full \u2014 the bulk the collapsed line exists to suppress \u2014 would leave the suite green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054328361059-qwnw-red-file-skipped-record-reaches-the-checklist/manifest.md:21 non-blocking: the done_when requires each cause listed with a product-wrong or test-wrong verdict, but the manifest compresses both causes to 'two product defects' and never records that tests/test_stop_hook_honours_late_state.py was rewritten to the rule the code now keeps, which is the test-wrong verdict the diff earns.",
+  "review_run_id": "r-20261119T032708448950-review-of-qwnw-red-file-skipped-record-reaches-the-checklist-0b17f86f574a",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "0b17f86f574a01b0d2429e73bf1341a97c2b3ad7",
+  "reviewed_run_id": "r-20261118T054328361059-qwnw-red-file-skipped-record-reaches-the-checklist",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:59:19.683382+00:00",
+  "total": 102
+}
