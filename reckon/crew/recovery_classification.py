@@ -1925,9 +1925,24 @@ def classify_pointer(
             stored_review = served_review.get("record")
             review = dict(stored_review) if isinstance(stored_review, Mapping) else None
             review_error = str(served_review.get("error") or "")
+            # The files that answer was read past travel with it: a served
+            # classification made no read, and without these a later derivation
+            # of the same fleet reports no finding while the sweep that wrote
+            # the memo named the path.
+            for finding in served_review.get("findings") or ():
+                note_read_failure(finding)
         else:
-            review, review_error = _stored_review(record)
-            memo["review"] = {"record": review, "error": review_error}
+            # The read's own findings are captured here so the memo can carry
+            # them, then noted to the region the caller opened around this call.
+            with collect_read_failures() as read_failures:
+                review, review_error = _stored_review(record)
+            memo["review"] = {
+                "record": review,
+                "error": review_error,
+                "findings": [dict(entry) for entry in read_failures],
+            }
+            for finding in read_failures:
+                note_read_failure(finding)
     review_complete = _review_is_complete(review)
     # The branch that decides whether the run still owes a review is the only
     # one that pays for recognising a dispatched review, so the pair starts
@@ -3793,4 +3808,8 @@ from .recovery_watch import (  # noqa: E402
     _pointer_role,
     _utc_seconds,
     _watch_verdict,
+)
+from .review_records import (  # noqa: E402
+    collect_read_failures,
+    note_read_failure,
 )

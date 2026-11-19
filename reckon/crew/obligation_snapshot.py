@@ -1226,6 +1226,7 @@ def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
             {
                 "kind": _UNREADABLE_RECORD_KIND,
                 "run_id": path,
+                "run_ids": [path],
                 "node": Path(path).name,
                 "age_seconds": 0,
                 "next_command": _unreadable_record_remedy(finding),
@@ -2199,8 +2200,12 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             state.unreconciled.get(session, state.unreconciled.get("", 0))
         ),
     }
-    delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
-    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
+    delivery = module.recovery_classification.delivery_summary(
+        state.rows, session=session
+    )
+    summary.update(
+        {key: value for key, value in delivery.items() if key != "remove_pointers"}
+    )
     return {
         "project": state.project,
         "session": session,
