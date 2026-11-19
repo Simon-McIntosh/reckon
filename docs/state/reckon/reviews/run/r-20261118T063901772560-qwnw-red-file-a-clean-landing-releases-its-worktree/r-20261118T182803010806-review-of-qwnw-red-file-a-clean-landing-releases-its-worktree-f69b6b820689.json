@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1364 complete()",
+    "reckon/crew_run_commands.py:3905 crew_complete -> complete() at :4162 and :4438"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:26:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms table header opens only one th and closes a second revision</th> it never opened, so the revision column has no header and the table renders five columns."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html",
+      "line": "87",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delta row emits \"1 failure fixed, 0 added\" outside any td and then a stray closing tag, so the delta is not in a cell and the row is malformed."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure row names revision 126b691bb9 while the gate log it records ran at f69b6b82, so a reader matching that row to scoped-gate-1795025896850656620.log by revision finds no such run."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html",
+      "line": "73",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm ran 7 files while 20 test files import reckon/crew/promotion_evidence.py, so the arm the done_when names is narrower than the population it states and 13 importer files add no measured failure against the base."
+    }
+  ],
+  "head_log_revision": "f69b6b820689064d02ca21b8e2b1ae35738e07d6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base bc7b7bec; 126b691bb9 replaces the unconditional canonical_head read with a conditional one at reckon/crew/promotion_evidence.py:437-441 and rewrites the docstring, and f69b6b82 adds the 98-line evidence fragment; nothing else moved.",
+    "done_when": "the done_when names the node file as an all_debug gate, a cause verdict, an importer arm with both revisions as inline JSON, a base-arm negative control with its failing ids, and a clean ruff; the manifest records the head gate 3 passed, the base arm 1 failed 2 passed with its failing id quoted at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html:64, and baseline_suite/after_suite at full 40-character revisions, but the importer arm is recorded as logs rather than inline JSON, it covers 7 of the 20 test files that import the module, and no line records the ruff result.",
+    "goal": "the node's goal is that tests/test_a_clean_landing_releases_its_worktree.py passes in full on the primary branch; reckon/crew/promotion_evidence.py:437-441 now reads the head only from a worktree the record names and still holds, so a released tree falls back to descent from base, and the gate log scoped-gate-1795025896850656620.log reads 3 passed EXIT=0 at f69b6b82.",
+    "manifest": "read; status complete, commits 126b691bb9 and f69b6b82 cited in full, changed_paths the two landed files, tests the single-file pytest gate, test_logs naming the head gate, the base control and both importer arms, baseline_suite at bc7b7bec with 0 failures and after_suite at f69b6b82 with 0 failures, plus a recorded retry for the importer selection's first timeout.",
+    "write_paths": "the declared paths are reckon, tests and the evidence fragment directory; git diff bc7b7bec..f69b6b82 touches only reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html, both inside that fence, and no test file is modified."
+  },
+  "justifications": {
+    "durability": "tests/test_a_clean_landing_releases_its_worktree.py:139 asserts exit_code == 0 and worktree_absent, and base-run-test-a-clean-landing.log shows that test red on the pre-change guard.",
+    "evidence": "scoped-gate-1795025896850656620.log and base-run-test-a-clean-landing.log record the gate and its negative control with ids, but arm-head-citation-importers.log covers 7 test files where 20 import reckon/crew/promotion_evidence.py and the manifest records no ruff result.",
+    "fit": "the comment and rewritten docstring at reckon/crew/promotion_evidence.py:433-441 follow the file's surrounding explanatory idiom and introduce no new identifier.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:437-441 gates the head read on _record_worktree, and scoped-gate-1795025896850656620.log reads 3 passed at the landed head.",
+    "reuse": "the change reuses _record_worktree from reckon/crew/promotion_release.py:1300 rather than adding a second notion of the run's tree.",
+    "scope_discipline": "git diff bc7b7bec..f69b6b82 lists only reckon/crew/promotion_evidence.py and the node's own evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_clean_landing_releases_its_worktree.py passes in full on the primary branch; reckon/crew/promotion_evidence.py:437-441 now reads the head only from a worktree the record names and still holds, so a released tree falls back to descent from base, and the gate log scoped-gate-1795025896850656620.log reads 3 passed EXIT=0 at f69b6b82.\nVERDICT done_when: the done_when names the node file as an all_debug gate, a cause verdict, an importer arm with both revisions as inline JSON, a base-arm negative control with its failing ids, and a clean ruff; the manifest records the head gate 3 passed, the base arm 1 failed 2 passed with its failing id quoted at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html:64, and baseline_suite/after_suite at full 40-character revisions, but the importer arm is recorded as logs rather than inline JSON, it covers 7 of the 20 test files that import the module, and no line records the ruff result.\nVERDICT write_paths: the declared paths are reckon, tests and the evidence fragment directory; git diff bc7b7bec..f69b6b82 touches only reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html, both inside that fence, and no test file is modified.\nVERDICT manifest: read; status complete, commits 126b691bb9 and f69b6b82 cited in full, changed_paths the two landed files, tests the single-file pytest gate, test_logs naming the head gate, the base control and both importer arms, baseline_suite at bc7b7bec with 0 failures and after_suite at f69b6b82 with 0 failures, plus a recorded retry for the importer selection's first timeout.\nVERDICT diff: read both commits against base bc7b7bec; 126b691bb9 replaces the unconditional canonical_head read with a conditional one at reckon/crew/promotion_evidence.py:437-441 and rewrites the docstring, and f69b6b82 adds the 98-line evidence fragment; nothing else moved.\nCALL_SITES: reckon/crew/promotion.py:1364 complete(), reckon/crew_run_commands.py:3905 crew_complete -> complete() at :4162 and :4438\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:437-441 gates the head read on _record_worktree, and scoped-gate-1795025896850656620.log reads 3 passed at the landed head.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795025896850656620.log and base-run-test-a-clean-landing.log record the gate and its negative control with ids, but arm-head-citation-importers.log covers 7 test files where 20 import reckon/crew/promotion_evidence.py and the manifest records no ruff result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff bc7b7bec..f69b6b82 lists only reckon/crew/promotion_evidence.py and the node's own evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_clean_landing_releases_its_worktree.py:139 asserts exit_code == 0 and worktree_absent, and base-run-test-a-clean-landing.log shows that test red on the pre-change guard.\nSCORE fit: 19\nJUSTIFICATION fit: the comment and rewritten docstring at reckon/crew/promotion_evidence.py:433-441 follow the file's surrounding explanatory idiom and introduce no new identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses _record_worktree from reckon/crew/promotion_release.py:1300 rather than adding a second notion of the run's tree.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html:58 non-blocking: the arms table header opens only one th and closes a second revision</th> it never opened, so the revision column has no header and the table renders five columns.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html:87 non-blocking: the delta row emits \"1 failure fixed, 0 added\" outside any td and then a stray closing tag, so the delta is not in a cell and the row is malformed.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html:68 non-blocking: the measure row names revision 126b691bb9 while the gate log it records ran at f69b6b82, so a reader matching that row to scoped-gate-1795025896850656620.log by revision finds no such run.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-clean-landing-releases-its-worktree.html:73 non-blocking: the importer arm ran 7 files while 20 test files import reckon/crew/promotion_evidence.py, so the arm the done_when names is narrower than the population it states and 13 importer files add no measured failure against the base.\n",
+  "review_run_id": "r-20261118T182803010806-review-of-qwnw-red-file-a-clean-landing-releases-its-worktree-f69b6b820689",
+  "reviewed_base_sha": "bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68",
+  "reviewed_head_sha": "f69b6b820689064d02ca21b8e2b1ae35738e07d6",
+  "reviewed_run_id": "r-20261118T063901772560-qwnw-red-file-a-clean-landing-releases-its-worktree",
+  "reviewer_run_id": "r-20261118T182803010806-review-of-qwnw-red-file-a-clean-landing-releases-its-worktree-f69b6b820689",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:03:58.902154+00:00",
+  "total": 110
+}

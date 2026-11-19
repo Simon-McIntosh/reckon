@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:02:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-decline-only-round-names-what-it-declined.html",
+      "line": 70,
+      "severity": "non-blocking",
+      "text": "The 'the armed suite' rows present 58 passed / EXIT=0 at both revisions as one of the fragment's four measured arms, but the command the reviewed manifest records for that pair (manifest.md:18-19) runs only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and neither file imports reckon/crew/recovery_repair_dispatch.py (grep -l over tests/ lists no such importer), so that arm cannot fail on a regression of this change and is a promotion-harness selection rather than coverage of it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063844788001-qwnw-red-file-a-decline-only-round-names-what-it-declined/manifest.md",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "The done_when requires the importer arm recorded 'as inline JSON carrying full 40-character revisions'; manifest.md:22 records it as prose. Both 40-character revisions, both counts (8 failed, 294 passed) and the equality of the sorted failure-id sets are present, and node-test-importers-base.log and node-test-importers-head.log on disk corroborate them, but the base arm's log path is named by no manifest field, so a reader has to reconstruct the filename to verify the base half of the clause."
+    }
+  ],
+  "notes": "added_failure_count and added_failure_ids were derived from the reviewed run's own gate logs rather than taken from its manifest: baseline_suite-1795075061139730986.log (revision 4584a203aafa020e0709da3db0bb51c7a94ade41) holds no 'FAILED ' line and ends '58 passed' then 'EXIT=0'; after_suite-1795075103990427245.log (revision 2525b92dfabd7ef8d747497b7e640a6a0281569e) likewise ends '58 passed' then 'EXIT=0'. Zero failing ids on each side leaves the added set empty. The importer logs' ids differ only inside the pytest tmp path (pytest-3 versus pytest-44), so their scoped test-id sets are equal. Durability rests on the base arm reddening test_a_decline_only_round_names_its_decision_and_what_it_left on the pre-repair empty-scope wording, which reinstating the old 'filtered to empty' reason at reckon/crew/recovery_repair_dispatch.py:1793 reproduces; the cited-true half of the new branch is measured independently by tests/test_repair_skips_out_of_repo_findings.py:403 test_an_empty_composed_scope_records_a_decline, which asserts 'filtered to empty' for a blocking finding that does cite reckon/crew/recovery.py and would redden if the decline-only reason were used there too. The added assertions at tests/test_a_decline_only_round_names_what_it_declined.py:291-296 compare the recorded reason against literal expected strings and one absence, not against a value the test handed in.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T081824867716-review-of-qwnw-red-file-a-decline-only-round-names-what-it-declined-6273dd9c8fb8",
+  "reviewed_base_sha": "4584a203aafa020e0709da3db0bb51c7a94ade41",
+  "reviewed_commits": [
+    "2525b92dfabd7ef8d747497b7e640a6a0281569e",
+    "6273dd9c8fb8c084111521a0c2aa33de6734ed63"
+  ],
+  "reviewed_head_sha": "6273dd9c8fb8c084111521a0c2aa33de6734ed63",
+  "reviewed_node": "qwnw-red-file-a-decline-only-round-names-what-it-declined",
+  "reviewed_run_id": "r-20261118T063844788001-qwnw-red-file-a-decline-only-round-names-what-it-declined",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:27:32.439866+00:00",
+  "total": 111,
+  "verdicts": {
+    "call_sites": "Searched the repository for callers of the changed function: reckon/crew/resumption.py:3031 calls dispatch_awaiting_reviews, which reaches reckon/crew/recovery_review_acceptance.py:1823 where dispatch_repair_for_run is called and the changed branches live; reckon/crew/recovery.py:185-192 only re-export the two names.",
+    "diff": "Read commit by commit from 4584a203 to 6273dd9c: 2525b92d binds _repairable_scope's result to 'cited' at reckon/crew/recovery_repair_dispatch.py:1761 and makes the 'if not scope' branch at :1793 choose between the existing 'filtered to empty' wording when cited is non-empty and _decline_only_reason when it is empty, touching no other branch or decision; 6273dd9c adds only the 103-line evidence fragment and no code.",
+    "done_when": "The named file passes at head as a job on all_debug with SLURM_JOB_ID unset (node-test-head.log headers '# host: 98dci4-clu-3143' and '# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest ... tests/test_a_decline_only_round_names_what_it_declined.py', 3 passed, EXIT=0); node-test-base.log carries the failing id AssertionError at its line 291 plus EXIT=1 and the fragment lines 40-44 quote that base run beside the head reason; the importer arms read 8 failed/294 passed with identical sorted ids at both revisions; ruff check and ruff format --check report nothing on the changed module. The importer clause is prose, not the inline JSON the done_when names.",
+    "goal": "The node goal (source brief line 38) is that tests/test_a_decline_only_round_names_what_it_declined.py passes in full; the landed change at reckon/crew/recovery_repair_dispatch.py:1761-1770 binds the cited-path read once and reuses it at :1793-1805 so the empty-scope decline carries _decline_only_reason's decision, and the head gate log node-test-head.log reads 3 passed with EXIT=0 at revision 6273dd9c.",
+    "manifest": "Read the reviewed run's manifest.md: status complete, commits 2525b92d,6273dd9c, the literal gate command naming tests/test_a_decline_only_round_names_what_it_declined.py, negative_control_log node-test-base.log, baseline_suite and after_suite both recorded with revision/command/exit_status 0/completed true/0 failure ids, measurement_module /tmp/mcintos-node-head-ayCeOd/tree/reckon/__init__.py, measurement_cwd that tree, and an outside_scope entry for the verify-gate route refusal.",
+    "write_paths": "Declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (and the node's fragment) and the figure path; the delivered diff 4584a203..6273dd9c changes only reckon/crew/recovery_repair_dispatch.py (+23 -4) and docs/...,qwnw-red-file-a-decline-only-round-names-what-it-declined.html (+103), both inside the declaration, and no test file was touched."
+  }
+}

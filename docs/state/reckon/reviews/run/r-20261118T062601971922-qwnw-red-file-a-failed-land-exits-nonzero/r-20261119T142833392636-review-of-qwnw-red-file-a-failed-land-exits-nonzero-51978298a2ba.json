@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:22:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062601971922-qwnw-red-file-a-failed-land-exits-nonzero/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "The recorded after_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file, so the done_when's clause about an arm over the test files that import what changed is not demonstrated by either recorded arm; the node itself records the mis-resolution under outside_scope and substitutes the head gate plus base negative control over the changed file, which is the measurement that actually bears on this change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062601971922-qwnw-red-file-a-failed-land-exits-nonzero/scoped-gate-1795096212425123927.log",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "The head gate log carries revision, host, tree and command but no partition and no record that SLURM_JOB_ID was unset, so the done_when's 'as a job on all_debug with SLURM_JOB_ID unset' venue rests on the manifest's and fragment's prose rather than on the artefact; the log does prove the run's green result (3 passed, EXIT=0 at 243e3d88)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062601971922-qwnw-red-file-a-failed-land-exits-nonzero/manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "The done_when requires that annotation on the changed paths is recorded, and the manifest records no result for the ruff check and format check; the review verified them itself with the repository's ruff over the head blob (check and format both clean, exit 0) so the clause is satisfied in fact but unrecorded as evidence."
+    },
+    {
+      "file": "tests/test_a_failed_land_exits_nonzero.py",
+      "line": 55,
+      "severity": "non-blocking",
+      "text": "The added _full_outcome helper reads the completion record the receipt cites, a capability tests/test_a_clean_landing_releases_its_worktree.py:126 already performs inline and tests/helpers/landing_repository.py exists as the declared owner of shared landing-test machinery, so a second and third caller of this read will copy the helper rather than extend the shared module."
+    }
+  ],
+  "notes": "Verdict per rubric item under verdicts. Durability rests on the base negative control (2 failed, 1 passed at be17b574, both repaired cases raising KeyError 'steps') against 3 passed at the delivered head, and on the series assertions: outcome['steps']['land']['ok'] is False and land['error']/land['resume'] redden if the land handler stops reporting an arbitrary exception as a failed step, and report['error'] reddens if the bounded receipt stops naming the refused stage. Each added assertion compares production output or a production-written record against a literal or a production record, never against a value the test itself passed in; _full_outcome re-reads result.output, the system under test's own receipt. Evidence 14 reflects the recorded gate and base arm plus three record gaps (importer-arm coverage, venue, ruff). Reuse 16 reflects the record-read helper duplicating a read two other landing tests already perform inline instead of extending tests/helpers/landing_repository.py; no product capability is forked because no product code changed.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T142833392636-review-of-qwnw-red-file-a-failed-land-exits-nonzero-51978298a2ba",
+  "reviewed_base_sha": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "reviewed_commits": [
+    "082252509546a4375ae3f58a08fd1fb0792e8157",
+    "243e3d8842c3d5c01ede230e257ea441869d25b9",
+    "51978298a2ba7d40fe517a730f2fec65a19fd3ce"
+  ],
+  "reviewed_head_sha": "51978298a2ba7d40fe517a730f2fec65a19fd3ce",
+  "reviewed_node": "qwnw-red-file-a-failed-land-exits-nonzero",
+  "reviewed_run_id": "r-20261118T062601971922-qwnw-red-file-a-failed-land-exits-nonzero",
+  "scores": {
+    "durability": 20,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:46:38.718115+00:00",
+  "total": 108,
+  "verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:_bounded reply builder (lines 3440-3505) and reckon/crew/promotion.py:958 complete; the receipt keys and the 'land: <message>' error text the tests read are produced there.",
+    "diff": "Read commit by commit: 0822525095 changes only the test (18+/3-), 243e3d8842 adds the 64-line fragment, 51978298a2 adds one fragment line citing the final gate re-run; no product line changes.",
+    "done_when": "The done_when's machine-checkable core is met and recorded -- the file green at head, the base red log with the same two ids, the commits field full 40-character ids, both suite arms inline JSON -- while its all_debug/SLURM_JOB_ID-unset venue, importer-arm coverage and ruff clause are prose or unrecorded (three findings).",
+    "goal": "The node's goal is that tests/test_a_failed_land_exits_nonzero.py passes in full; the head gate log scoped-gate-1795096212425123927.log records 3 passed and EXIT=0 at 243e3d88, the delivered head's only later commit being docs.",
+    "manifest": "The reviewed manifest reads complete, names the three commits, the gate command and its log beside the passed and failed counts, and separately records the suite-arm mis-resolution under outside_scope.",
+    "write_paths": "The declared paths cover reckon, tests and the node's fragment; git diff --stat be17b574..5197829 shows only tests/test_a_failed_land_exits_nonzero.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-land-exits-nonzero.html, both inside them."
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/obligations.py:2037 _live_item with SCOPE_HELD_DUTY_KIND",
+    "reckon/crew/recovery_watch.py:757 classify_pointer",
+    "reckon/crew/directory.py:342 classify_pointer",
+    "reckon/serve.py:902 classify_pointer",
+    "reckon/crew/forgotten_runs.py:111 classify_pointer",
+    "reckon/crew/station_subscriber.py:144 classify_pointer",
+    "reckon/roadmap.py:3221 classify_pointer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:25:55Z",
+  "findings": [
+    {
+      "file": "tests/test_a_full_queue_is_a_wait_not_a_refusal.py",
+      "line": "209",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arms asserted row next_action equals wait for a local lane slot for both claim cases, and the replacement only asserts PEER_RUN not in row next_action, which a row publishing any other command still satisfies, so the evidence fragment's claim that no assertion was deleted or weakened is stronger than the diff supports."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the evidence fragment opens the revision element with a truncated code closing tag that never closes, so the revision and the rest of that sentence render as tag text rather than as an element."
+    }
+  ],
+  "head_log_revision": "94ac54b8973378ee4548db68adaa8646cbdb1d33",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified seven production call sites that consume the classifier's queued row: reckon/crew/obligations.py:2037 builds the scope-held duty from session_refusal, and classify_pointer is reached from reckon/crew/recovery_watch.py:757, reckon/crew/directory.py:342, reckon/serve.py:902, reckon/crew/forgotten_runs.py:111, reckon/crew/station_subscriber.py:144 and reckon/roadmap.py:3221.",
+    "diff": "Read commit by commit against base 42fe90d0b0a46060bafde2490dda7d4002cda478: ee14480a1d8f1d27147ae32130170d704a43cbd7 widens the scope-claim pattern at reckon/crew/recovery_classification.py:168 and rewrites the two parametrised tests, adding the holder, path and next_command assertions; 94ac54b8973378ee4548db68adaa8646cbdb1d33 adds the 95-line evidence fragment recording both gate arms, the armed pair and the importing arm.",
+    "done_when": "The done_when names the file green at head as an all_debug job with SLURM_JOB_ID unset, a red base arm with each cause adjudicated, an importing-test arm adding no failure, and no assertion deleted or weakened; the manifest and logs record the first three, and the dropped exact next_action assertion at tests/test_a_full_queue_is_a_wait_not_a_refusal.py:209 leaves one caveat on the last.",
+    "goal": "The node's goal is that tests/test_a_full_queue_is_a_wait_not_a_refusal.py passes in full on the primary branch; the reviewed head runs that file at 8 passed with EXIT=0 per node-gate-head-ee14480a1d.log, and only promotion now separates the worktree from the primary branch.",
+    "manifest": "The manifest was read; it states status complete, commits ee14480a1d and 94ac54b8973378ee4548db68adaa8646cbdb1d33, the two adjudicated causes (test wrong, product wrong), the head gate 8 passed EXIT=0 against the base gate 2 failed EXIT=1, and its armed and importing arms with full revisions.",
+    "write_paths": "The declared write paths were reckon, tests, and the node's evidence-fragment and figure directories; the three paths in the 42fe90d0b0..94ac54b8 diff all sit inside them."
+  },
+  "justifications": {
+    "durability": "Restoring the base pattern at reckon/crew/recovery_classification.py:168 makes a directory claim fall through _scope_claim_holder to no hold, so the assertion at tests/test_a_full_queue_is_a_wait_not_a_refusal.py:203 fails; the base arm's exact next_action assertion for the claim cases was dropped and replaced by the looser one at :209.",
+    "evidence": "The done_when's measure is the named file green at head over a red base arm, which node-gate-base-42fe90d0b0.log (2 failed, EXIT=1) and node-gate-head-ee14480a1d.log (8 passed, EXIT=0) both record; the all_debug partition itself appears only as the evidence fragment's job ids, not in either log header.",
+    "fit": "The widened pattern at reckon/crew/recovery_classification.py:168 keeps the file's own comment-plus-regex idiom, carries no plan or ticket identifier, and the added DIRECTORY_CLAIMED_PATH follows the surrounding fixture naming.",
+    "goal_fidelity": "The node's goal is that tests/test_a_full_queue_is_a_wait_not_a_refusal.py passes in full, and node-gate-head-ee14480a1d.log records 8 passed at revision ee14480a1d with EXIT=0 against 2 failed and 6 passed at base 42fe90d0b0.",
+    "reuse": "The pattern at reckon/crew/recovery_classification.py:168 is extended in place at its owner; searching reckon/ for held by run and overlapping the live claim finds no second parser of these refusal messages, only their composers at reckon/crew/node.py:458 and reckon/crew/dispatch_claims.py:1839.",
+    "scope_discipline": "Every path in 42fe90d0b0..94ac54b8973378ee4548db68adaa8646cbdb1d33 lies inside the declared write paths, but reckon/crew/recovery_classification.py:168 changes production behaviour for the directory-claim case that was green in the base gate, so the change reaches past the two ids the red file actually failed on."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_full_queue_is_a_wait_not_a_refusal.py passes in full on the primary branch; the reviewed head runs that file at 8 passed with EXIT=0 per node-gate-head-ee14480a1d.log, and only promotion now separates the worktree from the primary branch.\nVERDICT done_when: the done_when names the file green at head as an all_debug job with SLURM_JOB_ID unset, a red base arm with each cause adjudicated, an importing-test arm adding no failure, and no assertion deleted or weakened; node-gate-base-42fe90d0b0.log records 2 failed EXIT=1 on the two r-scope-conflict ids and the head log records 8 passed EXIT=0, so the only gap is the dropped exact next_action assertion at tests/test_a_full_queue_is_a_wait_not_a_refusal.py:209.\nVERDICT write_paths: the declared write paths were reckon, tests, and the node's evidence-fragment and figure directories; the three paths in the 42fe90d0b0..94ac54b8973378ee4548db68adaa8646cbdb1d33 diff all sit inside them.\nVERDICT manifest: the manifest was read; it states status complete, commits ee14480a1d and 94ac54b8973378ee4548db68adaa8646cbdb1d33, the two adjudicated causes, the head gate 8 passed EXIT=0 against the base gate 2 failed EXIT=1, and its armed and importing arms with full revisions.\nVERDICT diff: read commit by commit against base 42fe90d0b0a46060bafde2490dda7d4002cda478: ee14480a1d8f1d27147ae32130170d704a43cbd7 widens the scope-claim pattern at reckon/crew/recovery_classification.py:168 and rewrites the two parametrised tests, adding the holder, path and next_command assertions; 94ac54b8973378ee4548db68adaa8646cbdb1d33 adds the 95-line evidence fragment.\nCALL_SITES: reckon/crew/obligations.py:2037 _live_item with SCOPE_HELD_DUTY_KIND, reckon/crew/recovery_watch.py:757 classify_pointer, reckon/crew/directory.py:342 classify_pointer, reckon/serve.py:902 classify_pointer, reckon/crew/forgotten_runs.py:111 classify_pointer, reckon/crew/station_subscriber.py:144 classify_pointer, reckon/roadmap.py:3221 classify_pointer\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 16\nSCORE durability: 17\nSCORE fit: 19\nSCORE reuse: 20\nFINDING tests/test_a_full_queue_is_a_wait_not_a_refusal.py:209 non-blocking: the base arms asserted the exact next_action text for both claim cases and the replacement only asserts the peer run id is absent from it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal.html:5 non-blocking: the revision element's closing tag is truncated, so the sentence around it renders as text rather than an element.\n",
+  "review_run_id": "r-20261119T043405026414-review-of-qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal-94ac54b89733",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "94ac54b8973378ee4548db68adaa8646cbdb1d33",
+  "reviewed_run_id": "r-20261118T062559569685-qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T043405026414-review-of-qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal-94ac54b89733"
+  },
+  "reviewer_run_id": "r-20261119T043405026414-review-of-qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal-94ac54b89733",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:05:30.008042+00:00",
+  "total": 108
+}

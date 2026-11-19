@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own gate logs: baseline-suite-all-debug.log ends '58 passed in 38.00s' and after-suite-all-debug.log ends '58 passed in 35.49s', each with 'EXIT=0', so neither arm carries a failure id and the difference is empty. The instrument is shown able to see tests present and run: head-arm-all-debug.log reaches its summary line with '3 passed in 9.72s' for the named file, and a re-run in this worktree printed '3 passed in 8.99s', so the zero is a measured zero rather than an empty collection.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "tests/test_queue_ordering_reads_history_once.py:189 assert decoded == [], f\"an unchanged store decodes no row: {decoded}\"",
+      "fails_if": "Reinstating the regression the section exists for - reading the run store's section history on every roadmap rebuild - puts rows into decoded on the second and third ordering, so the assertion reddens; it is compared against the stand-in's own record of what was decoded, not against a value the test passed to the code. It is pre-existing, not added by 834f169a76."
+    },
+    {
+      "assertion": "tests/test_queue_ordering_reads_history_once.py:182 assert read >= POPULATION",
+      "fails_if": "The positive control: it fails if the first ordering never reaches the store, which is what makes an empty decoded meaningful rather than an unexercised code path. Pre-existing."
+    },
+    {
+      "assertion": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html:15 '3 passed in 9.72s' quoted from head-arm-all-debug.log",
+      "fails_if": "Nothing in the repository asserts it; it is a transcription of a log whose '# revision:' line is the base, so it cannot fail on a regression of the product. It is evidence text, not a guard; the guard is the test file above."
+    }
+  ],
+  "assertion_independence": "The diff of 6fa2b177c5..834f169a76 adds no executable assertion: it adds one HTML fragment. Every assertion the review read lives in the pre-existing tests/test_queue_ordering_reads_history_once.py:174-266 and compares the ordering's output against the stand-in store's own decode record (decoded, read), not against values the test handed in.",
+  "call_sites": [
+    "reckon/serve.py:2751",
+    "reckon/mcp.py:1344",
+    "reckon/doccheck.py:1971"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:37:23Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "the heading reads 'Base run and head run of tests/test_queue_ordering_reads_history_once.py' but the single <pre> below it is one run whose '# revision:' line is 6fa2b177c5 (the base), and manifest.md's after_suite names the same base revision, so no run at the landed head 834f169a76 exists in the record; the deliverable is unaffected because the commit adds only this fragment and the test file is byte-identical at head (a re-run in this worktree printed '3 passed in 8.99s'), but the page presents one base run in both roles and a reader cannot tell the two apart."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html",
+      "line": 25,
+      "severity": "non-blocking",
+      "text": "the suite-arm figure is a paraphrase ('baseline-and-after: 58 passed, EXIT=0 in both jobs 1328977 and 1328978') that names no log path, and both arms are the armed template run at the one base revision, so the pair measures no delta; the logs it summarises (baseline-suite-all-debug.log, after-suite-all-debug.log) say '58 passed in 38.00s' and '58 passed in 35.49s', so a reader reconciling the page with the logs finds neither the wording nor the times it quotes."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the one commit 834f169a76b40074da3eed57cae1bccb0e908e1a (parent 6fa2b177c5) against its base: it adds 34 lines, one <section> fragment recording the base run, the suite arms and the fence failure; no product, test or figure file changed, so the diff matches the already-green branch the done_when allows.",
+    "done_when": "the done_when asks for the named file passing in full as a job on all_debug with SLURM_JOB_ID unset and its output on shared storage, the already-green branch delivered as such, an arm with full 40-character revisions, and the base run logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/; head-arm-all-debug.log carries '# revision: 6fa2b177c511a297d3440956aa64eaa759d4554a', '# slurm_job_id_in_task: []', '3 passed in 9.72s' and 'EXIT=0' under ~/.config/reckon/crew/runs/, both arms carry 40-character revisions and 58 passed, and the base run is in the fragment - but the base run is also the only run there and is presented as the head run too (finding at :8).",
+    "goal": "the node's goal is 'Make tests/test_queue_ordering_reads_history_once.py pass in full on the primary branch'; the file is 3 passed at base 6fa2b177c5 (head-arm-all-debug.log), base is an ancestor of main in this checkout, and a re-run of the file here printed '3 passed in 8.99s', so the goal's deliverable is green.",
+    "manifest": "read manifest.md at the reviewed run directory: status complete, commits 834f169a76b40074da3eed57cae1bccb0e908e1a, changed_paths the one fragment, tests the literal pytest command for tests/test_queue_ordering_reads_history_once.py, baseline_suite and after_suite both at 6fa2b177c5 with 0 failures and completed true, and outside_scope naming the bwrap re-entry failure that stopped the composed partition gate.",
+    "write_paths": "read the four declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment, its figure directory) against git diff 6fa2b177c5..834f169a76: the diff is the single file docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html, inside the declared fragment directory and its declared path."
+  },
+  "justifications": {
+    "durability": "no assertion is added by this diff, so the protection is the pre-existing tests/test_queue_ordering_reads_history_once.py:189, whose 'assert decoded == []' reddens if a rebuild reads the store's history again; the fragment itself guards nothing and would survive any product regression.",
+    "evidence": "head-arm-all-debug.log records revision, tree, complement command and 'EXIT=0', but its '# revision:' line is the base 6fa2b177c5 rather than the head, and both suite arms name that same revision, so the record proves a green base rather than a green head.",
+    "fit": "the fragment is a bare <section id=\"qwnw-red-file-queue-ordering-reads-history-once\"> in the majority idiom of its directory (276 of 303 sibling fragments are bare sections; the full-document form is the minority at 27), and it introduces no symbol at all.",
+    "goal_fidelity": "tests/test_queue_ordering_reads_history_once.py is 3 passed at 6fa2b177c5 (head-arm-all-debug.log:15) and 3 passed on a re-run from this worktree, so the goal's 'pass in full on the primary branch' holds.",
+    "reuse": "the diff adds no definition, function or module; the capability it uses is owned by reckon/evidence.py:1657 compose_landed_record, which composes docs/evidence/fragments/<plan>/<node>.html into the record, with the path shape owned by reckon/crew/reports.py:_fragment_plan_of and the read path by reckon/serve.py:2751, reckon/mcp.py:1344 and reckon/doccheck.py:1971.",
+    "scope_discipline": "the whole diff 6fa2b177c5..834f169a76 is the single new file docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html, inside the node's declared fragment path and touching nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_queue_ordering_reads_history_once.py pass in full on the primary branch'; the file is 3 passed at base 6fa2b177c5 (head-arm-all-debug.log) and 3 passed on a re-run from this worktree, so the deliverable is green on the primary branch.\nVERDICT done_when: the done_when asks for the named file passing in full as a job on all_debug with SLURM_JOB_ID unset and its output on shared storage, arms carrying full 40-character revisions; head-arm-all-debug.log carries '# revision: 6fa2b177c5...', '# slurm_job_id_in_task: []', '3 passed in 9.72s' and 'EXIT=0' under ~/.config/reckon/crew/runs/, and both arms record 58 passed at 6fa2b177c5 - but the base run is the only run in the fragment and is also presented as the head run.\nVERDICT write_paths: read the four declared paths against git diff 6fa2b177c5..834f169a76: the diff is the single file docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html, inside the declared fragment path.\nVERDICT manifest: read manifest.md at the reviewed run directory; status complete, commits 834f169a76b40074da3eed57cae1bccb0e908e1a, one changed path, the literal pytest command for the named file, baseline_suite and after_suite both 0 failures at 6fa2b177c5 with completed true.\nVERDICT diff: read the one commit 834f169a76 (parent 6fa2b177c5) against its base; it adds 34 lines of one fragment and no product, test or figure file, matching the already-green branch the done_when allows.\nCALL_SITES: reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1971\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_queue_ordering_reads_history_once.py is 3 passed at 6fa2b177c5 (head-arm-all-debug.log:15) and 3 passed on a re-run from this worktree, so the goal's passing file holds.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm-all-debug.log:1 records '# revision: 6fa2b177c5...' rather than the head 834f169a76, and both suite arms name that same base revision, so the recorded run proves a green base and not a green head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff 6fa2b177c5..834f169a76 is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html, inside the declared fragment path with nothing else touched.\nSCORE durability: 17\nJUSTIFICATION durability: this diff adds no assertion, and the protection is the pre-existing tests/test_queue_ordering_reads_history_once.py:189 whose 'assert decoded == []' reddens if a rebuild reads the store's history again.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html:1 is a bare <section id=...> in the majority idiom of its directory (276 of 303 sibling fragments) and introduces no symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and the capability it uses is owned by reckon/evidence.py:1657 compose_landed_record with the path shape owned by reckon/crew/reports.py:_fragment_plan_of.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html:8 non-blocking: the heading reads 'Base run and head run' but the single <pre> is one run whose '# revision:' line is the base 6fa2b177c5, and manifest.md's after_suite names the same base revision, so no run at the landed head 834f169a76 exists and the page presents one base run in both roles; the deliverable is unaffected because the commit adds only this fragment and the test file is byte-identical at head (re-run here: 3 passed in 8.99s).\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queue-ordering-reads-history-once.html:25 non-blocking: the suite-arm figure paraphrases the logs and names no log path, and both arms are the armed template run at the one base revision so the pair measures no delta; baseline-suite-all-debug.log and after-suite-all-debug.log say '58 passed in 38.00s' and '58 passed in 35.49s', neither of which the page quotes.",
+  "reuse_search": "searched reckon/ for the fragment and composition capability by capability rather than by name: 'evidence/fragments' matched reckon/evidence.py, reckon/resources.py:65, reckon/crew/dispatch_claims.py:1408,2226, reckon/crew/prompts.py:300 and reckon/crew/reports.py:2793; the fragment extends that owner by content rather than reimplementing it, and the diff defines nothing new, so no fork exists to score.",
+  "review_run_id": "r-20261119T015445241269-review-of-qwnw-red-file-queue-ordering-reads-history-once-834f169a76b4",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "834f169a76b40074da3eed57cae1bccb0e908e1a",
+  "reviewed_run_id": "r-20261118T054233608999-qwnw-red-file-queue-ordering-reads-history-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:03:17.293107+00:00",
+  "total": 110
+}

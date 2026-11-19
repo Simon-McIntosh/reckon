@@ -228,8 +228,10 @@ def _dry_run(entry: dict, repository: Path) -> dict:
     if entry.get("negative_control"):
         arguments += ["--negative-control", str(entry["negative_control"])]
     result = CliRunner().invoke(cli_module.main, arguments)
-    assert result.output.strip(), result.output
-    return json.loads(result.output)
+    # The command's stdout is one JSON document and any notice it prints rides
+    # stderr, which ``Result.output`` merges; read the stream the caller reads.
+    assert result.stdout.strip(), result.output
+    return json.loads(result.stdout)
 
 
 def _dry_run_details(payload: dict) -> str:
@@ -380,7 +382,10 @@ def test_an_execution_override_dispatches_and_records_the_label(
     result = CliRunner().invoke(cli_module.main, arguments)
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)
+    # The identity notice the command prints while its claim is published rides
+    # stderr, so a caller parsing stdout reads exactly one JSON document.
+    assert "reckon: created run" in result.stderr, result.stderr
+    record = json.loads(result.stdout)
     assert record["execution_fit"] == {
         "allowed": True,
         "execution_capable": False,

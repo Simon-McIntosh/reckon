@@ -418,6 +418,7 @@ def dispatch(
     dispatch_options: Mapping[str, Any] | None = None,
     admission_launch: bool = False,
     admitted_from: str = "",
+    seats_in_flight: int = 0,
     readiness_cache: dict[str, Any] | None = None,
     run_id: str | None = None,
     partner_masks: Iterable[str] | None = None,
@@ -1527,6 +1528,7 @@ def dispatch(
                 project,
                 exclude_run_ids=(run_id,),
                 reserve=_local_lane_reserve(is_local, config=config),
+                seats_in_flight=seats_in_flight,
             )
         except RosterFull as roster:
             reason = (

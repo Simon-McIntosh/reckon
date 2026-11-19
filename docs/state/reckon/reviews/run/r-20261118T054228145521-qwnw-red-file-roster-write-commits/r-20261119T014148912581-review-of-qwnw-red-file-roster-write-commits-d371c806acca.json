@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:35:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054228145521-qwnw-red-file-roster-write-commits/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the source manifest records no tests, test_logs, baseline_suite or after_suite keys and no per-cause verdict, all of which the done_when requires as inline JSON carrying full 40-character revisions; the arms survive only as base-arm.log and after-arm.log in the run directory, so a promotion reading the manifest alone cannot derive the suite delta."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-roster-write-commits.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the green gate is recorded at fcaba5b12b while the reviewed head is d371c806, whose only delta is this fragment, so the landed revision itself was never measured."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-roster-write-commits.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the third failing id is paraphrased ('empty status vs untracked docs/') rather than quoted from the log's own assertion line, so the fragment cannot be grepped for the failure the sibling fragments quote verbatim."
+    }
+  ],
+  "head_log_revision": "fcaba5b12b58bcfbc89336206b50ae9cfe44d2cb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is a test file plus an evidence document, so no production runtime code reaches the change; the product surface the test exercises was examined at reckon/ledger.py:3636 register_member.",
+    "diff": "read the three commits (028deaf829 fix, fcaba5b12b style, d371c806ac docs) against 6fa2b177c5; the repair rewrites three roster cases and adds the evidence fragment, nothing else.",
+    "done_when": "the done_when names the file passing in full as an all_debug job with SLURM_JOB_ID unset plus base and head arms as inline JSON; gate-head.log (3 passed EXIT=0) and the fragment record the job, base-arm.log and after-arm.log record 58 passed EXIT=0 each, but the manifest carries neither the arms nor the per-cause verdicts.",
+    "goal": "the node's goal is 'Make tests/test_roster_write_commits.py pass in full on the primary branch'; the landed change rewrites the three cases to the store-only rule documented at reckon/ledger.py:3652-3653 and gate-head.log records 3 passed at head.",
+    "manifest": "read the source run's 9-line manifest; status complete, three commits, changed_paths, retry_failures none, but no tests, test_logs, baseline_suite, after_suite or artifacts keys.",
+    "write_paths": "declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the roster fragment; the diff's two changed paths lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_roster_write_commits.py:45-52 fails if registration resumes committing: HEAD equality, the zero rev-list count and the absent docs/ directory redden, exactly as negative-control-base-run.log shows at the base arm.",
+    "evidence": "gate-head.log (rev fcaba5b12b, all_debug, SLURM_JOB_ID unset) reads '3 passed' EXIT=0 and negative-control-base-run.log records the base arm at 6fa2b177c5 with 3 failing ids and EXIT=1, but the reviewed run's manifest.md carries no tests/test_logs/baseline_suite/after_suite inline JSON the done_when requires.",
+    "fit": "tests/test_roster_write_commits.py drops the now-unused subprocess and pytest imports and reuses tests/helpers/git.py, matching the surrounding suite, and ruff check reports nothing on the landed file.",
+    "goal_fidelity": "tests/test_roster_write_commits.py at d371c806 asserts store-only registration against reckon/ledger.py:3652-3653, which documents the commit argument as inert, so the three cases the node was dispatched to green pass on the rule the product keeps.",
+    "reuse": "the diff adds no production definition; a capability search over tests/helpers found only git.py and landing_repository.py and no clean-status helper, and the change reuses tests/helpers/git.py git() for every repository assertion.",
+    "scope_discipline": "git diff 6fa2b177c5..d371c806a touches only tests/test_roster_write_commits.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-roster-write-commits.html, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_roster_write_commits.py pass in full on the primary branch'; the landed change rewrites the three cases to the store-only rule documented at reckon/ledger.py:3652-3653 and gate-head.log records 3 passed at head.\nVERDICT done_when: the done_when names the file passing in full as an all_debug job with SLURM_JOB_ID unset plus base and head arms as inline JSON; gate-head.log (3 passed EXIT=0) and the fragment record the job and both 58-test arms, but the manifest carries neither the arms nor the per-cause verdicts.\nVERDICT write_paths: declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the roster fragment; the diff's two paths lie inside them.\nVERDICT manifest: read the source run's 9-line manifest; status complete, three commits, changed_paths, retry_failures none, but no tests, test_logs, baseline_suite, after_suite or artifacts keys.\nVERDICT diff: read the three commits (028deaf829 fix, fcaba5b12b style, d371c806ac docs) against 6fa2b177c5; the repair rewrites three cases and adds the repair fragment, nothing else.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_roster_write_commits.py at d371c806 asserts store-only registration against reckon/ledger.py:3652-3653, so the three cases pass on the rule the product keeps.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head.log (rev fcaba5b12b, all_debug, SLURM_JOB_ID unset) reads '3 passed' EXIT=0 and negative-control-base-run.log records 3 failures EXIT=1, but manifest.md carries none of the inline arm JSON the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 6fa2b177c5..d371c806a touches only tests/test_roster_write_commits.py and its evidence fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_roster_write_commits.py:45-52 fails if registration resumes committing, as negative-control-base-run.log records exactly those failures at the base arm.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_roster_write_commits.py reuses tests/helpers/git.py and drops the unused subprocess and pytest imports, matching tests/test_members_and_holds_live_in_the_store.py.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition; the search over tests/helpers found no clean-status helper, so tests/helpers/git.py git() is the owner exercised and nothing is forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-roster-write-commits.html:26 non-blocking: the green gate is recorded at fcaba5b12b while the reviewed head is d371c806, so the landed revision was never measured.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-roster-write-commits.html:20 non-blocking: the third failing id is paraphrased rather than quoted from the log, so the fragment cannot be grepped for the quoted failure.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054228145521-qwnw-red-file-roster-write-commits/manifest.md:9 non-blocking: the source manifest carries no tests, test_logs, baseline_suite or after_suite keys, so a promotion reading the manifest alone cannot derive the suite delta.",
+  "review_run_id": "r-20261119T014148912581-review-of-qwnw-red-file-roster-write-commits-d371c806acca",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "d371c806acca38b6eb459f466cfdb6bba75a0bdf",
+  "reviewed_run_id": "r-20261118T054228145521-qwnw-red-file-roster-write-commits",
+  "reviewer_run_id": "r-20261119T014148912581-review-of-qwnw-red-file-roster-write-commits-d371c806acca",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:06:52.100799+00:00",
+  "total": 105
+}

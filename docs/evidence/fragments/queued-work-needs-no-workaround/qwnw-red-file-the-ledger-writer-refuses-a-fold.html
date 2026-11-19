@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-the-ledger-writer-refuses-a-fold</title>
+</head>
+<body>
+<h1 id="qwnw-red-file-the-ledger-fold-title">The fold-refusal file: three cases repaired</h1>
+
+<p id="qwnw-red-file-the-ledger-fold-base">Base run, revision 4d464485b8d773934c39db59a4ba4d43e8648a97: 3 failed, 7 passed, EXIT=1.</p>
+
+<p id="qwnw-red-file-the-ledger-fold-head">Head run, revision 253c17df56c062d34f941de6147c9e29c82f47a9: 10 passed, EXIT=0, measured as an all_debug job with SLURM_JOB_ID unset in the runner.</p>
+<p id="qwnw-red-file-the-ledger-fold-ids">Base failing ids: test_a_hold_check_leaves_the_aggregate_row_count_unchanged, test_the_idle_reap_leaves_the_aggregate_row_count_unchanged, and test_the_identity_retirement_leaves_the_aggregate_row_count_unchanged.</p>
+<table id="qwnw-red-file-the-ledger-fold-causes">
+<thead><tr><th>case</th><th>base assertion</th><th>rule the code keeps</th></tr></thead>
+<tbody>
+<tr><td>hold check</td><td>read the aggregate holds</td><td>the transition is written to the run store and read by ledger.holds</td></tr>
+<tr><td>idle reap</td><td>seeded a roster row through ledger.write and expected its removal in the aggregate</td><td>the reap writes the store roster through ledger.write_members</td></tr>
+<tr><td>identity retirement</td><td>same committed-aggregate seeding</td><td>the retirement writes the store roster only</td></tr>
+</tbody>
+</table>
+<p id="qwnw-red-file-the-ledger-fold-arms">Base and head arms over the node suite: baseline at 4d464485b8d773934c39db59a4ba4d43e8648a97 exit 0 with no failing id, and the head arm exit 0 with no failing id; the logs are cited by the run manifest.</p>
+</body>
+</html>

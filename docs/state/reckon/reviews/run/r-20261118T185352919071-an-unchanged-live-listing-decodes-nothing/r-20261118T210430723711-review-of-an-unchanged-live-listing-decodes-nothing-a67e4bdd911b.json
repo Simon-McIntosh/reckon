@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arm logs: baseline_suite-1795040580168455892.log records '58 passed' at 96e3c4b8 with no FAILED line and EXIT=0; after_suite-1795040623228052088.log records '60 passed' at 0b0c02da with no FAILED line and EXIT=0; the set difference is empty (0).",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/runs.py:1774 list_live -> _list_live_records at :1686",
+    "reckon/crew/runs.py:1636 read_pointer",
+    "reckon/serve.py:878",
+    "reckon/roadmap.py:3782",
+    "reckon/roadmap_snapshot.py:294",
+    "reckon/why_view.py:404",
+    "reckon/crew_follow_commands.py:2966",
+    "reckon/crew/dispatch_plan.py:1400",
+    "reckon/crew/routing.py:1149",
+    "reckon/crew_run_commands.py:1179 read_pointer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T19:20:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md",
+      "id": "fa6fd0039b3",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "negative_control_log names negative-control-base.txt, whose own record is '2 failed, 2 passed' over a four-case file run against the 21fc69f852 repair, so the cited control does not evidence the two-case file that landed at 0b0c02da; I ran the landed file against the base module in a scratch tree and reproduced 1 failed / 1 passed with 'an unchanged listing decoded 300 pointers', so the manifest's claim holds while the record filed for it is of a superseded test version."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "id": "f3be1e214bc",
+      "line": "1504",
+      "severity": "non-blocking",
+      "text": "the landed hand-out deep-copies each pointer's record on every unchanged listing, measured by the reviewed run at 19.00ms against the base revision's 18.44ms for 300 pointers of 13342 bytes (manifest.md:12), so the section's motivating cost is unchanged and this path is marginally slower than the pass it replaces; the copy-free hand-out that measured 2.15ms was committed as 21fc69f852 and reverted as 0b0c02da3f, so the trade is recorded rather than overlooked."
+    },
+    {
+      "file": "tests/test_an_unchanged_live_listing_decodes_nothing.py",
+      "id": "f32b9ca6f16",
+      "line": "102",
+      "severity": "non-blocking",
+      "text": "the caller-isolation assertions at :102-120 mutate second[0], a record handed out on a memo hit, so a regression that shared the memo's stored record on the miss path - the first decode of one signature, where file_memo.memoized_key returns the computed value itself and stores a copy - would leave every assertion green; the miss path is correct today but unguarded."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: 24d2e7a426 adds the record cache, _pointer_record and the test; 19e85cef66 rewrites the cache comment only; a67e4bdd911 reroutes the cache onto reckon/file_memo; 21fc69f852 hands the record out copy-free; 0b0c02da3f reverts 21fc69f852 - so the commits gained since the a67e4bdd review net to nothing (git diff a67e4bdd..0b0c02da is empty and both trees are 24a01d0d5c39f6d45898250478af56207e47ad25), and the landed change 96e3c4b8..0b0c02da is the state the earlier review at a67e4bdd read.",
+    "done_when": "The done-when asks for 300 live pointers, zero decodes on an unchanged second listing, at most two decodes after one rewrite plus one addition plus one removal, every listing equal to the base revision's own decode of the files, and a caller-mutated record returned unmutated next time; tests/test_an_unchanged_live_listing_decodes_nothing.py:90,95,112,116,119-120 assert exactly those five, and scoped-gate-1795040513229697407.log:7 records '60 passed' at 0b0c02da, while the same file against the base module reddens :95 with 'an unchanged listing decoded 300 pointers'.",
+    "goal": "The node's goal is that a listing whose pointers have not moved decodes none of them; at head 0b0c02da reckon/crew/runs.py:1482-1512 _pointer_record memoises each pointer's decoded record on file_memo's stat signature, and both readers of the pointer cache call it - read_pointer at runs.py:1636 and _list_live_records at runs.py:1686 - so an unchanged listing decodes nothing while a changed, added or removed pointer is decoded or dropped once.",
+    "manifest": "Read; it records the five commits through 0b0c02da, changed_paths matching the diff, a head gate of 60 passed at 0b0c02da and arms of 58 passed at base and 60 at head, each log present and ending in a bare EXIT line, the two measurements (base 18.44ms decoding 300, landed 19.00ms decoding 0), and status blocked with two blockers naming the out-of-scope consumers that forced the revert.",
+    "write_paths": "The node declares reckon/crew/runs.py, tests/test_an_unchanged_live_listing_decodes_nothing.py, the section's evidence fragment and its figures directory; git diff --stat 96e3c4b8..0b0c02da changes only the two code paths (+40/-6 and the new 134-line test), and the fragment and figures paths are correctly unused because the done-when names no artefact."
+  },
+  "justifications": {
+    "durability": "Reinstating the base's unconditional json.loads(_pointer_text(path)) at reckon/crew/runs.py:1688 reddens tests/test_an_unchanged_live_listing_decodes_nothing.py:95 (I ran the landed file against the base module: '1 failed, 1 passed', the failure being 'an unchanged listing decoded 300 pointers'), and returning the memo's own object instead of a copy reddens :119-120; deducted because :102-120 exercises only a cache hit, so the miss-path hand-out is unguarded and no assertion holds the section's cost.",
+    "evidence": "after_suite-1795040623228052088.log:7 shows '60 passed' at 0b0c02da and baseline_suite-1795040580168455892.log:7 shows '58 passed' at 96e3c4b8, both EXIT=0; deducted because the manifest's cited negative control (manifest.md:20) ran a four-case version of a file the revert removed, and because the two matched arm files (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) do not import the changed module.",
+    "fit": "reckon/crew/runs.py:1482 _pointer_record mirrors _pointer_text at :1443 and the new _POINTER_RECORD_KIND constant follows the module's _POINTER_TEXT idiom, and the added names are mechanism descriptions; deducted because the function is typed -> Any where its neighbouring readers type their returns precisely.",
+    "goal_fidelity": "reckon/crew/runs.py:1495-1512 takes the pointer's signature once and returns file_memo.memoized_key(...) around json.loads(_pointer_text(path)), so a listing whose population has not moved parses nothing, which is the node goal exactly.",
+    "reuse": "The capability - parse once per stat identity and hand out a copy - is owned by reckon/file_memo.py:445 memoized_key (with file_signature at :277), and the diff calls that owner instead of keeping a second cache, which is what the earlier review's finding at runs.py:1482 asked for.",
+    "scope_discipline": "Every path in git diff --stat 96e3c4b8..0b0c02da is a declared write path (reckon/crew/runs.py and the new test), and the pair of commits that cancel out stays inside the same scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a listing whose pointers have not moved decodes none of them; at head 0b0c02da reckon/crew/runs.py:1482-1512 _pointer_record memoises each pointer's decoded record on file_memo's stat signature, and both readers of the pointer cache call it - read_pointer at runs.py:1636 and _list_live_records at runs.py:1686 - so an unchanged listing decodes nothing while a changed, added or removed pointer is decoded or dropped once.\nVERDICT done_when: The done-when asks for 300 live pointers, zero decodes on an unchanged second listing, at most two decodes after one rewrite plus one addition plus one removal, every listing equal to the base revision's own decode of the files, and a caller-mutated record returned unmutated next time; tests/test_an_unchanged_live_listing_decodes_nothing.py:90,95,112,116,119-120 assert exactly those five, and scoped-gate-1795040513229697407.log:7 records '60 passed' at 0b0c02da, while the same file against the base module reddens :95 with 'an unchanged listing decoded 300 pointers'.\nVERDICT write_paths: The node declares reckon/crew/runs.py, tests/test_an_unchanged_live_listing_decodes_nothing.py, the section's evidence fragment and its figures directory; git diff --stat 96e3c4b8..0b0c02da changes only the two code paths (+40/-6 and the new 134-line test), and the fragment and figures paths are correctly unused because the done-when names no artefact.\nVERDICT manifest: Read; it records the five commits through 0b0c02da, changed_paths matching the diff, a head gate of 60 passed at 0b0c02da and arms of 58 passed at base and 60 at head, each log present and ending in a bare EXIT line, the two measurements (base 18.44ms decoding 300, landed 19.00ms decoding 0), and status blocked with two blockers naming the out-of-scope consumers that forced the revert.\nVERDICT diff: Read commit by commit: 24d2e7a426 adds the record cache, _pointer_record and the test; 19e85cef66 rewrites the cache comment only; a67e4bdd911 reroutes the cache onto reckon/file_memo; 21fc69f852 hands the record out copy-free; 0b0c02da3f reverts 21fc69f852 - so the commits gained since the a67e4bdd review net to nothing (git diff a67e4bdd..0b0c02da is empty and both trees are 24a01d0d5c39f6d45898250478af56207e47ad25), and the landed change 96e3c4b8..0b0c02da is the state the earlier review at a67e4bdd read.\nCALL_SITES: reckon/crew/runs.py:1774 list_live -> _list_live_records at :1686, reckon/crew/runs.py:1636 read_pointer, reckon/serve.py:878, reckon/roadmap.py:3782, reckon/roadmap_snapshot.py:294, reckon/why_view.py:404, reckon/crew_follow_commands.py:2966, reckon/crew/dispatch_plan.py:1400, reckon/crew/routing.py:1149, reckon/crew_run_commands.py:1179 read_pointer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1495-1512 takes the pointer's signature once and returns file_memo.memoized_key(...) around json.loads(_pointer_text(path)), so a listing whose population has not moved parses nothing, which is the node goal exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: after_suite-1795040623228052088.log:7 shows '60 passed' at 0b0c02da and baseline_suite-1795040580168455892.log:7 shows '58 passed' at 96e3c4b8, both EXIT=0; deducted because the manifest's cited negative control (manifest.md:20) ran a four-case version of a file the revert removed, and because the two matched arm files (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) do not import the changed module.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in git diff --stat 96e3c4b8..0b0c02da is a declared write path (reckon/crew/runs.py and the new test), and the pair of commits that cancel out stays inside the same scope.\nSCORE durability: 17\nJUSTIFICATION durability: Reinstating the base's unconditional json.loads(_pointer_text(path)) at reckon/crew/runs.py:1688 reddens tests/test_an_unchanged_live_listing_decodes_nothing.py:95 (I ran the landed file against the base module: '1 failed, 1 passed', the failure being 'an unchanged listing decoded 300 pointers'), and returning the memo's own object instead of a copy reddens :119-120; deducted because :102-120 exercises only a cache hit, so the miss-path hand-out is unguarded and no assertion holds the section's cost.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/runs.py:1482 _pointer_record mirrors _pointer_text at :1443 and the new _POINTER_RECORD_KIND constant follows the module's _POINTER_TEXT idiom, and the added names are mechanism descriptions; deducted because the function is typed -> Any where its neighbouring readers type their returns precisely.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability - parse once per stat identity and hand out a copy - is owned by reckon/file_memo.py:445 memoized_key (with file_signature at :277), and the diff calls that owner instead of keeping a second cache, which is what the earlier review's finding at runs.py:1482 asked for.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md:20 non-blocking: negative_control_log names negative-control-base.txt, whose own record is '2 failed, 2 passed' over a four-case file run against the 21fc69f852 repair, so the cited control does not evidence the two-case file that landed at 0b0c02da; I ran the landed file against the base module in a scratch tree and reproduced 1 failed / 1 passed with 'an unchanged listing decoded 300 pointers', so the manifest's claim holds while the record filed for it is of a superseded test version.\nFINDING reckon/crew/runs.py:1504 non-blocking: the landed hand-out deep-copies each pointer's record on every unchanged listing, measured by the reviewed run at 19.00ms against the base revision's 18.44ms for 300 pointers of 13342 bytes (manifest.md:12), so the section's motivating cost is unchanged and this path is marginally slower than the pass it replaces; the copy-free hand-out that measured 2.15ms was committed as 21fc69f852 and reverted as 0b0c02da3f, so the trade is recorded rather than overlooked.\nFINDING tests/test_an_unchanged_live_listing_decodes_nothing.py:102 non-blocking: the caller-isolation assertions at :102-120 mutate second[0], a record handed out on a memo hit, so a regression that shared the memo's stored record on the miss path - the first decode of one signature, where file_memo.memoized_key returns the computed value itself and stores a copy - would leave every assertion green; the miss path is correct today but unguarded.",
+  "review_node": "review-of-an-unchanged-live-listing-decodes-nothing-a67e4bdd911b",
+  "review_run_id": "r-20261118T210430723711-review-of-an-unchanged-live-listing-decodes-nothing-a67e4bdd911b",
+  "reviewed_base_sha": "96e3c4b8a3957e2624866e0dc773042892239333",
+  "reviewed_commits": [
+    "24d2e7a426d035ff9ae07f124957f04793347e3c",
+    "19e85cef66b1599f2d175f34bd62b4f1639651a8",
+    "a67e4bdd911b03eea2f1220afa082a6b088d142a",
+    "21fc69f852b97c1d0d9ea096c574698e2b7d432f",
+    "0b0c02da3ff0f232c3a1ea3c712c9073dd0ee1a3"
+  ],
+  "reviewed_head_sha": "0b0c02da3ff0f232c3a1ea3c712c9073dd0ee1a3",
+  "reviewed_run_id": "r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:10:00.812191+00:00",
+  "total": 108
+}

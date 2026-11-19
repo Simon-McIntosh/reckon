@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: baseline_suite-1795089866154187261.log at d9b857e053 reads 58 passed EXIT=0 and after_suite-1795089908869198587.log at 7ad7d519f7a3 reads 58 passed EXIT=0, both with no FAILED line, so the set difference is empty; the node's own import arm agrees, import-arm-base-d9b857e053a77af65ab77aad9d78f3ef3d3bb28a.log reads 17 failed and 17 ids and import-arm-head-7e59e2b3e416a1030f74a5d7c73b21f88aa72ae3.log reads 15 failed, the head set being the base set minus the two ids the change repaired.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3653"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:14:29Z",
+  "findings": [
+    {
+      "file": "tests/test_the_row_reads_in_one_order.py",
+      "line": "201",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected row interpolates ticker_module.DIM_MARKER, the same constant the renderer prints, so that cell cannot redden if the marker's shape regresses; the counts and letters beside it stay literal, so the guard is partial rather than absent."
+    },
+    {
+      "file": "tests/test_the_row_reads_in_one_order.py",
+      "line": "308",
+      "severity": "non-blocking",
+      "text": "non-blocking: the narrow-pane thresholds take the head from len(row_at(ticker_module.MIN_WIDTH)), a render of the code under test, so a regression that shortens the head moves every boundary with it and the token assertions still hold."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-row-reads-in-one-order.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the run was an all_debug job with SLURM_* dropped, but the cited log header carries only revision, host, tree and command and its scheduler sidecar is empty, so the partition and job-identity conditions the done_when names are claimed rather than shown."
+    },
+    {
+      "file": "tests/test_the_row_reads_in_one_order.py",
+      "line": "179",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case name test_the_counters_are_labelled_w_r_h_d_q enumerates five letters while the map it asserts holds seven, so a reader naming the case by its letters is misled about what it covers."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against d9b857e0; 7e59e2b3 adds the promotion-queue counter to the expected map and row and replaces the stale 132/124/floor widths with boundaries derived from the module's declared widths, and 7ad7d519 adds the evidence fragment, with no assertion deleted or weakened.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job, each cause's verdict, an import arm adding no failure, and a base run logged beside the head run; the manifest gives both causes the verdict test wrong, the import arms record 17 failed at base and 15 failed at head with the head set equal to the base set minus the two named ids, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-row-reads-in-one-order.html carries the base run's FAILED ids and the head run beside them.",
+    "goal": "the node goal is that tests/test_the_row_reads_in_one_order.py passes in full on the primary branch, and at 7ad7d519 the file carries the pane's promotion-queue cell and derived narrow thresholds, the diff touches no reckon/ path, and this file's gate log records 7 passed EXIT=0.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054307793981-qwnw-red-file-the-row-reads-in-one-order/manifest.md; it reads status complete, names tests/test_the_row_reads_in_one_order.py as the gate, names scoped-gate-1795089845024498564.log and negative-control-base-d9b857e053.log as the logs, records 2 failed and 5 passed at base, and records 58 passed in each suite arm.",
+    "write_paths": "the declared scope is reckon, tests and the queued-work evidence directory, and git diff d9b857e0..7ad7d519 --stat lists only tests/test_the_row_reads_in_one_order.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-row-reads-in-one-order.html."
+  },
+  "justifications": {
+    "durability": "reinstating a renderer that omits the promotion-queue cell reddens tests/test_the_row_reads_in_one_order.py:202 and restoring the old head width reddens :315-:327, but :201 interpolates ticker_module.DIM_MARKER and :308 derives the thresholds from len(row_at(ticker_module.MIN_WIDTH)), so those parts move with the code under test.",
+    "evidence": "scoped-gate-1795089845024498564.log:2 names revision 7ad7d519 and its summary reads 7 passed with EXIT=0, while the log header and the empty scoped-gate-1795089845024498564.log.scheduler record no partition for the done_when's all_debug condition.",
+    "fit": "the change follows the file's render-and-read-cells idiom and reuses the ticker module's constants as tests/test_ticker_shows_the_lane_mean.py:346 does, but the case at tests/test_the_row_reads_in_one_order.py:179 is still named w_r_h_d_q while it now asserts seven counters.",
+    "goal_fidelity": "tests/test_the_row_reads_in_one_order.py reads 7 passed EXIT=0 at 7ad7d519 in scoped-gate-1795089845024498564.log, and the diff leaves every reckon/ path untouched so the product already drew the row this file now asserts.",
+    "reuse": "the diff adds no production definition, and the narrow-pane case extends the owner reckon/crew/ticker.py:1255 model_cell_width plus the module's GAP, RATE and MIN_WIDTH rather than re-deriving them, with a search of tests/ finding no width-derivation owner to duplicate.",
+    "scope_discipline": "every path in git diff d9b857e0..7ad7d519 --stat, tests/test_the_row_reads_in_one_order.py and the one evidence fragment, sits inside the declared write paths and no product file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_the_row_reads_in_one_order.py passes in full on the primary branch, and at 7ad7d519 the file carries the pane's promotion-queue cell and derived narrow thresholds, the diff touches no reckon/ path, and this file's gate log records 7 passed EXIT=0.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job, each cause's verdict, an import arm adding no failure, and a base run logged beside the head run; the manifest gives both causes the verdict test wrong, the import arms record 17 failed at base and 15 failed at head with the head set equal to the base set minus the two named ids, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-row-reads-in-one-order.html carries the base run's FAILED ids and the head run beside them.\nVERDICT write_paths: the declared scope is reckon, tests and the queued-work evidence directory, and git diff d9b857e0..7ad7d519 --stat lists only tests/test_the_row_reads_in_one_order.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-row-reads-in-one-order.html.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054307793981-qwnw-red-file-the-row-reads-in-one-order/manifest.md; it reads status complete, names tests/test_the_row_reads_in_one_order.py as the gate, names scoped-gate-1795089845024498564.log and negative-control-base-d9b857e053.log as the logs, records 2 failed and 5 passed at base, and records 58 passed in each suite arm.\nVERDICT diff: read both commits against d9b857e0; 7e59e2b3 adds the promotion-queue counter to the expected map and row and replaces the stale 132/124/floor widths with boundaries derived from the module's declared widths, and 7ad7d519 adds the evidence fragment, with no assertion deleted or weakened.\nCALL_SITES: reckon/crew/recovery_watch.py:3653\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_row_reads_in_one_order.py reads 7 passed EXIT=0 at 7ad7d519 in scoped-gate-1795089845024498564.log, and the diff leaves every reckon/ path untouched so the product already drew the row this file now asserts.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795089845024498564.log:2 names revision 7ad7d519 and its summary reads 7 passed with EXIT=0, while the log header and the empty scoped-gate-1795089845024498564.log.scheduler record no partition for the done_when's all_debug condition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff d9b857e0..7ad7d519 --stat, tests/test_the_row_reads_in_one_order.py and the one evidence fragment, sits inside the declared write paths and no product file is touched.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating a renderer that omits the promotion-queue cell reddens tests/test_the_row_reads_in_one_order.py:202 and restoring the old head width reddens :315-:327, but :201 interpolates ticker_module.DIM_MARKER and :308 derives the thresholds from len(row_at(ticker_module.MIN_WIDTH)), so those parts move with the code under test.\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the file's render-and-read-cells idiom and reuses the ticker module's constants as tests/test_ticker_shows_the_lane_mean.py:346 does, but the case at tests/test_the_row_reads_in_one_order.py:179 is still named w_r_h_d_q while it now asserts seven counters.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition, and the narrow-pane case extends the owner reckon/crew/ticker.py:1255 model_cell_width plus the module's GAP, RATE and MIN_WIDTH rather than re-deriving them, with a search of tests/ finding no width-derivation owner to duplicate.\nFINDING tests/test_the_row_reads_in_one_order.py:201 non-blocking: the expected row interpolates ticker_module.DIM_MARKER, the same constant the renderer prints, so that cell cannot redden if the marker's shape regresses; the counts and letters beside it stay literal, so the guard is partial rather than absent.\nFINDING tests/test_the_row_reads_in_one_order.py:308 non-blocking: the narrow-pane thresholds take the head from len(row_at(ticker_module.MIN_WIDTH)), a render of the code under test, so a regression that shortens the head moves every boundary with it and the token assertions still hold.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-row-reads-in-one-order.html:33 non-blocking: the fragment states the run was an all_debug job with SLURM_* dropped, but the cited log header carries only revision, host, tree and command and its scheduler sidecar is empty, so the partition and job-identity conditions the done_when names are claimed rather than shown.\nFINDING tests/test_the_row_reads_in_one_order.py:179 non-blocking: the case name test_the_counters_are_labelled_w_r_h_d_q enumerates five letters while the map it asserts holds seven, so a reader naming the case by its letters is misled about what it covers.",
+  "review_node": "review-of-qwnw-red-file-the-row-reads-in-one-order-7ad7d519f7a3",
+  "review_run_id": "r-20261119T121012031180-review-of-qwnw-red-file-the-row-reads-in-one-order-7ad7d519f7a3",
+  "reviewed_base_sha": "d9b857e053a77af65ab77aad9d78f3ef3d3bb28a",
+  "reviewed_head_sha": "7ad7d519f7a3de2e2f6bacf34aca18e5aec742ee",
+  "reviewed_run_id": "r-20261118T054307793981-qwnw-red-file-the-row-reads-in-one-order",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T121012031180-review-of-qwnw-red-file-the-row-reads-in-one-order-7ad7d519f7a3"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:02:28.547351+00:00",
+  "total": 108
+}

@@ -628,7 +628,7 @@ def test_control_no_source_element_fails_the_sourced_case(
 def test_control_one_row_per_run_fails_the_attempt_case(
     checkout: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def one_row_per_run(landings) -> list[str]:
+    def one_row_per_run(landings, **_kwargs) -> list[str]:
         return [
             "      <tr>"
             f"<td>{record.get('node')}</td><td>{landing.section}</td>"

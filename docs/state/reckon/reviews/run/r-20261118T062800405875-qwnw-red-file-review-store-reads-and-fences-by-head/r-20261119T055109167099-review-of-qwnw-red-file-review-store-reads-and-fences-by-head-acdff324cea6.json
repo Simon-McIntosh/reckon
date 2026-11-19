@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": {
+    "after_suite": {
+      "failure_count": 0,
+      "failure_ids": [],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062800405875-qwnw-red-file-review-store-reads-and-fences-by-head/after_suite-1795066825780326609.log",
+      "revision": "acdff324cea6c9caf07b08b530c45043145964da",
+      "summary": "58 passed in 34.81s"
+    },
+    "baseline_suite": {
+      "failure_count": 0,
+      "failure_ids": [],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062800405875-qwnw-red-file-review-store-reads-and-fences-by-head/baseline_suite-1795066782803039929.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+      "summary": "58 passed in 35.69s"
+    },
+    "rule": "added failures are FAILED ids in the after arm that the baseline arm does not carry; both arms carry none",
+    "source": "the reviewed run's own baseline_suite and after_suite gate logs"
+  },
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:30:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062800405875-qwnw-red-file-review-store-reads-and-fences-by-head/scoped-gate-1795066761779451266.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the head arm to run \"with SLURM_JOB_ID unset\", but the recorded command is `env PYTHONPATH=. sh -c ...` with no `env -u SLURM_JOB_ID`, unlike base-target-test.log:4 which records it, so the receipt does not show that clause was met (immaterial here because the test never reads SLURM_JOB_ID)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the three commits against base 42fe90d0; one test fixture helper (_record_head_arm) plus one rewritten remedy case and one fixture line, and one new 68-line evidence fragment; no product file changed.",
+    "done_when": "the done_when names the file run as a job on all_debug with its failing control beside it; the manifest records that head arm (scoped-gate-1795066761779451266.log:6 \"6 passed in 2.21s\", EXIT=0) and the base arm base-target-test.log with the failing id.",
+    "goal": "the node goal is \"Make tests/test_review_store_reads_and_fences_by_head.py pass in full on the primary branch\"; the landed commits 886a26b7..acdff324 repair two remedy fixtures in that file and record the arms, and the head arm log shows 6 passed, EXIT=0.",
+    "manifest": "read the manifest; status complete, commits 886a26b72188fb122940b17ae1b8b199dda82845, b6bc8d997d1fb5236fb11e5a8443545d7ba825f5, acdff324cea6c9caf07b08b530c45043145964da, gate command and log paths named, both suite arms recorded as inline JSON with 40-character revisions and zero failures.",
+    "write_paths": "the declared paths are reckon, tests, and the queued-work-needs-no-workaround fragment directory; both changed paths (tests/test_review_store_reads_and_fences_by_head.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-store-reads-and-fences-by-head.html) are inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the fixture without the head arm makes tests/test_review_store_reads_and_fences_by_head.py:368 red on the observe fallback, which is exactly the base arm's recorded FAILED id.",
+    "evidence": "scoped-gate-1795066761779451266.log:6 carries \"6 passed in 2.21s\" and its last line EXIT=0, and baseline_suite-1795066782803039929.log and after_suite-1795066825780326609.log each end 58 passed EXIT=0 with no FAILED line.",
+    "fit": "_record_head_arm at tests/test_review_store_reads_and_fences_by_head.py:138 follows the file's existing local-writer idiom beside _manifest and _pointer.",
+    "goal_fidelity": "tests/test_review_store_reads_and_fences_by_head.py:389-430 now drives the composer's real remedy and the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-store-reads-and-fences-by-head.html records 6 passed at acdff324.",
+    "reuse": "searched tests/ and tests/conftest.py for a shared manifest-arm writer and found none (the ~20 other tests each write their own after_suite line), so the helper extends no owner because none exists and reuses EXECUTABLE_GATE_COMMAND from tests/conftest.py.",
+    "scope_discipline": "the diff's two paths, tests/test_review_store_reads_and_fences_by_head.py and the fragment, both sit inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_review_store_reads_and_fences_by_head.py pass in full on the primary branch\"; the landed commits 886a26b7..acdff324 repair two remedy fixtures in that file and record the arms, and the head arm log shows 6 passed, EXIT=0.\nVERDICT done_when: the done_when names the file run as a job on all_debug with its failing control beside it; the manifest records that head arm (scoped-gate-1795066761779451266.log:6 \"6 passed in 2.21s\", EXIT=0) and the base arm base-target-test.log with the failing id.\nVERDICT write_paths: the declared paths are reckon, tests, and the queued-work-needs-no-workaround fragment directory; both changed paths (tests/test_review_store_reads_and_fences_by_head.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-store-reads-and-fences-by-head.html) are inside them.\nVERDICT manifest: read the manifest; status complete, commits 886a26b72188fb122940b17ae1b8b199dda82845, b6bc8d997d1fb5236fb11e5a8443545d7ba825f5, acdff324cea6c9caf07b08b530c45043145964da, gate command and log paths named, both suite arms recorded as inline JSON with 40-character revisions and zero failures.\nVERDICT diff: read the three commits against base 42fe90d0; one test fixture helper (_record_head_arm) plus one rewritten remedy case and one fixture line, and one new 68-line evidence fragment; no product file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_review_store_reads_and_fences_by_head.py:389-430 now drives the composer's real remedy and the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-store-reads-and-fences-by-head.html records 6 passed at acdff324.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795066761779451266.log:6 carries \"6 passed in 2.21s\" and its last line EXIT=0, and baseline_suite-1795066782803039929.log and after_suite-1795066825780326609.log each end 58 passed EXIT=0 with no FAILED line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_review_store_reads_and_fences_by_head.py and the fragment, both sit inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the fixture without the head arm makes tests/test_review_store_reads_and_fences_by_head.py:368 red on the observe fallback, which is exactly the base arm's recorded FAILED id.\nSCORE fit: 19\nJUSTIFICATION fit: _record_head_arm at tests/test_review_store_reads_and_fences_by_head.py:138 follows the file's existing local-writer idiom beside _manifest and _pointer.\nSCORE reuse: 20\nJUSTIFICATION reuse: searched tests/ and tests/conftest.py for a shared manifest-arm writer and found none (the ~20 other tests each write their own after_suite line), so the helper extends no owner because none exists and reuses EXECUTABLE_GATE_COMMAND from tests/conftest.py.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062800405875-qwnw-red-file-review-store-reads-and-fences-by-head/scoped-gate-1795066761779451266.log:4 non-blocking: the done_when requires the head arm to run \"with SLURM_JOB_ID unset\", but the recorded command is `env PYTHONPATH=. sh -c ...` with no `env -u SLURM_JOB_ID`, unlike base-target-test.log:4 which records it, so the receipt does not show that clause was met (immaterial here because the test never reads SLURM_JOB_ID).",
+  "review_run_id": "r-20261119T055109167099-review-of-qwnw-red-file-review-store-reads-and-fences-by-head-acdff324cea6",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "acdff324cea6c9caf07b08b530c45043145964da",
+  "reviewed_run_id": "r-20261118T062800405875-qwnw-red-file-review-store-reads-and-fences-by-head",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:50:00Z",
+  "total": 112
+}

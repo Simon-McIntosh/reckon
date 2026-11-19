@@ -1,0 +1,57 @@
+<section id="qwnw-red-file-crew-shadow-landing">
+  <h2>One red shadow file on the primary branch</h2>
+
+  <p><strong>What changed.</strong> Two cases in
+  <code>tests/test_crew_shadow.py</code> failed at the dispatch's base
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>. Both causes were
+  resolved, one test-side and one product-side.</p>
+
+  <p><em>Test wrong.</em>
+  <code>test_shadow_cli_accepts_and_persists_session_and_wave</code> read its
+  payload from CliRunner's <code>result.output</code>, which mixes stdout and
+  stderr. A shadow dispatch writes the advisory
+  <code>reckon: created run &lt;id&gt;</code> to stderr, so the mixed stream
+  begins with that line instead of the JSON document. The repository's contract
+  is that stdout carries exactly one JSON line, and the sibling cases read
+  <code>result.stdout</code>; this case now reads stdout, and the advisory stays
+  on stderr.</p>
+
+  <p><em>Product wrong.</em>
+  <code>test_shadow_completion_refuses_commits_and_measures_the_retained_patch</code>
+  completes a shadow whose worktree holds the change the shadow is measuring.
+  The commitless branch of <code>_require_commits_beyond_base</code> in
+  <code>reckon/crew/promotion_evidence.py</code> refused that completion because
+  the tree held declared work in no commit.</p>
+
+  <p>That fact makes a run whose deliverable is a commit read as landed while
+  its work is in none. It is also the normal state of every shadow, whose
+  deliverable is the retained patch the landing writes before the tree is
+  released. The guard now leaves a shadow record to that path. The
+  <code>--commit is refused</code> refusal for a shadow presenting a commit is
+  unchanged and still fires first: the base run reports it for
+  <code>commits=["HEAD"]</code>.</p>
+
+  <h3 id="qwnw-red-file-crew-shadow-measured">Measured</h3>
+
+  <p>The node's own test file was run as its own <code>all_debug</code> job at
+  the head revision, with the allocation id removed from the environment the
+  tests see.</p>
+
+  <table id="qwnw-red-file-crew-shadow-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's test file, head</td>
+        <td><code>985eec0f140d27de45b3f603e873e5a3c1ee1483</code></td>
+        <td>14 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's test file, base (negative control)</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>2 failed, 12 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the tests naming the changed module, head</td>
+        <td><code>985eec0f140d27de45b3f603e873e5a3c1ee1483</code></td>
+        <td>1 failed, 139 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the tests naming the changed module, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>1 failed, 139 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+</section>

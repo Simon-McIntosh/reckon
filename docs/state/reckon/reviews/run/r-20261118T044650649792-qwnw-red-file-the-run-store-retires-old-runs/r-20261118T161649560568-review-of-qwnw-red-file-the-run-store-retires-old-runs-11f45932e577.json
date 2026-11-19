@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/run_store.py:1701 RunStore._refresh",
+    "reckon/run_store.py:1836 RunStore.records",
+    "reckon/run_store.py:1853 RunStore.get_run",
+    "reckon/run_store.py:1879 RunStore.get_detail",
+    "reckon/run_store.py:1906 RunStore.durable_rows"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T07:55:24Z",
+  "evidence_checks": {
+    "node_test_head": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py over git archive 11f45932e5 -> 19 passed, EXIT=0",
+    "ruff_head": "ruff check and ruff format --check over the three changed Python paths at 11f45932e5 -> All checks passed!, 3 files already formatted"
+  },
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "id": "fcf5e8201a4",
+      "line": "1717",
+      "severity": "non-blocking",
+      "text": "non-blocking: the memo records a project's stamp and skips the membership comparison on every later read carrying that stamp, and no test drives a ledger change, or a store-side divergence, while one RunStore instance stays open after a judgement is recorded, so a wrongly-recording memo would leave stale rows with the suite still green."
+    },
+    {
+      "file": "manifest.md",
+      "id": "fe6e5626b45",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's tests line at manifest.md:11 names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when measures, so promotion reads a gate receipt that does not name tests/test_the_run_store_retires_old_runs.py; the node's own batch run is filed under the non-contract key node_test_log."
+    }
+  ],
+  "head_log_revision": "11f45932e57708f9282c5db9438dd911fc99fe5f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read all seven commits against 97dec20b: c54a59d4b6 compares the store's rows with the committed documents, f255b18a02 memoises that comparison on ledger.index_state_stamp, f37dec2b82 deletes ledger.file_run_ids and moves the document read onto run_ids(use_index=False), ac1a9e2ec7 adds the absent-documents skip with its test, and three evidence commits record the arms.",
+    "done_when": "the done_when names the node file as an all_debug job with SLURM_JOB_ID unset plus base and head arms logged beside each other; the manifest records node_test_log scoped-gate-*682939612998.log at ac1a9e2ec7 (19 passed, EXIT=0, landing tree under /tmp), base 1 failed and 17 passed at 97dec20b (logs/base-node-test.log, 'assert 7 == 19'), and both suite arms 58 passed at 97dec20b and 11f45932e5, though its tests line names two other test files.",
+    "goal": "the node goal is that tests/test_the_run_store_retires_old_runs.py passes in full at head; reckon/run_store.py:1713-1740 makes the refresh compare the store's own rows against ledger.run_ids(..., use_index=False), the committed documents, instead of against its own answer, and I re-ran that file at 11f45932e5 for 19 passed, EXIT=0.",
+    "manifest": "read; status complete, seven commits listed, baseline_suite and after_suite both completed with 0 failures at their full 40-character revisions, negative_control_log logs/base-node-test.log, and every rubric dimension answered.",
+    "write_paths": "read the declared paths reckon, tests, the queued-work-needs-no-workaround fragment directory and reckon/run_store.py; git diff --name-only 97dec20b..11f45932e5 lists exactly four files and all four are inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_run_store_retires_old_runs.py:171 reddens at base on 'assert 7 == 19' and the new test at tests/test_the_run_store_retires_old_runs.py:193 reddens without the guard at reckon/run_store.py:1723, as logs/negative-control-guard.log records, but nothing exercises the memo skip at reckon/run_store.py:1717 after a judgement has been recorded.",
+    "evidence": "logs/base-node-test.log ends 1 failed, 17 passed with the failing id and EXIT=1, and the head arm at scoped-gate-*682939612998.log ends 19 passed with EXIT=0, but the tests line at manifest.md:11 names two other files and the all_debug launch rests on that log's host banner.",
+    "fit": "reckon/run_store.py:1127 initialises the memo beside _archive_attached and reckon/run_store.py:1723 calls ledger._ledger_holds_content exactly as main's refresh already does, naming no plan or ticket.",
+    "goal_fidelity": "the goal's measure is the node file passing in full at head, and my own run of tests/test_the_run_store_retires_old_runs.py over a clean archive of 11f45932e5 gave 19 passed with EXIT=0.",
+    "reuse": "reckon/ledger.py:1237 carries the document read as a parameter on the existing owner of document membership and the count of def file_run_ids is 0 at 11f45932e5.",
+    "scope_discipline": "every path in git diff 97dec20b..11f45932e5 is inside the declared paths, though the membership memo at reckon/run_store.py:1127 goes beyond the goal's make-the-test-pass statement."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_the_run_store_retires_old_runs.py passes in full at head; reckon/run_store.py:1713-1740 makes the refresh compare the store's own rows against ledger.run_ids(..., use_index=False), the committed documents, instead of against its own answer, and I re-ran that file at 11f45932e5 for 19 passed, EXIT=0.\nVERDICT done_when: the done_when names the node file as an all_debug job with SLURM_JOB_ID unset plus base and head arms logged beside each other; the manifest records node_test_log scoped-gate-*682939612998.log at ac1a9e2ec7 (19 passed, EXIT=0, landing tree under /tmp), base 1 failed and 17 passed at 97dec20b (logs/base-node-test.log, 'assert 7 == 19'), and both suite arms 58 passed at 97dec20b and 11f45932e5, though its tests line names two other test files.\nVERDICT write_paths: read the declared paths reckon, tests, the queued-work-needs-no-workaround fragment directory and reckon/run_store.py; git diff --name-only 97dec20b..11f45932e5 lists exactly four files and all four are inside them.\nVERDICT manifest: read; status complete, seven commits listed, baseline_suite and after_suite both completed with 0 failures at their full 40-character revisions, negative_control_log logs/base-node-test.log, and every rubric dimension answered.\nVERDICT diff: read all seven commits against 97dec20b: c54a59d4b6 compares the store's rows with the committed documents, f255b18a02 memoises that comparison on ledger.index_state_stamp, f37dec2b82 deletes ledger.file_run_ids and moves the document read onto run_ids(use_index=False), ac1a9e2ec7 adds the absent-documents skip with its test, and three evidence commits record the arms.\nCALL_SITES: reckon/run_store.py:1736 RunStore._refresh reached from records, get_run, get_detail and durable_rows, reckon/ledger.py:1237 ledger.run_ids\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal's measure is the node file passing in full at head, and my own run of tests/test_the_run_store_retires_old_runs.py over a clean archive of 11f45932e5 gave 19 passed with EXIT=0.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/base-node-test.log ends 1 failed, 17 passed with the failing id and EXIT=1, and the head arm at scoped-gate-*682939612998.log ends 19 passed with EXIT=0, but the tests line at manifest.md:11 names two other files and the all_debug launch rests on that log's host banner.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in git diff 97dec20b..11f45932e5 is inside the declared paths, though the membership memo at reckon/run_store.py:1127 goes beyond the goal's make-the-test-pass statement.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_run_store_retires_old_runs.py:171 reddens at base on 'assert 7 == 19' and the new test at tests/test_the_run_store_retires_old_runs.py:193 reddens without the guard at reckon/run_store.py:1723, as logs/negative-control-guard.log records, but nothing exercises the memo skip at reckon/run_store.py:1717 after a judgement has been recorded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/run_store.py:1127 initialises the memo beside _archive_attached and reckon/run_store.py:1723 calls ledger._ledger_holds_content exactly as main's refresh already does, naming no plan or ticket.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/ledger.py:1237 carries the document read as a parameter on the existing owner of document membership and the count of def file_run_ids is 0 at 11f45932e5.\nFINDING reckon/run_store.py:1717 non-blocking: the memo records a project's stamp and skips the membership comparison on every later read carrying that stamp, and no test drives a ledger change, or a store-side divergence, while one RunStore instance stays open after a judgement is recorded, so a wrongly-recording memo would leave stale rows with the suite still green.\nFINDING manifest.md:11 non-blocking: the manifest's tests line at manifest.md:11 names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when measures, so promotion reads a gate receipt that does not name tests/test_the_run_store_retires_old_runs.py; the node's own batch run is filed under the non-contract key node_test_log.",
+  "review_run_id": "r-20261118T161649560568-review-of-qwnw-red-file-the-run-store-retires-old-runs-11f45932e577",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "11f45932e57708f9282c5db9438dd911fc99fe5f",
+  "reviewed_run_id": "r-20261118T044650649792-qwnw-red-file-the-run-store-retires-old-runs",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T161649560568-review-of-qwnw-red-file-the-run-store-retires-old-runs-11f45932e577"
+  },
+  "reviewer_run_id": "r-20261118T161649560568-review-of-qwnw-red-file-the-run-store-retires-old-runs-11f45932e577",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T08:20:06.738154+00:00",
+  "total": 105
+}

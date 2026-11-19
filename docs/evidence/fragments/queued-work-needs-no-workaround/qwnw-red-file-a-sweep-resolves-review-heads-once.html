@@ -1,0 +1,93 @@
+<section id="qwnw-red-file-a-sweep-resolves-review-heads-once-landing">
+  <h2>A sweep resolves each live run's reviewed head once</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/obligation_snapshot.py</code>
+  defined <code>_derive_fleet_state</code> twice. The first definition opens the
+  three regions a derivation shares — one process-table walk, one ledger run
+  index, one resolution of each live run's reviewed head and tree — and the
+  second, 28 lines later, was the body those regions were meant to wrap. Python
+  binds the second def at import time, so the opener was dead code and every
+  reader inside a derivation resolved each live run's reviewed head for itself.
+  The body is now <code>_build_fleet_state</code> and the opener calls it,
+  so the regions are entered by both <code>fleet_state</code> and
+  <code>sweep</code> (whose own regions join the ones already open).</p>
+
+  <p><strong>The merge.</strong> The primary branch repaired the same defect
+  while this run was in flight
+  (<code>e618bd27c0ecb655b64771bb0c59a1b3261f1c43</code>), naming the body
+  <code>_build_fleet_state</code>. The merge of <code>73b9ac21</code> conflicted
+  on exactly those two hunks. The resolution keeps one opener and one body under
+  the primary's name, so both sides' intent lands and no second spelling of the
+  body survives; nothing else in the module differs between the sides.</p>
+
+  <p><strong>The reproduction at base.</strong> Run at
+  <code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code> over a base tree
+  extracted from that revision, with <code>SLURM_JOB_ID</code> unset:</p>
+
+<pre><code>.F..                                                                     [100%]
+FAILED tests/test_a_sweep_resolves_review_heads_once.py::test_one_derivation_resolves_each_reviewed_head_once - AssertionError: one derivation resolved 48 reviewed heads over 6 runs
+assert 48 &lt;= 6
+1 failed, 3 passed in 4.87s
+EXIT=1</code></pre>
+
+  <p>Eight resolutions per live run, and the eight is exactly the readers a
+  derivation has: the in-flight check, the derivation's own classification, the
+  sub-floor lookup, the held-worktree scan and the per-session slices. The
+  index half of the same test passed at base because
+  <code>open_run_index.read_scope</code> already bounds the ledger index, which
+  is why the failure named heads and not the index.</p>
+
+  <h3 id="qwnw-red-file-a-sweep-resolves-review-heads-once-arms">Measured</h3>
+
+  <table id="qwnw-red-file-a-sweep-resolves-review-heads-once-arm-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>negative control: base run of the node's file</td>
+        <td><code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code></td>
+        <td><code>pytest -q tests/test_a_sweep_resolves_review_heads_once.py</code></td>
+        <td>1 failed (<code>test_one_derivation_resolves_each_reviewed_head_once</code>), 3 passed, <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>node gate at the repaired head, batch job on <code>all_debug</code> with the job id removed</td>
+        <td><code>5003c378b97715e96e85f7e0123a55e1cc97edec</code></td>
+        <td><code>pytest -q tests/test_a_sweep_resolves_review_heads_once.py</code></td>
+        <td>4 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>base arm of the declared suite</td>
+        <td><code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code></td>
+        <td><code>pytest -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>after arm of the declared suite</td>
+        <td><code>5003c378b97715e96e85f7e0123a55e1cc97edec</code></td>
+        <td><code>pytest -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>imports arm — the 82 test files naming
+        <code>obligation_snapshot</code></td>
+        <td>base <code>9e1dc0dc…</code> vs head <code>65181b1b…</code></td>
+        <td><code>pytest -q &lt;the 82 files&gt;</code> in each tree</td>
+        <td>head 22 failed &lt;= base 34 failed, so no head-only id; the two trees
+        name the same file set</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The residual counts after the repair: the same fixture reports at most one
+  resolution per live run for one derivation and at most one for a whole sweep,
+  since the slices join the region the derivation opened.</p>
+
+  <h3 id="qwnw-red-file-a-sweep-resolves-review-heads-once-lint">Lint</h3>
+
+  <p><code>ruff check</code> reports nothing on the changed path at base or at
+  head. <code>ruff format --check</code> reports one hunk at base
+  (<code>delivery_summary</code>, base line 2202) and the same hunk at head
+  (line 2204, moved by the four-line insertion); that finding is pre-existing
+  and is not this node's to fix in passing.</p>
+</section>
