@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="951">
+<meta name="plan-version" content="952">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2925,6 +2925,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062806164054-qwnw-red-file-refused-promotion-request-settles" data-who="reckon-build" data-when="2026-11-19T03:47:26Z">
     <div class="r-comment-body"><p>A refused promotion request now resolves the checkout its promoted head lands in before asking ancestry, so a landed run settles as landed rather than promoted-unverified; the landed test delivers a commit that is on the primary branch. Node check 5 passed EXIT=0 at head against 1 failed 4 passed EXIT=1 at base; both suite arms 58 passed EXIT=0; importer arms 6 failed of 334 at head against 7 of 334 at base, the landed id dropped.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063834258025-qwnw-red-file-a-fenced-worker-runs-git-directly" data-who="reckon-build" data-when="2026-11-19T06:48:28.169Z">
+    <div class="r-comment-body"><p>Repaired the file&#x27;s one red case, which asserted the retired rule that a fenced launch outside an allocation carries only the inherited entries. It now asserts the rule the code keeps: the inherited git shim is dropped and the scheduler-shim directory comes first (c48178ede7). Measure: the file&#x27;s gate reads 7 passed EXIT=0 as a job on all_debug at f509cb35b0, against 1 failed and 6 passed at base b24fe95a789c.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
