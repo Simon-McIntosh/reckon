@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arm logs: baseline_suite-arm.log records '58 passed' EXIT=0 at 96e3c4b8a3957e2624866e0dc773042892239333 with no FAILED id, and after_suite-arm.log records '64 passed' EXIT=0 at c81bf06d76ee94cb0555214154d6cbbf07b8fb00 with no FAILED id, so the set difference is empty (0). The run's separate 571-file importer arm agrees: the 129 ids consumer-head-6.log fails at head are a strict subset of the 140 consumer-base-2.log fails at base, recomputed here by comm on the extracted FAILED ids.",
+  "call_sites": [
+    "reckon/crew/runs.py:1815 list_live -> :1700 _list_live_records -> :1484 _pointer_record",
+    "reckon/crew/runs.py:542 _mutate_pointer through :1656 read_pointer",
+    "reckon/crew/runs.py:3944 row_scope, whose callers include reckon/crew/promotion_release.py:1172",
+    "reckon/crew/admission/release.py:551 _advance_waiting_requests",
+    "reckon/crew/admission/release.py:349 _release_waiters",
+    "reckon/crew/admission/release.py:160 resolve_waits",
+    "reckon/crew/recovery_liveness.py:1673 launcher_host_is_gone, reached from :1741 local_liveness and :1819 live_worker_reading",
+    "reckon/crew/admission/holds.py:513 and reckon/crew/admission/launching.py:566 as read-only consumers"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:05:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1508",
+      "severity": "non-blocking",
+      "text": "non-blocking: _pointer_record fetches the text (runs.py:1506, which stats and may serve kept text) and then file_memo.memoized stats the same file again, so a rename landing between the two stats pairs the old text's parse with the new stat identity; file_memo's region path (reckon/file_memo.py:411-425) stores without the post-compute re-verification its unregioned path performs, so that stale record persists for the pointer until its file next changes, where the base revision's per-pass decode healed on the next pass."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: negative_control_log names negative-control-base.txt, whose record is '2 failed, 2 passed' over a four-case version of the test file, while the landed file carries six tests; the control that does cover the landed file \u2014 negative-control-copy-free.txt, '3 failed, 3 passed' at c81bf06d \u2014 is filed as an artifact and not as the declared control, so the field evidences a version that is not under review."
+    },
+    {
+      "file": "tests/test_an_unchanged_live_listing_decodes_nothing.py",
+      "line": "269",
+      "severity": "non-blocking",
+      "text": "non-blocking: the cost clause is a wall-clock comparison of two medians of five readings on a shared node, so a loaded host can redden it for reasons unrelated to the change; it did discriminate in the copy-per-record control (54.0ms against 37.9ms), but it is the one assertion in the file whose failure can be environmental rather than a regression."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/runs.py:1815 list_live -> :1700 _list_live_records -> :1484 _pointer_record; reckon/crew/runs.py:542 _mutate_pointer through :1656 read_pointer; reckon/crew/runs.py:3944 row_scope, whose callers include reckon/crew/promotion_release.py:1172; reckon/crew/admission/release.py:551 _advance_waiting_requests; reckon/crew/admission/release.py:349 _release_waiters; reckon/crew/admission/release.py:160 resolve_waits; reckon/crew/recovery_liveness.py:1673 launcher_host_is_gone, reached from :1741 local_liveness and :1819 live_worker_reading; reckon/crew/admission/holds.py:513 and reckon/crew/admission/launching.py:566 as read-only consumers",
+    "diff": "read all eight commits of 96e3c4b8..c81bf06d commit by commit; they add the memoised record (runs.py:1484), the shallow copy hand-out (runs.py:1511), the stat-before-parse fetch (runs.py:1506), the copy-then-mirror in release.py:551-611 and :349-358, the unguarded liveness stamp at recovery_liveness.py:1673 and the 370-line test, with nothing outside the four declared files.",
+    "done_when": "the done_when's clauses are asserted at tests/test_an_unchanged_live_listing_decodes_nothing.py:168-199 (300 first-pass decodes, zero on the unchanged pass, at most two after one rewrite plus one addition plus one removal, equality with the files' own decode, caller mutation isolated), and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/after_suite-arm.log records 64 passed EXIT=0 at c81bf06d against /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/baseline_suite-arm.log's 58 passed EXIT=0 at 96e3c4b8.",
+    "goal": "the node's goal is 'Make an unchanged live listing decode no pointer'; at c81bf06d reckon/crew/runs.py:1484-1511 memoises each pointer's decode through file_memo on its stat identity and hands the listing a shallow copy, and tests/test_an_unchanged_live_listing_decodes_nothing.py:173 asserts the unchanged second listing decoded nothing.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md; it states status complete, head c81bf06d, baseline_suite 58 passed EXIT=0 at 96e3c4b8 and after_suite 64 passed EXIT=0 at c81bf06d with both log paths present, and its negative_control_log names negative-control-base.txt, a four-case run (2 failed, 2 passed) rather than the six-test file under review.",
+    "write_paths": "the reviewed node declared six write paths; the delivered diff touches four \u2014 reckon/crew/runs.py, reckon/crew/recovery_liveness.py, reckon/crew/admission/release.py and tests/test_an_unchanged_live_listing_decodes_nothing.py \u2014 and every one is inside the declared set, with the evidence-fragment and figures paths declared but unused."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_live_listing_decodes_nothing.py:173 reddens at the base, :210 reddens under the bespoke-cache revision, :269 reddens under the copy-per-record revision and :319/:356/:368 redden under the copy-free revision, each failure recorded in the run's negative-control logs, while :230's single-decode assertion reddens if a mutation stops invalidating the memo.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/after_suite-arm.log names revision c81bf06d on its first line and ends `EXIT=0` after '64 passed', {RUNDIR}/negative-control-base.txt shows the same assertion reddening at the base with 'an unchanged listing decoded 300 pointers', and the importer arm's 129 head failures are a strict subset of the base's 140, which I recomputed from consumer-head-6.log and consumer-base-2.log.",
+    "fit": "reckon/crew/runs.py:8 follows the module's aliased-import idiom with `import copy as copy`, the new kind constant at :1332 follows `_POINTER_TEXT`'s naming, and ruff check and ruff format --check both exit 0 over the four staged paths at c81bf06d.",
+    "goal_fidelity": "reckon/crew/runs.py:1508 hands every listing the shared memo's record and :1719 accepts it without a decode, so a pass over an unchanged population decodes nothing while a moved or vanished pointer is decoded or dropped \u2014 the goal's own words, delivered at head.",
+    "reuse": "reckon/crew/runs.py:1508 extends reckon/file_memo.py:362 memoized inside read_only_region instead of keeping a decode cache of its own, and the test at :202 proves it by clearing the shared memo and requiring all 300 pointers to decode again.",
+    "scope_discipline": "the four files in the diff are each a declared write path in the reviewed node's brief, and the deletions are confined to the two writer guards and the old per-pass json.loads at runs.py:1719."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make an unchanged live listing decode no pointer'; at c81bf06d reckon/crew/runs.py:1484-1511 memoises each pointer's decode through file_memo on its stat identity and hands the listing a shallow copy, and tests/test_an_unchanged_live_listing_decodes_nothing.py:173 asserts the unchanged second listing decoded nothing.\nVERDICT done_when: the done_when's clauses are asserted at tests/test_an_unchanged_live_listing_decodes_nothing.py:168-199 (300 first-pass decodes, zero on the unchanged pass, at most two after one rewrite plus one addition plus one removal, equality with the files' own decode, caller mutation isolated), and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/after_suite-arm.log records 64 passed EXIT=0 at c81bf06d against /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/baseline_suite-arm.log's 58 passed EXIT=0 at 96e3c4b8.\nVERDICT write_paths: the reviewed node declared six write paths; the delivered diff touches four \u2014 reckon/crew/runs.py, reckon/crew/recovery_liveness.py, reckon/crew/admission/release.py and tests/test_an_unchanged_live_listing_decodes_nothing.py \u2014 and every one is inside the declared set, with the evidence-fragment and figures paths declared but unused.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md; it states status complete, head c81bf06d, baseline_suite 58 passed EXIT=0 at 96e3c4b8 and after_suite 64 passed EXIT=0 at c81bf06d with both log paths present, and its negative_control_log names negative-control-base.txt, a four-case run (2 failed, 2 passed) rather than the six-test file under review.\nVERDICT diff: read all eight commits of 96e3c4b8..c81bf06d commit by commit; they add the memoised record (runs.py:1484), the shallow copy hand-out (runs.py:1511), the stat-before-parse fetch (runs.py:1506), the copy-then-mirror in release.py:551-611 and :349-358, the unguarded liveness stamp at recovery_liveness.py:1673 and the 370-line test, with nothing outside the four declared files.\nCALL_SITES: reckon/crew/runs.py:1815 list_live -> :1700 _list_live_records -> :1484 _pointer_record, reckon/crew/runs.py:542 _mutate_pointer through :1656 read_pointer, reckon/crew/runs.py:3944 row_scope, whose callers include reckon/crew/promotion_release.py:1172, reckon/crew/admission/release.py:551 _advance_waiting_requests, reckon/crew/admission/release.py:349 _release_waiters, reckon/crew/admission/release.py:160 resolve_waits, reckon/crew/recovery_liveness.py:1673 launcher_host_is_gone, reached from :1741 local_liveness and :1819 live_worker_reading, reckon/crew/admission/holds.py:513 and reckon/crew/admission/launching.py:566 as read-only consumers\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1508 hands every listing the shared memo's record and :1719 accepts it without a decode, so a pass over an unchanged population decodes nothing while a moved or vanished pointer is decoded or dropped \u2014 the goal's own words, delivered at head.\nSCORE evidence: 17\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/after_suite-arm.log names revision c81bf06d on its first line and ends `EXIT=0` after '64 passed', {RUNDIR}/negative-control-base.txt shows the same assertion reddening at the base with 'an unchanged listing decoded 300 pointers', and the importer arm's 129 head failures are a strict subset of the base's 140, which I recomputed from consumer-head-6.log and consumer-base-2.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four files in the diff are each a declared write path in the reviewed node's brief, and the deletions are confined to the two writer guards and the old per-pass json.loads at runs.py:1719.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_unchanged_live_listing_decodes_nothing.py:173 reddens at the base, :210 reddens under the bespoke-cache revision, :269 reddens under the copy-per-record revision and :319/:356/:368 redden under the copy-free revision, each failure recorded in the run's negative-control logs, while :230's single-decode assertion reddens if a mutation stops invalidating the memo.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/runs.py:8 follows the module's aliased-import idiom with `import copy as copy`, the new kind constant at :1332 follows `_POINTER_TEXT`'s naming, and ruff check and ruff format --check both exit 0 over the four staged paths at c81bf06d.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/runs.py:1508 extends reckon/file_memo.py:362 memoized inside read_only_region instead of keeping a decode cache of its own, and the test at :202 proves it by clearing the shared memo and requiring all 300 pointers to decode again.\nFINDING reckon/crew/runs.py:1508 non-blocking: _pointer_record fetches the text (runs.py:1506, which stats and may serve kept text) and then file_memo.memoized stats the same file again, so a rename landing between the two stats pairs the old text's parse with the new stat identity; file_memo's region path (reckon/file_memo.py:411-425) stores without the post-compute re-verification its unregioned path performs, so that stale record persists for the pointer until its file next changes, where the base revision's per-pass decode healed on the next pass.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md:17 non-blocking: negative_control_log names negative-control-base.txt, whose record is '2 failed, 2 passed' over a four-case version of the test file, while the landed file carries six tests; the control that does cover the landed file \u2014 negative-control-copy-free.txt, '3 failed, 3 passed' at c81bf06d \u2014 is filed as an artifact and not as the declared control, so the field evidences a version that is not under review.\nFINDING tests/test_an_unchanged_live_listing_decodes_nothing.py:269 non-blocking: the cost clause is a wall-clock comparison of two medians of five readings on a shared node, so a loaded host can redden it for reasons unrelated to the change; it did discriminate in the copy-per-record control (54.0ms against 37.9ms), but it is the one assertion in the file whose failure can be environmental rather than a regression.\n",
+  "review_node": "review-of-an-unchanged-live-listing-decodes-nothing-c81bf06d76ee",
+  "review_run_id": "r-20261119T120234196085-review-of-an-unchanged-live-listing-decodes-nothing-c81bf06d76ee",
+  "reviewed_base_sha": "96e3c4b8a3957e2624866e0dc773042892239333",
+  "reviewed_commits": [
+    "24d2e7a426d035ff9ae07f124957f04793347e3c",
+    "19e85cef66b1599f2d175f34bd62b4f1639651a8",
+    "a67e4bdd911b03eea2f1220afa082a6b088d142a",
+    "21fc69f852b97c1d0d9ea096c574698e2b7d432f",
+    "0b0c02da3ff0f232c3a1ea3c712c9073dd0ee1a3",
+    "d915703637b09dcad95b3e6a66f6fef24a1d4bc9",
+    "6d5e148fa9b80c12673cb79388069232556713cb",
+    "c81bf06d76ee94cb0555214154d6cbbf07b8fb00"
+  ],
+  "reviewed_head_sha": "c81bf06d76ee94cb0555214154d6cbbf07b8fb00",
+  "reviewed_run_id": "r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:14:13.165560+00:00",
+  "total": 112
+}
