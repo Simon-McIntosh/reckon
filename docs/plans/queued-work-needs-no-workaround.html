@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="889">
+<meta name="plan-version" content="890">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2736,7 +2736,10 @@
     <div class="r-comment-body"><p>Repaired the executed fence case's fixture (node tmp pinned inside the test tree, the two stale negative controls matched to their seams) and made tests/test_a_run_review_cannot_remove_a_siblings_record.py pass 7/7 on all_debug at f2dc5ca8fd605e8e0c73a2a83a21a8ad318a15f8, against 1 failed / 6 passed at base 5b0a1f537ef9bbca90907bd16f663732db844fb0.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063718364754-qwnw-red-file-a-locked-ledger-store-is-retried" data-who="reckon-build" data-when="2026-11-19T15:06:37.669Z">
-    <div class="r-comment-body"><p>tests/test_a_locked_ledger_store_is_retried.py was red on the primary branch; the cause was the test, not the product — its third case still asserted the pre-2026-11-15 contract that a lock past the retry bound returns {&quot;status&quot;: &quot;failed&quot;}, where 7a8fdac445 deliberately replaced that payload with a LedgerError refusal that takes back the run file, so the case now requires the refusal naming the wait bound plus no surviving row and still shows import_ledger supplying the missing row; base arm 1 failed/2 passed at a7ac07a9 with that failing id logged, head arm 3 passed at e3a8c463ab on all_debug (EXIT=0), declared suite 58 passed in both arms.</p></div>
+    <div class="r-comment-body"><p>tests/test_a_locked_ledger_store_is_retried.py was red on the primary branch; the cause was the test, not the product — its third case still asserted the pre-2026-11-15 contract that a lock past the retry bound returns {"status": "failed"}, where 7a8fdac445 deliberately replaced that payload with a LedgerError refusal that takes back the run file, so the case now requires the refusal naming the wait bound plus no surviving row and still shows import_ledger supplying the missing row; base arm 1 failed/2 passed at a7ac07a9 with that failing id logged, head arm 3 passed at e3a8c463ab on all_debug (EXIT=0), declared suite 58 passed in both arms.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063905926433-qwnw-red-file-a-claim-hold-reads-the-holder-again" data-who="reckon-build" data-when="2026-11-18T17:43:42.845Z">
+    <div class="r-comment-body"><p>The claim-hold cases now claim docs/state/claimed.json — a generated-state path the sharing rule keeps exclusive — and pin the pass&#x27;s one live reading, so tests/test_a_claim_hold_reads_the_holder_again.py reads 2 passed EXIT=0 at 7180d6d8 against 1 failed / 1 passed EXIT=1 at base bc7b7bec (FAILED test_a_holder_that_still_claims_the_path_still_holds_the_request), and replacing the re-read with the pass&#x27;s cached reading fails the same case.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
