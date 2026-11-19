@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 from reckon import ledger
@@ -21,7 +19,7 @@ def _repository(tmp_path: Path) -> Path:
     return repository
 
 
-def test_member_add_commits_only_the_roster_write(tmp_path: Path) -> None:
+def test_member_add_registers_in_the_store_and_commits_nothing(tmp_path: Path) -> None:
     repository = _repository(tmp_path)
     unrelated = repository / "notes.txt"
     unrelated.write_text("committed\n", encoding="utf-8")
@@ -50,63 +48,40 @@ def test_member_add_commits_only_the_roster_write(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert _git(repository, "status", "--porcelain") == "M notes.txt"
     assert _git(repository, "diff", "--cached", "--name-only") == ""
-    assert _git(repository, "rev-list", "--count", f"{base}..HEAD") == "1"
-    assert _git(
-        repository,
-        "diff-tree",
-        "--no-commit-id",
-        "--name-only",
-        "-r",
-        "HEAD",
-    ).splitlines() == ["docs/state/reckon/crew.json"]
-    assert _git(repository, "log", "-1", "--format=%s").startswith("chore(roster):")
-    message = _git(repository, "log", "-1", "--format=%B")
-    assert _git(repository, "log", "-1", "--format=%b")
-    trailers = subprocess.run(
-        ["git", "interpret-trailers", "--parse"],
-        input=message,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    assert trailers.stdout == ""
+    assert _git(repository, "rev-parse", "HEAD") == base
+    assert _git(repository, "rev-list", "--count", f"{base}..HEAD") == "0"
+    assert not (repository / "docs").exists()
+
+    stored = ledger.member("reckon", "worker-a", root=repository)
+    assert stored is not None
+    assert stored["harness"] == "codex"
 
 
-def test_commit_refuses_roster_with_uncommitted_registration(tmp_path: Path) -> None:
-    checkout = Path(__file__).resolve().parents[1]
-    checkout_status = _git(checkout, "status", "--porcelain")
+def test_commit_argument_writes_no_committed_path(tmp_path: Path) -> None:
     repository = _repository(tmp_path)
     base = _git(repository, "rev-parse", "HEAD")
 
-    ledger.register_member(
+    first = ledger.register_member(
         "reckon",
         "internal-a",
         harness="codex",
         root=repository,
     )
+    second = ledger.register_member(
+        "reckon",
+        "public-b",
+        harness="codex",
+        root=repository,
+        commit=True,
+    )
 
-    try:
-        with pytest.raises(
-            ledger.LedgerError,
-            match=(
-                r"cannot commit roster registration 'public-b'.*"
-                r"uncommitted member registration.*internal-a"
-            ),
-        ):
-            ledger.register_member(
-                "reckon",
-                "public-b",
-                harness="codex",
-                root=repository,
-                commit=True,
-            )
-    finally:
-        assert _git(checkout, "status", "--porcelain") == checkout_status
-
+    assert first["id"] == "internal-a"
+    assert second["id"] == "public-b"
     assert _git(repository, "rev-parse", "HEAD") == base
-    assert _git(repository, "status", "--porcelain") == "?? docs/"
-    assert ledger.member("reckon", "internal-a", root=repository) is not None
-    assert ledger.member("reckon", "public-b", root=repository) is None
+    assert _git(repository, "status", "--porcelain") == ""
+    assert not (repository / "docs").exists()
+    assert ledger.member("reckon", "internal-a", root=repository) == first
+    assert ledger.member("reckon", "public-b", root=repository) == second
 
 
 def test_register_member_does_not_commit_by_default(tmp_path: Path) -> None:
@@ -123,4 +98,4 @@ def test_register_member_does_not_commit_by_default(tmp_path: Path) -> None:
     assert stored["id"] == "worker-a"
     assert ledger.member("reckon", "worker-a", root=repository) == stored
     assert _git(repository, "rev-parse", "HEAD") == base
-    assert _git(repository, "status", "--porcelain") == "?? docs/"
+    assert _git(repository, "status", "--porcelain") == ""
