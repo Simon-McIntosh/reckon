@@ -1136,7 +1136,9 @@ def _head_on_primary_branch(checkout: Path, head: str, moment: float) -> bool | 
     return on_branch
 
 
-def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
+def _delivered_head(
+    record: Mapping[str, Any], *, row: Mapping[str, Any] | None = None
+) -> tuple[Path | None, str, bool]:
     """The repository a run's head lands in, the head its row names, and whether it read one.
 
     The head comes from the run's own ledger row rather than from its worktree,
@@ -1145,6 +1147,10 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
     through the ledger's own ownership resolution, which is the same one
     promotion writes it under, so a run implementing one project's plan in
     another repository's checkout is still found.
+
+    ``row`` is that row when the caller already holds it. The departure reader
+    reads the row to choose a word, so re-reading it from a root the record
+    does not name would answer about a ledger the caller never consulted.
 
     The third answer separates a row that was read from one that was not. A row
     read and naming no commit is a completion that delivered nothing — there is
@@ -1159,13 +1165,14 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
     from reckon.crew.node import claim_repository
 
     checkout = claim_repository(record)
-    try:
-        from reckon.crew.pending_landing import _promotion_evidence
+    if row is None:
+        try:
+            from reckon.crew.pending_landing import _promotion_evidence
 
-        root = ledger._run_ledger_root(project, str(record.get("repo") or ""))
-        row = _promotion_evidence(project, run_id, root=root)
-    except (OSError, ValueError, RuntimeError, ledger.LedgerError, CrewError):
-        return checkout, "", False
+            root = ledger._run_ledger_root(project, str(record.get("repo") or ""))
+            row = _promotion_evidence(project, run_id, root=root)
+        except (OSError, ValueError, RuntimeError, ledger.LedgerError, CrewError):
+            return checkout, "", False
     if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
         return checkout, "", False
     promoted = str(row.get("promoted_revision") or "").strip()
@@ -1175,7 +1182,12 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
     return checkout, next((commit for commit in reversed(commits) if commit), ""), True
 
 
-def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str:
+def _promoted_awaiting_merge(
+    record: Mapping[str, Any],
+    *,
+    moment: float,
+    row: Mapping[str, Any] | None = None,
+) -> str:
     """The sentence for a promoted run whose merge is still owed, or empty.
 
     Two facts say a promotion's change is on no branch. ``crew complete --land``
@@ -1208,7 +1220,7 @@ def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str
             if pending.get("merge_conflict")
             else "awaiting-merge"
         )
-    checkout, head, row_read = _delivered_head(record)
+    checkout, head, row_read = _delivered_head(record, row=row)
     if row_read and not head:
         # A completion that delivered no commits has nothing to place on a
         # branch, so it owes no merge and stays settled.
