@@ -3699,6 +3699,44 @@ def recorded_run_rows(
     return None if rows is None else list(rows)
 
 
+#: The project whose derivation is building, so a reader the derivation reaches
+#: can take the history it already read. Unset everywhere else: outside a
+#: derivation the whole-history read is exactly the cost a bounded reader exists
+#: to avoid, and asking for it on the chance that some earlier read left rows
+#: behind would reinstate it.
+_DERIVING_PROJECT: ContextVar[str | None] = ContextVar("deriving_project", default=None)
+
+
+@contextmanager
+def derivation_history(project: str) -> Iterator[None]:
+    """Mark the history this derivation read as shareable with its own readers.
+
+    A derivation reads the ledger's run rows for the held-worktree screen and
+    then classifies the fleet, and the utilisation reader the classification
+    reaches needs a window of that same history. Both name one ledger file, so
+    a second read would decode one index twice for one derivation's answer.
+    The marker confines the share to a derivation: a monitor that classifies
+    runs without deriving never opens the ledger to answer a window.
+    """
+    token = _DERIVING_PROJECT.set(project)
+    try:
+        yield
+    finally:
+        _DERIVING_PROJECT.reset(token)
+
+
+def derivation_run_rows(project: str) -> list[Mapping[str, Any]] | None:
+    """The rows this derivation already read, or ``None`` where there are none.
+
+    ``None`` answers a caller outside a derivation, and a derivation whose pass
+    read no history because the project owes no tree duty. Both keep their own
+    read rather than widening one to the whole ledger.
+    """
+    if _DERIVING_PROJECT.get() != project:
+        return None
+    return recorded_run_rows(project)
+
+
 def _held_records_read_uncached(
     project: str, repository: Path, signature: tuple[Any, ...]
 ) -> _RecordedPass:

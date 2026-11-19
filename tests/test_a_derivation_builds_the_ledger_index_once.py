@@ -90,6 +90,10 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     holder = tmp_path / "held-worktree"
     holder.mkdir()
     _git(root, "worktree", "add", "-q", "--detach", str(holder))
+    # The tree carries a commit no primary ref reaches, which is what makes it a
+    # duty: a tree whose run has landed holds nothing a landing has not taken,
+    # so the derivation names it only when there is work left to lose.
+    _commit(holder, "held-work.txt", "work only this tree carries")
     for index in range(RUN_FILES):
         run_id = f"run-{index:02d}"
         record = _run_record(run_id, holder if index == 0 else None)
@@ -198,14 +202,17 @@ def test_the_shared_index_answers_as_the_explicit_root(
     # row set the held screen read, and it must be the same for both routes.
     assert shared.held_worktrees, "no held tree was reported, so nothing was compared"
     assert explicit.held_worktrees == shared.held_worktrees
-    # A fresh held-record derivation exposes the explicit-root route's second
-    # index build independently of reuse of an unchanged held-record answer.
+    # The count above is a reuse that happened, not a counter that cannot see a
+    # build: a derivation whose memo this process has dropped builds the index
+    # again, so two such derivations read two builds.
     obligations_module._clear_cached_obligation_inputs()
     with _CallCounter(ledger_module, "_index_payload") as index:
         _derive()
+        obligations_module._clear_cached_obligation_inputs()
+        _derive()
     assert index.calls == 2, (
-        f"the explicit-root route built the index {index.calls} times, so the"
-        " shared route's single build is not distinguished from it"
+        f"two derivations built the index {index.calls} times, so the one build"
+        " a single derivation makes is not distinguished from it"
     )
 
 
