@@ -413,6 +413,13 @@ def _require_commits_beyond_base(
     measured against whatever repository the promotion happens to run in. A
     tree git cannot read, or a base that does not resolve in it, leaves the
     guard silent: an unmeasured citation is not a defect in the citation.
+
+    Uncommitted declared work is only a defect for a run whose deliverable
+    belongs in a commit. A shadow run asserts no code and is refused a
+    citation by its own guard, so uncommitted work in its tree is the evidence
+    itself: the landing writes it into the run's shadow patch, which is what a
+    later reader measures. Refusing its row would leave the comparison arm with
+    its evidence in no artifact at all rather than in no commit.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
@@ -466,6 +473,10 @@ def _require_commits_beyond_base(
                 "or pass --no-commit '<why>' when it produced none"
             )
     if commits:
+        return
+    from reckon.crew.promotion_scope import _is_shadow
+
+    if _is_shadow(record):
         return
     roots = _declared_repository_roots(record, tree=tree)
     if not roots:
