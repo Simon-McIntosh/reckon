@@ -1,0 +1,92 @@
+<section id="qwnw-red-file-a-resumed-run-counts-as-working-landing">
+  <h2>A delivered run awaiting its review counts as unpromoted</h2>
+
+  <p><strong>What changed.</strong> <code>_fleet_counts</code> in
+  <code>reckon/crew/recovery_watch.py</code> read the delivered figure from
+  promotion evidence alone. A run classified <code>scoring</code> — its manifest
+  reports completion and its independent review is missing or in flight, so
+  <code>_delivery_reading</code> returns no status at all — was therefore
+  reported as nothing waiting, although its fleet state is
+  <code>completed_unpromoted</code>, the state the state-based count had always
+  treated as unpromoted. The delivered-awaiting-review population is now counted
+  with the delivered one, so the figure keeps the meaning its docstring states:
+  delivered work waiting on a gate, the review included. No assertion in the
+  node's test file was deleted or weakened.
+
+  <p><strong>The cause.</strong> The test file landed on 29 September
+  (<code>9bf9d9eb9e</code>) and the evidence-only count was introduced by
+  <code>130499dbb3</code> on 17 November, so the file predates the change that
+  broke it, and the state the failing run carries never disagreed with the test.
+  The defect is the product's: the commit that split delivered work from
+  requested promotions lost the population whose gate is still the review.
+  Verdict: <em>product wrong</em>.</p>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-arms">Arms</h3>
+
+  <p>Each arm is a log whose first lines name the revision, tree and command and
+  whose last line reads <code>EXIT=&lt;code&gt;</code>. The named-test arms ran
+  as <code>all_debug</code> batch jobs with <code>SLURM_JOB_ID</code> unset for
+  the pytest process (jobs 1329941 and 1329944); the importer and declared-suite
+  arms ran in place under this node's allocation after <code>all_debug</code> sat
+  <code>PENDING</code> for an hour. The base tree is a <code>git archive</code>
+  extraction of <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> under the
+  run directory.</p>
+
+  <table id="qwnw-red-file-a-resumed-run-counts-as-working-arm-table">
+    <caption>Every figure below is a log's own summary line.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>named test, head</td>
+        <td><code>46c40734ea</code>, worktree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>named test, base</td>
+        <td><code>b24fe95a789c</code>, extraction</td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importer arm, head (101 files importing the changed module)</td>
+        <td><code>46c40734ea</code>, worktree</td>
+        <td>21 failed, 797 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importer arm, base</td>
+        <td><code>b24fe95a789c</code>, extraction</td>
+        <td>24 failed, 794 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importer arm, delta</td><td>base failing ids against head</td>
+        <td>0 added failures, 3 base-only</td></tr>
+      <tr><td>declared suite, head</td>
+        <td><code>46c40734ea</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base</td>
+        <td><code>b24fe95a789c</code>, extraction</td>
+        <td>2 failed, 56 passed, <code>EXIT=1</code></td></tr>
+      <tr><td><code>ruff check</code> on the changed path</td>
+        <td>both revisions</td>
+        <td>3 findings at each, all pre-existing (UP017 line 784, B904 line 885,
+        F841 line 1533); <code>ruff format --check</code> clean</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-control">Negative control</h3>
+
+  <p>The base run of the node's own test file is red on exactly the case that
+  measures this rule:
+  <code>test_a_live_worker_that_predates_its_manifest_keeps_todays_verdict</code>
+  fails at <code>counts["unpromoted"] == 1</code> with <code>assert 0 == 1</code>,
+  <code>EXIT=1</code>; at head the same file is 5 passed, <code>EXIT=0</code>. The
+  importer arm's three base-only ids are
+  <code>test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing</code>,
+  <code>test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write</code>
+  and
+  <code>test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner</code>
+  — the two inventory ids the declared suite's base arm also fails, and a
+  producer-arm id no arm's head run fails. There is no head-only id.</p>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-evidence">Evidence inputs</h3>
+
+  <ul>
+    <li>logs:
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working/verify/{base-run,head-run,imp-base,imp-head,suite-base,suite-head}.log</code></li>
+    <li>importer population: the 101 <code>tests/*.py</code> files naming
+    <code>recovery_watch</code>, recorded in <code>verify/importers.txt</code></li>
+    <li>instrument check: the same population still exits <code>EXIT=1</code>
+    after the change, so the exit status alone says nothing; the delta is read
+    from the failing ids, where head carries no id the base arm did not.</li>
+  </ul>
+</section>
