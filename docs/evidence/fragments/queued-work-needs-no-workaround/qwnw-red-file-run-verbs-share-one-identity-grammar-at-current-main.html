@@ -1,0 +1,51 @@
+<section id="qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main-record">
+<h2>Two causes, one product and one test, both from a verb the sweep now sees</h2>
+<p>The file was already red before any repair, so the reproduction is the base run itself. Run
+against the base revision <code>e9dffe5259e14aac4f921e6ee6e63ce03e43ad86</code> as a job on
+<code>all_debug</code>, it read two failures and thirty-three passes, <code>EXIT=1</code>:</p>
+<pre>FAILED tests/test_run_verbs_share_one_identity_grammar.py::test_the_sweep_covers_every_single_run_verb - AssertionError: every swept verb needs its minimal options declared
+FAILED tests/test_run_verbs_share_one_identity_grammar.py::test_a_matching_project_is_accepted_and_a_disagreeing_one_refused[suite run] - KeyError: 'suite run'
+2 failed, 33 passed</pre>
+<p id="qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main-cause-product"><strong>Cause 1 — product wrong.</strong> <code>crew suite run</code> takes a single run id on
+<code>--run</code> but never applied the shared identity grammar: invoked with
+<code>--run &lt;live run&gt; --project &lt;a different project&gt;</code> it answered
+<code>project 'sweep-other' has no registered mount</code> instead of the
+<code>disagrees with run</code> refusal every sibling single-run verb raises. Reproduced directly
+through <code>CliRunner</code> against the base tree: the matching and the disagreeing arms print the
+same mount refusal. The verb now routes the run id through <code>_accept_a_matching_project</code>
+before it resolves the checkout, as the sibling verbs do.</p>
+<p id="qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main-cause-test"><strong>Cause 2 — test wrong.</strong> The file enumerates the crew command tree rather than a
+hard-coded list, and asserts that its own <code>MINIMAL_OPTIONS</code> and <code>ACCEPTED</code>
+tables cover every verb it swept. The sweep found <code>suite run</code>, which the tables did not
+name, so the coverage assertion and the parametrisation both failed on the table rather than on the
+rule. The tables now carry the verb — no further option is required beyond <code>--run</code> and
+<code>--project</code>, and a fixture run carrying only a live pointer reaches the verb's own
+<code>has no registered mount</code> refusal.</p>
+<p id="qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main-what-broke"><strong>What broke it since the earlier repair.</strong> Commit
+<code>9f54dd12c811fcf867fed6fd148dc2ffc4f958bf</code> (feat(crew): compose worker gate and suite
+arm calls) added <code>--run</code>, <code>--partition</code> and <code>--checkout-path</code> to
+<code>crew suite run</code> and left it outside the identity-grammar helper. The sweep only sees a
+verb once it declares <code>--run</code>, so the same commit created both causes: the new verb
+appeared in the sweep, and its tables and its refusal were one edit short.</p>
+<h2 id="qwnw-red-file-run-verbs-share-one-identity-grammar-at-current-main-runs">The two runs, beside each other</h2>
+<table>
+<thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+<tbody>
+<tr>
+<td>base (negative control)</td>
+<td><code>e9dffe5259e14aac4f921e6ee6e63ce03e43ad86</code></td>
+<td><code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_run_verbs_share_one_identity_grammar.py</code></td>
+<td>2 failed, 33 passed, <code>EXIT=1</code>; log <code>negative-control-1795043003208027640.log</code></td>
+</tr>
+<tr>
+<td>head</td>
+<td><code>2267b57bcfc48caef9a62c0311d5ff7e8204a1ae</code></td>
+<td><code>env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_run_verbs_share_one_identity_grammar.py</code></td>
+<td>35 passed, <code>EXIT=0</code>; log <code>scoped-gate-1795042933998356681.log</code></td>
+</tr>
+</tbody>
+</table>
+<p>Both ran as jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset inside the
+pytest process, each in a tree archived from its own revision, with the log on shared storage under
+the run directory.</p>
+</section>

@@ -1,0 +1,78 @@
+<section id="qwnw-red-file-gate-evidence-at-current-main-gate">
+  <h2>The gate-evidence suite reads the outcome its completion recorded</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_gate_evidence.py</code> read
+  a promotion's gate check, its suite delta and the fields a suite-delta refusal
+  names off the completion command's standard output. That command no longer
+  answers with the whole outcome: it returns a bounded reply — the row the
+  caller acts on, beside <code>record_path</code>, the path of the run's
+  recorded outcome — and the full statement is the file. Fourteen of the file's
+  twenty-five tests therefore failed at the base revision with
+  <code>KeyError: 'record'</code>, <code>'missing_fields'</code> or
+  <code>'added_failure_ids'</code>, while the command itself behaved correctly:
+  each promotion it refused still recorded
+  <code>{"error": "suite-delta-refused", "missing_fields": ["after_suite"], ...}</code>
+  in that file.</p>
+
+  <p><strong>Verdict: the test was wrong.</strong> No product rule broke. The
+  cause is <code>ba811581d3</code> (<em>feat(crew): confirm delivered runs
+  together with bounded replies</em>), which shrank the reply and kept each
+  run's full outcome in <code>completion-&lt;ns&gt;.json</code> under the run
+  directory. The repair adds one helper, <code>_recorded_outcome</code>, which
+  reads <code>record_path</code> from the reply and returns the recorded
+  outcome, falling back to the reply itself when it names no record (a refusal
+  raised before the outcome is filed). Every assertion keeps its subject: the
+  gate check a promotion stored, the suite delta's status, added failure ids,
+  waiver reason, attribution and the missing fields a refusal names are read
+  from the record rather than the shortened reply. No assertion is deleted,
+  weakened or relaxed.</p>
+
+  <h3 id="qwnw-red-file-gate-evidence-at-current-main-measured">Measured</h3>
+
+  <table id="qwnw-red-file-gate-evidence-at-current-main-arms">
+    <caption>The base run is the file at the revision this node started from,
+    before any change, and is also this node's negative control: the same
+    command goes red there and green at the head.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>command / tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base run (negative control)</td>
+        <td><code>e9dffe5259e14aac4f921e6ee6e63ce03e43ad86</code></td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gate_evidence.py</code></td>
+        <td>11 passed, 14 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>head run (the gate)</td>
+        <td><code>44d86d76a7932bf982dcb8ae672494597794b57f</code></td>
+        <td>the same command, as a job on <code>all_debug</code> (host <code>98dci4-clu-3141</code>)</td>
+        <td>25 passed, <code>EXIT=0</code></td></tr>
+      <tr id="qwnw-red-file-gate-evidence-at-current-main-suite-arms"><td>suite arms</td>
+        <td>base and after</td>
+        <td><code>crew suite run</code>, each arm resolved over its own tree</td>
+        <td>recorded in the manifest</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-gate-evidence-at-current-main-control">Negative control</h3>
+
+  <p>The base run of the file, with its fourteen failing ids, is logged at
+  <code>logs/base-gate-evidence-at-e9dffe5.log</code> under the run directory.
+  Its failures are exactly the fourteen tests that read the reply:</p>
+
+  <pre id="qwnw-red-file-gate-evidence-at-current-main-failures"><code>tests/test_gate_evidence.py::test_promoting_a_passing_gate_with_a_full_check_is_accepted_and_stored - KeyError: 'record'
+tests/test_gate_evidence.py::test_a_log_digest_satisfies_the_check_in_place_of_a_log_path - KeyError: 'record'
+tests/test_gate_evidence.py::test_a_failing_or_not_run_gate_needs_no_check_evidence - KeyError: 'record'
+tests/test_gate_evidence.py::test_armed_promotion_refuses_missing_observation_and_keeps_pointer - KeyError: 'missing_fields'
+tests/test_gate_evidence.py::test_armed_promotion_refuses_added_failures_with_ids - KeyError: 'added_failure_ids'
+tests/test_gate_evidence.py::test_reasoned_waiver_promotes_and_stores_observations - KeyError: 'record'
+tests/test_gate_evidence.py::test_repair_run_with_only_baseline_failures_is_clean - KeyError: 'record'
+tests/test_gate_evidence.py::test_real_cited_commit_and_clean_suite_delta_promote_together - KeyError: 'record'
+tests/test_gate_evidence.py::test_known_bad_promotion_with_twenty_added_failures_is_refused - KeyError: 'added_failure_ids'
+tests/test_gate_evidence.py::test_fifteen_repair_promotions_with_no_added_failures_are_accepted - KeyError: 'record'
+tests/test_gate_evidence.py::test_added_failure_ids_matches_promotions_suite_delta_arithmetic - KeyError: 'record'
+tests/test_gate_evidence.py::test_promoted_run_stores_failure_attribution_beside_added_ids - KeyError: 'record'
+tests/test_gate_evidence.py::test_added_failure_with_no_attribution_entry_still_refuses - KeyError: 'added_failure_ids'
+tests/test_gate_evidence.py::test_attribution_naming_a_pre_existing_failure_is_dropped - KeyError: 'record'</code></pre>
+
+  <p>What broke the file since its earlier repair landed: the earlier repair
+  (<code>3a543c4441</code>, 25 passed) predates <code>ba811581d3</code>, which
+  introduced the bounded reply. The file's assertions were true of the reply the
+  command used to print and false of the one it prints now.</p>
+</section>

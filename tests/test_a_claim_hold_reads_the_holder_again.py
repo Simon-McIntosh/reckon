@@ -32,7 +32,9 @@ from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
 
 HOLDER_ID = "r-holder"
 REQUEST_ID = "r-late"
-CLAIMED = "claimed.txt"
+# A claim fences a path a textual merge cannot reconcile: source files are
+# shared by default, so a stopped run's hold on one does not fence a peer.
+CLAIMED = "docs/state/claimed.json"
 
 
 def _dead_pid() -> int:
@@ -93,13 +95,19 @@ def _remove_the_holder_after_the_live_reading(
     """
     real = runs.list_live
     fired: list[bool] = []
+    pinned: list[list[dict[str, Any]]] = []
 
     def reading(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
-        records = real(*args, **kwargs)
-        if not fired and not args and not kwargs:
-            fired.append(True)
+        if args or kwargs:
+            return real(*args, **kwargs)
+        if not pinned:
+            # The pass's one full reading, kept for the whole stage: a pass that
+            # read the live set again would find the holder gone by itself and
+            # the re-read would go unmeasured.
+            pinned.append(real())
             runs.pointer_path(HOLDER_ID).unlink()
-        return records
+            fired.append(True)
+        return pinned[0]
 
     monkeypatch.setattr(runs, "list_live", reading)
     return fired
@@ -121,12 +129,19 @@ def _verdicts(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {str(row["run_id"]): row for row in result["verdicts"]}
 
 
+def _queue_the_request(repository: Path) -> None:
+    """Queue a request whose single write path is the path the holder claims."""
+    pointer = _queue(repository, node_id="claimed", run_id=REQUEST_ID)
+    pointer["node"]["write_paths"] = [CLAIMED]
+    runs.queue_dispatch(pointer)
+
+
 def test_a_holder_that_landed_before_the_judgement_does_not_hold(
     admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The holder's pointer is gone by the judgement, so nothing fences it."""
     _, resolve = _config_for()
-    runs.queue_dispatch(_queue(admit_repo, node_id="claimed", run_id=REQUEST_ID))
+    _queue_the_request(admit_repo)
     _stopped_holder(admit_repo, tmp_path)
     fired = _remove_the_holder_after_the_live_reading(monkeypatch)
     probe = _LaunchProbe(monkeypatch)
@@ -147,7 +162,7 @@ def test_a_holder_that_still_claims_the_path_still_holds_the_request(
 ) -> None:
     """A holder whose pointer is still there holds it exactly as before."""
     _, resolve = _config_for()
-    runs.queue_dispatch(_queue(admit_repo, node_id="claimed", run_id=REQUEST_ID))
+    _queue_the_request(admit_repo)
     _stopped_holder(admit_repo, tmp_path)
     probe = _LaunchProbe(monkeypatch)
 

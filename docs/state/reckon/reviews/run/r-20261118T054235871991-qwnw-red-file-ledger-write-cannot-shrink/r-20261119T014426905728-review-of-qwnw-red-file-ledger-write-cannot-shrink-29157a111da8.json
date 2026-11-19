@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion_gate.py:1325",
+    "reckon/crew_run_commands.py:1772"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:35:01Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "3087",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reworded roster-guard docstring reads \"a member id the roster the same read carries holds is refused\" with \"refused\" stranded on the next line, so the sentence stating the guard's rule is ungrammatical in the one place a reader learns it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054235871991-qwnw-red-file-ledger-write-cannot-shrink/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest records the arm command and the node-test measure in prose only, omitting the baseline_suite/after_suite inline JSON the done_when requires, so a reader must open baseline_suite-1795051006852683819.log and after_suite-1795051082919494661.log to learn that both arms ran 58 passing tests at 6fa2b177 and a4a28d7a."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read all three commits against 6fa2b177; a4a28d7a fixes reckon/ledger.py (+38 -7) by comparing declared members against run_store.read_auxiliary's roster instead of the aggregate's own copy, and f9953a04 plus 29157a11 add and correct only the evidence fragment; no test file is touched.",
+    "done_when": "the done_when names tests/test_ledger_write_cannot_shrink.py run as an all_debug job with SLURM_JOB_ID unset and a base arm with its failing ids; logs/node-test-head.log carries \"# job 1328944\" and \"9 passed in 2.62s\" with EXIT=0, and logs/node-test-base.log carries \"2 failed, 7 passed\" with EXIT=1 at 6fa2b17.",
+    "goal": "the reviewed node's goal is \"Make tests/test_ledger_write_cannot_shrink.py pass in full on the primary branch\"; the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-cannot-shrink.html records 9 collected, 9 passed, EXIT=0 at a4a28d7a, and the two commits after it touch only that fragment, so the head 29157a11 carries the same product code.",
+    "manifest": "read the reviewed run's manifest.md (11 lines) at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054235871991-qwnw-red-file-ledger-write-cannot-shrink/manifest.md; it records status complete, the three commits, the landing measure and the arm command, but carries no baseline_suite/after_suite inline JSON and no test_logs field.",
+    "write_paths": "the node declared reckon, tests, the fragment path and a figures path; the delivered diff 6fa2b177..29157a11 touches only reckon/ledger.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-cannot-shrink.html, both inside that list."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_write_cannot_shrink.py:112 fails with \"DID NOT RAISE LedgerError\" at 6fa2b17, so reinstating the aggregate's own member list as the reference reddens tests/test_ledger_write_cannot_shrink.py::test_a_write_that_reduces_the_member_count_is_refused, and that red is captured in the fragment's base ids.",
+    "evidence": "the gate logs baseline_suite-1795051006852683819.log and after_suite-1795051082919494661.log both end \"58 passed\" with EXIT=0 at their own named revisions, but manifest.md:9 records the arm command under `tests:` while the done_when's primary measure and the two required inline arm records are absent from the manifest.",
+    "fit": "reckon/ledger.py:2883 sits beside _roster_ids and uses the same lazy `from reckon import run_store` as ledger.py:2582, but ledger.py:3087's \"a member id the roster the same read carries holds is refused\" is garbled and leaves \"refused\" alone on ledger.py:3088.",
+    "goal_fidelity": "reckon/ledger.py:3192 replaces the self-comparison at the old line 3153 with _reader_members, which is the rule the two base-failing ids in tests/test_ledger_write_cannot_shrink.py asserted.",
+    "reuse": "_reader_members calls the store read the repository already owns (run_store.read_auxiliary, reckon/run_store.py:1063) and cannot use load_auxiliary/members (reckon/ledger.py:2424, :3283) because those import into the store, so it extends rather than forks the capability, though it restates load's fallback at ledger.py:2583-2586.",
+    "scope_discipline": "every path in 6fa2b177..29157a11 is reckon/ledger.py or the declared fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-cannot-shrink.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is \"Make tests/test_ledger_write_cannot_shrink.py pass in full on the primary branch\"; the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-cannot-shrink.html records 9 collected, 9 passed, EXIT=0 at a4a28d7a, and the two commits after it touch only that fragment, so the head 29157a11 carries the same product code.\nVERDICT done_when: the done_when names tests/test_ledger_write_cannot_shrink.py run as an all_debug job with SLURM_JOB_ID unset and a base arm with its failing ids; logs/node-test-head.log carries \"# job 1328944\" and \"9 passed in 2.62s\" with EXIT=0, and logs/node-test-base.log carries \"2 failed, 7 passed\" with EXIT=1 at 6fa2b17.\nVERDICT write_paths: the node declared reckon, tests, the fragment path and a figures path; the delivered diff 6fa2b177..29157a11 touches only reckon/ledger.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-cannot-shrink.html, both inside that list.\nVERDICT manifest: read the reviewed run's manifest.md (11 lines) at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054235871991-qwnw-red-file-ledger-write-cannot-shrink/manifest.md; it records status complete, the three commits, the landing measure and the arm command, but carries no baseline_suite/after_suite inline JSON and no test_logs field.\nVERDICT diff: read all three commits against 6fa2b177; a4a28d7a fixes reckon/ledger.py (+38 -7) by comparing declared members against run_store.read_auxiliary's roster instead of the aggregate's own copy, and f9953a04 plus 29157a11 add and correct only the evidence fragment; no test file is touched.\nCALL_SITES: reckon/crew/promotion_gate.py:1325, reckon/crew_run_commands.py:1772\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:3192 replaces the self-comparison at the old line 3153 with _reader_members, which is the rule the two base-failing ids in tests/test_ledger_write_cannot_shrink.py asserted.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate logs baseline_suite-1795051006852683819.log and after_suite-1795051082919494661.log both end \"58 passed\" with EXIT=0 at their own named revisions, but manifest.md:9 records the arm command under `tests:` while the done_when's primary measure and the two required inline arm records are absent from the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 6fa2b177..29157a11 is reckon/ledger.py or the declared fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ledger-write-cannot-shrink.html.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_ledger_write_cannot_shrink.py:112 fails with \"DID NOT RAISE LedgerError\" at 6fa2b17, so reinstating the aggregate's own member list as the reference reddens tests/test_ledger_write_cannot_shrink.py::test_a_write_that_reduces_the_member_count_is_refused, and that red is captured in the fragment's base ids.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/ledger.py:2883 sits beside _roster_ids and uses the same lazy `from reckon import run_store` as ledger.py:2582, but ledger.py:3087's \"a member id the roster the same read carries holds is refused\" is garbled and leaves \"refused\" alone on ledger.py:3088.\nSCORE reuse: 17\nJUSTIFICATION reuse: _reader_members calls the store read the repository already owns (run_store.read_auxiliary, reckon/run_store.py:1063) and cannot use load_auxiliary/members (reckon/ledger.py:2424, :3283) because those import into the store, so it extends rather than forks the capability, though it restates load's fallback at ledger.py:2583-2586.\nFINDING reckon/ledger.py:3087 non-blocking: the reworded roster-guard docstring reads \"a member id the roster the same read carries holds is refused\" with \"refused\" stranded on the next line, so the sentence stating the guard's rule is ungrammatical in the one place a reader learns it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054235871991-qwnw-red-file-ledger-write-cannot-shrink/manifest.md:9 non-blocking: the manifest records the arm command and the node-test measure in prose only, omitting the baseline_suite/after_suite inline JSON the done_when requires, so a reader must open baseline_suite-1795051006852683819.log and after_suite-1795051082919494661.log to learn that both arms ran 58 passing tests at 6fa2b177 and a4a28d7a.",
+  "review_run_id": "r-20261119T014426905728-review-of-qwnw-red-file-ledger-write-cannot-shrink-29157a111da8",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "29157a111da8a7b983436523a248a1b05caa891f",
+  "reviewed_run_id": "r-20261118T054235871991-qwnw-red-file-ledger-write-cannot-shrink",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:58:07.985659+00:00",
+  "total": 102
+}

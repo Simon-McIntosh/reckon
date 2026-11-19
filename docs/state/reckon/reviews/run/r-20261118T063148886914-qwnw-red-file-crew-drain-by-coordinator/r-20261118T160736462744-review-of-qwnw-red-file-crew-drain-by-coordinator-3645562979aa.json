@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "completed": true,
+    "failure_count": 0,
+    "failure_ids": [],
+    "revision": "3645562979aa06bd44c87f55905f8052c844cf72"
+  },
+  "baseline_suite": {
+    "completed": true,
+    "failure_count": 0,
+    "failure_ids": [],
+    "revision": "7d96b815d9cf590aa98251b510a841595cfdbfdc"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:crew_dispatch",
+    "reckon/crew/dispatching/preparation.py:806",
+    "reckon/crew/dispatching/launch.py:685",
+    "reckon/crew/runs.py:3993"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:31:16Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "the baseline_suite and after_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports tests/test_crew_drain_by_coordinator.py or reckon.crew.dispatching, so the green 58-passed arms cannot show that the changed test file breaks an importer."
+    }
+  ],
+  "findings_note": "one finding, non-blocking",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commits 8890651f2f and 3645562979 against base 7d96b815d9; two paths, 105 insertions and 7 deletions: the one case rewritten in tests/test_crew_drain_by_coordinator.py and a 76-line evidence fragment added at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-drain-by-coordinator.html.",
+    "done_when": "the measure is the named file green at head as an all_debug job with SLURM_JOB_ID unset, which head-run-1327024.out records at 3645562979aa with 4 passed and EXIT=0 against base-run-1326965.out's 1 failed, 3 passed at 7d96b815d9; the importer arm the measure also names is met only nominally, because the pair at manifest.md:15-16 exercises census and lock invariants that import neither the changed file nor reckon.crew.dispatching.",
+    "goal": "the node goal is that tests/test_crew_drain_by_coordinator.py pass in full on the primary branch; the diff rewrites only the retired-refusal case at tests/test_crew_drain_by_coordinator.py:193-258 to assert what dispatch now records, and no product module moved because the product already keeps that rule.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063148886914-qwnw-red-file-crew-drain-by-coordinator/manifest.md; it states status complete, names head job 1327024 and base job 1326965, records baseline_suite and after_suite as inline JSON at the full 40-character revisions 7d96b815d9cf590aa98251b510a841595cfdbfdc and 3645562979aa06bd44c87f55905f8052c844cf72 with zero failures each, and points at mutation-scope-detail.txt for the red mutation.",
+    "write_paths": "the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both paths in the diff are inside that scope: tests/test_crew_drain_by_coordinator.py and the node's own fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_drain_by_coordinator.py:253 fails whenever the fence's overdue read widens past the asking session, shown by the recorded mutation reading ['r-own', 'r-peer'] against ['r-own']; lines 254 and 258 guard little on their own.",
+    "evidence": "head-run-1327024.out and base-run-1326965.out are logged arms carrying revision, tree, command and EXIT lines, and mutation-scope-detail.txt shows tests/test_crew_drain_by_coordinator.py:253 red when the session scope is removed, but the suite pair at manifest.md:15-16 imports neither the changed file nor reckon.crew.dispatching.",
+    "fit": "tests/test_crew_drain_by_coordinator.py:127 shows the fixture-and-docstring idiom the case reuses, and its crew._spawn stub matches the CLI cases at tests/test_crew.py:2120, introducing no forbidden name.",
+    "goal_fidelity": "tests/test_crew_drain_by_coordinator.py:251-258 asserts the exit status and the recorded backlog the product writes now, and head-run-1327024.out records 4 passed at 3645562979aa06bd44c87f55905f8052c844cf72.",
+    "reuse": "no product definition was added; the backlog field it asserts is owned by reckon/crew/dispatching/preparation.py:806 and already guarded by tests/test_closure_fence_agreement.py:224 and tests/test_crew.py:2189, which the rewritten case now agrees with.",
+    "scope_discipline": "the diff touches only tests/test_crew_drain_by_coordinator.py and the node's own fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-drain-by-coordinator.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_crew_drain_by_coordinator.py pass in full on the primary branch; the diff rewrites only the retired-refusal case at tests/test_crew_drain_by_coordinator.py:193-258 to assert what dispatch now records, and no product module moved because the product already keeps that rule.\nVERDICT done_when: the measure is the named file green at head as an all_debug job with SLURM_JOB_ID unset, which head-run-1327024.out records at 3645562979aa with 4 passed and EXIT=0 against base-run-1326965.out's 1 failed, 3 passed at 7d96b815d9; the importer arm the measure also names is met only nominally, because the pair at manifest.md:15-16 exercises census and lock invariants that import neither the changed file nor reckon.crew.dispatching.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both paths in the diff are inside that scope: tests/test_crew_drain_by_coordinator.py and the node's own fragment.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063148886914-qwnw-red-file-crew-drain-by-coordinator/manifest.md; it states status complete, names head job 1327024 and base job 1326965, records baseline_suite and after_suite as inline JSON at the full 40-character revisions 7d96b815d9cf590aa98251b510a841595cfdbfdc and 3645562979aa06bd44c87f55905f8052c844cf72 with zero failures each, and points at mutation-scope-detail.txt for the red mutation.\nVERDICT diff: read commits 8890651f2f and 3645562979 against base 7d96b815d9; two paths, 105 insertions and 7 deletions: the one case rewritten in tests/test_crew_drain_by_coordinator.py and a 76-line evidence fragment added at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-drain-by-coordinator.html.\nCALL_SITES: reckon/crew_dispatch_commands.py:crew_dispatch, reckon/crew/dispatching/preparation.py:806, reckon/crew/dispatching/launch.py:685, reckon/crew/runs.py:3993\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_drain_by_coordinator.py:251-258 asserts the exit status and the recorded backlog the product writes now, and head-run-1327024.out records 4 passed at 3645562979aa06bd44c87f55905f8052c844cf72.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-run-1327024.out and base-run-1326965.out are logged arms carrying revision, tree, command and EXIT lines, and mutation-scope-detail.txt shows tests/test_crew_drain_by_coordinator.py:253 red when the session scope is removed, but the suite pair at manifest.md:15-16 imports neither the changed file nor reckon.crew.dispatching.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/test_crew_drain_by_coordinator.py and the node's own fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-drain-by-coordinator.html, both inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_crew_drain_by_coordinator.py:253 fails whenever the fence's overdue read widens past the asking session, shown by the recorded mutation reading ['r-own', 'r-peer'] against ['r-own']; lines 254 and 258 guard little on their own.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_crew_drain_by_coordinator.py:127 shows the fixture-and-docstring idiom the case reuses, and its crew._spawn stub matches the CLI cases at tests/test_crew.py:2120, introducing no forbidden name.\nSCORE reuse: 18\nJUSTIFICATION reuse: no product definition was added; the backlog field it asserts is owned by reckon/crew/dispatching/preparation.py:806 and already guarded by tests/test_closure_fence_agreement.py:224 and tests/test_crew.py:2189, which the rewritten case now agrees with.\nFINDING manifest.md:15 non-blocking: the baseline_suite and after_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports tests/test_crew_drain_by_coordinator.py or reckon.crew.dispatching, so the green 58-passed arms cannot show that the changed test file breaks an importer.\n",
+  "review_method": "Read-only reading of the reviewed run's manifest, its head and base arm logs, its mutation transcript, the two reviewed commits against the base, and the product code the case asserts; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T160736462744-review-of-qwnw-red-file-crew-drain-by-coordinator-3645562979aa",
+  "reviewed_base_sha": "7d96b815d9cf590aa98251b510a841595cfdbfdc",
+  "reviewed_head_sha": "3645562979aa06bd44c87f55905f8052c844cf72",
+  "reviewed_run_id": "r-20261118T063148886914-qwnw-red-file-crew-drain-by-coordinator",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "source_commits": [
+    "8890651f2f137a6b6eab7b06e08bced06a15ae28",
+    "3645562979aa06bd44c87f55905f8052c844cf72"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite_failure_ids": [],
+    "after_suite_revision": "3645562979aa06bd44c87f55905f8052c844cf72",
+    "baseline_suite_failure_ids": [],
+    "baseline_suite_revision": "7d96b815d9cf590aa98251b510a841595cfdbfdc",
+    "derivation": "baseline_suite and after_suite in the reviewed manifest both record failure_count 0 with empty failure_ids at the two revisions named above, so the after arm adds no failure the baseline did not carry."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:08:51.223705+00:00",
+  "total": 105
+}

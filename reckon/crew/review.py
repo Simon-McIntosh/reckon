@@ -4523,6 +4523,7 @@ from reckon.crew.review_records import (  # noqa: E402, F401
     _store_index,
     collect_read_failures,
     commit_record_write,
+    note_read_failure,
     reconcile_foreign_write,
     record_for_review_run,
     record_written,

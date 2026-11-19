@@ -1,0 +1,28 @@
+<section id="qwnw-red-file-crew-scoring-state-arms">
+<h2>Base and head runs of the named file</h2>
+<p>One cause, and it is the test. The case <code>test_parsed_review_makes_completed_manifest_promotable</code> built its pointer from a manifest whose cited commit is the literal <code>abc123</code>, and named neither a worktree nor a gate arm. Since <code>121ec82a42</code> a promotion is offered only from evidence a reader can check — the run's own tree resolving the commit it cites, and a manifest <code>after_suite</code> arm reporting a passing gate at that head — so the classifier's action for that row is <code>observe</code>, while the case expected <code>crew complete</code>. The rule the file now asserts is the same one every other row keeps: a promotable row is promoted by <code>crew complete</code>, from evidence. The fixture builds a throwaway repository with a base commit and the commit the run delivered, and writes the arm at that head; no assertion is deleted or weakened.</p>
+<h3 id="qwnw-red-file-crew-scoring-state-base-run">Base revision reject</h3>
+<pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# host: 98dci4-clu-3142.iter.org
+# tree: /tmp/mcintos-landing-f53a17978ef7-J8EcIu/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_scoring_state.py'
+.F.....                                                                  [100%]
+E       AssertionError: assert False
+E        +  where False = &lt;built-in method startswith of str object at 2&gt;('reckon crew complete --run source-run')
+E        +    where &lt;built-in method startswith of str object at 2&gt; = 'reckon crew observe --run source-run'.startswith
+FAILED tests/test_crew_scoring_state.py::test_parsed_review_makes_completed_manifest_promotable
+1 failed, 6 passed in 0.53s
+EXIT=1</pre>
+<h3 id="qwnw-red-file-crew-scoring-state-head-run">Head revision accepted</h3>
+<pre># revision: 4816d1987a7723d0b6cfcf4eec43cbd60fa41656
+# host: 98dci4-clu-3142.iter.org
+# tree: /tmp/mcintos-landing-67c959b3be88-YwKakT/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_scoring_state.py'
+.......                                                                  [100%]
+7 passed in 0.56s
+EXIT=0</pre>
+<section id="qwnw-red-file-crew-scoring-state-guard-fires">
+<h3>The offer still refuses without the evidence</h3>
+<p>The cleared case is not the only reader of the predicate. With the delivered fixture in place the guarded condition actually ran: removing the <code>after_suite</code> arm from the fixture returns the row to <code>observe</code>, which is the refusal the base revision above shows verbatim.</p>
+</section>
+</section>

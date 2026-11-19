@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arm logs: baseline_suite-arm.log records 58 passed EXIT=0 at 96e3c4b8a3957e2624866e0dc773042892239333 with no FAILED id, and after_suite-arm.log records 64 passed EXIT=0 at 6d5e148fa9b80c12673cb79388069232556713cb with no FAILED id, so the set difference is empty (0). The run's evidence_inputs also names one id added at the same head in a 571-file importer arm, tests/test_crew_live_listing.py::test_live_pointer_removed_between_scan_and_read_is_skipped, but that arm is not one of the recorded suite arms, so the id is filed as a finding rather than folded into this count.",
+  "call_sites": [
+    "reckon/crew/runs.py:1782 list_live -> _list_live_records at :1694",
+    "reckon/crew/runs.py:1639 read_pointer",
+    "reckon/crew/runs.py:3933 row_scope, whose caller is reckon/crew/promotion_release.py:1068",
+    "reckon/crew/admission/release.py:554 _advance_waiting_requests",
+    "reckon/crew/admission/release.py:318 _release_waiters",
+    "reckon/crew/admission/release.py:160 resolve_waits, reached through _resolve_and_move and directly from reckon/crew/dispatch_sessions.py",
+    "reckon/crew/recovery_liveness.py:1608 launcher_host_is_gone, called from reckon/crew/dispatch_sessions.py:2259 and :2414",
+    "reckon/crew/routing.py:1149, reckon/crew/directory.py:705 and reckon/serve.py:878 (read-only consumers)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T07:47:53Z",
+  "findings": [
+    {
+      "file": "tests/test_an_unchanged_live_listing_decodes_nothing.py",
+      "line": "346",
+      "severity": "blocking",
+      "text": "blocking: ruff format --check exits 1 on this landed file under the repository's own ruff 0.16.4 and pyproject config, joining the two-string implicit concatenation in the assertion message, so the done_when clause that ruff check and ruff format --check add no finding on the staged paths is unmet; the manifest records no ruff run at all."
+    },
+    {
+      "file": "tests/test_an_unchanged_live_listing_decodes_nothing.py",
+      "line": "314",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two consumer tests pass in both arms and so cannot show the consumer fix landed, because reckon/crew/recovery_liveness.py:1678 suppresses the TypeError a read-only record would raise and the listing stays memoised either way, so :314-317 and :344-348 hold whether launcher_host_is_gone and resolve_waits write onto the caller's copy or are refused; asserting the stamp arrived on the caller's own record would separate a copy from a refusal."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: negative_control_log names negative-control-base.txt, whose record is F.F. over a four-case file reporting 2 failed and 2 passed, while the landed file carries six tests, so the filed control does not evidence the version under review."
+    },
+    {
+      "file": "tests/test_crew_live_listing.py",
+      "line": "31",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed run's own importer arm records this test as the one id added at head, 136 failures at 6d5e148f against 140 at base over 571 files, because with the decoded record memoised the file-backed text is never read and the hook that unlinks a pointer between scan and read no longer fires; the file lies outside the node's declared write paths and was left failing."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "examined the eight production call sites named in call_sites, including the consumer writes the diff repairs and the read-only consumers in routing.py, directory.py and serve.py.",
+    "diff": "read all seven commits of 96e3c4b8..6d5e148f; they add the decoded-record memo, its copy hand-out, the test and four consumer copies, inside the four declared files only.",
+    "done_when": "tests/test_an_unchanged_live_listing_decodes_nothing.py:168-195 asserts 300 first-pass decodes, zero on the unchanged second listing, at most two after one rewrite plus one addition plus one removal, equality with the files' own decode and caller-mutation isolation, and after_suite-arm.log records the head arm at 64 passed EXIT=0 at 6d5e148f; the done_when's ruff clause is neither recorded nor met.",
+    "goal": "the node's goal is that a listing whose pointers have not moved decodes none of them; at 6d5e148f reckon/crew/runs.py:1484 keeps each decoded record in file_memo keyed by its stat identity and :1694 returns a shallow copy of it.",
+    "manifest": "read; it states status complete, head 6d5e148f, baseline_suite 58 passed EXIT=0 at 96e3c4b8 and after_suite 64 passed EXIT=0 at 6d5e148f with both logs present, no ruff record, and a control log of a four-case version of the file.",
+    "write_paths": "the delivered four-path diff is entirely inside the declared write paths \u2014 reckon/crew/runs.py, reckon/crew/recovery_liveness.py, reckon/crew/admission/release.py and the test file \u2014 and the section's fragment and figures paths are declared but unused."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unchanged_live_listing_decodes_nothing.py:173 would redden if the base's per-listing decode returned, while :314-317 and :344-348 stay green under either consumer arm.",
+    "evidence": "after_suite-arm.log records 64 passed EXIT=0 at 6d5e148f, but the done_when's ruff clause is unrecorded and fails, ruff format --check exiting 1 on the landed test file at line 346, and the filed negative control ran a four-case version of that file.",
+    "fit": "reckon/crew/runs.py:1484 follows the alias and comment idiom of the surrounding cache, but the landed test file is not ruff-formatted at its line 346.",
+    "goal_fidelity": "reckon/crew/runs.py:1484 memoises each pointer's decode on its stat identity and :1694 hands an unchanged pass a shallow copy, so a listing whose population has not moved decodes nothing.",
+    "reuse": "reckon/crew/runs.py:1484 calls reckon/file_memo.py:362 memoized inside read_only_region rather than keeping a second parse cache.",
+    "scope_discipline": "every path in the diff is one of the declared write paths listed in the reviewed run's manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a listing whose pointers have not moved decodes none of them; at 6d5e148f reckon/crew/runs.py:1484 keeps each decoded record in file_memo keyed by its stat identity and :1694 returns a shallow copy of it.\nVERDICT done_when: tests/test_an_unchanged_live_listing_decodes_nothing.py:168-195 asserts 300 first-pass decodes, zero on the unchanged second listing, at most two after one rewrite plus one addition plus one removal, equality with the files' own decode and caller-mutation isolation, and after_suite-arm.log records the head arm at 64 passed EXIT=0 at 6d5e148f; the done_when's ruff clause is neither recorded nor met.\nVERDICT write_paths: the delivered four-path diff is entirely inside the declared write paths \u2014 reckon/crew/runs.py, reckon/crew/recovery_liveness.py, reckon/crew/admission/release.py and the test file \u2014 and the section's fragment and figures paths are declared but unused.\nVERDICT manifest: read; it states status complete, head 6d5e148f, baseline_suite 58 passed EXIT=0 at 96e3c4b8 and after_suite 64 passed EXIT=0 at 6d5e148f with both logs present, no ruff record, and a control log of a four-case version of the file.\nVERDICT diff: read all seven commits of 96e3c4b8..6d5e148f; they add the decoded-record memo, its copy hand-out, the test and four consumer copies, inside the four declared files only.\nCALL_SITES: reckon/crew/runs.py:1782 list_live -> _list_live_records at :1694, reckon/crew/runs.py:1639 read_pointer, reckon/crew/runs.py:3933 row_scope, whose caller is reckon/crew/promotion_release.py:1068, reckon/crew/admission/release.py:554 _advance_waiting_requests, reckon/crew/admission/release.py:318 _release_waiters, reckon/crew/admission/release.py:160 resolve_waits, reached through _resolve_and_move and directly from reckon/crew/dispatch_sessions.py, reckon/crew/recovery_liveness.py:1608 launcher_host_is_gone, called from reckon/crew/dispatch_sessions.py:2259 and :2414, reckon/crew/routing.py:1149, reckon/crew/directory.py:705 and reckon/serve.py:878 (read-only consumers).\nSCORE goal_fidelity: 18\nSCORE evidence: 11\nSCORE scope_discipline: 19\nSCORE durability: 15\nSCORE fit: 15\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1484 memoises each pointer's decode on its stat identity and :1694 hands an unchanged pass a shallow copy, so a listing whose population has not moved decodes nothing.\nJUSTIFICATION evidence: after_suite-arm.log records 64 passed EXIT=0 at 6d5e148f, but the done_when's ruff clause is unrecorded and fails, ruff format --check exiting 1 on the landed test file at line 346, and the filed negative control ran a four-case version of that file.\nJUSTIFICATION scope_discipline: every path in the diff is one of the declared write paths listed in the reviewed run's manifest.\nJUSTIFICATION durability: tests/test_an_unchanged_live_listing_decodes_nothing.py:173 would redden if the base's per-listing decode returned, while :314-317 and :344-348 stay green under either consumer arm.\nJUSTIFICATION fit: reckon/crew/runs.py:1484 follows the alias and comment idiom of the surrounding cache, but the landed test file is not ruff-formatted at its line 346.\nJUSTIFICATION reuse: reckon/crew/runs.py:1484 calls reckon/file_memo.py:362 memoized inside read_only_region rather than keeping a second parse cache.\nFINDING tests/test_an_unchanged_live_listing_decodes_nothing.py:346 blocking: ruff format --check exits 1 on this landed file under the repository's own ruff 0.16.4 and pyproject config, joining the two-string implicit concatenation in the assertion message, so the done_when clause that ruff check and ruff format --check add no finding on the staged paths is unmet; the manifest records no ruff run at all.\nFINDING tests/test_an_unchanged_live_listing_decodes_nothing.py:314 non-blocking: the two consumer tests pass in both arms and so cannot show the consumer fix landed, because reckon/crew/recovery_liveness.py:1678 suppresses the TypeError a read-only record would raise and the listing stays memoised either way, so :314-317 and :344-348 hold whether launcher_host_is_gone and resolve_waits write onto the caller's copy or are refused; asserting the stamp arrived on the caller's own record would separate a copy from a refusal.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing/manifest.md:20 non-blocking: negative_control_log names negative-control-base.txt, whose record is F.F. over a four-case file reporting 2 failed and 2 passed, while the landed file carries six tests, so the filed control does not evidence the version under review.\nFINDING tests/test_crew_live_listing.py:31 non-blocking: the reviewed run's own importer arm records this test as the one id added at head, 136 failures at 6d5e148f against 140 at base over 571 files, because with the decoded record memoised the file-backed text is never read and the hook that unlinks a pointer between scan and read no longer fires; the file lies outside the node's declared write paths and was left failing.",
+  "review_node": "review-of-an-unchanged-live-listing-decodes-nothing-6d5e148fa9b8",
+  "review_run_id": "r-20261119T064201416795-review-of-an-unchanged-live-listing-decodes-nothing-6d5e148fa9b8",
+  "reviewed_base_sha": "96e3c4b8a3957e2624866e0dc773042892239333",
+  "reviewed_commits": [
+    "24d2e7a426d035ff9ae07f124957f04793347e3c",
+    "19e85cef66b1599f2d175f34bd62b4f1639651a8",
+    "a67e4bdd911b03eea2f1220afa082a6b088d142a",
+    "21fc69f852b97c1d0d9ea096c574698e2b7d432f",
+    "0b0c02da3ff0f232c3a1ea3c712c9073dd0ee1a3",
+    "d915703637b09dcad95b3e6a66f6fef24a1d4bc9",
+    "6d5e148fa9b80c12673cb79388069232556713cb"
+  ],
+  "reviewed_head_sha": "6d5e148fa9b80c12673cb79388069232556713cb",
+  "reviewed_run_id": "r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T08:31:35.973955+00:00",
+  "total": 97
+}

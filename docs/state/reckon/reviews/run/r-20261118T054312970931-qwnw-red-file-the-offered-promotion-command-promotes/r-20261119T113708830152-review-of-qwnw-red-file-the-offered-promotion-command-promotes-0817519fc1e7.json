@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:2308 classify_pointer",
+    "reckon/crew/recovery_classification.py:2337 classify_pointer",
+    "reckon/crew/promotion_checks.py:2374 _require_impl_moved",
+    "reckon/crew/queue_landing.py:2284 _land_deliveries",
+    "reckon/crew/obligations.py:985 _delivered_review_promotion_command",
+    "reckon/crew/obligations.py:1996 measured_remedy_items",
+    "reckon/crew/obligations.py:3102 _review_duty_detail",
+    "reckon/crew/obligations.py:3196 _review_duty_detail",
+    "reckon/crew/obligations.py:3342 _review_duty_detail",
+    "reckon/crew/obligations.py:5013 _obligations_view"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:43:34Z",
+  "findings": [
+    {
+      "file": "tests/test_the_offered_promotion_command_promotes.py",
+      "line": "309",
+      "severity": "non-blocking",
+      "text": "non-blocking: the committing-run case asserts only the commit list and the absence of --no-commit/--outcome, so the `--gate not-run` narrowing this node added at reckon/crew/recovery_classification.py:3705 is unguarded and a revert to an unconditional `passed` would still pass the gate while the offer names a verdict promotion refuses."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054312970931-qwnw-red-file-the-offered-promotion-command-promotes/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line records the inner pytest invocation while the log's `# command:` header shows `env PYTHONPATH=. sh -c 'SLURM_JOB_ID= ...'`, so a promotion receipt re-run from this line drops the SLURM_JOB_ID unset the done_when requires."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read both commits against 35fb9f3ae769; 1db4c3d011 changes only reckon/crew/recovery_classification.py (+73 -19, the commitless branch and the verdict narrowing) and 0817519fc1 adds only the fragment, with no third path anywhere in the diff.",
+    "done_when": "the done_when names tests/test_the_offered_promotion_command_promotes.py as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, and the scoped gate log's header names revision 1db4c3d011, host 98dci4-clu-3141 and the `SLURM_JOB_ID=` wrapper, with a last line of `EXIT=0`.",
+    "goal": "the node goal is that tests/test_the_offered_promotion_command_promotes.py passes in full on the primary branch; at head 1db4c3d011 both cases pass and the composer at reckon/crew/recovery_classification.py:3602 now offers the commitless declaration for a read-only run and keeps the citation list for a committing one.",
+    "manifest": "read; it records the gate log scoped-gate-1795086469461262252.log (\"2 passed in 1.10s\", EXIT=0 at 1db4c3d011), the base arm base-run-node-test.log (\"2 failed in 2.00s\", EXIT=1 at 35fb9f3ae769), baseline_suite and after_suite arms both at 0 failures on 58 passed, and names one pre-existing red case under outside_scope.",
+    "write_paths": "the declared paths are reckon, tests, the fragment directory, the fragment file and the figures directory; both diff paths (reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-offered-promotion-command-promotes.html) lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_offered_promotion_command_promotes.py:274 fails on the base composer's `crew observe` offer, but no assertion at :308-310 pins the `--gate not-run` narrowing added at reckon/crew/recovery_classification.py:3705, so reinstating an unconditional `passed` would keep the gate green.",
+    "evidence": "the gate log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054312970931-qwnw-red-file-the-offered-promotion-command-promotes/scoped-gate-1795086469461262252.log names the revision, host, command and \"2 passed\", and both suite arms record 58 passed with EXIT=0.",
+    "fit": "the keyword-only `placeholders` parameter at reckon/crew/recovery_classification.py:3606 follows the module's existing composer idiom, and ruff reports the head content 1 finding that the base file already carried and no new one.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:3674-3697 reads the worktree instead of the manifest prose, which is the reported defect, and the gate file passes in full at head against 2 failures at base.",
+    "reuse": "no new helper was written; the branch composes the existing owners reckon/crew/promotion_evidence.py:781 `_worktree_unchanged_since_base` and reckon/crew/promotion_scope.py:237 `_changed_paths_inside_repository` rather than re-deriving either.",
+    "scope_discipline": "git diff 35fb9f3ae769..0817519fc1 shows exactly the two declared paths and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_the_offered_promotion_command_promotes.py passes in full on the primary branch; at head 1db4c3d011 both cases pass and the composer at reckon/crew/recovery_classification.py:3602 now offers the commitless declaration for a read-only run and keeps the citation list for a committing one.\nVERDICT done_when: the done_when names tests/test_the_offered_promotion_command_promotes.py as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, and the scoped gate log's header names revision 1db4c3d011, host 98dci4-clu-3141 and the `SLURM_JOB_ID=` wrapper, with a last line of `EXIT=0`.\nVERDICT write_paths: the declared paths are reckon, tests, the fragment directory, the fragment file and the figures directory; both diff paths (reckon/crew/recovery_classification.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-offered-promotion-command-promotes.html) lie inside them.\nVERDICT manifest: read; it records the gate log scoped-gate-1795086469461262252.log (\"2 passed in 1.10s\", EXIT=0 at 1db4c3d011), the base arm base-run-node-test.log (\"2 failed in 2.00s\", EXIT=1 at 35fb9f3ae769), baseline_suite and after_suite arms both at 0 failures on 58 passed, and names one pre-existing red case under outside_scope.\nVERDICT diff: read both commits against 35fb9f3ae769; 1db4c3d011 changes only reckon/crew/recovery_classification.py (+73 -19, the commitless branch and the verdict narrowing) and 0817519fc1 adds only the fragment, with no third path anywhere in the diff.\nCALL_SITES: reckon/crew/recovery_classification.py:2308 classify_pointer, reckon/crew/recovery_classification.py:2337 classify_pointer, reckon/crew/promotion_checks.py:2374 _require_impl_moved, reckon/crew/queue_landing.py:2284 _land_deliveries, reckon/crew/obligations.py:985 _delivered_review_promotion_command, reckon/crew/obligations.py:1996 measured_remedy_items, reckon/crew/obligations.py:3102 _review_duty_detail, reckon/crew/obligations.py:3196 _review_duty_detail, reckon/crew/obligations.py:3342 _review_duty_detail, reckon/crew/obligations.py:5013 _obligations_view\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:3674-3697 reads the worktree instead of the manifest prose, which is the reported defect, and the gate file passes in full at head against 2 failures at base.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054312970931-qwnw-red-file-the-offered-promotion-command-promotes/scoped-gate-1795086469461262252.log names the revision, host, command and \"2 passed\", and both suite arms record 58 passed with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 35fb9f3ae769..0817519fc1 shows exactly the two declared paths and nothing else.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_offered_promotion_command_promotes.py:274 fails on the base composer's `crew observe` offer, but no assertion at :308-310 pins the `--gate not-run` narrowing added at reckon/crew/recovery_classification.py:3705, so reinstating an unconditional `passed` would keep the gate green.\nSCORE fit: 18\nJUSTIFICATION fit: the keyword-only `placeholders` parameter at reckon/crew/recovery_classification.py:3606 follows the module's existing composer idiom, and ruff reports the head content 1 finding that the base file already carried and no new one.\nSCORE reuse: 19\nJUSTIFICATION reuse: no new helper was written; the branch composes the existing owners reckon/crew/promotion_evidence.py:781 `_worktree_unchanged_since_base` and reckon/crew/promotion_scope.py:237 `_changed_paths_inside_repository` rather than re-deriving either.\nFINDING tests/test_the_offered_promotion_command_promotes.py:309 non-blocking: the committing-run case asserts only the commit list and the absence of --no-commit/--outcome, so the `--gate not-run` narrowing this node added at reckon/crew/recovery_classification.py:3705 is unguarded and a revert to an unconditional `passed` would still pass the gate while the offer names a verdict promotion refuses.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054312970931-qwnw-red-file-the-offered-promotion-command-promotes/manifest.md:10 non-blocking: the tests line records the inner pytest invocation while the log's `# command:` header shows `env PYTHONPATH=. sh -c 'SLURM_JOB_ID= ...'`, so a promotion receipt re-run from this line drops the SLURM_JOB_ID unset the done_when requires.",
+  "review_run_id": "r-20261119T113708830152-review-of-qwnw-red-file-the-offered-promotion-command-promotes-0817519fc1e7",
+  "reviewed_base_sha": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+  "reviewed_head_sha": "0817519fc1e76b7027cdc3f4967611adfc2f67c4",
+  "reviewed_run_id": "r-20261118T054312970931-qwnw-red-file-the-offered-promotion-command-promotes",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:11:24.627106+00:00",
+  "total": 107
+}

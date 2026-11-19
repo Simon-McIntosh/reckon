@@ -12,7 +12,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from reckon import _backends, budget, capabilities, capability, flight, ledger
+from reckon import budget, capabilities, capability, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_group,
@@ -1703,10 +1703,7 @@ def candidates(
         )
         model = backend.get("model")
         reasons = []
-        try:
-            dialect = _backends.dialect_for(backend)
-        except _backends.BackendError:
-            dialect = None
+        dialect = dispatch_picker.backend_dialect(backend)
         local_backend = config.get("local_backend")
         local_settings = config.get("backends", {}).get(local_backend, {})
         shared_endpoints = backend.get("endpoints_document") and (

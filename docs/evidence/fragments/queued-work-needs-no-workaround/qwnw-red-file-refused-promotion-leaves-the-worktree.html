@@ -1,0 +1,24 @@
+<section id="qwnw-red-file-refused-promotion-leaves-the-worktree">
+<h2>The refused promotion's one cause, and the arms</h2>
+<p><strong>Base cause: test wrong.</strong> At <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> the case's accepted path was a source file (<code>shared_module.py</code>). Promotion asks no acceptance for a declared-and-written source path: a declared write path is a hint and a companion source file beside it lands on its own, so the peer's claim was never compared and the promotion went through. The case now accepts a binary receipt (<code>artifact.png</code>), the class whose acceptance a live peer may refuse, and its own docstring states that rule. No assertion was deleted or weakened: the refusal, the surviving worktree, the unchanged pointer and the empty ledger are the same four assertions.</p>
+<p>The composed <code>crew verify-gate</code> / <code>crew suite run</code> calls could not run in this worker's fence: each submitted job re-entered the fence and its <code>bwrap</code> could not bind the fence's mounted-over node tmp (<code>Can't bind mount /oldroot/tmp/auto2I1S9T</code>), leaving logs with no <code>EXIT=</code> receipt. The gate and both arms below were therefore submitted and run directly, each log naming its revision, tree and command.</p>
+<pre># base run (fence) not usable; hand-run over an extracted tree
+$ git archive over 42fe90d0b0a46060bafde2490dda7d4002cda478, PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_refused_promotion_leaves_the_worktree.py
+F                                                                        [100%]
+FAILED tests/test_refused_promotion_leaves_the_worktree.py::test_a_refused_promotion_leaves_the_worktree_pointer_and_ledger - Failed: DID NOT RAISE CrewError
+1 failed in 1.10s
+EXIT=1
+
+# head run at 33a80abedb05288b333479918234686a0ef93c86, all_debug job 1329674
+1 passed in 1.32s
+EXIT=0
+</pre>
+<h3 id="qwnw-red-file-refused-promotion-leaves-the-worktree-arms">Suite arms</h3>
+<table>
+<thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+<tbody>
+<tr><td>base</td><td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td><td>58 passed</td></tr>
+<tr><td>head</td><td><code>33a80abedb05288b333479918234686a0ef93c86</code></td><td>58 passed</td></tr>
+</tbody>
+</table>
+</section>

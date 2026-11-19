@@ -135,6 +135,30 @@ def _manifest(tmp_path: Path, run_id: str, commits: str) -> Path:
     return manifest
 
 
+def _record_head_arm(manifest: Path, head: str) -> None:
+    """Append the passing head arm a promotion offer may be composed from.
+
+    The composer offers a passing gate only from evidence belonging to the
+    current attempt — a completed arm that exits zero and names the tree's own
+    head — so a manifest without one is offered ``observe`` and no citations,
+    which is the arm of the refusal below these cases rather than the arm they
+    are about.
+    """
+    log = manifest.with_suffix(".log")
+    log.write_text("1 passed in 0.01s\n", encoding="utf-8")
+    arm = {
+        "revision": head,
+        "completed": True,
+        "command": EXECUTABLE_GATE_COMMAND,
+        "exit_status": 0,
+        "log_path": str(log),
+    }
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8") + f"after_suite: {json.dumps(arm)}\n",
+        encoding="utf-8",
+    )
+
+
 def _pointer(
     repository: Path, run_tree: Path, run_id: str, base: str, manifest: Path
 ) -> None:
@@ -349,6 +373,7 @@ def _remedy_action(repository: Path, tmp_path: Path, run_id: str, commits: str) 
     tree = _run_tree(repository, tmp_path, run_id)
     head = _commit_run(tree, "repair", FIRST_WHEN)
     manifest = _manifest(tmp_path, run_id, commits.format(head=head))
+    _record_head_arm(manifest, head)
     _pointer(repository, tree, run_id, base, manifest)
     _store_review(run_id, base=base, head=head)
     row = recovery.classify_pointer(runs.read_pointer(run_id))
@@ -387,8 +412,19 @@ def test_the_remedy_cites_nothing_for_prose_naming_no_commit(
     run_id = "r-remedy-prose"
     # Prose that names no commit yields no `--commit` value rather than one that
     # fails to resolve: a remedy that reproduces the refusal is worse than one
-    # that says nothing about the revision.
-    action = _remedy_action(
-        repository, tmp_path, run_id, "several commits were made and tidy"
-    )
-    assert "--commit" not in action
+    # that says nothing about the revision. The run commits nothing past its
+    # base, so the manifest's field is the composer's only candidate — the run's
+    # own range supplies nothing, which is what makes the prose the thing read.
+    base = _git(repository, "rev-parse", "HEAD")
+    tree = _run_tree(repository, tmp_path, run_id)
+    manifest = _manifest(tmp_path, run_id, "several commits were made and tidy")
+    _record_head_arm(manifest, base)
+    _pointer(repository, tree, run_id, base, manifest)
+    _store_review(run_id, base=base, head=base)
+    row = recovery.classify_pointer(runs.read_pointer(run_id))
+    assert row["classification"] == "promotable"
+    action = str(row["next_action"])
+    # The composer was reached — this is a completion, not the `observe`
+    # fallback — and it prints no `--commit` for the prose it could not resolve.
+    assert action.startswith("reckon crew complete"), action
+    assert "--commit" not in action, action

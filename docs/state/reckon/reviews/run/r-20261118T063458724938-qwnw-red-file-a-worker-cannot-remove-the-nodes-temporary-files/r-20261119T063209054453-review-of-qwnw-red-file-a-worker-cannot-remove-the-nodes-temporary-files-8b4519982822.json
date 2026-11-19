@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:09:12Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+      "line": "576",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected \"program\" value is computed by _worker_fence.fence_program(), the same function that fills the recipe under test, so a regression in fence_program (returning an empty string or a relative path) moves both sides together and the assertion stays green; an independently obtained absolute path would guard it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063458724938-qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the head run \"as a job on all_debug with SLURM_JOB_ID unset\", but the recorded tests command unsets nothing and the scoped-gate logs show the run inside an srun step under a held job, so the recorded evidence does not show the condition held even though this test file reads no SLURM variable."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read b24fe95a789c82cd33f22a912b4dbbf94d5e2193..8b45199828229645e4153d79c5a719fad0052cff commit by commit \u2014 ce86d1f8b2 rewrites the literal-argv assertion as a mount prefix plus the appended recipe envelope, and 8b451998282 quantifies both gate arms in the evidence fragment; no assertion was deleted or weakened.",
+    "done_when": "the done_when names the same test file passing in full at head as an all_debug job, a base run first, a per-cause verdict, an arm adding no failure, and a negative control; the manifest records the base red run and the head green run, but nowhere records SLURM_JOB_ID unset.",
+    "goal": "read the node goal (\"Make tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py pass in full on the primary branch\"); the landed test at 8b45199828229645e4153d79c5a719fad0052cff passes in full, 8 passed, in scoped-gate-1795068927878825439.log.",
+    "manifest": "read the reviewed manifest.md; it records tests at line 10, baseline_suite and after_suite as inline JSON with full 40-character revisions, scoped-gate logs for base and head, negative_control_log, and outside_scope naming the arm's two unrelated test files.",
+    "write_paths": "read write_paths from dispatch-detail.json (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, docs/figures/...) and the diff touches only tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and the fragment under docs/evidence/fragments/."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:567 fails if reckon/_worker_fence.py stops appending the --setenv RECKON_WORKER_FENCE triple, and line 570 fails if any mount, directory, source, scratch or limit in the recipe changes; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:576 compares against the same function the product uses, so it guards carriage but not fence_program's own regression.",
+    "evidence": "scoped-gate-1795068927878825439.log carries revision 8b45199828229645e4153d79c5a719fad0052cff, \"8 passed\" and EXIT=0, and scoped-gate-1795067698882433277.log carries the base \"1 failed, 7 passed\" with EXIT=1, but no log shows the SLURM_JOB_ID-unset condition the done_when names.",
+    "fit": "the test keeps its fixed-root literal-list idiom and splits the expectation into prefix and tail at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:561 without renaming anything the repository forbids.",
+    "goal_fidelity": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py at line 561 now passes at head, and edd79b651054fe81edd10a831013a1baa0451da2 (reckon/_worker_fence.py, ancestor of the base) shows the recipe the old expectation predated was a deliberate product rule.",
+    "reuse": "the change adds no definition; its inline json.loads(base64.urlsafe_b64decode(...)) at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:569 matches the repository's existing decode of this envelope in reckon/nested_launch.py:491, and a search of reckon/ for a decoder function found none to extend.",
+    "scope_discipline": "the two paths in the diff, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files.html, both sit inside the declared write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"Make tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py pass in full on the primary branch\"); the landed test at 8b45199828229645e4153d79c5a719fad0052cff passes in full, 8 passed, in scoped-gate-1795068927878825439.log.\nVERDICT done_when: the done_when names the same test file passing in full at head as an all_debug job, a base run first, a per-cause verdict, an arm adding no failure, and a negative control; the manifest records the base red run and the head green run, but nowhere records SLURM_JOB_ID unset.\nVERDICT write_paths: read write_paths from dispatch-detail.json (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, docs/figures/...) and the diff touches only tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and the fragment under docs/evidence/fragments/.\nVERDICT manifest: read the reviewed manifest.md; it records tests at line 10, baseline_suite and after_suite as inline JSON with full 40-character revisions, scoped-gate logs for base and head, negative_control_log, and outside_scope naming the arm's two unrelated test files.\nVERDICT diff: read b24fe95a789c82cd33f22a912b4dbbf94d5e2193..8b45199828229645e4153d79c5a719fad0052cff commit by commit \u2014 ce86d1f8b2 rewrites the literal-argv assertion as a mount prefix plus the appended recipe envelope, and 8b451998282 quantifies both gate arms in the evidence fragment; no assertion was deleted or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py at line 561 now passes at head, and edd79b651054fe81edd10a831013a1baa0451da2 (reckon/_worker_fence.py, ancestor of the base) shows the recipe the old expectation predated was a deliberate product rule.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795068927878825439.log carries revision 8b45199828229645e4153d79c5a719fad0052cff, \"8 passed\" and EXIT=0, and scoped-gate-1795067698882433277.log carries the base \"1 failed, 7 passed\" with EXIT=1, but no log shows the SLURM_JOB_ID-unset condition the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two paths in the diff, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files.html, both sit inside the declared write_paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:567 fails if reckon/_worker_fence.py stops appending the --setenv RECKON_WORKER_FENCE triple, and line 570 fails if any mount, directory, source, scratch or limit in the recipe changes; tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:576 compares against the same function the product uses, so it guards carriage but not fence_program's own regression.\nSCORE fit: 19\nJUSTIFICATION fit: the test keeps its fixed-root literal-list idiom and splits the expectation into prefix and tail at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:561 without renaming anything the repository forbids.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; its inline json.loads(base64.urlsafe_b64decode(...)) at tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:569 matches the repository's existing decode of this envelope in reckon/nested_launch.py:491, and a search of reckon/ for a decoder function found none to extend.\nFINDING tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:576 non-blocking: the expected \"program\" value is computed by _worker_fence.fence_program(), the same function that fills the recipe under test, so a regression in fence_program (returning an empty string or a relative path) moves both sides together and the assertion stays green; an independently obtained absolute path would guard it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063458724938-qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files/manifest.md:10 non-blocking: the done_when requires the head run \"as a job on all_debug with SLURM_JOB_ID unset\", but the recorded tests command unsets nothing and the scoped-gate logs show the run inside an srun step under a held job, so the recorded evidence does not show the condition held even though this test file reads no SLURM variable.",
+  "review_run_id": "r-20261119T063209054453-review-of-qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files-8b4519982822",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "8b45199828229645e4153d79c5a719fad0052cff",
+  "reviewed_run_id": "r-20261118T063458724938-qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:30:17.730335+00:00",
+  "total": 108
+}

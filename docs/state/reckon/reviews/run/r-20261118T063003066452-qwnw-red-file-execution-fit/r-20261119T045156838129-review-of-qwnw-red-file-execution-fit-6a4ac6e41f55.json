@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:27:37Z",
+  "findings": [
+    {
+      "file": "tests/test_execution_fit.py",
+      "line": "175",
+      "severity": "non-blocking",
+      "text": "non-blocking: The added manifest fixture at 175-178 is setup with no assertion of its own; if crew.complete stopped reading the run manifest the written file would be inert and every assertion in the test would still pass, so the new rule the update encodes (promotion reads the run's own account) is not guarded by this file."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063003066452-qwnw-red-file-execution-fit/manifest.md",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: The done_when at prompt.txt:354 requires the manifest to list each cause with a product-wrong or test-wrong verdict; the checkpoint and negative_control_note describe the cause (Result.output mixing stderr into stdout) but never state the verdict word, so a reader has to infer 'test wrong' from the commit body rather than read it from the record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit against 42fe90d0b0a46060bafde2490dda7d4002cda478: 65963c0b68e686b13324f9ac62fe6555246e90ea switches three json.loads calls from CliRunner .output to .stdout and writes the run manifest before crew.complete, and 6a4ac6e41f556b82fb1a7b339b9972f2937b83ce adds only a 33-line evidence fragment recording both arms.",
+    "done_when": "prompt.txt:354 asks for a head run on all_debug, a base run first, a per-cause product-wrong/test-wrong verdict, no deleted or weakened assertion, both suite arms with full 40-character revisions, the base failing ids in the evidence fragment, and clean ruff on the changed paths; the manifest and logs supply all but the explicit per-cause verdict and a ruff log, and the diff deletes no assertion.",
+    "goal": "The source node.goal in dispatch-detail.json is 'Make tests/test_execution_fit.py pass in full on the primary branch'; the file holds exactly one test and scoped-gate-1795062053029083816.log records '1 passed in 1.50s' with EXIT=0 at 65963c0b, so the file passes in full.",
+    "manifest": "The reviewed run's manifest.md reads status complete, cites both full commit ids, records baseline_suite and after_suite with full revisions and 0 failures, names negative-control-base.log, and quotes the scoped gate as '1 passed in 1.50s', EXIT=0.",
+    "write_paths": "The node declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-execution-fit; git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..6a4ac6e41f556b82fb1a7b339b9972f2937b83ce changes only tests/test_execution_fit.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-execution-fit.html, both inside them."
+  },
+  "justifications": {
+    "durability": "The base arm at tests/test_execution_fit.py:123 / :160 fails with JSONDecodeError at 42fe90d0 and passes at 65963c0b, so reverting the .output-to-.stdout change reddens it, but the manifest fixture added at tests/test_execution_fit.py:175-178 is setup only: no assertion fails if crew.complete stops reading the run manifest.",
+    "evidence": "scoped-gate-1795062053029083816.log records '1 passed in 1.50s' with EXIT=0 at 65963c0b over tests/test_execution_fit.py and negative-control-base.log records 'FAILED tests/test_execution_fit.py::test_execution_measure_requires_a_capable_role_or_recorded_override' with EXIT=1 at 42fe90d0, but the manifest's ruff claim carries no log and a 1-test file makes 'passes in full' a single-test measurement.",
+    "fit": "The change follows the test's existing pattern of invoking cli_module.main through CliRunner and asserting on one JSON document per arm (tests/test_execution_fit.py:110-171), and adds no identifier the repository naming rules forbid.",
+    "goal_fidelity": "tests/test_execution_fit.py:123-172 now parses the dispatch record from refused.stdout, capable.stdout and overridden.stdout, matching the product's own contract at reckon/crew/dispatching/preparation.py:1581 which prints the notice to stderr, and the head gate records 1 passed.",
+    "reuse": "The diff adds no function, class or module; a search over tests/ for an existing run-manifest writer (grep for manifest.md and manifest.write_text, plus tests/conftest.py) found no shared helper, so the two-line fixture at tests/test_execution_fit.py:175-178 forks nothing.",
+    "scope_discipline": "Every path in git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..6a4ac6e4 lies inside the declared write paths, and the second commit adds nothing but the evidence fragment the done_when asks for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node.goal in dispatch-detail.json is 'Make tests/test_execution_fit.py pass in full on the primary branch'; the file holds exactly one test and scoped-gate-1795062053029083816.log records '1 passed in 1.50s' with EXIT=0 at 65963c0b, so the file passes in full.\nVERDICT done_when: prompt.txt:354 asks for a head run on all_debug, a base run first, a per-cause product-wrong/test-wrong verdict, no deleted or weakened assertion, both suite arms with full 40-character revisions, the base failing ids in the evidence fragment, and clean ruff on the changed paths; the manifest and logs supply all but the explicit per-cause verdict and a ruff log, and the diff deletes no assertion.\nVERDICT write_paths: The node declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-execution-fit; git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..6a4ac6e41f556b82fb1a7b339b9972f2937b83ce changes only tests/test_execution_fit.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-execution-fit.html, both inside them.\nVERDICT manifest: The reviewed run's manifest.md reads status complete, cites both full commit ids, records baseline_suite and after_suite with full revisions and 0 failures, names negative-control-base.log, and quotes the scoped gate as '1 passed in 1.50s', EXIT=0.\nVERDICT diff: Read commit by commit against 42fe90d0b0a46060bafde2490dda7d4002cda478: 65963c0b68e686b13324f9ac62fe6555246e90ea switches three json.loads calls from CliRunner .output to .stdout and writes the run manifest before crew.complete, and 6a4ac6e41f556b82fb1a7b339b9972f2937b83ce adds only a 33-line evidence fragment recording both arms.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_execution_fit.py:123-172 now parses the dispatch record from refused.stdout, capable.stdout and overridden.stdout, matching the product's own contract at reckon/crew/dispatching/preparation.py:1581 which prints the notice to stderr, and the head gate records 1 passed.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795062053029083816.log records '1 passed in 1.50s' with EXIT=0 at 65963c0b over tests/test_execution_fit.py and negative-control-base.log records 'FAILED tests/test_execution_fit.py::test_execution_measure_requires_a_capable_role_or_recorded_override' with EXIT=1 at 42fe90d0, but the manifest's ruff claim carries no log and a 1-test file makes 'passes in full' a single-test measurement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..6a4ac6e4 lies inside the declared write paths, and the second commit adds nothing but the evidence fragment the done_when asks for.\nSCORE durability: 15\nJUSTIFICATION durability: The base arm at tests/test_execution_fit.py:123 / :160 fails with JSONDecodeError at 42fe90d0 and passes at 65963c0b, so reverting the .output-to-.stdout change reddens it, but the manifest fixture added at tests/test_execution_fit.py:175-178 is setup only: no assertion fails if crew.complete stops reading the run manifest.\nSCORE fit: 19\nJUSTIFICATION fit: The change follows the test's existing pattern of invoking cli_module.main through CliRunner and asserting on one JSON document per arm (tests/test_execution_fit.py:110-171), and adds no identifier the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no function, class or module; a search over tests/ for an existing run-manifest writer (grep for manifest.md and manifest.write_text, plus tests/conftest.py) found no shared helper, so the two-line fixture at tests/test_execution_fit.py:175-178 forks nothing.\nFINDING tests/test_execution_fit.py:175 non-blocking: The added manifest fixture at 175-178 is setup with no assertion of its own; if crew.complete stopped reading the run manifest the written file would be inert and every assertion in the test would still pass, so the new rule the update encodes (promotion reads the run's own account) is not guarded by this file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063003066452-qwnw-red-file-execution-fit/manifest.md:6 non-blocking: The done_when at prompt.txt:354 requires the manifest to list each cause with a product-wrong or test-wrong verdict; the checkpoint and negative_control_note describe the cause (Result.output mixing stderr into stdout) but never state the verdict word, so a reader has to infer 'test wrong' from the commit body rather than read it from the record.\n",
+  "review_method": "Read-only review of the source node's goal, done_when, write paths, manifest, the two landed commits against their base, and the recorded gate and suite logs; the only command run was ruff check and ruff format --check on the base and head blobs in a scratch directory to test the manifest's ruff claim.",
+  "review_run_id": "r-20261119T045156838129-review-of-qwnw-red-file-execution-fit-6a4ac6e41f55",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "6a4ac6e41f556b82fb1a7b339b9972f2937b83ce",
+  "reviewed_run_id": "r-20261118T063003066452-qwnw-red-file-execution-fit",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "65963c0b68e686b13324f9ac62fe6555246e90ea",
+    "6a4ac6e41f556b82fb1a7b339b9972f2937b83ce"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063003066452-qwnw-red-file-execution-fit/after_suite-1795062746023784801.log",
+      "observed_summary": "58 passed in 35.80s",
+      "partition": "all_debug",
+      "revision": "65963c0b68e686b13324f9ac62fe6555246e90ea"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063003066452-qwnw-red-file-execution-fit/baseline_suite-1795062671207521434.log",
+      "observed_summary": "58 passed in 36.95s",
+      "partition": "all_debug",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:01:47.902180+00:00",
+  "total": 108
+}

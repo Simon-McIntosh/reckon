@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py",
+    "reckon/crew/obligations.py:_tree_holds_unmerged_work",
+    "reckon/crew/recovery_liveness.py:_run_exit_record",
+    "reckon/crew/recovery_classification.py:3632"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:18:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-coordinator-obligations-hook.html",
+      "line": 49,
+      "severity": "non-blocking",
+      "text": "The done-when asks for the named file to pass in full at head, but the scoped gate reads its own header as revision 0f1ce824435584ef8f6b6f6eab0b7bc905d9bdeb while the reviewed head is 3e9920018a5a0e7db0d6e95d4d0d4ccde29c007c: the intervening commit adds only this 91-line docs fragment, which no test collects, so the pass is inferred at head rather than measured there and the fragment's own 'at revision' citation is honest about the revision it measured."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The change is test-only, so I verified the state the fixtures stage against the production readers they exercise: reckon/hooks/coordinator_obligations.py renders the checklist the cases read, reckon/crew/obligations.py:3565 _tree_holds_unmerged_work is the rule the committed tree satisfies, reckon/crew/recovery_liveness.py:1953 _run_exit_record reads the staged exit.json's run_id/exit_code, and reckon/crew/recovery_classification.py:3632 composes the 'reckon crew complete --run ... --gate not-run --wait' remedy the assertion now pins.",
+    "diff": "Read both commits against d60ef8b2: 0f1ce824435584ef8f6b6f6eab0b7bc905d9bdeb changes only tests/test_coordinator_obligations_hook.py (31 added, 9 deleted: the exit.json staging in _review_ready_run at line 224, the per-tree commit in _retained_worktrees at lines 330-332, and the remedy literal at line 857), and 3e9920018a5a0e7db0d6e95d4d0d4ccde29c007c adds only the 91-line evidence fragment; no product source, no deleted assertion.",
+    "done_when": "Read the done-when in brief-for-worker.md: it names tests/test_coordinator_obligations_hook.py passing in full as an all_debug job with SLURM_JOB_ID unset, each base failure given a verdict, no assertion deleted or weakened, both suite arms recorded, and the base arm as negative control; scoped-gate-1795092818472720136.log line 7 reads '20 passed in 25.88s' with EXIT=0 at 0f1ce824 and base-arm-coordinator-obligations-hook.log lines 220 and 328 name the two FAILED ids, with '2 failed, 18 passed' and EXIT=1.",
+    "goal": "The reviewed node's goal in brief-for-worker.md is 'Make tests/test_coordinator_obligations_hook.py pass in full on the primary branch'; the landed diff is two commits \u2014 fixture state in tests/test_coordinator_obligations_hook.py and an evidence fragment \u2014 that make the file's 20 collected cases pass with no product source touched.",
+    "manifest": "Read the reviewed run's manifest.md.",
+    "write_paths": "Read the declared write paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-coordinator-obligations-hook.html, plus docs/figures/...; the diff's two paths, tests/test_coordinator_obligations_hook.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-coordinator-obligations-hook.html, are both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Make tests/test_coordinator_obligations_hook.py pass in full on the primary branch'; the landed diff is two commits making the file's 20 cases pass with no product source touched, as tests/test_coordinator_obligations_hook.py:735 and :805 assert the duties the derivation now raises.\nVERDICT done_when: the done-when names tests/test_coordinator_obligations_hook.py passing in full on all_debug with SLURM_JOB_ID unset plus a base reproducer and both suite arms; scoped-gate-1795092818472720136.log:7 reads '20 passed in 25.88s' EXIT=0 at 0f1ce824 and base-arm-coordinator-obligations-hook.log:220,328 name the two failing ids with '2 failed, 18 passed' EXIT=1 at d60ef8b2.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-coordinator-obligations-hook.html; the diff's two paths, tests/test_coordinator_obligations_hook.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-coordinator-obligations-hook.html, are both inside them.\nVERDICT manifest: read; it declares status complete, both commits, the scoped gate at 20 passed EXIT=0, both suite arms at 58 passed EXIT=0 on full 40-character revisions, a negative-control log reading 2 failed, 18 passed EXIT=1 at d60ef8b2, and two cause verdicts of test-wrong; every figure reconciles with the log it cites.\nVERDICT diff: read commit by commit against d60ef8b2; 0f1ce824 touches only tests/test_coordinator_obligations_hook.py (31+/9-) and 3e992001 adds only the 91-line evidence fragment, all inside the declared write paths.\nCALL_SITES: reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py:_tree_holds_unmerged_work, reckon/crew/recovery_liveness.py:_run_exit_record, reckon/crew/recovery_classification.py:3632\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_coordinator_obligations_hook.py:224 and :330 stage the state each case is about, so the two cases red at d60ef8b2 pass, while 'on the primary branch' stays unverified until promotion.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795092818472720136.log:7 records 20 passed at 0f1ce824 and base-arm-coordinator-obligations-hook.log:329 records 2 failed, 18 passed at d60ef8b2, so the measure is recorded but one docs-only commit before the reviewed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's only paths, tests/test_coordinator_obligations_hook.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-coordinator-obligations-hook.html, are both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the remedy composition at reckon/crew/recovery_classification.py:3632 to an observation reddens tests/test_coordinator_obligations_hook.py:857, as the base arm already shows, though the clean-tree exclusion of reckon/crew/obligations.py:3565 is left to sibling files.\nSCORE fit: 17\nJUSTIFICATION fit: the staged exit record at tests/test_coordinator_obligations_hook.py:224 carries the run_id and exit_code those readers keys read, and the per-tree commit at :332 repeats tests/test_a_worktree_held_row_is_rechecked_at_read.py:121.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, reusing tests.helpers.git.git and runs.run_dir; a search of tests/helpers and the suite for an exit-record writer found no owner, and 74 sibling test files write the same record inline.",
+  "review_run_id": "r-20261119T131626070892-review-of-qwnw-red-file-coordinator-obligations-hook-3e9920018a5a",
+  "reviewed_base_sha": "d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a",
+  "reviewed_head_sha": "3e9920018a5a0e7db0d6e95d4d0d4ccde29c007c",
+  "reviewed_run_id": "r-20261118T062503507734-qwnw-red-file-coordinator-obligations-hook",
+  "rubric": "text",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:44:57.030535+00:00",
+  "total": 108
+}

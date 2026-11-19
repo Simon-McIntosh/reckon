@@ -1,0 +1,56 @@
+<section id="qwnw-red-file-a-claim-hold-reads-the-holder-again-cause">
+<h2>The claim-hold cases never reached the hold</h2>
+<p>The file's second case recorded a stopped holder claiming
+<code>claimed.txt</code> and expected the pass to hold a queued request behind
+it. Source files became shareable by default on 11 November
+(<code>471bf98366</code>, tightened at <code>5695689722</code>), so
+<code>_claim_paths_share</code> answers <em>shared</em> for any source path and
+no claim on one fences anything: the case launched its request and read
+<code>assert ['r-late'] == []</code>.</p>
+<p><strong>Verdict: test wrong.</strong> The re-read the file exists for is
+present and works; the fixture named a path the current sharing rule does not
+let a claim bear on. The holder and the request now claim
+<code>docs/state/claimed.json</code>, a generated-state path
+<code>DEFAULT_EXCLUSIVE_PATHS</code> keeps exclusive whoever claims it. No
+assertion was changed, deleted or weakened.</p>
+<p>The first case was also measuring nothing: the pass read the live set again
+after the holder's pointer was removed, so it found the holder gone by itself
+and would have launched with no re-read at all. Its live reading is now pinned
+for the whole stage, which is the shape the file's docstring describes — one
+reading, one pointer read per hold.</p>
+</section>
+
+<section id="qwnw-red-file-a-claim-hold-reads-the-holder-again-falsification">
+<h2>The re-read fires: removing it fails the same case</h2>
+<p>With <code>_refreshed_claim</code> replaced by the pass's cached reading
+(the pre-<code>cb1989103c</code> product), the pinned-reading case fails and
+the guard case passes, so the first case's launch is explained by the re-read
+alone:</p>
+<pre># command: env PYTHONPATH=... .venv/bin/python -m pytest -p no:cacheprovider -q -p mutation_only tests/test_a_claim_hold_reads_the_holder_again.py
+1 failed, 1 passed in 3.20s
+EXIT=1
+
+FAILED tests/test_a_claim_hold_reads_the_holder_again.py::test_a_holder_that_landed_before_the_judgement_does_not_hold</pre>
+<p>The mutation is a pytest plugin in the run directory
+(<code>mutation_no_reread.log</code>); no product source was changed to run it.</p>
+</section>
+<section id="qwnw-red-file-a-claim-hold-reads-the-holder-again-negative-control">
+<h2>Negative control: the base revision fails the same case</h2>
+<p><code>tests/test_a_claim_hold_reads_the_holder_again.py</code> at base
+<code>bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68</code>, run as a job on
+<code>all_debug</code> over a <code>git archive</code> of that revision:</p>
+<pre># revision: bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68
+# command: PYTHONPATH=&lt;base tree&gt; python -m pytest -p no:cacheprovider -q tests/test_a_claim_hold_reads_the_holder_again.py
+.F                                                                       [100%]
+1 failed, 1 passed in 1.73s
+EXIT=1
+
+FAILED tests/test_a_claim_hold_reads_the_holder_again.py::test_a_holder_that_still_claims_the_path_still_holds_the_request
+AssertionError: a held claim must cost the pass no dispatch
+assert ['r-late'] == []</pre>
+<p>The failing id is the guard case: a stopped holder whose worktree still
+holds its commit must hold the queued request, and at base the request
+launched. The passing id at base is the case that needs the re-read, so the
+two cases fail in opposite directions and neither passes for the other's
+reason. Head reads 2 passed, <code>EXIT=0</code>.</p>
+</section>

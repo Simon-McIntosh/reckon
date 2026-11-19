@@ -1,0 +1,154 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "_departure_word_from_ledger(landed, _departing_snapshot(landed, state='complete')) == 'promoted'",
+      "fails_if": "The project's mount is not resolved into the record before the ancestry question, or the landing check is skipped: the fold then falls back to 'complete'. The recorded base arm shows precisely this refusal ('assert complete == promoted'), so the guard is falsified by reinstating the regression.",
+      "file": "tests/test_a_promotion_never_reads_unpromoted.py",
+      "line": 305,
+      "test": "test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger"
+    },
+    {
+      "assertion": "_departure_word_from_ledger(vanished, ...) == 'withdrawn'",
+      "fails_if": "A run with no ledger row starts being worded as landed, e.g. a mount resolved for a project whose ledger holds no row and the ancestry check passing anyway.",
+      "file": "tests/test_a_promotion_never_reads_unpromoted.py",
+      "line": 313,
+      "test": "test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger"
+    },
+    {
+      "assertion": "_departure_word_from_ledger(discarded, ...) == 'discarded'",
+      "fails_if": "A deliberate discard loses its own word to the promoted/withdrawn pair, e.g. if a discarded run's row were read as a landing.",
+      "file": "tests/test_a_promotion_never_reads_unpromoted.py",
+      "line": 323,
+      "test": "test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger"
+    },
+    {
+      "assertion": "_departure_word_for(run_id, snapshot) 'promoted' when recorded else 'withdrawn'",
+      "fails_if": "The supplied-reader path stops distinguishing a recorded row from an absent one, which is the control that keeps the unsupplied case meaningful.",
+      "file": "tests/test_a_promotion_never_reads_unpromoted.py",
+      "line": 289,
+      "test": "test_the_departure_control_states_promoted_only_for_a_recorded_row"
+    }
+  ],
+  "assertion_independence": "No added assertion echoes a value the test supplied: every expectation in the guarded cases is a literal word ('promoted', 'withdrawn', 'discarded') compared against a fold result whose inputs are run ids and ledger fixture writes. The diff itself adds no assertion; it changes production code so that a pre-existing assertion flips, which the recorded base arm demonstrates.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2482 _ledger_landing_word via _LedgerRunWordReader.for_runs",
+    "reckon/crew/recovery_watch.py:2502 _ledger_landing_word via _LedgerRunWordReader.read",
+    "reckon/crew/recovery_watch.py:2513 _ledger_landing_word via _LedgerRunWordReader.for_recorded_rows",
+    "reckon/crew/recovery_classification.py:1215 _promoted_awaiting_merge -> _delivered_head",
+    "reckon/crew/recovery_classification.py:3466 _promoted_awaiting_merge at the word reader",
+    "reckon/crew/recovery_classification.py:3492 _delivered_head at the await-merge reader",
+    "reckon/crew/promotion_requests.py:1227 _promoted_awaiting_merge",
+    "reckon/crew/runs.py:3902 _promoted_awaiting_merge"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:55:51Z",
+  "evidence_limits": [
+    "No suite was rerun during this review; the gate and negative-control results are read from the source run's logs at the revisions those logs name.",
+    "The all_debug submission and the SLURM_JOB_ID-unset condition are asserted in manifest.md evidence_inputs (job 1330236, host 98dci4-clu-3141) but nothing in logs/gate-head-all_debug.log records the job id or the environment, so that clause could not be verified from the artefacts.",
+    "The ruff measurement here was made at the reviewed revision via --stdin-filename under the repository config, not by a recorded run of the node's own.",
+    "This worktree's HEAD is 31846ccb02, which already differs from the reviewed head in both changed modules, so nothing was re-executed against this tree."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-never-reads-unpromoted.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: The base arm of tests/test_a_promotion_never_reads_unpromoted.py is recorded in the fragment as counts only ('1 failed, 5 passed'); the reviewed node's done_when asks for that run logged beside the head run *with its failing ids*, and the id test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger appears only in the manifest note and in logs/negative-control-base.log, so a reader of the plan document cannot tell which case the node repaired from the document alone. Fold the id into the arm table row."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: The done_when asks the arm over the test files that import the changed modules to be recorded as inline JSON with full revisions, but baseline_suite/after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which read the tree's write inventory and lock table rather than importing recovery_watch or recovery_classification; the twenty-five-file importer delta lives only in prose at manifest.md:23 plus logs/importers-base.log and logs/importers-head.log, so the required field pair measures a different population from the one the clause names. The substantive claim still holds on reading: the two FAILED id sets differ by exactly one id, present in the base arm and absent from the head arm, i.e. zero added and one fixed. Fold the importer arms into the inline JSON pair."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: The done_when requires 'ruff check and ruff format --check report nothing new on the changed paths', yet the manifest records no ruff run in tests, test_logs or artifacts. Measured here at the reviewed revision through `ruff check --no-cache --stdin-filename` on both changed modules: 3 findings in recovery_watch.py and 1 in recovery_classification.py at 9da4cf2d, the identical 3 and 1 at b24fe95a, and `ruff format --check` clean on both \u2014 so nothing is new, but the receipt a promotion would read is absent. Fold a ruff receipt line into the manifest."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: e5cd9897ff adds the keyword-only row parameter to _delivered_head and _promoted_awaiting_merge and resolves the project mount in _ledger_landing_word, and 9da4cf2d adds the 60-line evidence fragment; no test, plan, state or index path changes.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job, a base run with its failing ids beside it in the fragment, an importer arm recorded as inline JSON, and clean ruff on the changed paths; logs/gate-head-all_debug.log (6 passed, EXIT=0) and logs/negative-control-base.log (1 failed, 5 passed, EXIT=1) carry the first and control arms, while the importer arm appears only as prose and the ruff clause has no receipt.",
+    "goal": "The reviewed node's goal is to make tests/test_a_promotion_never_reads_unpromoted.py pass in full; the head commit e5cd9897 rewires reckon/crew/recovery_watch.py:2453 _ledger_landing_word to resolve the project mount so the row's head is asked of a checkout, and the recorded head job reports 6 passed, EXIT=0 for that file.",
+    "manifest": "Read in full; it declares status complete, both worker commits, gate 6 passed with its log, a base control reddening exactly test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger, baseline/after suite arms at full 40-character revisions with EXIT=0, and the importer delta as prose.",
+    "write_paths": "The node's write_paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two narrower entries; the delivered diff b24fe95a..9da4cf2d touches only reckon/crew/recovery_classification.py, reckon/crew/recovery_watch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-never-reads-unpromoted.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_never_reads_unpromoted.py:305 asserts the independent literal 'promoted' and reddens at the base revision for exactly this defect, as logs/negative-control-base.log records; removing the record['repo'] assignment in reckon/crew/recovery_watch.py:2460 restores that red.",
+    "evidence": "logs/gate-head-all_debug.log ends '6 passed' / 'EXIT=0' at e5cd9897 and logs/negative-control-base.log ends '1 failed, 5 passed' / 'EXIT=1' at b24fe95a with the quoted assertion 'assert 'complete' == 'promoted'', but the importer arm and the ruff clause have no machine-readable receipt.",
+    "fit": "reckon/crew/recovery_classification.py:1139-1157 extends the existing signature with a keyword-only defaulted row parameter and carries the reason in the docstring, and the function-local import at recovery_watch.py:2458 matches the module's existing deferred-import idiom.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:2453-2461 now resolves the mount via dispatch_sections.project_mount_repository and sets it on the record, so a landed head reads 'promoted', matching the 6-passed head gate the goal names.",
+    "reuse": "The only outside mechanism the change reaches is reckon/crew/dispatch_sections.py:42 project_mount_repository, which the change calls rather than re-implements, and the already-read ledger row is threaded through instead of being read twice.",
+    "scope_discipline": "The two-commit diff b24fe95a..9da4cf2d changes only reckon/crew/recovery_classification.py, reckon/crew/recovery_watch.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is to make tests/test_a_promotion_never_reads_unpromoted.py pass in full; the head commit e5cd9897 rewires reckon/crew/recovery_watch.py:2453 _ledger_landing_word to resolve the project mount so the row's head is asked of a checkout, and the recorded head job reports 6 passed, EXIT=0 for that file.\nVERDICT done_when: The done_when asks for the file green at head as an all_debug job, a base run with its failing ids beside it in the fragment, an importer arm recorded as inline JSON, and clean ruff on the changed paths; logs/gate-head-all_debug.log (6 passed, EXIT=0) and logs/negative-control-base.log (1 failed, 5 passed, EXIT=1) carry the first and control arms, while the importer arm appears only as prose and the ruff clause has no receipt.\nVERDICT write_paths: The node's write_paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its two narrower entries; the delivered diff b24fe95a..9da4cf2d touches only reckon/crew/recovery_classification.py, reckon/crew/recovery_watch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-never-reads-unpromoted.html, all inside them.\nVERDICT manifest: Read in full; it declares status complete, both worker commits, gate 6 passed with its log, a base control reddening exactly test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger, baseline/after suite arms at full 40-character revisions with EXIT=0, and the importer delta as prose.\nVERDICT diff: Read commit by commit: e5cd9897ff adds the keyword-only row parameter to _delivered_head and _promoted_awaiting_merge and resolves the project mount in _ledger_landing_word, and 9da4cf2d adds the 60-line evidence fragment; no test, plan, state or index path changes.\nCALL_SITES: reckon/crew/recovery_watch.py:2482 _ledger_landing_word via _LedgerRunWordReader.for_runs, reckon/crew/recovery_watch.py:2502 _ledger_landing_word via _LedgerRunWordReader.read, reckon/crew/recovery_watch.py:2513 _ledger_landing_word via _LedgerRunWordReader.for_recorded_rows, reckon/crew/recovery_classification.py:1215 _promoted_awaiting_merge -> _delivered_head, reckon/crew/recovery_classification.py:3466 _promoted_awaiting_merge at the word reader, reckon/crew/recovery_classification.py:3492 _delivered_head at the await-merge reader, reckon/crew/promotion_requests.py:1227 _promoted_awaiting_merge, reckon/crew/runs.py:3902 _promoted_awaiting_merge\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2453-2461 now resolves the mount via dispatch_sections.project_mount_repository and sets it on the record, so a landed head reads 'promoted', matching the 6-passed head gate the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-head-all_debug.log ends '6 passed' / 'EXIT=0' at e5cd9897 and logs/negative-control-base.log ends '1 failed, 5 passed' / 'EXIT=1' at b24fe95a with the quoted assertion 'assert complete == promoted', but the importer arm and the ruff clause have no machine-readable receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-commit diff b24fe95a..9da4cf2d changes only reckon/crew/recovery_classification.py, reckon/crew/recovery_watch.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promotion_never_reads_unpromoted.py:305 asserts the independent literal 'promoted' and reddens at the base revision for exactly this defect, as logs/negative-control-base.log records; removing the record['repo'] assignment in reckon/crew/recovery_watch.py:2460 restores that red.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1139-1157 extends the existing signature with a keyword-only defaulted row parameter and carries the reason in the docstring, and the function-local import at recovery_watch.py:2458 matches the module's existing deferred-import idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: The only outside mechanism the change reaches is reckon/crew/dispatch_sections.py:42 project_mount_repository, which the change calls rather than re-implements, and the already-read ledger row is threaded through instead of being read twice.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-never-reads-unpromoted.html:37 non-blocking: The base arm of tests/test_a_promotion_never_reads_unpromoted.py is recorded in the fragment as counts only ('1 failed, 5 passed'); the done_when asks for it logged beside the head run with its failing ids, and the id appears only in the manifest note and logs/negative-control-base.log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/manifest.md:21 non-blocking: baseline_suite/after_suite name the two-file declared suite rather than the importer arm the done_when asks to be recorded as inline JSON; the importer delta is prose only, though the logs' id sets differ by exactly the one fixed id, so zero added holds.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/manifest.md:25 non-blocking: No ruff receipt is recorded for the done_when's lint clause; measured at the reviewed revision the findings are identical at base and head (3 in recovery_watch.py, 1 in recovery_classification.py) and both files are format-clean, so nothing is new but the receipt is missing.",
+  "reuse_search": {
+    "capabilities": [
+      "resolve a project's repository checkout",
+      "read a run's ledger row"
+    ],
+    "judgement": "project_mount_repository is the repository's single answer for a project's mount \u2014 its docstring states it comes from the same mounted-project map every other scope resolution consults \u2014 and the change calls it rather than adding a second reader of mounts.json. The ledger row is threaded through the existing _delivered_head instead of a new ledger reader being introduced, so nothing is forked.",
+    "owners_opened": [
+      "reckon/crew/dispatch_sections.py:42",
+      "reckon/crew/recovery_classification.py:1139"
+    ]
+  },
+  "review_run_id": "r-20261119T075557424053-review-of-qwnw-red-file-a-promotion-never-reads-unpromoted-9da4cf2dff4a",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "9da4cf2dff4aebedf15b5170cb7519c951d86ef7",
+  "reviewed_run_id": "r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted",
+  "reviewed_worker_commits": [
+    "e5cd9897ff2dd807c432d07bb88687b69ecf5930",
+    "9da4cf2dff4aebedf15b5170cb7519c951d86ef7"
+  ],
+  "scope_provenance": "The reviewed head's parent chain to the base is exactly two worker commits, e5cd9897ff and 9da4cf2dff, so the whole diff b24fe95a..9da4cf2d is this node's own work.",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/logs/suite-after.log",
+      "revision": "e5cd9897ff2dd807c432d07bb88687b69ecf5930",
+      "sha256": "9ac714712a5091d2c41f2da373bfeb8a4be66d4e286a691fc19e059e2e18f627",
+      "summary": "58 passed in 36.09s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/logs/suite-baseline.log",
+      "revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+      "sha256": "0b8c73ee4157034b1748d7e0ada38e7702aec4a65a62d4e1f4a3a1ab7ee1a6f7",
+      "summary": "58 passed in 36.62s"
+    },
+    "importer_arm": {
+      "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/logs/importers-head.log",
+      "after_summary": "10 failed, 185 passed",
+      "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted/logs/importers-base.log",
+      "baseline_summary": "11 failed, 184 passed",
+      "id_set_delta": "zero ids added at the head; one id fixed (tests/test_a_promotion_never_reads_unpromoted.py::test_the_fold_resolves_an_unsupplied_reader_from_the_project_ledger)"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:15:42.587022+00:00",
+  "total": 108
+}

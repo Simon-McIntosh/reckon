@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1364 complete -> _require_commits_beyond_base",
+    "reckon/crew/promotion_checks.py:2801 _refuse_commits_for_a_shadow reads promotion_scope._is_shadow",
+    "reckon/crew/promotion_checks.py:2829 _landing_scope_products writes a shadow's patch as its deliverable"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:33:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "479",
+      "severity": "non-blocking",
+      "text": "the shadow exemption is guarded in one direction only: no committed test asserts that a non-shadow run with uncommitted declared work is still refused (a search of tests/ for the refusal text finds none), so replacing the shadow test at line 479 with a bare return leaves every test green and reinstates the promote-away-the-deliverable path the clause exists to refuse."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the fragment's claim that a probe made the guard happen in both directions has no log: the run's logs/ holds only the two node arms and the two importer arms, so the still-refused direction is recorded as prose and the quoted refusal cannot be re-checked by a later reader."
+    }
+  ],
+  "head_log_revision": "15e05c95cb088acf5c37dc5028b565749440b999",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the completion path that invokes the guard at reckon/crew/promotion.py:1364, the shadow citation guard at reckon/crew/promotion_checks.py:2801, and the shadow-patch deliverable at reckon/crew/promotion_checks.py:2829.",
+    "diff": "read commit by commit against base 42fe90d0: 15e05c95 adds an 11-line docstring paragraph and a two-line shadow exemption to _require_commits_beyond_base, and 7ccc2142 adds the 18-line evidence fragment; no test file is touched.",
+    "done_when": "the done-when names tests/test_crew_shadow_paths.py at the node's base and head as all_debug jobs with the output on shared storage, an importer arm over what changed adding no failure against the base, and the base run as the negative control; the manifest records all four arms with job ids and the logs carry their revisions and EXIT lines.",
+    "goal": "the node's goal is to make tests/test_crew_shadow_paths.py pass in full; the landed change exempts a shadow run from the commitless-work clause of _require_commits_beyond_base at reckon/crew/promotion_evidence.py:477-480, and the file reads '5 passed' EXIT=0 at head 15e05c95.",
+    "manifest": "read; status complete, commits 15e05c95 and 7ccc2142, changed_paths the two landed paths, tests the literal node command, baseline_suite 1 failed at 42fe90d0 and after_suite 0 failed at 15e05c95.",
+    "write_paths": "the fence is reckon, tests, the plan's evidence-fragment directory and its per-node fragment and figure directory; git diff 42fe90d0..7ccc2142 touches only reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html, both inside it."
+  },
+  "justifications": {
+    "durability": "the exemption at reckon/crew/promotion_evidence.py:477-480 is pinned in one direction only: reverting it reddens tests/test_crew_shadow_paths.py::test_two_effort_arms_on_one_backend_keep_separate_patches as logs/base-node-test.log shows, but no committed test asserts that a non-shadow run is still refused, so widening the exemption to a bare return would leave the suite green.",
+    "evidence": "logs/base-node-test.log (rev 42fe90d0, '1 failed, 4 passed' EXIT=1) and logs/head-node-test.log (rev 15e05c95, '5 passed' EXIT=0) record the done-when's two arms, and both importer arms carry their literal command and EXIT=1 with the same pre-existing id; the head importer arm's inline JSON in the manifest elides its command as 'the same twenty files', so only the log header carries it literally.",
+    "fit": "reckon/crew/promotion_evidence.py:477 imports promotion_scope._is_shadow inside the function, the same lazy cross-module import idiom the function already uses for _declared_manifest_commits and _delivered_revision, and the change adds no new name.",
+    "goal_fidelity": "tests/test_crew_shadow_paths.py reads identically at base 42fe90d0 and head 7ccc2142 (same digest) and logs/head-node-test.log at 15e05c95 reads '5 passed' EXIT=0, so the goal's passing file is reached without touching an assertion.",
+    "reuse": "the change calls reckon/crew/promotion_scope.py:1160 _is_shadow, the repository's single owner of the shadow predicate, rather than writing a second shadow test, and its reading matches the existing shadow branch at reckon/crew/promotion_checks.py:2801-2805 and the patch-as-deliverable branch at reckon/crew/promotion_checks.py:2828-2829.",
+    "scope_discipline": "git diff --stat 42fe90d0..7ccc2142 lists exactly two paths, reckon/crew/promotion_evidence.py and the node's own fragment, both inside the declared write paths and neither carrying work the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_crew_shadow_paths.py pass in full; the landed change exempts a shadow run from the commitless-work clause of _require_commits_beyond_base at reckon/crew/promotion_evidence.py:477-480, and the file reads '5 passed' EXIT=0 at head 15e05c95.\nVERDICT done_when: the done-when asks for the file at base and head as all_debug jobs, an importer arm adding no failure against the base, and the base run as the negative control; the manifest records all four arms with job ids and the logs carry their revisions and EXIT lines.\nVERDICT write_paths: the fence is reckon, tests, the plan's evidence-fragment directory and its per-node fragment and figure directory; git diff 42fe90d0..7ccc2142 touches only reckon/crew/promotion_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html, both inside it.\nVERDICT manifest: read; status complete, commits 15e05c95 and 7ccc2142, changed_paths the two landed paths, tests the literal node command, baseline_suite 1 failed at 42fe90d0 and after_suite 0 failed at 15e05c95.\nVERDICT diff: read commit by commit against base 42fe90d0; 15e05c95 adds an 11-line docstring paragraph and a two-line shadow exemption, 7ccc2142 adds the 18-line evidence fragment, and no test file is touched.\nCALL_SITES: reckon/crew/promotion.py:1364 complete -> _require_commits_beyond_base, reckon/crew/promotion_checks.py:2801 _refuse_commits_for_a_shadow, reckon/crew/promotion_checks.py:2829 _landing_scope_products\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_shadow_paths.py reads identically at base 42fe90d0 and head 7ccc2142 (same digest) and logs/head-node-test.log at 15e05c95 reads '5 passed' EXIT=0.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-node-test.log and logs/head-node-test.log carry their revisions and EXIT lines for the done-when's two arms, while the head importer arm's inline JSON in the manifest elides its command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 42fe90d0..7ccc2142 lists exactly reckon/crew/promotion_evidence.py and the node's own fragment, both inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: reckon/crew/promotion_evidence.py:479 is pinned only by the shadow case, since no committed test asserts that a non-shadow run is still refused and a bare return there would leave the suite green.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_evidence.py:477 imports promotion_scope._is_shadow inside the function, the same lazy cross-module import idiom the function already uses for _declared_manifest_commits and _delivered_revision, and the change adds no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change calls reckon/crew/promotion_scope.py:1160 _is_shadow, the repository's single owner of the shadow predicate, matching reckon/crew/promotion_checks.py:2801's reading, and forks nothing.\nFINDING reckon/crew/promotion_evidence.py:479 non-blocking: the exemption is guarded only in the shadow direction, so a bare return there keeps every test green and reinstates the promote-away-the-deliverable path the clause refuses.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow-paths.html:5 non-blocking: the fragment's both-directions probe claim has no log under the run's logs/, so the still-refused direction is prose a later reader cannot re-check.",
+  "review_run_id": "r-20261119T060010183196-review-of-qwnw-red-file-crew-shadow-paths-7ccc21426861",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "7ccc214268619f35fed483da35a36a94d83999ef",
+  "reviewed_run_id": "r-20261118T063113406183-qwnw-red-file-crew-shadow-paths",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T060010183196-review-of-qwnw-red-file-crew-shadow-paths-7ccc21426861"
+  },
+  "reviewer_run_id": "r-20261119T060010183196-review-of-qwnw-red-file-crew-shadow-paths-7ccc21426861",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:54:33.549769+00:00",
+  "total": 112
+}

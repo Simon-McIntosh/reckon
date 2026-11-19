@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-19T17:14:21Z",
+  "dispatched_at": "2026-11-19T17:01:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dry-run-evaluates-every-gate.html",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "The 'Head run' section's receipt is at 64eddd1cfe17, one commit below the delivered head 0f5b9526f225 the node names as head, so no gate ran at the revision that lands; the intervening commit adds only this docs fragment, which no test imports, so the conclusion holds, but the receipt a reader takes as the head arm is not the head."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The landed change is confined to tests/test_a_dry_run_evaluates_every_gate.py:128 and a docs fragment, so no production runtime code reaches it.",
+    "diff": "Read both commits against 4584a203: 64eddd1c replaces one line of _payload in tests/test_a_dry_run_evaluates_every_gate.py (result.output to result.stdout) and adds a three-line comment, deleting or weakening no assertion; 0f5b9526 adds the 30-line evidence fragment; no product file changes.",
+    "done_when": "The done_when names the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a product-or-test verdict, and an importer arm adding no failure with both arms as inline JSON carrying 40-character revisions; base-gate.sbatch:16 and head-gate.sbatch:16 both run under 'env -u SLURM_JOB_ID', the manifest's baseline_suite and after_suite carry full 40-character revisions with '58 passed' EXIT=0 on both sides, and the fragment names the single cause as the test's at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dry-run-evaluates-every-gate.html:5, corroborated by reckon/crew/dispatching/preparation.py:1581 writing the notice to stderr.",
+    "goal": "The node goal is 'Make tests/test_a_dry_run_evaluates_every_gate.py pass in full on the primary branch'; scoped-gate-1795073762616119848.log records '2 passed in 0.97s' EXIT=0 at 64eddd1c against base-gate-arm.log '1 failed, 1 passed in 2.38s' EXIT=1 at 4584a203.",
+    "manifest": "Read in full; it names commits 64eddd1c and 0f5b9526, the head gate '2 passed' EXIT=0 and the base arm '1 failed, 1 passed' EXIT=1 with the failing id, both suite arms with 40-character revisions and EXIT=0, the scratch tree's imported module path /tmp/mcintos-landing-328875182188-MNufCa/tree/reckon/crew/dispatch.py, and no retry failures.",
+    "write_paths": "The declared paths are reckon, tests, the evidence-fragment directory and file, and the figures path; the delivered diff touches exactly tests/test_a_dry_run_evaluates_every_gate.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dry-run-evaluates-every-gate.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_a_dry_run_evaluates_every_gate.py pass in full on the primary branch'; scoped-gate-1795073762616119848.log records '2 passed in 0.97s' EXIT=0 at 64eddd1c against base-gate-arm.log '1 failed, 1 passed in 2.38s' EXIT=1 at 4584a203.\nVERDICT done_when: the done_when names the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a product-or-test verdict, and an importer arm adding no failure as inline JSON at 40-character revisions; base-gate.sbatch:16 and head-gate.sbatch:16 carry 'env -u SLURM_JOB_ID', the manifest's baseline_suite and after_suite carry full shas with '58 passed' EXIT=0 on both sides, and the single cause is named as the test's at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dry-run-evaluates-every-gate.html:5, corroborated by reckon/crew/dispatching/preparation.py:1581 writing the notice to stderr.\nVERDICT write_paths: the declared paths are reckon, tests, the evidence-fragment directory and file, and the figures path; the delivered diff touches exactly tests/test_a_dry_run_evaluates_every_gate.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dry-run-evaluates-every-gate.html, both inside them.\nVERDICT manifest: read in full; it names commits 64eddd1c and 0f5b9526, the head gate '2 passed' EXIT=0 and the base arm '1 failed, 1 passed' EXIT=1 with the failing id, both suite arms with 40-character revisions and EXIT=0, the scratch tree's imported module path, and no retry failures.\nVERDICT diff: read both commits against 4584a203; 64eddd1c replaces one line of _payload in tests/test_a_dry_run_evaluates_every_gate.py (result.output to result.stdout) plus a three-line comment with no assertion deleted or weakened, 0f5b9526 adds the 30-line evidence fragment, and no product file changes.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_dry_run_evaluates_every_gate.py:128 now reads the document from result.stdout and scoped-gate-1795073762616119848.log records '2 passed in 0.97s' EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: base-gate-arm.log:44 records the JSONDecodeError on 'reckon: created run r-20261119T073955239493-held-local' from _payload(real) at 4584a203 and the head log records 2 passed EXIT=0, though the head arm runs at 64eddd1c, one docs-only commit below the delivered head 0f5b9526.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths, tests/test_a_dry_run_evaluates_every_gate.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dry-run-evaluates-every-gate.html, are named in the reviewed node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: restoring result.output in tests/test_a_dry_run_evaluates_every_gate.py:128 reddens test_a_dry_run_routes_a_held_node_where_the_launch_routes_it exactly as base-gate-arm.log:59 records at 4584a203, and the diff adds no assertion of its own so the guard is the existing assertion the helper reaches.\nSCORE fit: 20\nJUSTIFICATION fit: the helper now matches the sibling payload at tests/test_dispatch_names_a_model.py:171-178, including a comment naming the same stderr notice and the same result.stdout source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and the capability it uses - decoding a dispatch's one JSON document from a CliRunner result - is already owned by tests/test_dispatch_names_a_model.py:171-178, which the change follows rather than forks.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-dry-run-evaluates-every-gate.html:22 non-blocking: the 'Head run' receipt is at 64eddd1cfe, one commit below the delivered head 0f5b9526, so no gate ran at the revision the node names as head; only a docs fragment separates them, so the conclusion holds, but a reader taking that receipt as the head arm is reading a different revision.",
+  "review_run_id": "r-20261119T081522338716-review-of-qwnw-red-file-a-dry-run-evaluates-every-gate-0f5b9526f225",
+  "reviewed_base_sha": "4584a203aafa020e0709da3db0bb51c7a94ade41",
+  "reviewed_head_sha": "0f5b9526f225c80d2340e36bcfbe956fca0a3db3",
+  "reviewed_run_id": "r-20261118T063841128508-qwnw-red-file-a-dry-run-evaluates-every-gate",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:20:48.151608+00:00",
+  "total": 114
+}

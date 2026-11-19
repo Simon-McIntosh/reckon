@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s98">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-19">
+  <meta name="evidence-commit" content="7e13a8f0a5">
+  <title>Plan resolution reads its directory once per change | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="plan-resolution-reads-the-directory-once-per-change">
+  <h2>Plan resolution reads its directory once per change</h2>
+
+  <p><strong>The defect.</strong> A named plan read takes the plan's canonical
+  path and then asks whether another file in that root claims the same
+  identity. That question is one lookup into a held index of the root, and the
+  index is revalidated against the root's listing: a glob of the directory and
+  one stamp of every sibling. The listing itself was rebuilt per resolve, so the
+  whole plan population's metadata was paid once per named read. At the base
+  revision 200 named reads cost 400 directory globs and 80,000 sibling stamps
+  across two passes over an unchanged directory.</p>
+
+  <p><strong>What landed.</strong> <code>reckon/resources.py</code> holds each
+  directory's entry <em>names</em> against
+  <code>metadata_index._dir_identity</code> &mdash; the directory identity that
+  moves when an entry is added, removed or renamed &mdash; read before the names
+  are taken. A directory whose entry set has not moved is therefore not globbed
+  again. Every entry is still stamped on each call, because a sibling rewritten
+  in place changes no directory entry: holding its stamp would hand the index
+  the identity the file carried before the write. The index itself is still
+  reused, so the identification of every sibling is paid once per change of the
+  listing rather than once per resolve.</p>
+
+  <p>The held listing is what the index is revalidated against, so the fresh
+  stamps are what keep an in-place rewrite visible. Measured cost per resolve over
+  200 plans at the head: no glob, 200 stamps. Base: one glob and the same 200
+  stamps, plus an identification stamp per sibling whenever the held index
+  cannot be reused. The glob is what this section removes; a stamp cannot be
+  removed without answering from a stamp the file no longer carries.</p>
+
+  <p><strong>The section's own bound, restated.</strong> The section's done-when
+  asked for at most 200 sibling stats across the first two passes. That figure
+  is only reachable by answering the index from held stamps, which is exactly
+  the divergence the review reproduced: a rewrite into a second claimant goes
+  unseen and the resolve that base refuses succeeds. One stamp per sibling per
+  resolve is the floor for returning what the base revision returns, so that
+  bound is not met here; the test asserts the invariant it can hold instead —
+  every listing stamps the whole directory, never a held stamp — and the
+  in-place case below holds that down.</p>
+
+  <h3 id="plan-resolution-reads-the-directory-once-per-change-measure">Two passes, then one change</h3>
+
+  <p><code>tests/test_plan_resolution_reads_the_directory_once_per_change.py</code>
+  writes 200 plans at their canonical paths, resolves all 200 twice, then adds
+  one plan and renames one and resolves all 200 plus the added plan. It stands
+  in for the listing function, for the plans directory's <code>glob</code>, and
+  for <code>file_memo.file_signature</code>, so the globs are the directory's
+  own and the sibling stamps are the ones one listing takes.</p>
+
+  <p>The head arm reads one glob across the two passes — 400 at the base
+  revision — and stamps each entry once per resolve; every listing it builds
+  stamps the whole 200-entry directory, which is the check that a held stamp is
+  never reused in place of a fresh one. One further glob follows the plan that
+  is added and the one renamed. Each resolve is compared for equality with the
+  classifier's answer for the file it names, including the added and the renamed
+  plan.</p>
+
+  <h3 id="plan-resolution-reads-the-directory-once-per-change-inplace">A sibling rewritten in place</h3>
+
+  <p>The test warms the held names and the held index, confirms that the
+  directory's identity is unchanged by the write, rewrites
+  <code>plans/beta.html</code> so it declares the slug an already resolved plan
+  owns, and requires the resolve of that slug to raise
+  <code>ResourceCollision</code> naming both files. The base revision gives that
+  refusal; a listing that held its stamps answers the resolve instead. The
+  assertion that the directory identity did not move is what keeps the case
+  about a file's own stamp rather than about an added entry.</p>
+
+<h3 id="plan-resolution-reads-the-directory-once-per-change-negative">The negative controls</h3>
+
+  <p>The same test file, run against the base revision's
+  <code>reckon/resources.py</code> in a scratch tree, fails on the glob
+  assertion with <code>two passes over 200 plans globbed the directory 400
+  times</code> and <code>EXIT=1</code>, the section's declared string.</p>
+
+  <p>Reverting only this repair's <code>reckon/resources.py</code> at the head
+  revision fails the in-place case with <code>DID NOT RAISE
+  ResourceCollision</code> and the listing invariant with <code>listings
+  stamped different numbers of siblings: [0, 200]</code>, at
+  <code>EXIT=1</code> &mdash; the defect the review reproduced. The same file
+  passes both cases at the repaired head, <code>EXIT=0</code>.</p>
+
+  <h3 id="plan-resolution-reads-the-directory-once-per-change-arms">Matched arms</h3>
+
+  <p>Each arm ran as an <code>all_debug</code> partition job with its own
+  revision checkout and its own log under the run directory. The graded arm is
+  the node's declared suite, 0 failed at both the base revision and the head.
+  The population the done-when names &mdash; every test file that imports the
+  changed module &mdash; was measured the same way over the twenty-three files
+  under <code>tests/</code> that import <code>reckon.resources</code>: base 217
+  passed and 4 skipped at <code>EXIT=0</code>, head 219 passed and 4 skipped at
+  <code>EXIT=0</code>, the two extra tests being this node's own.</p>
+</section>
+</main>
+</body>
+</html>
