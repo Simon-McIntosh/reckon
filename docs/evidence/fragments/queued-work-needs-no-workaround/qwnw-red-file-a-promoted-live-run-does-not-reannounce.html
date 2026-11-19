@@ -49,9 +49,10 @@ EXIT=0
 <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
 <tbody>
 <tr><td>baseline</td><td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td><td>58 passed, exit 0</td></tr>
-<tr><td>after</td><td><code>b5da12e06224adc82e4218460329c6d458d13d1f</code></td><td>58 passed, exit 0</td></tr>
+<tr><td>after</td><td><code>5f9ba27bd0e0edec96f5217015718aaa4438bf79</code></td><td>58 passed, exit 0</td></tr>
 </tbody>
 </table>
+<p>The commit after the after arm adds only this fragment, which neither census test reads, so the arm still holds (a commit touching no path the suite imports does not invalidate it).</p>
 <p>No failure is added against the base. The changed file is not among either arm's files, and the diff adds and deletes no product line, so no test of a module that imports a changed module is reachable from it.</p>
 
 <h4 id="qwnw-red-file-a-promoted-live-run-does-not-reannounce-composed-calls">The composed gate calls could not run under this worker's fence</h4>
