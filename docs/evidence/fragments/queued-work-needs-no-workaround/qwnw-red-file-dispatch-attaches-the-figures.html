@@ -47,6 +47,13 @@ resolving its own revision on <code>all_debug</code>:</p>
 <pre>baseline 42fe90d0b0a46060bafde2490dda7d4002cda478: 58 passed in 36.15s, EXIT=0 (job 1329810)
 after    ec1783f9a68e4f0848882b109086a8e0444a1036: 58 passed in 35.59s, EXIT=0 (job 1329849)</pre>
 
+<h3 id="qwnw-red-file-dispatch-attaches-the-figures-importer">The module that imports it</h3>
+<p><code>tests/test_dispatch_renders_svg_figures.py</code> imports this test
+module for its fixtures. Its arm also reads the dispatch document from
+<code>result.output</code>, so the same two ids fail on both arms and the arm
+adds no failure at head: baseline job 1329873 and after job 1329874, two failed
+either side. That file is outside this node's changed paths.</p>
+
 <h3 id="qwnw-red-file-dispatch-attaches-the-figures-scope">Scope and lint</h3>
 <p>Changed path: <code>tests/test_dispatch_attaches_the_figures.py</code> only;
 no product source changed. <code>ruff check</code> and
