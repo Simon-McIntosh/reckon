@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="993">
+<meta name="plan-version" content="994">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3048,7 +3048,10 @@
     <div class="r-comment-body"><p>the created-run notice now waits for the repository scope claim, so a scope-conflict refusal keeps the JSON document as its first line; tests/test_scope_refusal_names_its_claimant.py 3 passed at head, 2 of 3 failed at base 42fe90d0</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261119T050921864303-review-of-qwnw-red-file-receipt-names-the-rolled-back-row-554aa68684f9" data-who="reckon-build" data-when="2026-11-19T19:54:20.353Z">
-    <div class="r-comment-body"><p>stored a parsed review of run r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row at base 42fe90d0b0a46060bafde2490dda7d4002cda478 / head 554aa68684f9cf76372732ca6d7a14f9d10525ef scoring goal_fidelity 15, evidence 10, scope_discipline 20, durability 17, fit 18, reuse 20 (total 100) with added_failure_count 0 and no added failure ids from the run&#x27;s own baseline (58 passed, EXIT=0) and after (58 passed, EXIT=0) arm logs, one blocking finding on the reviewed manifest&#x27;s baseline_suite/after_suite record and two non-blocking findings on its log citations and the fragment&#x27;s all_debug job claim</p></div>
+    <div class="r-comment-body"><p>stored a parsed review of run r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row at base 42fe90d0b0a46060bafde2490dda7d4002cda478 / head 554aa68684f9cf76372732ca6d7a14f9d10525ef scoring goal_fidelity 15, evidence 10, scope_discipline 20, durability 17, fit 18, reuse 20 (total 100) with added_failure_count 0 and no added failure ids from the run's own baseline (58 passed, EXIT=0) and after (58 passed, EXIT=0) arm logs, one blocking finding on the reviewed manifest's baseline_suite/after_suite record and two non-blocking findings on its log citations and the fragment's all_debug job claim</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T104302353553-qwnw-red-file-worker-session-is-session-scoped-at-current-main" data-who="reckon-build" data-when="2026-11-19T03:15:15.764Z">
+    <div class="r-comment-body"><p>Test-wrong verdict for the one red case in tests/test_worker_session_is_session_scoped.py: it compared a committed docs/state/proj/crew.json before and after capture, a path the roster stopped occupying at 0c0f42d351, so it raised FileNotFoundError before reaching its subject; it now reads the roster&#x27;s store region (ledger.load_auxiliary payload and version) before and after the capture and asserts both survive unchanged, having first asserted the region holds the registered member — base 1 failed / 4 passed at 42fe90d0b0, head 5 passed on all_debug.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
