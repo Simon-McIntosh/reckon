@@ -1306,6 +1306,91 @@ def protected_checkouts(
     return [path for path in protected_paths(home, config) if (path / ".git").exists()]
 
 
+def project_root_paths(
+    home: str | Path | None = None, config: Mapping[str, Any] | None = None
+) -> list[Path]:
+    """Return the directories that are a project's root rather than a grant.
+
+    A declared write grant names a directory the worker must write inside. A
+    directory that *holds* a project is not that: granting one hands the worker
+    the checkout's git metadata, its plan documents and every sibling file at
+    once, which is the whole-repository write the fence exists to refuse. Two
+    kinds of root are recognised here — a protected checkout, and the root of
+    every project the host's mounts registry serves — so a grant that names
+    either is refused by name before a launch is composed.
+    """
+    roots = [
+        resolved_destination(checkout) for checkout in protected_checkouts(home, config)
+    ]
+    from reckon._store import _mounts_path
+    from reckon.flight import mounted_project_docs
+
+    registry = (
+        _mounts_path()
+        if home in (None, Path.home())
+        else Path(home) / ".config" / "reckon" / "mounts.json"
+    )
+    try:
+        docs = mounted_project_docs(registry)
+    except (OSError, ValueError):
+        docs = {}
+    roots.extend(
+        resolved_destination(Path(docs_path).parent) for docs_path in docs.values()
+    )
+    return list(dict.fromkeys(roots))
+
+
+def declared_grant_refusal(
+    path: str | Path,
+    *,
+    home: str | Path | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> str | None:
+    """Return why one declared write grant may not be composed, or None.
+
+    A declared grant is a directory a dispatch names as writable with a reason,
+    so it has to be a place a run's own work lands and never a boundary whose
+    whole contents the kernel would then let that run rewrite. Three kinds of
+    directory are refused, each naming the path: a filesystem root, whose grant
+    is the writable whole filesystem the fence replaced; a project root, which a
+    grant re-opens together with its git metadata and every sibling file; and a
+    shared crew root that already covers another run's run directory, which
+    contains neither a filesystem root nor a checkout and so passes the first two
+    tests while still handing one run another run's record.
+
+    The refusal is composed before any mount is emitted, so a dispatch
+    declaring one of these fails before a worker starts rather than launching a
+    worker whose fence is a boundary nobody checked.
+    """
+    target = resolved_destination(Path(path))
+    if target.parent == target:
+        return (
+            f"refusing declared write grant {target}: it is a filesystem root, so "
+            "the grant would make the whole filesystem writable to the worker"
+        )
+    if (target / ".git").exists():
+        return (
+            f"refusing declared write grant {target}: it is a project root (a git "
+            "checkout), so the grant would re-open the checkout and its git "
+            "metadata, which the fence seals"
+        )
+    project_roots = project_root_paths(home, config)
+    if target in project_roots:
+        return (
+            f"refusing declared write grant {target}: it is a registered project "
+            "root, so the grant would re-open a whole project for one run"
+        )
+    from reckon.crew.runs import runs_dir
+
+    crew_runs = resolved_destination(runs_dir())
+    if crew_runs == target or crew_runs.is_relative_to(target):
+        return (
+            f"refusing declared write grant {target}: it contains the crew runs "
+            f"root {crew_runs}, so the grant would cover every other run's grant"
+        )
+    return None
+
+
 def _fenced_worktree_refusal(worktree: Path, checkouts: Sequence[Path]) -> Path | None:
     """Return the protected checkout ``worktree`` must not be composed against.
 
@@ -1840,21 +1925,30 @@ def fence_argv(
     masked_paths: Iterable[str | Path] = (),
     config: Mapping[str, Any] | None = None,
 ) -> list[str]:
-    """Wrap a launch argv so protected paths are read-only to the worker.
+    """Wrap a launch argv so only the granted paths are writable to the worker.
 
-    The whole filesystem is dev-bind-mounted writable, each existing protected
-    path is then overlaid read-only, and the run's own write roots are re-bound
-    writable where they fall inside a protected path. bubblewrap applies its
-    mounts in argv order, so a later bind over an earlier read-only overlay is
-    what keeps a worker's run directory and worktree writable while everything
-    else under the same protected root stays sealed.
+    The filesystem is mounted read-only and the run's write roots are then
+    bound writable over it, so a write or a removal anywhere else fails with
+    the operating system's read-only error whether or not anybody listed the
+    path. A fence that enumerates what it protects protects only what somebody
+    thought to list, which is how one run's cleanup removed a shared project
+    root on 19 November. The protected overlays and the node-tmp seal are still
+    emitted: they make the boundary legible in the argv, and they carry the
+    seals a read-only root alone does not — the masked paths and the paths git
+    cannot merge.
+    A read-only root also means every handed root is bound writable rather than
+    only the ones falling under an overlay, which is what the protected-path
+    list used to decide.
 
     A write root is the run's declared writable directories, its worktree, and
     the run directory the manifest lives in — the last because a worker that
     cannot write its own manifest has delivered nothing. A linked worktree also
     needs its own git directory and its repository's shared object store
     writable, or a worker cannot commit the work it was dispatched to do; see
-    :func:`worktree_git_write_roots`.
+    :func:`worktree_git_write_roots`. A *declared* grant is judged before
+    anything is composed: a filesystem root, a project root or the shared crew
+    root that holds every run is refused by name rather than granted; see
+    :func:`declared_grant_refusal`.
 
     A protected path is bound at its resolved target rather than at its own
     path, because bubblewrap cannot create a mount point below a symlink; see
@@ -1927,8 +2021,18 @@ def fence_argv(
     invent nothing. Each handed root is a directory by construction, so
     declaring a file can never create a directory of that name.
     """
+    declared_roots = [Path(path) for path in writable_directories]
+    # A declared grant is judged before anything is composed or created: the
+    # filesystem is read-only apart from the grants, so a grant naming a
+    # filesystem root, a project root or the shared crew runs root would hand
+    # back the whole surface the fence exists to withhold; see
+    # :func:`declared_grant_refusal`.
+    for declared in declared_roots:
+        refusal = declared_grant_refusal(declared, home=home, config=config)
+        if refusal is not None:
+            raise BackendError(refusal)
     protected = declared_protected_paths(home, config)
-    roots: list[Path] = [Path(path) for path in writable_directories]
+    roots: list[Path] = list(declared_roots)
     if worktree is not None:
         roots.extend(worktree_write_grant(worktree))
         roots.extend(worktree_git_write_roots(worktree))
@@ -1986,8 +2090,6 @@ def fence_argv(
         protected,
         required=_declared_paths(config, PROTECTED_PATHS_KEY, home),
     )
-    sealed = [destination for _source, destination in binds]
-    sealed += [destination for _source, destination in node_tmp_seal]
     if worktree is not None:
         checkout = _fenced_worktree_refusal(
             Path(worktree), protected_checkouts(home, config)
@@ -1999,7 +2101,18 @@ def fence_argv(
                 "inside it, so the fence's writable re-bind would re-open the "
                 "checkout it is meant to seal"
             )
-    fenced = [FENCE_BINARY, "--dev-bind", "/", "/", *PID_NAMESPACE_ARGS]
+    fenced = [
+        FENCE_BINARY,
+        "--ro-bind",
+        "/",
+        "/",
+        # The read-only root carries the node's device nodes read-only, and
+        # tools that allocate a pty or write a shared-memory segment need the
+        # writable devtmpfs beneath /dev. It exposes no file of the host's.
+        "--dev",
+        "/dev",
+        *PID_NAMESPACE_ARGS,
+    ]
     for source, destination in binds:
         fenced += ["--ro-bind", str(source), str(destination)]
     # The node tmp is emitted as its own overlay rather than folded into the
@@ -2066,7 +2179,12 @@ def fence_argv(
     # agrees with a bind emitted here; see :func:`fence_writable_roots`.
     for target in fence_writable_roots(roots):
         key = str(target)
-        if key in granted or not _within_any(target, sealed):
+        # The filesystem is read-only apart from these binds, so every handed
+        # root is granted rather than only the ones an overlay happened to
+        # compose, which is what the protected-path list used to decide. A
+        # duplicate is still dropped: a second bind of one path says nothing
+        # new and only lengthens the argv.
+        if key in granted:
             continue
         # A grant is the last word on its own path, so a handed root at or
         # above the worker scratch root would re-open it whole — the seal is
