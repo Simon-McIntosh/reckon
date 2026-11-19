@@ -1,0 +1,105 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "_entries(searched) == [str(shim_directory()), \"/usr/bin\"]",
+      "fails_if": "Removing the `if fenced or placement.in_allocation` append at reckon/crew/dispatch_launch.py:778 leaves [\"/usr/bin\"] instead of the scheduler entry; leaving the inherited git shim in, or appending any other entry, fails the same exact-list comparison. A wrong shim_directory() value moves both sides and is not caught.",
+      "file": "tests/test_a_fenced_worker_runs_git_directly.py",
+      "line": 95
+    }
+  ],
+  "assertion_independence": "The left side is the code's output and the right side is the path composition the code owns; the test-supplied value is only the inherited PATH, so the assertion does not compare a value against itself. Its scheduler element is computed by reckon.nested_launch.shim_directory, the function dispatch_launch.py:651-655 delegates to, so a defective relocation of that directory would be mirrored on both sides; the independent part is the /usr/bin tail and the git-shim exclusion.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:47:08Z",
+  "evidence_limits": [
+    "No suite rerun and no test rerun; the reviewed run's recorded arms were read instead.",
+    "The gate log header does not print its partition; the all_debug submission is read from the worker's verify-gate invocation recorded in stream.jsonl, and the log header prints a grid host.",
+    "The successful gate ran from a submission with RECKON_WORKER_FENCE unset, which the manifest and evidence fragment both disclose after three fenced submissions refused at a bind before pytest started.",
+    "The gate log the manifest records (scoped-gate-1795073282606964777.log) is at the reviewed head; the fragment quotes an earlier successful gate at f509cb35b0 (scoped-gate-1795072499630076643.log); both read 7 passed EXIT=0."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_a_fenced_worker_runs_git_directly.py",
+      "line": "95",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected scheduler entry is computed by calling the product's own shim_directory() rather than an independent literal, so a defective relocation of the shim directory is mirrored on both sides; the assertion still guards the path-composition rule the repair is about, but not the shim path's value."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the landed change is a test file and an evidence fragment; no runtime code imports either.",
+    "diff": "Commit f509cb35b0 replaces the exact-list assertion at tests/test_a_fenced_worker_runs_git_directly.py:95 and adds a comment; commit 742f590729 adds only the evidence fragment; no product file changed.",
+    "done_when": "The done_when asks for the file passing in full as a job on all_debug with SLURM_JOB_ID unset, the base run's failing ids logged beside it, no assertion weakened, and an importer arm; the manifest records the head gate, the base arm with its failing id, the head arm with measurement_module and measurement_cwd, and both suite arms at 58 passed EXIT=0.",
+    "goal": "The goal is that the named file passes in full on the primary branch; at head 742f5907294e the gate reads 7 passed EXIT=0 and the diff is the file's one stale assertion plus its evidence fragment.",
+    "manifest": "The manifest reads complete, cites both commits, states the repaired cause as the test being wrong, and carries both suite arms as inline JSON at full 40-character revisions with 0 failure ids.",
+    "write_paths": "The diff's two paths, tests/test_a_fenced_worker_runs_git_directly.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-fenced-worker-runs-git-directly.html, are inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fenced_worker_runs_git_directly.py:95 reddens if reckon/crew/dispatch_launch.py:778 stops appending _worker_shim_directory() when fenced, though its expected shim element is computed by the product's own shim_directory().",
+    "evidence": "scoped-gate-1795073282606964777.log:1-5 names revision 742f5907294e4a439c67c5ad679042e796a3b795, 7 passed and EXIT=0, and base-arm-b24fe95a789c82cd33f22a912b4dbbf94d5e2193.log carries the failing id the repair answers.",
+    "fit": "The added comment at tests/test_a_fenced_worker_runs_git_directly.py:91-93 matches the explanatory-comment idiom at lines 157-159 and 234-236, and the change introduces no new name.",
+    "goal_fidelity": "tests/test_a_fenced_worker_runs_git_directly.py passes 7 of 7 at the reviewed head per scoped-gate-1795073282606964777.log, and the repair is the stored assertion rather than a product change, which the done_when permits.",
+    "reuse": "The change defines nothing; it reuses reckon.nested_launch.shim_directory, the owner dispatch_launch.py:651-655 delegates to, and cites the existing sibling rule owner tests/test_shared_environments_are_read_only.py:480.",
+    "scope_discipline": "The two diff paths sit inside the declared write paths, and nothing else changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the named file passes in full on the primary branch; at head 742f5907294e the gate log scoped-gate-1795073282606964777.log reads 7 passed EXIT=0 over tests/test_a_fenced_worker_runs_git_directly.py, and the diff is that file's one stale assertion plus its evidence fragment.\nVERDICT done_when: the done_when asks for the file passing in full as a job on all_debug with SLURM_JOB_ID unset, the base run's failing ids logged beside it, no assertion weakened, and an importer arm; the manifest records the gate at the reviewed head (scoped-gate-1795073282606964777.log, revision 742f5907294e4a439c67c5ad679042e796a3b795, 7 passed, EXIT=0), the base arm (base-arm-b24fe95a789c82cd33f22a912b4dbbf94d5e2193.log, 1 failed / 6 passed, EXIT=1, FAILED test_a_fenced_launch_drops_an_inherited_git_shim), the head arm with measurement_module and measurement_cwd, and both suite arms (58 passed, EXIT=0 each).\nVERDICT write_paths: read the manifest's declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two narrower entries; the diff's only two paths are tests/test_a_fenced_worker_runs_git_directly.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-fenced-worker-runs-git-directly.html, both inside them.\nVERDICT manifest: read; it records status complete, both commits f509cb35b0444a0edff1a3dce3ce159c20b9c33b and 742f5907294e4a439c67c5ad679042e796a3b795, one cause with the verdict \"test was wrong\" in evidence_inputs, and baseline_suite/after_suite as inline JSON at full 40-character revisions with 0 failure ids each.\nVERDICT diff: read commit by commit from b24fe95a789c82cd33f22a912b4dbbf94d5e2193 to 742f5907294e4a439c67c5ad679042e796a3b795; f509cb35b0 replaces assert _entries(searched) == [\"/usr/bin\"] with == [str(shim_directory()), \"/usr/bin\"] plus a three-line comment at tests/test_a_fenced_worker_runs_git_directly.py:91-95, and 742f590729 adds only the 57-line evidence fragment; no product file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_fenced_worker_runs_git_directly.py passes 7 of 7 at the reviewed head per scoped-gate-1795073282606964777.log, and the repair is the stored assertion rather than a product change, which the done_when permits.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-1795073282606964777.log:1-5 names revision 742f5907294e4a439c67c5ad679042e796a3b795, 7 passed and EXIT=0, and base-arm-b24fe95a789c82cd33f22a912b4dbbf94d5e2193.log carries the failing id the repair answers.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two diff paths tests/test_a_fenced_worker_runs_git_directly.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-fenced-worker-runs-git-directly.html sit inside the declared write paths, and nothing else changed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_fenced_worker_runs_git_directly.py:95 reddens if reckon/crew/dispatch_launch.py:778 stops appending _worker_shim_directory() when fenced, though its expected shim element is computed by the product's own shim_directory().\nSCORE fit: 20\nJUSTIFICATION fit: the added comment at tests/test_a_fenced_worker_runs_git_directly.py:91-93 matches the explanatory-comment idiom already at lines 157-159 and 234-236, and the change introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change defines nothing; it reuses reckon.nested_launch.shim_directory, the owner dispatch_launch.py:651-655 delegates to, and cites the existing sibling rule owner tests/test_shared_environments_are_read_only.py:480 instead of restating it.\nFINDING tests/test_a_fenced_worker_runs_git_directly.py:95 non-blocking: the expected scheduler entry is computed by calling the product's own shim_directory() rather than an independent literal, so a defective relocation of the shim directory is mirrored on both sides; the assertion still guards the path-composition rule the repair is about, but not the shim path's value.\n",
+  "reuse_search": {
+    "capabilities": [
+      "composition of a launch search path",
+      "the scheduler shim directory",
+      "expected-path assertions in this test file"
+    ],
+    "judgement": "The change adds no definition. The path composition owner is dispatch_launch.launch_search_path, the shim directory owner is reckon.nested_launch.shim_directory (delegated at dispatch_launch.py:651-655), and the rule is already asserted by tests/test_shared_environments_are_read_only.py:480; the repaired assertion uses both owners rather than forking them.",
+    "owners_opened": [
+      "reckon/crew/dispatch_launch.py:launch_search_path",
+      "reckon/nested_launch.py:shim_directory",
+      "tests/test_shared_environments_are_read_only.py:480"
+    ]
+  },
+  "review_run_id": "r-20261119T073903559732-review-of-qwnw-red-file-a-fenced-worker-runs-git-directly-742f5907294e",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "742f5907294e4a439c67c5ad679042e796a3b795",
+  "reviewed_run_id": "r-20261118T063834258025-qwnw-red-file-a-fenced-worker-runs-git-directly",
+  "reviewed_worker_commits": [
+    "f509cb35b0444a0edff1a3dce3ce159c20b9c33b",
+    "742f5907294e4a439c67c5ad679042e796a3b795"
+  ],
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063834258025-qwnw-red-file-a-fenced-worker-runs-git-directly/after_suite-1795073344199478013.log",
+      "revision": "742f5907294e4a439c67c5ad679042e796a3b795",
+      "summary": "58 passed"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063834258025-qwnw-red-file-a-fenced-worker-runs-git-directly/baseline_suite-1795073301160846879.log",
+      "revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+      "summary": "58 passed"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:04:59.432854+00:00",
+  "total": 114
+}
