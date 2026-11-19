@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": "derived from the reviewed run's own gate logs: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064015733225-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main/baseline_suite-1795045714993583488.log reads 58 passed with EXIT=0 at 5b0a1f537ef9bbca90907bd16f663732db844fb0 and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064015733225-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main/after_suite-1795045790091517031.log reads 58 passed with EXIT=0, so the after arm holds no failing id the baseline did not",
+  "assertion_review": [
+    {
+      "conditions_for_failure": "the diff is a document and adds no assertion; the guard it rests on is the unchanged tests/test_the_held_worktree_read_is_bounded.py, which fails if the derivation reads more than 15 per-run documents (mutation log line: assert 500 <= 15) or if the store compares only the durable payload so a post-publication retention is lost (mutation log EXIT=1)",
+      "independence": "no assertion was added, so none compares a value with a variable the run supplied; the two failing ids come from mutations applied in scratch copies of the base tree",
+      "limit": "the mutation copies live only in the run directory and in scratch trees, so nothing in the repository reddens if the document's own figures drift",
+      "location": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html (whole file); tests/test_the_held_worktree_read_is_bounded.py is unchanged"
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:854 _fragment_href",
+    "reckon/evidence.py:1657 compose_landed_record"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:32:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base row and the current-primary row at :41 quote 6 passed in 19.27s and 6 passed in 20.14s without naming a log, and neither arm has a log on shared storage \u2014 the on-disk base evidence is /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064015733225-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main/scoped-gate-1795045909276254595.log reading 6 passed in 17.14s in a scratch tree \u2014 so a reader cannot reconcile those rows against a file they can open, unlike the job row at :58 which names logs/held-bound-2-1328544.out."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit db520dd72e6b2ca285db2e67d6b88b94231137dd against 5b0a1f537ef9bbca90907bd16f663732db844fb0; it adds 116 lines of evidence fragment only, with no product or test edit, and the quoted job log matches logs/held-bound-2-1328544.out line for line.",
+    "done_when": "the done_when asks for the file in full as an all_debug job with SLURM_JOB_ID unset and shared-storage output, a base-first pass, both suite arms as inline JSON with full 40-character revisions, and a negative control logged beside the head run in the fragment; the manifest records job 1328544 (logs/held-bound-2-1328544.out, 6 passed, EXIT=0 at 5b0a1f537ef9bbca90907bd16f663732db844fb0) and both arms at 58 passed EXIT=0, with two authored mutations substituted for the unsatisfiable base-red control, but the base row's 19.27s figure has no log on disk.",
+    "goal": "the source goal requires tests/test_the_held_worktree_read_is_bounded.py to pass in full on the primary branch, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html:4-10 records that it is green at base 5b0a1f53, at 46c938b2e8f7c1e369d29bb68165a7f1af29cc9e and as an all_debug job; my own re-run of that file at the present primary branch 7c481b65f22d read 6 passed in 22.94s.",
+    "manifest": "manifest.md reads status complete with commit db520dd72e6b2ca285db2e67d6b88b94231137dd, both suite arms as inline JSON carrying full 40-character revisions and log paths, the job log, two negative-control logs, and the sbatch fence launch failure under retry_failures with a scaffolding attribution.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git log 5b0a1f537ef9bbca90907bd16f663732db844fb0..db520dd72e6b2ca285db2e67d6b88b94231137dd holds one commit whose single path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html, inside the fragment directory."
+  },
+  "justifications": {
+    "durability": "the change adds no assertion, so the guard is the unchanged tests/test_the_held_worktree_read_is_bounded.py, which logs/negative-control-screen-refused.log shows failing at 500 <= 15 when reckon/crew/obligations.py:_run_namings returns None and logs/negative-control-store-compares-half-a-row.log shows failing when RunStore.sync_run compares only the durable payload.",
+    "evidence": "logs/held-bound-2-1328544.out carries the revision, tree, command and EXIT=0 the done_when asks for, but the base row at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html:36 quotes 19.27s that no log on disk reproduces.",
+    "fit": "the fragment follows the sibling shape at docs/evidence/fragments/queued-work-needs-no-workaround/s30.html and the node-id filename its at-current-main siblings use, prefixing every id with the node id.",
+    "goal_fidelity": "the goal's pass exists and is reproducible \u2014 my re-run at the present primary branch 7c481b65 read 6 passed \u2014 though docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html:36-41 quotes arms whose logs are not named.",
+    "reuse": "no definition is added, and reckon/evidence.py:1657 compose_landed_record already owns fragment composition and consumes the new file unchanged.",
+    "scope_discipline": "the only path in 5b0a1f53..db520dd7 is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html, which the declared fragment directory covers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal requires tests/test_the_held_worktree_read_is_bounded.py to pass in full on the primary branch, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html:4-10 records that it is green at base 5b0a1f53, at 46c938b2e8f7c1e369d29bb68165a7f1af29cc9e and as an all_debug job; my own re-run of that file at the present primary branch 7c481b65f22d read 6 passed in 22.94s.\nVERDICT done_when: the done_when asks for the file in full as an all_debug job with SLURM_JOB_ID unset and shared-storage output, a base-first pass, both suite arms as inline JSON with full 40-character revisions, and a negative control logged beside the head run in the fragment; the manifest records job 1328544 (logs/held-bound-2-1328544.out, 6 passed, EXIT=0 at 5b0a1f537ef9bbca90907bd16f663732db844fb0) and both arms at 58 passed EXIT=0, with two authored mutations substituted for the unsatisfiable base-red control, but the base row's 19.27s figure has no log on disk.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git log 5b0a1f537ef9bbca90907bd16f663732db844fb0..db520dd72e6b2ca285db2e67d6b88b94231137dd holds one commit whose single path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html, inside the fragment directory.\nVERDICT manifest: manifest.md reads status complete with commit db520dd72e6b2ca285db2e67d6b88b94231137dd, both suite arms as inline JSON carrying full 40-character revisions and log paths, the job log, two negative-control logs, and the sbatch fence launch failure under retry_failures with a scaffolding attribution.\nVERDICT diff: read the single commit db520dd72e6b2ca285db2e67d6b88b94231137dd against 5b0a1f537ef9bbca90907bd16f663732db844fb0; it adds 116 lines of evidence fragment only, with no product or test edit, and the quoted job log matches logs/held-bound-2-1328544.out line for line.\nCALL_SITES: reckon/evidence.py:854 _fragment_href, reckon/evidence.py:1657 compose_landed_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal's pass exists and is reproducible \u2014 my re-run at the present primary branch 7c481b65 read 6 passed \u2014 though docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html:36-41 quotes arms whose logs are not named.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/held-bound-2-1328544.out carries the revision, tree, command and EXIT=0 the done_when asks for, but the base row at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html:36 quotes 19.27s that no log on disk reproduces.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only path in 5b0a1f53..db520dd7 is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html, which the declared fragment directory covers.\nSCORE durability: 16\nJUSTIFICATION durability: the change adds no assertion, so the guard is the unchanged tests/test_the_held_worktree_read_is_bounded.py, which logs/negative-control-screen-refused.log shows failing at 500 <= 15 when reckon/crew/obligations.py:_run_namings returns None and logs/negative-control-store-compares-half-a-row.log shows failing when RunStore.sync_run compares only the durable payload.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the sibling shape at docs/evidence/fragments/queued-work-needs-no-workaround/s30.html and the node-id filename its at-current-main siblings use, prefixing every id with the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added, and reckon/evidence.py:1657 compose_landed_record already owns fragment composition and consumes the new file unchanged.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main.html:36 non-blocking: the base row and the current-primary row at :41 quote 6 passed in 19.27s and 6 passed in 20.14s without naming a log, and neither arm has a log on shared storage \u2014 the on-disk base evidence is /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064015733225-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main/scoped-gate-1795045909276254595.log reading 6 passed in 17.14s in a scratch tree \u2014 so a reader cannot reconcile those rows against a file they can open, unlike the job row at :58 which names logs/held-bound-2-1328544.out.",
+  "review_method": "read-only review of the source node, its manifest, its one-commit diff, its gate and negative-control logs and the fragment composer that consumes it, plus one bounded re-run of the single test the gate names at the present primary branch; no suite rerun and no mutation experiment",
+  "review_run_id": "r-20261119T000248074360-review-of-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main-db520dd72e6b",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "db520dd72e6b2ca285db2e67d6b88b94231137dd",
+  "reviewed_run_id": "r-20261118T064015733225-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "db520dd72e6b2ca285db2e67d6b88b94231137dd"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064015733225-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main/after_suite-1795045790091517031.log",
+      "observed_summary": "58 passed in 39.58s",
+      "reviewed_head_sha": "db520dd72e6b2ca285db2e67d6b88b94231137dd",
+      "revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064015733225-qwnw-red-file-the-held-worktree-read-is-bounded-at-current-main/baseline_suite-1795045714993583488.log",
+      "observed_summary": "58 passed in 39.21s",
+      "revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:53:46.725515+00:00",
+  "total": 106
+}
