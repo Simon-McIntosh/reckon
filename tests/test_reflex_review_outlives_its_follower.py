@@ -100,7 +100,6 @@ for arguments in (
     subprocess.run(["git", *arguments], cwd=repo, check=True, capture_output=True)
 (home / "mounts.json").write_text('{"sample": "' + str(repo / "docs") + '"}')
 
-dispatch = importlib.import_module("reckon.crew.dispatch")
 base_sha = subprocess.run(
     ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
 ).stdout.strip()
@@ -112,8 +111,20 @@ def prepare_worktree(_repo, session, node, base):
     return {"path": str(path), "base": base, "base_sha": base_sha}
 
 
-dispatch._create_worktree = prepare_worktree
-dispatch._supervisor_argv = lambda *, spec_path: [
+# Every override below is bound on the module whose caller reads it.
+# ``reckon.crew.dispatch`` is a compatibility facade: an assignment on it reaches
+# ``reckon.crew.dispatching._imports`` and stops there, because each caller holds
+# the name it imported rather than reading the facade per call. Binding on the
+# facade left these overrides inert, which is why the in-tree arm passed before
+# this change: the mutation never reached the code under test, so its green said
+# nothing about how the launch target was started. Each name is bound where it is
+# called: ``_create_worktree`` in ``dispatching.launch``, and ``_supervisor_argv``
+# and ``_spawn_detached_supervisor`` in ``dispatch_launch``.
+dispatching_launch = importlib.import_module("reckon.crew.dispatching.launch")
+dispatch_launch = importlib.import_module("reckon.crew.dispatch_launch")
+
+dispatching_launch._create_worktree = prepare_worktree
+dispatch_launch._supervisor_argv = lambda *, spec_path: [
     sys.executable,
     "-c",
     "import time; time.sleep(300)",
@@ -123,7 +134,7 @@ if launch == "in-tree":
         # No intermediate and no new session: the launch target is a plain child
         # of the follower, as the single-Popen vector was before it was fixed.
         return subprocess.Popen(argv).pid
-    dispatch._spawn_detached_supervisor = _in_tree_spawn
+    dispatch_launch._spawn_detached_supervisor = _in_tree_spawn
 
 CONFIG = {
     "default_backend": "alpha",
