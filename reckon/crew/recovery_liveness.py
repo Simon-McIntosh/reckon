@@ -1669,8 +1669,11 @@ def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
         )
     except OSError:
         return False
-    if isinstance(record, dict):
-        record["launcher_host_observation"] = observation
+    # The record is the caller's own copy of a listing's record, or the mutable
+    # pointer a writing reader read, so the observation lands where that caller
+    # can read it. A record that refuses the write is a shared view reaching a
+    # writer, which is the defect this line exists to surface rather than hide.
+    record["launcher_host_observation"] = observation  # type: ignore[index]
     return observation["process_gone"]
 
 
