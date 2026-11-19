@@ -1,0 +1,98 @@
+<section id="qwnw-red-file-a-hand-merged-run-is-recorded-landing">
+  <h2>A hand-merged run is recorded as the landing it was refused at</h2>
+
+  <p><strong>What changed.</strong> <code>reckon crew record-merge</code>
+  already verified the merge it is given: the commit resolves, it carries the
+  run's reviewed head, and it is on the local primary branch. It then handed
+  the merge to promotion as the run's commit citation, and the promotion
+  citation guard
+  (<code>reckon/crew/promotion_evidence.py::_require_commits_beyond_base</code>)
+  measured that citation in the run's own worktree. A commit made on the
+  primary branch is by construction not on the run's history, so the guard
+  refused the one commit that was actually the landing, and every hand-merged
+  run failed after its merge had already been pushed.</p>
+
+  <p>The guard now accepts a citation that is the pointer's
+  <code>recorded_merge</code> field. That field has exactly one writer —
+  <code>crew record-merge</code> — and it writes it only after the three
+  verifications above, so the field names a landing rather than a candidate.
+  The acceptance is per citation: a foreign commit cited beside the recorded
+  merge is still refused, and the base-citation and unmerged-branch refusals are
+  untouched.</p>
+
+  <h3 id="qwnw-red-file-a-hand-merged-run-is-recorded-measured">Measured</h3>
+
+  <p>The node's gate re-ran the whole file at the head revision as an
+  <code>all_debug</code> job with the scheduler's own variables removed:</p>
+
+  <table id="qwnw-red-file-a-hand-merged-run-is-recorded-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>head gate</td>
+        <td><code>bfed9c71cf7853078c64edd96f73417267ac4864</code></td>
+        <td>2 passed, <code>EXIT=0</code></td>
+        <td><code>scoped-gate-1795071810851477657.log</code></td>
+      </tr>
+      <tr>
+        <td>base, same file</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code></td>
+        <td><code>negative-control-base-1795072072653323129.log</code></td>
+      </tr>
+      <tr>
+        <td>importer arm, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>1 failure</td>
+        <td><code>importers-base-1795072129042173827.log</code></td>
+      </tr>
+      <tr>
+        <td>importer arm, head</td>
+        <td><code>bfed9c71cf7853078c64edd96f73417267ac4864</code></td>
+        <td>1 failure (the same id)</td>
+        <td><code>importers-head-1795072204228350715.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The importer arm runs the twenty test files that import
+  <code>reckon.crew.promotion_evidence</code>. Both arms fail
+  <code>tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run</code>
+  and nothing else, so the arm adds no failure against the base. The declared
+  suite arms (<code>tests/test_staged_write_inventory.py</code>,
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>) exit 0 at
+  both <code>b24fe95a</code> and <code>bfed9c71cf7853078c64edd96f73417267ac4864</code>.</p>
+
+  <p>A throwaway probe over a synthesised repository shows the acceptance is
+  the recorded merge and not a blanket bypass:</p>
+
+  <ul id="qwnw-red-file-a-hand-merged-run-is-recorded-probe">
+    <li>a commit on an unmerged branch, no <code>recorded_merge</code>: refused</li>
+    <li>the run's own head: accepted</li>
+    <li>the merge that carried the head, named as <code>recorded_merge</code>: accepted</li>
+    <li>that merge cited together with the unmerged commit: refused, naming the unmerged commit</li>
+  </ul>
+
+  <h3 id="qwnw-red-file-a-hand-merged-run-is-recorded-control">Negative control</h3>
+
+  <p>At the base revision
+  <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> the same file fails
+  with its failing id
+  <code>tests/test_a_hand_merged_run_is_recorded.py::test_a_hand_merged_run_is_recorded_on_the_branch</code>
+  and the refusal the repair removes:</p>
+
+  <pre><code>Error: run 'r-20261115T100000000000-a-hand-merged-run' cites
+abd590bdef4da8386b944b504c0f5c791a841364, which is not a commit this run made
+beyond its base a9edfe6c17e7260a65c7c52cc5068639d5bd7d9a: ... Cite the run's own
+commit, or pass --no-commit '&lt;why&gt;' when it produced none</code></pre>
+
+  <p>The red log is
+  <code>negative-control-base-1795072072653323129.log</code>; its last line is
+  <code>EXIT=1</code>. The second case in the file,
+  <code>test_a_merge_that_does_not_carry_the_head_is_refused</code>, passes in
+  both arms, so the refusal that remains is the merge check rather than the
+  citation guard.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
