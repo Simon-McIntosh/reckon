@@ -43,7 +43,6 @@ import shutil
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -55,6 +54,7 @@ import reckon
 from reckon._store import _config_home
 from reckon.crew.dispatch_launch import worker_scratch_dir
 from reckon.shim_lookup import real_executable
+from tests.test_fenced_worker_tmp_is_its_scratch import _base_outside
 
 PACKAGE_ROOT = Path(reckon.__file__).resolve().parents[1]
 
@@ -369,17 +369,11 @@ def _stub_base() -> Path:
     beneath the node tmp reads as absent to the worker rather than merely
     read-only. The stub backend is exec'd by name from the worker's PATH, so
     its directory may not sit inside the worker's /tmp, and pytest's own
-    temporary root does on a compute node. The fence dev-binds the whole
-    filesystem, so a base beside the node tmp is reached unchanged.
+    temporary root does on a compute node. ``_base_outside`` is the repository's
+    one rule for choosing such a base, so this case asks it rather than
+    restating it.
     """
-    node_tmp = Path("/tmp").resolve()  # noqa: S108 - the node's own tmp
-    for parent in (Path("/dev/shm"), Path.home()):  # noqa: S108 - not a tmp file
-        if not os.access(parent, os.W_OK):
-            continue
-        if parent.resolve().is_relative_to(node_tmp.resolve()):
-            continue
-        return Path(tempfile.mkdtemp(prefix="reckon-stop-gate-base-", dir=parent))
-    raise RuntimeError(f"no writable temporary base outside the node tmp {node_tmp}")
+    return _base_outside(Path("/tmp").resolve())  # noqa: S108 - the node's tmp
 
 
 @pytest.fixture

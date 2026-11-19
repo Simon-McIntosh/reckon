@@ -3,11 +3,10 @@
   <p id="qwnw-red-file-stop-before-spawn-spawns-nothing-mechanism">
     <strong>Cause, and which side was wrong.</strong> Test wrong. At the base the failing id was
     <code>tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit</code>,
-    red as an exec that named the case's own stub:
-    <code>bwrap: execvp …/stub-bin/claude: No such file or directory</code>, with the supervisor's
-    <code>exit.json</code> reading <code>ended_during: launch</code> and the assertion reading
-    <em>the stub worker never ran</em>. The stub was installed under <code>tmp_path</code>, which is beneath the node
-    <code>/tmp</code> whenever pytest's temporary root lives there. Since <code>reckon/_worker_fence.py</code>
+    red with the assertion that arm records,
+    <em>the stub worker never ran, so the group stop would find nothing to end</em>. The cause was read from the fence's
+    composition rather than from a string in that log: the stub was installed under <code>tmp_path</code>, which is
+    beneath the node <code>/tmp</code> whenever pytest's temporary root lives there. Since <code>reckon/_worker_fence.py</code>
     (<code>worker_tmp_mount_source</code>, commit <code>f420eb11bf</code>, 14 November) mounts a run's own scratch over
     the node tmp, every other path there reads as absent to the worker rather than merely read-only, so a stub beside the
     case's own tree cannot be executed inside the node's own fence.
@@ -35,12 +34,12 @@
       <tr>
         <td>Declared suite, base extraction</td>
         <td><code>4d464485b8d773934c39db59a4ba4d43e8648a97</code></td>
-        <td>1 failed, 58 passed, 2 errors; the errors are the staged-writer census's own <code>git ls-tree</code> against an extraction with no repository</td>
+        <td>56 passed, 2 errors, <code>EXIT=1</code>; the two errors are the staged-writer census's own <code>git ls-tree</code> against an extraction with no repository, not a failure of a test</td>
       </tr>
       <tr>
         <td>Declared suite, head</td>
         <td><code>01e09365e8596a6577563cf537591e14d4c8126c</code></td>
-        <td>61 passed, <code>EXIT=0</code></td>
+        <td>58 passed, <code>EXIT=0</code>, job on <code>all_debug</code></td>
       </tr>
     </tbody>
   </table>
