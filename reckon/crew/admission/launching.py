@@ -114,7 +114,7 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     other path — a ``--manifest`` the coordinator named elsewhere, a declared
     write path, the brief the run reads — is carried over unchanged.
     """
-    stored = dict(pointer.get("node") or {})
+    stored = runs.node_definition(pointer)
     queued_dir = runs.run_dir(str(pointer["run_id"]))
     manifest_path = str(stored.get("manifest_path") or "")
     if _inside_run_directory(manifest_path, queued_dir):

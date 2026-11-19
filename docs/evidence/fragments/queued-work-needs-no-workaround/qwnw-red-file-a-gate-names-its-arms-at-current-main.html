@@ -1,0 +1,133 @@
+<section id="qwnw-red-file-a-gate-names-its-arms-at-current-main-landing">
+  <h2>A gate's arms are read from the record its reply links</h2>
+
+  <p><strong>What changed.</strong> The test file's four red cases read a
+  completion's outcome off the command's own JSON reply:
+  <code>json.loads(result.output)["record"]["suite_delta"]</code> for the arms
+  a declared gate lands, and <code>payload["missing_fields"]</code> or
+  <code>payload["added_failure_ids"]</code> for the two refusals. That was the
+  reply's shape when the file was last repaired. It is not any more. A
+  completion reply is now a bounded receipt — <code>ok</code>,
+  <code>run_id</code>, <code>ledger_path</code>, <code>record_path</code>,
+  <code>pointer_removed</code> — and the outcome, the suite delta and the
+  fields a refusal names, is the record that <code>record_path</code> holds.
+  The reply answered <code>KeyError: 'record'</code> and
+  <code>KeyError: 'missing_fields'</code> on a landing that had in fact
+  succeeded, so the file was red about the reply's shape and not about the
+  gate declaration it is written to measure.</p>
+
+  <p>The change is one helper, <code>_receipt(result)</code>, which loads the
+  record the reply links, and the four cases read through it. No assertion was
+  deleted or weakened: every case still asserts the same status, the same
+  declared command, the same missing fields, the same added failure ids and the
+  same detail sentences — it reads them from the document the receipt names
+  instead of from the receipt.</p>
+
+  <p><strong>Verdict.</strong> Test wrong. The product rule the file encoded
+  was retired deliberately in <code>ba811581d3</code>, "confirm delivered runs
+  together with bounded replies": <em>recording full outcomes and returning
+  compact receipts</em>. The record still carries every field the cases assert,
+  and reading the linked record is what any other caller of this reply shape
+  does — <code>tests/test_a_clean_landing_releases_its_worktree.py</code> and
+  <code>tests/test_a_conflicting_landing_is_repaired.py</code> already read
+  <code>json.loads(Path(json.loads(result.output)["record_path"]).read_text())</code>.
+  Nothing in <code>reckon/</code> was edited.</p>
+
+  <h3 id="qwnw-red-file-a-gate-names-its-arms-at-current-main-arms">Measured</h3>
+
+  <p>Both arms ran as separate <code>sbatch --wait</code> jobs on
+  <code>all_debug</code>, each with <code>SLURM_JOB_ID</code> removed from the
+  pytest process's environment, and each appended its own header and a bare
+  <code>EXIT=</code> receipt to a log on shared storage under the run directory.
+  The base arm is the base revision extracted into its own git tree; the head
+  arm runs the landed worktree.</p>
+
+  <table id="qwnw-red-file-a-gate-names-its-arms-at-current-main-arms-table">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>job</th><th>node</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>gate</td>
+        <td><code>bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68</code></td>
+        <td>1327653</td>
+        <td>98dci4-clu-3141</td>
+        <td>4 failed, 1 passed (<code>EXIT=1</code>)</td>
+      </tr>
+      <tr>
+        <td>gate</td>
+        <td><code>15e224be731faf4e10360f3a36786591ed97b7d1</code></td>
+        <td>1327576</td>
+        <td>98dci4-clu-3141</td>
+        <td>5 passed (<code>EXIT=0</code>)</td>
+      </tr>
+      <tr>
+        <td>armed suite</td>
+        <td><code>bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68</code></td>
+        <td>1327655</td>
+        <td>98dci4-clu-3141</td>
+        <td>58 passed (<code>EXIT=0</code>)</td>
+      </tr>
+      <tr>
+        <td>armed suite</td>
+        <td><code>15e224be731faf4e10360f3a36786591ed97b7d1</code></td>
+        <td>1327591</td>
+        <td>98dci4-clu-3141</td>
+        <td>58 passed (<code>EXIT=0</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The armed suite is <code>tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code>, 58 collected
+  on both arms, so this change adds no failure against the base and drops
+  none. The node's own file is the arm over the test that reads the changed
+  reply: 4 failed at the base revision, 0 at the head.</p>
+
+  <p>Each base log's first three lines name the revision, the tree and the
+  command, and it goes on to name the host, the module the run imported and the
+  git tree it read it from, so the arm cannot be read as the worktree's own
+  code.</p>
+
+  <p>Because the node-local <code>/tmp</code> on the <code>all_debug</code>
+  node was full (279 MB free of 45 G, with 1.4 MB of it this run's), the base
+  extraction was narrowed to the paths these arms read —
+  <code>reckon tests pyproject.toml docs/research</code> — and each base log
+  states that in a <code># archive paths:</code> header line.</p>
+
+  <p>Ruff reports nothing new on the changed path: <code>ruff check</code>
+  <em>All checks passed!</em> and <code>ruff format --check</code> <em>1 file
+  already formatted</em>.</p>
+
+  <h3 id="qwnw-red-file-a-gate-names-its-arms-at-current-main-control">Negative control</h3>
+
+  <p>The pre-repair test file at the base revision fails four cases and passes
+  one (<code>EXIT=1</code>), logged at
+  <code>logs/negative-control-base-tests-test_a_gate_names_its_arms.log</code>
+  under the run directory, and again as the gate's base arm in
+  <code>logs/base-arm.log</code> (job 1327653): <code>EXIT=1</code> with the
+  ids</p>
+
+  <ul>
+    <li><code>tests/test_a_gate_names_its_arms.py::test_declared_gpu_arms_land_and_the_row_names_them</code> — <code>KeyError: 'record'</code></li>
+    <li><code>tests/test_a_gate_names_its_arms.py::test_the_same_arms_undeclared_are_refused_naming_the_mismatch</code> — <code>KeyError: 'missing_fields'</code></li>
+    <li><code>tests/test_a_gate_names_its_arms.py::test_a_mismatch_waiver_lands_with_its_reason_and_the_held_arms</code> — <code>KeyError: 'record'</code></li>
+    <li><code>tests/test_a_gate_names_its_arms.py::test_a_waiver_never_covers_a_failure_the_held_arms_add</code> — <code>KeyError: 'added_failure_ids'</code></li>
+  </ul>
+
+  <p>None of those four ids fails in the head arm, which is the same command at
+  <code>15e224be731f</code> reading 5 passed.</p>
+
+  <h3 id="qwnw-red-file-a-gate-names-its-arms-at-current-main-outside">Outside scope</h3>
+
+  <p><code>tests/test_suite_arms_use_the_armed_command.py</code> fails the same
+  way at the head (3 failed: <code>KeyError: 'missing_fields'</code> twice and
+  <code>KeyError: 'record'</code> once), because it reads the suite delta and a
+  refusal's named fields from the same compact reply instead of from the
+  completion record the reply links. It is a sibling of this file's subject and
+  is not in this node's changed paths, so it is reported here rather than
+  repaired.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged
+  result belongs to a separately dispatched test node.</p>
+</section>

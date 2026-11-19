@@ -16,7 +16,7 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="critical">
-  <meta name="plan-sprint" content="S27">
+  <meta name="plan-sprint" content="S28">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-worker-cannot-write-your-home">
@@ -138,6 +138,11 @@
 <article class="r-fu" data-id="f-awojcosf-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-11-16" data-recommends-skill="/reckon-build a-worker-or-its-job-cannot-overwrite-shared-files" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Land the file-permission check and the fence seal first</h4>
     <div class="r-fu-body"><p>§2 and §3 are small and close the route the incident took. §6 and §8 are independent of them and of each other. §4 follows §3; §5 can run beside §3 and meets it at the merge; §7 follows §6; §9 follows §4. §10 runs last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-or-its-job-cannot-overwrite-shared-files</pre>
+    </article>
+<article class="r-fu" data-id="f-awoj-s28" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-review" data-written-at="2026-11-19" data-recommends-skill="/reckon-build a-worker-or-its-job-cannot-overwrite-shared-files" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Rebuild the allow-list fence under a hold, then measure</h4>
+    <div class="r-fu-body"><p>§13 landed on 19 November and was reverted the same day: its project-root test refused every plan-review launch, and the admit service running it starved the lane from 27 live runs to 2. Before it lands again it needs a project-root test that accepts only what git itself accepts as a checkout (the review role's report directory holds an empty <code>.git</code> directory left by a sandbox, and a grant on it must be allowed: that case is the negative control), a write grant for every project in the flight, the importer tests repaired, and the workspace-write trap fixed. Place <code>crew hold</code> on the run when it is delivered and show the lead the grant list before releasing it. Two reports to place in this plan: the flight schema does not declare the fence program, and a fenced worker cannot start a job on <code>98dci4-gpu-0003</code>, which has no bwrap, so a one-card submission from inside the fence fails with no refusal at submit time. §10 is the fleet measurement. The four fleet-measurement sections of sprint S28 (this plan, and its three siblings) need the same quiet 24 hours; take them in one window.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-or-its-job-cannot-overwrite-shared-files</pre>
     </article>
 </section>

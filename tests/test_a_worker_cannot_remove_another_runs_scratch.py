@@ -99,7 +99,26 @@ class Scratch:
         self.stub.chmod(0o755)
 
     def point_the_scratch_root(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Resolve the scratch root to this tree, with a node tmp beside it.
+
+        The fence seals the node tmp and, where the run's scratch sits beneath
+        it, mounts that scratch over it, so everything else under the node tmp
+        reads as absent. pytest's own temporary root sits under ``/tmp`` on a
+        compute node, so a synthetic tree left there would be shadowed by the
+        fence this fixture composes and not even its stub would execute. Pin the
+        node tmp inside this tree, beside the scratch root, as the node-tmp and
+        store suites do, so the composition and its execution exercise the
+        scratch seal rather than a host tmp the fixture does not own.
+        """
         monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(self.scratch_root))
+        node_tmp = self.base / "node-tmp"
+        node_tmp.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", node_tmp)
+        monkeypatch.setattr(
+            _worker_fence,
+            "node_tmp_runtime_paths",
+            lambda: [node_tmp / "fleet", node_tmp / ".codex"],
+        )
 
     def argv(self) -> list[str]:
         """Compose the fence the way a dispatch does, through the production path."""

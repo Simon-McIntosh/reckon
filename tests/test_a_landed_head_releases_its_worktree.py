@@ -32,6 +32,17 @@ from tests.helpers.landing_repository import (
 MARKER = "the reviewed head landed\n"
 
 
+def _full_report(result) -> dict:
+    """The archived outcome the bounded receipt links to.
+
+    ``crew complete`` answers a caller with a short receipt naming
+    ``record_path``; the merge, release and refusal detail this module asserts
+    lives in that archived record.
+    """
+    receipt = json.loads(result.output)
+    return json.loads(Path(receipt["record_path"]).read_text(encoding="utf-8"))
+
+
 def _landed_run(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -118,7 +129,7 @@ def test_a_landing_of_the_reviewed_head_releases_the_worktree(
     result = _complete_land(run)
 
     assert result.exit_code == 0, result.output
-    report = json.loads(result.output)
+    report = _full_report(result)
     assert report["steps"]["land"]["ok"] is True, report
     assert report["steps"]["land"]["pushed"] is True
     # The marker the change introduced is on the primary branch and the remote.
@@ -140,7 +151,7 @@ def test_a_recorded_observer_checkout_still_releases_the_worktree(
     result = _complete_land(run)
 
     assert result.exit_code == 0, result.output
-    report = json.loads(result.output)
+    report = _full_report(result)
     landed = _git(run["repository"], "rev-parse", "main")
     assert _git(run["origin"], "rev-parse", "main") == landed
     # The observer really was left behind by the landing, so the release cannot
@@ -161,7 +172,7 @@ def test_a_worktree_holding_a_commit_beyond_the_head_is_withheld(
     result = _complete_land(run)
 
     assert result.exit_code != 0, result.output
-    report = json.loads(result.output)
+    report = _full_report(result)
     assert report["steps"]["land"]["ok"] is False, report
     assert report["worktree_released"] is False, report
     assert _git(run["origin"], "rev-parse", "main") == origin_before

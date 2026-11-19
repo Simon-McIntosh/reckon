@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import recovery, review
+from tests.helpers.git import git
 
 
 @pytest.fixture()
@@ -43,6 +45,47 @@ def _pointer(review_home: Path, *, with_manifest: bool = True) -> dict:
     }
 
 
+def _delivered_pointer(review_home: Path, tmp_path: Path) -> dict:
+    """A completed run whose manifest carries a passing gate at its own head.
+
+    A promotion is offered only from evidence a reader can check: the run's
+    tree resolves the commit it cites, and its manifest's ``after_suite`` arm
+    reports a passing suite at that revision. The bare pointer above carries
+    neither, and a run whose tree is unreadable offers no settlement.
+    """
+    tree = tmp_path / "worktree"
+    tree.mkdir()
+    git(tree, "init", "-q", "-b", "main")
+    git(tree, "config", "user.name", "Test User")
+    git(tree, "config", "user.email", "test@example.invalid")
+    git(tree, "config", "commit.gpgsign", "false")
+    (tree / "seed.txt").write_text("seed\n", encoding="utf-8")
+    git(tree, "add", "seed.txt")
+    git(tree, "commit", "-q", "-m", "test: seed the run's base")
+    base = git(tree, "rev-parse", "HEAD")
+    (tree / "candidate.py").write_text("answer = 42\n", encoding="utf-8")
+    git(tree, "add", "candidate.py")
+    git(tree, "commit", "-q", "-m", "test: deliver the candidate")
+    head = git(tree, "rev-parse", "HEAD")
+    pointer = _pointer(review_home)
+    pointer.update({"worktree": str(tree), "base_sha": base})
+    arm = {
+        "revision": head,
+        "exit_status": 0,
+        "completed": True,
+        "command": "pytest -p no:cacheprovider -q tests/test_candidate.py",
+        "log_path": "gate.log",
+    }
+    Path(pointer["manifest_path"]).write_text(
+        "node: source-node\n"
+        "status: complete\n"
+        f"commits: {head}\n"
+        f"after_suite: {json.dumps(arm)}\n",
+        encoding="utf-8",
+    )
+    return pointer
+
+
 def _parsed_review() -> dict:
     emitted = "\n".join(
         f"SCORE {dimension}: 18" for dimension in review.REVIEW_DIMENSIONS
@@ -68,10 +111,12 @@ def test_completed_manifest_waits_in_scoring_without_review(review_home: Path) -
     assert row["review_status"] is None
 
 
-def test_parsed_review_makes_completed_manifest_promotable(review_home: Path) -> None:
+def test_parsed_review_makes_completed_manifest_promotable(
+    review_home: Path, tmp_path: Path
+) -> None:
     stored = review.store_review(_parsed_review())
 
-    row = recovery.classify_pointer(_pointer(review_home))
+    row = recovery.classify_pointer(_delivered_pointer(review_home, tmp_path))
 
     assert stored == review.review_path("sample-project", "source-run")
     assert row["classification"] == "promotable"

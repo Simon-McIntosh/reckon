@@ -1,0 +1,20 @@
+<section id="qwnw-red-file-crew-view-serves-every-view-head"><h2>tests/test_crew_view_serves_every_view.py passes in full at 42fe90d0</h2><p>The named file passes at the revision this node started from: 6 passed, EXIT=0, as a job on <code>all_debug</code> over a scratch tree archived at that revision. The submission removes every <code>SLURM_*</code> variable from its environment. The prelude prints the imported module path and the working directory.</p><pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-0519a82086d3-zSjiPL/tree
+# command: env PYTHONPATH=. sh -c &#x27;PYTHONPATH=. .venv/bin/python -c &quot;import os; import reckon; print(chr(35), chr(112), reckon.__file__); print(chr(35), chr(99), os.getcwd())&quot; &amp;&amp; PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_view_serves_every_view.py&#x27;
+# p /tmp/mcintos-landing-0519a82086d3-zSjiPL/tree/reckon/__init__.py
+# c /tmp/mcintos-landing-0519a82086d3-zSjiPL/tree
+......                                                                   [100%]
+6 passed in 2.49s
+EXIT=0</pre></section>
+<section id="qwnw-red-file-crew-view-serves-every-view-negative-control"><h2>Negative control: the same file fails at a0bf002e72</h2><p>That revision is the parent of <code>ae3237b0e5</code>, which taught the typed tool surface to advertise the queue and decisions views. Two of the six cases fail there.</p><pre># revision: a0bf002e72bcb5d4275feb5335cd7515002fda50
+# tree: /tmp/reckon-crew-scratch/r-20261118T063106869692-qwnw-red-file-crew-view-serves-every-view/negctl-0xFpM4
+# module.__file__: /tmp/reckon-crew-scratch/r-20261118T063106869692-qwnw-red-file-crew-view-serves-every-view/negctl-0xFpM4/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063106869692-qwnw-red-file-crew-view-serves-every-view/negctl-0xFpM4
+# command: PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T063106869692-qwnw-red-file-crew-view-serves-every-view/negctl-0xFpM4 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_view_serves_every_view.py
+.FF...                                                                   [100%]
+FAILED tests/test_crew_view_serves_every_view.py::test_the_tool_and_the_dispatcher_declare_the_same_views - AssertionError: the crew view dispatcher serves these views and the crew tool does not advertise: [&#x27;decisions&#x27;, &#x27;queue&#x27;]
+FAILED tests/test_crew_view_serves_every_view.py::test_every_declared_view_answers_the_same_document_on_both_surfaces - AssertionError: these view/argument pairs answer differently on the command line and on the crew tool: [&#x27;queue with mine&#x27;, &#x27;queue with phase&#x27;, &#x27;queue with read&#x27;, &#x27;queue with session&#x27;]
+2 failed, 4 passed in 2.85s
+EXIT=1</pre></section>
+<section id="qwnw-red-file-crew-view-serves-every-view-verdict"><h2>Cause verdict</h2><p>No cause remains at the base revision: the repair that makes these cases green reached the file before this node began, so neither the product nor the test is changed here and no assertion is removed or weakened. The base run above is the delivery; the negative control shows the cases still fail when the repair is absent.</p></section>

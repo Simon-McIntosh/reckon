@@ -9,6 +9,11 @@ a failed land step, naming the exception's declared type and message and
 offering the command that resumes the landing. ``crew merge`` maps the same
 failure to a refusal rather than a traceback.
 
+``crew complete`` replies with a bounded receipt that cites the full outcome at
+``record_path`` and names the refused stage in ``error``; the per-step entries
+live on that record, so the cases below read the record the receipt cites and
+also assert the bounded receipt names the failure.
+
 The declared mutation narrows the handler back to ``MergeError``: the patched
 ``UnicodeDecodeError`` then escapes ``crew complete --land`` and the first case
 fails, which is the red log the manifest names.
@@ -45,6 +50,13 @@ def _raise_on_land(monkeypatch: pytest.MonkeyPatch, exc: Exception) -> None:
         raise exc
 
     monkeypatch.setattr(merge, "land_merge", _land_merge_raises)
+
+
+def _full_outcome(result) -> dict:
+    """The complete command's whole outcome, read from the record its receipt cites."""
+    receipt = json.loads(result.output)
+    record_path = receipt["record_path"]
+    return json.loads(Path(record_path).read_text(encoding="utf-8"))
 
 
 def _merge_argv(run: dict) -> list[str]:
@@ -128,8 +140,10 @@ def test_a_land_that_raises_after_promotion_exits_nonzero(
     assert result.exit_code != 0, result.output
     report = json.loads(result.output)
     assert report["ok"] is False, report
-    assert report["steps"]["promote"]["ok"] is True, report
-    land = report["steps"]["land"]
+    assert "UnicodeDecodeError" in report["error"], report
+    outcome = _full_outcome(result)
+    assert outcome["steps"]["promote"]["ok"] is True, outcome
+    land = outcome["steps"]["land"]
     assert land["ok"] is False, land
     assert "UnicodeDecodeError" in land["error"], land
     assert land["resume"].startswith("reckon crew merge"), land
@@ -156,7 +170,8 @@ def test_a_merge_error_refusal_reports_as_at_base(
 
     assert result.exit_code != 0, result.output
     report = json.loads(result.output)
-    land = report["steps"]["land"]
+    assert report["error"] == "land: the merge dropped the change", report
+    land = _full_outcome(result)["steps"]["land"]
     assert land["ok"] is False, land
     assert land["error"] == "the merge dropped the change", land
     assert land["resume"].startswith("reckon crew merge"), land

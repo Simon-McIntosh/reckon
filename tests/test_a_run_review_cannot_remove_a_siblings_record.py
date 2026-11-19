@@ -104,6 +104,7 @@ class Store:
         self.sibling_record = self.project_directory / f"{SIBLING_ID}.json"
         self.manifest = self.crew_home / "runs" / REVIEW_ID / "manifest.md"
         self.results = self.crew_home / "runs" / REVIEW_ID / "results.txt"
+        self.scratch = root / "scratch" / REVIEW_ID
         self.home.mkdir(parents=True, exist_ok=True)
         self.project_directory.mkdir(parents=True)
         self.sibling_record.write_text('{"project": "reckon"}\n')
@@ -112,8 +113,25 @@ class Store:
 
     def point_the_stores(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("RECKON_HOME", str(self.base))
-        monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(self.base / "scratch"))
-        (self.base / "scratch" / REVIEW_ID).mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(self.scratch.parent))
+        self.scratch.mkdir(parents=True, exist_ok=True)
+        # The fence seals the node tmp and, where the run's scratch sits beneath
+        # it, mounts that scratch over it, so everything else under the node tmp
+        # reads as absent. pytest's own temporary root sits under ``/tmp`` on a
+        # compute node, so a synthetic crew home left there would be shadowed by
+        # the fence this fixture composes: not even the stub would execute, and
+        # the review store would read as absent rather than as sealed. Pin the
+        # node tmp inside this tree, as the sibling fence suites do, so the
+        # composition and its execution exercise the store seal rather than a
+        # host tmp the fixture does not own.
+        node_tmp = self.base / "node-tmp"
+        node_tmp.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", node_tmp)
+        monkeypatch.setattr(
+            _worker_fence,
+            "node_tmp_runtime_paths",
+            lambda: [node_tmp / "fleet", node_tmp / ".codex"],
+        )
 
     def reviewed_run_directory(self) -> Path:
         from reckon.crew.runs import run_dir
@@ -177,7 +195,9 @@ def mutations(monkeypatch: pytest.MonkeyPatch) -> None:
         # The widening, which is what a store-path declaration composes: the
         # record is declared where it does not exist yet, so the fence grants
         # its parent — the project directory holding every other run's record.
-        def widened(run_directory, reviewed_run_id, *, reviewed_head_sha=""):
+        def widened(
+            run_directory, reviewed_run_id, *, reviewed_head_sha="", rubric=None
+        ):
             paths = [str(review_module.review_path(PROJECT, REVIEWED_ID))]
             if reviewed_head_sha:
                 paths.append(
@@ -194,7 +214,7 @@ def mutations(monkeypatch: pytest.MonkeyPatch) -> None:
         )
     if PATHS_NEGATIVE:
 
-        def store_only(record, project):
+        def store_only(record, project, *, pointers=None):
             node = record.get("node") or {}
             directory = review_module.review_store_root() / project
             return [

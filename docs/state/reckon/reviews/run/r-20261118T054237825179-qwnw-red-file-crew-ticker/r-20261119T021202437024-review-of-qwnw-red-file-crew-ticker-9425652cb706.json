@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/ticker.py:_stats",
+    "reckon/crew/recovery_watch.py:_departure_word",
+    "reckon/crew/recovery_watch.py:_ledger_landing_word",
+    "reckon/crew/recovery_watch.py:_fleet_counts",
+    "reckon/crew/recovery_classification.py:_promoted_awaiting_merge",
+    "reckon/crew/recovery_classification.py:delivery_summary"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:41:06Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "257",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case passes position 7 but nothing asserts it -- the regex at :242 reads the position as r'(\\d+)p@\\s*\\S+', whose \\S+ also matches the dim marker '\u2013', and the groups at :298-306 stop at the promotion count -- so a renderer that printed the marker for a queued promotion would pass while the comment at :248-251 claims the cell is read for its own position."
+    },
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "163",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment, and the same rule in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html, says the departure reads 'complete' because the fixture's head is on no branch, but the fixture row at :73 names no worktree, so recovery_classification._promoted_awaiting_merge takes its 'ancestry could not be read' arm. The assertion pins the unverified-landing rule and the stated non-ancestor rule is never exercised."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line reads 'PYTHONPATH=. .venv/bin 2>/dev/null', which is not a command any shell can run, so promotion must fall back to the log header; and baseline_suite/after_suite, which the done_when requires as inline JSON carrying full revisions, are absent from the manifest (both read null in the run record) although baseline_suite-1795053508633516706.log and after_suite-1795053554972303424.log exist in the run directory at 6fa2b177c5 and 9425652cb7."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: changed_paths names 'docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-typo-placeholder', which no commit creates and which does not exist at 9425652cb7, and it omits the two evidence files the diff does ship, so a coordinator reading the record learns a wrong file list."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit against 6fa2b177c5: acf0ba101f updates the counter and departure assertions in tests/test_crew_ticker.py, 2a283a0f41 adds the fragment and the base log, 2af559a33c and 9425652cb7 cite the head revisions in that fragment; 3 files, no product change.",
+    "done_when": "The done_when requires the head run as an all_debug job with SLURM_JOB_ID unset on shared storage, a base run first, a cause-by-cause verdict, an importer-arm pair as inline JSON with full revisions, a negative control and ruff clean; ticker-head.log satisfies the head run and the committed fragment satisfies the base run and the negative control, but the manifest omits the inline suite arms and the ruff record.",
+    "goal": "The node goal ('Make tests/test_crew_ticker.py pass in full on the primary branch') is delivered: ticker-head.log records 27 passed with EXIT=0 at 9425652cb7, and the diff updates three assertions in tests/test_crew_ticker.py without touching reckon/.",
+    "manifest": "Read; it names four commits (acf0ba101f, 2a283a0f41, 2af559a33c, 9425652cb7), status complete, ticker-head.log as the head gate and the committed base log as the negative control, while baseline_suite and after_suite read null and its tests line reads 'PYTHONPATH=. .venv/bin 2>/dev/null'.",
+    "write_paths": "Declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and that fragment file, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker; the diff touches only tests/test_crew_ticker.py and two files inside the declared fragment directory."
+  },
+  "justifications": {
+    "durability": "The base run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker-base.txt reddens all three updated assertions, but the promotion case's position value at tests/test_crew_ticker.py:257 is never asserted, so a renderer that always prints the dim marker would still pass that case.",
+    "evidence": "ticker-head.log records the head run at 9425652cb7 with SLURM_JOB_ID unset and the committed fragment records the base run at 6fa2b177c5 (3 failed, 24 passed, EXIT=1), but the manifest carries neither the baseline_suite/after_suite inline JSON the done_when requires nor any ruff record, and its tests line is not a runnable command.",
+    "fit": "The updated assertions keep the module's shape -- regex at tests/test_crew_ticker.py:242, a cases tuple at :252 and a per-case loop with its comments -- and the head file is ruff-clean, though the comment at :248-251 states a check the case does not make.",
+    "goal_fidelity": "tests/test_crew_ticker.py passes 27 of 27 at 9425652cb7 (ticker-head.log: '27 passed', EXIT=0) and the delivered diff changes no file under reckon/, which is what the goal names.",
+    "reuse": "The diff adds no production definition; the only new text is in tests/test_crew_ticker.py and the evidence fragment, and a search of reckon/crew found no existing mechanism the change duplicates.",
+    "scope_discipline": "The three paths in 6fa2b177c5..9425652cb7 (tests/test_crew_ticker.py and the two files under docs/evidence/fragments/queued-work-needs-no-workaround/) all sit inside the declared write paths, and no product file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_crew_ticker.py pass in full on the primary branch'; ticker-head.log records 27 passed with EXIT=0 at 9425652cb7, and the diff changes only that test file plus two evidence files, so the goal is delivered by updating three assertions rather than by touching reckon/.\nVERDICT done_when: the done_when names the file at head as an all_debug job with SLURM_JOB_ID unset on shared storage, a base run first, a per-cause verdict, an importer arm pair as inline JSON with full revisions, a negative control and ruff clean; ticker-head.log carries the head run ('# child SLURM_JOB_ID: unset', 27 passed, EXIT=0) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker-base.txt carries the base run (3 failed, 24 passed, EXIT=1 at 6fa2b177c5), while the manifest records neither the inline suite arms nor the ruff result.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment file, and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker; every path in 6fa2b177c5..9425652cb7 is inside them, while the manifest's own changed_paths line names a placeholder file that does not exist.\nVERDICT manifest: read; it names four commits, status complete, ticker-head.log as the head gate and the committed base log as the negative control, but baseline_suite and after_suite read null and its tests line reads 'PYTHONPATH=. .venv/bin 2>/dev/null'.\nVERDICT diff: read commit by commit against 6fa2b177c5 -- acf0ba101f updates the counter and departure assertions in tests/test_crew_ticker.py, 2a283a0f41 adds the fragment and the base log, 2af559a33c and 9425652cb7 cite the head revisions in the fragment; 3 files, all inside the declared scope, no product code changed.\nCALL_SITES: reckon/crew/ticker.py:_stats, reckon/crew/recovery_watch.py:_departure_word, reckon/crew/recovery_watch.py:_ledger_landing_word, reckon/crew/recovery_watch.py:_fleet_counts, reckon/crew/recovery_classification.py:_promoted_awaiting_merge, reckon/crew/recovery_classification.py:delivery_summary\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_crew_ticker.py passes 27 of 27 at 9425652cb7 (ticker-head.log: '27 passed', EXIT=0) and the delivered diff changes no file under reckon/, which is what the goal names.\nSCORE evidence: 12\nJUSTIFICATION evidence: ticker-head.log records the head run at 9425652cb7 with SLURM_JOB_ID unset and the fragment records the base run at 6fa2b177c5 (3 failed, 24 passed, EXIT=1), but the manifest carries neither the baseline_suite/after_suite inline JSON the done_when requires nor any ruff record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths in 6fa2b177c5..9425652cb7 all sit inside the declared write paths, and no product file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker-base.txt reddens all three updated assertions, but the promotion case's position value at tests/test_crew_ticker.py:257 is never asserted, so a renderer that always printed the dim marker would still pass.\nSCORE fit: 17\nJUSTIFICATION fit: the updated assertions keep the module's shape (regex at tests/test_crew_ticker.py:242, cases tuple at :252, per-case loop) and the head file is ruff-clean, though the comment at :248-251 states a check the case does not make.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition, and a capability search over reckon/crew found no owner the change duplicates or forks.\nFINDING tests/test_crew_ticker.py:257 non-blocking: the case passes position 7 but nothing asserts it -- the regex at :242 reads the position as r'(\\d+)p@\\s*\\S+', whose \\S+ also matches the dim marker '\u2013', and the groups at :298-306 stop at the promotion count -- so a renderer that printed the marker for a queued promotion would pass while the comment at :248-251 claims the cell is read for its own position.\nFINDING tests/test_crew_ticker.py:163 non-blocking: the comment, and the same rule in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ticker.html, says the departure reads 'complete' because the fixture's head is on no branch, but the fixture row at :73 names no worktree, so recovery_classification._promoted_awaiting_merge takes its 'ancestry could not be read' arm; the explanation is wrong and the stated rule is untested.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md:10 non-blocking: the tests line reads 'PYTHONPATH=. .venv/bin 2>/dev/null', which is not a command any shell can run, so promotion must fall back to the log header; and the baseline_suite/after_suite inline JSON the done_when requires is absent though the two arms' logs exist in the run directory at 6fa2b177c5 and 9425652cb7.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054237825179-qwnw-red-file-crew-ticker/manifest.md:8 non-blocking: changed_paths names 'docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-typo-placeholder', which no commit creates, and omits the two evidence files the diff does ship.\n",
+  "review_method": "Read-only review of the source node, its manifest, its four commits against 6fa2b177c5, its gate logs and the production code the assertions reach; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T021202437024-review-of-qwnw-red-file-crew-ticker-9425652cb706",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "9425652cb70628b22764b1af9eb588e07b4c5e0f",
+  "reviewed_run_id": "r-20261118T054237825179-qwnw-red-file-crew-ticker",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "acf0ba101fd3043f9faedc3afc695d8e33c8bf20",
+    "2a283a0f415a48a44f74757529d3a35f3c23551c",
+    "2af559a33cadcc87b4c1a5cf5b483128795b6412",
+    "9425652cb70628b22764b1af9eb588e07b4c5e0f"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:10:09.179050+00:00",
+  "total": 102
+}

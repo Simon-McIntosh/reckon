@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1455.log at b24fe95a records '58 passed', EXIT=0, completed; after_suite-unfenced-1795070548537646965-2939.log at 12745a6640 records '58 passed', EXIT=0, completed; neither carries a FAILED line, so the set difference is empty (0 added failures, ids []). The arm command names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import the changed test.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station_subscriber.py:276 live_work_populations",
+    "reckon/crew/station_subscriber.py:360 process_table_walk_once region",
+    "reckon/crew/process_signal.py:309 process_table_walk_once",
+    "reckon/crew/recovery_liveness.py local_liveness"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:40:44Z",
+  "findings": [
+    {
+      "file": "tests/test_a_tick_walks_the_process_table_once.py",
+      "line": "337",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm's expectation was weakened from `== POINTERS` to `>= POINTERS` to pass, which the plan's \"No assertion is deleted or weakened to pass\" forbids; it still catches the defect changing shape."
+    },
+    {
+      "file": "tests/test_a_tick_walks_the_process_table_once.py",
+      "line": "332",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment pins the regionless walk count at 79, an absolute that moves with any change to how many liveness reads a pointer costs, so it must be edited on a future date to stay true."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tick-walks-the-process-table-once.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the exact head assertion \"fails with 79 == 1\" with the region neutralised, but at head the head assertion passes 1 == 1 and the recorded 79 == 1 failure is nowhere in the logs; the recorded red is 79 == 40 at the base revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against b24fe95a789c82cd33f22a912b4dbbf94d5e2193: the first restates the regionless expectation and its docstring in tests/test_a_tick_walks_the_process_table_once.py (+15 -5) and the second adds the 24-line evidence fragment; no product source is touched.",
+    "done_when": "the statement asks for the file green at head on all_debug with SLURM_JOB_ID unset, a base run that is red, an arm over importing test files, and no assertion weakened; the head log runs `env -u SLURM_JOB_ID -u SLURM_JOBID` and exits 0, negative-control-1455.log is red at b24fe95a789c82cd33f22a912b4dbbf94d5e2193 on tests/test_a_tick_walks_the_process_table_once.py:328 (`assert 79 == 40`), but the two recorded suite arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, a population the change does not touch, and the base-arm expectation at tests/test_a_tick_walks_the_process_table_once.py:337 was relaxed from `== POINTERS` to `>= POINTERS`.",
+    "goal": "the goal is that tests/test_a_tick_walks_the_process_table_once.py passes in full; scoped-gate-unfenced-1795070438502155788-2878.log records `1 passed in 1.84s` with EXIT=0 at revision 12745a6640172864fdbd070920411a9d3a0c4aed, and the file carries exactly one collected test (`^def test_` count 1), so the whole file is that one case and it is green at the declared head.",
+    "manifest": "read; it reports status complete, commits 215fe5a9d901c6a64ec86bd5a64687e03c111635 and 12745a6640172864fdbd070920411a9d3a0c4aed, a landing line stating 1/1 at head and 1 failed at base, both arms 58 passed, and four logs, of which I opened the scoped gate, the negative control and both suite arms and found their summary lines and EXIT receipts exactly as claimed.",
+    "write_paths": "the manifest declares reckon, tests, the plan's fragment directory and this node's fragment, and a figures directory; the diff touches only tests/test_a_tick_walks_the_process_table_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tick-walks-the-process-table-once.html, and both are inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_walks_the_process_table_once.py:311 fails if the region stops holding one walk (the regionless arm counts 79), but tests/test_a_tick_walks_the_process_table_once.py:337 would still pass if the regionless pass walked the table thousands of times.",
+    "evidence": "scoped-gate-unfenced-1795070438502155788-2878.log and negative-control-1455.log record the head pass and the base failure with its id, but baseline_suite-1455.log and after_suite-unfenced-1795070548537646965-2939.log measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cannot fail on a change to the walk-count test.",
+    "fit": "the restated assertion and its message follow the surrounding assertion style, and tests/test_a_tick_walks_the_process_table_once.py:332 records the count 79 in prose, the fuse pattern the repository bans.",
+    "goal_fidelity": "scoped gate log scoped-gate-unfenced-1795070438502155788-2878.log shows the one collected case in tests/test_a_tick_walks_the_process_table_once.py passing at 12745a66, so the named file is green at the reviewed head.",
+    "reuse": "the diff adds no definition \u2014 two commits change a docstring, a mutation string, one assertion and its comment \u2014 and a search of tests/ for an existing walk-count assertion lands on this file, the only owner of the fixture.",
+    "scope_discipline": "every path in `git diff b24fe95a78..12745a66` is inside the declared write paths, and no product file was edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_a_tick_walks_the_process_table_once.py passes in full; scoped-gate-unfenced-1795070438502155788-2878.log records `1 passed in 1.84s` with EXIT=0 at revision 12745a6640172864fdbd070920411a9d3a0c4aed, and the file carries exactly one collected test (`^def test_` count 1), so the whole file is that one case and it is green at the declared head.\nVERDICT done_when: the statement asks for the file green at head on all_debug with SLURM_JOB_ID unset, a base run that is red, an arm over importing test files, and no assertion weakened; the head log runs `env -u SLURM_JOB_ID -u SLURM_JOBID` and exits 0, negative-control-1455.log is red at b24fe95a789c82cd33f22a912b4dbbf94d5e2193 on tests/test_a_tick_walks_the_process_table_once.py:328 (`assert 79 == 40`), but the two recorded suite arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, a population the change does not touch, and the base-arm expectation at tests/test_a_tick_walks_the_process_table_once.py:337 was relaxed from `== POINTERS` to `>= POINTERS`.\nVERDICT write_paths: the manifest declares reckon, tests, the plan's fragment directory and this node's fragment, and a figures directory; the diff touches only tests/test_a_tick_walks_the_process_table_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tick-walks-the-process-table-once.html, and both are inside that fence.\nVERDICT manifest: read; it reports status complete, commits 215fe5a9d901c6a64ec86bd5a64687e03c111635 and 12745a6640172864fdbd070920411a9d3a0c4aed, a landing line stating 1/1 at head and 1 failed at base, both arms 58 passed, and four logs, of which I opened the scoped gate, the negative control and both suite arms and found their summary lines and EXIT receipts exactly as claimed.\nVERDICT diff: read both commits against b24fe95a789c82cd33f22a912b4dbbf94d5e2193: the first restates the regionless expectation and its docstring in tests/test_a_tick_walks_the_process_table_once.py (+15 -5) and the second adds the 24-line evidence fragment; no product source is touched.\nCALL_SITES: reckon/crew/station_subscriber.py:276 live_work_populations, reckon/crew/station_subscriber.py:360 process_table_walk_once region, reckon/crew/process_signal.py:309 process_table_walk_once, reckon/crew/recovery_liveness.py local_liveness\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scoped gate log scoped-gate-unfenced-1795070438502155788-2878.log shows the one collected case in tests/test_a_tick_walks_the_process_table_once.py passing at 12745a66, so the named file is green at the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-unfenced-1795070438502155788-2878.log and negative-control-1455.log record the head pass and the base failure with its id, but baseline_suite-1455.log and after_suite-unfenced-1795070548537646965-2939.log measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cannot fail on a change to the walk-count test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff b24fe95a78..12745a66` is inside the declared write paths, and no product file was edited.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_tick_walks_the_process_table_once.py:311 fails if the region stops holding one walk (the regionless arm counts 79), but tests/test_a_tick_walks_the_process_table_once.py:337 would still pass if the regionless pass walked the table thousands of times.\nSCORE fit: 17\nJUSTIFICATION fit: the restated assertion and its message follow the surrounding assertion style, and tests/test_a_tick_walks_the_process_table_once.py:332 records the count 79 in prose, the fuse pattern the repository bans.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition \u2014 two commits change a docstring, a mutation string, one assertion and its comment \u2014 and a search of tests/ for an existing walk-count assertion lands on this file, the only owner of the fixture.\nFINDING tests/test_a_tick_walks_the_process_table_once.py:337 non-blocking: the base arm's expectation was weakened from `== POINTERS` to `>= POINTERS` to pass, which the plan's \"No assertion is deleted or weakened to pass\" forbids; it still catches the defect changing shape.\nFINDING tests/test_a_tick_walks_the_process_table_once.py:332 non-blocking: the comment pins the regionless walk count at 79, an absolute that moves with any change to how many liveness reads a pointer costs, so it must be edited on a future date to stay true.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tick-walks-the-process-table-once.html:20 non-blocking: the fragment says the exact head assertion \"fails with 79 == 1\" with the region neutralised, but at head the head assertion passes 1 == 1 and the recorded 79 == 1 failure is nowhere in the logs; the recorded red is 79 == 40 at the base revision.",
+  "review_run_id": "r-20261119T070112045112-review-of-qwnw-red-file-a-tick-walks-the-process-table-once-12745a664017",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "12745a6640172864fdbd070920411a9d3a0c4aed",
+  "reviewed_run_id": "r-20261118T063514935749-qwnw-red-file-a-tick-walks-the-process-table-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:52:33.791431+00:00",
+  "total": 107
+}
