@@ -54,6 +54,33 @@
   <p>The delta is one test id fixed and none added; the census pair reads the
   same 58 passes at both revisions.</p>
 
+  <p>The census arms are recorded as inline JSON so a promotion can read them
+  without a log, each carrying the full 40-character revision it measured and
+  the command resolved over that revision's own tree:</p>
+
+  <pre id="qwnw-red-file-every-launch-route-runs-the-resolved-command-suite-arms">
+{
+  "baseline_suite": {
+    "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "exit_status": 0,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command/baseline-suite.log",
+    "completed": true,
+    "failure_count": 0,
+    "failure_ids": []
+  },
+  "after_suite": {
+    "revision": "d064e0acee976b4ec9b67f84fb638ed66e51e88b",
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "exit_status": 0,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command/after-suite.log",
+    "completed": true,
+    "failure_count": 0,
+    "failure_ids": []
+  }
+}
+  </pre>
+
   <h3 id="qwnw-red-file-every-launch-route-runs-the-resolved-command-control">Negative control</h3>
 
   <p>The base run of the named file fails exactly
