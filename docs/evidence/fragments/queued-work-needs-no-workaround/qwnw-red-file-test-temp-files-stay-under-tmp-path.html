@@ -1,0 +1,50 @@
+<section id="qwnw-red-file-test-temp-files-stay-under-tmp-path-record">
+<h3>The temp-file guard file passes: three causes, all in the file it measures</h3>
+<p>At base <code>35fb9f3ae769586b2f364485bf2d6fc31caf87f5</code> the node's named file read <code>1 failed, 2 passed</code>: the guarded run over <code>tests/test_budget_group_declaration.py</code> and <code>tests/test_budget.py</code> left its <code>TMPDIR</code> empty, and the run over <code>tests/test_crew.py</code> failed <code>5 failed, 186 passed</code> — so the guard's own claim (the directory stays empty) was never reached for that file. Every cause is in <code>tests/test_crew.py</code>; none is in the product. The base run is logged below beside the head run, both as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code> unset inside them.</p>
+
+<h4>Cause 1 — a delivered word read before its worker ended (test wrong)</h4>
+<p>Four cases delivered a <code>blocked</code>, <code>failed</code> or <code>complete</code> manifest and then read the run's classification. <code>_dispatched</code> launches through a stub returning zero, so the pointer carried no pid a launch could produce and every liveness read answered <em>unknown</em>. A terminal word is provisional while the run's stream sits inside the stall window (<code>reckon/crew/recovery_classification.py</code>, <code>own_terminal_word_provisional</code>; asserted by <code>tests/test_a_resumed_attempt_is_read_through_its_own_records.py::test_arm_v_the_attempts_own_word_is_provisional_while_it_writes</code> and <code>tests/test_a_delivered_run_waits_for_the_reflex.py</code>), so the four read <code>running</code> where they asserted the word they had just delivered. The repair records what an exited worker leaves behind — a pointer naming a pid no process table holds, and the attempt's own worker record naming that same ended process — through one new helper, <code>_worker_has_stopped</code>. No assertion moved.</p>
+<pre># reproduction at base, one of the four
+$ env -u TMPDIR PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew.py::test_blocked_manifest_is_not_promotable
+E       AssertionError: assert 'running' == 'blocked'
+E         - blocked
+E         + running
+1 failed in 2.28s
+</pre>
+
+<h4>Cause 2 — a roster read from a committed path it no longer has (test wrong)</h4>
+<p><code>test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code> snapshotted <code>repo/docs/state/proj/crew.json</code> and compared its bytes afterwards. <code>write_members</code> is documented as replacing "a version-paired roster without writing a committed path" and <code>register_member</code> is store-only, so the file never exists and the case died with <code>FileNotFoundError</code> before reaching any assertion. The before-and-after comparison now reads through <code>ledger.members</code>, which answers from that store.</p>
+
+<h4>Cause 3 — the guard's own subject</h4>
+<p>With the five green, the guard's emptiness assertion for <code>tests/test_crew.py</code> is reached and holds: the file's unwritten-manifest directory resolves through <code>RECKON_TEST_TEMP_ROOT</code> (<code>tests/conftest.py:_publish_session_temp_root</code>) rather than <code>tempfile.gettempdir()</code>, so nothing lands in the <code>TMPDIR</code> the guard hands it. The head run below is that assertion passing for all three files.</p>
+
+<h4>Head gate — an all_debug job with SLURM_JOB_ID unset</h4>
+<pre># revision: 4aa5562b0da74cf1f300454f5731b7ca537c05b1
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-test-temp-files-stay-under-tmp-path
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_test_temp_files_stay_under_tmp_path.py
+# host: 98dci4-clu-3144.iter.org job: 1330873 partition: all_debug
+...                                                                      [100%]
+3 passed in 56.07s
+EXIT=0
+</pre>
+
+<h4>Negative control — the base revision's run of the same file, its failing ids</h4>
+<pre># revision: 35fb9f3ae769586b2f364485bf2d6fc31caf87f5
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-test-temp-files-stay-under-tmp-path
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_test_temp_files_stay_under_tmp_path.py
+# host: 98dci4-clu-3142.iter.org job: 1330815 partition: all_debug
+..F                                                                      [100%]
+FAILED tests/test_test_temp_files_stay_under_tmp_path.py::test_the_file_leaves_the_system_temp_directory_empty[test_crew.py]
+FAILED tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first - FileNotFoundError: [Errno 2] No such file or directory: '.../repo/docs/state/proj/crew.json'
+FAILED tests/test_crew.py::test_blocked_manifest_is_not_promotable - AssertionError: assert 'running' == 'blocked'
+FAILED tests/test_crew.py::test_failed_manifest_is_not_promotable - AssertionError: assert 'running' == 'failed'
+FAILED tests/test_crew.py::test_a_complete_manifest_emits_an_authorised_review_dispatch - AssertionError: assert 'running' == 'scoring'
+FAILED tests/test_crew.py::test_crew_read_and_recovery_command_share_classification - AssertionError: assert 'running' == 'blocked'
+5 failed, 186 passed in 46.78s
+1 failed, 2 passed in 57.10s
+EXIT=1
+</pre>
+
+<h4>Changed paths and their measures</h4>
+<p>One file changed, <code>tests/test_crew.py</code>: <code>5 failed, 186 passed</code> at base and <code>191 passed</code> at head for that file alone. <code>ruff check</code> reports the same 14 findings on it at base and at head, and <code>ruff format --diff</code> the same 13 hunks, none of them on an added line.</p>
+</section>
