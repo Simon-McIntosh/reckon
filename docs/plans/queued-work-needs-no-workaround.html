@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="857">
+<meta name="plan-version" content="858">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2640,7 +2640,10 @@
     <div class="r-comment-body"><p>Repaired the lane-family consolidation so the node's test file passes: backend_dialect in reckon/crew/dispatch_picker.py is now the one reading of a backend's dialect that lane_family, reservation_family and the picker snapshot's local-wrapper check all call, so the snapshot no longer holds a derivation of its own; tests/test_a_lane_family_has_one_owner.py reads 6 passed at head against 1 failed and 5 passed at base, the scoped all_debug gate reads 64 passed EXIT=0, and the declared suite arms read 58 passed each at base 5b0a1f53 and head 695d78b6, and the importer arm over the 33 test files that import the changed module reads 3 failed and 291 passed at head against 4 failed and 290 passed at base with the same three pre-existing ids.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044634501998-qwnw-red-file-crew-runs-view" data-who="reckon-build" data-when="2026-11-18T23:26:54.476Z">
-    <div class="r-comment-body"><p>A drain&#x27;s plan inventory now reads each plan&#x27;s own bytes before counting its declared work, so a plan the filesystem refuses reports the closure remainder as unknown (None/None) instead of counting as a plan declaring nothing; tests/test_crew_runs_view.py reads 20 passed at head 679a789104 on all_debug (base 5b0a1f53: 1 failed, 19 passed), cause verdict product wrong, and the same nine-file arm adds no failure against the base.</p></div>
+    <div class="r-comment-body"><p>A drain's plan inventory now reads each plan's own bytes before counting its declared work, so a plan the filesystem refuses reports the closure remainder as unknown (None/None) instead of counting as a plan declaring nothing; tests/test_crew_runs_view.py reads 20 passed at head 679a789104 on all_debug (base 5b0a1f53: 1 failed, 19 passed), cause verdict product wrong, and the same nine-file arm adds no failure against the base.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044639196754-qwnw-red-file-a-queued-request-arranges-its-follower" data-who="reckon-build" data-when="2026-11-19T00:13:42.901Z">
+    <div class="r-comment-body"><p>tests/test_a_queued_request_arranges_its_follower.py goes from 1 failed, 1 passed at base 73b9ac21a5 to 2 passed EXIT=0 at head 1c86942186 as all_debug jobs with SLURM_JOB_ID unset; one cause, test wrong: the case compared the follow-request line against the two-key spelling it carried before the line began recording owner_checked for a queued pair an unowning host may show, so the comparison is now a three-key payload comparison against one helper, no assertion deleted or weakened, and the product tree unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
