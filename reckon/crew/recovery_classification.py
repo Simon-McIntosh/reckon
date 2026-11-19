@@ -1076,26 +1076,13 @@ def _primary_branch_revision(checkout: Path, moment: float) -> str:
     revision = ""
     if checkout.is_dir():
         from reckon.crew import merge
+        from reckon.crew.recovery import _resolve_commit
 
         try:
             branch = merge._current_branch(checkout)
         except merge.MergeError:
             branch = "HEAD"
-        answer = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(checkout),
-                "rev-parse",
-                "--verify",
-                f"{branch}^{{commit}}",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if answer.returncode == 0:
-            revision = answer.stdout.strip()
+        revision = _resolve_commit(checkout, branch)
     _PRIMARY_REVISION_MEMO[key] = (moment, revision)
     return revision
 
