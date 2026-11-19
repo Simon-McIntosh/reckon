@@ -1431,11 +1431,22 @@ def _merged_primary_baseline(
     inherited failures without claiming they failed before the run started.
     Reuse a receipt only for its immutable revision and command, checking its
     log before trusting its IDs. An interrupted reading excuses no failure.
+
+    A role that may not write repository paths merged nothing: its tree is the
+    tree it grades, so a merge in that history was taken by whoever merged the
+    head, and there are no inherited failures for this run's delivery to
+    explain. Measuring one would charge the verifier a scheduler job for a
+    revision it did not land, so the reading is skipped and the run's own
+    baseline and after pair stands as its evidence.
     """
     import hashlib
 
     from reckon.crew import promotion_evidence
+    from reckon.crew.node import role_may_write_repository_paths
+    from reckon.crew.recovery import _pointer_role
 
+    if not role_may_write_repository_paths(_pointer_role(record)):
+        return None
     primary = promotion_evidence._merged_primary_revision(record, head)
     if not primary:
         return None
