@@ -42,6 +42,8 @@ file is then removed. It is applied by running with
 
 from __future__ import annotations
 
+import base64
+import json
 import os
 import shutil
 import subprocess
@@ -555,7 +557,42 @@ def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
         "--bind",
         str(resolve(node.codex)),
         str(resolve(node.codex)),
-        "--",
-        str(node.stub),
     ]
-    assert argv == expected
+    assert argv[: len(expected)] == expected
+    # Then, appended after every mount, the fence carries what it composed into
+    # a scheduler task that re-enters it: the recipe names these mounts as its
+    # own argv, so a task replays this exact boundary rather than rediscovering
+    # protection from job-local environment.
+    tail = argv[len(expected) :]
+    assert tail[:2] == ["--setenv", "RECKON_WORKER_FENCE"], tail
+    assert tail[3:] == ["--", str(node.stub)], tail
+    recipe = json.loads(base64.urlsafe_b64decode(tail[2]))
+    assert recipe == {
+        # The mounts are the composition's own argv, so the recipe and this
+        # list cannot disagree about what the fence seals or grants.
+        "argv": expected,
+        # The location resolved here, because a job's task starts the fence on
+        # another node whose search path need not name it.
+        "program": _worker_fence.fence_program(),
+        # The runtime paths, the run's own scratch, then the scratch root: the
+        # directories a task prepares before it composes the mounts again.
+        "directories": [
+            str(resolve(node.fleet)),
+            str(resolve(node.codex)),
+            str(resolve(node.own)),
+            str(resolve(node.scratch_root)),
+        ],
+        # Every bind whose source is a directory, sorted by path.
+        "directory_sources": [
+            str(resolve(node.run)),
+            str(resolve(node.codex)),
+            str(resolve(node.fleet)),
+            str(resolve(node.own)),
+        ],
+        # The scratch a task runs in when the fence names no tmp mount.
+        "scratch": str(resolve(node.own)),
+        "limit": (
+            "Absolute scheduler paths bypass task re-entry; interpreter "
+            "permissions guard that route."
+        ),
+    }
