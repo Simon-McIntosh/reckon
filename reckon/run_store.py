@@ -1176,6 +1176,10 @@ class RunStore:
         if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
             self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
         self._archive_attached = False
+        # The committed state each project's membership was last judged at.
+        # Reading membership costs a stat per run file, so a repeated read of
+        # an unchanged ledger answers from this record instead.
+        self._membership_stamps: dict[str, dict[str, Any]] = {}
         self._create()
 
     def __enter__(self) -> Self:
@@ -1760,9 +1764,22 @@ class RunStore:
 
         roots = self._ledger_roots()
         changed = {}
+        # A rebuild records its stamp only once the rows it wrote agree with the
+        # ledger: a refused write leaves the store stale, and a stamp taken
+        # before the write would stop the next read from trying again.
+        rebuilt: dict[str, Any] = {}
         stale: set[str] = set()
         for name, root in roots.items():
             if project is not None and name != project:
+                continue
+            stamp = ledger.index_state_stamp(name, root)
+            if self._membership_stamps.get(name) == stamp:
+                continue
+            # A project whose documents are absent or empty is left alone. The
+            # committed set would read as empty and the rebuild would delete
+            # rows a mount that is simply not present here still legitimately
+            # holds: no absent mount deletes a project's cached history.
+            if not ledger._ledger_holds_content(name, root):
                 continue
             indexed = {
                 str(row[0])
@@ -1770,12 +1787,19 @@ class RunStore:
                     "SELECT run_id FROM runs WHERE project = ?", (name,)
                 )
             } | self._archived_ids(name)
-            if not ledger._ledger_holds_content(name, root):
-                continue
-            if indexed != ledger.run_ids(name, root, use_index=False):
+            # The store's own rows are one side of this comparison, so the
+            # other side must be the committed documents: asking run_ids() here
+            # answers through the store whenever one exists and leaves the
+            # check comparing the store with itself, so a ledger that moved
+            # would never rebuild the rows it outgrew.
+            committed = ledger.run_ids(name, root, use_index=False)
+            if indexed != committed:
                 data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
+                rebuilt[name] = stamp
                 stale |= indexed
+            else:
+                self._membership_stamps[name] = stamp
         if not changed:
             return None
         # The payload is the record, so the rows it replaces are named by id
@@ -1869,6 +1893,8 @@ class RunStore:
                 self._path,
                 exc,
             )
+        else:
+            self._membership_stamps.update(rebuilt)
         return records
 
     def records(self) -> dict[str, dict[str, Any]]:
