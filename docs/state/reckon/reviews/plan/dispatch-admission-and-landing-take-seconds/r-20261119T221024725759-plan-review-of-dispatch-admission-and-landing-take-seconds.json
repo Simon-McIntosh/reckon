@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T22:11:55Z",
+  "findings": [
+    {
+      "anchor": "dispatch-admission-and-landing-take-seconds#s11",
+      "id": "reasoning-1",
+      "reason": "a node sent to these three files to remove a per-review-item roadmap build finds no such build, so it either reports the defect not reproducible or widens scope until it finds the real one; correcting the Why to the measured quantity (roadmap builds per sweep) or the write paths to the module that actually builds per item changes what the node measures.",
+      "text": "the Why claims \"the obligations sweep building the project roadmap again for each review item it examined\", but the three write paths it declares contain no roadmap build and no per-review-item loop: `grep -n 'build_roadmap\\|roadmap_build_scope\\|roadmap_stale_answer' reckon/crew/station_obligations.py reckon/crew/obligations.py reckon/crew/section_obligations.py` returns only `reckon/crew/station_obligations.py:708`/`:736`, a single `roadmap_stale_answer` call in `_publish_pending` that marks one project's rows stale once per sweep, and the term \"review item\" appears nowhere in those modules (`grep -rn 'review item' reckon/crew/*.py` is empty) \u2014 so the cause the Why names is not locatable where the section sends the worker, and the count in the delivered measure has no instrument that would carry per-item builds",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "dispatch-admission-and-landing-take-seconds#s11",
+      "id": "done_when-1",
+      "reason": "a control that cannot go red at base measures nothing; the plan needs the base arm stated against the quantity the base actually exhibits.",
+      "text": "the negative control \"at the base revision the count exceeds two\" is red only if the base builds a roadmap per review item, which the same section's declared write paths do not do (see the reasoning finding), so the gate's control inherits the unverified cause and can come back green at base, leaving the delivered \"at most one per project\" unfalsifiable",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bc9ae35d90de0c68251cb17d9a42327b6bad165d",
+  "plan_fingerprint": "521376196151d09f8a264946eb9d85fa60b2925b6b89c4d6addabd8211fa0b64",
+  "plan_slug": "dispatch-admission-and-landing-take-seconds",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261119T221024725759-plan-review-of-dispatch-admission-and-landing-take-seconds",
+  "reviewed_blob_sha": "5007916c5f08b5b122f1e7e7e8fa1d002a7a96d5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a711 cites no href, and each path it names resolves except the test file it asks to be created (`reckon/crew/station_obligations.py`, `reckon/crew/obligations.py`, `reckon/crew/section_obligations.py` all exist under `/home/ITER/mcintos/Code/reckon`).",
+    "done_when": "a finding \u2014 \u00a711's base arm \"at the base revision the count exceeds two\" presupposes the per-item roadmap build the Why claims, so the control is only red if the unsupported cause is true.",
+    "evidence_paths": "pass \u2014 \u00a711's live arm reads \"the station's own stage timings\" and its unit arm runs in a temporary crew home; no session scratchpad or node-local temporary path is named as the record.",
+    "naming": "pass \u2014 \"obligations sweep\", \"roadmap build\" and the test filename carry no plan label, sprint or ticket number.",
+    "reasoning": "a finding \u2014 \u00a711's stated root cause has no home in the write paths the same section declares, and the section prescribes those paths rather than the endpoint.",
+    "single_goal": "pass \u2014 \u00a711 asks for one quantity (at most one roadmap build per project per sweep); the 30 s fleet arm is the same sweep's wall time and the obligations-equality arm is its correctness, not a second deliverable.",
+    "wiring": "pass \u2014 `_document`'s new edges resolve: `s11` is declared `implementable`, \u00a79 carries `dispatch-admission-and-landing-take-seconds#s11` and `queued-work-needs-no-workaround#s35` in its depends-on, and `s10`'s edge to `#s7` still names an existing section; \u00a711 depends on nothing it needs."
+  },
+  "section_digests": {
+    "_document": "0c07c96a42f6d59d47d7c645cdb8b10007ad2c74a6e00ed88c14f028e9bf3f60",
+    "s1": "e76e79408be253cc9da0cd82405aba89521a59ead734ee7d67f25e26068d92cf",
+    "s10": "049170af28771c25afa444c78a46edc11867049e4359c2f1398e0771b7a64203",
+    "s11": "5976b5b002b334975cd7de818454eb26e8dc699c19d8944ec007edb5855a8307",
+    "s2": "08e5f2e1a21e7b9f68adff8507c34bd4c3d6fc45768e9bfc14f3239d2e86365c",
+    "s3": "39c4805e7541dfdea5b9c6fcfde7621419e26f461cd8928aacfd1a7c01f95832",
+    "s4": "6b6f78ea76f273f0a5578f68654ba1995a7543f190a4abee5b7d1cb5fbc86000",
+    "s5": "27dfecfc33aa9795a9c849e2e5f746a71b47a4be6e91e18ee1c578b53e493d34",
+    "s6": "d74dc9b417a35c088a2a6e4139beec0cb61ac6b5ae7e92ce07be384831cc213f",
+    "s7": "922038d02c2364cbbca18bc21e3dc324e20a15dff2d0c7d8a1c224b6e73f3fe1",
+    "s8": "e1ca6849c89c9ee324bfd66a6afb82be135528315674c7553992723618dd24a8",
+    "s9": "a69ddb08e7746aae1367900268adff2c4d5cf63d307e5655a1b1f920f42b580e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:15:06.204487+00:00",
+  "total": null
+}
