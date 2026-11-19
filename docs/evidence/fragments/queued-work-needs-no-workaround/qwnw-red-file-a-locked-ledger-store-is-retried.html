@@ -1,0 +1,77 @@
+<section id="qwnw-red-file-a-locked-ledger-store-is-retried-landing">
+  <h2>A lock past the retry bound is a refusal, and the test says so</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_a_locked_ledger_store_is_retried.py</code>
+  was red on the primary branch: its third case called
+  <code>ledger._index_append</code> against a store lock held longer than the retry
+  bound and asserted the call returned <code>{"status": "failed"}</code>. It raised
+  <code>LedgerError</code> instead, and the run read 1 failed, 2 passed.</p>
+
+  <p><strong>The cause, with its verdict — the test was wrong.</strong> The file was
+  written on 2026-11-05 (<code>02f6f1b963</code>) against the contract as it then
+  stood: a store write that declined was reported as a merely unhealthy index and
+  the run file was left for a later import. On 2026-11-15 <code>7a8fdac445</code>
+  reversed that rule deliberately — the store is the durable authority for every
+  promoted run, so a declined write refuses the promotion, and
+  <code>append_run</code> takes back the run file it had already written rather
+  than leaving a run whose row no store holds. The product keeps that rule and its
+  docstring, its caller and <code>tests/test_a_failed_store_write_leaves_no_row.py</code>
+  all state it. Only this file still encoded the superseded rule, so the product is
+  untouched here and the file is updated to the rule the code now keeps.</p>
+
+  <p><strong>The assertions were replaced, not weakened.</strong> The case
+  (<code>test_a_lock_past_the_bound_is_refused_then_imported</code>) now requires
+  the refusal — <code>pytest.raises(ledger.LedgerError)</code> — asserts the
+  message names the wait bound it exceeded, and asserts no row survived the
+  refusal. The second half is unchanged and still writes the run file and shows
+  <code>run_store.import_ledger</code> supplying the missing row. The module
+  docstring and the case name carry the same rule, so no prose tells a reader the
+  write is reported rather than raised.</p>
+
+  <h3 id="qwnw-red-file-a-locked-ledger-store-is-retried-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-locked-ledger-store-is-retried-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm</td>
+        <td><code>a7ac07a91d918a57176c0d218abc4ae06e7ebab0</code>, worktree</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head arm (scoped gate, <code>all_debug</code>, SLURM job)</td>
+        <td><code>e3a8c463ab0341dd244569d048295699cee6c4cf</code>, extraction</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>a7ac07a91d918a57176c0d218abc4ae06e7ebab0</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, head arm</td>
+        <td><code>e3a8c463ab0341dd244569d048295699cee6c4cf</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>ruff check and format on the changed path</td>
+        <td><code>e3a8c463ab0341dd244569d048295699cee6c4cf</code>, worktree</td>
+        <td>no findings, formatted, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-locked-ledger-store-is-retried-control">Negative control</h3>
+
+  <p>The base arm is the red run the node's evidence fence names: at
+  <code>a7ac07a91d918a57176c0d218abc4ae06e7ebab0</code>, with the file exactly as
+  that revision carries it and the product unchanged, pytest reports</p>
+
+  <pre><code>FAILED tests/test_a_locked_ledger_store_is_retried.py::test_a_lock_past_the_bound_is_reported_then_imported - reckon.ledger.LedgerError: cannot record run 'r-locked-append' in the run store at ...: OperationalError: database is locked. ... the store was locked past the wait bound (0.2 s); promote the run again
+1 failed, 2 passed in 2.29s
+EXIT=1</code></pre>
+
+  <p>That is the reproduction of the recorded defect: the write refused where the
+  case expected a payload, which no longer comes back. Its log is
+  <code>base-arm-a-locked-ledger-store-is-retried.log</code> in this run's
+  directory, and the two other cases pass in it, so the failure is the third case
+  and not a collection error.</p>
+
+  <h3 id="qwnw-red-file-a-locked-ledger-store-is-retried-outside">Outside scope</h3>
+
+  <p>No product source or other test was touched; <code>git show --stat</code> over
+  this node's single commit is one file. Nothing outside this node's write scope
+  was found.</p>
+</section>
