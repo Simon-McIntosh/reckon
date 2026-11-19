@@ -48,6 +48,7 @@ def review_run(isolated_reckon_home: Path, tmp_path: Path) -> tuple[Path, Path]:
     manifest = tmp_path / "manifest.md"
     manifest.write_text(
         f"node: review-of-the-run\nstatus: complete\ncommits: none\n"
+        f"messages_received: none\n"
         f"changed_paths:\n  - {record_path}\n"
         "tests: record parsed and checked\n",
         encoding="utf-8",
