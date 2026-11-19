@@ -1,0 +1,89 @@
+<section id="qwnw-red-file-a-sweep-failure-is-an-obligation-landing">
+  <h2>A retained sweep failure is compared with its own rolling ages removed</h2>
+
+  <p><strong>Reproduction.</strong> At the base revision
+  <code>be17b57484c74a3432a3d7372aa84da6702ad965</code>
+  <code>tests/test_a_sweep_failure_is_an_obligation.py</code> reads 2 failed,
+  <code>EXIT=1</code>. Both parametrisations fail on the same assertion, the one
+  that carries the test's second intent — a failed whole pass cannot attest that
+  any run was handled successfully:</p>
+
+  <pre id="qwnw-red-file-a-sweep-failure-is-an-obligation-repro">assert publish(later)["obligations"] == payload["obligations"]
+E  At index 0 diff: {... 'run_id': 'r-review-first', 'age_seconds': 20} != {... 'run_id': 'r-review-first', 'age_seconds': 0}</pre>
+
+  <p><strong>Verdict: the test was wrong.</strong> The product keeps the duty and
+  keeps its raise instant; what moves is the age the read derives from it.
+  <code>obligation_snapshot.live_payload</code>
+  recomputes every row's
+  <code>age_seconds</code> from the stored <code>age_since</code> against the
+  read instant — the docstring of <code>payload_identity</code> states the rule
+  directly: <em>"Ages are measured from the read instant, so a fleet that has not
+  changed still derives a payload whose <code>age_seconds</code> differ from the
+  stored one"</em>, which is why that function strips ages before digesting.
+  The duty row read at <code>moment</code> therefore carries age 0 and the same
+  row read at <code>moment + 20s</code> carries age 20, and the retained duty is
+  exactly what the test was written to prove. A single cause, and only the test
+  encoded a rule the code does not keep.</p>
+
+  <p><strong>What changed.</strong> <code>tests/test_a_sweep_failure_is_an_obligation.py</code>
+  compares the retained rows with <code>age_seconds</code> removed (through a
+  local <code>_without_ages</code>) and then asserts the retained row's age is
+  the 20 seconds that separate the two reads. Every field the original
+  comparison covered is still compared, the row is still required to be retained
+  with the same detail and next command, and no assertion was deleted; the
+  aging field is compared for what it is rather than for byte equality. No
+  product code changed.</p>
+
+  <h3 id="qwnw-red-file-a-sweep-failure-is-an-obligation-arms">Measured</h3>
+
+  <p>Both runs are jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+  unset, in a tree archived from the revision they name. Both arms of the
+  project's suite are the composed <code>crew suite run</code> arms over the
+  census tests the resolution the dispatch declares reaches.</p>
+
+  <table id="qwnw-red-file-a-sweep-failure-is-an-obligation-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, head</td>
+        <td><code>8fe981bb5ae32b03608e4a59ab45232ffd8da848</code></td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's file, base (negative control)</td>
+        <td><code>be17b57484c74a3432a3d7372aa84da6702ad965</code></td>
+        <td>2 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>suite, after arm</td>
+        <td><code>8fe981bb5ae32b03608e4a59ab45232ffd8da848</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>suite, baseline arm</td>
+        <td><code>be17b57484c74a3432a3d7372aa84da6702ad965</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-sweep-failure-is-an-obligation-control">Negative control</h3>
+
+  <p>The base run of the named file is the control, and it is red for the cause
+  repaired here rather than for an unrelated failure: both ids are the two
+  parametrisations of the one case</p>
+
+  <ul id="qwnw-red-file-a-sweep-failure-is-an-obligation-ids">
+    <li><code>tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[True]</code></li>
+    <li><code>tests/test_a_sweep_failure_is_an_obligation.py::test_failed_run_is_published_until_a_successful_sweep[False]</code></li>
+  </ul>
+
+  <p>and the head run of the same command at
+  <code>8fe981bb5ae32b03608e4a59ab45232ffd8da848</code> names no failing id at
+  all, so nothing is covered up beside the repair.</p>
+
+  <h3 id="qwnw-red-file-a-sweep-failure-is-an-obligation-scope">Importer arm</h3>
+
+  <p>The change touches one test file and no product module, so no test imports
+  what it changed and the importer arm is empty by construction. The composed
+  suite arms recorded in the manifest are the strongest available reading —
+  the project's declared suite over both revisions — and the after arm adds no
+  failure against the same command at the base.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
