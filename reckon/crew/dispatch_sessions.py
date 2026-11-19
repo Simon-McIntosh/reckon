@@ -56,6 +56,7 @@ from reckon.crew.runs import (
     _utc_now,
     capture_run_session,
     dispatch_field,
+    node_definition,
     process_alive,
     read_pointer,
     record_process_alive,
@@ -1580,9 +1581,12 @@ def resume_plan(
 
 def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
     """Rebuild the immutable dispatch request stored on a live run."""
-    data = record.get("node")
-    if not isinstance(data, Mapping):
+    # The refusal is tested on the record's own node, before hydration: the
+    # accessor answers a dict for every record, so a pointer carrying no node
+    # would otherwise rebuild as an empty task instead of being refused.
+    if not isinstance(record.get("node"), Mapping):
         raise CrewError(f"run {record.get('run_id')!r} records no node definition")
+    data = node_definition(record)
     return TaskNode(
         id=str(data.get("id") or ""),
         goal=str(data.get("goal") or ""),

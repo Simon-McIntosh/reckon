@@ -30,6 +30,7 @@ from reckon.crew.runs import (
     _utc_now,
     _write_json,
     list_live,
+    node_field,
     read_pointer,
     run_dir,
 )
@@ -310,7 +311,7 @@ def _adjacent_live_peers(
             continue
         peer_id = str(peer_node.get("id") or "")
         peer_named_new = node.id in {
-            str(name) for name in (peer_node.get("peer_scopes") or {})
+            str(name) for name in (node_field(pointer, "peer_scopes") or {})
         }
         if not (
             peer_id in explicitly_named
