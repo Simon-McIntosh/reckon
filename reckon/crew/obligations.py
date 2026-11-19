@@ -1855,11 +1855,13 @@ def _acknowledgements_in_force(
     project's committed history — a deliberate remainder of a promoted run is
     withheld exactly as a live run's is, and expires the same way.
 
-    A deferral whose ``until`` has passed is not returned, so the run it named
-    re-enters the list on the next read rather than lingering in the
-    acknowledged block. A run whose deferral cannot be parsed as an instant is
-    treated as undeferred: an unreadable deadline is no excuse to withhold an
-    obligation.
+    A deferral whose ``until`` has passed is not returned, and its file is
+    removed by the same read that refuses it: the deferral excuses nothing and
+    leaving it behind charges every later read for a record no reader can
+    honour. A deferral whose ``until`` cannot be parsed as an instant is
+    likewise not returned — an unreadable deadline is no excuse to withhold an
+    obligation — but its file is left in place, because a sweep removes only
+    what it can prove expired and an unreadable instant proves nothing.
     """
     in_force: dict[str, dict[str, Any]] = {}
     live_ids: set[str] = set()
@@ -1889,11 +1891,11 @@ def _acknowledgements_in_force(
             runs.release_run_acknowledgement(run_id, record, promoted=True)
             continue
         until = parse_utc(record.get("until"))
-        if (
-            until is not None
-            and until > now
-            and not _acknowledgement_condition_ended(record)
-        ):
+        if until is None:
+            # Nothing proves this record expired, so it is refused the duty it
+            # proves: the run is owed, the file an operator wrote stays.
+            continue
+        if until > now and not _acknowledgement_condition_ended(record):
             in_force[run_id] = record
         else:
             runs.release_run_acknowledgement(run_id, record, promoted=True)
