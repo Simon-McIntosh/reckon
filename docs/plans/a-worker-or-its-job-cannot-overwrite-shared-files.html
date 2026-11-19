@@ -25,7 +25,7 @@
   <title>A Worker Or Its Job Cannot Overwrite Shared Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -271,6 +271,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261119T122728100292-review-of-a-worker-can-write-only-what-it-was-granted-2b1430cc3845" data-who="reckon-build" data-when="2026-11-19T12:50:23.207Z">
     <div class="r-comment-body"><p>Independent review of r-20261119T065649772937-a-worker-can-write-only-what-it-was-granted at head 2b1430cc (base 8112e425): scores goal_fidelity 19, evidence 14, scope_discipline 17, durability 18, fit 15, reuse 18; added_failure_count 0 derived from the reviewed run's own baseline_suite (58 passed, EXIT=0) and after_suite (64 passed, EXIT=0) logs; 5 non-blocking findings, including a latent refusal of the repository root the product itself grants for a workspace-write backend, a stale refusal named in the comment beside the guard, and the section's evidence fragment delivered empty.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261119T065649772937-a-worker-can-write-only-what-it-was-granted" data-who="reckon-build" data-when="2026-11-19T08:16:17Z">
+    <div class="r-comment-body"><p>A worker&#x27;s fence now mounts the filesystem read-only and binds writable only the roots its dispatch handed it: worktree, run directory, scratch, the crew lock path and each declared grant. A declared grant naming a filesystem root or a project root refuses at composition, naming the path, before any process starts. Measure: the node&#x27;s 6 cases pass at the head revision against 6 failing at the base revision, whose failures include the incident replay removing a temporary shared root.</p></div>
 </div>
 </section>
   </main>
