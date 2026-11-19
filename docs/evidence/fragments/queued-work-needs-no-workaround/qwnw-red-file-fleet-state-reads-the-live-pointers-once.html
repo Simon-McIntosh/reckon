@@ -38,6 +38,30 @@
   derivation keeps its own listing under <code>_VIEW_LIVE_POINTERS</code>, which
   is what the guards measure.</p>
 
+  <p><strong>The merge with primary <code>03d91dda</code>.</strong> Primary had
+  widened the by-id read with a third rule: the node's body now lives in the
+  run's own file once it has been moved there, so a record whose
+  <code>node</code> is a mapping has its definition hydrated on read, while a
+  listing still returns the slim record it decoded. The one conflict was
+  <code>read_pointer</code>, where this node had gathered the rules into
+  <code>_pointer_as_read</code> and primary had written them in place. Both
+  survive: the helper now deep-copies, hydrates the definition, then drops the
+  station's pid — hydration where primary put it, before the pid strip — and
+  <code>read_pointer</code> is again that one call. Neither side's rule was
+  dropped and no conflict marker was committed.</p>
+
+  <p><strong>What the merge costs a pre-move pointer.</strong> A pointer written
+  before the body moved names no body file, so hydrating its definition re-reads
+  that pointer's text: once as the reduced record every listing decodes, once
+  for the body fields the reduction dropped. That second read is the pre-move
+  pointer's own one-off and is charged only when a reader asks for the body,
+  which the by-id read does; a pointer written now names
+  <code>node.node_body</code>, so its definition is hydrated from the run's own
+  file and its pointer text is read and decoded once. The arms below measure the
+  current shape: the fixture's pointers name their body file, as the writer
+  produces them, and one derivation still decodes 300 documents for 300
+  pointers.</p>
+
   <h3 id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-measured">Measured</h3>
 
   <table id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-arms">

@@ -157,6 +157,21 @@ def _build_fleet(home: Path, repo: Path) -> dict[str, Path]:
         os.utime(manifest, (stamp, stamp))
         if index % 10 in (2, 3):
             _store_review(store, run_id, head)
+        # The pointer is written in the shape the writer gives it now: the node
+        # body no listing reads lives in the run's own file, and the pointer's
+        # node names it. A by-id read hydrates the definition from there, so the
+        # pointer's own text is read and decoded once per derivation.
+        body_path = runs.node_body_path(run_id)
+        runs._write_json(
+            body_path,
+            {
+                "admission_findings": [],
+                "brief": f"fixture brief for {run_id}",
+                "done_when": "the fixture reads this run once",
+                "peer_scopes": [],
+            },
+        )
+        pointer["node"]["node_body"] = str(body_path)
         runs._write_json(runs.pointer_path(run_id), pointer)
     return {"home": home, "repo": repo, "store": store}
 
@@ -307,5 +322,7 @@ def test_a_by_id_read_is_the_callers_own(fleet: dict[str, Path]) -> None:
     listed = {row["run_id"]: row for row in runs.list_live(project=PROJECT)}
     assert listed[run_id]["node"] == written["node"]
     again = runs.read_pointer(run_id)
-    assert again["node"] == written["node"]
+    # The definition a by-id read carries is hydrated from the run's own body
+    # file, so the fields the pointer itself holds are what must match.
+    assert {name: again["node"][name] for name in written["node"]} == written["node"]
     assert again.get("phase") == written.get("phase")
