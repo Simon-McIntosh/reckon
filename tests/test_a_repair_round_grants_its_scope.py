@@ -8,10 +8,14 @@ no exception passed by hand, and a peer sees the path held while the round edits
 it. These cases drive the reflex and read back the two facts a reader depends
 on — the grant on the run's declared scope, and the scope promotion measures.
 
-A path a peer's claim already holds is the other half of the same rule. The
-grant is refused, the path is left out of the advice's scope line, and the
-advice names the peer that holds it, so a worker is told which file it must not
-edit rather than discovering the refusal at promotion.
+A path a peer's claim already holds is the other half of the same rule, judged
+by the class the path belongs to. A source path is shared by default, so a
+peer's claim on it admits the grant and the round's scope carries the path. An
+unmergeable artifact — a plan document, generated state, a figure topic — is
+not: the grant is refused, the path is left out of the advice's scope line, and
+the advice names the peer that holds it, so a worker is told which file it must
+not edit rather than discovering the refusal at promotion. A refusal about this
+run's own claim carries its own error and names no peer.
 """
 
 from __future__ import annotations
@@ -64,6 +68,17 @@ FINDING = {
     "file": GRANTED,
     "line": "10",
     "text": "off-by-one in the loop",
+}
+
+# A path a merge cannot reconcile, which is the class a peer's live claim still
+# fences. A source path is shared by default, so a peer's claim on one is
+# admitted rather than refused.
+EXCLUSIVE = "docs/state/generated.json"
+
+EXCLUSIVE_FINDING = {
+    "file": EXCLUSIVE,
+    "line": "1",
+    "text": "generated state rewritten",
 }
 
 
@@ -338,10 +353,34 @@ def test_promotion_accepts_a_head_that_changed_the_granted_path(
     assert products["scope_acceptances"] == []
 
 
-def test_a_peer_held_path_is_not_granted_and_the_advice_names_the_peer(
+def test_a_peer_held_exclusive_path_is_not_granted_and_the_advice_names_the_peer(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A claim the peer holds refuses the grant; the advice drops and names it."""
+    """A claim on an unmergeable path refuses the grant; the advice names it."""
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo, write_paths=[DECLARED])
+    _peer_pointer(repo, write_paths=[EXCLUSIVE])
+    _store_review(head_sha, [EXCLUSIVE_FINDING])
+    resumed = _stub_resume(monkeypatch)
+    _stub_dispatch(monkeypatch)
+
+    _sweep()
+
+    assert len(resumed) == 1
+    advice = resumed[0]["advice"]
+    pointer = runs.read_pointer(RUN_ID)
+    assert EXCLUSIVE not in pointer["node"]["write_paths"]
+    assert [
+        grant for grant in declared_write_grants(pointer) if grant["path"] == EXCLUSIVE
+    ] == []
+    assert PEER_RUN_ID in advice
+    assert EXCLUSIVE not in _scope_line(advice)
+
+
+def test_a_peer_held_source_path_is_granted_because_source_paths_are_shared(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A source path is shared by default, so a peer's claim admits the grant."""
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo, write_paths=[DECLARED])
     _peer_pointer(repo, write_paths=[GRANTED])
@@ -354,12 +393,14 @@ def test_a_peer_held_path_is_not_granted_and_the_advice_names_the_peer(
     assert len(resumed) == 1
     advice = resumed[0]["advice"]
     pointer = runs.read_pointer(RUN_ID)
-    assert GRANTED not in pointer["node"]["write_paths"]
-    assert [
-        grant for grant in declared_write_grants(pointer) if grant["path"] == GRANTED
-    ] == []
-    assert PEER_RUN_ID in advice
-    assert GRANTED not in _scope_line(advice)
+    assert GRANTED in pointer["node"]["write_paths"]
+    assert {
+        "path": GRANTED,
+        "source": "repair-round",
+        "reason": repair.finding_id(FINDING),
+    } in declared_write_grants(pointer)
+    assert PEER_RUN_ID not in advice
+    assert GRANTED in _scope_line(advice)
 
 
 def test_an_amendment_refusal_names_its_reason_and_no_peer(
