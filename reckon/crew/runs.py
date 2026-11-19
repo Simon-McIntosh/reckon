@@ -1468,7 +1468,7 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
 # identity, so a listing that finds the identity unchanged decodes nothing and
 # pays no copy: the record is handed out as that owner's read-only view, and the
 # single-pointer reader copies it once for the callers that change what they read.
-_POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
+_POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
 
 #: The unreduced text of a legacy pointer, kept only for the runs whose node
@@ -1638,8 +1638,8 @@ def _pointer_text_without_omitted_members(text: str) -> str:
     return text[:opening] + reduced + text[_json_value_end(text, opening) :]
 
 
-def _pointer_text(path: Path) -> str:
-    """A pointer's text, re-read only when its stat identity has moved.
+def _pointer_text(path: Path) -> tuple[tuple[int, int, int, int, int], str]:
+    """A pointer's text and the stat identity it was read at.
 
     The text is kept without the fields no live pointer reader asks for, so a
     pointer left on disk by an older writer costs its decoder no more than a
@@ -1647,21 +1647,30 @@ def _pointer_text(path: Path) -> str:
     reader cannot reduce is parsed as it is, rather than one pointer dropped
     from every listing by a scanner that misjudged it.
 
+    The identity is the file's own — ``file_memo.signature_from_stat``'s — and
+    it is taken before the text is read and returned beside it, because the
+    record memoised from that text has to be stored under it. A writer replaces
+    a pointer by rename, and an identity taken after the read can already
+    describe the file that replaced it: the record of these bytes kept under
+    that one would answer every later listing. The store is given this identity
+    instead, and keeps nothing when the file has moved past it, so a text read
+    as its file was replaced costs one listing's staleness rather than a record
+    pinned to the replacement's identity.
+
     Raises ``FileNotFoundError`` for a pointer that is gone, as a direct read
     would, and forgets whatever was kept for it.
     """
     key = str(path)
     try:
-        info = path.stat()
+        identity = file_memo.file_signature(path)
     except FileNotFoundError:
         with _POINTER_TEXT_LOCK:
             _POINTER_TEXT.pop(key, None)
         raise
-    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
     with _POINTER_TEXT_LOCK:
         kept = _POINTER_TEXT.get(key)
     if kept is not None and kept[0] == identity:
-        return kept[1]
+        return kept
     text = path.read_text()
     reduced = _pointer_text_without_omitted_members(text)
     if reduced is not text:
@@ -1671,7 +1680,7 @@ def _pointer_text(path: Path) -> str:
             reduced = text
     with _POINTER_TEXT_LOCK:
         _POINTER_TEXT[key] = (identity, reduced)
-    return reduced
+    return (identity, reduced)
 
 
 def _pointer_node_body(run_id: str) -> dict[str, Any]:
@@ -1730,6 +1739,14 @@ def _pointer_record(path: Path) -> Any:
     as a listing that read every text dropped it, and an unchanged pass reads no
     text and decodes nothing.
 
+    The store is given the identity that text was read at rather than one taken
+    here, because writers replace a pointer by rename: a stat taken after the
+    read can already describe the replacing file, and the record of the text
+    just read would then be kept under that file's identity and answer every
+    listing until the pointer moved again. Handed the read's own identity, the
+    store answers only from what it kept for that identity and keeps nothing
+    when the file has moved on, so the next listing decodes the new text.
+
     The record comes back as one shallow copy of that owner's view, so a reader
     that stamps a field of the record it was handed cannot reach the memo every
     later listing reads. A reader that changes a pointer reads it through
@@ -1737,10 +1754,13 @@ def _pointer_record(path: Path) -> Any:
     readers change.
     """
     try:
-        text = _pointer_text(path)
+        identity, text = _pointer_text(path)
         with file_memo.read_only_region():
             record = file_memo.memoized(
-                _POINTER_RECORD_KIND, path, lambda: json.loads(text)
+                _POINTER_RECORD_KIND,
+                path,
+                lambda: json.loads(text),
+                identity=identity,
             )
             return dict(record)
     except OSError:
