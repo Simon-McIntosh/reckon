@@ -1,0 +1,115 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "The byte-scan assertion fails if the duplicate check parses the aggregate a byte-missed id is not present in (ledger.json.loads is forbidden) or opens another run's file, and the seeded store row at line 248 means the append measured is an ordinary one rather than the store's first-row import.",
+      "independence": "The opened-file list is built by the monkeypatched Path.open and compared with the constant expected name, not with anything the test passed to append_run.",
+      "limit": "The seed line removes the first-row import from this test's path entirely, so this test no longer covers that import.",
+      "location": "tests/test_append_run_writes_one_run_file.py:248,268"
+    },
+    {
+      "conditions_for_failure": "pytest.raises fails if ledger.append_run returns a failure payload instead of refusing; the not-exists assertion fails if reckon/ledger.py:4183 target.unlink is removed; the lag-zero assertion fails if the refusal leaves the row readable as lag.",
+      "independence": "The refusal text is the product's own message and the file and lag readings are taken from the filesystem and store, not from values the test supplied.",
+      "limit": "No log records the mutation that would show these reddening; the guard is read, not exercised here.",
+      "location": "tests/test_append_run_writes_one_run_file.py:293-301"
+    },
+    {
+      "conditions_for_failure": "Essentially none the code under test can produce: the test wrote those bytes at line 308 through the same ledger.serialize_run call.",
+      "independence": "None \u2014 both sides are the test's own input.",
+      "limit": "Only a rewrite of the file by index_lag would fail it, which the monkeypatched read_text does not prevent after the context exits.",
+      "location": "tests/test_append_run_writes_one_run_file.py:320"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3001 append_run",
+    "reckon/crew/obligations.py:5253 _index_lag_notice",
+    "reckon/crew/obligations.py:4478 _record_index_lag"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:08:16Z",
+  "findings": [
+    {
+      "file": "tests/test_append_run_writes_one_run_file.py",
+      "line": "320",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added assertion compares the file's bytes against ledger.serialize_run of the same dict the test wrote there three lines above, so both sides move together and it holds whatever index_lag does \u2014 it is not evidence that a lag read leaves a run file untouched."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html",
+      "line": "62",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arms table's \"head\" rows name c83ef27f721dd4265749597fecd1501a70022a82 for the named file and the declared suite, one commit before the reviewed head deedf8dc046b8039f9c753f471eea319468c42b8 that the manifest's named check and after_suite actually ran at, so a reader taking the fragment as the record reads a revision the run did not end on."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states \"No assertion was deleted or weakened\" and the manifest repeats it, while the diff removes the `result[\"store\"] == {\"status\": \"failed\", ...}` payload assertion, `result[\"run\"] == row`, the in-callback `target.read_text() == ledger.serialize_run(row)` and the `store.get_run(...)` assertion; replacing assertions that encoded the retired rule is what the done_when allows, but the claim of zero deletion is checkable against the diff and false as written."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment and the manifest assert that mutating the byte scan away and restoring the failure payload each turn the repaired test red, but the manifest's only red log is the base run, so neither mutation is recorded anywhere a reader can open."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read both commits against the base: c83ef27f72 seeds the byte-scan test's store with one row at tests/test_append_run_writes_one_run_file.py:248 and rewrites the failed-insert test as a refusal test at lines 271-322, and deedf8dc04 adds the 77-line evidence fragment; no product source changed; four assertions that encoded the retired failure-payload rule are gone and the refusal rule replaces them.",
+    "done_when": "The done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a base run first, a verdict per cause, two arms as inline JSON with 40-character revisions, and the base run as negative control; the manifest records each: negative-control-base.log at d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a reads \"2 failed, 15 passed\" with both ids and EXIT=1, named-check-head-final.log reads 17 passed/EXIT=0 at deedf8dc as job 1330975 (sacct shows partition all_debug, COMPLETED), and both suite arms read 58 passed at their own 40-character revisions.",
+    "goal": "The node's goal is \"Make tests/test_append_run_writes_one_run_file.py pass in full on the primary branch\"; the landed change repoints the two red tests in tests/test_append_run_writes_one_run_file.py:241-322 at the ledger rules the code keeps, and that file's head run reads 17 passed, EXIT=0 at deedf8dc046b8039f9c753f471eea319468c42b8 (named-check-head-final.log).",
+    "manifest": "The manifest reads status complete with commits c83ef27f721d and deedf8dc, names both causes as test-wrong with the commits that changed each rule (57edff12f4, 7a8fdac445), records the arms as inline JSON at both revisions, and cites negative-control-base.log as the red log.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its one fragment, and docs/figures/...; the delivered diff touches only tests/test_append_run_writes_one_run_file.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html, and `git diff --name-only d60ef8b deedf8dc -- reckon/` is empty."
+  },
+  "justifications": {
+    "durability": "at tests/test_append_run_writes_one_run_file.py:293-300 the refusal test reddens on both regressions it guards \u2014 restoring the failure payload fails pytest.raises and removing the target.unlink at reckon/ledger.py:4183 fails the not-exists assertion \u2014 while the added line 320 assertion compares the file against the same ledger.serialize_run call the test itself wrote it with.",
+    "evidence": "negative-control-base.log reproduces both ids with EXIT=1 at d60ef8b and named-check-head-final.log records 17 passed/EXIT=0 at deedf8dc on all_debug, but the fragment's head rows cite c83ef27f721d rather than the reviewed head and no log records either mutation the fragment claims.",
+    "fit": "the repaired tests carry docstrings and comments explaining the rule each asserts, in the style of the surrounding tests in tests/test_append_run_writes_one_run_file.py:304-330, and the fragment follows the sibling shape at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html:1-8.",
+    "goal_fidelity": "tests/test_append_run_writes_one_run_file.py:241-322 now asserts the byte-scan-miss and store-refusal rules the ledger actually keeps, and the file is green at the black-box level named in the goal (named-check-head-final.log, 17 passed, EXIT=0).",
+    "reuse": "the diff adds no function, class or module \u2014 it seeds the store through the existing run_store.append and reads lag through ledger.index_lag at tests/test_append_run_writes_one_run_file.py:248,321 \u2014 so there is no capability to fork.",
+    "scope_discipline": "the two paths in the delivered diff (tests/test_append_run_writes_one_run_file.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html) both lie inside the declared write paths, and reckon/ is byte-identical across the two revisions."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed run: r-20261118T062505782663-qwnw-red-file-append-run-writes-one-run-file\nReviewed base: d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a\nReviewed head: deedf8dc046b8039f9c753f471eea319468c42b8\n\nVERDICT goal: The node's goal is \"Make tests/test_append_run_writes_one_run_file.py pass in full on the primary branch\"; the landed change repoints the two red tests in tests/test_append_run_writes_one_run_file.py:241-322 at the ledger rules the code keeps, and that file's head run reads 17 passed, EXIT=0 at deedf8dc046b8039f9c753f471eea319468c42b8 (named-check-head-final.log).\nVERDICT done_when: The done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a base run first, a verdict per cause, two arms as inline JSON with 40-character revisions, and the base run as negative control; the manifest records each: negative-control-base.log at d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a reads \"2 failed, 15 passed\" with both ids and EXIT=1, named-check-head-final.log reads 17 passed/EXIT=0 at deedf8dc as job 1330975 (sacct shows partition all_debug, COMPLETED), and both suite arms read 58 passed at their own 40-character revisions.\nVERDICT write_paths: The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its one fragment, and docs/figures/...; the delivered diff touches only tests/test_append_run_writes_one_run_file.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html, and `git diff --name-only d60ef8b deedf8dc -- reckon/` is empty.\nVERDICT manifest: The manifest reads status complete with commits c83ef27f721d and deedf8dc, names both causes as test-wrong with the commits that changed each rule (57edff12f4, 7a8fdac445), records the arms as inline JSON at both revisions, and cites negative-control-base.log as the red log.\nVERDICT diff: Read both commits against the base: c83ef27f72 seeds the byte-scan test's store with one row at tests/test_append_run_writes_one_run_file.py:248 and rewrites the failed-insert test as a refusal test at lines 271-322, and deedf8dc04 adds the 77-line evidence fragment; no product source changed; four assertions that encoded the retired failure-payload rule are gone and the refusal rule replaces them.\nCALL_SITES: reckon/crew/promotion.py:3001 append_run, reckon/crew/obligations.py:5253 _index_lag_notice, reckon/crew/obligations.py:4478 _record_index_lag\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_append_run_writes_one_run_file.py:241-322 now asserts the byte-scan-miss and store-refusal rules the ledger actually keeps, and the file is green at the black-box level named in the goal (named-check-head-final.log, 17 passed, EXIT=0).\nSCORE evidence: 15\nJUSTIFICATION evidence: negative-control-base.log reproduces both ids with EXIT=1 at d60ef8b and named-check-head-final.log records 17 passed/EXIT=0 at deedf8dc on all_debug, but the fragment's head rows cite c83ef27f721d rather than the reviewed head and no log records either mutation the fragment claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two paths in the delivered diff (tests/test_append_run_writes_one_run_file.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html) both lie inside the declared write paths, and reckon/ is byte-identical across the two revisions.\nSCORE durability: 16\nJUSTIFICATION durability: at tests/test_append_run_writes_one_run_file.py:293-300 the refusal test reddens on both regressions it guards \u2014 restoring the failure payload fails pytest.raises and removing the target.unlink at reckon/ledger.py:4183 fails the not-exists assertion \u2014 while the added line 320 assertion compares the file against the same ledger.serialize_run call the test itself wrote it with.\nSCORE fit: 17\nJUSTIFICATION fit: the repaired tests carry docstrings and comments explaining the rule each asserts, in the style of the surrounding tests in tests/test_append_run_writes_one_run_file.py:304-330, and the fragment follows the sibling shape at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html:1-8.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module \u2014 it seeds the store through the existing run_store.append and reads lag through ledger.index_lag at tests/test_append_run_writes_one_run_file.py:248,321 \u2014 so there is no capability to fork.\nFINDING tests/test_append_run_writes_one_run_file.py:320 non-blocking: the added assertion compares the file's bytes against ledger.serialize_run of the same dict the test wrote there three lines above, so both sides move together and it holds whatever index_lag does \u2014 it is not evidence that a lag read leaves a run file untouched.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html:62 non-blocking: the arms table's \"head\" rows name c83ef27f721dd4265749597fecd1501a70022a82 for the named file and the declared suite, one commit before the reviewed head deedf8dc046b8039f9c753f471eea319468c42b8 that the manifest's named check and after_suite actually ran at, so a reader taking the fragment as the record reads a revision the run did not end on.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html:40 non-blocking: the fragment states \"No assertion was deleted or weakened\" and the manifest repeats it, while the diff removes the `result[\"store\"] == {\"status\": \"failed\", ...}` payload assertion, `result[\"run\"] == row`, the in-callback `target.read_text() == ledger.serialize_run(row)` and the `store.get_run(...)` assertion; replacing assertions that encoded the retired rule is what the done_when allows, but the claim of zero deletion is checkable against the diff and false as written.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-append-run-writes-one-run-file.html:21 non-blocking: the fragment and the manifest assert that mutating the byte scan away and restoring the failure payload each turn the repaired test red, but the manifest's only red log is the base run, so neither mutation is recorded anywhere a reader can open.",
+  "review_run_id": "r-20261119T130507044750-review-of-qwnw-red-file-append-run-writes-one-run-file-deedf8dc046b",
+  "reviewed_base_sha": "d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a",
+  "reviewed_head_sha": "deedf8dc046b8039f9c753f471eea319468c42b8",
+  "reviewed_run_id": "r-20261118T062505782663-qwnw-red-file-append-run-writes-one-run-file",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "c83ef27f721dd4265749597fecd1501a70022a82",
+    "deedf8dc046b8039f9c753f471eea319468c42b8"
+  ],
+  "status": "parsed",
+  "suite_evidence": [
+    {
+      "arm": "baseline_suite",
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062505782663-qwnw-red-file-append-run-writes-one-run-file/baseline_suite-1795092149299461164.log",
+      "revision": "d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a"
+    },
+    {
+      "arm": "after_suite",
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062505782663-qwnw-red-file-append-run-writes-one-run-file/after_suite-1795092429745953703.log",
+      "revision": "deedf8dc046b8039f9c753f471eea319468c42b8"
+    }
+  ],
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:25:38.701065+00:00",
+  "total": 107
+}

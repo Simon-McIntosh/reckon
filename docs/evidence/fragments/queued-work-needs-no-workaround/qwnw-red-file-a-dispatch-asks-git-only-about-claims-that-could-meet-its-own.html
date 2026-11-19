@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-work-needs-no-workaround">
+  <meta name="plan-evidence-for" content="reckon:queued-work-needs-no-workaround">
+  <meta name="plan-verifies" content="reckon:queued-work-needs-no-workaround#s29">
+  <title>A dispatch asks git only about claims that could meet its own | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-landing" data-node="qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own" data-reckon="landed" data-when="2026-11-19">
+  <h2>A dispatch asks git only about claims that could meet its own</h2>
+  <p id="qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-cause">The file was red at the section's base revision <code>be17b57484c74a3432a3d7372aa84da6702ad965</code> with two failures, and the cause is a test that encodes a rule the code no longer keeps. Its fixture gave the live claim that overlaps the dispatch the <code>package</code> directory and the dispatch <code>package/target.py</code>. That overlap is one git reconciles, and the claim policy — <code>_shared_write_paths</code> and <code>_claim_paths_share</code>, which the arbitration has consulted since the rule that only an unmergeable region refuses a second writer — admits it. So the arbitration never reached the refusal the two tests assert, and both failed on <code>pytest.fail("conflict must not launch")</code>. The narrowing those tests exist to bound was correct throughout: the private read already judged the overlapping claim binding and not unread.</p>
+  <p id="qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-repair">The repair changes the fixture's overlap and no assertion. The overlapping claim now declares the <code>docs/figures/topic</code> directory, holding its <code>panel.svg</code> uncommitted, and the dispatch declares <code>docs/figures/topic/panel.svg</code>. A figure topic is one of the built-in unmergeable classes, so the refusal is real again and names it: <code>write scope 'docs/figures/topic/panel.svg' conflicts with live claim 'docs/figures/topic' held by run 'r-overlapping' (node 'owner-node') … exclusive pattern 'docs/figures/'; run 'r-overlapping' has stopped but its worktree still holds 1 uncommitted change(s) at declared paths</code>. The read's bound, the twenty-one-claim fixture, the unread population and the disposition count are unchanged.</p>
+  <p id="qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-negative-control">The negative control is the base run of the named file: <strong>2 failed, 4 passed</strong>, <code>EXIT=1</code>, with ids <code>tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py::test_the_overlapping_claim_refuses_the_dispatch_and_names_the_owner</code> and <code>tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py::test_the_dispatch_itself_probes_git_only_for_a_claim_that_can_meet_its_own</code>. Log: <code>logs/base-run.log</code> in the run directory.</p>
+  <p id="qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-head">The head run of the same file in the worktree is <strong>6 passed</strong> in 5.68 s. As a job on <code>all_debug</code> at the committed head <code>ed462fb7b1f0a974b373e9402f5b8e22ad0903b4</code>, over a scratch tree importing <code>/tmp/mcintos-landing-8308cfd9d858-v9MRIA/tree/reckon/crew/dispatch_claims.py</code>, it is <strong>6 passed, 0 failed</strong>, <code>EXIT=0</code>.</p>
+  <p id="qwnw-red-file-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-falsified">Two mutations show the file's guards still fire, each applied to the product module and reverted byte-identically (<code>md5 21dddac34aae225946b01cf49839ddcd</code> before and after). Forcing <code>_pointer_can_meet</code> true — the narrowing off — spends <strong>42</strong> dispositions rather than 2 and fails 3 tests, the two bounds and the unread population (<code>logs/mutation-narrowing-off.log</code>). Forcing it false — a narrowing that drops a claim that can meet — admits the dispatch and fails 4 tests, including both refusal tests (<code>logs/mutation-narrowing-drops-overlap.log</code>).</p>
+</article>
+</body>
+</html>

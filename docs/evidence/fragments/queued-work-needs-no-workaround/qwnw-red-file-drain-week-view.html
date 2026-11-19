@@ -1,0 +1,71 @@
+<section id="qwnw-red-file-drain-week-view-landing">
+  <h2>The drain week view counts the last admission verdict and the record landing</h2>
+
+  <p><strong>What changed.</strong> Only
+  <code>tests/test_drain_week_view.py</code>. Both red cases share one cause.
+  The week view counts a completion as landed only where its promotion is on
+  record: a delivered head that reaches the primary branch. The fixture
+  synthesised ledger rows without that evidence, so each row read as promoted
+  and awaiting a merge, and every landing count it fed read zero.</p>
+
+  <p>Verdict: <strong>test wrong</strong>. The rule is deliberate, read by the
+  pane, the watch and the request status, and the drain view's guard came in
+  with the rule that counts landings only when the delivered head reaches
+  primary, after these assertions were written. The fixture now records each
+  landing in the run store, as the promoting pass does, under the test's own
+  temporary config home. No assertion was deleted or weakened.</p>
+<h3 id="qwnw-red-file-drain-week-view-repro">Reproduction at the base revision</h3>
+
+  <p>The base arm at 42fe90d0b0a46060bafde2490dda7d4002cda478 read
+  <code>2 failed, 3 passed in 6.09s</code> with these ids:</p>
+
+  <pre><code>FAILED tests/test_drain_week_view.py::test_week_view_counts_each_request_and_uses_the_last_admission_verdict
+Differing items:
+{'landed': 0} != {'landed': 6}
+FAILED tests/test_drain_week_view.py::test_recent_launch_of_a_landed_request_uses_the_worker_stamp
+assert 0 == 1</code></pre>
+<h3 id="qwnw-red-file-drain-week-view-arms">Measured</h3>
+
+  <p>Each arm ran the node's own file as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset, in an extraction of its own revision. Each
+  log's header names the revision, host, tree, command and
+  <code>module.__file__</code>, and each ends with a bare <code>EXIT=</code>
+  line.</p>
+
+  <table id="qwnw-red-file-drain-week-view-arms-table">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td>42fe90d0b0a46060bafde2490dda7d4002cda478</td>
+        <td>2 failed, 3 passed — EXIT=1</td>
+        <td><code>drain-week-base.log</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td>the delivered head this fragment lands with</td>
+        <td>5 passed — EXIT=0</td>
+        <td><code>drain-week-head3.log</code>, named by the manifest</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The command both arms ran is
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_drain_week_view.py</code>.
+  Both logs sit in the run directory
+  <code>r-20261118T062447584352-qwnw-red-file-drain-week-view</code>.</p>
+<h3 id="qwnw-red-file-drain-week-view-control">Negative control</h3>
+
+  <p>The base arm of the same file is the negative control: it fails exactly
+  the two ids quoted above against 3 passed, and the head arm passes all five.
+  Its log is <code>drain-week-base.log</code> in the run directory.</p>
+
+  <p>The scoped gate of the same command, measured at the head revision by the
+  crew gate runner on <code>all_debug</code>, also read <code>5 passed</code>
+  with <code>EXIT=0</code>.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged
+  result belongs to a separately dispatched test node.</p>
+</section>

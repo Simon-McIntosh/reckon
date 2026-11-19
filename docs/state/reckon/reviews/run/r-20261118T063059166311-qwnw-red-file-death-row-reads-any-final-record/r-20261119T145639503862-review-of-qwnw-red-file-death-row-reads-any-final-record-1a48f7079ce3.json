@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:1457",
+    "reckon/crew/recovery_repair_dispatch.py:398",
+    "reckon/crew/resumption.py:363-366",
+    "reckon/crew/recovery.py:348"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:22:26Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-death-row-reads-any-final-record.html",
+      "line": 54,
+      "severity": "non-blocking",
+      "text": "The head arm row states the run was on all_debug host 98dci4-clu-3144 with SLURM_JOB_ID unset, but the log it cites, scoped-gate-1795099734450658310.log, records only revision, host, tree, command and EXIT=0: no partition and no job id, and its .scheduler sidecar is empty. The SLURM_JOB_ID=unset line inside that log is the command's own env -u printf, which prints unset whatever the environment held, so it evidences nothing. The partition clause therefore rests on prose; the only support for a submitted job is that the gate host differs from the allocation node 98dci4-clu-3026."
+    },
+    {
+      "file": "manifest.md",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "The importing-files arm is recorded as prose in evidence_inputs plus two log paths in test_logs, not as the inline JSON carrying full 40-character revisions that the node's done_when names. Its base arm ran in a scratch tree named on logs/importers-base.log:2 (/tmp/reckon-crew-scratch/r-20261118T063059166311-qwnw-red-file-death-row-reads-any-final-record/base-arm-J8d2Ez), yet the manifest records no measurement_module and no measurement_cwd and that log carries no module.__file__ line, so nothing in the receipt shows the base arm imported the extracted revision rather than a shared checkout; the equal 2 failed / 98 passed counts on both arms are the only cross-check, and they would be unchanged if both arms had imported one tree."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The reading reaches production through recovery_watch.py:1457 (the watch snapshot), recovery_repair_dispatch.py:398, resumption.py:363-366 and the re-export at recovery.py:348; the changed offset is consumed only at recovery_wait.py:1659-1662 into _appended_lines and in the scan memo tuple, where a smaller offset costs a wider re-read and nothing else.",
+    "diff": "Read both commits against 7c481b65: 45a439059b drops the pre-loop _last_newline_offset(handle, size) call from _tail_record_type and takes the covered offset from the first chunk the loop already reads (reckon/crew/recovery_wait.py, 15 added and 4 removed, one module), and 1a48f7079c adds the 94-line evidence fragment; no test file and no other module changes.",
+    "done_when": "The measure asks for the file green at head as a job with SLURM_JOB_ID unset and its output on shared storage, each cause with a product-or-test verdict, no assertion deleted or weakened, and importing arms as inline JSON with 40-character revisions; the manifest carries the green head run on shared storage, the product-wrong verdict and untouched tests, but the importing pair is prose plus logs/importers-*.log rather than inline JSON and the all_debug clause is carried by no log line.",
+    "goal": "The node goal is to make tests/test_death_row_reads_any_final_record.py pass in full; that file is untouched by the diff and the head gate scoped-gate-1795099734450658310.log records 5 passed EXIT=0 at 45a439059b, against 1 failed and 4 passed EXIT=1 at 7c481b65 in negative-control-base-red.log, so the named file is green at head and the goal is met.",
+    "manifest": "Read in full at the run directory: it names commits 45a439059b and 1a48f7079c, the head gate with 5 passed and EXIT=0, the base red run with 1 failed and the id test_the_common_small_record_path_reads_one_window_not_the_stream, the declared suite arms at 7c481b65 and 1a48f7079c (58 passed each in their logs), the importing pair at 2 failed and 98 passed each, and two out-of-scope ids red at both revisions.",
+    "write_paths": "The declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment path, and docs/figures/...; the delivered diff is exactly reckon/crew/recovery_wait.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-death-row-reads-any-final-record.html, both inside, with tests declared and left untouched because the cause was the product."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_death_row_reads_any_final_record.py pass in full; the file is untouched by the diff and scoped-gate-1795099734450658310.log records 5 passed EXIT=0 at 45a439059b, against 1 failed and 4 passed at base in negative-control-base-red.log.\nVERDICT done_when: the measure names the file green at head as a job with SLURM_JOB_ID unset, each cause with a verdict, no assertion weakened, and importing arms as inline JSON with full revisions; the manifest satisfies the first three and records the arms as prose plus logs instead, while the all_debug clause appears in no log line.\nVERDICT write_paths: declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/...; the diff is reckon/crew/recovery_wait.py and that fragment file, both inside, with tests left untouched because the cause was the product.\nVERDICT manifest: read in full; states the two commits, the head gate with 5 passed and EXIT=0, the base failing id, both declared suite arms at 58 passed, the importing pair at 2 failed and 98 passed, and two out-of-scope ids red at both revisions.\nVERDICT diff: read both commits against 7c481b65; recovery_wait.py:1679-1717 takes the last-newline offset from the chunk the loop already read, one window instead of two, and the fragment records the base red run and head green run.\nCALL_SITES: reckon/crew/recovery_watch.py:1457, reckon/crew/recovery_repair_dispatch.py:398, reckon/crew/resumption.py:363-366, reckon/crew/recovery.py:348\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:1679 makes the named file green at head by repairing the product, and the diff touches no assertion.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate measures the file the done_when names and its receipt is on disk, but the importing arms are not the inline JSON the measure names and no log line carries the all_debug partition.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff at 1a48f7079c touches only reckon/crew/recovery_wait.py and the declared fragment path.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_death_row_reads_any_final_record.py::test_the_common_small_record_path_reads_one_window_not_the_stream counts handle bytes against the 65536 constant, and negative-control-base-red.log shows it reddening on the double read with (131072, 3000142).\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_wait.py:1693-1700 keeps the file's commented-loop idiom, though covered or 0 at lines 1700 and 1712 spells a None sentinel as a falsy int at two returns.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/recovery_wait.py:1688-1691 restates the rfind that _last_newline_offset owns at reckon/crew/recovery_wait.py:213, taken deliberately so the owner is not called twice, and the owner keeps its other caller at line 326.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-death-row-reads-any-final-record.html:54 non-blocking: the head arm row claims all_debug and SLURM_JOB_ID unset while the cited log records no partition or job id and its scheduler sidecar is empty.\nFINDING manifest.md:12 non-blocking: the importing pair is prose plus logs rather than the inline JSON the done_when names, and the scratch-tree base arm carries no module.__file__ or measurement_cwd, so nothing shows it imported the extracted base revision rather than a shared checkout.\n",
+  "review_run_id": "r-20261119T145639503862-review-of-qwnw-red-file-death-row-reads-any-final-record-1a48f7079ce3",
+  "reviewed_base_sha": "7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061",
+  "reviewed_head_sha": "1a48f7079ce340f8604492606d16977bae86f4f8",
+  "reviewed_run_id": "r-20261118T063059166311-qwnw-red-file-death-row-reads-any-final-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:50:12.129455+00:00",
+  "total": 105
+}

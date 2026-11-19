@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:_obligations_view",
+    "reckon/crew/obligation_snapshot.py:payload_for",
+    "reckon/crew/station_obligations.py:346",
+    "reckon/crew/station_subscriber.py:163"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:17:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2928",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment says \"only a refusal is the coordinator's decision\" while the code at reckon/crew/obligations.py:2934 now lists a reviewer in the waiting and unreadable states too, so the sentence states a rule the branch below it does not keep."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligation-count-equals-its-list.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "non-blocking: the page says that at 23b901694b \"six fixtures hold them equal\", but its own reproduction on the same page reads \"1 failed, 5 passed\" and `assert 0 == 1`, so the base state is stated as green when the record shows one of the six red."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 23b901694b4bfec73d95be3a082d4c336d9a4101 \u2014 2dd455a549 is the repair in three modules, 1c74bb66c9 adds the 107-line evidence fragment, c1f314d90f corrects the fragment's head row to the revision affected-head.log genuinely ran at, four paths total, no test file and no plan edited.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, both causes with a verdict, unchanged assertions, an importer arm and a negative control; head-obligation-count.log carries \"partition: all_debug SLURM_JOB_ID: unset\" and 6 passed EXIT=0, base-obligation-count.log is red with the named id at tests/test_obligation_count_equals_its_list.py:155, and no test file appears in the diff.",
+    "goal": "the source node's goal is \"Make tests/test_obligation_count_equals_its_list.py pass in full on the primary branch\"; head-obligation-count.log runs that file at 2dd455a5495fd6ac5c7dda15511df73b9e90567a and reads 6 passed EXIT=0, and the repair is in reckon/crew/runs.py:4027 and reckon/crew/obligations.py:2934.",
+    "manifest": "status complete; it names the gate command, the three obligation-count/gate logs, both causes with product-wrong verdicts, and both suite arms as inline JSON over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py with 40-character revisions and 0 failures either side.",
+    "write_paths": "the declared paths are reckon, tests, the plan's evidence-fragment directory and this node's own fragment path; the diff touches only reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, reckon/crew/runs.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligation-count-equals-its-list.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_obligation_count_equals_its_list.py:155 asserts both `count == 1` and `len(items) == 1`, so reinstating either `.get(session, 0)` or the `state != REVIEW_SELF_REFUSED` suppression reddens it, and the base arm's failure proves the assertions are not tautological.",
+    "evidence": "base-obligation-count.log records the failing id and `assert 0 == 1` at tests/test_obligation_count_equals_its_list.py:155 beside the head arm's receipt line naming partition all_debug and SLURM_JOB_ID unset, and count-and-list-probe.log shows both causes on one fixture.",
+    "fit": "`unreconciled_for_session` at reckon/crew/runs.py:4027 follows the module's documented-helper style and both readers route through it, though the comment at reckon/crew/obligations.py:2928 still states a rule the code beneath it no longer keeps.",
+    "goal_fidelity": "head-obligation-count.log reads 6 passed EXIT=0 at 2dd455a549 and the two product rules behind the base failure are repaired at reckon/crew/runs.py:4027 and reckon/crew/obligations.py:2934.",
+    "reuse": "no owner of a per-session count accessor existed \u2014 the search over reckon/crew for `drain_unreconciled_by_session`, `_partition_session_rows` and `unreconciled` found only the producer map and inline `.get(...)` readers \u2014 so reckon/crew/runs.py:4027 becomes the single owner of the ownerless rule and both former inline readers now call it.",
+    "scope_discipline": "the four changed paths in `git diff 23b901694b..c1f314d90f` are the three modules the two causes name plus the node's own permitted evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Make tests/test_obligation_count_equals_its_list.py pass in full on the primary branch\"; head-obligation-count.log runs that file at 2dd455a5495fd6ac5c7dda15511df73b9e90567a and reads 6 passed EXIT=0, and the repair is in reckon/crew/runs.py:4027 and reckon/crew/obligations.py:2934.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, both causes with a verdict, unchanged assertions, an importer arm and a negative control; head-obligation-count.log carries \"partition: all_debug SLURM_JOB_ID: unset\" and 6 passed EXIT=0, base-obligation-count.log is red with the named id at tests/test_obligation_count_equals_its_list.py:155, and no test file appears in the diff.\nVERDICT write_paths: the declared paths are reckon, tests, the plan's evidence-fragment directory and this node's own fragment path; the diff touches only reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, reckon/crew/runs.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligation-count-equals-its-list.html, all inside them.\nVERDICT manifest: status complete; it names the gate command, the three obligation-count/gate logs, both causes with product-wrong verdicts, and both suite arms as inline JSON over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py with 40-character revisions and 0 failures either side.\nVERDICT diff: read commit by commit against 23b901694b4bfec73d95be3a082d4c336d9a4101 \u2014 2dd455a549 is the repair in three modules, 1c74bb66c9 adds the 107-line evidence fragment, c1f314d90f corrects the fragment's head row to the revision affected-head.log genuinely ran at, four paths total, no test file and no plan edited.\nCALL_SITES: reckon/crew/obligations.py:_obligations_view, reckon/crew/obligation_snapshot.py:payload_for, reckon/crew/station_obligations.py:346, reckon/crew/station_subscriber.py:163\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: head-obligation-count.log reads 6 passed EXIT=0 at 2dd455a549 and the two product rules behind the base failure are repaired at reckon/crew/runs.py:4027 and reckon/crew/obligations.py:2934.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-obligation-count.log records the failing id and `assert 0 == 1` at tests/test_obligation_count_equals_its_list.py:155 beside the head arm's receipt line naming partition all_debug and SLURM_JOB_ID unset, and count-and-list-probe.log shows both causes on one fixture.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four changed paths in `git diff 23b901694b..c1f314d90f` are the three modules the two causes name plus the node's own permitted evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_obligation_count_equals_its_list.py:155 asserts both `count == 1` and `len(items) == 1`, so reinstating either `.get(session, 0)` or the `state != REVIEW_SELF_REFUSED` suppression reddens it, and the base arm's failure proves the assertions are not tautological.\nSCORE fit: 18\nJUSTIFICATION fit: `unreconciled_for_session` at reckon/crew/runs.py:4027 follows the module's documented-helper style and both readers route through it, though the comment at reckon/crew/obligations.py:2928 still states a rule the code beneath it no longer keeps.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of a per-session count accessor existed \u2014 the search over reckon/crew for `drain_unreconciled_by_session`, `_partition_session_rows` and `unreconciled` found only the producer map and inline `.get(...)` readers \u2014 so reckon/crew/runs.py:4027 becomes the single owner of the ownerless rule and both former inline readers now call it.\nFINDING reckon/crew/obligations.py:2928 non-blocking: the comment says \"only a refusal is the coordinator's decision\" while the code at reckon/crew/obligations.py:2934 now lists a reviewer in the waiting and unreadable states too, so the sentence states a rule the branch below it does not keep.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligation-count-equals-its-list.html:7 non-blocking: the page says that at 23b901694b \"six fixtures hold them equal\", but its own reproduction on the same page reads \"1 failed, 5 passed\" and `assert 0 == 1`, so the base state is stated as green when the record shows one of the six red.",
+  "review_run_id": "r-20261118T161847871977-review-of-qwnw-red-file-obligation-count-equals-its-list-c1f314d90fc3",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "c1f314d90fc3aeed5dbc2d855de6802bf013ab7c",
+  "reviewed_run_id": "r-20261118T062924879202-qwnw-red-file-obligation-count-equals-its-list",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:55:42.272524+00:00",
+  "total": 113
+}

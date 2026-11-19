@@ -1,4 +1,11 @@
-"""A pending landing retires its marked run only after the remote accepts it."""
+"""A pending landing retires its run only after the remote accepts it.
+
+A promotion that has not merged yet is finished by the landing pass at the head
+it cited. A promotion whose merge meets a conflict is different: the run is
+promoted, so its live pointer is never written back and the pending record —
+which the refusal names and which carries the conflict — is the obligation a
+coordinator reads.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew_run_commands
-from reckon.crew import merge, pending_landing, runs
+from reckon.crew import pending_landing, runs
 from tests.helpers.git import git
 from tests.helpers.landing_repository import PROJECT
 from tests.test_a_conflicting_landing_is_repaired import (
@@ -23,18 +30,49 @@ from tests.test_a_conflicting_landing_is_repaired import (
 )
 
 
-def _promoted_repair(deliver):
+def _promoted_conflict(deliver):
+    """Deliver two runs whose changes meet in a real merge conflict.
+
+    The second delivery is promoted before its merge runs, so the conflict is
+    met with a promoted row behind it. Promotion removed the live pointer, and
+    the repair that would resume the delivery's worker is refused because a
+    promoted run's pointer is never written back. What survives is the pending
+    record, which the refusal receipt names and which carries the conflict.
+    """
     first = deliver("first", "first original", "first delivered")
-    repaired = deliver("repair", "first original", "second delivered")
     result = _complete_land(first)
     assert result.exit_code == 0, result.output
+    repaired = deliver("repair", "first original", "second delivered")
     result = _complete_land(repaired)
     assert result.exit_code != 0, result.output
     receipt = json.loads(Path(json.loads(result.output)["record_path"]).read_text())
     assert receipt["steps"]["promote"]["ok"], receipt
     assert receipt["steps"]["land"]["outcome"] == "merge-conflict", receipt
-    primary = git(repaired["repository"], "rev-parse", "HEAD")
-    worktree = repaired["worktree"]
+    repair = receipt["steps"]["land"]["repair"]
+    record_path = pending_landing._record_path(repaired["run_id"])
+    assert repair["status"] == "refused", repair
+    assert "is promoted" in repair["reason"], repair
+    assert repair["record"] == str(record_path)
+    assert not runs.pointer_path(repaired["run_id"]).exists()
+    assert record_path.is_file()
+    record = pending_landing._read(record_path)
+    assert record["merge_conflict"]["head"] == repaired["head"]
+    assert record["merge_conflict"]["paths"] == [SOURCE]
+    assert repaired["worktree"].is_dir()
+    assert git(repaired["worktree"], "rev-parse", "HEAD") == repaired["head"]
+    assert "second delivered" not in git(repaired["origin"], "show", "main:" + SOURCE)
+    repaired["conflict_head"] = repaired["head"]
+    return repaired
+
+
+def _conflict_resolution(run):
+    """Merge the primary into the delivery's worktree and gate the resolution.
+
+    This is the repair the refusal's advice asks for, delivered into a worktree
+    whose run has been promoted; the record stays the only journal naming it.
+    """
+    primary = git(run["repository"], "rev-parse", "HEAD")
+    worktree = run["worktree"]
     conflict = subprocess.run(
         ["git", "-C", str(worktree), "merge", "--no-commit", "--no-ff", primary],
         capture_output=True,
@@ -56,14 +94,11 @@ def _promoted_repair(deliver):
         "-m",
         "Combine the function changes and retain the promotion record.",
     )
-    repaired["authored_head"] = repaired["head"]
-    repaired["head"] = git(worktree, "rev-parse", "HEAD")
-    deliver_repair_gate(repaired)
-    pointer = runs.read_pointer(repaired["run_id"])
-    assert pointer["pending_landing_repair"] is True
-    assert pending_landing._record_path(repaired["run_id"]).is_file()
-    assert worktree.is_dir()
-    return repaired
+    repaired_head = git(worktree, "rev-parse", "HEAD")
+    run["authored_head"] = run["head"]
+    run["head"] = repaired_head
+    deliver_repair_gate(run)
+    return run
 
 
 def _assert_remote_carries(run):
@@ -73,37 +108,49 @@ def _assert_remote_carries(run):
     )
 
 
-def test_a_finished_pending_landing_retires_its_run(deliveries, monkeypatch):
+def test_a_conflicted_promotion_owes_its_record_and_lands_nothing(deliveries):
     deliver, _resumed = deliveries
-    run = _promoted_repair(deliver)
-
-    results = pending_landing.finish_pending_landings(only_run=run["run_id"])
-
-    assert results[0]["status"] == "finished", results
-    assert results[0]["head"] == run["head"]
-    _assert_remote_carries(run)
-    assert not runs.pointer_path(run["run_id"]).exists()
-    assert not run["worktree"].exists()
-    assert str(run["worktree"]) not in git(run["repository"], "worktree", "list")
-    assert not pending_landing._record_path(run["run_id"]).exists()
-
-
-def test_a_refused_push_keeps_the_run_and_its_recovery_state(deliveries, monkeypatch):
-    deliver, _resumed = deliveries
-    run = _promoted_repair(deliver)
+    run = _promoted_conflict(deliver)
+    record_path = pending_landing._record_path(run["run_id"])
     remote_before = git(run["origin"], "rev-parse", "main")
-    hook = run["origin"] / "hooks" / "pre-receive"
-    hook.write_text("#!/bin/sh\necho 'push refused by fixture' >&2\nexit 1\n")
-    hook.chmod(0o755)
 
     results = pending_landing.finish_pending_landings(only_run=run["run_id"])
 
-    assert results[0]["status"] == "failed", results
-    assert "push refused by fixture" in results[0]["error"]
+    assert results[0]["status"] == "record-obligation", results
+    assert results[0]["record"] == str(record_path)
+    assert "is promoted" in results[0]["error"], results
     assert git(run["origin"], "rev-parse", "main") == remote_before
-    assert runs.read_pointer(run["run_id"])["pending_landing_repair"] is True
+    assert not runs.pointer_path(run["run_id"]).exists()
+    assert record_path.is_file()
     assert run["worktree"].is_dir()
+    assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
+    # The obligation is durable: a later pass reports the same record rather
+    # than retrying a merge nothing can finish.
+    again = pending_landing.finish_pending_landings(only_run=run["run_id"])
+    assert again[0]["status"] == "record-obligation", again
+    assert again[0]["record"] == str(record_path)
+    assert not runs.pointer_path(run["run_id"]).exists()
+
+
+def test_a_delivered_repair_keeps_the_record_and_the_worktree(deliveries):
+    deliver, _resumed = deliveries
+    run = _promoted_conflict(deliver)
+    _conflict_resolution(run)
+    record_path = pending_landing._record_path(run["run_id"])
+    record = pending_landing._read(record_path)
+    assert record["merge_conflict"]["head"] == run["conflict_head"]
+    remote_before = git(run["origin"], "rev-parse", "main")
+
+    results = pending_landing.finish_pending_landings(only_run=run["run_id"])
+
+    assert results[0]["status"] == "record-obligation", results
+    assert results[0]["record"] == str(record_path)
+    assert "is promoted" in results[0]["error"], results
+    assert not runs.pointer_path(run["run_id"]).exists()
     assert pending_landing._record_path(run["run_id"]).is_file()
+    assert run["worktree"].is_dir()
+    assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
+    assert git(run["origin"], "rev-parse", "main") == remote_before
 
 
 def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monkeypatch):
@@ -132,6 +179,48 @@ def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monke
     _assert_remote_carries(run)
     assert not runs.pointer_path(run["run_id"]).exists()
     assert not pending_landing._record_path(run["run_id"]).exists()
+
+
+def test_a_refused_push_keeps_the_run_and_its_recovery_state(deliveries, monkeypatch):
+    """A push the remote refuses leaves the run, its record and its worktree.
+
+    An interrupted promotion's recovery state is the pending record and the
+    worktree its reviewed head was authored in. A refused push is the failure
+    that leaves the merge itself sound, so nothing may be retired on the way
+    out: the refusal is written onto the record as the attempt's own error, the
+    record stays for the next pass to retry, and the worktree is left where the
+    worker can reach it.
+    """
+    deliver, _resumed = deliveries
+    run = deliver("refused", "first original", "first delivered + second delivered")
+    with monkeypatch.context() as interrupted:
+        interrupted.setattr(
+            crew_run_commands,
+            "_land_a_promoted_run",
+            lambda *a, **k: ({"ok": False, "interrupted": True}, 1),
+        )
+        result = _complete_land(run)
+    assert result.exit_code != 0, result.output
+    record_path = pending_landing._record_path(run["run_id"])
+    assert record_path.is_file()
+    assert not runs.pointer_path(run["run_id"]).exists()
+    remote_before = git(run["origin"], "rev-parse", "main")
+    hook = run["origin"] / "hooks" / "pre-receive"
+    hook.write_text("#!/bin/sh\necho 'push refused by fixture' >&2\nexit 1\n")
+    hook.chmod(0o755)
+
+    results = pending_landing.finish_pending_landings(only_run=run["run_id"])
+
+    assert results[0]["status"] == "failed", results
+    assert "push refused by fixture" in results[0]["error"], results
+    assert git(run["origin"], "rev-parse", "main") == remote_before
+    assert record_path.is_file()
+    record = pending_landing._read(record_path)
+    assert record["attempts"] == 1
+    assert "push refused by fixture" in record["last_error"]
+    assert not runs.pointer_path(run["run_id"]).exists()
+    assert run["worktree"].is_dir()
+    assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
 
 
 def _unfinished_promotion(deliver, name):
@@ -252,34 +341,30 @@ def test_a_record_survives_when_the_attempt_cannot_be_retired(deliveries, monkey
     )
 
 
-def test_a_newer_attempt_keeps_its_pointer_and_worktree(deliveries):
+def test_a_later_attempt_is_never_written_back(deliveries):
+    """A promoted run's record is the obligation; no attempt is given a pointer.
+
+    The pass reads, but never rewrites, a pointer that a later attempt left: the
+    record names the conflict and the run is reported as an obligation, with its
+    worktree, its pointer and the branch it could not land on all left as they
+    were.
+    """
     deliver, _resumed = deliveries
-    run = _promoted_repair(deliver)
-    marked = runs.read_pointer(run["run_id"])
-    newer = {
-        **marked,
-        "attempt": int(marked.get("attempt") or 0) + 1,
-        "phase": "running",
-    }
-    assert (
-        pending_landing.pointer_attempt(newer)
-        != marked["pending_landing_repair_attempt"]
-    )
+    run = _promoted_conflict(deliver)
+    record_path = pending_landing._record_path(run["run_id"])
+    captured = pending_landing._read(record_path)["pointer"]
+    captured_attempt = int(captured.get("attempt") or 0)
+    newer = {**captured, "attempt": captured_attempt + 1, "phase": "running"}
+    runs._write_json(runs.pointer_path(run["run_id"]), newer)
+    written = runs.pointer_path(run["run_id"]).read_bytes()
 
-    def land_with_newer_attempt(repository, **kwargs):
-        runs._write_json(runs.pointer_path(run["run_id"]), newer)
-        return merge.land(repository, **kwargs)
+    results = pending_landing.finish_pending_landings(only_run=run["run_id"])
 
-    results = pending_landing.finish_pending_landings(
-        only_run=run["run_id"], land=land_with_newer_attempt
-    )
-
-    assert results[0]["status"] == "finished", results
-    assert results[0]["head"] == run["head"]
-    _assert_remote_carries(run)
-    assert runs.pointer_path(run["run_id"]).is_file()
+    assert results[0]["status"] == "record-obligation", results
+    assert results[0]["record"] == str(record_path)
+    assert runs.pointer_path(run["run_id"]).read_bytes() == written
     assert runs.read_pointer(run["run_id"]) == newer
+    assert int(runs.read_pointer(run["run_id"])["attempt"]) == captured_attempt + 1
     assert run["worktree"].is_dir()
-    assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
-    assert str(run["worktree"]) in git(run["repository"], "worktree", "list")
-    assert not pending_landing._record_path(run["run_id"]).exists()
+    assert git(run["worktree"], "rev-parse", "HEAD") == run["conflict_head"]
+    assert pending_landing._record_path(run["run_id"]).is_file()

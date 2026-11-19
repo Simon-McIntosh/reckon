@@ -34,7 +34,10 @@ from reckon.crew.routing import _context_file_inputs
 
 PROJECT = "proj"
 PLAN = "plan-a"
-LARGE_PATH = "docs/research/generated.html"
+# A path the sharing policy keeps exclusive: an ordinary source path is shared by
+# a project with no sharing declaration, so only a class git cannot reconcile
+# (here generated state) reaches the peer check at all.
+LARGE_PATH = "docs/state/generated.html"
 LARGE_BYTES = 1_000_000
 REFERENCE_TOKENS = routing._REGENERATED_PATH_REFERENCE_TOKENS
 STANDING_TOKENS = 20_000

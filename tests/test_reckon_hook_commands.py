@@ -1,4 +1,4 @@
-"""Check the commands written by both hook settings writers."""
+"""Check the commands written by every hook settings writer."""
 
 from __future__ import annotations
 
@@ -77,7 +77,12 @@ def test_registered_reckon_importing_scripts_use_the_checkout_interpreter(
     settings_path = tmp_path / "settings.json"
     synced = _sync(tmp_path, settings_path)
     installed = install.build_hook_snippet(include_git_guard=True)
-    commands = _commands(synced) + _commands(installed)
+    # The inbox hook is registered in the home a run is launched into rather
+    # than in the operator's settings, so its writer's commands join the
+    # population: a script that imports this package is only launchable from an
+    # entry that names the checkout's interpreter, whatever file carries it.
+    inbox = install.build_worker_inbox_snippet()
+    commands = _commands(synced) + _commands(installed) + _commands(inbox)
     importing = _importing_scripts()
     registered = set()
 

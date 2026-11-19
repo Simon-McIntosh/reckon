@@ -1,9 +1,10 @@
-"""A locked run store is retried, reported, and repaired.
+"""A locked run store is retried, refused past its bound, and repaired.
 
-The index is a cache over the committed run files, so a write that loses a race
-for the store's lock must not cost a run its row: it is retried with a bounded
-backoff, a lock past that bound is reported rather than raised, and the missing
-row is left for the import the promotion gate runs.
+The store is the durable authority for every promoted run, so a write that
+loses a race for its lock must not cost a run its row: it is retried with a
+bounded backoff. A lock outlasting that bound refuses the write rather than
+reporting a merely unhealthy index, and the row the refusal left unwritten is
+what the import the promotion gate runs supplies.
 """
 
 from __future__ import annotations
@@ -12,6 +13,8 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
+
+import pytest
 
 from reckon import ledger, run_store
 
@@ -88,17 +91,19 @@ def test_a_short_lock_is_waited_out(tmp_path: Path, monkeypatch) -> None:
     assert RUN_ID in (run_store.indexed_run_ids(PROJECT) or set())
 
 
-def test_a_lock_past_the_bound_is_reported_then_imported(
+def test_a_lock_past_the_bound_is_refused_then_imported(
     tmp_path: Path, monkeypatch
 ) -> None:
+    """A lock outlasting the bound is a refusal, and the run file repairs it."""
     path = _store(tmp_path, monkeypatch)
     monkeypatch.setattr(run_store, "INDEX_RETRY_SECONDS", 0.2)
     releaser = _holding(path, 0.6)
     try:
-        outcome = ledger._index_append(PROJECT, _record())
+        with pytest.raises(ledger.LedgerError) as refusal:
+            ledger._index_append(PROJECT, _record())
     finally:
         releaser.join()
-    assert outcome["status"] == "failed"
+    assert "locked past the wait bound" in str(refusal.value)
     assert RUN_ID not in (run_store.indexed_run_ids(PROJECT) or set())
 
     source = ledger.run_path(PROJECT, RUN_ID)

@@ -158,8 +158,9 @@ def test_a_dispatch_runs_the_backend_command_it_resolved(
     assert "No such file or directory" not in output, output
     assert result.exit_code == 0, output
 
-    print(output)
-    run = json.loads(output.splitlines()[0])
+    # The created run's identity is written to stderr as soon as its claim is
+    # published, so stdout carries the one final JSON document a caller reads.
+    run = json.loads(result.stdout)
     assert run["ok"] is True, run
     assert str(bindir / COMMAND) in run.get("argv", []), run
 PROBE_REPORT = "probe-report.json"

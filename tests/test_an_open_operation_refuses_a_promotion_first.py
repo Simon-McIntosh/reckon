@@ -318,8 +318,25 @@ def test_an_open_operation_refuses_before_any_ledger_read(
     assert counter.run_stores == 0, (
         "the checkout's open operation was judged only after a store was opened"
     )
-    assert _snapshot(repository) == before, (
-        "the refusal wrote to the ledger, the plan or the run directory"
+    after = _snapshot(repository)
+    written = sorted(set(after) - set(before))
+    # ``crew complete`` answers every request it carries out with a receipt
+    # beside the run's own files, a refusal included, so a caller reads a
+    # settled answer instead of an absent one. That receipt is the request's,
+    # not the promotion's landing: it is the only file the refusal may add,
+    # and it must carry the same refusal the reply carried.
+    assert len(written) == 1, (
+        "the refusal added files besides its own completion receipt: " + repr(written)
+    )
+    receipt_path = Path(written[0])
+    assert receipt_path.parent == run_dir(REVIEW_RUN), written
+    assert receipt_path.name.startswith("completion-"), written
+    receipt = json.loads(after[written[0]])
+    assert receipt["ok"] is False, receipt
+    assert f"has an open {state_word} in progress" in receipt["detail"], receipt
+    assert {path: after[path] for path in before} == before, (
+        "the refusal rewrote the ledger, the plan or a run file it promised to "
+        "leave alone"
     )
     assert pointer_path(REVIEW_RUN).is_file()
 

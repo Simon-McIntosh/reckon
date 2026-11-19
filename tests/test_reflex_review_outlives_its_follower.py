@@ -100,7 +100,6 @@ for arguments in (
     subprocess.run(["git", *arguments], cwd=repo, check=True, capture_output=True)
 (home / "mounts.json").write_text('{"sample": "' + str(repo / "docs") + '"}')
 
-dispatch = importlib.import_module("reckon.crew.dispatch")
 base_sha = subprocess.run(
     ["git", "rev-parse", "HEAD"], cwd=repo, check=True, capture_output=True, text=True
 ).stdout.strip()
@@ -112,8 +111,23 @@ def prepare_worktree(_repo, session, node, base):
     return {"path": str(path), "base": base, "base_sha": base_sha}
 
 
-dispatch._create_worktree = prepare_worktree
-dispatch._supervisor_argv = lambda *, spec_path: [
+# Every override below is bound on the module whose caller reads it.
+# ``reckon.crew.dispatch`` is a compatibility facade that forwards an assignment
+# to the concern modules it lists in ``_CONCERN_MODULES``, so a facade binding
+# reaches ``reckon.crew.dispatching.launch`` and its ``_create_worktree``. It
+# reaches nothing that holds the other two names: the supervisor argv and the
+# detached spawn live in ``reckon.crew.dispatch_launch``, which the facade does
+# not list, so a facade assignment stopped in ``dispatching._imports`` and both
+# overrides stayed inert. That is why the in-tree arm passed before this change:
+# its mutation never reached the code under test, so its green said nothing about
+# how the launch target was started. Each name is now bound where it is read:
+# ``_create_worktree`` in ``dispatching.launch``, and ``_supervisor_argv`` and
+# ``_spawn_detached_supervisor`` in ``dispatch_launch``.
+dispatching_launch = importlib.import_module("reckon.crew.dispatching.launch")
+dispatch_launch = importlib.import_module("reckon.crew.dispatch_launch")
+
+dispatching_launch._create_worktree = prepare_worktree
+dispatch_launch._supervisor_argv = lambda *, spec_path: [
     sys.executable,
     "-c",
     "import time; time.sleep(300)",
@@ -123,7 +137,7 @@ if launch == "in-tree":
         # No intermediate and no new session: the launch target is a plain child
         # of the follower, as the single-Popen vector was before it was fixed.
         return subprocess.Popen(argv).pid
-    dispatch._spawn_detached_supervisor = _in_tree_spawn
+    dispatch_launch._spawn_detached_supervisor = _in_tree_spawn
 
 CONFIG = {
     "default_backend": "alpha",
@@ -304,3 +318,85 @@ def test_a_reflex_review_supervisor_survives_the_followers_group_in_tree(
     vector did the work.
     """
     _run(tmp_path, "in-tree")
+
+
+_BINDING_START = "dispatching_launch = importlib.import_module"
+_BINDING_END = "\nCONFIG = {"
+_SLEEP_ARGV = [sys.executable, "-c", "import time; time.sleep(300)"]
+
+
+def _binding_source() -> str:
+    """The override block the follower itself runs, read out of ``FOLLOWER``."""
+    start = FOLLOWER.index(_BINDING_START)
+    end = FOLLOWER.index(_BINDING_END, start)
+    return FOLLOWER[start:end]
+
+
+def _overridden() -> list[tuple[object, str, object]]:
+    """The launch bindings as they stand, with the values to put back."""
+    dispatch_launch = importlib.import_module("reckon.crew.dispatch_launch")
+    dispatching_launch = importlib.import_module("reckon.crew.dispatching.launch")
+    return [
+        (dispatch_launch, "_supervisor_argv", dispatch_launch._supervisor_argv),
+        (
+            dispatch_launch,
+            "_spawn_detached_supervisor",
+            dispatch_launch._spawn_detached_supervisor,
+        ),
+        (dispatching_launch, "_create_worktree", dispatching_launch._create_worktree),
+    ]
+
+
+def test_the_followers_overrides_land_where_the_launch_reads_them() -> None:
+    """Both arms' mutations must reach the module the launch actually calls.
+
+    The in-tree arm proves the mutation only when its overrides reach the code
+    under test; a binding the launch never reads leaves them inert and the arm's
+    green means nothing. This executes the follower's own binding block and
+    asserts the supervisor's caller observes each override, so a binding moved
+    back onto the facade fails here — in the default run, not only in the arm the
+    mutation selects.
+    """
+    dispatch_launch = importlib.import_module("reckon.crew.dispatch_launch")
+    dispatching_launch = importlib.import_module("reckon.crew.dispatching.launch")
+    real_spawn = dispatch_launch._spawn_detached_supervisor
+    saved = _overridden()
+    assert dispatch_launch._start_supervisor.__globals__ is vars(dispatch_launch)
+    try:
+        for launch in ("detached", "in-tree"):
+            namespace = {
+                "importlib": importlib,
+                "subprocess": subprocess,
+                "sys": sys,
+                "launch": launch,
+                "prepare_worktree": lambda *_a, **_k: None,
+            }
+            # The follower's own binding block is the thing under test.
+            exec(compile(_binding_source(), "<follower>", "exec"), namespace)  # noqa: S102
+            assert namespace.get("dispatch_launch") is dispatch_launch, (
+                launch + ": the follower does not bind on the launch module"
+            )
+            assert namespace.get("dispatching_launch") is dispatching_launch, (
+                launch + ": the follower does not bind on the worktree module"
+            )
+            assert (
+                dispatch_launch._supervisor_argv(spec_path=Path("spec.json"))
+                == _SLEEP_ARGV
+            ), launch
+            assert (
+                dispatch_launch._start_supervisor.__globals__["_supervisor_argv"]
+                is dispatch_launch._supervisor_argv
+            ), launch
+            assert (
+                dispatching_launch._create_worktree is namespace["prepare_worktree"]
+            ), launch
+            if launch == "in-tree":
+                assert (
+                    dispatch_launch._spawn_detached_supervisor
+                    is namespace["_in_tree_spawn"]
+                ), launch
+            else:
+                assert dispatch_launch._spawn_detached_supervisor is real_spawn
+    finally:
+        for module, name, value in saved:
+            setattr(module, name, value)

@@ -696,20 +696,31 @@ def _ledger_readings(
     config: Mapping[str, Any] | None,
     records: Iterable[Mapping[str, Any]] | None,
 ) -> list[_Reading]:
-    """Derive historical readings independently of the moving live pointers."""
+    """Derive historical readings independently of the store's whole history.
+
+    The stored read decodes only the rows promoted since this process last read
+    them, so a verdict costs the new rows rather than the project's history. A
+    caller that hands the rows in already hears its own roster, and one the
+    store cannot answer for falls back to the committed ledger exactly as
+    :func:`reckon.ledger.load` does.
+    """
     found: list[_Reading] = []
-    data, _version = (
-        ledger.load(project, root)
-        if records is None
-        else ledger.indexed_headers(project, root)
-    )
-    records = data["runs"] if records is None else records
+    if records is None:
+        stored = ledger.stored_history(project, root)
+        if stored is not None:
+            rows, data = stored
+        else:
+            data, _version = ledger.load(project, root)
+            rows = data["runs"]
+    else:
+        data, _version = ledger.indexed_headers(project, root)
+        rows = records
     members = {
         str(item.get("id") or ""): str(item.get("harness") or "")
         for item in data.get("members", ())
         if item.get("id") and item.get("harness")
     }
-    for record in records:
+    for record in rows:
         stamp = record.get("completed_at")
         when = _parse_stamp(stamp)
         budget = record.get("budget")

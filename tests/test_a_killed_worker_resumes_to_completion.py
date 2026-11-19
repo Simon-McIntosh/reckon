@@ -246,8 +246,8 @@ def test_a_killed_worker_is_classified_resumed_and_completed(
 ) -> None:
     worktree = _worktree_with_committed_work(repository, tmp_path)
     manifest = run_dir(RUN_ID) / "manifest.md"
-    bin_directory = tmp_path / "bin"
-    bin_directory.mkdir()
+    bin_directory = run_dir(RUN_ID) / "bin"
+    bin_directory.mkdir(parents=True)
     _stub_worker(bin_directory, WORKER_BINARY, KILLED_WORKER)
     _write_pointer(repository, worktree, manifest, bin_directory=bin_directory)
 

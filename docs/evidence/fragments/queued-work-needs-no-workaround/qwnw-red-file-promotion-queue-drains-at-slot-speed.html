@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-promotion-queue-drains-at-slot-speed-evidence">
+<h3>A negative result: the red run did not reproduce, and the drain is fast</h3>
+<p>This node measured <code>tests/test_promotion_queue_drains_at_slot_speed.py</code> at
+<code>84df41f817943ad9f228ac90491b8faf87dbd2c1</code>. The file is red once in the record below and
+green in every later run of the same tree and the same command, so the red is a negative result:
+the mechanism it points at is the assertion's wall-clock window, not the queue. No product line and
+no test line was changed.</p>
+
+<h4 id="qwnw-red-file-promotion-queue-drains-at-slot-speed-base-red">Base run, the red the node was dispatched for</h4>
+<pre># revision: 84df41f817943ad9f228ac90491b8faf87dbd2c1
+# command: PYTHONPATH=. timeout 600 .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_queue_drains_at_slot_speed.py 2&gt;&amp;1 | tail -40
+
+F...                                                                     [100%]
+___________________ test_a_freed_slot_takes_the_next_request ___________________
+&gt;       assert moments["start"][2] - moments["finish"][0] &lt; PROMOTION_SECONDS
+E       assert (7246387.896919558 - 7246385.835799199) &lt; 1.0
+FAILED tests/test_promotion_queue_drains_at_slot_speed.py::test_a_freed_slot_takes_the_next_request
+1 failed, 3 passed in 22.55s</pre>
+
+<h4 id="qwnw-red-file-promotion-queue-drains-at-slot-speed-probe">What the drain actually costs, timed from the product</h4>
+<p>A temporary probe (not committed) wrapped the product's tick, its completion write and its lease
+release, and ran the same five-request, width-2 drain twenty times:</p>
+<pre># probe: reckon/crew/promotion_requests.py, PromotionService.tick, _finish, PromotionService._release
+# 20 runs, gap = promotion's completion write -&gt; the tick that launched the next request
+run.1  gap 0.006s     run.8  gap 0.009s     run.15 gap 0.007s
+run.2  gap 0.008s     run.9  gap 0.008s     run.16 gap 0.008s
+run.3  gap 0.010s     run.10 gap 0.007s     run.17 gap 0.007s
+run.4  gap 0.008s     run.11 gap 0.012s     run.18 gap 0.006s
+run.5  gap 0.007s     run.12 gap 0.007s     run.19 gap 0.007s
+run.6  gap 0.009s     run.13 gap 0.008s     run.20 gap 0.007s
+run.7  gap 0.024s     run.14 gap 0.006s
+# no tick, completion write or lease release exceeded 0.25 s in any of the twenty runs</pre>
+<p>The same test, pinned with three CPU burners to one core, keeps passing and the measured gap
+grows with the contention rather than with anything in the queue:</p>
+<pre># taskset -c 7, three burners also on cpu 7
+pinned.1  gap 0.045s
+pinned.2  gap 0.043s
+pinned.3  gap 0.042s</pre>
+
+<h4 id="qwnw-red-file-promotion-queue-drains-at-slot-speed-verdict">Verdict</h4>
+<p>No product rule broke. The freed slot is refilled within 6 to 24 milliseconds of the promotion's
+own completion write across twenty runs, and the admission pass is never needed.</p>
+<p>Because the file now passes in full at its base revision, this node repaired no cause and
+changed no product or test line; the single red run is recorded above with its own assertion value
+so a later reader can see what it measured rather than taking a green run as proof it never ran red.</p>
+</section>

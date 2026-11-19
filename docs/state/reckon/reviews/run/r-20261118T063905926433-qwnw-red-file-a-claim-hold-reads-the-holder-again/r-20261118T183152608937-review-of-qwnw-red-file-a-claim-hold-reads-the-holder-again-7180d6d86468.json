@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite-1795026101095207991.log at bc7b7bec records '58 passed in 46.41s' EXIT=0 with no FAILED line, after_suite-1795026176696690750.log at 7180d6d8 records '58 passed in 46.62s' EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_sites": [
+    "reckon/crew/admission/service.py:471 (service calls selection.admit_once)",
+    "reckon/crew/admission/service.py:536 (service calls selection.admit_once)",
+    "reckon/crew/admission/holds.py:611 (_refreshed_claim, the re-read the file measures)",
+    "reckon/crew/admission/holds.py:720 (_live_claim_detail calls _refreshed_claim)",
+    "reckon/crew/runs.py:2440 (_claim_paths_share, the sharing rule the claim path must satisfy)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:01:07Z",
+  "findings": [
+    {
+      "claim": "the pinned-reading fixture models a pass shape the product no longer has",
+      "file": "tests/test_a_claim_hold_reads_the_holder_again.py",
+      "line": "104",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment claims the pass takes one full reading and pins it for the whole stage, but reckon/crew/admission/selection.py:106,112,121 takes several no-argument runs.list_live() readings per pass, all of which this diff answers with the same stale pinned set, so the fixture models a pass shape the product does not have and a fresh read inserted before judgement would make the re-read unnecessary in production while this case still passes."
+    },
+    {
+      "claim": "reverting the pinned live reading leaves the suite green",
+      "file": "tests/test_a_claim_hold_reads_the_holder_again.py",
+      "line": "98",
+      "severity": "non-blocking",
+      "text": "non-blocking: the pinning added at lines 98-110 has no assertion behind it - reverting it to a fresh read per call leaves both cases green and restores exactly the vacuous pass the commit message says it fixed, so the fixture half of this change has no regression test."
+    },
+    {
+      "claim": "the fragment misdescribes how the mutation was applied",
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-hold-reads-the-holder-again.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the falsification section calls the mutation a pytest plugin in the run directory, while mutation-no-reread.log's header shows a /tmp/reckon-crew-scratch module shadowing reckon/crew/admission/holds.py, so the account of how the mutation was applied does not match the log it cites; the log's own result is sound and the assertion is demonstrated."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites",
+    "diff": "read bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68..7180d6d8646868c03a0d8f420965435dfe7729cc commit by commit: bc5cda9e changes CLAIMED to docs/state/claimed.json and pins the live reading in tests/test_a_claim_hold_reads_the_holder_again.py (+22 -7), 7180d6d8 adds the 56-line evidence fragment, and every hunk is inside the declared paths.",
+    "done_when": "the done_when asks for a green run of the named file at head as an all_debug job with SLURM_JOB_ID unset, a cause verdict per failure, both arms as inline JSON, the base run's failing id in the fragment, ruff clean on the changed paths and the commits listed; the gate log and the fragment satisfy the run, verdict, arms and failing-id clauses and ruff is clean on the head copy of the file (I ran both ruff commands), but the all_debug partition and SLURM_JOB_ID shape is recorded nowhere - scoped-gate-1795026037901098756.log.scheduler is empty, and the manifest's rubric.goal_fidelity line asserts an all_debug job the log does not name.",
+    "goal": "the node goal is to make tests/test_a_claim_hold_reads_the_holder_again.py pass in full; commit bc5cda9e moves the fixture claim to docs/state/claimed.json and pins the live reading, commit 7180d6d8 records the readings, and scoped-gate-1795026037901098756.log records 2 passed EXIT=0 at 7180d6d8, so the named file passes in full.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063905926433-qwnw-red-file-a-claim-hold-reads-the-holder-again/manifest.md; it reports status complete, the head gate command on line 10, three log paths on line 11, head 2 passed EXIT=0 and base 1 failed/1 passed EXIT=1 on line 20, and the base failing id, all of which I confirmed against the three logs.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment file and a figures directory; the two changed paths, tests/test_a_claim_hold_reads_the_holder_again.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-hold-reads-the-holder-again.html, are both inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_claim_hold_reads_the_holder_again.py:169 reddens on the reinstated shared-path claim (base-arm-bc7b7bec.log: assert ['r-late'] == []) and on the removed re-read (mutation-no-reread.log), but nothing reddens if the pinned live reading at lines 98-110 is reverted to a fresh read per call, so half the delivered fixture change carries no guard.",
+    "evidence": "scoped-gate-1795026037901098756.log records the head reading and base-arm-bc7b7bec.log the base failing id, but the baseline_suite/after_suite pair at manifest.md:16-17 runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which contains or imports the changed file, so the recorded 0/0 delta is uninformative rather than exculpatory.",
+    "fit": "the helper and comments at tests/test_a_claim_hold_reads_the_holder_again.py:37,132 follow the module's existing docstring-and-helper idiom and introduce no identifier carrying a plan or ticket id.",
+    "goal_fidelity": "tests/test_a_claim_hold_reads_the_holder_again.py reads 2 passed with EXIT=0 at 7180d6d8 in scoped-gate-1795026037901098756.log, so the node goal of making that file pass in full is met by the landed change.",
+    "reuse": "tests/test_a_claim_hold_reads_the_holder_again.py:132 wraps the imported _queue fixture and takes its claim path from the existing DEFAULT_EXCLUSIVE_PATHS class at reckon/crew/runs.py:2276 rather than adding a rule, though the manifest's rubric.reuse line wrongly says no helper was added.",
+    "scope_discipline": "the two changed paths, tests/test_a_claim_hold_reads_the_holder_again.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-hold-reads-the-holder-again.html, are both inside the declared write paths, and no product source moved."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_claim_hold_reads_the_holder_again.py pass in full; commit bc5cda9e moves the fixture claim to docs/state/claimed.json and pins the live reading, commit 7180d6d8 records the readings, and scoped-gate-1795026037901098756.log records 2 passed EXIT=0 at 7180d6d8, so the named file passes in full.\nVERDICT done_when: the done_when asks for a green run of the named file at head as an all_debug job with SLURM_JOB_ID unset, a cause verdict per failure, both arms as inline JSON, the base run's failing id in the fragment, ruff clean on the changed paths and the commits listed; the gate log and fragment satisfy the run, verdict, arms and failing-id clauses and ruff is clean on the head copy of the file, but the all_debug partition and SLURM_JOB_ID shape is recorded nowhere (scoped-gate-1795026037901098756.log.scheduler is empty), and the suite pair at manifest.md:16-17 runs two files that neither contain nor import the changed file.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment file and a figures directory; tests/test_a_claim_hold_reads_the_holder_again.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-hold-reads-the-holder-again.html are both inside that fence.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063905926433-qwnw-red-file-a-claim-hold-reads-the-holder-again/manifest.md; it reports status complete, the head gate command on line 10, three log paths on line 11 and the readings on line 20, all confirmed against the three logs I opened.\nVERDICT diff: read bc7b7bec..7180d6d8 commit by commit; bc5cda9e changes CLAIMED to docs/state/claimed.json and pins the live reading (+22 -7), 7180d6d8 adds the 56-line fragment, every hunk inside the declared paths.\nCALL_SITES: reckon/crew/admission/service.py:471, reckon/crew/admission/service.py:536, reckon/crew/admission/holds.py:611, reckon/crew/admission/holds.py:720, reckon/crew/runs.py:2440\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_claim_hold_reads_the_holder_again.py reads 2 passed with EXIT=0 at 7180d6d8 in scoped-gate-1795026037901098756.log, so the node goal of making that file pass in full is met by the landed change.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795026037901098756.log records the head reading and base-arm-bc7b7bec.log the base failing id, but the suite pair at manifest.md:16-17 runs two files that neither contain nor import the changed file, so its 0/0 delta is uninformative.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two changed paths, tests/test_a_claim_hold_reads_the_holder_again.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-hold-reads-the-holder-again.html, are both inside the declared write paths and no product source moved.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_claim_hold_reads_the_holder_again.py:169 reddens on the reinstated shared-path claim (base-arm-bc7b7bec.log) and on the removed re-read (mutation-no-reread.log), but nothing reddens if the pinned reading at lines 98-110 is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: the helper and comments at tests/test_a_claim_hold_reads_the_holder_again.py:37,132 follow the module's docstring-and-helper idiom and introduce no plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: tests/test_a_claim_hold_reads_the_holder_again.py:132 wraps the imported _queue fixture and the claim path comes from the existing DEFAULT_EXCLUSIVE_PATHS class at reckon/crew/runs.py:2276, not a new rule.\nFINDING tests/test_a_claim_hold_reads_the_holder_again.py:104 non-blocking: the comment claims the pass takes one full reading and pins it for the stage, but reckon/crew/admission/selection.py:106,112,121 takes several no-argument runs.list_live() readings per pass, all answered here with the same stale set, so the fixture models a pass shape the product does not have.\nFINDING tests/test_a_claim_hold_reads_the_holder_again.py:98 non-blocking: the pinning added at lines 98-110 has no assertion behind it, so reverting it to a fresh read per call leaves both cases green and restores the vacuous pass the commit message says it fixed.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-hold-reads-the-holder-again.html:1 non-blocking: the falsification section calls the mutation a pytest plugin in the run directory while mutation-no-reread.log's header shows a /tmp/reckon-crew-scratch module shadowing reckon/crew/admission/holds.py, so the account does not match the log it cites, though the log's own result is sound.\n",
+  "review_node": "review-of-qwnw-red-file-a-claim-hold-reads-the-holder-again-7180d6d86468",
+  "review_run_id": "r-20261118T183152608937-review-of-qwnw-red-file-a-claim-hold-reads-the-holder-again-7180d6d86468",
+  "review_time": "2026-11-19T18:40:00Z",
+  "reviewed_base_sha": "bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68",
+  "reviewed_head_sha": "7180d6d8646868c03a0d8f420965435dfe7729cc",
+  "reviewed_run_id": "r-20261118T063905926433-qwnw-red-file-a-claim-hold-reads-the-holder-again",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/review-of-qwnw-red-file-a-claim-hold-reads-the-holder-again-7180d6d86468",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T183152608937-review-of-qwnw-red-file-a-claim-hold-reads-the-holder-again-7180d6d86468"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:26:46.549205+00:00",
+  "total": 105
+}

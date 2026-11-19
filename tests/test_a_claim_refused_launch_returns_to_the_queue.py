@@ -12,7 +12,16 @@ The refusal is a hold like any other: the request goes back to ``queued``,
 carrying the claim that refused it, and the next pass launches it once that
 claim is released. The tests here also read the first half of the same rule —
 a stopped run whose worktree still holds an unlanded commit keeps binding, and
-its claim holds the request before any dispatch is spent on it.
+its claim on a path a textual merge cannot reconcile holds the request before
+any dispatch is spent on it.
+
+That hold is a question about the path as well as about the holder: a project
+that declares no sharing declaration shares its ordinary source files, so two
+runs may edit one and the merge reconciles them. Only the exclusive classes —
+a plan document, a cumulative evidence record, generated state, a figure
+directory, the dependency manifest and lock, a generated receipt and any
+binary file — are exclusive. A stopped holder's claim on a shared source file
+does not fence a peer; on one of those classes it holds it.
 """
 
 # ruff: noqa: F811 - the fixture is imported and also named as each test's parameter.
@@ -39,7 +48,11 @@ from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
 
 HOLDER_ID = "r-holder"
 REQUEST_ID = "r-queued"
-CLAIMED = "claimed.txt"
+# Generated state is one of the classes a textual merge cannot reconcile, so a
+# claim on this path fences a peer whatever the project declares, and a project
+# that declares nothing still admits concurrent source edits.
+CLAIMED = "docs/state/held.json"
+SHARED_SOURCE = "notes.txt"
 
 
 def _dead_pid() -> int:
@@ -52,18 +65,21 @@ def _dead_pid() -> int:
     raise AssertionError("no dead pid available")
 
 
-def _stopped_holder(repository: Path, tmp_path: Path) -> str:
+def _stopped_holder(repository: Path, tmp_path: Path, *, claimed: str = CLAIMED) -> str:
     """Record a stopped run whose worktree still holds the path it claims.
 
     The commit keeps the claim binding after the process is gone, which is the
-    shape a delivered-but-unpromoted run takes when it fences a later request.
+    shape a delivered-but-unpromoted worktree takes when it fences a later
+    request. Whether that claim fences at all is the path's question, judged
+    by the sharing policy this module's docstring describes.
     """
     base = _git(repository, "rev-parse", "HEAD")
     tree = tmp_path / f"{HOLDER_ID}-tree"
     _git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
-    (tree / CLAIMED).write_text(f"{CLAIMED}\n", encoding="utf-8")
-    _git(tree, "add", "--", CLAIMED)
-    _git(tree, "commit", "-q", "-m", f"test: hold {CLAIMED}")
+    (tree / claimed).parent.mkdir(parents=True, exist_ok=True)
+    (tree / claimed).write_text(f"{claimed}\n", encoding="utf-8")
+    _git(tree, "add", "--", claimed)
+    _git(tree, "commit", "-q", "-m", f"test: hold {claimed}")
     head = _git(tree, "rev-parse", "HEAD")
     runs._write_json(
         runs.pointer_path(HOLDER_ID),
@@ -82,7 +98,7 @@ def _stopped_holder(repository: Path, tmp_path: Path) -> str:
                 "plan": "plan-a",
                 "section": "dispatch",
                 "time_budget": "20m",
-                "write_paths": [CLAIMED],
+                "write_paths": [claimed],
             },
         },
     )
@@ -90,7 +106,11 @@ def _stopped_holder(repository: Path, tmp_path: Path) -> str:
 
 
 def _queue_request(
-    repository: Path, *, backend: str = "clive", metered: bool = False
+    repository: Path,
+    *,
+    backend: str = "clive",
+    metered: bool = False,
+    claimed: str = CLAIMED,
 ) -> None:
     node = TaskNode(
         id="queued",
@@ -98,7 +118,7 @@ def _queue_request(
         plan="plan-a",
         section="dispatch",
         done_when="pytest reports passed",
-        write_paths=[CLAIMED],
+        write_paths=[claimed],
         time_budget="20m",
         spec_level="exact",
     )
@@ -222,7 +242,11 @@ def _verdicts(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
 def test_a_stopped_holders_claim_holds_the_request_before_launch(
     admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A stopped run holding an unlanded commit fences the request first."""
+    """A stopped run holding an unlanded commit fences the request first.
+
+    ``CLAIMED`` is generated state, one of the classes a merge cannot
+    reconcile, so the holder's stopped-but-loaded claim fences it.
+    """
     _, resolve = _config_for()
     _queue_request(admit_repo)
     _stopped_holder(admit_repo, tmp_path)
@@ -260,6 +284,29 @@ def test_a_claim_taken_at_launch_returns_the_request_to_the_queue(
     assert hold["verdict"] == "refused-scope-conflict", hold
     assert hold["holder"]["run_id"] == HOLDER_ID, hold
     assert hold["holder"]["path"] == CLAIMED, hold
+
+
+def test_a_stopped_holders_shared_source_claim_does_not_hold_the_request(
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A claim on a shared source file does not fence: the merge reconciles it.
+
+    The project declares no sharing declaration, so ``SHARED_SOURCE`` is one of
+    the paths it admits concurrent edits on. The holder's stopped-but-loaded
+    claim still binds for the exclusive classes, and this is the other half:
+    holding a peer here would cost a dispatch per pass and buy nothing, since
+    the two edits merge.
+    """
+    _, resolve = _config_for()
+    _queue_request(admit_repo, claimed=SHARED_SOURCE)
+    _stopped_holder(admit_repo, tmp_path, claimed=SHARED_SOURCE)
+    probe = _LaunchProbe(monkeypatch)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    assert probe.attempted == [REQUEST_ID]
+    assert result["launched"] == [REQUEST_ID]
+    assert _verdicts(result)[REQUEST_ID]["verdict"] == "launched"
 
 
 def test_the_request_launches_once_the_holders_commits_reach_main(

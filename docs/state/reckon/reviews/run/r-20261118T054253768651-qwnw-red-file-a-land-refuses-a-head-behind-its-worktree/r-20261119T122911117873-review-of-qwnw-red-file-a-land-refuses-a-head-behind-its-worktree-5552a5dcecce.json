@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1364 domain-gate lambda running _require_commits_beyond_base",
+    "reckon/crew/promotion_release.py:1300 _record_worktree resolving the run's head"
+  ],
+  "completed_at": "2026-11-19T20:52:00.000Z",
+  "dispatched_at": "2026-11-19T20:37:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "470",
+      "severity": "non-blocking",
+      "text": "non-blocking: with no run worktree canonical_head is None and the refusal reduces to ancestry from the base, so a commit on a peer branch cut from the same base is accepted as the run's own work where the removed repository-HEAD comparison refused it; no test covers that branch for a non-descendant citation (a search of tests for \"unmerged branch\" finds none, and tests/test_promotion_readers_name_their_tree.py:103 covers only the base-citation case), so the relaxation the release case forces is itself unguarded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054253768651-qwnw-red-file-a-land-refuses-a-head-behind-its-worktree/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm pair is recorded as prose plus two log paths rather than the inline JSON with full 40-character revisions the done_when names, its revisions appearing only as 12- and 10-character prefixes; the headers of logs/import-arm-base.log and logs/import-arm-head.log carry the full ids, so the arm is evidenced but not in the shape the measure asks for."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against 35fb9f3ae769586b; 69d72e67a5 changes one guard in reckon/crew/promotion_evidence.py and its docstring (15 lines) and swaps three test readers to a new _record helper without changing an assertion; 5552a5dcec adds only the 67-line evidence fragment.",
+    "done_when": "the done_when at prompt.txt:336 asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a product-or-test verdict per cause, no assertion deleted, an importer arm adding no failure, both arms as inline JSON at 40-character revisions, and ruff clean; manifest.md records the green run, the three base ids, both verdicts and both declared suite arms as inline JSON, while the importer pair is prose at manifest.md:17 and the ruff claim carries no log.",
+    "goal": "the reviewed goal at prompt.txt:38 is \"Make tests/test_a_land_refuses_a_head_behind_its_worktree.py pass in full on the primary branch\"; reckon/crew/promotion_evidence.py:438-442 now joins a citation to the run's own worktree head instead of the repository's, and scoped-gate-1795086817937982492.log records 3 passed EXIT=0 at code revision 69d72e67a5.",
+    "manifest": "read in full; it names both commits, the base run of the named file with three KeyError 'steps' ids at 35fb9f3a, the 3-passed EXIT=0 head gate at 69d72e67a5, both declared suite arms as inline JSON at full revisions with 58 passed EXIT=0, an importer pair of 19 failed 993 passed on both sides with byte-identical failure lists, and six out-of-scope red files.",
+    "write_paths": "the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named fragment plus the figure directory; the diff 35fb9f3a..5552a5dc touches exactly reckon/crew/promotion_evidence.py, tests/test_a_land_refuses_a_head_behind_its_worktree.py and the fragment qwnw-red-file-a-land-refuses-a-head-behind-its-worktree.html, all inside it."
+  },
+  "justifications": {
+    "durability": "restoring _commit_canonical_id(tree, \"HEAD\") at reckon/crew/promotion_evidence.py:438-440 reddens the released-worktree case at tests/test_a_land_refuses_a_head_behind_its_worktree.py:166-196, and the surviving base-citation rule is pinned by tests/test_promotion_readers_name_their_tree.py:103, while the non-descendant branch the relaxation creates is pinned by nothing.",
+    "evidence": "scoped-gate-1795086817937982492.log records 3 passed EXIT=0 and logs/base-named-test.log records the three failing ids at 35fb9f3a, but the importer arms are prose at manifest.md:17 and the ruff claim rests on no log.",
+    "fit": "the change reads the module's already imported _record_worktree at reckon/crew/promotion_evidence.py:2425 and states its reason in the docstring the module's other readers carry, at lines 407-421.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:438-442 takes the citation's head from the run's own worktree, which is what makes the released-worktree case at tests/test_a_land_refuses_a_head_behind_its_worktree.py:166-196 land, and that file reads 3 passed at head.",
+    "reuse": "no new definition is added, since reckon/crew/promotion_release.py:1300 _record_worktree already owns the worktree resolution, and the test's _record helper follows the inline record_path read already present at tests/test_crew_promotion_scope.py:441.",
+    "scope_discipline": "the diff touches only the three declared paths, and 5552a5dcec adds nothing but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-land-refuses-a-head-behind-its-worktree.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal at prompt.txt:38 is \"Make tests/test_a_land_refuses_a_head_behind_its_worktree.py pass in full on the primary branch\"; reckon/crew/promotion_evidence.py:438-442 now joins a citation to the run's own worktree head instead of the repository's, and scoped-gate-1795086817937982492.log records 3 passed EXIT=0 at code revision 69d72e67a5.\nVERDICT done_when: the done_when at prompt.txt:336 asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a product-or-test verdict per cause, no assertion deleted, an importer arm adding no failure, both arms as inline JSON at 40-character revisions, and ruff clean; manifest.md records the green run, the three base ids, both verdicts and both declared suite arms as inline JSON, while the importer pair is prose at manifest.md:17 and the ruff claim carries no log.\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named fragment plus the figure directory; the diff 35fb9f3a..5552a5dc touches exactly reckon/crew/promotion_evidence.py, tests/test_a_land_refuses_a_head_behind_its_worktree.py and the fragment qwnw-red-file-a-land-refuses-a-head-behind-its-worktree.html, all inside it.\nVERDICT manifest: read in full; it names both commits, the base run of the named file with three KeyError 'steps' ids at 35fb9f3a, the 3-passed EXIT=0 head gate at 69d72e67a5, both declared suite arms as inline JSON at full revisions with 58 passed EXIT=0, an importer pair of 19 failed 993 passed on both sides with byte-identical failure lists, and six out-of-scope red files.\nVERDICT diff: read both commits against 35fb9f3ae769586b; 69d72e67a5 changes one guard in reckon/crew/promotion_evidence.py and its docstring (15 lines) and swaps three test readers to a new _record helper without changing an assertion; 5552a5dcec adds only the 67-line evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:1364 domain-gate lambda running _require_commits_beyond_base, reckon/crew/promotion_release.py:1300 _record_worktree resolving the run's head\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:438-442 takes the citation's head from the run's own worktree, which is what makes the released-worktree case at tests/test_a_land_refuses_a_head_behind_its_worktree.py:166-196 land, and that file reads 3 passed at head.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795086817937982492.log records 3 passed EXIT=0 and logs/base-named-test.log records the three failing ids at 35fb9f3a, but the importer arms are prose at manifest.md:17 and the ruff claim rests on no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only the three declared paths, and 5552a5dcec adds nothing but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-land-refuses-a-head-behind-its-worktree.html.\nSCORE durability: 17\nJUSTIFICATION durability: restoring _commit_canonical_id(tree, \"HEAD\") at reckon/crew/promotion_evidence.py:438-440 reddens the released-worktree case at tests/test_a_land_refuses_a_head_behind_its_worktree.py:166-196, and the surviving base-citation rule is pinned by tests/test_promotion_readers_name_their_tree.py:103, while the non-descendant branch the relaxation creates is pinned by nothing.\nSCORE fit: 19\nJUSTIFICATION fit: the change reads the module's already imported _record_worktree at reckon/crew/promotion_evidence.py:2425 and states its reason in the docstring the module's other readers carry, at lines 407-421.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new definition is added, since reckon/crew/promotion_release.py:1300 _record_worktree already owns the worktree resolution, and the test's _record helper follows the inline record_path read already present at tests/test_crew_promotion_scope.py:441.\nFINDING reckon/crew/promotion_evidence.py:470 non-blocking: with no run worktree canonical_head is None and the refusal reduces to ancestry from the base, so a commit on a peer branch cut from the same base is accepted as the run's own work where the removed repository-HEAD comparison refused it; no test covers that branch for a non-descendant citation (a search of tests for \"unmerged branch\" finds none, and tests/test_promotion_readers_name_their_tree.py:103 covers only the base-citation case), so the relaxation the release case forces is itself unguarded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054253768651-qwnw-red-file-a-land-refuses-a-head-behind-its-worktree/manifest.md:17 non-blocking: the importer arm pair is recorded as prose plus two log paths rather than the inline JSON with full 40-character revisions the done_when names, its revisions appearing only as 12- and 10-character prefixes; the headers of logs/import-arm-base.log and logs/import-arm-head.log carry the full ids, so the arm is evidenced but not in the shape the measure asks for.",
+  "review_run_id": "r-20261119T122911117873-review-of-qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-5552a5dcecce",
+  "reviewed_base_sha": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+  "reviewed_head_sha": "5552a5dceccea7ee1c7e2f52df7da76ded1a1177",
+  "reviewed_run_id": "r-20261118T054253768651-qwnw-red-file-a-land-refuses-a-head-behind-its-worktree",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:03:42.398855+00:00",
+  "total": 109
+}

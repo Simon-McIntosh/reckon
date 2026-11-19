@@ -1,0 +1,57 @@
+<section id="qwnw-red-file-a-fenced-worker-runs-git-directly-file">
+<h3>A fenced worker runs git directly: one cause, and the test was wrong</h3>
+<p>The base revision <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> ran the file at 1 failed, 6 passed.
+The failing id was <code>test_a_fenced_launch_drops_an_inherited_git_shim</code>. One cause: the test encoded a
+rule the product no longer keeps, so the test is updated to the rule the code now asserts, and no product code
+is repaired.</p>
+<h4 id="qwnw-red-file-a-fenced-worker-runs-git-directly-cause">Cause 1, verdict: the test was wrong</h4>
+<p>The case held that a fenced launch outside an allocation carries only the inherited entries, so it asserted
+<code>_entries(searched) == ["/usr/bin"]</code>. <code>dispatch_launch.launch_search_path</code> prepends the
+scheduler-shim directory on every fenced launch, inside an allocation or out of one
+(<code>if fenced or placement.in_allocation</code>, commit <code>c48178ede7</code>), so that a task a fenced worker
+submits re-enters the fence. <code>test_fenced_launch_resolves_scheduler_shims_outside_allocation</code> in
+<code>tests/test_shared_environments_are_read_only.py</code> asserts that rule. The case now requires the
+inherited git shim to be absent and names the whole resolved path, which is
+<code>[str(shim_directory()), "/usr/bin"]</code>. The assertion is as strong as it was: the same exact list, with
+the scheduler entry it must now carry named.</p>
+<h4 id="qwnw-red-file-a-fenced-worker-runs-git-directly-baseline">Baseline arm, the failing run</h4>
+<pre># revision: b24fe95a789c82cd33f22a912b4dbbf94d5e2193
+# tree: base-arm-aj8gnZ, under the run's scratch root
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_fenced_worker_runs_git_directly.py
+..F....                                                                  [100%]
+FAILED tests/test_a_fenced_worker_runs_git_directly.py::test_a_fenced_launch_drops_an_inherited_git_shim
+1 failed, 6 passed in 1.72s
+EXIT=1</pre>
+<h4 id="qwnw-red-file-a-fenced-worker-runs-git-directly-head">Head arm, the repaired file</h4>
+<pre>
+# revision: f509cb35b0444a0edff1a3dce3ce159c20b9c33b
+# tree: /tmp/reckon-crew-scratch/r-20261118T063834258025-qwnw-red-file-a-fenced-worker-runs-git-directly/head-arm-XsUcoI
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_fenced_worker_runs_git_directly.py
+# measurement_module: /tmp/reckon-crew-scratch/r-20261118T063834258025-qwnw-red-file-a-fenced-worker-runs-git-directly/head-arm-XsUcoI/reckon/crew/dispatch_launch.py
+# measurement_cwd: /tmp/reckon-crew-scratch/r-20261118T063834258025-qwnw-red-file-a-fenced-worker-runs-git-directly/head-arm-XsUcoI
+.......                                                                  [100%]
+7 passed in 1.69s
+EXIT=0
+</pre>
+<h4 id="qwnw-red-file-a-fenced-worker-runs-git-directly-gate">The declared gate, as a job on all_debug</h4>
+<pre>
+# revision: f509cb35b0444a0edff1a3dce3ce159c20b9c33b
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-4a747aab7456-lujOLJ/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_fenced_worker_runs_git_directly.py'
+.......                                                                  [100%]
+7 passed in 1.60s
+EXIT=0
+</pre>
+<p>The submission drops every SLURM_ key from its environment, so the job ran with SLURM_JOB_ID unset. Three
+earlier identical submissions to the same partition failed before pytest started: the batch job's srun re-enters
+the worker's own fence, and the worker's fence carries node-local temporary directories, so the re-entry refused
+at a bind of a path that does not exist on the node the job landed on, leaving no exit receipt. The recorded gate
+is the submission that carried no worker fence recipe. That refusal belongs to the fence's batch path, not to the
+test this node repairs.</p>
+<h4 id="qwnw-red-file-a-fenced-worker-runs-git-directly-suite">Suite arms</h4>
+<p>Baseline b24fe95a789c: 58 passed, EXIT=0. After f509cb35b0: 58 passed, EXIT=0. Both as jobs on all_debug over
+tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, the two files the
+suite resolver takes from this node's write scope. The change touches no product module, and no file imports the
+test that changed, so there is no further importer arm to report on.</p>
+</section>

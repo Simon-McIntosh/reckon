@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms it names under baseline_suite and after_suite: baseline_suite-1795062681026717799.log (header revision 42fe90d0b0a46060bafde2490dda7d4002cda478, '58 passed', EXIT=0) and after_suite-1795062723976489546.log (header revision fdc2443ec9c7f2e97e809df4b7cfed2623e4bdbe, '58 passed', EXIT=0), both completed, both failure_count 0, both failure_ids empty, so the head adds no failure over the base.",
+  "call_sites": [
+    "reckon/hooks/install.py:275",
+    "reckon/_worker_fence.py:557"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:09:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062812981514-qwnw-red-file-reckon-hook-commands/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the recorded baseline_suite and after_suite arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file (no test imports tests/test_reckon_hook_commands.py), so the done_when's arm over the files that import what this node changed is satisfied in shape only and measures nothing about this change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062812981514-qwnw-red-file-reckon-hook-commands/manifest.md",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "the ruff clause (\"ruff check All checks passed and ruff format 1 file already formatted\") has no log in the run directory and no ruff command in tests: or test_logs:, so a reader cannot reproduce it; I re-ran both on the head tree and read `All checks passed!` and `1 file already formatted`, so the claim is true but unrecorded."
+    }
+  ],
+  "justifications": {
+    "durability": "base-run.log reds test_registered_reckon_importing_scripts_use_the_checkout_interpreter at 42fe90d0 on `assert registered == importing` with 'worker_inbox.py' extra, and I confirmed at head that without the added population `registered` lacks worker_inbox.py while `_importing_scripts()` holds it, so reverting the added line reddens it again.",
+    "evidence": "manifest.md:19 records arms over two files that import nothing this node changed, so the arm proves nothing about the change, and manifest.md:22's ruff clause rests on prose with no log.",
+    "fit": "the comment at tests/test_reckon_hook_commands.py:80-83 explains the population growth in the file's own voice, the docstring at line 1 now names every writer, and no new name is introduced.",
+    "goal_fidelity": "the whole repair is tests/test_reckon_hook_commands.py:80-85 and scoped-gate-1795062897628416495.log records that file 2 passed EXIT=0 at fdc2443e.",
+    "reuse": "the change calls install.build_worker_inbox_snippet (reckon/hooks/install.py:191) rather than composing the command, but it grows a second guard of an interpreter rule tests/test_hook_scripts_correct_their_interpreter.py already owns.",
+    "scope_discipline": "both changed paths in git diff --stat 42fe90d0..a71c31c7 sit inside the declared tests and fragment paths, with no product, plan or figure edit."
+  },
+  "node": "review-of-qwnw-red-file-reckon-hook-commands-a71c31c780bf",
+  "notes": "Durability is judged against the reinstated regression rather than a green run: if the added line is removed, `_importing_scripts()` still yields worker_inbox.py and `registered` does not, which is the base arm reddening (1 failed, 1 passed, EXIT=1), and if install.worker_inbox_group composed the script as a bare path the loop's `len(tokens) > 1 and tokens[1] in scripts` fails, the mutation the manifest records as `assert (1 > 2)`. The two assertions inside the loop are independent of a value the test passes in: the command is read from the product's own snippet builders, `importing` is scanned from reckon/hooks/, so the two sides of `assert registered == importing` move independently. Evidence is scored below durability because the only arm the record carries measures a population the done_when does not name, which is the dispatch template's substitution and not the worker's choice; the worker discloses it at manifest.md:24 and measures the declared pair as instructed. The all_debug clause is grounded in the worker's own sbatch submissions recorded in stream.jsonl alongside base-run.sh and head-run.sh, and both scripts unset SLURM_JOB_ID before pytest.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Make tests/test_reckon_hook_commands.py pass in full on the primary branch\"; scoped-gate-1795062897628416495.log carries `2 passed` and `EXIT=0` at fdc2443ec9c7f2e97e809df4b7cfed2623e4bdbe, and I re-ran the file at a71c31c780bf5ae820415bfcd922147f9f717823 in a $TMPDIR export and read `2 passed`, the reviewed head differing from the gate revision by the evidence fragment alone.\nVERDICT done_when: the measure's clauses are a head job on all_debug with SLURM_JOB_ID unset, the base arm first, a per-cause verdict, no weakened assertion, an importer arm pair as inline JSON at 40-character revisions, the base red log beside the head run in the fragment, and ruff; manifest.md:15 names the single cause with the verdict test wrong, manifest.md:19-20 carry both arms as inline JSON, base-run.log is the red log, and the fragment quotes its FAILED id at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reckon-hook-commands.html:21, but the arms at manifest.md:19 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import nothing this node changed, and the ruff clause at manifest.md:22 has no receipt.\nVERDICT write_paths: the declared scope is reckon, tests and the node's fragment and figure paths; the two changed paths, tests/test_reckon_hook_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reckon-hook-commands.html, are inside it, and no figure was written.\nVERDICT manifest: read all 35 lines of manifest.md; it records status complete, both commits at full length, the literal gate command, three log paths, both suite arms as inline JSON at full revisions, the one cause with its verdict, the mutation probe, six rubric lines, and outside_scope naming the substituted arm pair and the sibling red file.\nVERDICT diff: read commit by commit over 42fe90d0..a71c31c7; fdc2443ec9 adds install.build_worker_inbox_snippet() to the command population at tests/test_reckon_hook_commands.py:84 with a four-line comment and the docstring correction at line 1, and a71c31c7 adds the 76-line evidence fragment, with no product line changed.\nCALL_SITES: reckon/hooks/install.py:275, reckon/_worker_fence.py:557\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the whole repair is tests/test_reckon_hook_commands.py:80-85 and scoped-gate-1795062897628416495.log records that file 2 passed EXIT=0 at fdc2443e.\nSCORE evidence: 15\nJUSTIFICATION evidence: manifest.md:19 records arms over two files that import nothing this node changed, so the arm proves nothing about the change, and manifest.md:22's ruff clause rests on prose with no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths in git diff --stat 42fe90d0..a71c31c7 sit inside the declared tests and fragment paths, with no product, plan or figure edit.\nSCORE durability: 19\nJUSTIFICATION durability: base-run.log reds test_registered_reckon_importing_scripts_use_the_checkout_interpreter at 42fe90d0 on `assert registered == importing` with 'worker_inbox.py' extra, and I confirmed at head that without the added population `registered` lacks worker_inbox.py while `_importing_scripts()` holds it, so reverting the added line reddens it again.\nSCORE fit: 18\nJUSTIFICATION fit: the comment at tests/test_reckon_hook_commands.py:80-83 explains the population growth in the file's own voice, the docstring at line 1 now names every writer, and no new name is introduced.\nSCORE reuse: 16\nJUSTIFICATION reuse: the change calls install.build_worker_inbox_snippet (reckon/hooks/install.py:191) rather than composing the command, but it grows a second guard of an interpreter rule tests/test_hook_scripts_correct_their_interpreter.py already owns.\nFINDING manifest.md:19 non-blocking: the recorded baseline_suite and after_suite arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file (no test imports tests/test_reckon_hook_commands.py), so the done_when's arm over the files that import what this node changed is satisfied in shape only and measures nothing about this change.\nFINDING manifest.md:22 non-blocking: the ruff clause (\"ruff check All checks passed and ruff format 1 file already formatted\") has no log in the run directory and no ruff command in tests: or test_logs:, so a reader cannot reproduce it; I re-ran both on the head tree and read `All checks passed!` and `1 file already formatted`, so the claim is true but unrecorded.\n",
+  "review_run_id": "r-20261119T050422034581-review-of-qwnw-red-file-reckon-hook-commands-a71c31c780bf",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_commits": [
+    "fdc2443ec9c7f2e97e809df4b7cfed2623e4bdbe",
+    "a71c31c780bf5ae820415bfcd922147f9f717823"
+  ],
+  "reviewed_head_sha": "a71c31c780bf5ae820415bfcd922147f9f717823",
+  "reviewed_node": "qwnw-red-file-reckon-hook-commands",
+  "reviewed_run_id": "r-20261118T062812981514-qwnw-red-file-reckon-hook-commands",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:20:00+00:00",
+  "total": 107,
+  "verdicts": {
+    "diff": "read commit by commit over 42fe90d0..a71c31c7; fdc2443ec9 adds install.build_worker_inbox_snippet() to the command population at tests/test_reckon_hook_commands.py:84 with a four-line comment and the docstring correction at line 1, and a71c31c7 adds the 76-line evidence fragment, with no product line changed.",
+    "done_when": "the measure's clauses are a head job on all_debug with SLURM_JOB_ID unset, the base arm first, a per-cause verdict, no weakened assertion, an importer arm pair as inline JSON at 40-character revisions, the base red log beside the head run in the fragment, and ruff; manifest.md:15 names the single cause with the verdict test wrong, manifest.md:19-20 carry both arms as inline JSON, base-run.log is the red log, and the fragment quotes its FAILED id at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reckon-hook-commands.html:21, but the arms at manifest.md:19 name files that import nothing this node changed, and the ruff clause at manifest.md:22 has no receipt.",
+    "goal": "the goal is \"Make tests/test_reckon_hook_commands.py pass in full on the primary branch\"; scoped-gate-1795062897628416495.log carries `2 passed` and `EXIT=0` at fdc2443ec9c7f2e97e809df4b7cfed2623e4bdbe, and I re-ran the file at a71c31c780bf5ae820415bfcd922147f9f717823 in a $TMPDIR export and read `2 passed`, the reviewed head differing from the gate revision by the evidence fragment alone.",
+    "manifest": "read all 35 lines of manifest.md; it records status complete, both commits at full length, the literal gate command, three log paths, both suite arms as inline JSON at full revisions, the one cause with its verdict, the mutation probe, six rubric lines, and outside_scope naming the substituted arm pair and the sibling red file.",
+    "write_paths": "the declared scope is reckon, tests and the node's fragment and figure paths; the two changed paths, tests/test_reckon_hook_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-reckon-hook-commands.html, are inside it, and no figure was written."
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795085374408612321.log (revision 4dd916ef30) records '58 passed in 31.12s' with no FAILED line and EXIT=0, and after_suite-1795085417146399360.log (revision 0e7703803a95) records '64 passed in 41.36s' with no FAILED line and EXIT=0, so the failure-set difference is empty (0). The base arm does not include the node test, which does not exist at 4dd916ef30; the base-revision decode-count claim rests on negative-control-base-modules.log ('the unchanged repeat decoded 2000 rows', 4 failed, 2 passed, EXIT=1) under the head test file. The range reviewed here is 37cd777f16..0e7703803a, one commit touching reckon/file_memo.py, reckon/ledger.py and the node test.",
+  "base_log_revision": "4dd916ef308f57b97a58e5406a5ef12f2e7f5508",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/budget.py:709 _ledger_readings -> ledger.stored_history",
+    "reckon/ledger.py:1919 picker_runs -> ledger.stored_history",
+    "reckon/crew/dispatch_picker.py:304 -> ledger.picker_runs",
+    "reckon/crew/section_holds.py:127 -> ledger.picker_runs",
+    "reckon/mcp_views.py:1786 -> ledger.picker_runs",
+    "reckon/crew/obligations.py:2803 -> file_memo.clear()"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:17:32Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the lock itself is the owner's (file_memo's BoundedMap), reviewed here and covered by file_memo's own concurrency use; the test still shows eight threads complete without exception over more projects than the bound",
+      "recorded_at": "2026-11-19T12:24:04.340743+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "latent: the only bounded_map caller runs once at import, so no container accumulates; a per-read caller would be a new change and reviewed as one",
+      "recorded_at": "2026-11-19T12:24:07.085747+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the cold-read promise is held by ledger.clear_stored_history, which the tests exercise; file_memo.clear emptying the maps is an extra path with no caller that depends on it today",
+      "recorded_at": "2026-11-19T12:24:09.703050+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the bound is asserted directly against the sixteen-history cap at head; the control's shape mismatch weakens that one control's evidence, not the bound's assertion",
+      "recorded_at": "2026-11-19T12:24:12.414100+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_budget_and_picker_history_read_what_changed.py",
+      "line": "353",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added 'assert not escaped' is not shown to be a guard for the shared lock \u2014 the run's own revert arm (negative-control-revert-answering-commit.log) runs the head test file against reckon/ledger.py at 08cf09dc, a module dict with no lock, and records 'F.F' with 2 failed 1 passed, so test_concurrent_reads_keep_their_own_history passed against the lock-free container and removing BoundedMap's lock again would leave this assertion true."
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "536",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new loop in clear() that empties every registered bounded map is asserted nowhere \u2014 the test helper _forget_history (tests/test_budget_and_picker_history_read_what_changed.py:70) also calls ledger.clear_stored_history(), so a regression that stopped file_memo.clear() from emptying the maps would leave the suite green while the docstring at reckon/file_memo.py:524 and :535 promises a cold read."
+    },
+    {
+      "file": "reckon/file_memo.py",
+      "line": "527",
+      "severity": "non-blocking",
+      "text": "non-blocking: _MAPS is append-only and keeps a strong reference to every map bounded_map() returns, and clear() empties each map's entries without ever dropping one, so a caller that held a map per read would leak containers for the process lifetime; the one current caller is import-time (reckon/ledger.py:1760), and the name argument stored at reckon/file_memo.py:489 is never read."
+    },
+    {
+      "file": "tests/test_budget_and_picker_history_read_what_changed.py",
+      "line": "268",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative control cited for the bound reddens as AttributeError: module 'reckon.ledger' has no attribute '_HELD_HISTORIES' (negative-control-revert-answering-commit.log:47), a shape mismatch on the attribute the assertion reads rather than the unbounded-growth condition it guards, so the run does not exhibit an escaped eviction the assertion catches on behaviour."
+    }
+  ],
+  "head_log_revision": "0e7703803a95b0df314aa2b29632b1c20829c9a4",
+  "item_verdicts": {
+    "call_sites": "checked the production callers at the reviewed head: reckon/budget.py:709 budget._ledger_readings calls ledger.stored_history, reckon/ledger.py:1919 picker_runs calls it with picker_only=True and is reached from reckon/crew/dispatch_picker.py:304, reckon/crew/section_holds.py:127 and reckon/mcp_views.py:1786, and file_memo.clear() is reached from reckon/crew/obligations.py:2803.",
+    "diff": "read commit by commit from 37cd777f16 to 0e7703803a; the range is one commit touching reckon/file_memo.py (BoundedMap, bounded_map, _name, _MAPS and the clear loop), reckon/ledger.py (functools and threading imports, _HELD_LOCK and _history_cell removed, the histories moved onto the map) and the node test (the bound assertion repointed, a stored-history equality added, an escaped-exception capture added).",
+    "done_when": "the done_when's counted-decode measure is asserted at tests/test_budget_and_picker_history_read_what_changed.py:196-216 (0 decoded rows on the unchanged repeat, at most 10 after 5 promotions) and the row-and-order equality against ledger.load at :282-307, with scoped-gate-1795085298447348402.log recording 64 passed EXIT=0 at 0e7703803a.",
+    "goal": "the node goal is that the budget's ledger readings and picker_runs read only rows promoted since their last read; the gained commit 0e7703803a replaces the held-history container at reckon/ledger.py:1760-1777 with reckon/file_memo.py:470-536 BoundedMap and leaves both readers on ledger.stored_history (reckon/budget.py:709, reckon/ledger.py:1919).",
+    "manifest": "read at the reviewed head; it records status complete, the five commits, the scoped gate 64 passed EXIT=0 at 0e7703803a, matched arms base 58 passed and head 64 passed both EXIT=0, three negative-control logs and the outside_scope entry for reckon/crew/section_holds.py:131, and every log it names on disk carries the revision and EXIT= line it claims.",
+    "write_paths": "the node's declared paths are reckon/budget.py, reckon/ledger.py, tests/test_budget_and_picker_history_read_what_changed.py, reckon/run_store.py, reckon/file_memo.py and two docs paths; git diff stat for 37cd777f16..0e7703803a touches exactly three of them, reckon/file_memo.py, reckon/ledger.py and the node test (+93 -32), and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_and_picker_history_read_what_changed.py:268 reddens if the map stops evicting and :305-307 compare against ledger.load, but :353's escaped-exception guard passes against the run's own lock-free revert arm (negative-control-revert-answering-commit.log records 'F.F', 1 passed) and the clear loop at reckon/file_memo.py:536 is asserted nowhere.",
+    "evidence": "after_suite-1795085417146399360.log records '64 passed in 41.36s' with EXIT=0 at 0e7703803a against baseline_suite-1795085374408612321.log's '58 passed in 31.12s' EXIT=0, but the delta's own negative control reverts reckon/ledger.py to 08cf09dc and reddens on a missing attribute rather than on the container this commit adds.",
+    "fit": "reckon/file_memo.py:470-536 follows the module's OrderedDict plus one _LOCK idiom and its PEP 695 generic form, but _name at :489 is stored and never read and _MAPS at :43 is typed list[Any] and only ever appended to.",
+    "goal_fidelity": "the gained commit replaces only the container at reckon/ledger.py:1760-1773, so the readers at reckon/budget.py:709 and reckon/ledger.py:1919-1921 still answer from the stored-history delta the goal names.",
+    "reuse": "the held histories now live in reckon/file_memo.py:519 bounded_map beside the memo owner's own _CACHE and _LOCK at reckon/file_memo.py:39-40, so the second bespoke container the earlier review named is gone; a search over reckon for a shared bounded cache found only per-caller eviction loops at reckon/crew/obligations.py:3873 and reckon/crew/promotion_evidence.py:171 plus a caller-local result store at reckon/crew/recovery_memo.py:729, none of them an owner this addition should have extended instead.",
+    "scope_discipline": "git diff --stat 37cd777f16 0e7703803a lists only reckon/file_memo.py, reckon/ledger.py and tests/test_budget_and_picker_history_read_what_changed.py, all three declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the budget's ledger readings and picker_runs read only rows promoted since their last read; the gained commit 0e7703803a replaces the held-history container at reckon/ledger.py:1760-1777 with reckon/file_memo.py:470-536 BoundedMap and leaves both readers on ledger.stored_history (reckon/budget.py:709, reckon/ledger.py:1919).\nVERDICT done_when: the done_when's counted-decode measure is asserted at tests/test_budget_and_picker_history_read_what_changed.py:196-216 (0 decoded rows on the unchanged repeat, at most 10 after 5 promotions) and the row-and-order equality against ledger.load at :282-307, with scoped-gate-1795085298447348402.log recording 64 passed EXIT=0 at 0e7703803a.\nVERDICT write_paths: the node's declared paths are reckon/budget.py, reckon/ledger.py, tests/test_budget_and_picker_history_read_what_changed.py, reckon/run_store.py, reckon/file_memo.py and two docs paths; git diff 37cd777f16..0e7703803a touches exactly three of them, reckon/file_memo.py, reckon/ledger.py and the node test (+93 -32), and nothing else.\nVERDICT manifest: read at the reviewed head; it records status complete, the five commits, the scoped gate 64 passed EXIT=0 at 0e7703803a, matched arms base 58 passed and head 64 passed both EXIT=0, three negative-control logs and the outside_scope entry for reckon/crew/section_holds.py:131, and every log it names on disk carries the revision and EXIT= line it claims.\nVERDICT diff: read commit by commit from 37cd777f16 to 0e7703803a; the range is one commit touching reckon/file_memo.py, reckon/ledger.py and the node test.\nCALL_SITES: reckon/budget.py:709 _ledger_readings, reckon/ledger.py:1919 picker_runs, reckon/crew/dispatch_picker.py:304, reckon/crew/section_holds.py:127, reckon/mcp_views.py:1786, reckon/crew/obligations.py:2803\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commit replaces only the container at reckon/ledger.py:1760-1773, so the readers at reckon/budget.py:709 and reckon/ledger.py:1919-1921 still answer from the stored-history delta the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: after_suite-1795085417146399360.log records '64 passed in 41.36s' with EXIT=0 at 0e7703803a against baseline_suite-1795085374408612321.log's '58 passed in 31.12s' EXIT=0, but the delta's own negative control reverts reckon/ledger.py to 08cf09dc and reddens on a missing attribute rather than on the container this commit adds.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 37cd777f16 0e7703803a lists only reckon/file_memo.py, reckon/ledger.py and tests/test_budget_and_picker_history_read_what_changed.py, all three declared.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_budget_and_picker_history_read_what_changed.py:268 reddens if the map stops evicting and :305-307 compare against ledger.load, but :353's escaped-exception guard passes against the run's own lock-free revert arm and the clear loop at reckon/file_memo.py:536 is asserted nowhere.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/file_memo.py:470-536 follows the module's OrderedDict plus one _LOCK idiom and its PEP 695 generic form, but _name at :489 is stored and never read and _MAPS at :43 is typed list[Any] and only ever appended to.\nSCORE reuse: 18\nJUSTIFICATION reuse: the held histories now live in reckon/file_memo.py:519 bounded_map beside the memo owner's own _CACHE and _LOCK at reckon/file_memo.py:39-40, so the second bespoke container the earlier review named is gone.\nFINDING tests/test_budget_and_picker_history_read_what_changed.py:353 non-blocking: the added assert not escaped is not shown to be a guard for the shared lock, because the run's own revert arm records the lock-free container passing it.\nFINDING reckon/file_memo.py:536 non-blocking: the new loop that empties every registered bounded map on clear() is asserted nowhere, and _forget_history hides it by also calling ledger.clear_stored_history().\nFINDING reckon/file_memo.py:527 non-blocking: _MAPS is append-only and holds a strong reference to every map bounded_map() returns, and the name argument stored at :489 is never read.\nFINDING tests/test_budget_and_picker_history_read_what_changed.py:268 non-blocking: the negative control cited for the bound reddens as AttributeError on the attribute the assertion reads, not on unbounded growth.\n",
+  "review_node": "review-of-budget-and-picker-history-read-what-changed-0e7703803a95",
+  "review_run_id": "r-20261119T111302110019-review-of-budget-and-picker-history-read-what-changed-0e7703803a95",
+  "reviewed_base_sha": "37cd777f1695fc810664a0d3cdb8dccf711ddc2d",
+  "reviewed_head_sha": "0e7703803a95b0df314aa2b29632b1c20829c9a4",
+  "reviewed_run_id": "r-20261118T185356027067-budget-and-picker-history-read-what-changed",
+  "reviewer_run_id": "r-20261119T111302110019-review-of-budget-and-picker-history-read-what-changed-0e7703803a95",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:39:52.880401+00:00",
+  "total": 105
+}

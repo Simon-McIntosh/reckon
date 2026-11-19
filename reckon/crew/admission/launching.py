@@ -114,7 +114,7 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     other path — a ``--manifest`` the coordinator named elsewhere, a declared
     write path, the brief the run reads — is carried over unchanged.
     """
-    stored = dict(pointer.get("node") or {})
+    stored = runs.node_definition(pointer)
     queued_dir = runs.run_dir(str(pointer["run_id"]))
     manifest_path = str(stored.get("manifest_path") or "")
     if _inside_run_directory(manifest_path, queued_dir):
@@ -285,8 +285,14 @@ def _launch_queued(
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
     backend_override: str = "",
     readiness_cache: dict[str, Any] | None = None,
+    seats_in_flight: int = 0,
 ) -> dict[str, Any]:
     """Launch one queued run through the shared dispatch path a coordinator uses.
+
+    ``seats_in_flight`` is the number of launches this admission pass has
+    already started and not yet settled. Dispatch reads the concurrency bound
+    against the published population, which those launches have not all
+    reached, so the figure is handed on and counted as seats already taken.
 
     ``backend_override`` names the backend this request launches on instead of
     the one it was queued for: a rebind of a request that never launched, so the
@@ -396,6 +402,7 @@ def _launch_queued(
             comment=str(options.get("comment") or ""),
             dispatch_options=options,
             admission_launch=True,
+            seats_in_flight=seats_in_flight,
             admitted_from=str(pointer["run_id"]),
             readiness_cache=readiness_cache,
         )

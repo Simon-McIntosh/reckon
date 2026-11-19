@@ -1,0 +1,97 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1476"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:50:23Z",
+  "evidence_limits": [
+    "Both arm JSON entries in the reviewed manifest measure the brief's substituted population (two files of another node), not an importer population; the after-suite command text above repeats the substitution the log header records.",
+    "The importer arms (267 files, base 61 failed / head 59 failed, 0 added ids) were read from logs/arm-base-review-importers.log and logs/arm-head-review-importers.log and are not in the reviewed run's arm JSON.",
+    "The claim that the all_debug gate ran with SLURM_JOB_ID unset is not visible in scoped-gate-1795095579232066105.log; only its revision, tree and 17 passed result are."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-families-fold.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scoped-gate row names revision 4bcdcfd8f3298a856a985cfa6e324948852a9bd5 as the tree it ran at while scoped-gate-1795095579232066105.log's header names 1132eb0995671d83a021ddfc3770814754b1137a, and line 60 makes the same substitution for the after-suite arm whose log names 1132eb09, so the landing record cites shas the logs do not carry."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "4064",
+      "severity": "non-blocking",
+      "text": "non-blocking: the pre-read guard tests only run_review_record_directory(runs.run_dir(run_id)), so an absent record under the project's committed review directory \u2014 the second location the docstring at :4020 says a repair accepts \u2014 is now refused with \"record is outside the reviewed run's review-records directory\", a false statement about that path, where the base surfaced the read fault it hit."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "4066",
+      "severity": "non-blocking",
+      "text": "non-blocking: the containment refusal literal is written twice in one function, here and at :4094, so a later edit to either branch leaves two statements of one rule disagreeing about what the repair refuses."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "Read the three commits 4bcdcfd8f3298a856a985cfa6e324948852a9bd5, 697aa1e1da1981e216fa626ccc1c1b1adaf6c0ae and 1132eb0995671d83a021ddfc3770814754b1137a against the base; reckon/crew/review.py moves the _stages predicate ahead of the read and refuses an unreadable path outside the named run, tests/test_crew_families_fold.py adds only --wait, and the fragment records both causes and both arm tables.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job, a base-first run, one product-or-test verdict per cause, an importer arm with both arms in inline JSON carrying full shas, and the base run as negative control; manifest.md records each part, but its baseline_suite and after_suite JSON carry the brief's substituted command naming tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than any importer population.",
+    "goal": "The reviewed node's goal is that tests/test_crew_families_fold.py pass in full on the primary branch; logs/head-families-fold.log reads \"17 passed in 4.36s\" with EXIT=0 and scoped-gate-1795095579232066105.log reads \"17 passed in 2.98s\" with EXIT=0 at 1132eb0995671d83a021ddfc3770814754b1137a.",
+    "manifest": "Read manifest.md; it states 17 passed at head, the base arm at 2 failed and 15 passed, the two causes with product-wrong and test-wrong verdicts, the importer arms at 61 and 59 failed with no added id, and it records the brief's suite substitution as an operator defect.",
+    "write_paths": "The reviewed run's node write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and this node's fragment, and the node's figures directory; all three paths in d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a..1132eb0995671d83a021ddfc3770814754b1137a lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_families_fold.py:862-887 fails with the base's ENOENT output when the pre-read guard is removed, as logs/negative-control-base-families-fold.log records, but no test covers the committed-store branch the guard now intercepts at reckon/crew/review.py:4064, so that branch's behaviour is unguarded.",
+    "evidence": "the reviewed run's baseline_suite-1795095607072337136.log and after_suite-1795095650097987098.log both read 58 passed at EXIT=0 over tests/test_staged_write_inventory.py, so the recorded arm JSON measures another node's population while the importer arms live only in prose in manifest.md baseline_suite/after_suite and artifacts.",
+    "fit": "reckon/crew/review.py:4064 reuses the function's own _stages predicate and raises the module's existing ValueError wording, yet the same refusal literal is now written twice in one function at :4066 and :4094.",
+    "goal_fidelity": "reckon/crew/review.py:4056-4067 refuses a record outside the named run's review-records directory before the read, which is the product rule tests/test_crew_families_fold.py::test_repair_and_check_successors_preserve_recorded_answers pins and the head gate makes green.",
+    "reuse": "the diff adds no definition \u2014 _stages is moved, not authored \u2014 and a search of reckon for an existing containment owner found only the module's own _stages and run_review_record_directory, which the change reuses.",
+    "scope_discipline": "git diff d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a..1132eb0995671d83a021ddfc3770814754b1137a touches only reckon/crew/review.py, tests/test_crew_families_fold.py and the declared fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is that tests/test_crew_families_fold.py pass in full on the primary branch; logs/head-families-fold.log reads \"17 passed in 4.36s\" with EXIT=0 and scoped-gate-1795095579232066105.log reads \"17 passed in 2.98s\" with EXIT=0 at 1132eb0995671d83a021ddfc3770814754b1137a.\nVERDICT done_when: The done_when asks for the file green at head as an all_debug job, a base-first run, one product-or-test verdict per cause, an importer arm with both arms in inline JSON carrying full shas, and the base run as negative control; manifest.md records each part, but its baseline_suite and after_suite JSON carry the brief's substituted command naming tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than any importer population.\nVERDICT write_paths: The reviewed run's node write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and this node's fragment, and the node's figures directory; all three paths in d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a..1132eb0995671d83a021ddfc3770814754b1137a lie inside them.\nVERDICT manifest: Read manifest.md; it states 17 passed at head, the base arm at 2 failed and 15 passed, the two causes with product-wrong and test-wrong verdicts, the importer arms at 61 and 59 failed with no added id, and it records the brief's suite substitution as an operator defect.\nVERDICT diff: Read the three commits 4bcdcfd8f3298a856a985cfa6e324948852a9bd5, 697aa1e1da1981e216fa626ccc1c1b1adaf6c0ae and 1132eb0995671d83a021ddfc3770814754b1137a against the base; reckon/crew/review.py moves the _stages predicate ahead of the read and refuses an unreadable path outside the named run, tests/test_crew_families_fold.py adds only --wait, and the fragment records both causes and both arm tables.\nCALL_SITES: reckon/crew_run_commands.py:1476\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:4056-4067 refuses a record outside the named run's review-records directory before the read, which is the product rule tests/test_crew_families_fold.py::test_repair_and_check_successors_preserve_recorded_answers pins and the head gate makes green.\nSCORE evidence: 12\nJUSTIFICATION evidence: the reviewed run's baseline_suite-1795095607072337136.log and after_suite-1795095650097987098.log both read 58 passed at EXIT=0 over tests/test_staged_write_inventory.py, so the recorded arm JSON measures another node's population while the importer arms live only in prose in manifest.md baseline_suite/after_suite and artifacts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a..1132eb0995671d83a021ddfc3770814754b1137a touches only reckon/crew/review.py, tests/test_crew_families_fold.py and the declared fragment.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_families_fold.py:862-887 fails with the base's ENOENT output when the pre-read guard is removed, as logs/negative-control-base-families-fold.log records, but no test covers the committed-store branch the guard now intercepts at reckon/crew/review.py:4064, so that branch's behaviour is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/review.py:4064 reuses the function's own _stages predicate and raises the module's existing ValueError wording, yet the same refusal literal is now written twice in one function at :4066 and :4094.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition \u2014 _stages is moved, not authored \u2014 and a search of reckon for an existing containment owner found only the module's own _stages and run_review_record_directory, which the change reuses.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-families-fold.html:56 non-blocking: the scoped-gate row names revision 4bcdcfd8f3298a856a985cfa6e324948852a9bd5 as the tree it ran at while scoped-gate-1795095579232066105.log's header names 1132eb0995671d83a021ddfc3770814754b1137a, and line 60 makes the same substitution for the after-suite arm whose log names 1132eb09, so the landing record cites shas the logs do not carry.\nFINDING reckon/crew/review.py:4064 non-blocking: the pre-read guard tests only run_review_record_directory(runs.run_dir(run_id)), so an absent record under the project's committed review directory \u2014 the second location the docstring at :4020 says a repair accepts \u2014 is now refused with \"record is outside the reviewed run's review-records directory\", a false statement about that path, where the base surfaced the read fault it hit.\nFINDING reckon/crew/review.py:4066 non-blocking: the containment refusal literal is written twice in one function, here and at :4094, so a later edit to either branch leaves two statements of one rule disagreeing about what the repair refuses.",
+  "review_run_id": "r-20261119T134649220623-review-of-qwnw-red-file-crew-families-fold-1132eb099567",
+  "reviewed_base_sha": "d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a",
+  "reviewed_head_sha": "1132eb0995671d83a021ddfc3770814754b1137a",
+  "reviewed_run_id": "r-20261118T062501122409-qwnw-red-file-crew-families-fold",
+  "reviewed_worker_commits": [
+    "4bcdcfd8f3298a856a985cfa6e324948852a9bd5",
+    "697aa1e1da1981e216fa626ccc1c1b1adaf6c0ae",
+    "1132eb0995671d83a021ddfc3770814754b1137a"
+  ],
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062501122409-qwnw-red-file-crew-families-fold/after_suite-1795095650097987098.log",
+      "revision": "1132eb0995671d83a021ddfc3770814754b1137a",
+      "summary": "58 passed in 36.72s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062501122409-qwnw-red-file-crew-families-fold/baseline_suite-1795095607072337136.log",
+      "revision": "d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a",
+      "summary": "58 passed in 35.12s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:33:32.756339+00:00",
+  "total": 102
+}

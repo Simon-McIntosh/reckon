@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8c7ea625091640c12d6aa56bc8997803ae470037",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T20:37:26Z",
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "2593",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert runs.peer_channel_peers(pointer) compares two empty mappings here, because the dispatch is given no adjacent peers and reckon/crew/dispatching/launch.py:580 seeds peers as {}, so the assertion cannot redden if the peer list stops being published or re-read; the peer half of the merge repair is unguarded."
+    },
+    {
+      "file": "tests/test_crew.py",
+      "line": "2586",
+      "severity": "non-blocking",
+      "text": "non-blocking: the body-path assertion at tests/test_crew.py:2588 is guarded by `if body_path:` where body_path is read from the same hydrated node it checks, so a pointer that stops naming its body file skips the assertion and falls back through reckon/crew/runs.py:363 without a red."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html",
+      "line": "78",
+      "severity": "non-blocking",
+      "text": "non-blocking: the merge section states the inherited case reproduces on primary's tree at d628c376 without citing a log or revision header for that run, and the page's cited head gate and both suite arms stay at the pre-merge 86c3a7204b, so the delivered head's own measurement (091c2cb5, scoped-gate-1795115894506355493.log, two 58-passed arms) exists only in the manifest."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/after_suite-1795116130173869062.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/baseline_suite-1795116085648108686.log",
+    "head_gate": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/scoped-gate-1795115894506355493.log"
+  },
+  "head_log_revision": "091c2cb56aa93c63f9d63f814c1897ee714076be",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: the gained commits change a test file and an evidence fragment, and no runtime module reaches either.",
+    "diff": "read 091c2cb5 against both parents and c42ce66c against its parent; the merge contributes the accessor reads at tests/test_crew.py:2579-2597, _ABSENT_PID and _worker_has_stopped at tests/test_crew.py:3022-3039 and four call sites, and c42ce66c adds 22 lines to the fragment, with no production module touched; the remaining 555 paths in 9894a1b3..c42ce66c are primary's integration carried in from d628c376.",
+    "done_when": "the done_when asks for tests/test_crew.py at head as an all_debug job with SLURM_JOB_ID unset, each base cause with a verdict, and both suite arms as inline JSON at 40-character revisions; the manifest carries both arms (8c7ea625 and 091c2cb5, each 58 passed and EXIT=0 in baseline_suite-1795116085648108686.log and after_suite-1795116130173869062.log) with the base red run as the negative control.",
+    "goal": "the node's goal is tests/test_crew.py passing in full on the primary branch; the gained commits repair the one inherited case at tests/test_crew.py:2568-2597 and record it at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html:67-89, and the head gate at 091c2cb5 reads \"191 passed in 157.97s\" with EXIT=0 at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/scoped-gate-1795115894506355493.log:11 and :18926.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/manifest.md; it records status complete, commits 86c3a7204b, 9894a1b3, 091c2cb5 and c42ce66c, the head-gate wrapper as its tests line, both suite arms as inline JSON with full 40-character revisions, negative_control_log base-test_crew.log, and retry 1001 attributed to a tmp-full node.",
+    "write_paths": "the declared set is reckon, tests, the node's fragment directory and the node's figure directory; the node's net contribution against primary (git diff d628c3763e..091c2cb56a) is exactly tests/test_crew.py (+57/-4) and its own fragment, and c42ce66c touches only that fragment, so the change stays inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_crew.py:2593 compares two empty mappings and tests/test_crew.py:2586-2588 guards its body-path check on the value it checks, while tests/test_crew.py:2589 does redden if node_definition stops rehydrating the body.",
+    "evidence": "the manifest records both arms and the gate as inline JSON at 40-character revisions, but the gate measures 091c2cb5 rather than the run head c42ce66c and the fragment's merge section cites no log for the d628c376 reproduction it claims.",
+    "fit": "_worker_has_stopped at tests/test_crew.py:3025 composes the file's own _set_pointer_pid (tests/test_crew.py:3013) and _record_attempt_worker (tests/test_crew.py:3041), and the repaired reads use the product's accessors at reckon/crew/runs.py:343 and reckon/crew/runs.py:380.",
+    "goal_fidelity": "the named file's repair sits at tests/test_crew.py:2568-2597 and the head gate at 091c2cb5 reads 191 passed with EXIT=0, with only the 22-line fragment commit between the measured revision and the run head.",
+    "reuse": "a search of tests/ for an existing stopped-worker or clock-aging helper found only tests/test_crew.py:3025, and the reads extend runs.node_definition (reckon/crew/runs.py:343) and runs.peer_channel_peers (reckon/crew/runs.py:380) instead of forking them.",
+    "scope_discipline": "git diff --stat d628c3763e 091c2cb56a lists only tests/test_crew.py and the node's own fragment, both inside the declared write paths, and no product module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is tests/test_crew.py passing in full on the primary branch; the gained commits repair the one inherited case at tests/test_crew.py:2568-2597 and record it at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html:67-89, and the head gate at 091c2cb5 reads \"191 passed in 157.97s\" with EXIT=0 at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/scoped-gate-1795115894506355493.log:11 and :18926.\nVERDICT done_when: the done_when asks for tests/test_crew.py at head as an all_debug job with SLURM_JOB_ID unset, each base cause with a verdict, and both suite arms as inline JSON at 40-character revisions; the manifest carries both arms (8c7ea625 and 091c2cb5, each 58 passed and EXIT=0 in baseline_suite-1795116085648108686.log and after_suite-1795116130173869062.log) with the base red run as the negative control.\nVERDICT write_paths: the declared set is reckon, tests, the node's fragment directory and the node's figure directory; the node's net contribution against primary (git diff d628c3763e..091c2cb56a) is exactly tests/test_crew.py (+57/-4) and its own fragment, and c42ce66c touches only that fragment, so the change stays inside the declared set.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/manifest.md; it records status complete, commits 86c3a7204b, 9894a1b3, 091c2cb5 and c42ce66c, the head-gate wrapper as its tests line, both suite arms as inline JSON with full 40-character revisions, negative_control_log base-test_crew.log, and retry 1001 attributed to a tmp-full node.\nVERDICT diff: read 091c2cb5 against both parents and c42ce66c against its parent; the merge contributes the accessor reads at tests/test_crew.py:2579-2597, _ABSENT_PID and _worker_has_stopped at tests/test_crew.py:3022-3039 and four call sites, and c42ce66c adds 22 lines to the fragment, with no production module touched; the remaining 555 paths in 9894a1b3..c42ce66c are primary's integration carried in from d628c376.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the named file's repair sits at tests/test_crew.py:2568-2597 and the head gate at 091c2cb5 reads 191 passed with EXIT=0, with only the 22-line fragment commit between the measured revision and the run head.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest records both arms and the gate as inline JSON at 40-character revisions, but the gate measures 091c2cb5 rather than the run head c42ce66c and the fragment's merge section cites no log for the d628c376 reproduction it claims.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat d628c3763e 091c2cb56a lists only tests/test_crew.py and the node's own fragment, both inside the declared write paths, and no product module.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_crew.py:2593 compares two empty mappings and tests/test_crew.py:2586-2588 guards its body-path check on the value it checks, while tests/test_crew.py:2589 does redden if node_definition stops rehydrating the body.\nSCORE fit: 19\nJUSTIFICATION fit: _worker_has_stopped at tests/test_crew.py:3025 composes the file's own _set_pointer_pid (tests/test_crew.py:3013) and _record_attempt_worker (tests/test_crew.py:3041), and the repaired reads use the product's accessors at reckon/crew/runs.py:343 and reckon/crew/runs.py:380.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of tests/ for an existing stopped-worker or clock-aging helper found only tests/test_crew.py:3025, and the reads extend runs.node_definition (reckon/crew/runs.py:343) and runs.peer_channel_peers (reckon/crew/runs.py:380) instead of forking them.\nFINDING tests/test_crew.py:2593 non-blocking: assert runs.peer_channel_peers(pointer) compares two empty mappings here, because the dispatch is given no adjacent peers and reckon/crew/dispatching/launch.py:580 seeds peers as {}, so the assertion cannot redden if the peer list stops being published or re-read; the peer half of the merge repair is unguarded.\nFINDING tests/test_crew.py:2586 non-blocking: the body-path assertion at tests/test_crew.py:2588 is guarded by `if body_path:` where body_path is read from the same hydrated node it checks, so a pointer that stops naming its body file skips the assertion and falls back through reckon/crew/runs.py:363 without a red.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html:78 non-blocking: the merge section states the inherited case reproduces on primary's tree at d628c376 without citing a log or revision header for that run, and the page's cited head gate and both suite arms stay at the pre-merge 86c3a7204b, so the delivered head's own measurement (091c2cb5, scoped-gate-1795115894506355493.log, two 58-passed arms) exists only in the manifest.",
+  "review_run_id": "r-20261119T192803073466-review-of-qwnw-red-file-crew-at-current-main-c42ce66ccc06",
+  "reviewed_base_sha": "9894a1b3dd0dc492f8c13db2c13f9c0fbf3308fc",
+  "reviewed_head_sha": "c42ce66ccc0639f65483f59431dfdd66f93517ca",
+  "reviewed_run_id": "r-20261118T063934993934-qwnw-red-file-crew-at-current-main",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:05:57.873336+00:00",
+  "total": 107
+}

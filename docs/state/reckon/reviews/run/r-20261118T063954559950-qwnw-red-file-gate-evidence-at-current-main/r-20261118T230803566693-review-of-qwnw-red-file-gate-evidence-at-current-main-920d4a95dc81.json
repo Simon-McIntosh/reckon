@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3413 _complete_many",
+    "reckon/crew_run_commands.py:3483 record_path emission",
+    "reckon/crew_run_commands.py:4188 _emit_completion_reply refusal payload",
+    "reckon/crew/runs.py:_write_json"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:27:28Z",
+  "findings": [
+    {
+      "file": "scoped-gate-1795042910666883148.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head receipt names revision 44d86d76a7932bf982dcb8ae672494597794b57f while the reviewed head is 920d4a95dc8, and its `# tree:` line names /tmp/mcintos-landing-cae0d62a5ffa-H8g1Jp/tree although its `# command:` cds into the worker's worktree, so the log names a tree the measured run did not execute in."
+    },
+    {
+      "file": "tests/test_gate_evidence.py",
+      "line": "327",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `path is None` fallback in `_recorded_outcome` is reached by no case in the file \u2014 every completion test drives a non-dry-run promotion, which always writes a record \u2014 so the docstring's stated case, a reply carrying no record, is unverified."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the baseline_suite and after_suite arms measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file, so the done_when's arm over the importing files is answered by an arm that cannot redden on this change and the absence is not stated."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from e9dffe5259 to 920d4a95dc8 \u2014 44d86d76 adds the 16-line `_recorded_outcome` helper and swaps 14 `json.loads(result.output)` reads for it with no assert line deleted or relaxed (30 added, 14 removed). 920d4a95 adds only the 78-line evidence fragment.",
+    "done_when": "every clause has a recorded artefact except the importing-arm clause \u2014 the head run is an all_debug job (gate receipt partition all_debug, revision 44d86d76, exit_status 0), logs/base-gate-evidence-at-e9dffe5.log lists 14 FAILED ids beside the head run, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gate-evidence-at-current-main.html:59-73 carries the base ids, ruff on the head blob reports only the two ISC004 findings already present at e9dffe5:tests/test_gate_evidence.py:1011,1023, manifest.md:7 carries two full 40-character ids, but the baseline_suite and after_suite arms name two test files that neither import nor exercise the changed file.",
+    "goal": "the source node's goal is that tests/test_gate_evidence.py passes in full on the committed head; the landed diff re-points every outcome read through `_recorded_outcome` at tests/test_gate_evidence.py:316 and the file's 25 cases pass at 44d86d76 (scoped-gate-1795042910666883148.log, 25 passed in 18.63s, EXIT=0) against 14 failed at e9dffe5.",
+    "manifest": "read at manifest.md; it records status complete, the literal gate command, four log paths, both suite arms at 58 passed EXIT=0, and a landing line naming ba811581d3 as the cause and the test (not the product) as wrong, which matches the completion path at reckon/crew_run_commands.py:3413 writing completion-<ns>.json with record_path.",
+    "write_paths": "the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's only two paths, tests/test_gate_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gate-evidence-at-current-main.html, sit inside that scope."
+  },
+  "justifications": {
+    "durability": "the base arm at e9dffe5 reddens 14 of the re-pointed reads (KeyError 'record', 'missing_fields', 'added_failure_ids'), so the helper is load-bearing, but no assertion covers the `path is None` fallback at tests/test_gate_evidence.py:327.",
+    "evidence": "scoped-gate-1795042910666883148.log:6 reads \"25 passed\" and ends EXIT=0, logs/base-gate-evidence-at-e9dffe5.log ends with 14 FAILED ids and 14 failed, 11 passed, and both suite arms read \"58 passed\", but the log's `# tree:` line names a /tmp landing tree its own `# command:` does not run in.",
+    "fit": "the helper at tests/test_gate_evidence.py:316 follows the module's `_`-prefixed fixture-helper idiom beside `_complete_arguments` at :313 and introduces no new naming convention.",
+    "goal_fidelity": "tests/test_gate_evidence.py:316-330 changes nothing the product does and the file's 25 cases pass at 44d86d76, so the red file the goal names is green.",
+    "reuse": "no shared owner exists \u2014 tests/conftest.py and reckon/ hold no reader of a completion receipt \u2014 but the same inline idiom is repeated in tests/test_a_clean_landing_releases_its_worktree.py:126,151,169 and tests/test_a_conflicting_landing_is_repaired.py:140,214, so this consolidates the capability file-locally rather than extending an owner.",
+    "scope_discipline": "the diff's two paths, tests/test_gate_evidence.py and the node's own evidence fragment, are both inside the write paths the run declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_gate_evidence.py passes in full on the committed head; the landed diff re-points every outcome read through `_recorded_outcome` at tests/test_gate_evidence.py:316 and the file's 25 cases pass at 44d86d76 (scoped-gate-1795042910666883148.log, 25 passed in 18.63s, EXIT=0) against 14 failed at e9dffe5.\nVERDICT done_when: every clause has a recorded artefact except the importing-arm clause \u2014 the head run is an all_debug job (gate receipt partition all_debug, revision 44d86d76, exit_status 0), logs/base-gate-evidence-at-e9dffe5.log lists 14 FAILED ids beside the head run, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gate-evidence-at-current-main.html:59-73 carries the base ids, ruff on the head blob reports only the two ISC004 findings already present at e9dffe5:tests/test_gate_evidence.py:1011,1023, manifest.md:7 carries two full 40-character ids, but the baseline_suite and after_suite arms name two test files that neither import nor exercise the changed file.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's only two paths, tests/test_gate_evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-gate-evidence-at-current-main.html, sit inside that scope.\nVERDICT manifest: read at manifest.md; it records status complete, the literal gate command, four log paths, both suite arms at 58 passed EXIT=0, and a landing line naming ba811581d3 as the cause and the test (not the product) as wrong, which matches the completion path at reckon/crew_run_commands.py:3413 writing completion-<ns>.json with record_path.\nVERDICT diff: read commit by commit from e9dffe5259 to 920d4a95dc8 \u2014 44d86d76 adds the 16-line `_recorded_outcome` helper and swaps 14 `json.loads(result.output)` reads for it with no assert line deleted or relaxed (30 added, 14 removed). 920d4a95 adds only the 78-line evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:3413 _complete_many, reckon/crew_run_commands.py:3483 record_path emission, reckon/crew_run_commands.py:4188 _emit_completion_reply refusal payload, reckon/crew/runs.py:_write_json\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_gate_evidence.py:316-330 changes nothing the product does and the file's 25 cases pass at 44d86d76, so the red file the goal names is green.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-1795042910666883148.log:6 reads \"25 passed\" and ends EXIT=0, logs/base-gate-evidence-at-e9dffe5.log ends with 14 FAILED ids and 14 failed, 11 passed, and both suite arms read \"58 passed\", but the log's `# tree:` line names a /tmp landing tree its own `# command:` does not run in.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_gate_evidence.py and the node's own evidence fragment, are both inside the write paths the run declared.\nSCORE durability: 17\nJUSTIFICATION durability: the base arm at e9dffe5 reddens 14 of the re-pointed reads (KeyError 'record', 'missing_fields', 'added_failure_ids'), so the helper is load-bearing, but no assertion covers the `path is None` fallback at tests/test_gate_evidence.py:327.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at tests/test_gate_evidence.py:316 follows the module's `_`-prefixed fixture-helper idiom beside `_complete_arguments` at :313 and introduces no new naming convention.\nSCORE reuse: 18\nJUSTIFICATION reuse: no shared owner exists \u2014 tests/conftest.py and reckon/ hold no reader of a completion receipt \u2014 but the same inline idiom is repeated in tests/test_a_clean_landing_releases_its_worktree.py:126,151,169 and tests/test_a_conflicting_landing_is_repaired.py:140,214, so this consolidates the capability file-locally rather than extending an owner.\nFINDING scoped-gate-1795042910666883148.log:1 non-blocking: the head receipt names revision 44d86d76a7932bf982dcb8ae672494597794b57f while the reviewed head is 920d4a95dc8, and its `# tree:` line names /tmp/mcintos-landing-cae0d62a5ffa-H8g1Jp/tree although its `# command:` cds into the worker's worktree, so the log names a tree the measured run did not execute in.\nFINDING tests/test_gate_evidence.py:327 non-blocking: the `path is None` fallback in `_recorded_outcome` is reached by no case in the file \u2014 every completion test drives a non-dry-run promotion, which always writes a record \u2014 so the docstring's stated case, a reply carrying no record, is unverified.\nFINDING manifest.md:15 non-blocking: the baseline_suite and after_suite arms measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file, so the done_when's arm over the importing files is answered by an arm that cannot redden on this change and the absence is not stated.",
+  "review_run_id": "r-20261118T230803566693-review-of-qwnw-red-file-gate-evidence-at-current-main-920d4a95dc81",
+  "reviewed_base_sha": "e9dffe5259e14aac4f921e6ee6e63ce03e43ad86",
+  "reviewed_head_sha": "920d4a95dc8120134315f42ab2326397f80e5445",
+  "reviewed_run_id": "r-20261118T063954559950-qwnw-red-file-gate-evidence-at-current-main",
+  "reviewed_worker_commits": [
+    "44d86d76a7932bf982dcb8ae672494597794b57f",
+    "920d4a95dc8120134315f42ab2326397f80e5445"
+  ],
+  "rubric": "",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063954559950-qwnw-red-file-gate-evidence-at-current-main/after_suite-1795043013844617783.log",
+      "revision": "44d86d76a7932bf982dcb8ae672494597794b57f",
+      "sha256": "ece8020a740ff468c0dbb2431a8b4a6f949a1facb96db0a498c8ed9e09692b2a",
+      "summary": "58 passed"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063954559950-qwnw-red-file-gate-evidence-at-current-main/baseline_suite-1795042970801823306.log",
+      "revision": "e9dffe5259e14aac4f921e6ee6e63ce03e43ad86",
+      "sha256": "2b24bc180a6a6d56867efa8728a131133329c3500ba0a31f71c0ea5d63164f05",
+      "summary": "58 passed"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:42:06.447364+00:00",
+  "total": 111
+}

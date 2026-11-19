@@ -82,6 +82,7 @@ def test_every_reckon_importing_hook_uses_the_shared_bootstrap():
     assert {script.name for script in scripts} == {
         "coordinator_obligations.py",
         "worker_git_guard.py",
+        "worker_inbox.py",
         "worker_stop.py",
     }
     for script in scripts:
@@ -104,6 +105,19 @@ def test_importing_hooks_reexecute_under_old_python(tmp_path: Path):
     (live_dir / "synthetic-run.json").write_text(
         json.dumps({"run_id": "synthetic-run", "worktree": str(worktree)})
     )
+    inbox = tmp_path / "inbox"
+    message_body = "work the next section, then report what landed\n"
+
+    def seed_message() -> None:
+        """Put one waiting message in the run's inbox.
+
+        Seeded before each arm because the first arm claims it: a delivered
+        message leaves the inbox, so an arm that ran second would find nothing
+        waiting and the two arms could not be compared, nor delivery proved.
+        """
+        inbox.mkdir(parents=True, exist_ok=True)
+        (inbox / "20261119T000000000000Z-0000feed.md").write_text(message_body)
+
     cases = {
         "coordinator_obligations.py": ({"cwd": str(tmp_path)}, ("--hook", "prompt")),
         "worker_stop.py": ({"cwd": str(tmp_path)}, ()),
@@ -115,15 +129,20 @@ def test_importing_hooks_reexecute_under_old_python(tmp_path: Path):
             },
             (),
         ),
+        "worker_inbox.py": ({"tool_name": "Read", "cwd": str(tmp_path)}, ()),
     }
     for script in scripts:
         payload, args = cases[script.name]
         case_env = env.copy()
         if script.name == "worker_git_guard.py":
             case_env["RECKON_RUN_ID"] = "synthetic-run"
+        if script.name == "worker_inbox.py":
+            seed_message()
         expected = _run(Path(sys.executable), script, payload, case_env, *args)
         if script.name == "worker_stop.py":
             (manifest.parent / ".worker_stop_blocks").unlink(missing_ok=True)
+        if script.name == "worker_inbox.py":
+            seed_message()
         Path(env["RECKON_INTERPRETER_TRACE"]).unlink()
         actual = _run(old_python, script, payload, case_env, *args)
         starts = Path(env["RECKON_INTERPRETER_TRACE"]).read_text().splitlines()
@@ -140,6 +159,11 @@ def test_importing_hooks_reexecute_under_old_python(tmp_path: Path):
             assert (
                 json.loads(actual.stdout)["hookSpecificOutput"]["permissionDecision"]
                 == "deny"
+            )
+        if script.name == "worker_inbox.py":
+            assert (
+                message_body.strip()
+                in json.loads(actual.stdout)["hookSpecificOutput"]["additionalContext"]
             )
 
 
@@ -177,7 +201,13 @@ def test_stdlib_guards_keep_their_decisions_under_old_python(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "name", ["worker_stop.py", "coordinator_obligations.py", "worker_git_guard.py"]
+    "name",
+    [
+        "worker_stop.py",
+        "coordinator_obligations.py",
+        "worker_git_guard.py",
+        "worker_inbox.py",
+    ],
 )
 def test_missing_checkout_interpreter_reports_without_looping(
     tmp_path: Path, name: str

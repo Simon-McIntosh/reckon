@@ -1,0 +1,71 @@
+<section id="qwnw-red-file-member-registration-commits-landing">
+  <h2>A member registration is a store transaction, and the file says so</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_member_registration_commits.py</code>
+  was red for one cause, and the cause is the rule the test states, not the
+  product. The file was written on 18 September against registration that
+  committed <code>docs/state/&lt;project&gt;/crew.json</code>; the roster moved
+  into the run store on 15 November. <code>ledger.register_member</code> now
+  persists through <code>run_store.auxiliary</code> and states that it is "a
+  store-only transaction regardless" of its <code>commit</code> argument, and
+  <code>ledger.write_members</code> replaces "a version-paired roster without
+  writing a committed path". Eight of the file's ten cases asserted a commit, a
+  committed blob, or a dirty-roster refusal the code no longer performs.</p>
+
+  <p><strong>Verdict: test wrong, product correct.</strong> The file now states
+  the rule the code keeps and weakens no assertion: a registration reaches the
+  store and a second checkout reads the same rows; no git path, staging entry or
+  revision moves; the retained <code>commit</code> argument persists the row
+  anyway; a roster write that lost its version pairing is refused with the row
+  already stored surviving; an unnamed dispatch registers nothing and writes
+  nothing; and a reap followed by a registration is two recorded store
+  transactions.</p>
+
+  <h3 id="qwnw-red-file-member-registration-commits-measured">Measured</h3>
+
+  <table id="qwnw-red-file-member-registration-commits-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>5417b373ff9230f07c1c8f403632835808fffc15</td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_member_registration_commits.py</code></td>
+        <td>8 failed, 2 passed, EXIT=1</td></tr>
+      <tr><td>head</td><td>17b544d1e6c69f0e38add2e5da14b7b7b80c3eef</td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_member_registration_commits.py</code></td>
+        <td>9 passed, EXIT=0</td></tr>
+      <tr><td>suite baseline</td><td>5417b373ff9230f07c1c8f403632835808fffc15</td>
+        <td>the project's declared suite over this revision's tree</td>
+        <td>0 failed, EXIT=0</td></tr>
+      <tr><td>suite after</td><td>17b544d1e6c69f0e38add2e5da14b7b7b80c3eef</td>
+        <td>the project's declared suite over this revision's tree</td>
+        <td>0 failed, EXIT=0</td></tr>
+    </tbody>
+  </table>
+
+  <p>The suite's command is the project's own scoped declaration; the census
+  tests it resolves to are unchanged between the two revisions, so the arm
+  measures the tree rather than a different test set.</p>
+
+  <h3 id="qwnw-red-file-member-registration-commits-control">Negative control</h3>
+
+  <p>The base revision's run of the named file, on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset, read 8 failed and 2 passed (EXIT=1).
+  Its failing ids:</p>
+
+  <ul id="qwnw-red-file-member-registration-commits-control-ids">
+    <li><code>test_a_session_registration_is_committed</code></li>
+    <li><code>test_the_registration_commit_names_only_the_roster_file</code></li>
+    <li><code>test_the_committed_row_is_what_the_roster_serves</code></li>
+    <li><code>test_a_caller_that_does_not_ask_to_commit_leaves_the_write_untracked</code></li>
+    <li><code>test_an_uncommitted_row_already_in_the_roster_blocks_the_registration</code></li>
+    <li><code>test_a_failed_registration_commit_is_surfaced</code></li>
+    <li><code>test_a_dispatch_naming_no_member_is_disposable_and_commits_nothing</code></li>
+    <li><code>test_a_reap_before_a_registration_does_not_block_it</code></li>
+  </ul>
+
+  <p>Seven of the eight named or asserted a committed roster path that
+    a store-only registration no longer writes, so their read failed or
+    their expected refusal never arrived; the eighth
+    (<code>test_a_reap_...</code>) counted a registration commit the product no
+    longer makes. None failed on a store read, and the two that passed at base
+    are the two cases that never asserted a commit.</p>
+</section>

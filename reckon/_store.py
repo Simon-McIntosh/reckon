@@ -718,11 +718,13 @@ class _AuthoredChildCounter(HTMLParser):
         self,
         wanted: Sequence[str],
         *,
+        marker: str,
         structural: Sequence[str],
         void: Sequence[str],
     ) -> None:
         super().__init__(convert_charrefs=False)
         self._wanted = frozenset(wanted)
+        self._marker = marker
         self._structural = frozenset(structural)
         self._void = frozenset(void)
         self._open: list[tuple[str, str | None]] = []
@@ -746,7 +748,7 @@ class _AuthoredChildCounter(HTMLParser):
         if tag != "section":
             return None
         values = dict(attrs)
-        reckon_id = values.get("data-reckon")
+        reckon_id = values.get(self._marker)
         if reckon_id not in self._wanted or reckon_id in self.counts:
             return None
         self.counts[reckon_id] = 0
@@ -786,6 +788,7 @@ def _authored_child_counts(
 
     counter = _AuthoredChildCounter(
         section_ids,
+        marker=_plan_html.RECKON_ATTRIBUTE,
         structural=_plan_html._STRUCTURAL_SECTION_CHILDREN,
         void=_plan_html._VOID_TAGS,
     )
@@ -828,7 +831,7 @@ def _unparsed_section_warnings(html_text: str, state: dict[str, Any]) -> list[st
         spelling = _plan_html._SECTION_RECOGNISED_SPELLING.get(reckon_id)
         expected = f" Expected spelling: {spelling}" if spelling else ""
         out.append(
-            f'plan read: section data-reckon="{reckon_id}" holds {count} '
+            f'plan read: section {_plan_html.RECKON_ATTRIBUTE}="{reckon_id}" holds {count} '
             "authored child element(s) the parser did not recognise — the "
             f"parsed collection is empty.{expected}"
         )
@@ -2488,6 +2491,8 @@ def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
     """
     from bs4 import BeautifulSoup, NavigableString
 
+    from reckon import _plan_html
+
     soup = BeautifulSoup(document, "html.parser")
     token = secrets.token_hex(16)
     while token in document:
@@ -2507,7 +2512,7 @@ def plan_text_projection(document: str) -> tuple[str, list[tuple[int, str]]]:
         ).lower().startswith("plan-")
         if (
             state_meta
-            or element.has_attr("data-reckon")
+            or element.has_attr(_plan_html.RECKON_ATTRIBUTE)
             or "r-comment" in (element.get("class") or [])
         ):
             element.replace_with(NavigableString(mark(str(element))))

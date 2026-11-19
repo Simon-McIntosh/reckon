@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Promotion scope guard: the red file at the current primary branch</title>
+<style>
+  body { font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; margin: 2rem auto; max-width: 60rem; color: #1d2530; }
+  h2 { margin-top: 2.2rem; border-bottom: 1px solid #d8dee8; padding-bottom: .3rem; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
+  pre { background: #f4f6fa; padding: .8rem 1rem; overflow-x: auto; border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #d8dee8; padding: .35rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #f4f6fa; }
+</style>
+</head>
+<body>
+<h1>Promotion scope: three red tests, three verdicts</h1>
+<p>
+  <code>tests/test_crew_promotion_scope.py</code> was red at the primary branch
+  <code>65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd</code> with three failures. The file had
+  passed at <code>75b1857de8</code>; three later commits changed the code and the reply
+  shape under it, and none of them re-read this file.
+</p>
+
+<h2 id="qwnw-red-file-crew-promotion-scope-at-current-main-verdicts">Causes and verdicts</h2>
+<table>
+  <thead><tr><th>Failing test</th><th>Observed</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>test_main_checkout_source_write_allows_promotion</code><br>
+          <code>test_peer_worktree_source_write_allows_promotion</code></td>
+      <td>Boundary check refuses: <code>its base is older than the 7-day bound this check
+          can attribute</code>, naming <code>allowed.txt</code> in the other tree.</td>
+      <td><strong>test wrong</strong>, twice over. The fixture pinned
+          <code>created_at</code> to <code>2026-08-26T12:00:00Z</code>, so the record's
+          dispatch read as older than the span the boundary walk can attribute and the
+          per-path check was replaced by the no-referent refusal — a literal that had to
+          be edited on a future date to stay true. And both cases asserted that a stray
+          edit at a declared source path promotes while the project declared no shared
+          path at all; the guard now reads the project's own declaration instead of the
+          undeclared sharing default, so each case now publishes the path as shareable,
+          which is the state its own comment claims.</td>
+    </tr>
+    <tr>
+      <td><code>test_complete_command_accepts_reasoned_companion_path</code></td>
+      <td><code>KeyError: 'record'</code> on <code>json.loads(accepted.output)</code>.</td>
+      <td><strong>test wrong</strong>. The command's reply is now a bounded summary
+          (<code>ok</code>, <code>pointer_removed</code>, <code>ledger_path</code>,
+          <code>record_path</code>) and the full promotion result is written at the
+          receipt path it names. The case reads that receipt.</td>
+    </tr>
+  </tbody>
+</table>
+<p>No assertion was deleted or weakened: each still judges <code>scope_acceptances</code>,
+<code>commits</code>, the ledger row and the pointer's removal.</p>
+
+<h2 id="qwnw-red-file-crew-promotion-scope-at-current-main-negative-control">Negative control — the base run</h2>
+<pre># revision: 65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest \
+#            -p no:cacheprovider -q tests/test_crew_promotion_scope.py</pre>
+<p>Failing ids at the base, three of twenty-eight:</p>
+<pre>FAILED tests/test_crew_promotion_scope.py::test_main_checkout_source_write_allows_promotion
+FAILED tests/test_crew_promotion_scope.py::test_peer_worktree_source_write_allows_promotion
+FAILED tests/test_crew_promotion_scope.py::test_complete_command_accepts_reasoned_companion_path
+3 failed, 25 passed
+EXIT=1</pre>
+<p>Log: <code>runs/r-20261118T063946103899-qwnw-red-file-crew-promotion-scope-at-current-main/negative-control-base-65ae7f6f.log</code>.</p>
+
+<h2 id="qwnw-red-file-crew-promotion-scope-at-current-main-head">Head run</h2>
+<p>
+  The same command at <code>af10eb87ef05b1774d1d68540269924e8ac85b59</code>, submitted
+  as a job on <code>all_debug</code> through the scoped gate, reports
+  <code>28 passed</code> with <code>EXIT=0</code>; none of the three ids above appears.
+</p>
+
+<h2 id="qwnw-red-file-crew-promotion-scope-at-current-main-instrument">The instrument was checked, not assumed</h2>
+<p>
+  A frozen dispatch stamp only matters because the guard compares it against now. Asked
+  directly, with a surviving worktree:
+</p>
+<pre>0 days  -&gt; ''
+8 days  -&gt; 'its base is older than the 7-day bound this check can attribute'
+84 days -&gt; 'its base is older than the 7-day bound this check can attribute'</pre>
+<p>
+  So the literal <code>2026-08-26T12:00:00Z</code> (84 days before this run) really did
+  take the two cases out of the per-path refusal they were written to judge, and
+  deriving the stamp from the clock is what restores them rather than masking it.
+</p>
+</body>
+</html>

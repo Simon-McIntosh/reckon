@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs, not from its manifest claim: baseline_suite-1795109972202726314.log at b24fe95a789c reads '58 passed in 35.49s' with EXIT=0 and zero FAILED lines; after_suite-1795110015487842241.log at b0c4c642132d reads '58 passed in 35.61s' with EXIT=0 and zero FAILED lines. The after arm adds no failing id the baseline did not carry.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:4846 (obligations() dispatches to _obligations_view)",
+    "reckon/mcp_views.py:4672 (MCP read calls obligations_module.obligations)",
+    "reckon/hooks/coordinator_obligations.py:220 (hook wrapper calls the obligations view)",
+    "reckon/crew/obligation_snapshot.py:2208 (snapshot summary calls runs.unreconciled_for_session)",
+    "reckon/crew/obligation_snapshot.py:1933 (derivation wraps its pass in obligations.derivation_history)",
+    "reckon/crew/recovery_stream.py:193 (stream reader calls obligations.derivation_run_rows)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:24:59Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_obligations.py",
+      "line": "226",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repointed stub returns {SESSION: 7}, so the summary assertion at :275 reads 7 whether the view goes through runs.unreconciled_for_session or the plain .get(session, 0) the merge claims to have replaced, so this case does not guard the ownerless-row rule; tests/test_obligation_count_equals_its_list.py:131 is the case that does."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the declared-suite paragraph still cites after_suite-1795075853145234440.log at a453d47a7e40 while the reviewed run's manifest after_suite names after_suite-1795110015487842241.log at b0c4c642132d; both logs exist and read 58 passed EXIT=0, but one receipt naming two different after arms leaves a later reader unable to tell which arm the fragment rests on, and the docs commit did not reconcile it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against b61ffa397326: the merge resolves one hunk at reckon/crew/obligations.py:5274 to runs.unreconciled_for_session over drain_unreconciled_by_session(pointers=live_pointers), carries primary main's _review_duty_item and derivation_history hunks, and repoints tests/test_crew_obligations.py:226 at drain_unreconciled_by_session; the docs commit adds one merge paragraph to the fragment.",
+    "done_when": "the done_when asks for the named file green at head on all_debug with SLURM_JOB_ID unset, a cause-with-verdict list, an import arm that adds no failure and the base run logged beside it; repair-gate.log carries 8 passed EXIT=0 at bef60c80ff and the reviewed manifest pairs that with base-run-test_a_queued_review_is_not_missing.log (1 failed, 7 passed, EXIT=1 at b24fe95).",
+    "goal": "the node goal is that tests/test_a_queued_review_is_not_missing.py passes in full on the primary branch; the increment merges primary main f0e0315 and records it at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html:26, with the named file 8 passed at the merge head bef60c80ff in repair-gate.log.",
+    "manifest": "the reviewed run's manifest.md records bef60c80ff and b0c4c64213 in commits, names repair-gate.log at bef60c80ff (8 passed, EXIT=0) and both suite arms completed at EXIT=0 with 0 failures, and every cited log exists and ends in its own EXIT= line.",
+    "write_paths": "the reviewed node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path; the two commits gained since b61ffa39 hand-author only reckon/crew/obligations.py, tests/test_crew_obligations.py and that fragment, all inside the declaration, while the merge commit reconciles 387 paths of primary main as a merge must."
+  },
+  "justifications": {
+    "durability": "reinstating the .get(session, 0) resolution at reckon/crew/obligations.py:5274 reddens tests/test_obligation_count_equals_its_list.py:131, and reverting the review suppression at obligations.py:2944 to state != REVIEW_SELF_REFUSED reddens tests/test_a_delivered_review_reads_as_awaiting_promotion.py:312, while the changed case at tests/test_crew_obligations.py:275 cannot distinguish the count path because its stub supplies the session's own key.",
+    "evidence": "the merge is evidenced by repair-gate.log at bef60c80ff and by after_suite-1795110015487842241.log at b0c4c642132d (58 passed, EXIT=0), though the fragment's declared-suite paragraph at :25 still names a different after arm and no run of the named file exists at the landed docs head.",
+    "fit": "reckon/crew/obligations.py:5270 carries the same explanatory-comment idiom as the surrounding hunks and the new derivation marker at obligations.py:3714 follows the module's existing ContextVar-scoped read sharing at obligations.py:811.",
+    "goal_fidelity": "reckon/crew/obligations.py:5274 keeps both sides of the conflicting hunk, so the view still reads one listing and an ownerless row still counts, and repair-gate.log records 8 passed EXIT=0 at the merge head bef60c80ff.",
+    "reuse": "the added derivation_history/derivation_run_rows at reckon/crew/obligations.py:3718 and :3735 extend the module's existing ContextVar read-scope idiom and hand out recorded_run_rows, which already owns the history read; a search over reckon/crew for a way to share one derivation's run rows found only the view-scope markers at obligations.py:811 and the held-records cache at obligations.py:3915, neither of which carries ledger rows.",
+    "scope_discipline": "the hand-authored part of the increment is the three declared paths (obligations.py, the test file, the fragment); the remaining 384 paths arrive through the primary-main merge commit bef60c80ff rather than as node work."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_a_queued_review_is_not_missing.py passes in full on the primary branch; the increment merges primary main f0e0315 and records it at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html:26, with the named file 8 passed at the merge head bef60c80ff in repair-gate.log.\nVERDICT done_when: the done_when asks for the named file green at head on all_debug with SLURM_JOB_ID unset, a cause-with-verdict list, an import arm that adds no failure and the base run logged beside it; repair-gate.log carries 8 passed EXIT=0 at bef60c80ff and the reviewed manifest pairs that with base-run-test_a_queued_review_is_not_missing.log (1 failed, 7 passed, EXIT=1 at b24fe95).\nVERDICT write_paths: the reviewed node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path; the two commits gained since b61ffa39 hand-author only reckon/crew/obligations.py, tests/test_crew_obligations.py and that fragment, all inside the declaration, while the merge commit reconciles 387 paths of primary main as a merge must.\nVERDICT manifest: the reviewed run's manifest.md records bef60c80ff and b0c4c64213 in commits, names repair-gate.log at bef60c80ff (8 passed, EXIT=0) and both suite arms completed at EXIT=0 with 0 failures, and every cited log exists and ends in its own EXIT=0 line.\nVERDICT diff: read both commits against b61ffa397326: the merge resolves one hunk at reckon/crew/obligations.py:5274 to runs.unreconciled_for_session over drain_unreconciled_by_session(pointers=live_pointers), carries primary main's _review_duty_item and derivation_history hunks, and repoints tests/test_crew_obligations.py:226 at drain_unreconciled_by_session; the docs commit adds one merge paragraph to the fragment.\nCALL_SITES: reckon/crew/obligations.py:4846, reckon/mcp_views.py:4672, reckon/hooks/coordinator_obligations.py:220, reckon/crew/obligation_snapshot.py:2208, reckon/crew/obligation_snapshot.py:1933, reckon/crew/recovery_stream.py:193\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:5274 keeps both sides of the conflicting hunk, so the view still reads one listing and an ownerless row still counts, and repair-gate.log records 8 passed EXIT=0 at bef60c80ff.\nSCORE evidence: 16\nJUSTIFICATION evidence: the merge is evidenced by repair-gate.log at bef60c80ff and by after_suite-1795110015487842241.log at b0c4c642132d (58 passed, EXIT=0), though the fragment's declared-suite paragraph at :25 still names a different after arm and no run of the named file exists at the landed docs head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the hand-authored part of the increment is the three declared paths (obligations.py, the test file, the fragment); the remaining 384 paths arrive through the primary-main merge commit bef60c80ff rather than as node work.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the .get(session, 0) resolution at reckon/crew/obligations.py:5274 reddens tests/test_obligation_count_equals_its_list.py:131, and reverting the review suppression at obligations.py:2944 to state != REVIEW_SELF_REFUSED reddens tests/test_a_delivered_review_reads_as_awaiting_promotion.py:312, while the changed case at tests/test_crew_obligations.py:275 cannot distinguish the count path because its stub supplies the session's own key.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:5270 carries the same explanatory-comment idiom as the surrounding hunks and the new derivation marker at obligations.py:3714 follows the module's existing ContextVar-scoped read sharing at obligations.py:811.\nSCORE reuse: 18\nJUSTIFICATION reuse: the added derivation_history/derivation_run_rows at reckon/crew/obligations.py:3718 and :3735 extend the module's existing ContextVar read-scope idiom and hand out recorded_run_rows, which already owns the history read; a search over reckon/crew for a way to share one derivation's run rows found only the view-scope markers at obligations.py:811 and the held-records cache at obligations.py:3915, neither of which carries ledger rows.\nFINDING tests/test_crew_obligations.py:226 non-blocking: the repointed stub returns the session's own key with 7, so the summary assertion at :275 reads 7 whether the view goes through runs.unreconciled_for_session or the plain .get(session, 0) the merge claims to have replaced, so this case does not guard the ownerless-row rule; tests/test_obligation_count_equals_its_list.py:131 is the case that does.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-queued-review-is-not-missing.html:25 non-blocking: the declared-suite paragraph still cites after_suite-1795075853145234440.log at a453d47a7e40 while the reviewed run manifest after_suite names after_suite-1795110015487842241.log at b0c4c642132d; both logs read 58 passed EXIT=0, but one receipt naming two different after arms leaves a later reader unable to tell which arm the fragment rests on, and the docs commit did not reconcile it.\n",
+  "review_method": "Read-only review of the two commits the run gained since its prior review at b61ffa397326 (a primary-main merge and a docs commit), over the three paths the node names; the recorded logs were read, no mutation was applied and the named file was not re-run.",
+  "review_node": "review-of-qwnw-red-file-a-queued-review-is-not-missing-b0c4c642132d",
+  "review_run_id": "r-20261119T174215850868-review-of-qwnw-red-file-a-queued-review-is-not-missing-b0c4c642132d",
+  "reviewed_base_sha": "b61ffa3973265933c957486cfbca0ea594afb26b",
+  "reviewed_head_sha": "b0c4c642132dd6c5ecffdd59bb2b53a5c79aae7d",
+  "reviewed_run_id": "r-20261118T063628566105-qwnw-red-file-a-queued-review-is-not-missing",
+  "reviewer": "omp",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "source_commits": [
+    "bef60c80ff5966ddb9071cad4725278e395b9fb3",
+    "b0c4c642132dd6c5ecffdd59bb2b53a5c79aae7d"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:49:25.748687+00:00",
+  "total": 113
+}

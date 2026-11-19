@@ -1,0 +1,61 @@
+<section id="qwnw-red-file-a-refused-resume-names-the-live-attempt-landing">
+  <h2>A refused resume names the live attempt — already green at base</h2>
+
+  <p><strong>What this node found.</strong> The named file,
+  <code>tests/test_a_refused_resume_names_the_live_attempt.py</code>, passes in
+  full at the base revision <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code>,
+  so the defect the section records no longer reproduces and no product or test
+  edit was made. The repair is already in history ahead of this node, at
+  <code>c91556d05574b2a1de644bc6de05c69395f8b6ec</code> (the refusal names the
+  live attempt) and <code>248e2dcdea</code> (the repair round is read from its
+  owner), and this worktree's head is a descendant of both.</p>
+
+  <p><strong>Causes and verdicts.</strong> None remain. The one composer the
+  section required is in place: <code>live_process_refusal</code> in
+  <code>reckon/crew/resumption.py</code> is the single place the message is
+  worded, and the launcher's guard, the sweep's <code>_launcher_refusal</code>
+  prediction and the stream-reading gate all reach it, which is what the parity
+  case asserts. A file already green when its node starts is, per the section's
+  deliverable, delivered with its passing run — this fragment records that run
+  and the control showing the test can fail.</p>
+
+  <h3 id="qwnw-red-file-a-refused-resume-names-the-live-attempt-arms">Measured</h3>
+
+  <p>Each arm is a log whose first lines name the revision, the tree and the
+  command, and whose last line is a bare <code>EXIT=&lt;code&gt;</code>. The
+  three test arms ran as batch jobs of their own on <code>all_debug</code>, with
+  <code>SLURM_JOB_ID</code> unset for the pytest process.</p>
+
+  <table id="qwnw-red-file-a-refused-resume-names-the-live-attempt-runs">
+    <caption>The named file's base run, the declared suite's two arms, and one
+    mutation that shows the cases fire.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>named file</td><td><code>b24fe95a789c</code> (base) and <code>6f99d4c5ef</code> (head)</td>
+        <td><code>pytest -q tests/test_a_refused_resume_names_the_live_attempt.py</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base</td><td><code>b24fe95a789c</code></td>
+        <td><code>pytest -q tests/test_staged_write_inventory.py
+        tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, after</td><td><code>6f99d4c5ef</code></td>
+        <td>same command over the head tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>mutation control</td><td><code>b24fe95a789c</code> in a scratch copy</td>
+        <td>same file, one door composing its own sentence</td>
+        <td>3 failed, 4 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The mutation is the one the module's own docstring declares: composing the
+  message at the launcher door alone, with
+  <code>return live_process_refusal(record, reading="alive")</code> replaced by
+  a fixed sentence in the scratch copy. The parity case fails on the two texts
+  differing, and the two naming cases fail on <code>attempt 2</code> being
+  absent — so the naming assertions are load-bearing rather than passing for
+  want of a process to find.</p>
+
+  <p>Logs: <code>head-run.log</code>, <code>baseline-suite.log</code>,
+  <code>after-suite.log</code> and <code>negative-control.log</code> under the
+  run directory.</p>
+</section>

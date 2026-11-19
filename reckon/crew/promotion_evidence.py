@@ -430,15 +430,28 @@ def _require_commits_beyond_base(
     declared work records the run as complete while its deliverable exists in
     no commit at all, which the release step then takes with the worktree.
 
-    The comparison is made in the run's own tree, so a citation that resolves to
-    an abbreviated revision still equals the base it names, and a citation
-    that resolves nowhere is left to the guard whose refusal names the repository it
-    consulted rather than answered here by this guard. The tree is the one the
-    record names, read the way every other reader reads it: a citation that the
-    record's directory cannot measure is not measured here rather than measured
-    against whatever repository the promotion happens to run in. A tree git
-    cannot read, or a base that does not resolve in it, leaves the guard silent:
-    an unmeasured citation is not a defect in the citation.
+    The comparison is made in the run's own tree, so a citation that resolves
+    to an abbreviated revision still equals the base it names, and a citation
+    that resolves nowhere is left to the guard whose refusal names the
+    repository it consulted rather than answered here with this one. A tree git
+    cannot read, or a base that does not resolve in it, leaves the guard
+    silent: an unmeasured citation is not a defect in the citation.
+
+    Reachability is asked about the run's *worktree* head, never the
+    repository's. A released worktree is read through the repository that
+    shares its object store, and that repository's head follows the integration
+    branch: a run whose tree is already gone therefore reads as an unmerged
+    branch when measured against it, and the commit the run made was refused
+    after the tree it belonged to no longer existed. With no worktree to read,
+    the observable question is the one the base answers — the citation is the
+    run's work if it descends from the base the run was dispatched against.
+
+    Uncommitted declared work is only a defect for a run whose deliverable
+    belongs in a commit. A shadow run asserts no code and is refused a
+    citation by its own guard, so uncommitted work in its tree is the evidence
+    itself: the landing writes it into the run's shadow patch, which is what a
+    later reader measures. Refusing its row would leave the comparison arm with
+    its evidence in no artifact at all rather than in no commit.
 
     An integration merge that names the run's own head as one of its parents is
     the run's work too: the merge is the commit that carried it, and the scope
@@ -456,7 +469,15 @@ def _require_commits_beyond_base(
     from reckon.crew.promotion_scope import _declared_manifest_commits
     from reckon.crew.queue_landing import _delivered_revision
 
-    canonical_head = _commit_canonical_id(tree, "HEAD")
+    # Only the run's own worktree answers whether a citation is on the run's
+    # line. A record whose worktree is gone is read through the repository
+    # that shares its object store, whose head follows the integration branch,
+    # so a head read there refuses the run's own commit as an unmerged branch.
+    canonical_head = (
+        _commit_canonical_id(tree, "HEAD")
+        if _record_worktree(record) is not None
+        else None
+    )
     # A history-derived presentation must not hide a foreign manifest citation.
     # Reachable merge imports are valid citations but not owned commit records.
     citations = dict.fromkeys(
@@ -501,6 +522,13 @@ def _require_commits_beyond_base(
                 "or pass --no-commit '<why>' when it produced none"
             )
     if commits:
+        return
+    if _is_shadow(record):
+        # A shadow's deliverable is its retained patch, not a commit, so its
+        # tree holding uncommitted work is the shadow's normal state rather
+        # than work the release step would take with the worktree: the
+        # landing writes the patch before the tree is released, which is where
+        # a shadow's work is kept.
         return
     roots = _declared_repository_roots(record, tree=tree)
     if not roots:
@@ -2442,6 +2470,7 @@ from reckon.crew.promotion_scope import (
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
     _commit_parents,
+    _is_shadow,
     _merge_revisions,
     _repository_scope_paths,
     _revision_is_ancestor,

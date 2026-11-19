@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:14:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 4097,
+      "severity": "non-blocking",
+      "text": "_exit_a_handle_already_collected is a second exit-reading path with no test: no case drives the except (ChildProcessError, OSError) branch at 5292 with a carrier whose Popen holds a returncode, so a regression that made the helper return None again \u2014 the scope of the branch's docstring is identical to the branch that does nothing \u2014 would leave every assertion in tests/test_a_killed_worker_resumes_to_completion.py green; only the handle-retention half of the repair is guarded."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-killed-worker-resumes-to-completion.html",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "the arm table (and the manifest's checkpoint line) attribute the head and base node-test runs to an all_debug job, but neither cited log carries a Slurm marker: scoped-gate-1795073641904856472.log and base-arm.log open with '# revision:' / '# host:' / '# tree:' / '# command:' only, so the done_when's venue clause and its SLURM_JOB_ID-unset half are asserted in prose rather than shown by the artefact that is on disk."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-killed-worker-resumes-to-completion.html",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "the fragment's head-arm row cites c529224d9b while the manifest's checkpoint and tests line place the head gate at 1e946a6526; a green log exists at each revision (scoped-gate-1795072858960365093.log '1 passed in 6.76s' EXIT=0 at c529224d9b, scoped-gate-1795073641904856472.log '1 passed in 6.51s' EXIT=0 at 1e946a6526), so the substance is unaffected, but two records of one arm name different revisions and a reader cannot tell which ran where."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal at dispatch-detail.json is to make tests/test_a_killed_worker_resumes_to_completion.py pass in full on the primary branch; reckon/crew/dispatch_launch.py:4083 carries the Popen on the pid carrier so the supervisor's exit record keeps the signal the test reads.\nVERDICT done_when: the done_when requires the file to pass in full at head, each cause verdicted, no assertion deleted, and both suite arms recorded with full revisions; scoped-gate-1795073641904856472.log reads '1 passed in 6.51s' EXIT=0 at 1e946a6526, base-arm.log reads '1 failed in 4.15s' EXIT=1 at b24fe95a78, and both arms are recorded in the manifest as completed JSON with 0 failures.\nVERDICT write_paths: the two commits touch reckon/crew/dispatch_launch.py, tests/test_a_killed_worker_resumes_to_completion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-killed-worker-resumes-to-completion.html, all inside the declared write paths, and no other path appears in the range.\nVERDICT manifest: read the source manifest at r-20261118T063827750740-qwnw-red-file-a-killed-worker-resumes-to-completion/manifest.md; it names commits c529224d9b and 1e946a6526, the head gate, four local head repetitions, the base arm and a six-of-six base-race-reproduction.log, with the log paths it cites all present.\nVERDICT diff: read both commits against b24fe95a78 \u2014 c529224d9b adds the Popen field, the collected-exit fallback at reckon/crew/dispatch_launch.py:4097 and the fixture's stub relocation at tests/test_a_killed_worker_resumes_to_completion.py:249, and 1e946a6526 adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/dispatch_launch.py:_run_supervisor, reckon/crew/dispatch_launch.py:_reap_the_launched_worker, reckon/crew/dispatch_launch.py:_reap_worker_on_its_terminal_manifest\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:4083 keeps the handle the exit record's wait needs, and the file the goal names reads 1 passed EXIT=0 at 1e946a6526 in scoped-gate-1795073641904856472.log.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate, the base arm and the six-of-six race reproduction are on disk under the run directory with revisions and EXIT lines, but the all_debug venue the done_when names is not shown by any of those log headers.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in b24fe95a78..1e946a6526 lies under the declared write paths, and the product edit is confined to reckon/crew/dispatch_launch.py:4083-4110 and 5290-5293.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_killed_worker_resumes_to_completion.py:280 reddens on the reinstated regression \u2014 base-race-reproduction.log shows 'assert None == SIGTERM' six times at b24fe95a78 \u2014 but the added fallback at reckon/crew/dispatch_launch.py:4097 has no case that reaches its except branch with a collected returncode.\nSCORE fit: 18\nJUSTIFICATION fit: the field and helper follow the carrier's existing collected_wait_status idiom and its module-level private-helper naming at reckon/crew/dispatch_launch.py:4097, beside _without_this_supervisor.\nSCORE reuse: 19\nJUSTIFICATION reuse: the fallback calls the existing _wait_status_from_returncode at reckon/crew/dispatch_launch.py:4049 rather than adding a second returncode-to-wait-status conversion, and the search over reckon/ found no other owner of that conversion.\nFINDING reckon/crew/dispatch_launch.py:4097 non-blocking: the collected-exit fallback is a second exit-reading path with no test reaching its except branch, so a regression that made it return None would leave every recorded assertion green.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-killed-worker-resumes-to-completion.html:43 non-blocking: the all_debug venue and SLURM_JOB_ID-unset half of the done_when is stated in the arm table and the manifest but no cited log header carries a Slurm marker.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-killed-worker-resumes-to-completion.html:44 non-blocking: the head-arm row cites c529224d9b while the manifest places the head gate at 1e946a6526, so two records of one arm name different revisions.",
+  "review_run_id": "r-20261119T074615427720-review-of-qwnw-red-file-a-killed-worker-resumes-to-completion-1e946a6526ff",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "1e946a6526ffe316e7073a94e3dc548518482bbb",
+  "reviewed_run_id": "r-20261118T063827750740-qwnw-red-file-a-killed-worker-resumes-to-completion",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:05:00.000000+00:00",
+  "total": 106
+}

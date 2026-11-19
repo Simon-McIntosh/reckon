@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's paired logs: baseline_suite-1794926725049116419.log at f93503d87092ad0440bff2c6a1aff8d184f8eedd reports 70 passed with EXIT=0 and no failing IDs; after_suite-1794926800124905906.log at 3b66953c3512992091e9d70e720a15cecf03bfdf reports 73 passed with EXIT=0 and no failing IDs, so the set difference is empty.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1388-1394 (complete passes the gate verdict into _evaluate_suite_delta)",
+    "reckon/crew/promotion.py:1023-1031 (complete records a failed measurement outcome as measured)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-17T16:01:35Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The comment-only rewrites have no runtime effect and remain within the granted source paths; their scope cost is reflected in the score.",
+      "recorded_at": "2026-11-17T16:11:43Z"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The production evaluator uses the existing added_failure_ids calculation, while the changed decision branch has a red mutation control; the limited independence of this stored-ID assertion is noted without blocking the measured behavior.",
+      "recorded_at": "2026-11-17T16:11:43Z"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2024",
+      "severity": "non-blocking",
+      "text": "non-blocking: the implementation commit also changes unrelated comments and docstrings at promotion.py:2024, :2201, :2893, :3291 and promotion_records.py:917, :938; these wording changes do not advance the failed-measurement behavior and add review noise."
+    },
+    {
+      "file": "tests/test_a_measurement_run_never_lands.py",
+      "line": "499",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion row[\"suite_delta\"][\"added_failure_ids\"] == [failure_id] uses the ID that _record_added_failure_arms itself wrote into the after arm, so it would also pass if the stored IDs copied that arm instead of computing the baseline-to-after difference."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the implementation and test commits 4984ef527c and 670bee3629 against base f93503d87092ad0440bff2c6a1aff8d184f8eedd, then checked the target head 3b66953c3512992091e9d70e720a15cecf03bfdf: it retains _failed_measurement_gate at promotion_records.py:1327 and passes gate_verdict at promotion.py:1388-1394; only the declared source/test paths changed, with the unrelated comment rewrites noted above.",
+    "done_when": "tests/test_a_measurement_run_never_lands.py:477-529 covers a failed measurement, ordinary-run refusal and passing-measurement refusal; the manifest records the focused gate and the negative control. The recorded reproduction at reproduction.log shows suite-delta-refused naming tests/test_sample.py::test_new_regression.",
+    "goal": "The \u00a716 goal is to preserve failed measurements as ledger outcomes; promotion_records.py:1695-1758 accepts added suite failures only when the run is marked for measurement and its completion gate failed, while promotion.py:1023-1031 records the outcome as measured.",
+    "manifest": "Read the completed manifest: it names commits 4984ef527c and 670bee3629 plus integration head 3b66953c3512992091e9d70e720a15cecf03bfdf, the focused gate, reproduction, mutation control, and final baseline/after suite receipts.",
+    "write_paths": "The run manifest lists promotion_records.py, promotion.py, the test, and the optional evidence/figure paths; resume-1-advice.txt:1 records the explicit crew widen that granted promotion.py. The implementation commit changes only the two granted source files and the test; no evidence or figure was added."
+  },
+  "justifications": {
+    "durability": "tests/test_a_measurement_run_never_lands.py:477-529 exercises failed-measurement acceptance, ordinary and passing-gate refusals, and a negative control; line 499's stored-ID assertion is weaker because it reuses the ID written into the after arm.",
+    "evidence": "The run manifest and its receipts record the defect reproduction, a mutation that fails with suite-delta-refused, and the focused gate; baseline and after logs both have EXIT=0 with 0 failing IDs.",
+    "fit": "promotion_records.py:1327 follows the module's private predicate style and uses the existing measure_only marker and gate verdict vocabulary.",
+    "goal_fidelity": "promotion_records.py:1695 and :1733-1758 retain added failure IDs for a marked run only when the completion gate is failed, and promotion.py:1023 records that result as measured.",
+    "reuse": "The capability search found _evaluate_suite_delta in promotion_records.py:1400 as the existing suite-delta owner, which this change extends; _measurement_reason in promotion.py:870 owns marker interpretation, and no existing failed-measurement gate predicate was found.",
+    "scope_discipline": "The granted promotion.py extension is recorded in resume-1-advice.txt:1; the commits stay within the granted source/test paths but include unrelated prose rewrites at promotion.py:2024 and nearby comments."
+  },
+  "project": "reckon",
+  "review_node": "review-of-failed-measurement-is-recorded-s16-3b66953c3512",
+  "review_run_id": "r-20261117T155905376441-review-of-failed-measurement-is-recorded-s16-3b66953c3512",
+  "reviewed_base_sha": "f93503d87092ad0440bff2c6a1aff8d184f8eedd",
+  "reviewed_head_sha": "3b66953c3512992091e9d70e720a15cecf03bfdf",
+  "reviewed_run_id": "r-20261117T125353986055-failed-measurement-is-recorded-s16",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T09:58:14.645370+00:00",
+  "total": 109
+}

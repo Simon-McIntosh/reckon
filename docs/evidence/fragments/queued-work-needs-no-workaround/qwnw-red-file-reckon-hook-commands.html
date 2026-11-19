@@ -1,0 +1,76 @@
+<section id="qwnw-red-file-reckon-hook-commands-landing">
+  <h3>The interpreter check reads the writer that registers the inbox hook</h3>
+  <p>One case of the file failed on the primary branch:
+  <code>test_registered_reckon_importing_scripts_use_the_checkout_interpreter</code>.
+  The case builds the set of hook scripts in <code>reckon/hooks/</code> that
+  import the package, then requires that set to equal the scripts registered by
+  the settings writers the case read: <code>reckon sync</code> and
+  <code>install.build_hook_snippet</code>. <code>worker_inbox.py</code> imports
+  <code>reckon._store</code> lazily for its config home and its atomic write, so
+  it is in the first set, while it is registered by neither writer: the inbox
+  hook belongs to the home a fenced run is launched into, merged by
+  <code>install.merge_worker_inbox_hook</code> through
+  <code>install.build_worker_inbox_snippet</code>. The verdict is <strong>test
+  wrong</strong>: the product rule the case states is kept by all three writers,
+  and the product composes the inbox entry with the same
+  <code>interpreter_path</code> the operator-settings entries use. No product
+  line changed.</p>
+  <p>The reproduction, quoted from the base arm at
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, is the population
+  disagreement itself:</p>
+  <pre id="qwnw-red-file-reckon-hook-commands-repro" class="log">FAILED tests/test_reckon_hook_commands.py::test_registered_reckon_importing_scripts_use_the_checkout_interpreter - AssertionError: assert {'coordinator...rker_stop.py'} == {'coordinator...rker_stop.py'}
+
+  Extra items in the right set:
+  'worker_inbox.py'
+
+  Full diff:
+    {
+        'coordinator_obligations.py',
+        'worker_git_guard.py',
+-       'worker_inbox.py',
+        'worker_stop.py',
+    }
+1 failed, 1 passed in 1.11s
+EXIT=1</pre>
+  <table id="qwnw-red-file-reckon-hook-commands-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_registered_reckon_importing_scripts_use_the_checkout_interpreter</code>:
+        <code>assert registered == importing</code> with
+        <code>'worker_inbox.py'</code> extra in the right-hand set</td>
+        <td>test wrong</td>
+        <td>Every hook script that imports the checkout interpreter is launched by
+        the entry that registers it. The inbox hook is registered in a run home
+        rather than the operator's settings, so the rule needs that writer's
+        commands in the population; the population was two writers where the
+        directory holds three.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The repair adds
+  <code>install.build_worker_inbox_snippet()</code> to the command population the
+  case reads, so the inbox entry is held to the same interpreter rule as the rest,
+  and corrects the module docstring from "both hook settings writers" to "every
+  hook settings writer". No assertion was deleted or weakened: the loop's
+  <code>len(tokens) &gt; 1</code> and interpreter-prefix assertions now run over
+  one more entry.</p>
+  <p>Both arms ran as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code>
+  unset in the pytest environment, their logs on shared storage under the run
+  directory:</p>
+  <table id="qwnw-red-file-reckon-hook-commands-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td><td>1 failed, 1 passed — <code>EXIT=1</code></td></tr>
+      <tr><td>head</td><td><code>fdc2443ec9c7f2e97e809df4b7cfed2623e4bdbe</code></td><td>2 passed — <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+  <p>The guard was falsified before it was trusted: composed as a bare script
+  path, the inbox entry makes the loop report
+  <code>assert (1 &gt; 1)</code> for <code>worker_inbox.py</code>, so the
+  strengthened case refuses an inbox command that does not name the checkout's
+  interpreter. A sibling file,
+  <code>tests/test_hook_scripts_correct_their_interpreter.py</code>, is red with
+  the same population gap (<code>KeyError: 'worker_inbox.py'</code>) and is
+  another node's file.</p>
+</section>

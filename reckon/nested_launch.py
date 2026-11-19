@@ -502,7 +502,7 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
-_TASK_REENTRY_TEMPLATE = """import base64, json, os, pathlib, socket, subprocess, sys, tempfile
+_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile
 spec = json.loads(base64.urlsafe_b64decode(sys.argv[-1]))
 recipe = spec["fence"]
 # The recipe's own list, not a copy: a seal this node repairs to the ``-try``
@@ -516,8 +516,30 @@ prefix = recipe["argv"]
 # recipe that names none, or names one this node cannot run, refuses before the
 # task starts and never falls back to running the task unfenced.
 program = str(recipe.get("program") or "")
+carried = recipe.get("carried_program")
+if not isinstance(carried, dict):
+    carried = {}
+name = os.path.basename(prefix[0]) if prefix else "the fence program"
+
+def _not_started(detail):
+    sys.stderr.write(
+        "fence program %s cannot run on %s: %s; the job's task was "
+        "not started and the fence was not dropped\\n"
+        % (name, socket.gethostname(), detail))
+    raise SystemExit(_FENCE_PROGRAM_STATUS)
+
+def _checksum(value):
+    text = str(value or "").strip().lower()
+    return text[7:] if text.startswith("sha256:") else text
+
+def _digest(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for block in iter(lambda: stream.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
 if not (os.path.isabs(program) and os.access(program, os.X_OK)):
-    name = os.path.basename(prefix[0]) if prefix else "the fence program"
     if program and os.path.isabs(program):
         where = "%s (%s)" % (program, "absent" if not os.path.exists(program)
                              else "not executable")
@@ -525,11 +547,29 @@ if not (os.path.isabs(program) and os.access(program, os.X_OK)):
         where = "%s (not an absolute path)" % program
     else:
         where = "no carried location; PATH=%s was not searched" % os.environ.get("PATH", "")
-    sys.stderr.write(
-        "fence program %s cannot run on %s: looked at %s; the job's task was "
-        "not started and the fence was not dropped\\n"
-        % (name, socket.gethostname(), where))
-    raise SystemExit(_FENCE_PROGRAM_STATUS)
+    carried_path = str(carried.get("path") or "")
+    if not carried_path:
+        _not_started("looked at %s" % where)
+    # A carried program on shared storage is used only when this node cannot
+    # run the one its dispatcher resolved, and only after its bytes match the
+    # checksum the flight settings recorded. An absent file or a different
+    # digest refuses before the task starts; neither ever falls back to a
+    # search of this node's path.
+    if not os.path.isfile(carried_path):
+        _not_started("looked at %s and the carried location %s (absent)"
+                     % (where, carried_path))
+    held = _checksum(carried.get("checksum"))
+    if not held:
+        _not_started("the carried location %s records no checksum to verify"
+                     % carried_path)
+    found = _digest(carried_path)
+    if found != held:
+        _not_started("the carried location %s does not match its recorded "
+                     "checksum: recorded %s, found %s"
+                     % (carried_path, held, found))
+    program = carried_path
+if not (os.path.isabs(program) and os.access(program, os.X_OK)):
+    _not_started("looked at %s (not executable)" % program)
 # Every later step runs the carried location: the prepare step and the task's
 # own fence both read prefix[0], so one substitution here is what stops either
 # from searching the job node's path.

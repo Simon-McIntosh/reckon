@@ -97,12 +97,17 @@ def _deliver(repo: Path) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def _complete(repo: Path, log: Path, exit_status: int):
-    """Drive the node's promotion with the evidence check as its gate."""
-    check = (
+def _declared_check() -> str:
+    """The node's declared check: it passes only on the delivered fragment."""
+    return (
         f'{sys.executable} -c "import pathlib,sys; '
         f"sys.exit(not pathlib.Path('{FRAGMENT}').exists())\""
     )
+
+
+def _complete(repo: Path, log: Path, exit_status: int):
+    """Drive the node's promotion with the evidence check as its gate."""
+    check = _declared_check()
     return CliRunner().invoke(
         cli_main,
         [
@@ -140,9 +145,16 @@ def test_an_evidence_only_node_lands_on_its_declared_check(
     result = _complete(repo, log, 0)
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    # A completion's reply is bounded: it names the path its whole receipt was
+    # written to, and the landed record is read there.
+    receipt = json.loads(result.output)
+    landed = json.loads(Path(receipt["record_path"]).read_text(encoding="utf-8"))
+    record = landed["record"]
     assert record["gate"] == "passed"
+    assert record["gate_check"]["command"] == _declared_check()
+    assert record["gate_check"]["exit_status"] == 0
     assert record["negative_control"]["verdict"] == "exempt"
+    assert record["negative_control"]["reason"] == "node-writes-no-test-path"
     assert record["promoted_revision"] == head
 
 

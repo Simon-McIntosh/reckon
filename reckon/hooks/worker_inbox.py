@@ -28,6 +28,7 @@ tool call of every worker carrying it.
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import json
 import os
 import socket
@@ -37,6 +38,25 @@ import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
+
+_bootstrap_path = Path(__file__).with_name("interpreter_bootstrap.py")
+_bootstrap_spec = importlib.util.spec_from_file_location(
+    "interpreter_bootstrap", _bootstrap_path
+)
+_bootstrap = importlib.util.module_from_spec(_bootstrap_spec)
+_bootstrap_spec.loader.exec_module(_bootstrap)
+
+
+def _interpreter_error() -> str | None:
+    """Hand off to this checkout's interpreter, or return why that failed.
+
+    Run from :func:`main` rather than at import: the fleet and the MCP view
+    import this module to compose messages, and a module that re-executes the
+    process as a side effect of being imported would replace that caller with
+    this hook.
+    """
+    return _bootstrap.ensure_interpreter(__file__)
+
 
 # The harness event this hook answers, and the tool whose payload names the run.
 HOOK_EVENT = "PostToolUse"
@@ -393,6 +413,14 @@ def _manifest_says_none(text: str) -> bool:
 
 
 def main() -> int:
+    error = _interpreter_error()
+    if error:
+        # The inbox cannot be read under this interpreter, so a silent exit
+        # would drop the coordinator's messages with nothing reporting it. The
+        # message goes to stderr and the exit is non-zero, which the harness
+        # surfaces without blocking the tool call this hook followed.
+        sys.stderr.write(error + "\n")
+        return 1
     raw = sys.stdin.read()
     try:
         payload = json.loads(raw) if raw.strip() else {}

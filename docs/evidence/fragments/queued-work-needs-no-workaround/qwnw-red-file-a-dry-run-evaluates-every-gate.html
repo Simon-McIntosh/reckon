@@ -1,0 +1,30 @@
+<section id="qwnw-red-file-a-dry-run-evaluates-every-gate-cause">
+<h2>One cause, and it is the test's</h2>
+<p><code>tests/test_a_dry_run_evaluates_every_gate.py</code> failed one of its two cases on the primary branch at <code>4584a203aa</code>: the live-dispatch arm raised <code>JSONDecodeError</code> before reaching any assertion. The payload helper decoded the first line of click's combined <code>result.output</code>, and a real dispatch writes its one JSON document on stdout while the dispatcher writes <code>reckon: created run &lt;id&gt;</code> on stderr, so the notice came first. The product's rule is unchanged and intended: the document is stdout's, the progress notice is stderr's. The test encoded an older rule and is updated to read <code>result.stdout</code>, the way <code>tests/test_dispatch_names_a_model.py</code> already reads the same document. No assertion was deleted or weakened; only <code>_payload</code>'s source of the document changed.</p>
+</section>
+
+<section id="qwnw-red-file-a-dry-run-evaluates-every-gate-negative-control">
+<h2>Negative control: the base revision, as a job on all_debug</h2>
+<pre># revision: 4584a203aafa020e0709da3db0bb51c7a94ade41
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063841128508-qwnw-red-file-a-dry-run-evaluates-every-gate/base-tree
+# host: 98dci4-clu-3141.iter.org
+# job: 1330282
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_dry_run_evaluates_every_gate.py
+.F                                                                       [100%]
+FAILED tests/test_a_dry_run_evaluates_every_gate.py::test_a_dry_run_routes_a_held_node_where_the_launch_routes_it - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 1 passed in 2.38s
+EXIT=1</pre>
+<p>The decoded string was the stderr notice: <code>reckon: created run r-20261119T073955239493-held-local</code>.</p>
+</section>
+
+<section id="qwnw-red-file-a-dry-run-evaluates-every-gate-head-run">
+<h2>Head run: the named file passes in full, as a job on all_debug</h2>
+<pre># revision: 64eddd1cfe17ac65bbced3797dd204657826a4bd
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-653e4ff76f81-T6UbRT/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_dry_run_evaluates_every_gate.py'
+..                                                                       [100%]
+2 passed in 0.97s
+EXIT=0</pre>
+<p>A second head job printed the import the gate resolved from its scratch tree, and the same two cases passed there: <code>module.__file__: /tmp/mcintos-landing-328875182188-MNufCa/tree/reckon/crew/dispatch.py</code>, <code>module.cwd: /tmp/mcintos-landing-328875182188-MNufCa/tree</code>.</p>
+</section>

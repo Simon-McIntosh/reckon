@@ -95,8 +95,12 @@ def test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session(
     ledger.register_member(
         "proj", "keeper", harness="worker", root=repository, commit=True
     )
-    roster_path = ledger.ledger_path("proj", repository)
-    roster_before = roster_path.read_bytes()
+    roster_before = ledger.members("proj", root=repository)
+    assert [entry["id"] for entry in roster_before] == ["keeper"]
+    # Registration is a store-only transaction: the roster lives in the run
+    # store, and no committed ``crew.json`` is written for it.
+    committed_roster = ledger.ledger_path("proj", repository)
+    assert not committed_roster.exists()
 
     def launch(node_id: str, coordinator_session: str) -> dict:
         return crew.dispatch(
@@ -125,7 +129,7 @@ def test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session(
     assert {entry["id"] for entry in ledger.members("proj", root=repository)} == {
         "keeper"
     }
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.members("proj", root=repository) == roster_before
 
     captured_session = "019ff509-8a60-7723-94fd-65942a6d8faa"
     Path(first["log_path"]).write_text(
@@ -146,7 +150,7 @@ def test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session(
     assert captured["session_id"] == captured_session
     assert captured["session_harness"] == "codex"
     assert captured["session_model"] == "some-model"
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.members("proj", root=repository) == roster_before
 
     # A later dispatch from the same coordinator is a third disposable identity:
     # it composes no session, and the record names the task rule as the reason.

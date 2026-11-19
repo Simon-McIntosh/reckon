@@ -1,22 +1,27 @@
 """A composed plan review is a first attempt, not a redispatch.
 
 Every review that ``crew review --plan <slug>`` composes dispatches under one
-node id, ``plan-review-of-<slug>``. ``dispatch()`` reads any earlier committed run
-with the same node id as a previous attempt, so a fresh review of a revised plan
-was recorded as a redispatch at attempt 2, 3 and higher — a number that means
-nothing to a reader who takes it for a retry. A composed plan review now carries
-a marker in its dispatch options, and ``dispatch()`` reads it to record a first
-attempt: attempt 1, attempt_kind ``dispatch`` and no redispatch lineage. The
-marker rides the dispatch options onto the queued record the admission pass
-(in ``reckon/crew/queue_admission.py``) replays, so a review the lane holds and
-later launches records a first attempt too. Any other node dispatched again
-under its own node id keeps the redispatch it records today.
+node id for its plan and rubric — ``plan-review-of-<slug>`` for the content
+rubric and ``plan-review-of-<slug>-design`` for the design rubric, which names
+itself after the plan so two reviews of one plan can run together; the cases
+below compose the design review, the rubric the command defaults to.
+``dispatch()`` reads any earlier committed run with the same node id as a
+previous attempt, so a fresh review of a revised plan was recorded as a
+redispatch at attempt 2, 3 and higher — a number that means nothing to a reader
+who takes it for a retry. A composed plan review now carries a marker in its
+dispatch options, and ``dispatch()`` reads it to record a first attempt: attempt
+1, attempt_kind ``dispatch`` and no redispatch lineage. The marker rides the
+dispatch options onto the queued record the admission pass (in
+``reckon/crew/queue_admission.py``) replays, so a review the lane holds and later
+launches records a first attempt too. Any other node dispatched again under its
+own node id keeps the redispatch it records today.
 
 Every case drives the real compose and the real ``dispatch()``: a helper-level
 assertion is how the wrong attempt number stayed invisible. Each case seeds the
-prior committed run it needs through the ledger, which is the row a promotion
-commits, and asserts that row is present where ``dispatch()`` reads it, so a
-first-attempt result cannot stand in for a missing precondition.
+prior committed run it needs through the run store, which is the seam a
+promotion commits a run's row to and the one a launch reads a node's rows from,
+and asserts that row is present where ``dispatch()`` reads it, so a first-attempt
+result cannot stand in for a missing precondition.
 
 Declared negative control: with the composed review dispatched as before — the
 marker stripped from its dispatch options — the second review records attempt 2
@@ -33,16 +38,19 @@ from types import SimpleNamespace
 
 import pytest
 
-from reckon import crew, flight, ledger
+from reckon import crew, flight, run_store
 from reckon.crew import recovery, runs
 from reckon.crew.dispatch_admission import LanePaused
+from reckon.crew.dispatching import preparation
+from reckon.crew.recovery_review_subject import PLAN_REVIEW_NODE_PREFIX
+from reckon.crew.repair import PLAN_REVIEW_RUBRIC_SUFFIX
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "sample"
 PLAN_SLUG = "fixture"
 PLAN_VERSION = 3
-PLAN_REVIEW_NODE = f"plan-review-of-{PLAN_SLUG}"
+PLAN_REVIEW_NODE = f"{PLAN_REVIEW_NODE_PREFIX}{PLAN_SLUG}{PLAN_REVIEW_RUBRIC_SUFFIX}"
 IMPL_NODE = "impl-node"
 PRIOR_AT = "2026-10-15T00:00:00Z"
 
@@ -107,34 +115,37 @@ def _subject():
 def _commit_prior_row(
     repo: Path, node_id: str, *, run_id: str, gate: str = "passed"
 ) -> None:
-    """Commit one ledger row standing for a node's earlier completed run.
+    """Commit one stored row standing for a node's earlier completed run.
 
-    This is the row a promotion writes, and the one ``dispatch()`` reads back
-    through ``ledger.runs()`` when it decides a node's attempt number. Seeding it
-    directly lets a case state the precondition — an earlier run of this node id
-    is committed — without a full promotion of a run the case is not about.
+    ``run_store.append`` is the seam a promotion commits a run's row to, and the
+    run store is where ``dispatch()`` reads a node's earlier rows when it decides
+    its attempt number, so the store is where this precondition belongs. Seeding
+    it directly lets a case state the precondition — an earlier run of this node
+    id is committed — without a full promotion of a run the case is not about.
     """
-    data, version = ledger.load(PROJECT, root=repo)
-    data["runs"].append(
+    run_store.append(
+        PROJECT,
         {
             "run_id": run_id,
             "project": PROJECT,
             "node": node_id,
             "plan": PLAN_SLUG,
-            "role": "review" if node_id.startswith("plan-review-of-") else "implement",
+            "role": "review"
+            if node_id.startswith(PLAN_REVIEW_NODE_PREFIX)
+            else "implement",
             "gate": gate,
             "attempt": 1,
             "lineage": None,
             "created_at": PRIOR_AT,
             "dispatched_at": PRIOR_AT,
             "completed_at": PRIOR_AT,
-        }
+        },
     )
-    ledger.write(PROJECT, data, version, root=repo)
     # Positive control: the precondition is present where dispatch() reads it, so
     # a first-attempt result cannot pass on a seeding that silently did nothing.
     assert any(
-        str(row.get("node") or "") == node_id for row in ledger.runs(PROJECT, root=repo)
+        str(row.get("node") or "") == node_id
+        for row in preparation._committed_node_runs(PROJECT, repo, node_id)
     ), f"the prior run of {node_id} is not committed where dispatch() reads it"
 
 

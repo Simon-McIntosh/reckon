@@ -88,8 +88,11 @@ def test_a_fenced_launch_drops_an_inherited_git_shim() -> None:
         {"PATH": inherited}, facts=_facts(inside=False), fenced=True
     )
 
+    # The scheduler shims precede every inherited entry on a fenced worker's
+    # path whether or not the host sits in an allocation, so a task it submits
+    # re-enters the fence; the git shim is dropped all the same.
     assert GIT_SHIMS not in _entries(searched)
-    assert _entries(searched) == ["/usr/bin"]
+    assert _entries(searched) == [str(shim_directory()), "/usr/bin"]
 
 
 @pytest.mark.parametrize(("fenced", "carries_shim"), [(True, False), (False, True)])

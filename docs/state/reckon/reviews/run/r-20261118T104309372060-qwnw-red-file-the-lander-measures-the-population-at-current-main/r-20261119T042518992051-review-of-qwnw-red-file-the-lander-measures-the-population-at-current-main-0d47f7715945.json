@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1762 _verified_measurement -> _measure_delivery (refresh at the moved primary)",
+    "reckon/crew/queue_landing.py:1769 _verified_measurement refusal 'the primary moved again during the refreshed measurement'",
+    "reckon/crew/queue_landing.py:839 _measurement_record (the record the test reads back)",
+    "reckon/crew/promotion_requests.py PromotionService.tick/settle (driven by _drain_promotion)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:25:25Z",
+  "findings": [],
+  "head_log_revision": "3a3f5f2bbd74bcd371a9bdd004e91f1ad5813e79",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is test-only, so no runtime code calls it; the production paths it drives and that were read for this verdict are reckon/crew/queue_landing.py:1762 _measure_delivery inside _verified_measurement, the guard at reckon/crew/queue_landing.py:1769, and reckon/crew/promotion_requests.py:PromotionService.tick.",
+    "diff": "read both commits against 42fe90d0b0: 3a3f5f2bbd rewrites test_primary_advance_after_measurement_refuses_the_promotion into test_primary_advance_after_measurement_is_measured_again_at_the_new_main and splits the retained refusal into test_a_primary_moving_again_during_the_refresh_refuses_the_promotion (+44/-3), and 0d47f7715945 adds the 24-line evidence fragment; no product file changed.",
+    "done_when": "the done_when names the file passing in full at head, a base arm taken first, a per-cause verdict, and an arm over the test files importing what changed; the manifest records the gate (scoped-gate-1795059600628585858.log: 25 passed, EXIT=0), the base arm (negative-control-base.log at 42fe90d0b0: 1 failed, 23 passed, FAILED test_primary_advance_after_measurement_refuses_the_promotion, EXIT=1), the importer population measured empty with a live control seeing 39 importers of reckon/crew/queue_landing.py, and inline JSON arms at full 40-character revisions that carry zero failures - but those arms run the fence suite (tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py) rather than the importing population the done_when names.",
+    "goal": "the node goal is that tests/test_the_lander_measures_the_population.py passes in full; the scoped-gate log records 25 passed EXIT=0 at 3a3f5f2bbd, and the case that asserted the removed 'the measured primary changed before completion' refusal was rewritten to the refresh rule commit acf72141c9 substituted.",
+    "manifest": "read; status complete, commits 3a3f5f2bbd74bcd371a9bdd004e91f1ad5813e79 and 0d47f7715945aef29ea823f5ae43bf189b359f85, tests the resolved gate command, test_logs naming scoped-gate-1795059600628585858.log plus the two arm logs, negative_control_log the base arm, and baseline_suite/after_suite inline JSON at 42fe90d0b0/3a3f5f2bbd with exit_status 0, completed true and failure_ids [] each.",
+    "write_paths": "the declared write paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; the two-path diff touches tests/test_the_lander_measures_the_population.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-measures-the-population-at-current-main.html, both inside them."
+  },
+  "justifications": {
+    "durability": "the rewritten case reddens if the refresh is dropped (queue_landing.py:1762 removed leaves record_main equal to before, and the merge-base --is-ancestor assertion at tests/test_the_lander_measures_the_population.py:317 fails), and the new case at :347 reddens if the guard at queue_landing.py:1769 is removed because the receipt would read PROMOTED; a grep over tests/ found no other case carrying that guard.",
+    "evidence": "the gate asserts the done_when's core measure with its EXIT line at scoped-gate-1795059600628585858.log and the base arm is red at negative-control-base.log, but the recorded suite arms are the fence pair named in manifest.md rather than the importing population the done_when names.",
+    "fit": "the two cases at tests/test_the_lander_measures_the_population.py:306 and :335 follow the file's fixture-and-_drain_promotion idiom, reuse its _git/_commit helpers, and name no plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_the_lander_measures_the_population.py reads 25 passed at 3a3f5f2bbd in scoped-gate-1795059600628585858.log, and the rewritten case at :306 now asserts the rule reckon/crew/queue_landing.py:1769 keeps rather than the refusal acf72141c9 removed.",
+    "reuse": "the diff adds no production definition and reads the measurement through the existing owner queue_landing._measurement_record at :306, while the _measure_delivery monkeypatch seam at :347 is the one already used at tests/test_concurrent_edits_land_unattended.py:92.",
+    "scope_discipline": "git diff --stat 42fe90d0b0..0d47f7715945 lists exactly tests/test_the_lander_measures_the_population.py and the fragment, both inside the declared write paths, and the fragment carries no figure or plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_the_lander_measures_the_population.py passes in full; the scoped-gate log records 25 passed EXIT=0 at 3a3f5f2bbd, and the case that asserted the removed 'the measured primary changed before completion' refusal was rewritten to the refresh rule commit acf72141c9 substituted.\nVERDICT done_when: the done_when names the file passing in full at head, a base arm taken first, a per-cause verdict, and an arm over the test files importing what changed; the manifest records the gate (scoped-gate-1795059600628585858.log: 25 passed, EXIT=0), the base arm (negative-control-base.log at 42fe90d0b0: 1 failed, 23 passed, FAILED test_primary_advance_after_measurement_refuses_the_promotion, EXIT=1), the importer population measured empty with a live control seeing 39 importers of reckon/crew/queue_landing.py, and inline JSON arms at full 40-character revisions that carry zero failures - but those arms run the fence suite (tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py) rather than the importing population the done_when names.\nVERDICT write_paths: the declared write paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; the two-path diff touches tests/test_the_lander_measures_the_population.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lander-measures-the-population-at-current-main.html, both inside them.\nVERDICT manifest: read; status complete, commits 3a3f5f2bbd74bcd371a9bdd004e91f1ad5813e79 and 0d47f7715945aef29ea823f5ae43bf189b359f85, tests the resolved gate command, test_logs naming scoped-gate-1795059600628585858.log plus the two arm logs, negative_control_log the base arm, and baseline_suite/after_suite inline JSON at 42fe90d0b0/3a3f5f2bbd with exit_status 0, completed true and failure_ids [] each.\nVERDICT diff: read both commits against 42fe90d0b0: 3a3f5f2bbd rewrites test_primary_advance_after_measurement_refuses_the_promotion into test_primary_advance_after_measurement_is_measured_again_at_the_new_main and splits the retained refusal into test_a_primary_moving_again_during_the_refresh_refuses_the_promotion (+44/-3), and 0d47f7715945 adds the 24-line evidence fragment; no product file changed.\nCALL_SITES: reckon/crew/queue_landing.py:1762 _verified_measurement -> _measure_delivery (refresh at the moved primary), reckon/crew/queue_landing.py:1769 _verified_measurement refusal 'the primary moved again during the refreshed measurement', reckon/crew/queue_landing.py:839 _measurement_record (the record the test reads back), reckon/crew/promotion_requests.py PromotionService.tick/settle (driven by _drain_promotion)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_lander_measures_the_population.py reads 25 passed at 3a3f5f2bbd in scoped-gate-1795059600628585858.log, and the rewritten case at :306 now asserts the rule reckon/crew/queue_landing.py:1769 keeps rather than the refusal acf72141c9 removed.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate asserts the done_when's core measure with its EXIT line at scoped-gate-1795059600628585858.log and the base arm is red at negative-control-base.log, but the recorded suite arms are the fence pair named in manifest.md rather than the importing population the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 42fe90d0b0..0d47f7715945 lists exactly tests/test_the_lander_measures_the_population.py and the fragment, both inside the declared write paths, and the fragment carries no figure or plan edit.\nSCORE durability: 19\nJUSTIFICATION durability: the rewritten case reddens if the refresh is dropped (queue_landing.py:1762 removed leaves record_main equal to before, and the merge-base --is-ancestor assertion at tests/test_the_lander_measures_the_population.py:317 fails), and the new case at :347 reddens if the guard at queue_landing.py:1769 is removed because the receipt would read PROMOTED; a grep over tests/ found no other case carrying that guard.\nSCORE fit: 19\nJUSTIFICATION fit: the two cases at tests/test_the_lander_measures_the_population.py:306 and :335 follow the file's fixture-and-_drain_promotion idiom, reuse its _git/_commit helpers, and name no plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition and reads the measurement through the existing owner queue_landing._measurement_record at :306, while the _measure_delivery monkeypatch seam at :347 is the one already used at tests/test_concurrent_edits_land_unattended.py:92.\n",
+  "review_run_id": "r-20261119T042518992051-review-of-qwnw-red-file-the-lander-measures-the-population-at-current-main-0d47f7715945",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "0d47f7715945aef29ea823f5ae43bf189b359f85",
+  "reviewed_run_id": "r-20261118T104309372060-qwnw-red-file-the-lander-measures-the-population-at-current-main",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T042518992051-review-of-qwnw-red-file-the-lander-measures-the-population-at-current-main-0d47f7715945"
+  },
+  "reviewer_run_id": "r-20261119T042518992051-review-of-qwnw-red-file-the-lander-measures-the-population-at-current-main-0d47f7715945",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:00:06.140757+00:00",
+  "total": 113
+}

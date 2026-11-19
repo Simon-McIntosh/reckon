@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/admission/service.py:445, reckon/crew/promotion.py:1489, reckon/crew/queue_landing.py:1829, reckon/crew/crew_run_commands.py:4023",
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:06:54Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promoted_run_settles_as_promoted.py",
+      "line": 128,
+      "severity": "non-blocking",
+      "text": "all four cases plant a live pointer and a location that exists, so _mark_pointer's FileNotFoundError arm (reckon/crew/promotion_requests.py:371) and the OSError arm of _location_commits (:876) are never exercised; reverting either leaves the suite green, yet the 54 missing-file failures the plan measured are that path."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 909,
+      "severity": "non-blocking",
+      "text": "_failure_text and _raising_site (:896) re-implement the capability owned by reckon/crew/admission/attempts.py:36 _failure_with_origin -- naming a failure by its innermost raising frame -- instead of extending that owner to emit the module-qualified site the done_when asks for, so the repository now renders a stored failure's origin in two places."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 371,
+      "severity": "non-blocking",
+      "text": "_mark_pointer's catch was widened from PointerLockHeldError to every CrewError, a category the new comment does not name: a torn or unreadable pointer now leaves the request recorded with no pointer status instead of surfacing the refusal it used to raise."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 1259,
+      "severity": "non-blocking",
+      "text": "_outcome_already_recorded is called from inside the except handler and calls _read, which raises on a torn receipt (json.JSONDecodeError) or a non-object receipt (CrewError); that escapes _run's thread and leaves the request RUNNING with no outcome recorded, so the fault handler can itself fault."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_promoted_run_settles_as_promoted.py:154 reddens if _outcome_already_recorded is removed and :186 reddens if _raising_site returns another frame, but :128 leaves the vanished-pointer and missing-file arms of promotion_requests.py:371 and :876 unexercised.",
+    "evidence": "the after-arm log (after_suite-1795120706196347451.log:7 '62 passed') and base-arm log (baseline_suite-1795120631203428251.log:7 '58 passed') record the measure, but nothing in the gate runs the ruff format --check the done_when requires and no partition is named in the log.",
+    "fit": "reckon/crew/promotion_requests.py:839-912 follows the module's private-helper and docstring idiom, though the leading `result: ... = None` at :1183 is never read and the name _failure_text already means a different renderer in reckon/crew/queue_admission.py:73.",
+    "goal_fidelity": "reckon/crew/promotion_requests.py:839 reads the commit list from run_store.stored_run_rows by run id and :876 answers an undecodable or missing location as no commit, which is the settlement the goal names.",
+    "reuse": "reckon/crew/promotion_requests.py:909 duplicates reckon/crew/admission/attempts.py:36 _failure_with_origin, while _stored_commits (:839) correctly extends run_store.stored_run_rows rather than reading the store itself.",
+    "scope_discipline": "git diff 28fbf2bc..c82bf600 changes only reckon/crew/promotion_requests.py and tests/test_a_promoted_run_settles_as_promoted.py, both declared write paths, and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T204435795097-review-of-qwnw-a-promoted-run-settles-as-promoted-c82bf60013d1",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "c82bf60013d152cbec0a9a5cdcace735ce369e58",
+  "reviewed_run_id": "r-20261119T184800234721-qwnw-a-promoted-run-settles-as-promoted",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:22:37.188745+00:00",
+  "total": 86,
+  "verdicts": {
+    "diff": "VERDICT diff: read both commits against 28fbf2bc; f8294e366b rewrites the promoted-commit lookup (declared, stored by identity, tolerant location read), tolerates a vanished pointer and preserves a durable outcome, and c82bf60013 adds _location_commits as the last fallback (+24 -1) after the first commit regressed an existing receipt test.",
+    "done_when": "VERDICT done_when: the done_when names tests/test_a_promoted_run_settles_as_promoted.py with four cases, a negative control, an all_debug run and a ruff format check; the file carries the four cases at lines 134, 143, 154 and 186, the after arm records 62 passed EXIT=0 and the negative control 3 failed EXIT=1, but no ruff format run and no partition are recorded.",
+    "goal": "VERDICT goal: the goal is that a promotion request whose run was promoted settles as promoted with no error; reckon/crew/promotion_requests.py:839 _stored_commits reads commits by run identity from the store and :863 _location_commits answers a non-document location as no commit, so the close no longer decodes the store as JSON.",
+    "manifest": "VERDICT manifest: read; it records the after arm at c82bf600 (62 passed, EXIT=0), the base arm at 28fbf2bc (58 passed, EXIT=0) with log paths that carry those summaries, a negative control at EXIT=1, and changed_paths naming those two files; its artifacts line says +86 -13 where git reports +108 -14, and it records no ruff format run though the done_when requires one.",
+    "write_paths": "VERDICT write_paths: the declared paths are reckon/crew/promotion_requests.py, reckon/crew/stage_receipts.py, tests/test_a_promoted_run_settles_as_promoted.py and three docs/evidence or docs/figures paths; the diff touches only the first and third, both inside that set, and stage_receipts.py is untouched."
+  }
+}

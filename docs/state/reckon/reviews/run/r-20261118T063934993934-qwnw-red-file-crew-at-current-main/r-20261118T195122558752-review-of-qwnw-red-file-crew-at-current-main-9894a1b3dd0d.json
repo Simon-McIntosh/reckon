@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:26:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html",
+      "id": "f19e0099ecd",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment, the manifest's after_suite and the head gate all measure 86c3a7204b while the run head is 9894a1b3, so no recorded measurement covers the commit being promoted; it is harmless because the head commit adds only this fragment, but the measured revision and the reviewed revision are one commit apart."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/after_suite-1795030467650039222.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/baseline_suite-1795030392681577943.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base 8c7ea625; 86c3a7204b replaces one roster comparison and adds the fixture helper at tests/test_crew.py:3431 plus four calls to it with the four cases' assertions untouched, and 9894a1b3 adds only the 67-line evidence fragment.",
+    "done_when": "the done_when asks for tests/test_crew.py at head as an all_debug job with SLURM_JOB_ID unset, a base run whose five causes each carry a verdict, and both suite arms as inline JSON with 40-character revisions; the manifest's tests line is the head-gate.sh wrapper whose body runs \"-q tests/test_crew.py\" (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/head-gate.sh:7), and its base, arm and control records are all present, with one arm-versus-head gap named below.",
+    "goal": "the node's goal is tests/test_crew.py passing in full on the primary branch; the head gate at 86c3a7204b reads \"191 passed in 162.66s\" and EXIT=0 at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/scoped-gate-1795030305859947793.log:11, clearing all five ids the base run reports red.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/manifest.md; it records status complete, commits 86c3a7204b then 9894a1b3, the scoped gate at 191 passed EXIT=0, the control at 5 failed 186 passed EXIT=1, both suite arms at 58 passed EXIT=0, and retry 1001 attributed to an mktemp ENOSPC on 98dci4-clu-3141, which scoped-gate-1795029566308191338.log:2-4 confirms verbatim.",
+    "write_paths": "the declared paths are reckon, tests, the plan's fragment directory and the node's figure directory; git diff --stat 8c7ea625..9894a1b3 touches exactly tests/test_crew.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html, both inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_crew.py:3690 reddens by exactly base-test_crew.log:168's \"assert 'running' == 'blocked'\" if the classification withdraws a terminal word outside the stall window, and the roster comparison at tests/test_crew.py:3197 compares two reads separated by the dispatch through ledger.members at reckon/ledger.py:3283, which run_store.auxiliary at reckon/run_store.py:1244 decodes fresh from the store on each call, so a second dispatch that rewrote the roster would leave the two sides unequal.",
+    "evidence": "the gate and both arms are recorded with their commands and 40-character revisions in the manifest, but the after arm and the head gate measure 86c3a7204b (after_suite-1795030467650039222.log:2) rather than the run head 9894a1b3.",
+    "fit": "tests/test_crew.py:3431 sits among the file's own fixture helpers (_deliver_manifest at tests/test_crew.py:3424 and _predate_delivery at tests/test_crew.py:3459), uses the already-imported json, os, datetime and runs names, and takes its window from recovery.LOG_STALE_AFTER_SECONDS rather than a literal.",
+    "goal_fidelity": "the landed change at tests/test_crew.py:3197 and tests/test_crew.py:3690-3780 leaves base-test_crew.log:167-180 with no failing id at head, and scoped-gate-1795030305859947793.log:11 reads 191 passed EXIT=0.",
+    "reuse": "the only added definition is tests/test_crew.py:3431, and the roster capability it needed is taken from its owner reckon/ledger.py:3283 rather than read a different way; a search of tests/ for an existing helper that ages a run's attempt clocks found only per-test inline os.utime calls (tests/test_a_resumed_attempt_is_read_through_its_own_records.py:120) and no shared owner, so the helper cannot be a fork of one.",
+    "scope_discipline": "`git diff --stat 8c7ea625..9894a1b3` lists only tests/test_crew.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html, and no product module changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is tests/test_crew.py passing in full on the primary branch; the head gate at 86c3a7204b reads \"191 passed in 162.66s\" and EXIT=0 at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/scoped-gate-1795030305859947793.log:11, clearing all five ids the base run reports red.\nVERDICT done_when: the done_when asks for tests/test_crew.py at head as an all_debug job with SLURM_JOB_ID unset, a base run whose five causes each carry a verdict, and both suite arms as inline JSON with 40-character revisions; the manifest's tests line is the head-gate.sh wrapper whose body runs \"-q tests/test_crew.py\" (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/head-gate.sh:7), and its base, arm and control records are all present, with one arm-versus-head gap named below.\nVERDICT write_paths: the declared paths are reckon, tests, the plan's fragment directory and the node's figure directory; git diff --stat 8c7ea625..9894a1b3 touches exactly tests/test_crew.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html, both inside the declared set.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063934993934-qwnw-red-file-crew-at-current-main/manifest.md; it records status complete, commits 86c3a7204b then 9894a1b3, the scoped gate at 191 passed EXIT=0, the control at 5 failed 186 passed EXIT=1, both suite arms at 58 passed EXIT=0, and retry 1001 attributed to an mktemp ENOSPC on 98dci4-clu-3141, which scoped-gate-1795029566308191338.log:2-4 confirms verbatim.\nVERDICT diff: read both commits against base 8c7ea625; 86c3a7204b replaces one roster comparison and adds the fixture helper at tests/test_crew.py:3431 plus four calls to it with the four cases' assertions untouched, and 9894a1b3 adds only the 67-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the landed change at tests/test_crew.py:3197 and tests/test_crew.py:3690-3780 leaves base-test_crew.log:167-180 with no failing id at head, and scoped-gate-1795030305859947793.log:11 reads 191 passed EXIT=0.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate and both arms are recorded with their commands and 40-character revisions in the manifest, but the after arm and the head gate measure 86c3a7204b (after_suite-1795030467650039222.log:2) rather than the run head 9894a1b3.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 8c7ea625..9894a1b3` lists only tests/test_crew.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html, and no product module changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew.py:3690 reddens by exactly base-test_crew.log:168's \"assert 'running' == 'blocked'\" if the classification withdraws a terminal word outside the stall window, and the roster comparison at tests/test_crew.py:3197 compares two reads separated by the dispatch through ledger.members at reckon/ledger.py:3283, which run_store.auxiliary at reckon/run_store.py:1244 decodes fresh from the store on each call, so a second dispatch that rewrote the roster would leave the two sides unequal.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_crew.py:3431 sits among the file's own fixture helpers (_deliver_manifest at tests/test_crew.py:3424 and _predate_delivery at tests/test_crew.py:3459), uses the already-imported json, os, datetime and runs names, and takes its window from recovery.LOG_STALE_AFTER_SECONDS rather than a literal.\nSCORE reuse: 20\nJUSTIFICATION reuse: the only added definition is tests/test_crew.py:3431, and the roster capability it needed is taken from its owner reckon/ledger.py:3283 rather than read a different way; a search of tests/ for an existing helper that ages a run's attempt clocks found only per-test inline os.utime calls (tests/test_a_resumed_attempt_is_read_through_its_own_records.py:120) and no shared owner, so the helper cannot be a fork of one.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-at-current-main.html:58 non-blocking: the fragment, the manifest's after_suite and the head gate all measure 86c3a7204b while the run head is 9894a1b3, so no recorded measurement covers the commit being promoted; it is harmless because the head commit adds only this fragment, but the measured revision and the reviewed revision are one commit apart.",
+  "review_run_id": "r-20261118T195122558752-review-of-qwnw-red-file-crew-at-current-main-9894a1b3dd0d",
+  "reviewed_base_sha": "8c7ea625091640c12d6aa56bc8997803ae470037",
+  "reviewed_head_sha": "9894a1b3dd0dc492f8c13db2c13f9c0fbf3308fc",
+  "reviewed_run_id": "r-20261118T063934993934-qwnw-red-file-crew-at-current-main",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:43:03.026232+00:00",
+  "total": 111
+}

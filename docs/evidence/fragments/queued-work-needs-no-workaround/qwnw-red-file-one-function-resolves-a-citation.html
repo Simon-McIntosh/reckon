@@ -1,0 +1,48 @@
+<section>
+<h2>One citation, one resolver</h2>
+<p>At base <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code> the named test failed on
+<code>test_only_the_shared_resolver_peels_a_revision_to_a_commit</code>.
+Its set difference named five sites that resolved a revision to a
+commit by hand; all five now delegate to the shared resolver:
+<code>merge._copy_objects</code>, <code>merge.head_on_remote_branch</code>,
+<code>recovery_classification._primary_branch_revision</code>,
+<code>recovery_review_acceptance._names_a_commit</code> and
+<code>reports._revision_is_committed</code>.</p>
+<p>The named file reports one failure and one pass at base, two passes at head.
+Every test file importing the four touched modules, 159 of them, ran at both
+revisions: base 44 failed, 11 errors, 1516 passed; head 43 failed, 11 errors,
+1517 passed. The head failing set is a subset of the base set, so the change
+adds no failure where those modules are reached.</p>
+<h3>Base run: the red log</h3>
+<pre>
+# revision: 73b9ac21a50d4566b8bc7ec2cf2c49160af28656
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_function_resolves_a_citation.py
+F.                                                                       [100%]
+FAILED tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit
+1 failed, 1 passed in 4.80s
+EXIT=1
+</pre>
+<h3>Head run: the green log</h3>
+<p>The delivered head is measured by the scoped gate recorded in the manifest test_logs, which reports the file passing in full:</p>
+<pre>
+..                                                                       [100%]
+2 passed
+EXIT=0
+</pre>
+<h3>Arms over the importing test files</h3>
+<p>Each run covers the same 159 test files that import one of the four touched modules.</p>
+<pre>
+base revision 73b9ac21a50d4566b8bc7ec2cf2c49160af28656
+     44 failed, 11 errors, 1516 passed, EXIT=1
+head revision 2ac68d544b115c94b0631ee19706740c4a70b074
+     46 failed, 11 errors, 1514 passed, EXIT=1
+head revision ed49ec95b67179b7df65433119f69f736920525f
+     43 failed, 11 errors, 1517 passed, EXIT=1
+</pre>
+<p>At 2ac68d54 the head arm adds three ids over base, all of them
+<code>test_failed_port_22_fetch_retries_over_443</code> on its three parameters: that test drove the
+<code>cat-file</code> probe the change removed, so commit ed49ec95 repoints it at the shared resolver.
+At ed49ec95, against the base run at 73b9ac21, the head set is a strict subset: the one id the
+base run fails and no head run repeats is a lock-age test.
+</p>
+</section>

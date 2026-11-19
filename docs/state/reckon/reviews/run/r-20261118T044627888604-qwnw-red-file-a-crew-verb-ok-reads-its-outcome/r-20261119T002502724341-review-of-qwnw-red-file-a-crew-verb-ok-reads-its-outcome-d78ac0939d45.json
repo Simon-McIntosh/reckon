@@ -1,0 +1,116 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "The delivered diff adds no assertion. The guard the fix relies on is tests/test_a_crew_verb_ok_reads_its_outcome.py:66-90, whose expectation is the empty offender list derived from the source AST rather than from a value the test handed the code under test, so it is independent of the value under test; it reddened on the pre-fix literal, and the review re-ran it at a revision without the fix to see that refusal.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:4315 (@crew.command(name=\"record-merge\") registration)",
+    "reckon/crew_run_commands.py:48 (_emit_crew_result shared by every crew verb)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:10:17Z",
+  "evidence_limits": [
+    "No suite or importer rerun was performed by this review; the reviewed run's logs were read and their FAILED id sets compared.",
+    "The single file the gate names was re-run in the review worktree, which sits on a revision without the fix; that run is a base arm, and the head confirmation is logs/gate-head.log.",
+    "Both armed suite arms pass identically at base and head, so they evidence no regression of those two files rather than discriminating this change."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the guard that makes this fix durable walks dict literals only inside top-level crew_ FunctionDefs of three modules, so the same defect rewritten as a payload key assignment, a variable-valued key, or a literal inside a nested function or a non-crew_ helper stays green; the file pre-exists this node, and a behavioural assertion over crew record-merge's exit code would close that form."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read both commits from 5b0a1f537ef9bbca90907bd16f663732db844fb0; c714b75855 removes one dict key at reckon/crew_run_commands.py:4452 and d78ac0939d adds the 46-line evidence fragment, with no test file, plan or unrelated source touched.",
+    "done_when": "The done_when requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a first base run, one verdict per cause, an importer arm adding no failure and a base negative control; logs/gate-head.log carries \"# slurm_job_id: unset\" beside \"25 passed in 0.99s\" at c714b758557a3d70cef40e8add13736e993a9736, logs/base-test.log holds the base red at 5b0a1f537ef9bbca90907bd16f663732db844fb0, logs/importer-base.log and logs/importer-head.log hold the two 29-file arms, and logs/negative-control.log ends EXIT=1.",
+    "goal": "The source node's goal is to make tests/test_a_crew_verb_ok_reads_its_outcome.py pass in full on the primary branch; commit c714b758557a3d70cef40e8add13736e993a9736 deletes the literal \"ok\": True at reckon/crew_run_commands.py:4452 so _emit_crew_result at :56 derives the command's verdict from the promotion result, and the file is green at the reviewed head.",
+    "manifest": "Read; it records status complete, commits c714b758557a3d70cef40e8add13736e993a9736 and d78ac0939d45cac04f9fe759d5f8450f44b63c5b, the gate and suite commands with full 40-character revisions, baseline and after arms at zero failures, the importer population falling from 22 failed to 21 with no added id, and one cause with the verdict \"product wrong\".",
+    "write_paths": "The source pointer declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's figure path; the two landed paths, reckon/crew_run_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-crew-verb-ok-reads-its-outcome.html, both sit inside them and match the manifest."
+  },
+  "justifications": {
+    "durability": "tests/test_a_crew_verb_ok_reads_its_outcome.py:90 compares the source scan's offenders against [] and reddens with ['crew_record_merge:4452'] when the literal is reinstated, which my run at a revision lacking the fix reproduced.",
+    "evidence": "logs/gate-head.log records \"25 passed in 0.99s\" beside \"# slurm_job_id: unset\" at c714b758557a3d70cef40e8add13736e993a9736, while the two armed arms read 58 passed on both sides at exit 0, a suite that passes identically either side and therefore cannot itself discriminate the change.",
+    "fit": "The change keeps the module's existing _emit_crew_result idiom at reckon/crew_run_commands.py:48 and introduces no new name, symbol or file.",
+    "goal_fidelity": "reckon/crew_run_commands.py:4453 now hands the promotion result to _crew_result_ok through _emit_crew_result at :48-61 instead of fixing True beside it, and my own run of the guard file at a revision without the fix still reddens on crew_record_merge:4452.",
+    "reuse": "No definition is added; the change deletes a shadowing key so the existing owner _crew_result_ok at reckon/crew_dispatch_commands.py:309 decides, and a search of reckon/ for a second verdict rule found none.",
+    "scope_discipline": "The whole delivered diff is one removed dict key at reckon/crew_run_commands.py:4452 plus the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make tests/test_a_crew_verb_ok_reads_its_outcome.py pass in full on the primary branch; commit c714b758557a3d70cef40e8add13736e993a9736 deletes the literal \"ok\": True at reckon/crew_run_commands.py:4452 so _emit_crew_result at :56 derives the command's verdict from the promotion result, and the file is green at the reviewed head.\nVERDICT done_when: The done_when requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a first base run, one verdict per cause, an importer arm adding no failure and a base negative control; logs/gate-head.log carries \"# slurm_job_id: unset\" beside \"25 passed in 0.99s\" at c714b758557a3d70cef40e8add13736e993a9736, logs/base-test.log holds the base red at 5b0a1f537ef9bbca90907bd16f663732db844fb0, logs/importer-base.log and logs/importer-head.log hold the two 29-file arms, and logs/negative-control.log ends EXIT=1.\nVERDICT write_paths: The source pointer declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the node's figure path; the two landed paths, reckon/crew_run_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-crew-verb-ok-reads-its-outcome.html, both sit inside them and match the manifest.\nVERDICT manifest: Read; it records status complete, commits c714b758557a3d70cef40e8add13736e993a9736 and d78ac0939d45cac04f9fe759d5f8450f44b63c5b, the gate and suite commands with full 40-character revisions, baseline and after arms at zero failures, the importer population falling from 22 failed to 21 with no added id, and one cause with the verdict \"product wrong\".\nVERDICT diff: Read both commits from 5b0a1f537ef9bbca90907bd16f663732db844fb0; c714b75855 removes one dict key at reckon/crew_run_commands.py:4452 and d78ac0939d adds the 46-line evidence fragment, with no test file, plan or unrelated source touched.\nCALL_SITES: reckon/crew_run_commands.py:4315 (@crew.command(name=\"record-merge\") registration), reckon/crew_run_commands.py:48 (_emit_crew_result shared by every crew verb)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:4453 now hands the promotion result to _crew_result_ok through _emit_crew_result at :48-61 instead of fixing True beside it, and my own run of the guard file at a revision without the fix still reddens on crew_record_merge:4452.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log records \"25 passed in 0.99s\" beside \"# slurm_job_id: unset\" at c714b758557a3d70cef40e8add13736e993a9736, while the two armed arms read 58 passed on both sides at exit 0, a suite that passes identically either side and therefore cannot itself discriminate the change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The whole delivered diff is one removed dict key at reckon/crew_run_commands.py:4452 plus the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_crew_verb_ok_reads_its_outcome.py:90 compares the source scan's offenders against [] and reddens with ['crew_record_merge:4452'] when the literal is reinstated, which my run at a revision lacking the fix reproduced.\nSCORE fit: 19\nJUSTIFICATION fit: The change keeps the module's existing _emit_crew_result idiom at reckon/crew_run_commands.py:48 and introduces no new name, symbol or file.\nSCORE reuse: 20\nJUSTIFICATION reuse: No definition is added; the change deletes a shadowing key so the existing owner _crew_result_ok at reckon/crew_dispatch_commands.py:309 decides, and a search of reckon/ for a second verdict rule found none.\nFINDING tests/test_a_crew_verb_ok_reads_its_outcome.py:90 non-blocking: the guard that makes this fix durable walks dict literals only inside top-level crew_ FunctionDefs of three modules, so the same defect rewritten as a payload key assignment, a variable-valued key, or a literal inside a nested function or a non-crew_ helper stays green; the file pre-exists this node, and a behavioural assertion over crew record-merge's exit code would close that form.",
+  "reuse_search": {
+    "capabilities": [
+      "deriving a crew command's success verdict from the payload it publishes"
+    ],
+    "judgement": "One owner exists for the verdict rule; the landed change extends it by removing the key that shadowed it and introduces no second derivation.",
+    "owners_opened": [
+      "reckon/crew_dispatch_commands.py:309 _crew_result_ok",
+      "reckon/crew_dispatch_commands.py:349 _emit_crew_result",
+      "reckon/crew_run_commands.py:48 _emit_crew_result"
+    ]
+  },
+  "review_run_id": "r-20261119T002502724341-review-of-qwnw-red-file-a-crew-verb-ok-reads-its-outcome-d78ac0939d45",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "d78ac0939d45cac04f9fe759d5f8450f44b63c5b",
+  "reviewed_run_id": "r-20261118T044627888604-qwnw-red-file-a-crew-verb-ok-reads-its-outcome",
+  "reviewed_worker_commits": [
+    "c714b758557a3d70cef40e8add13736e993a9736",
+    "d78ac0939d45cac04f9fe759d5f8450f44b63c5b"
+  ],
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_derivation": "0 added. Both armed arms in the source manifest record zero failures on each side, and this review's own set difference over the FAILED lines of logs/importer-base.log and logs/importer-head.log yields one id present at base and absent at head (tests/test_a_crew_verb_ok_reads_its_outcome.py::test_crew_emit_sites_do_not_put_literal_success_beside_a_result) and none present at head and absent at base.",
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044627888604-qwnw-red-file-a-crew-verb-ok-reads-its-outcome/logs/suite-after.log",
+      "revision": "c714b758557a3d70cef40e8add13736e993a9736",
+      "summary": "58 passed in 35.56s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044627888604-qwnw-red-file-a-crew-verb-ok-reads-its-outcome/logs/suite-base.log",
+      "revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+      "summary": "58 passed in 35.09s"
+    },
+    "importer_base": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 22,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044627888604-qwnw-red-file-a-crew-verb-ok-reads-its-outcome/logs/importer-base.log",
+      "revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+      "summary": "22 failed, 512 passed in 460.09s (0:07:40)"
+    },
+    "importer_head": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 21,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044627888604-qwnw-red-file-a-crew-verb-ok-reads-its-outcome/logs/importer-head.log",
+      "revision": "c714b758557a3d70cef40e8add13736e993a9736",
+      "summary": "21 failed, 513 passed in 480.30s (0:08:00)"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:37:20.057010+00:00",
+  "total": 114
+}

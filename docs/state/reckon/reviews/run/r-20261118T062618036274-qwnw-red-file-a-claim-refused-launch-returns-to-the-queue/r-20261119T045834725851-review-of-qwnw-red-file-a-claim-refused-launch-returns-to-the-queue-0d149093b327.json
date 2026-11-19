@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite-1795059675445728904.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 ends '58 passed in 35.37s' with no failing id, and after_suite-1795059719214951502.log at 64793cdce464000d665a2d5a189039af4e663856 ends '58 passed in 35.14s' with no failing id, so the set difference of failure ids is empty. Both arm commands name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import nothing this change touches, so the zero is a true measurement of an unrelated population.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:28:55Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the tests: line is truncated to a placeholder with no trailing newline, so the record carries no literal command a shell was handed; promotion fills its gate receipt from this line, and the log header scoped-gate-1795059310821816411.log:5 is the only readable copy of the command."
+    },
+    {
+      "file": "manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "the retry key is written as retry_failures_placeholder with the value x rather than retry_failures, and the record carries no rubric.<dimension> line and no baseline_suite or after_suite JSON, so the self-check and armed-arm fields read as absent although both arm logs sit beside it."
+    },
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "the landing line states the base arm as '(base 42fe90d0: 2 failed, 2 cases)' while negative-control-base.log:86 records '2 failed, 4 passed in 1.60s', and the landing line is the text promotion lands on the plan section."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-refused-launch-returns-to-the-queue.html",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "the head row names 64793cdce464000d665a2d5a189039af4e663856, one commit before the node head 0d149093b3273ead0313a5e637c834efc686b80d, so no gate or suite arm was taken at the reviewed revision; the step holds only transitively, because the intervening commit adds this 21-line static fragment and no collected test imports it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062618036274-qwnw-red-file-a-claim-refused-launch-returns-to-the-queue/baseline_suite-1795059675445728904.log",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "both armed suite arms ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, files this change cannot affect, so the recorded 58-passed pair says nothing about this test file; the evidence for the change is the scoped gate at the named file, not the suite pair."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none, because the landed change is a test module and a static HTML fragment; the production code the tests drive, reckon/crew/admission/holds.py:_queued_requests_overlap and reckon/crew/runs.py:_claim_paths_share, is untouched.",
+    "diff": "read 42fe90d0b0a4..0d149093b3 commit by commit: 64793cdce4 rewrites 11 lines and adds 47 in the test file only, extending the module docstring, moving CLAIMED to generated state, threading claimed= through _stopped_holder and _queue_request, and adding one control test with no assertion deleted; 0d149093b3 adds the 21-line evidence fragment.",
+    "done_when": "the done_when names the file's full pass at head, the base arm taken first, a product-or-test verdict per cause and both suite arms recorded; negative-control-base.log at 42fe90d0 reads '2 failed, 4 passed in 1.60s' EXIT=1 with the two failing ids, and the scoped gate at 64793cdce4 reads '7 passed in 1.02s' EXIT=0, so the gate asserts the stated measure, though it was taken one docs-only commit before the head.",
+    "goal": "the goal is to make tests/test_a_claim_refused_launch_returns_to_the_queue.py pass in full; the landed change moves CLAIMED to 'docs/state/held.json' at tests/test_a_claim_refused_launch_returns_to_the_queue.py:53, threads the claimed path through the holder and request helpers, adds test_a_stopped_holders_shared_source_claim_does_not_hold_the_request, and scoped-gate-1795059310821816411.log records '7 passed in 1.02s' EXIT=0 at 64793cdce4, so the goal is met; no product change was needed because the rule the two cases encoded had moved, as reckon/crew/runs.py:2213 DEFAULT_EXCLUSIVE_PATHS and reckon/crew/runs.py:2377 _claim_paths_share confirm.",
+    "manifest": "read the source run's manifest.md: it records status complete, commits 64793cdce464000d665a2d5a189039af4e663856 and 0d149093b3273ead0313a5e637c834efc686b80d, the 7-passed head and 2-failed base, and 58 passed at each suite arm, but its tests: line is truncated to a placeholder, its retry key is retry_failures_placeholder, and it carries no rubric line and no arm JSON.",
+    "write_paths": "the declared paths are reckon, tests, the fragment directory for queued-work-needs-no-workaround and this node's fragment and figure path; the diff carries exactly tests/test_a_claim_refused_launch_returns_to_the_queue.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-refused-launch-returns-to-the-queue.html, both inside the fence."
+  },
+  "justifications": {
+    "durability": "reinstating a fence that holds a shared-source claim reddens tests/test_a_claim_refused_launch_returns_to_the_queue.py:303 'assert result[\"launched\"] == [REQUEST_ID]', and reinstating a policy that shares generated state reddens line 260 'assert probe.attempted == []', the exact base-arm failure quoted by negative-control-base.log; only 'assert CLAIMED in row[\"detail\"]' at line 264 compares a constant the test supplied against text production composed from that same pointer, and no guard rests on it.",
+    "evidence": "negative-control-base.log:86 records '2 failed, 4 passed' EXIT=1 at 42fe90d0b0a4 and scoped-gate-1795059310821816411.log:7 records '7 passed' EXIT=0, so both the reproduction and the head pass are receipts on disk rather than claims, with the one-commit offset recorded as a finding.",
+    "fit": "the change extends the module docstring and the helper style of tests/test_a_claim_refused_launch_returns_to_the_queue.py:65 rather than adding a second convention, and its only new names, SHARED_SOURCE and the claimed= keyword, follow the CLAIMED constant idiom already in the module.",
+    "goal_fidelity": "tests/test_a_claim_refused_launch_returns_to_the_queue.py:53 sets CLAIMED to 'docs/state/held.json', a class reckon/crew/runs.py:2213 lists as one a textual merge cannot reconcile, and scoped-gate-1795059310821816411.log:7 records 7 passed over the whole file.",
+    "reuse": "the diff adds no production definition and forks no capability: it drives the existing owner reckon/crew/runs.py:2424 _shared_write_paths through the existing admission path, and a search of tests/ for a held-on-claim case in the shared-source direction found none, so no existing coverage is duplicated.",
+    "scope_discipline": "the only two paths in the diff, tests/test_a_claim_refused_launch_returns_to_the_queue.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, lie inside the declared tests and fragment paths, and no product module changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_a_claim_refused_launch_returns_to_the_queue.py pass in full; the landed change moves CLAIMED to 'docs/state/held.json' at tests/test_a_claim_refused_launch_returns_to_the_queue.py:53, threads the claimed path through the holder and request helpers, adds test_a_stopped_holders_shared_source_claim_does_not_hold_the_request, and scoped-gate-1795059310821816411.log records '7 passed in 1.02s' EXIT=0 at 64793cdce4, so the goal is met; no product change was needed because the rule the two cases encoded had moved, as reckon/crew/runs.py:2213 DEFAULT_EXCLUSIVE_PATHS and reckon/crew/runs.py:2377 _claim_paths_share confirm.\nVERDICT done_when: the done_when names the file's full pass at head, the base arm taken first, a product-or-test verdict per cause and both suite arms recorded; negative-control-base.log at 42fe90d0 reads '2 failed, 4 passed in 1.60s' EXIT=1 with the two failing ids, and the scoped gate at 64793cdce4 reads '7 passed in 1.02s' EXIT=0, so the gate asserts the stated measure, though it was taken one docs-only commit before the done head.\nVERDICT write_paths: the declared paths are reckon, tests, the fragment directory for queued-work-needs-no-workaround and this node's fragment and figure path; the diff carries exactly tests/test_a_claim_refused_launch_returns_to_the_queue.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, both inside the fence.\nVERDICT manifest: read the source run's manifest.md: it records status complete, commits 64793cdce464000d665a2d5a189039af4e663856 and 0d149093b3273ead0313a5e637c834efc686b80d, the 7-passed head and 2-failed base, and 58 passed at each suite arm, but its tests: line is truncated to a placeholder, its retry key is retry_failures_placeholder, and it carries no rubric line and no arm JSON.\nVERDICT diff: read 42fe90d0b0a4..0d149093b3 commit by commit: 64793cdce4 rewrites 11 lines and adds 47 in the test file only, extending the module docstring, moving CLAIMED to generated state, threading claimed= through _stopped_holder and _queue_request, and adding one control test with no assertion deleted; 0d149093b3 adds the 21-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_claim_refused_launch_returns_to_the_queue.py:53 sets CLAIMED to 'docs/state/held.json', a class reckon/crew/runs.py:2213 lists as one a textual merge cannot reconcile, and scoped-gate-1795059310821816411.log:7 records 7 passed over the whole file.\nSCORE evidence: 16\nJUSTIFICATION evidence: negative-control-base.log:86 records '2 failed, 4 passed' EXIT=1 at 42fe90d0b0a4 and scoped-gate-1795059310821816411.log:7 records '7 passed' EXIT=0, so the gate's result is a receipt on disk, but the gate ran one docs-only commit before the head and the manifest's own tests: line is truncated to a placeholder.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only two paths in the diff, tests/test_a_claim_refused_launch_returns_to_the_queue.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround, lie inside the declared tests and fragment paths.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating a fence that holds a shared-source claim reddens tests/test_a_claim_refused_launch_returns_to_the_queue.py:303 'assert result[\"launched\"] == [REQUEST_ID]', and reinstating a policy that shares generated state reddens line 260 'assert probe.attempted == []', the base-arm failure quoted by negative-control-base.log.\nSCORE fit: 18\nJUSTIFICATION fit: the change extends the module docstring and the helper style of tests/test_a_claim_refused_launch_returns_to_the_queue.py:65, and its only new names follow the CLAIMED constant idiom already in the module.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition and forks no capability, driving the existing owner reckon/crew/runs.py:2424 _shared_write_paths through the existing admission path.\nFINDING manifest.md:12 non-blocking: the tests: line is truncated to a placeholder, so no literal command is recorded for promotion to re-run; the log header scoped-gate-1795059310821816411.log:5 is the only readable copy.\nFINDING manifest.md:9 non-blocking: the retry key is retry_failures_placeholder rather than retry_failures, and no rubric.<dimension> line and no baseline_suite or after_suite JSON are present.\nFINDING manifest.md:11 non-blocking: the landing line states the base arm as '(base 42fe90d0: 2 failed, 2 cases)' while negative-control-base.log:86 records '2 failed, 4 passed in 1.60s'.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claim-refused-launch-returns-to-the-queue.html:14 non-blocking: the head row names 64793cdce4, one commit before the node head 0d149093b3, so no gate or arm was taken at the reviewed revision; the step holds only transitively across a docs-only commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062618036274-qwnw-red-file-a-claim-refused-launch-returns-to-the-queue/baseline_suite-1795059675445728904.log:5 non-blocking: both armed suite arms ran test files this change cannot affect, so the 58-passed pair says nothing about the changed file.\n",
+  "review_node": "review-of-qwnw-red-file-a-claim-refused-launch-returns-to-the-queue-0d149093b327",
+  "review_run_id": "r-20261119T045834725851-review-of-qwnw-red-file-a-claim-refused-launch-returns-to-the-queue-0d149093b327",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "0d149093b3273ead0313a5e637c834efc686b80d",
+  "reviewed_run_id": "r-20261118T062618036274-qwnw-red-file-a-claim-refused-launch-returns-to-the-queue",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T045834725851-review-of-qwnw-red-file-a-claim-refused-launch-returns-to-the-queue-0d149093b327"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:06:55.778166+00:00",
+  "total": 109
+}

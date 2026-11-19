@@ -147,7 +147,11 @@ def test_an_activity_read_visits_only_active_rows(
                 expected.extend((appended, inserted))
 
     monkeypatch.setenv("RECKON_RUN_STORE", str(path))
-    monkeypatch.setattr(ledger, "_aggregate_headers", lambda *_: ({"runs": []}, 0))
+    monkeypatch.setattr(
+        ledger,
+        "_aggregate_headers",
+        lambda *_: ({"members": [], "runs": [], "holds": []}, 0),
+    )
     original_connect = sqlite3.connect
     measured = {"rows": 0, "steps": 0}
 

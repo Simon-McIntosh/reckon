@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "The diff adds no assertion: the six review assertions at tests/test_a_live_worker_still_owes_its_review.py:128-150 are unchanged and the head arm passes them at 43151b34bea9f46dea20ec8e89fab3d71d8e84fc. The changed fixture is falsified by the base arm, which commits on the repository branch and reddens the same test with the citation refusal.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:19:35Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-live-worker-still-owes-its-review.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-arm rows at :47 and :53 name 112e63f2d5 as the measured revision, while the reviewed head is 43151b34bea9f46dea20ec8e89fab3d71d8e84fc and the manifest's declared gate and after-suite logs ran at 43151b34bea9f46dea20ec8e89fab3d71d8e84fc (head-node-gate-43151b3.log, after_suite-1795102110688497297.log); the artifact cites an earlier head than the one being promoted, so the table cannot be paired with the receipt the manifest carries."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-live-worker-still-owes-its-review.html",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the base arm ran on all_debug, but base-arm.sh and head-arm.sh print only revision, tree, command, cwd and module, so neither gate log carries a host or SLURM job id; the done_when's venue clause rests on the worker's own sbatch invocation in the run stream rather than on the logs' headers."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "No production call site: the diff changes one test helper and one evidence document, and no runtime module imports either.",
+    "diff": "Read commit by commit: 112e63f2d5b39cfa17509cf947a8e1ba101ff2cb changes only tests/test_a_live_worker_still_owes_its_review.py:113-123 (6 added, 6 deleted) to commit and cite in the run's worktree, and 43151b34bea9f46dea20ec8e89fab3d71d8e84fc adds only the 62-line evidence fragment; no product source is touched.",
+    "done_when": "done_when requires the file to pass at head as an all_debug job with SLURM_JOB_ID unset, a cause verdict and no weakened assertion, plus both suite arms as inline JSON at full 40-character revisions; the manifest carries the test-wrong verdict, both arms at a7ac07a91d918a57176c0d218abc4ae06e7ebab0 and 43151b34bea9f46dea20ec8e89fab3d71d8e84fc with EXIT=0, and the node arms at EXIT=1/EXIT=0, but the arm scripts print no host or job id, so the venue is evidenced only by the worker's sbatch invocation.",
+    "goal": "The source node's goal is to make tests/test_a_live_worker_still_owes_its_review.py pass in full on the primary branch; tests/test_a_live_worker_still_owes_its_review.py:113-123 changes the fixture to commit the run's declared work in the run's own worktree, and the head arm records 1 passed EXIT=0 at 43151b34bea9f46dea20ec8e89fab3d71d8e84fc.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063751799197-qwnw-red-file-a-live-worker-still-owes-its-review/manifest.md: status complete, two commits, node arms head-node-gate-43151b3.log (1 passed, EXIT=0) and base-node-gate-a7ac07a.log (1 failed, EXIT=1), the declared suite pair at full revisions with completed true and failure_count 0, and the cause verdict test-wrong, matching the logs it names.",
+    "write_paths": "The declared paths are reckon, tests, the plan's fragments directory and this node's fragment; the two paths in a7ac07a91d918a57176c0d218abc4ae06e7ebab0..43151b34bea9f46dea20ec8e89fab3d71d8e84fc are tests/test_a_live_worker_still_owes_its_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-live-worker-still-owes-its-review.html, both inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the repo-target commit at tests/test_a_live_worker_still_owes_its_review.py:113 is exactly the base arm, which reddens the single test with the citation CrewError, and lines 128-150 keep every review-obligation assertion unchanged.",
+    "evidence": "head-node-gate-43151b3.log records revision 43151b34bea9f46dea20ec8e89fab3d71d8e84fc, 1 passed and EXIT=0 beside base-node-gate-a7ac07a.log's 1 failed/EXIT=1, and both suite arms record 58 passed/EXIT=0 at full revisions, but neither arm script prints a host or SLURM job id, so the all_debug venue the done_when names is not in the receipt.",
+    "fit": "the parameter rename at tests/test_a_live_worker_still_owes_its_review.py:113 now matches the sibling helper at tests/test_a_stale_manifest_does_not_license_promotion.py:171 and introduces no new name.",
+    "goal_fidelity": "tests/test_a_live_worker_still_owes_its_review.py:113-123 moves only the fixture's commit target, and the file's head arm records 1 passed EXIT=0 at 43151b34bea9f46dea20ec8e89fab3d71d8e84fc while the base arm records the citation refusal at a7ac07a91d918a57176c0d218abc4ae06e7ebab0.",
+    "reuse": "the capability is already owned by test helpers at tests/test_a_stale_manifest_does_not_license_promotion.py:171 and tests/test_promotion_records_the_pick.py:122, this test's third copy of _commit_work now converges on the same worktree rule, and a search over tests/ and reckon/ found no production owner the change should have extended.",
+    "scope_discipline": "the only two paths in a7ac07a91d..43151b34be are tests/test_a_live_worker_still_owes_its_review.py and the node's fragment html, both inside the declared write paths, and no product source is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make tests/test_a_live_worker_still_owes_its_review.py pass in full on the primary branch; tests/test_a_live_worker_still_owes_its_review.py:113-123 changes the fixture to commit the run's declared work in the run's own worktree, and the head arm records 1 passed EXIT=0 at 43151b34bea9f46dea20ec8e89fab3d71d8e84fc.\nVERDICT done_when: done_when requires the file to pass at head as an all_debug job with SLURM_JOB_ID unset, a cause verdict and no weakened assertion, plus both suite arms as inline JSON at full 40-character revisions; the manifest carries the test-wrong verdict, both arms at a7ac07a91d918a57176c0d218abc4ae06e7ebab0 and 43151b34bea9f46dea20ec8e89fab3d71d8e84fc with EXIT=0, and the node arms at EXIT=1/EXIT=0, but the arm scripts print no host or job id, so the venue is evidenced only by the worker's sbatch invocation.\nVERDICT write_paths: The declared paths are reckon, tests, the plan's fragments directory and this node's fragment; the two paths in a7ac07a91d918a57176c0d218abc4ae06e7ebab0..43151b34bea9f46dea20ec8e89fab3d71d8e84fc are tests/test_a_live_worker_still_owes_its_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-live-worker-still-owes-its-review.html, both inside them.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063751799197-qwnw-red-file-a-live-worker-still-owes-its-review/manifest.md: status complete, two commits, node arms head-node-gate-43151b3.log (1 passed, EXIT=0) and base-node-gate-a7ac07a.log (1 failed, EXIT=1), the declared suite pair at full revisions with completed true and failure_count 0, and the cause verdict test-wrong, matching the logs it names.\nVERDICT diff: Read commit by commit: 112e63f2d5b39cfa17509cf947a8e1ba101ff2cb changes only tests/test_a_live_worker_still_owes_its_review.py:113-123 (6 added, 6 deleted) to commit and cite in the run's worktree, and 43151b34bea9f46dea20ec8e89fab3d71d8e84fc adds only the 62-line evidence fragment; no product source is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_live_worker_still_owes_its_review.py:113-123 moves only the fixture's commit target, and the file's head arm records 1 passed EXIT=0 at 43151b34bea9f46dea20ec8e89fab3d71d8e84fc while the base arm records the citation refusal at a7ac07a91d918a57176c0d218abc4ae06e7ebab0.\nSCORE evidence: 14\nJUSTIFICATION evidence: head-node-gate-43151b3.log records revision 43151b34bea9f46dea20ec8e89fab3d71d8e84fc, 1 passed and EXIT=0 beside base-node-gate-a7ac07a.log's 1 failed/EXIT=1, and both suite arms record 58 passed/EXIT=0 at full revisions, but neither arm script prints a host or SLURM job id, so the all_debug venue the done_when names is not in the receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths in a7ac07a91d..43151b34be are tests/test_a_live_worker_still_owes_its_review.py and the node's fragment html, both inside the declared write paths, and no product source is touched.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the repo-target commit at tests/test_a_live_worker_still_owes_its_review.py:113 is exactly the base arm, which reddens the single test with the citation CrewError, and lines 128-150 keep every review-obligation assertion unchanged.\nSCORE fit: 19\nJUSTIFICATION fit: the parameter rename at tests/test_a_live_worker_still_owes_its_review.py:113 now matches the sibling helper at tests/test_a_stale_manifest_does_not_license_promotion.py:171 and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability is already owned by test helpers at tests/test_a_stale_manifest_does_not_license_promotion.py:171 and tests/test_promotion_records_the_pick.py:122, this test's third copy of _commit_work now converges on the same worktree rule, and a search over tests/ and reckon/ found no production owner the change should have extended.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-live-worker-still-owes-its-review.html:47 non-blocking: the head-arm rows at :47 and :53 name 112e63f2d5 as the measured revision, while the reviewed head is 43151b34bea9f46dea20ec8e89fab3d71d8e84fc and the manifest's declared gate and after-suite logs ran at 43151b34bea9f46dea20ec8e89fab3d71d8e84fc (head-node-gate-43151b3.log, after_suite-1795102110688497297.log); the artifact cites an earlier head than the one being promoted, so the table cannot be paired with the receipt the manifest carries.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-live-worker-still-owes-its-review.html:15 non-blocking: the fragment states the base arm ran on all_debug, but base-arm.sh and head-arm.sh print only revision, tree, command, cwd and module, so neither gate log carries a host or SLURM job id; the done_when's venue clause rests on the worker's own sbatch invocation in the run stream rather than on the logs' headers.\n",
+  "review_run_id": "r-20261119T153739948994-review-of-qwnw-red-file-a-live-worker-still-owes-its-review-43151b34bea9",
+  "reviewed_base_sha": "a7ac07a91d918a57176c0d218abc4ae06e7ebab0",
+  "reviewed_head_sha": "43151b34bea9f46dea20ec8e89fab3d71d8e84fc",
+  "reviewed_run_id": "r-20261118T063751799197-qwnw-red-file-a-live-worker-still-owes-its-review",
+  "reviewed_worker_commits": [
+    "112e63f2d5b39cfa17509cf947a8e1ba101ff2cb",
+    "43151b34bea9f46dea20ec8e89fab3d71d8e84fc"
+  ],
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:46:37.298616+00:00",
+  "total": 110
+}
