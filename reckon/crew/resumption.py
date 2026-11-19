@@ -326,7 +326,18 @@ def launch_mark_holds(record: Mapping[str, Any]) -> bool:
     a mark whose presence means nothing about what is running now. Presence
     alone therefore must not refuse a review, or one abandoned door withholds
     a run's review for as long as the pointer holding the mark survives.
+
+    A launch this process has begun stands whatever the pointer says. The
+    pointer mark exempts its own writer, so a sweep's review pass running
+    inside the launch that door began would read the previous attempt's answer
+    as the mark being spent and compose a review of the head the resume has
+    not yet replaced. The registry separates the two cases the pointer cannot:
+    a launch of this run under way in this process never counts as spent,
+    while a mark left in the pointer by an earlier launch still does.
     """
+    run_id = str(record.get("run_id") or "")
+    if run_id and run_id in _LAUNCHES_IN_THIS_PROCESS:
+        return True
     if not launch_in_flight(record):
         return False
     marker = record.get(RESUME_LAUNCH_IN_FLIGHT)
