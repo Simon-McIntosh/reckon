@@ -1,0 +1,69 @@
+<section id="qwnw-red-file-a-review-that-never-launched-is-not-running-landing">
+  <h2>A review that never launched is not running</h2>
+
+  <p><strong>What changed.</strong> <code>recovery_liveness._stranded_launch</code>
+  dates a launch with no attempt clock from the claim its dispatch registered,
+  and failing that from the pointer's own <code>created_at</code>. Commit
+  <code>57d91db2ce</code> widened that fallback from a cli launch to every
+  launch kind, so that a station launch stopped at <code>claim-published</code>
+  would age and release. That fix also caught the pointer whose liveness
+  belongs to the calling harness: it holds a claim naming no holder, so this
+  host had no process to call gone, and past the 900 s bound it read
+  <code>launch-failed</code>. Releasing a run that cannot be shown to have
+  stopped removes its pointer and its whole run directory, which is the cost
+  <code>tests/test_a_review_that_never_launched_is_not_running.py</code> exists
+  to prevent.</p>
+
+  <p>An <code>in-harness</code> pointer is now dated only from a claim that
+  names its holder (<code>holder_pid</code> and <code>holder_host</code>), the
+  process a station launch publishes beside the claim and the one the stranded
+  reading already judges. A cli launch is unchanged, and so is every launch
+  that recorded an attempt clock.</p>
+
+  <p>The named case also asserted the sentence a pre-spawn pointer carried
+  before the launcher-claim arm existed (<code>fab923980b</code>, 14 November).
+  That arm answers for every claimed, unstarted pointer, so the case asserts
+  the reading it now carries — the claim — with its classification assertion
+  unchanged and a second one added for the recovery classification.</p>
+
+  <h3 id="qwnw-red-file-a-review-that-never-launched-is-not-running-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-review-that-never-launched-is-not-running-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's named file, head gate on <code>all_debug</code></td>
+        <td><code>b3a5862829a5</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the same file, base arm on <code>all_debug</code></td>
+        <td><code>d9b857e053a7</code></td>
+        <td>1 failed, 5 passed, <code>EXIT=1</code> —
+        <code>test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running</code>
+        failed with <code>assert 'launch-failed' == 'running'</code></td></tr>
+      <tr><td>the declared negative control: the claim read removed from the
+        dating</td>
+        <td><code>b3a5862829a5</code>, working tree</td>
+        <td>1 failed, 5 passed, <code>EXIT=1</code> —
+        <code>test_a_stale_claim_dates_a_pointer_created_inside_the_bound</code>
+        failed with <code>assert 'running' == 'launch-failed'</code></td></tr>
+      <tr><td>the armed suite, base arm</td>
+        <td><code>d9b857e053a7</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed suite, after arm</td>
+        <td><code>b3a5862829a5</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The two causes, each with its verdict. The product was wrong that an
+  in-harness pointer whose claim names no holder was dated and released: no
+  process existed for this host to find gone, and no plan text asks for such a
+  run to be freed, while the in-harness claim case of the section that
+  introduced the dating names the in-harness pointer as still running. The test
+  was wrong that the row's detail names the harness: the launcher-claim arm
+  answers for that shape and reports the same running classification with the
+  claim it holds. No assertion was deleted or weakened; the detail assertion is
+  re-pinned to the sentence the reading carries and a second classification
+  assertion is added beside it.</p>
+</section>
