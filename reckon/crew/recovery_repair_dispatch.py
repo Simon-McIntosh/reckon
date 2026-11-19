@@ -80,6 +80,8 @@ def dispatch_merge_repair(
             record=str(pending_landing._record_path(run_id)),
         )
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
+        if promoted:
+            _record_the_conflict(run_id, receipt)
         return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
     other_side = merge._run(
@@ -164,13 +166,24 @@ def dispatch_merge_repair(
         _mutate_pointer(run_id, save)
     runs._write_json(receipt_path, receipt)
     if promoted:
-        from reckon.crew import pending_landing
-
-        pending = pending_landing._read(pending_landing._record_path(run_id))
-        if pending is not None:
-            pending["merge_conflict"] = receipt
-            runs._write_json(pending_landing._record_path(run_id), pending)
+        _record_the_conflict(run_id, receipt)
     return receipt
+
+
+def _record_the_conflict(run_id: str, receipt: Mapping[str, Any]) -> None:
+    """Write the conflict onto the pending record, which is the obligation.
+
+    A promoted run's live pointer is never written back, so the record is the
+    only journal a landing pass can read this conflict from: without it the pass
+    re-attempts the merge every sweep and names no obligation.
+    """
+    from reckon.crew import pending_landing
+
+    path = pending_landing._record_path(run_id)
+    pending = pending_landing._read(path)
+    if pending is not None:
+        pending["merge_conflict"] = dict(receipt)
+        runs._write_json(path, pending)
 
 
 def _dimension_floors(project: str, config: Mapping[str, Any] | None) -> dict[str, int]:
