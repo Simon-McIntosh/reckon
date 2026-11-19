@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-crew-member-reaping-landing">
+  <h2>The member-reaping file passes on the primary branch as it stands</h2>
+
+  <p><strong>What changed.</strong> Nothing in the product and nothing in the
+  test. The node's named file, <code>tests/test_crew_member_reaping.py</code>,
+  was run at the base revision, in this worktree, before any branch was merged
+  or pulled: it passes in full. One case,
+  <code>test_reaping_preserves_live_named_and_durable_session_state</code>,
+  passes in 1.01 s as an <code>all_debug</code> job with
+  <code>SLURM_JOB_ID</code> unset for the run.</p>
+
+  <p>There is therefore no cause to adjudicate and no failing id to log as a
+  negative control: the file is green at the base, so the deliverable is that
+  passing run, which the plan's §29 deliverable names as an acceptable
+  delivery when another node's repair has already reached the file. The case
+  is hermetic — it synthesises its own config home, project state and live
+  pointer under <code>tmp_path</code> and sets <code>RECKON_HOME</code> to it —
+  so the pass does not rest on the operator's state.</p>
+
+  <table id="qwnw-red-file-crew-member-reaping-arms">
+    <caption>Each arm is a log whose header lines name the revision, tree,
+    imported module and command, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base run of the named file</td>
+        <td><code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code></td>
+        <td>1 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>armed suite, base arm</td>
+        <td><code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code></td>
+        <td>see the manifest's <code>baseline_suite</code></td>
+      </tr>
+      <tr>
+        <td>armed suite, after arm</td>
+        <td><code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code></td>
+        <td>see the manifest's <code>after_suite</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The base run's log is
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063141366062-qwnw-red-file-crew-member-reaping/logs/base-run.log</code>.</p>
+</section>
