@@ -37,6 +37,7 @@ from reckon.crew.runs import (
     _mutate_pointer,
     _utc_now,
     list_live,
+    node_field,
     read_pointer,
 )
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
@@ -1782,7 +1783,7 @@ def _judge_head_move(
         return None
     node = record.get("node") or {}
     goal = str(node.get("goal") or "")
-    done_when = str(node.get("done_when") or "")
+    done_when = str(runs.node_field(record, "done_when") or "")
     verdicts = review_need.judge(
         [
             review_need.Change(
@@ -1891,7 +1892,7 @@ def re_review_prediction(
             paths = _changed_paths_between(tree, prior_head, head)
     node = record.get("node") or {}
     goal = str(node.get("goal") or "")
-    done_when = str(node.get("done_when") or "")
+    done_when = str(runs.node_field(record, "done_when") or "")
     findings = review_module.normalised_findings(prior)
     prior_summary = {
         "review_run_id": str(prior.get("review_run_id") or ""),
@@ -4224,7 +4225,7 @@ def _queued_pointer_names_directory(project: str, directory: Path) -> bool:
         return False
     target = Path(directory)
     for pointer in _list_live_records(project=project, phase="queued"):
-        brief = str((pointer.get("node") or {}).get("brief") or "").strip()
+        brief = str(node_field(pointer, "brief") or "").strip()
         if brief and Path(brief).parent == target:
             return True
     return False

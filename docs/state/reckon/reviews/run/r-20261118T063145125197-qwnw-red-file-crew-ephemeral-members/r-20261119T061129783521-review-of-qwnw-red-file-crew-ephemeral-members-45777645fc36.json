@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:3465 members",
+    "reckon/ledger.py:915 ledger_path",
+    "reckon/ledger.py:3818 register_member",
+    "reckon/crew/dispatching/preparation.py:385 dispatch"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:07:02Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fence armed a suite pair and both arms ran to \"58 passed\" with EXIT=0, yet the manifest carries no baseline_suite or after_suite key, so promotion must re-measure the pair over the base and head trees instead of reading the record the node already holds."
+    },
+    {
+      "file": "manifest.md",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: changed_paths names docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ephemeral-placeholder, which no commit contains, and omits the fragment 45777645fc actually adds, so a reader comparing declared paths with the diff is told a file was changed that was not."
+    },
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_logs reads \"/home/ITER/mcintos 2>/dev/null\", a bare home directory with a shell redirection left in it, so the record names no gate log and a reader deriving the added-failure count from this run's own record finds no arm and files it as unmeasured rather than as the measured zero its two logs support."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against b24fe95a78; 0fe1ea662f rewrites only the roster snapshot in tests/test_crew_ephemeral_members.py (18 asserts before, 20 after, none deleted), and 45777645fc adds only the 46-line evidence fragment, so the two commits agree with the two changed paths.",
+    "done_when": "the fence's clauses are the all_debug head job, the base failing ids, a stated cause for each with a product-or-test verdict, no assertion deleted or weakened, both suite arms as inline JSON, ruff clean on the changed paths, and plain full commit ids; every clause is met except the suite arms, which manifest.md never records although baseline_suite-1795067011011464946.log and after_suite-1795067054081462078.log sit in the run directory.",
+    "goal": "the node's goal is that tests/test_crew_ephemeral_members.py passes in full; the landed head keeps the file's one case green (head-named-file.log reads \"1 passed\" and EXIT=0 at 0fe1ea662f) and the repair rests on the rule reckon/ledger.py:3834 states, that registration is a store-only transaction.",
+    "manifest": "read manifest.md; it records status complete, both full commit ids, a landing line naming the cause, the \"test wrong\" verdict and the rule the case now asserts, and a negative_control_log that exists and reddens; its changed_paths line names a placeholder file no commit contains, its test_logs line names no readable log, and it carries no baseline_suite or after_suite arms.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment and figure paths; the diff b24fe95a78..45777645fc touches only tests/test_crew_ephemeral_members.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ephemeral-members.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_ephemeral_members.py:104 asserts the retired committed roster stays absent, which reddens the moment registration writes docs/state/<project>/crew.json again.",
+    "evidence": "head-named-file.log and baseline-named-file.log record both arms with the base failing id, but manifest.md:12 names no readable gate log and the manifest records neither suite arm, so the run's own record cannot be re-read for the pair it measured.",
+    "fit": "the added case body follows the module's own comment-then-assert idiom beside the roster reads at tests/test_crew_ephemeral_members.py:93, and reckon/evidence.py:1641 strips a fragment's document wrapper, so the doctype-wrapped fragment composes like its siblings.",
+    "goal_fidelity": "tests/test_crew_ephemeral_members.py:98-102 replaces the snapshot that raised FileNotFoundError with ledger.members at reckon/ledger.py:3465, and the file passes at the head the base arm reddens.",
+    "reuse": "no definition is added; the change calls the roster owner reckon/ledger.py:3465 members and the path resolver at :915 rather than adding a second reader, and a search of reckon/ledger.py for a roster read found no other.",
+    "scope_discipline": "the diff's two paths, tests/test_crew_ephemeral_members.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ephemeral-members.html, are both inside the declared write paths, with nothing else in either commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_crew_ephemeral_members.py passes in full; the landed head keeps the file's one case green (head-named-file.log reads \"1 passed\" and EXIT=0 at 0fe1ea662f) and the repair rests on the rule reckon/ledger.py:3834 states, that registration is a store-only transaction.\nVERDICT done_when: the fence's clauses are the all_debug head job, the base failing ids, a stated cause for each with a product-or-test verdict, no assertion deleted or weakened, both suite arms as inline JSON, ruff clean on the changed paths, and plain full commit ids; every clause is met except the suite arms, which manifest.md never records although baseline_suite-1795067011011464946.log and after_suite-1795067054081462078.log sit in the run directory.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment and figure paths; the diff b24fe95a78..45777645fc touches only tests/test_crew_ephemeral_members.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ephemeral-members.html, both inside that scope.\nVERDICT manifest: read manifest.md; it records status complete, both full commit ids, a landing line naming the cause, the \"test wrong\" verdict and the rule the case now asserts, and a negative_control_log that exists and reddens; its changed_paths line names a placeholder file no commit contains, its test_logs line names no readable log, and it carries no baseline_suite or after_suite arms.\nVERDICT diff: read both commits against b24fe95a78; 0fe1ea662f rewrites only the roster snapshot in tests/test_crew_ephemeral_members.py (18 asserts before, 20 after, none deleted), and 45777645fc adds only the 46-line evidence fragment, so the two commits agree with the two changed paths.\nCALL_SITES: reckon/ledger.py:3465 members, reckon/ledger.py:915 ledger_path, reckon/ledger.py:3818 register_member, reckon/crew/dispatching/preparation.py:385 dispatch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_ephemeral_members.py:98-102 replaces the snapshot that raised FileNotFoundError with ledger.members at reckon/ledger.py:3465, and the file passes at the head the base arm reddens.\nSCORE evidence: 14\nJUSTIFICATION evidence: head-named-file.log and baseline-named-file.log record both arms with the base failing id, but manifest.md:12 names no readable gate log and the manifest records neither suite arm, so the run's own record cannot be re-read for the pair it measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_crew_ephemeral_members.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ephemeral-members.html, are both inside the declared write paths, with nothing else in either commit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_ephemeral_members.py:104 asserts the retired committed roster stays absent, which reddens the moment registration writes docs/state/<project>/crew.json again.\nSCORE fit: 19\nJUSTIFICATION fit: the added case body follows the module's own comment-then-assert idiom beside the roster reads at tests/test_crew_ephemeral_members.py:93, and reckon/evidence.py:1641 strips a fragment's document wrapper, so the doctype-wrapped fragment composes like its siblings.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change calls the roster owner reckon/ledger.py:3465 members and the path resolver at :915 rather than adding a second reader, and a search of reckon/ledger.py for a roster read found no other.\nFINDING manifest.md:11 non-blocking: the fence armed a suite pair and both arms ran to \"58 passed\" with EXIT=0, yet the manifest carries no baseline_suite or after_suite key, so promotion must re-measure the pair over the base and head trees instead of reading the record the node already holds.\nFINDING manifest.md:8 non-blocking: changed_paths names docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-ephemeral-placeholder, which no commit contains, and omits the fragment 45777645fc actually adds, so a reader comparing declared paths with the diff is told a file was changed that was not.\nFINDING manifest.md:12 non-blocking: test_logs reads \"/home/ITER/mcintos 2>/dev/null\", a bare home directory with a shell redirection left in it, so the record names no gate log and a reader deriving the added-failure count from this run's own record finds no arm and files it as unmeasured rather than as the measured zero its two logs support.",
+  "review_run_id": "r-20261119T061129783521-review-of-qwnw-red-file-crew-ephemeral-members-45777645fc36",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "45777645fc36a8a1c91b2190bf1f107a7e7dd220",
+  "reviewed_run_id": "r-20261118T063145125197-qwnw-red-file-crew-ephemeral-members",
+  "reviewed_worker_commits": [
+    "0fe1ea662f2b1f2c735c93181b30ab472ee5aa41",
+    "45777645fc36a8a1c91b2190bf1f107a7e7dd220"
+  ],
+  "rubric": "",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063145125197-qwnw-red-file-crew-ephemeral-members/after_suite-1795067054081462078.log",
+      "revision": "45777645fc36a8a1c91b2190bf1f107a7e7dd220",
+      "sha256": "e37b47e2ec8985f3d355651bb79d01b0212107edddccb165afdd14f16d819884",
+      "summary": "58 passed in 35.01s"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063145125197-qwnw-red-file-crew-ephemeral-members/baseline_suite-1795067011011464946.log",
+      "revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+      "sha256": "36a44b9f71eb1be9a4ab5f93806a8cbbeb8fb6ad4dd5d29c9dc3e0d9e01dfa13",
+      "summary": "58 passed in 35.33s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:27:16.993309+00:00",
+  "total": 110
+}

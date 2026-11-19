@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:45:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow.html",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The fragment states 'the sibling cases read result.stdout', which is false at the reviewed head: tests/test_crew_shadow.py:504 (the --dry-run lineage case, read at ef21a4bf) still parses json.loads(result.output), and that case reads result.output rather than stdout, so the stated justification for the one-line change rests on a claim the file contradicts; the change itself is still correct, and only the reason given for it is overstated."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062455365750-qwnw-red-file-crew-shadow/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The done_when asks for the arm over the test files importing promotion_evidence recorded as inline JSON with full 40-character revisions, but baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py (58 passed, EXIT=0 at each revision), a selection that does not import the changed module; the importer arm itself exists only as arm-importers-base.log and arm-importers-head.log on disk (139 passed, 1 failed, the same KeyError id at each revision), so the pair the done_when names is not the reviewed change's arm and no inline JSON cites the arm that is."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062455365750-qwnw-red-file-crew-shadow/gate-head-test_crew_shadow.log",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "The done_when requires the head run as a job on all_debug, but no recorded artefact names the partition: the gate log's header carries the revision, tree, command and the note that sbatch was invoked with the allocation id unset, and never the partition or the job id, so the venue rests on the manifest's prose at manifest.md:10 and on the submitting command in the run's stream rather than on a log a reader can open."
+    }
+  ],
+  "notes": "Read at repo revision a559b64140ad57f15e6d075710965346f71775fe (this review worktree), which does not contain the reviewed head; every file of the reviewed diff was read through git show at 42fe90d0 and ef21a4bf. Durability is the base arm the worker kept: gate-base-test_crew_shadow.log reddens the two cases this change repairs, and reverting the 8-line _is_shadow early return puts the 'holds its own declared work uncommitted' CrewError back on test_shadow_completion_refuses_commits_and_measures_the_retained_patch; the CLI case reddens on the pre-repair result.output because the dispatch advisory sits on stderr. No added assertion compares a value against the value handed in: the only changed assertion parses result.stdout and feeds the persisted pointer, whose session and wave come from the CLI arguments. added_failure_count and added_failure_ids are derived from the reviewed run's own suite arms, baseline_suite-1795056759873944555.log (58 passed, EXIT=0 at 42fe90d0) and after_suite-1795056804707436747.log (58 passed, EXIT=0 at 985eec0f), each carrying a summary line so the zero is a measured clean pair, not an absent outcome.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is 'Make tests/test_crew_shadow.py pass in full on the primary branch'; reckon/crew/promotion_evidence.py:470-476 and tests/test_crew_shadow.py:561 are the two repairs, and gate-head-test_crew_shadow.log records 14 passed EXIT=0.\nVERDICT done_when: The gate asserts the file passing in full at head (14 passed, EXIT=0) and the base negative control (2 failed, 12 passed, EXIT=1), but the all_debug venue appears in no log header and the importer arm is not the selection the manifest's inline JSON pairs.\nVERDICT write_paths: Declared paths are reckon, tests and the evidence fragment; the diff's three paths are all inside them.\nVERDICT manifest: manifest.md records status complete, both commits, the literal gate command, both gate logs and two suite arms at 0 failures.\nVERDICT diff: Read from 42fe90d0 to ef21a4bf; 985eec0f adds the 8-line _is_shadow early return and one test stream fix, ef21a4bf adds the 57-line evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:1364, reckon/crew/promotion_checks.py:2828\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:470-476 leaves a shadow record to the landing path that writes its patch, and tests/test_crew_shadow.py:561 reads stdout, which are the two failures the base log lists.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head-test_crew_shadow.log:1-8 records 14 passed and EXIT=0 with the revision and command, while manifest.md:15 pairs the arm over a selection that does not import the changed module and the all_debug venue is in no header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three paths in the diff (reckon/crew/promotion_evidence.py, tests/test_crew_shadow.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow.html) all lie inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: removing reckon/crew/promotion_evidence.py:470-476 reinstates the CrewError the base log records for test_shadow_completion_refuses_commits_and_measures_the_retained_patch, and the non-shadow arm stays covered by tests/test_promotion_checks_read_only_what_moved.py:350-353.\nSCORE fit: 18\nJUSTIFICATION fit: the branch sits in promotion_evidence.py's commitless arm in the function's own comment style and imports _is_shadow through the module's late-import block at promotion_evidence.py:2413, following the file's existing idiom.\nSCORE reuse: 19\nJUSTIFICATION reuse: the guard consults reckon/crew/promotion_scope.py:1160 _is_shadow, the owner of that test, and the capability it defers to (reckon/crew/promotion_scope.py:1164 _write_shadow_patch) already exists, so nothing is re-implemented.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow.html:15 non-blocking: the fragment says the sibling cases read result.stdout, but tests/test_crew_shadow.py:504 still reads result.output at the reviewed head.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062455365750-qwnw-red-file-crew-shadow/manifest.md:15 non-blocking: baseline_suite and after_suite name a selection that does not import the changed module, so the importer arm exists only as arm-importers-*.log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062455365750-qwnw-red-file-crew-shadow/gate-head-test_crew_shadow.log:4 non-blocking: the log header names no partition or job id, so the done_when's all_debug venue is not readable from any recorded artefact.\n",
+  "review_run_id": "r-20261119T033602635782-review-of-qwnw-red-file-crew-shadow-ef21a4bf2877",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_commits": [
+    "985eec0f140d27de45b3f603e873e5a3c1ee1483",
+    "ef21a4bf28770d09c0d62822a77179b2e1128966"
+  ],
+  "reviewed_head_sha": "ef21a4bf28770d09c0d62822a77179b2e1128966",
+  "reviewed_node": "qwnw-red-file-crew-shadow",
+  "reviewed_run_id": "r-20261118T062455365750-qwnw-red-file-crew-shadow",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:12:08.816766+00:00",
+  "total": 108,
+  "verdicts": {
+    "call_sites": "The one production call site is reckon/crew/promotion.py:1364, the promotion guard chain, where _refuse_commits_for_a_shadow at promotion.py:1350 still fires first, and the continuation that keeps a shadow's work is reckon/crew/promotion_checks.py:2828 _write_shadow_patch inside _landing_scope_products.",
+    "diff": "Read commit by commit from 42fe90d0 to ef21a4bf: 985eec0f adds the _is_shadow early return at reckon/crew/promotion_evidence.py:470-476 plus the _is_shadow import at promotion_evidence.py:2416 and switches tests/test_crew_shadow.py:561 to result.stdout; ef21a4bf adds the 57-line evidence fragment with its four-row arms table.",
+    "done_when": "The gate the worker ran asserts the measure's first clause (14 passed, EXIT=0, allocation id removed) and its negative control (2 failed, 12 passed, EXIT=1 at 42fe90d0), but the claimed all_debug venue is absent from every log header, ruff is clean on both changed paths (ruff check --no-cache and ruff format --check --no-cache both exit 0 at a559b64) yet unrecorded in the manifest, and the importer arm appears in the manifest's inline JSON as a different selection than the one the done_when names.",
+    "goal": "The node goal is 'Make tests/test_crew_shadow.py pass in full on the primary branch'; the head gate log records 14 passed EXIT=0 at 985eec0f140d27de45b3f603e873e5a3c1ee1483, and the two cases it repairs are the ones the base log lists FAILED (test_shadow_cli_accepts_and_persists_session_and_wave and test_shadow_completion_refuses_commits_and_measures_the_retained_patch).",
+    "manifest": "The manifest at manifest.md reads status complete with commits 985eec0f140d27de45b3f603e873e5a3c1ee1483 and ef21a4bf28770d09c0d62822a77179b2e1128966, the literal pytest command, both gate logs, gate-base-test_crew_shadow.log as the negative control, and two suite arms at 0 failures each.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-crew-shadow.html plus docs/figures/.../qwnw-red-file-crew-shadow; the diff touches exactly reckon/crew/promotion_evidence.py, tests/test_crew_shadow.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-shadow.html, all inside them."
+  }
+}

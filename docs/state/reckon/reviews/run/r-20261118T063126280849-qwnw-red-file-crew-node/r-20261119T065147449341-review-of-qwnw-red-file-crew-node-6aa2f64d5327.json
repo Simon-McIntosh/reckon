@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/cli.py:210",
+    "reckon/crew_dispatch_commands.py:1750"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:23:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063126280849-qwnw-red-file-crew-node/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when requires both importing arms \"recorded as inline JSON carrying full 40-character revisions\", but the manifest carries them only as prose in `artifacts`; the substance is in importing-base-arm.log:1 and importing-head-arm.log:1 and the two failing-id files, so the measure holds while the record shape does not."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063126280849-qwnw-red-file-crew-node/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's \"ruff check and ruff format --check report nothing new on the changed paths\" obligation is recorded nowhere in the manifest, so a reader of the record alone cannot tell it ran; this review verified it instead, with both commands exiting 0 on the reviewed head's reckon/crew_dispatch_commands.py under the repository's pyproject configuration."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "1751",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repaired routing's only guard is tests/test_crew_node.py:116, which reddens through json.loads on the refusal text rather than asserting that a plan-and-node request without --section queues one node, so a narrower regression at this line would be caught only incidentally."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits of b24fe95a789c82cd33f22a912b4dbbf94d5e2193..6aa2f64d53270737e0e3142431527b798b76442d commit by commit: ac634797 adds five lines and removes one in reckon/crew_dispatch_commands.py (the added `and not node_id` condition plus its comment), and 6aa2f64 adds the 30-line evidence fragment; no other path changed.",
+    "done_when": "the done_when at prompt.txt:350 asks for tests/test_crew_node.py passing at head on all_debug, the base run beside it, an importing arm with both revisions as inline JSON, ruff on the changed paths and a full-id commits field; the manifest records the head (scoped-gate-1795069992914281111.log: 15 passed, EXIT=0) and base (base-test-crew-node.log: 1 failed, EXIT=1) runs and the importing arm's 38-to-36 figures, but records the arms as prose rather than inline JSON and records no ruff result.",
+    "goal": "the node's goal is \"Make tests/test_crew_node.py pass in full on the primary branch\", and the landed change at reckon/crew_dispatch_commands.py:1750 is one condition narrowing the reviewer-visible whole-plan guard so a request naming --node keeps the single-node path, with the recorded head run of tests/test_crew_node.py reading 15 passed, EXIT=0.",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits ac634797082f3a03f2d0defcc2a9e339a0eb5927 and 6aa2f64d53270737e0e3142431527b798b76442d, head 15 passed EXIT=0 at 6aa2f64d5327 against base 1 failed EXIT=1 at b24fe95, the importing arm 36 failed at head against 38 at base with no added id, and added ids 0; the manifest records no ruff result and no inline JSON for the importing arms.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-crew-node.html; the diff's two paths, reckon/crew_dispatch_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-node.html, are both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_node.py::test_dispatch_without_a_specification_level_exits_two reddens when the old condition is reinstated, as base-test-crew-node.log shows at EXIT=1, but it fails through a json.loads on the usage text rather than asserting the routing itself.",
+    "evidence": "scoped-gate-1795069992914281111.log:2 records revision 6aa2f64d53270737e0e3142431527b798b76442d with EXIT=0 and base-test-crew-node.log ends EXIT=1 at b24fe95a789c82cd33f22a912b4dbbf94d5e2193, but the manifest records neither the importing arms' required inline JSON nor the done-when's ruff clause.",
+    "fit": "the added condition and its comment at reckon/crew_dispatch_commands.py:1749-1754 follow the surrounding option-guard idiom and name no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:1750 excludes a request that names a node from the whole-plan branch, which is exactly the refusal the failing test hit, and the head gate at tests/test_crew_node.py reads 15 passed.",
+    "reuse": "the change extends the existing whole-plan guard at reckon/crew_dispatch_commands.py:1750 rather than adding a predicate; a search for a second owner of the whole-plan refusal message and for queue_plan callers found only this one.",
+    "scope_discipline": "both changed paths in the diff sit inside the declared reckon and docs/evidence/fragments/queued-work-needs-no-workaround scope, and no path outside them was touched."
+  },
+  "node": "review-of-qwnw-red-file-crew-node-6aa2f64d5327",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make tests/test_crew_node.py pass in full on the primary branch\", and the landed change at reckon/crew_dispatch_commands.py:1750 is one condition narrowing the reviewer-visible whole-plan guard so a request naming --node keeps the single-node path, with the recorded head run of tests/test_crew_node.py reading 15 passed, EXIT=0.\nVERDICT done_when: the done_when at prompt.txt:350 asks for tests/test_crew_node.py passing at head on all_debug, the base run beside it, an importing arm with both revisions as inline JSON, ruff on the changed paths and a full-id commits field; the manifest records the head (scoped-gate-1795069992914281111.log: 15 passed, EXIT=0) and base (base-test-crew-node.log: 1 failed, EXIT=1) runs and the importing arm's 38-to-36 figures, but records the arms as prose rather than inline JSON and records no ruff result.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-crew-node.html; the diff's two paths, reckon/crew_dispatch_commands.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-node.html, are both inside that scope.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits ac634797082f3a03f2d0defcc2a9e339a0eb5927 and 6aa2f64d53270737e0e3142431527b798b76442d, head 15 passed EXIT=0 at 6aa2f64d5327 against base 1 failed EXIT=1 at b24fe95, the importing arm 36 failed at head against 38 at base with no added id, and added ids 0; the manifest records no ruff result and no inline JSON for the importing arms.\nVERDICT diff: read both commits of b24fe95a789c82cd33f22a912b4dbbf94d5e2193..6aa2f64d53270737e0e3142431527b798b76442d commit by commit: ac634797 adds five lines and removes one in reckon/crew_dispatch_commands.py (the added `and not node_id` condition plus its comment), and 6aa2f64 adds the 30-line evidence fragment; no other path changed.\nCALL_SITES: reckon/cli.py:210, reckon/crew_dispatch_commands.py:1750\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:1750 excludes a request that names a node from the whole-plan branch, which is exactly the refusal the failing test hit, and the head gate at tests/test_crew_node.py reads 15 passed.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795069992914281111.log:2 records revision 6aa2f64d53270737e0e3142431527b798b76442d with EXIT=0 and base-test-crew-node.log ends EXIT=1 at b24fe95a789c82cd33f22a912b4dbbf94d5e2193, but the manifest records neither the importing arms' required inline JSON nor the done-when's ruff clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths in the diff sit inside the declared reckon and docs/evidence/fragments/queued-work-needs-no-workaround scope, and no path outside them was touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_node.py::test_dispatch_without_a_specification_level_exits_two reddens when the old condition is reinstated, as base-test-crew-node.log shows at EXIT=1, but it fails through a json.loads on the usage text rather than asserting the routing itself.\nSCORE fit: 20\nJUSTIFICATION fit: the added condition and its comment at reckon/crew_dispatch_commands.py:1749-1754 follow the surrounding option-guard idiom and name no plan, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing whole-plan guard at reckon/crew_dispatch_commands.py:1750 rather than adding a predicate; a search for a second owner of the whole-plan refusal message and for queue_plan callers found only this one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063126280849-qwnw-red-file-crew-node/manifest.md:18 non-blocking: the done-when requires both importing arms \"recorded as inline JSON carrying full 40-character revisions\", but the manifest carries them only as prose in `artifacts`; the substance is in importing-base-arm.log:1 and importing-head-arm.log:1 and the two failing-id files, so the measure holds while the record shape does not.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063126280849-qwnw-red-file-crew-node/manifest.md:9 non-blocking: the done-when's \"ruff check and ruff format --check report nothing new on the changed paths\" obligation is recorded nowhere in the manifest, so a reader of the record alone cannot tell it ran; this review verified it instead, with both commands exiting 0 on the reviewed head's reckon/crew_dispatch_commands.py under the repository's pyproject configuration.\nFINDING reckon/crew_dispatch_commands.py:1751 non-blocking: the repaired routing's only guard is tests/test_crew_node.py:116, which reddens through json.loads on the refusal text rather than asserting that a plan-and-node request without --section queues one node, so a narrower regression at this line would be caught only incidentally.",
+  "review_run_id": "r-20261119T065147449341-review-of-qwnw-red-file-crew-node-6aa2f64d5327",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "6aa2f64d53270737e0e3142431527b798b76442d",
+  "reviewed_run_id": "r-20261118T063126280849-qwnw-red-file-crew-node",
+  "reviewer_run_id": "r-20261119T065147449341-review-of-qwnw-red-file-crew-node-6aa2f64d5327",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:51:56.269577+00:00",
+  "total": 111
+}

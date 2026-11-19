@@ -1,0 +1,126 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own baseline_suite and after_suite entries (manifest.md:15-16) and from the logs beside them: baseline_suite-1795058524547484589.log (revision 42fe90d0b0a46060bafde2490dda7d4002cda478) reads '58 passed in 35.52s' with EXIT=0 and after_suite-1795058568148046907.log (revision 8b4b372c874e6abf37eb7ba862278a9ff139fd45) reads '58 passed in 37.41s' with EXIT=0, and both manifest failure_id lists are empty, so the difference is empty. The instrument is shown able to see a failure in this run rather than only report zeros: base-arm.log records '2 failed, 1 passed' with EXIT=1 and names tests/test_expired_acknowledgement_is_swept.py::test_an_expired_acknowledgement_is_swept_and_a_current_one_honoured and ::test_a_deferral_with_an_unreadable_instant_is_left_in_place. Note the after_suite entry's log_path ends in '-placeholder' and names no file; the readable log is after_suite-1795058568148046907.log in the same directory.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert path.is_file()",
+      "fails_if": "Reinstating `runs.release_run_acknowledgement(run_id, record, promoted=True)` on the unparsable branch deletes the file and the assertion reads False; the reviewed run's own base-arm.log shows exactly that red (AssertionError: assert False ... is_file) at 42fe90d0b0.",
+      "file": "tests/test_expired_acknowledgement_is_swept.py",
+      "independent": true,
+      "line": 176
+    },
+    {
+      "assertion": "assert _owed(before) == sorted([RUN_EXPIRED, RUN_CURRENT])",
+      "fails_if": "A promoted run whose retained tree holds nothing unmerged raises no held-worktree duty, which is the base arm's failure ('assert [] == [two ids]'); the expected ids are constants while the duty list is derived by the obligations read, so the two sides come from different sources.",
+      "file": "tests/test_expired_acknowledgement_is_swept.py",
+      "independent": true,
+      "line": 127
+    },
+    {
+      "assertion": "assert expired_path.exists() is False",
+      "fails_if": "Stopping the sweep (returning the expired record without releasing it) leaves the file on disk and the assertion fails.",
+      "file": "tests/test_expired_acknowledgement_is_swept.py",
+      "independent": true,
+      "line": 146
+    },
+    {
+      "assertion": "assert _owed(result) == [RUN_EXPIRED]",
+      "fails_if": "Honouring the expired deferral keeps RUN_EXPIRED out of the owed list, so a refusal that treats a passed instant as in force reddens it.",
+      "file": "tests/test_expired_acknowledgement_is_swept.py",
+      "independent": true,
+      "line": 148
+    },
+    {
+      "assertion": "assert deferred['until'] == (OBSERVED_AT + timedelta(hours=1)).isoformat()",
+      "fails_if": "This compares the record's echoed 'until' against the same expression the test passed to runs.record_run_acknowledgement at :134-138, so a reader that returns the stored mapping unchanged holds it whatever the obligation reader decides; it is a round-trip check, not an independent guard.",
+      "file": "tests/test_expired_acknowledgement_is_swept.py",
+      "independent": false,
+      "line": 153
+    }
+  ],
+  "assertion_independence": "The run added no assertion: the test diff at tests/test_expired_acknowledgement_is_swept.py:77-91 changes only the _worktree helper's body and docstring, and commit 415417acd9's message states assertions were unchanged, which the diff confirms. The guards that do the work are pre-existing: :146 and :148 cover the sweep of a parsed-but-expired record, :176 covers the record whose 'until' will not parse, and :127 covers the duty the fixture must raise for either case to mean anything. Each compares filesystem state or an obligations-read list against a constant, so reverting the product hunk reddens :176 (base arm shows it) and reverting the fixture reddens :127. The one non-independent assertion, :153, only round-trips a value the test supplied; it guards nothing the reviewer counts toward durability.",
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1934",
+    "reckon/crew/obligations.py:5204",
+    "reckon/crew/recovery_review_dispatch.py:4011",
+    "reckon/hooks/coordinator_obligations.py:1858"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:23:00Z",
+  "evidence_limits": "The suite pair is the harness-armed selection (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) and is not an arm over the 58 test files that import reckon.crew.obligations directly, so the done_when's 'test files that import what you changed' clause is measured on two files that exercise neither the changed loop in practice; its zero added failures is consistent but weak. The ruff clause is measurable only in the run's stream, where `ruff check reckon/crew/obligations.py tests/test_expired_acknowledgement_is_swept.py` reports 'All checks passed!' and `ruff format --check` reports '2 files already formatted'; the manifest records neither.",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062440541667-qwnw-red-file-expired-acknowledgement-is-swept/manifest.md",
+      "id": "f-review-acksweep-1",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite entry's log_path names '...-swept-placeholder', a file that does not exist, while the log it means (after_suite-1795058568148046907.log, 58 passed, EXIT=0 at 8b4b372c87 sits in the same directory; a reader or promotion that opens the recorded path finds nothing, so the arm's evidence is present but unreachable from the record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062440541667-qwnw-red-file-expired-acknowledgement-is-swept/manifest.md",
+      "id": "f-review-acksweep-2",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: both suite arms run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py while 58 test files import reckon.crew.obligations directly, so the done_when's arm 'over the test files that import what you changed' spans 2 of 58; a regression in any other caller of the changed reader would leave both arms green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062440541667-qwnw-red-file-expired-acknowledgement-is-swept/manifest.md",
+      "id": "f-review-acksweep-3",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires that 'ruff check and ruff format --check report nothing new on the changed paths', and neither the manifest nor the evidence fragment records that result; the run's stream carries it ('All checks passed!', '2 files already formatted') so the clause was measured, but the durable record cannot show it."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "id": "f-review-acksweep-4",
+      "line": "1877",
+      "severity": "non-blocking",
+      "text": "non-blocking: the live-pointer branch still releases a deferral whose 'until' will not parse, so the same unreadable record is refused-and-kept when it lives in the promoted store and refused-and-dropped when it lives in a live pointer; the difference is plausible (the live store holds the record in the pointer, not in an operator-written file) but neither the code nor the new docstring at :1895-1901 states it, so a later reader sees two rules where one was intended."
+    },
+    {
+      "file": "tests/test_expired_acknowledgement_is_swept.py",
+      "id": "f-review-acksweep-5",
+      "line": "153",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'assert deferred[until] == (OBSERVED_AT + timedelta(hours=1)).isoformat()' compares the record against the value the test itself supplied to runs.record_run_acknowledgement at :134-138, so both sides move together; it survives a reader that stops judging the instant and only echoes the mapping, and the guard for that rule is :146-150 instead."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 42fe90d0b0a46060bafde2490dda7d4002cda478: 415417acd9 adds the 'until is None' refusal at reckon/crew/obligations.py:1893-1901 with its docstring, and gives tests/test_expired_acknowledgement_is_swept.py:77-91 a committed file so the fixture tree carries unmerged work; 8b4b372c87 adds the 47-line evidence fragment; no other path changes and no assertion is removed or weakened.",
+    "done_when": "The done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, the base failing ids logged beside the head run, a no-added-failure arm over the test files that import the change as inline JSON at full 40-character revisions, and no new ruff finding on the changed paths; gate-expired-ack-local.log holds both arms at 415417acd9 and 42fe90d0b0, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-expired-acknowledgement-is-swept.html:20-34 carries the base ids, both suite entries carry 40-character revisions, and only the ruff clause is unrecorded (manifest.md carries no ruff line).",
+    "goal": "The goal is 'Make tests/test_expired_acknowledgement_is_swept.py pass in full on the primary branch'; gate-expired-ack-local.log header 'gate job: 1319171' records 3 passed EXIT=0 at head 415417acd9ece83478990a305e10d693738819c9 and scoped-gate-1795058712466226254.log reads 3 passed EXIT=0 at 8b4b372c874e6abf37eb7ba862278a9ff139fd45.",
+    "manifest": "Read; it states status complete with commits 415417acd9ece83478990a305e10d693738819c9 and 8b4b372c874e6abf37eb7ba862278a9ff139fd45, base arm 2 failed and 1 passed EXIT=1 at 42fe90d0b0 and head 3 passed at 415417acd9, both suite arms 58 passed at full revisions, but its after_suite log_path is a '-placeholder' path and it records no ruff result.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, and the figures directory; the diff touches exactly reckon/crew/obligations.py, tests/test_expired_acknowledgement_is_swept.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-expired-acknowledgement-is-swept.html, all inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Make tests/test_expired_acknowledgement_is_swept.py pass in full on the primary branch'; gate-expired-ack-local.log header 'gate job: 1319171' records 3 passed EXIT=0 at head 415417acd9ece83478990a305e10d693738819c9 and scoped-gate-1795058712466226254.log reads 3 passed EXIT=0 at 8b4b372c874e6abf37eb7ba862278a9ff139fd45.\nVERDICT done_when: the done_when names the file passing in full as an all_debug job with SLURM_JOB_ID unset, the base failing ids logged beside the head run, an arm over the test files that import the change, both suite arms as inline JSON at full 40-character revisions, and no new ruff findings; gate-expired-ack-local.log holds both file arms at 415417acd9 and 42fe90d0b0, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-expired-acknowledgement-is-swept.html:20-34 states the base ids, and only the ruff clause is left unrecorded.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, and the figures directory; the diff touches exactly reckon/crew/obligations.py, tests/test_expired_acknowledgement_is_swept.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-expired-acknowledgement-is-swept.html, all inside them.\nVERDICT manifest: read; it states status complete, commits 415417acd9ece83478990a305e10d693738819c9 and 8b4b372c874e6abf37eb7ba862278a9ff139fd45, the base arm 2 failed and 1 passed EXIT=1 at 42fe90d0b0, the head 3 passed, and 58 passed on each suite arm at full revisions, while its after_suite log_path is a '-placeholder' path and it records no ruff result.\nVERDICT diff: read commit by commit against 42fe90d0b0a46060bafde2490dda7d4002cda478; 415417acd9 adds the 'until is None' refusal and its docstring at reckon/crew/obligations.py:1893-1901 and gives tests/test_expired_acknowledgement_is_swept.py:77-91 a committed file so the fixture tree carries unmerged work, and 8b4b372c87 adds the 47-line evidence fragment; nothing else changes.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1934, reckon/crew/obligations.py:5204, reckon/crew/recovery_review_dispatch.py:4011, reckon/hooks/coordinator_obligations.py:1858\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1894 refuses an unparsable deferral without deleting it and tests/test_expired_acknowledgement_is_swept.py:87-91 gives the fixture tree the commit a dispatched run leaves, and gate-expired-ack-local.log reads 3 passed EXIT=0 at head.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate that ran is recorded at 8b4b372c87 with EXIT=0 and the base arm at 42fe90d0b0, but manifest.md:16 names an after_suite log path ending in '-placeholder' that does not exist and no line records the ruff check the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in the diff (reckon/crew/obligations.py, tests/test_expired_acknowledgement_is_swept.py, the fragment) lies inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the release at tests/test_expired_acknowledgement_is_swept.py:176's subject reddens that is_file assertion, and base-arm.log shows that red at 42fe90d0b0 rather than only a green.\nSCORE fit: 19\nJUSTIFICATION fit: the 'if until is None: continue' guard at reckon/crew/obligations.py:1894-1897 follows the surrounding loop's shape and comment idiom in the same function.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and routes the removal through the existing owner runs.release_run_acknowledgement (reckon/crew/runs.py:3012).\nFINDING manifest.md:16 non-blocking: the after_suite log_path names a '-placeholder' file that does not exist while after_suite-1795058568148046907.log (58 passed, EXIT=0) sits in the same directory, so the recorded evidence cannot be opened.\nFINDING manifest.md:15 non-blocking: both suite arms cover 2 of the 58 test files that import reckon.crew.obligations directly, so the done_when's arm over the importing files that import what changed is narrower than its wording.\nFINDING manifest.md:1 non-blocking: the done_when's ruff clause has no line in the manifest or the fragment; the run's stream shows 'All checks passed!' and '2 files already formatted' but the durable record omits it.\nFINDING reckon/crew/obligations.py:1877 non-blocking: the live-pointer branch still releases a deferral whose 'until' will not parse, so the same record is kept when promoted and dropped when live, and the docstring at :1895-1901 describes only the promoted rule.\nFINDING tests/test_expired_acknowledgement_is_swept.py:153 non-blocking: the assertion compares 'until' against the very expression passed to runs.record_run_acknowledgement at :134-138, so it holds whatever the reader does and guards nothing.\n",
+  "reuse_search": "Searched reckon/ and tests/ by capability for a deferral-file sweep: the single owner of removing a promoted acknowledgement file is runs.release_run_acknowledgement (reckon/crew/runs.py:3012-3028), which unlinks the file when the payload equals the record the reader observed. The landed change calls that owner and adds no new definition, so it neither forks nor duplicates a capability; the promoted loop at reckon/crew/obligations.py:1893-1903 already used it for the expired case and now uses the same function's absence for the unreadable case by refusing to call it.",
+  "review_run_id": "r-20261119T033205194761-review-of-qwnw-red-file-expired-acknowledgement-is-swept-8b4b372c874e",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "8b4b372c874e6abf37eb7ba862278a9ff139fd45",
+  "reviewed_run_id": "r-20261118T062440541667-qwnw-red-file-expired-acknowledgement-is-swept",
+  "reviewed_worker_commits": [
+    "415417acd9ece83478990a305e10d693738819c9",
+    "8b4b372c874e6abf37eb7ba862278a9ff139fd45"
+  ],
+  "rubric": "independent-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after": "8b4b372c874e6abf37eb7ba862278a9ff139fd45, same command, EXIT=0, '58 passed in 37.41s', no failure ids (after_suite-1795058568148046907.log; the manifest's own log_path for this entry is a '-placeholder' path)",
+    "baseline": "42fe90d0b0a46060bafde2490dda7d4002cda478, 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py', EXIT=0, '58 passed in 35.52s', no failure ids (baseline_suite-1795058524547484589.log)",
+    "file_arms": "gate-expired-ack-local.log, gate job 1319171: head arm 415417acd9 '3 passed' EXIT=0; base arm 42fe90d0b0 '2 failed, 1 passed' EXIT=1 with test_an_expired_acknowledgement_is_swept_and_a_current_one_honoured and test_a_deferral_with_an_unreadable_instant_is_left_in_place"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:40:00Z",
+  "total": 113
+}

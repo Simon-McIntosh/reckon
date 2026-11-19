@@ -181,24 +181,44 @@ def test_a_run_refused_for_its_review_and_another_reason_is_refused():
         service.settle(timeout=20)
 
 
-def _park_review_while_its_record_is_written() -> None:
-    """Put the review's request where a live reviewer's absent record leaves it."""
+def _park_review_while_its_record_is_written(monkeypatch, record_stored) -> None:
+    """Put the review's request where a live reviewer's absent record leaves it.
+
+    Only a review's own request is parked on its record: every other kind reads
+    durable state that either exists or does not, so the drain re-reads such a
+    request as ready and promotes it. This request is therefore the review's own
+    kind, and the drain re-reads its readiness from the record the reviewer has
+    not written yet. The verdict is handed to the drain from the test, so the
+    store's phase and the record's landing are the two states simulated here.
+    """
     path = requests._request_path(REVIEW_ID)
     queued = requests._read(path)
     runs._write_json(
         path,
         {
             **queued,
+            "kind": "review-self",
             "phase": requests.WAITING,
             "waiting_reason": "the review record is still being written",
         },
     )
+    # The reviewer stores its record: the verdict flips to ready while the
+    # request stays where the live reviewer left it until the drain re-reads it.
+    real_waits = requests._review_self_waits
+
+    def review_readiness(request):
+        if request.get("run_id") == REVIEW_ID and record_stored.is_set():
+            return False, ""
+        return real_waits(request)
+
+    monkeypatch.setattr(requests, "_review_self_waits", review_readiness)
 
 
-def test_a_run_whose_review_is_parked_while_its_record_is_written_waits():
+def test_a_run_whose_review_is_parked_while_its_record_is_written_waits(monkeypatch):
     _queue(RUN_ID, "delivery")
     _queue(REVIEW_ID, f"review-of-{RUN_ID}")
-    _park_review_while_its_record_is_written()
+    record_stored = threading.Event()
+    _park_review_while_its_record_is_written(monkeypatch, record_stored)
     promotions = _StubPromotions()
     service = requests.PromotionService(width=1, execute=promotions)
 
@@ -207,16 +227,11 @@ def test_a_run_whose_review_is_parked_while_its_record_is_written_waits():
 
     receipt = requests.read_promotion(RUN_ID)
     assert receipt["phase"] == requests.REQUESTED, receipt
+    assert promotions.attempts.count(RUN_ID) == 1, promotions.attempts
 
-    # The reviewer stores its record, so its request leaves the waiting phase
-    # and the queue promotes the review, then the run it licenses.
-    runs._write_json(
-        requests._request_path(REVIEW_ID),
-        {
-            **requests._read(requests._request_path(REVIEW_ID)),
-            "phase": requests.REQUESTED,
-        },
-    )
+    # The reviewer stores its record: the drain re-reads the parked request as
+    # ready, promotes the review, then the run it licenses.
+    record_stored.set()
     _drain(service)
 
     assert promotions.promoted == [REVIEW_ID, RUN_ID], promotions.attempts

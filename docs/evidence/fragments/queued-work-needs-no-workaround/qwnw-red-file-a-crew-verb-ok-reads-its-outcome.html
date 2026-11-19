@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-a-crew-verb-ok-reads-its-outcome-cause">
+<h2>One cause: a literal success beside a promotion result</h2>
+<p>The node's file was red at <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code> on one test.</p>
+<pre># revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crew_verb_ok_reads_its_outcome.py
+......................F..                                                [100%]
+1 failed, 24 passed in 1.54s
+FAILED tests/test_a_crew_verb_ok_reads_its_outcome.py::test_crew_emit_sites_do_not_put_literal_success_beside_a_result - AssertionError: ['crew_record_merge:4452']
+assert ['crew_record_merge:4452'] == []
+EXIT=1</pre>
+<p>Verdict: <strong>product wrong</strong>. <code>crew_record_merge</code> emitted <code>{"ok": True, ... , **result}</code>, so the command's verdict was fixed before the result it publishes was read. Every other crew emit site leaves the verdict to <code>_crew_result_ok</code>, which reads the payload; this one now does the same. Nothing in the test was deleted or weakened.</p>
+</section>
+
+<section id="qwnw-red-file-a-crew-verb-ok-reads-its-outcome-head">
+<h2>The file at head</h2>
+<p>Run as a job on all_debug with <code>SLURM_JOB_ID</code> unset, at <code>c714b758557a3d70cef40e8add13736e993a9736</code>: <strong>25 passed</strong>, <code>EXIT=0</code>.</p>
+<pre># revision: c714b758557a3d70cef40e8add13736e993a9736
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crew_verb_ok_reads_its_outcome.py
+.........................                                                [100%]
+25 passed in 0.99s
+EXIT=0</pre>
+</section>
+
+<section id="qwnw-red-file-a-crew-verb-ok-reads-its-outcome-arms">
+<h2>Arms</h2>
+<table>
+<tr><th>arm</th><th>revision</th><th>result</th></tr>
+<tr><td>declared suite, base</td><td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td><td>58 passed, EXIT=0</td></tr>
+<tr><td>declared suite, head</td><td><code>c714b758557a3d70cef40e8add13736e993a9736</code></td><td>58 passed, EXIT=0</td></tr>
+</table>
+<p>No failure is added. Ruff reports nothing on the changed path either side.</p>
+</section>
+
+<section id="qwnw-red-file-a-crew-verb-ok-reads-its-outcome-importers">
+<h2>Every test file importing the changed module</h2>
+<p>29 test files name <code>reckon.crew_run_commands</code>, the module this node changed. Run at both revisions on all_debug: the base arm fails 22 and passes 512, the head arm fails 21 and passes 513. The one id the head no longer fails is this node's own emit-site guard; no id is added.</p>
+<pre>base 5b0a1f537ef9bbca90907bd16f663732db844fb0: 22 failed, 512 passed, EXIT=1
+head c714b758557a3d70cef40e8add13736e993a9736: 21 failed, 513 passed, EXIT=1
+in base and not head: FAILED tests/test_a_crew_verb_ok_reads_its_outcome.py::test_crew_emit_sites_do_not_put_literal_success_beside_a_result
+in head and not base: none</pre>
+</section>
+
+<section id="qwnw-red-file-a-crew-verb-ok-reads-its-outcome-negative-control">
+<h2>Negative control</h2>
+<p>The same file at the base revision, in a real clone of that revision, on all_debug with <code>SLURM_JOB_ID</code> unset: <strong>1 failed, 24 passed</strong>, <code>EXIT=1</code>, failing at <code>test_crew_emit_sites_do_not_put_literal_success_beside_a_result</code> with <code>['crew_record_merge:4452']</code>. The head run of the same file passes, so the guard fired at base and the repair is what silenced it.</p>
+</section>

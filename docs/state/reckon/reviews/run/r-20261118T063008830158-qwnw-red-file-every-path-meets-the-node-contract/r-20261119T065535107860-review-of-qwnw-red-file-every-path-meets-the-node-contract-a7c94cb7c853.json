@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:300 _emit",
+    "reckon/crew/dispatching/preparation.py:1581 created-run notice"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:24:10Z",
+  "evidence_limits": [
+    "The done_when's all_debug job route never ran: every gate and suite submission was refused before pytest with bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T (scoped-gate-1795063686529864774.log.scheduler and siblings).",
+    "logs/head-gate.log's header lines and its EXIT=0 were echoed by the worker; the body is the captured stdout document written by a real pytest run at a7c94cb7.",
+    "added_failure_count 0 was derived from logs/baseline-suite.txt (58 passed, EXIT=0) against after_suite-1795062965030358358.log (58 passed, EXIT=0); the same instrument reads 1 added id when the red base log is passed as the head arm, so the zero is measured rather than blind."
+  ],
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063008830158-qwnw-red-file-every-path-meets-the-node-contract/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite is recorded inline without the after_suite arm the run's armed suite fence requires, although after_suite-1795062965030358358.log holds 58 passed EXIT=0 at c3716eb9, so promotion holds half of the pair the delta is read from."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063008830158-qwnw-red-file-every-path-meets-the-node-contract/logs/head-gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log's header lines and its EXIT=0 were echoed by hand and the body was appended from a captured run, so the status promotion reads from the last line is authored rather than the runner's own; the refusal of the job route is what forces this and should be named beside the log."
+    },
+    {
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "387",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added assertion pins the literal notice text \"reckon: created run\", so rewording a user-facing notice reddens a test whose subject is which stream carries it rather than what it says."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-path-meets-the-node-contract.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "the fragment at line 20 labels c3716eb9 as the head and quotes 2.23s at line 21, while the node landed at a7c94cb7 and its recorded head run reads 1.95s, so a reader comparing fragment and node row sees two heads and two durations."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read both commits against 42fe90d0 \u2014 c3716eb9 moves two stream reads in the named test file from result.output to result.stdout and adds one stderr assertion (+8/-3), and a7c94cb7 adds the 24-line evidence fragment; no production code changes.",
+    "done_when": "The done_when names a full run as an all_debug job with SLURM_JOB_ID unset plus a base-red control and both suite arms as inline JSON; the manifest records the job route refused with bwrap receipts (scoped-gate-1795063686529864774.log.scheduler), a base-red control at 42fe90d0 naming the one failing id, and only the baseline_suite arm inline.",
+    "goal": "The node's goal is that tests/test_every_path_meets_the_node_contract.py passes in full; at head a7c94cb7 the test reads the command's stdout document at tests/test_every_path_meets_the_node_contract.py:231-233 and :385-388, and the recorded run reports 11 passed EXIT=0.",
+    "manifest": "Read at the source run directory; it states 11 passed EXIT=0 at a7c94cb7 with status complete, quotes the one base failing id, records baseline_suite inline and records no after_suite arm.",
+    "write_paths": "The declared paths cover reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its figure directory; the two-path diff touches only tests/test_every_path_meets_the_node_contract.py and the node's fragment file, both inside, and no product file."
+  },
+  "justifications": {
+    "durability": "putting the product's notice back on stdout (reckon/crew/dispatching/preparation.py:1581) reddens tests/test_every_path_meets_the_node_contract.py:233 and :387, so the repair is guarded; the added assertion at :387 pins message wording as well as the stream.",
+    "evidence": "logs/negative-control-base.txt reproduces the exact JSONDecodeError on the merged stream at 42fe90d0 and logs/head-gate.log records 11 passed at a7c94cb7, but the named all_debug route never ran and the manifest records baseline_suite without an after_suite arm.",
+    "fit": "the changed test keeps the module's CliRunner idiom and adds no new name, and its comments at tests/test_every_path_meets_the_node_contract.py:231 and :386 match the house comment style.",
+    "goal_fidelity": "tests/test_every_path_meets_the_node_contract.py:385-388 parses result.stdout and asserts the notice on result.stderr, and the recorded head run reports 11 passed EXIT=0 at a7c94cb7; passing \"on the primary branch\" still awaits promotion.",
+    "reuse": "the diff adds no definition; the stdout-read idiom it adopts is the per-file helper convention this repository already uses (tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:148), and no shared owner exists in tests/conftest.py to extend.",
+    "scope_discipline": "both paths in 42fe90d0..a7c94cb7, tests/test_every_path_meets_the_node_contract.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-path-meets-the-node-contract.html, sit inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that tests/test_every_path_meets_the_node_contract.py passes in full; at head a7c94cb7 the test reads the command's stdout document at tests/test_every_path_meets_the_node_contract.py:231-233 and :385-388, and the recorded run reports 11 passed EXIT=0.\nVERDICT done_when: The done_when names a full run as an all_debug job with SLURM_JOB_ID unset plus a base-red control and both suite arms as inline JSON; the manifest records the job route refused with bwrap receipts (scoped-gate-1795063686529864774.log.scheduler), a base-red control at 42fe90d0 naming the one failing id, and only the baseline_suite arm inline.\nVERDICT write_paths: The declared paths cover reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its figure directory; the two-path diff touches only tests/test_every_path_meets_the_node_contract.py and the node's fragment file, both inside, and no product file.\nVERDICT manifest: Read at the source run directory; it states 11 passed EXIT=0 at a7c94cb7 with status complete, quotes the one base failing id, records baseline_suite inline and records no after_suite arm.\nVERDICT diff: Read both commits against 42fe90d0 \u2014 c3716eb9 moves two stream reads in the named test file from result.output to result.stdout and adds one stderr assertion (+8/-3), and a7c94cb7 adds the 24-line evidence fragment; no production code changes.\nCALL_SITES: reckon/crew_dispatch_commands.py:300 _emit, reckon/crew/dispatching/preparation.py:1581 created-run notice\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_every_path_meets_the_node_contract.py:385-388 parses result.stdout and asserts the notice on result.stderr, and the recorded head run reports 11 passed EXIT=0 at a7c94cb7; passing \"on the primary branch\" still awaits promotion.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/negative-control-base.txt reproduces the exact JSONDecodeError on the merged stream at 42fe90d0 and logs/head-gate.log records 11 passed at a7c94cb7, but the named all_debug route never ran and the manifest records baseline_suite without an after_suite arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both paths in 42fe90d0..a7c94cb7, tests/test_every_path_meets_the_node_contract.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-path-meets-the-node-contract.html, sit inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: putting the product's notice back on stdout (reckon/crew/dispatching/preparation.py:1581) reddens tests/test_every_path_meets_the_node_contract.py:233 and :387, so the repair is guarded; the added assertion at :387 pins message wording as well as the stream.\nSCORE fit: 17\nJUSTIFICATION fit: the changed test keeps the module's CliRunner idiom and adds no new name, and its comments at tests/test_every_path_meets_the_node_contract.py:231 and :386 match the house comment style.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; the stdout-read idiom it adopts is the per-file helper convention this repository already uses (tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:148), and no shared owner exists in tests/conftest.py to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063008830158-qwnw-red-file-every-path-meets-the-node-contract/manifest.md:14 non-blocking: baseline_suite is recorded inline without the after_suite arm the run's armed suite fence requires, although after_suite-1795062965030358358.log holds 58 passed EXIT=0 at c3716eb9, so promotion holds half of the pair the delta is read from.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063008830158-qwnw-red-file-every-path-meets-the-node-contract/logs/head-gate.log:1 non-blocking: the gate log's header lines and its EXIT=0 were echoed by hand and the body was appended from a captured run, so the status promotion reads from the last line is authored rather than the runner's own; the refusal of the job route is what forces this and should be named beside the log.\nFINDING tests/test_every_path_meets_the_node_contract.py:387 non-blocking: the added assertion pins the literal notice text \"reckon: created run\", so rewording a user-facing notice reddens a test whose subject is which stream carries it rather than what it says.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-path-meets-the-node-contract.html:17 non-blocking: the fragment labels c3716eb9 as the head and quotes a 2.23s run, while the node landed at a7c94cb7 and the manifest's head run reads 1.95s, so a reader comparing fragment and node row sees two heads and two durations.",
+  "review_run_id": "r-20261119T065535107860-review-of-qwnw-red-file-every-path-meets-the-node-contract-a7c94cb7c853",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "a7c94cb7c853fdf11b1b49ba78254df367b0490b",
+  "reviewed_run_id": "r-20261118T063008830158-qwnw-red-file-every-path-meets-the-node-contract",
+  "reviewed_worker_commits": [
+    "c3716eb9a3f0283a9444d61a8f18aa4804dfdc75",
+    "a7c94cb7c853fdf11b1b49ba78254df367b0490b"
+  ],
+  "scope_provenance": "c3716eb9a3f0283a9444d61a8f18aa4804dfdc75 parents at 42fe90d0b0a46060bafde2490dda7d4002cda478, so both commits in the range are the node's own and neither path leaves its declared scope.",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:52:45.347308+00:00",
+  "total": 107
+}

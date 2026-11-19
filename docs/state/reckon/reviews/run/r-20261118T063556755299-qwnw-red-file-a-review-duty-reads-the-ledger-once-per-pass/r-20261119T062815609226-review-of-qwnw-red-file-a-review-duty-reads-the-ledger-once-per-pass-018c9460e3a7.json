@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/station_subscriber.py:276 live_work_populations",
+    "reckon/crew/recovery_review_dispatch.py:3527 _open_review_refusal"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:09:10Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite log_path is a truncated string ending \"_ledger log, so no reader can open that arm's log from the record although the log exists as after_suite-1795068870944909852.log and ends EXIT=0."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed test nor any module the diff touches, so the arm the done_when names is not measured and the manifest does not state how this population was derived."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/negative-control-base.log",
+      "line": "103",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm's log continues past its own EXIT=1 at line 102 with an unrelated whole-suite probe, so the last line is not the EXIT record a reader keys on and the red result is legible only at lines 101-102."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: failure_attribution is not valid JSON, so the scaffolding exclusion the run relies on to keep its retry count at none cannot be read by a machine."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: measurement_module carries \"/tmp/reckon-crew-scratch place rather than the absolute path of the imported module, and the base arm's scratch tree sits under bare /tmp rather than $TMPDIR."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Both commits were read; 93f600a71b replaces the control arm's patch of ledger.run_ids with open_run_index.has_row answering from ledger.run_ids(..., use_index=False) at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:246 and strengthens the count to one parse per delivered run at :263, and 018c9460 adds the 66-line fragment carrying the base output, the arms table and the mutation note.",
+    "done_when": "done_when asks for the named file green at head on all_debug, a verdict per cause, no assertion deleted or weakened, an arm over the importing test files, and the base red run logged in the fragment; scoped-gate-1795068761660668759.log reads 3 passed with last line EXIT=0 at 93f600a71b on host 98dci4-clu-3142, manifest.md:11 states the cause verdict product right and test wrong, and negative-control-base.log:101-102 carries the base red run with its failing id, but manifest.md:18 runs an arm over two files that import neither the changed test nor any module the diff touches, so the importing-test-files arm is not shown to have been measured.",
+    "goal": "The node goal in dispatch-detail.json admit_request.node.goal is \"Make tests/test_a_review_duty_reads_the_ledger_once_per_pass.py pass in full on the primary branch\"; at 018c9460e3a7 the file is green and the case test_a_station_pass_reads_the_ledger_once at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:189 is the only repair the diff makes.",
+    "manifest": "manifest.md was read in full; line 7 names commits 93f600a71b and 018c9460e3, line 11 the cause verdict, line 12 the gate command with line 13 its logs, lines 18-19 the two suite arms, and lines 14 and 19-20 carry malformed fields recorded as findings below.",
+    "write_paths": "The diff b24fe95a78..018c9460e3 changes only tests/test_a_review_duty_reads_the_ledger_once_per_pass.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass.html, both inside the write paths dispatch-detail.json admit_request.node.write_paths declares (tests and the fragment directory)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:263 reddens when the arm answers from the index instead of the aggregate, and :222 reddens-on-regression by refusing more than one aggregate parse in the real pass, both counting reads the code under test makes rather than echoing a value the test supplied.",
+    "evidence": "scoped gate and base red logs are recorded and openable, but manifest.md:19 leaves the after_suite log_path unterminated, manifest.md:18 runs a population the done_when does not name, and manifest.md:20 carries failure_attribution that is not JSON.",
+    "fit": "the added helper base_has_row at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:246 and the alias at :41 follow the module-alias and helper idiom of the same file, and no forbidden name is introduced.",
+    "goal_fidelity": "tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:189 is green under the named gate at 93f600a71b and the diff changes no product code, so the file passes in full with no rule added to make it.",
+    "reuse": "no product capability is added; the control arm answers through the owner ledger.run_ids(use_index=False) at reckon/ledger.py:1237 rather than a second membership reader, and the searched owners were reckon/ledger.py:1237 and reckon/crew/open_run_index.py:724.",
+    "scope_discipline": "every path in b24fe95a78..018c9460e3 lies inside the write paths dispatch-detail.json declares, and the diff carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal in dispatch-detail.json admit_request.node.goal is \"Make tests/test_a_review_duty_reads_the_ledger_once_per_pass.py pass in full on the primary branch\"; at 018c9460e3a7 the file is green and the case test_a_station_pass_reads_the_ledger_once at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:189 is the only repair the diff makes.\nVERDICT done_when: done_when asks for the named file green at head on all_debug, a verdict per cause, no assertion deleted or weakened, an arm over the importing test files, and the base red run logged in the fragment; scoped-gate-1795068761660668759.log reads 3 passed with last line EXIT=0 at 93f600a71b on host 98dci4-clu-3142, manifest.md:11 states the cause verdict product right and test wrong, and negative-control-base.log:101-102 carries the base red run with its failing id, but manifest.md:18 runs an arm over two files that import neither the changed test nor any module the diff touches, so the importing-test-files arm is not shown to have been measured.\nVERDICT write_paths: The diff b24fe95a78..018c9460e3 changes only tests/test_a_review_duty_reads_the_ledger_once_per_pass.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass.html, both inside the write paths dispatch-detail.json admit_request.node.write_paths declares (tests and the fragment directory).\nVERDICT manifest: manifest.md was read in full; line 7 names commits 93f600a71b and 018c9460e3, line 11 the cause verdict, line 12 the gate command with line 13 its logs, lines 18-19 the two suite arms, and lines 14 and 19-20 carry malformed fields recorded as findings below.\nVERDICT diff: Both commits were read; 93f600a71b replaces the control arm's patch of ledger.run_ids with open_run_index.has_row answering from ledger.run_ids(..., use_index=False) at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:246 and strengthens the count to one parse per delivered run at :263, and 018c9460 adds the 66-line fragment carrying the base output, the arms table and the mutation note.\nCALL_SITES: reckon/crew/station_subscriber.py:276 live_work_populations, reckon/crew/recovery_review_dispatch.py:3527 _open_review_refusal\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:189 is green under the named gate at 93f600a71b and the diff changes no product code, so the file passes in full with no rule added to make it.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped gate and base red logs are recorded and openable, but manifest.md:19 leaves the after_suite log_path unterminated, manifest.md:18 runs a population the done_when does not name, and manifest.md:20 carries failure_attribution that is not JSON.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in b24fe95a78..018c9460e3 lies inside the write paths dispatch-detail.json declares, and the diff carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:263 reddens when the arm answers from the index instead of the aggregate, and :222 reddens-on-regression by refusing more than one aggregate parse in the real pass, both counting reads the code under test makes rather than echoing a value the test supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the added helper base_has_row at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:246 and the alias at :41 follow the module-alias and helper idiom of the same file, and no forbidden name is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: no product capability is added; the control arm answers through the owner ledger.run_ids(use_index=False) at reckon/ledger.py:1237 rather than a second membership reader, and the searched owners were reckon/ledger.py:1237 and reckon/crew/open_run_index.py:724.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md:19 non-blocking: the after_suite log_path is a truncated string ending \"_ledger log, so no reader can open that arm's log from the record although the log exists as after_suite-1795068870944909852.log and ends EXIT=0.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md:18 non-blocking: the suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import neither the changed test nor any module the diff touches, so the arm the done_when names is not measured and the manifest does not state how this population was derived.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/negative-control-base.log:103 non-blocking: the base arm's log continues past its own EXIT=1 at line 102 with an unrelated whole-suite probe, so the last line is not the EXIT record a reader keys on and the red result is legible only at lines 101-102.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md:20 non-blocking: failure_attribution is not valid JSON, so the scaffolding exclusion the run relies on to keep its retry count at none cannot be read by a machine.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass/manifest.md:14 non-blocking: measurement_module carries \"/tmp/reckon-crew-scratch place rather than the absolute path of the imported module, and the base arm's scratch tree sits under bare /tmp rather than $TMPDIR.",
+  "reuse_search": {
+    "capability": "membership set rebuilt from the committed sources",
+    "owners_found": [
+      "reckon/crew/open_run_index.py:724 has_row",
+      "reckon/ledger.py:1237 run_ids(use_index=False)"
+    ],
+    "verdict": "the arm answers through the owner and adds no second reader"
+  },
+  "review_run_id": "r-20261119T062815609226-review-of-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass-018c9460e3a7",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "018c9460e3a7ebcb4b19cae85202b6ba9366c7c7",
+  "reviewed_run_id": "r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass",
+  "reviewed_worker_commits": [
+    "93f600a71b584587735e9aed1bd90cc5f4937f24",
+    "018c9460e3a7ebcb4b19cae85202b6ba9366c7c7"
+  ],
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:34:16.630853+00:00",
+  "total": 107
+}

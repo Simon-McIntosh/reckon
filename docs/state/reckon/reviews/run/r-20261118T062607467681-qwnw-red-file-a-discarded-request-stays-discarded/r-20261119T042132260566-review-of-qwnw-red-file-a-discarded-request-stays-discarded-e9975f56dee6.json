@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms on disk: baseline_suite-1795060018977036154.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 records 58 passed EXIT=0 and after_suite-1795060062806384767.log at e9975f56dee65fc359134358b34e4601496118b1 records 58 passed EXIT=0, neither carrying a FAILED line, so the set difference is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3077 (crew discard command calls the facade's discard)",
+    "reckon/crew/dispatch_launch.py:1853 (admission dispatch calls supervised_launch)",
+    "reckon/crew/resumption.py:1779 (resume calls supervised_launch)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:15:59Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the baseline_suite and after_suite values carry a placeholder command (\"x\", \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider? x\") and an empty log_path, so the done_when's \"both arms recorded as inline JSON\" holds only in shape; the arms a reader can actually open are baseline_suite-1795060018977036154.log and after_suite-1795060062806384767.log."
+    },
+    {
+      "file": "tests/test_an_ended_attempt_holds_nothing.py",
+      "line": "280",
+      "severity": "non-blocking",
+      "text": "non-blocking: the only recorded importer arm at a head revision (related-head-5e693b9159.log) adds this test's discard assertion, \"DID NOT RAISE CrewError\", over the base's three failures, and no importer arm is recorded at e9975f56, so the done_when's \"adds no failure against the base\" clause is unproven at the landed revision even though reckon/crew/promotion.py:3394 restores that refusal for the supervisor-named attempt the test holds."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478; 5e693b9159 adds a discard_recorded guard at reckon/crew/dispatch_launch.py:3831 and removes the reservation refusal from promotion.discard, and e9975f56 restores that refusal narrowed to a reservation naming a supervisor at reckon/crew/promotion.py:3394, with no test file changed in the range.",
+    "done_when": "the done_when names that file passing in full at head as an all_debug job, its base run taken first, no weakened assertion, and an importer arm adding no failure over the base; scoped-gate-1795059954620843844.log is the named run at e9975f56 (9 passed, EXIT=0) and negative-control-base-42fe90d0.log is the base run (EXIT=1, naming the two failing ids), but the importer arm is recorded only at the intermediate 5e693b9159 and not at the landed revision.",
+    "goal": "the goal is to make tests/test_a_discarded_request_stays_discarded.py pass in full on the primary branch; the landing is reckon/crew/promotion.py:3394 plus the guard at reckon/crew/dispatch_launch.py:3831-3842, and scoped-gate-1795059954620843844.log records 9 passed EXIT=0 at e9975f56 where negative-control-base-42fe90d0.log records 2 failed, 7 passed EXIT=1 at 42fe90d0.",
+    "manifest": "read the reviewed run's manifest.md; it reports status complete, commits 5e693b91593daadcfca7e13c855c9176c6bfa18b and e9975f56dee65fc359134358b34e4601496118b1, and the literal gate command, but its baseline_suite and after_suite JSON carry a placeholder command (\"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider? x\" and \"x\") with empty log_path fields, and its test_logs line names a directory fragment rather than a log.",
+    "write_paths": "the declared paths are reckon, tests, the queued-work-needs-no-workaround fragments directory, its per-node fragment, and a figures directory; git diff 42fe90d0..e9975f56 touches only reckon/crew/dispatch_launch.py and reckon/crew/promotion.py, both inside reckon."
+  },
+  "justifications": {
+    "durability": "tests/test_a_discarded_request_stays_discarded.py:175 fails at base with \"a discarded request leaves no live run (launcher calls: 0)\" and would redden again if the guard at reckon/crew/dispatch_launch.py:3831 were removed, but the diff adds no assertion of its own and that guard belongs to an earlier commit of the run.",
+    "evidence": "scoped-gate-1795059954620843844.log records the named gate at e9975f56 with 9 passed and EXIT=0, but the inline arm JSON at manifest.md:13 carries a placeholder command with an empty log_path and no importer-arm run is recorded at the landed revision.",
+    "fit": "the added block at reckon/crew/dispatch_launch.py:3831 uses the same in-function import of discard_recorded and the same CrewError phrasing as the existing reader at reckon/crew/dispatch_launch.py:4107.",
+    "goal_fidelity": "reckon/crew/promotion.py:3394 and reckon/crew/dispatch_launch.py:3831 carry the two changes, and the named file reads 9 passed at e9975f56 against 2 failed at base in negative-control-base-42fe90d0.log.",
+    "reuse": "the change adds no new predicate, calling the existing promotion.discard_recorded (reckon/crew/promotion.py:3314) at reckon/crew/dispatch_launch.py:3834 and narrowing the existing held_launch_reservation refusal at promotion.py:3394, the same predicate the other discard-record readers use (reckon/crew/dispatching/claims.py:36, reckon/crew/dispatch_claims.py:1267).",
+    "scope_discipline": "git diff 42fe90d0..e9975f56 changes only reckon/crew/promotion.py and reckon/crew/dispatch_launch.py, both inside the declared reckon path, with no unrelated hunk."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make tests/test_a_discarded_request_stays_discarded.py pass in full on the primary branch; the landing is reckon/crew/promotion.py:3394 plus the guard at reckon/crew/dispatch_launch.py:3831-3842, and scoped-gate-1795059954620843844.log records 9 passed EXIT=0 at e9975f56 where negative-control-base-42fe90d0.log records 2 failed, 7 passed EXIT=1 at 42fe90d0.\nVERDICT done_when: the done_when names that file passing in full at head as an all_debug job, its base run taken first, no weakened assertion, and an importer arm adding no failure over the base; scoped-gate-1795059954620843844.log is the named run at e9975f56 (9 passed, EXIT=0) and negative-control-base-42fe90d0.log is the base run (EXIT=1, naming the two failing ids), but the importer arm is recorded only at the intermediate 5e693b9159 and not at the landed revision.\nVERDICT write_paths: the declared paths are reckon, tests, the queued-work-needs-no-workaround fragments directory, its per-node fragment, and a figures directory; git diff 42fe90d0..e9975f56 touches only reckon/crew/dispatch_launch.py and reckon/crew/promotion.py, both inside reckon.\nVERDICT manifest: read the reviewed run's manifest.md; it reports status complete, commits 5e693b91593daadcfca7e13c855c9176c6bfa18b and e9975f56dee65fc359134358b34e4601496118b1, and the literal gate command, but its baseline_suite and after_suite JSON carry a placeholder command (\"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider? x\" and \"x\") with empty log_path fields, and its test_logs line names a directory fragment rather than a log.\nVERDICT diff: read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478; 5e693b9159 adds a discard_recorded guard at reckon/crew/dispatch_launch.py:3831 and removes the reservation refusal from promotion.discard, and e9975f56 restores that refusal narrowed to a reservation naming a supervisor at reckon/crew/promotion.py:3394, with no test file changed in the range.\nCALL_SITES: reckon/crew_run_commands.py:3077 (crew discard command calls the facade's discard), reckon/crew/dispatch_launch.py:1853 (admission dispatch calls supervised_launch), reckon/crew/resumption.py:1779 (resume calls supervised_launch)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3394 and reckon/crew/dispatch_launch.py:3831 carry the two changes, and the named file reads 9 passed at e9975f56 against 2 failed at base in negative-control-base-42fe90d0.log.\nSCORE evidence: 11\nJUSTIFICATION evidence: scoped-gate-1795059954620843844.log records the named gate at e9975f56 with 9 passed and EXIT=0, but the inline arm JSON at manifest.md:13 carries a placeholder command with an empty log_path and no importer-arm run is recorded at the landed revision.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 42fe90d0..e9975f56 changes only reckon/crew/promotion.py and reckon/crew/dispatch_launch.py, both inside the declared reckon path, with no unrelated hunk.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_discarded_request_stays_discarded.py:175 fails at base with \"a discarded request leaves no live run (launcher calls: 0)\" and would redden again if the guard at reckon/crew/dispatch_launch.py:3831 were removed, but the diff adds no assertion of its own and that guard belongs to an earlier commit of the run.\nSCORE fit: 18\nJUSTIFICATION fit: the added block at reckon/crew/dispatch_launch.py:3831 uses the same in-function import of discard_recorded and the same CrewError phrasing as the existing reader at reckon/crew/dispatch_launch.py:4107.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no new predicate, calling the existing promotion.discard_recorded (reckon/crew/promotion.py:3314) at reckon/crew/dispatch_launch.py:3834 and narrowing the existing held_launch_reservation refusal at promotion.py:3394, the same predicate the other discard-record readers use (reckon/crew/dispatching/claims.py:36, reckon/crew/dispatch_claims.py:1267).\nFINDING manifest.md:13 non-blocking: the baseline_suite and after_suite values carry a placeholder command (\"x\", \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider? x\") and an empty log_path, so the done_when's \"both arms recorded as inline JSON\" holds only in shape; the arms a reader can actually open are baseline_suite-1795060018977036154.log and after_suite-1795060062806384767.log.\nFINDING tests/test_an_ended_attempt_holds_nothing.py:280 non-blocking: the only recorded importer arm at a head revision (related-head-5e693b9159.log) adds this test's discard assertion, \"DID NOT RAISE CrewError\", over the base's three failures, and no importer arm is recorded at e9975f56, so the done_when's \"adds no failure against the base\" clause is unproven at the landed revision even though reckon/crew/promotion.py:3394 restores that refusal for the supervisor-named attempt the test holds.",
+  "review_node": "review-of-qwnw-red-file-a-discarded-request-stays-discarded-e9975f56dee6",
+  "review_run_id": "r-20261119T042132260566-review-of-qwnw-red-file-a-discarded-request-stays-discarded-e9975f56dee6",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "e9975f56dee65fc359134358b34e4601496118b1",
+  "reviewed_run_id": "r-20261118T062607467681-qwnw-red-file-a-discarded-request-stays-discarded",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T042132260566-review-of-qwnw-red-file-a-discarded-request-stays-discarded-e9975f56dee6"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:43:24.289144+00:00",
+  "total": 104
+}

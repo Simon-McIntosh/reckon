@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own declared arms: suite-base-9e1dc0dc.log reports 58 passed at 9e1dc0dc3e2ce3b478d6d162b32e37d11653c246 and suite-after-final.log reports 58 passed at 5003c378b97715e96e85f7e0123a55e1cc97edec, EXIT=0 on both, so neither arm records a failing id; no head-only id can exist.",
+  "after_suite": {
+    "command": "env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once/suite-after-final.log",
+    "revision": "5003c378b97715e96e85f7e0123a55e1cc97edec"
+  },
+  "baseline_suite": {
+    "command": "env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once/suite-base-9e1dc0dc.log",
+    "revision": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:2300 fleet_state",
+    "reckon/crew/station_obligations.py:342 fleet_state",
+    "reckon/crew/runs.py:4885 obligation_snapshot.sweep"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T09:00:26Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node-gate row cites 5003c378b97715e96e85f7e0123a55e1cc97edec as the revision the gate passed at, but no gate log in the run names that revision: gate-head-99db1c1a.log names 99db1c1af75fbbbf624eb737791bf9c371d56a8d and gate-final.log names d3c1ed6a94d7e65491f75556ad8308dcbcebabcf, both 4 passed EXIT=0, so the citation cannot be reconciled with the log set the table's own caption promises. The same row also asserts a batch job on all_debug with the job id removed, while the two batch submissions recorded at that merge, scoped-gate-1795047545636753437.log and scoped-gate-1795047556361497212.log, are 0 bytes and the latter's .scheduler file holds only a bwrap bind-mount error, so the done_when's job condition has no passing job behind it; the passing runs are worktree runs on 98dci4-clu-3142 with env -u SLURM_JOB_ID."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the baseline_suite and after_suite fields (manifest.md lines 15 and 16) carry the literal unsubstituted placeholder \"@@SUITECMD@@\" in their command key, so the pair cannot be re-run from the record; the same file's tests line and both gate logs do carry the real command, and the failure counts above are read from the logs at the declared log_path values."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "VERDICT diff: read 65181b1b96f8048de716ec8c26637766e987d68d..d3c1ed6a94d7e65491f75556ad8308dcbcebabcf commit by commit; 99db1c1a merges primary main and resolves the two-hunk conflict to primary's _build_fleet_state (the merged reckon/crew/obligation_snapshot.py hashes equal to the 73b9ac21 parent), 5003c378 adds 17 lines to the fragment, d3c1ed6a rewrites two revision cells.",
+    "done_when": "VERDICT done_when: the done_when names the file passing in full at head as a job on all_debug with SLURM_JOB_ID unset, a base run, an imports arm, a negative control and clean lint; the delta's table records 1 failed/3 passed at 9e1dc0dc and 58 passed/EXIT=0 on both suite arms, but its gate row miscites the revision and no passing batch job exists (scoped-gate-1795047545636753437.log and scoped-gate-1795047556361497212.log are empty, the latter with a bwrap error in its .scheduler file).",
+    "goal": "VERDICT goal: the goal is that tests/test_a_sweep_resolves_review_heads_once.py passes in full on the primary branch; gate-final.log records 4 passed EXIT=0 at the delivered head d3c1ed6a94d7e65491f75556ad8308dcbcebabcf and reckon/crew/obligation_snapshot.py:1867,1895 at that head holds one opener and one _build_fleet_state body.",
+    "manifest": "VERDICT manifest: read; it reports status complete, lists 74dd0d04, 65181b1b, 99db1c1a, 5003c378 and d3c1ed6a, names the gate command and six log paths, and carries both suite arms at 58 passed each, but its baseline_suite and after_suite command keys hold the literal placeholder \"@@SUITECMD@@\".",
+    "write_paths": "VERDICT write_paths: the declaration covers reckon, tests, the queued-work fragment directory and the fragment file; the delta's two commits touch only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html, and the range's other 160-plus paths arrive through three merges of primary main authored by other nodes."
+  },
+  "justifications": {
+    "durability": "JUSTIFICATION durability: the delta adds documentation only, and the guard it rests on, tests/test_a_sweep_resolves_review_heads_once.py:206, counts calls to dispatch_module._reviewed_run_head against len(runs.list_live(...)) from an independent source, reddening as negative-control-base.log shows (48 <= 6 at base) if the duplicate def returns.",
+    "evidence": "JUSTIFICATION evidence: suite-base-9e1dc0dc.log and suite-after-final.log both end in a bare EXIT=0 line with 58 passed, yet the delta's gate row at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html:55 cites 5003c378b97715e96e85f7e0123a55e1cc97edec, a revision no gate log names, beside a batch-job claim its own two scoped-gate submissions do not support.",
+    "fit": "JUSTIFICATION fit: the two commits keep the surrounding fragment idiom in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html:40-92, the arm table shape its sibling fragments use, and introduce no new symbol or identifier, the fragment's existing anchors aside.",
+    "goal_fidelity": "JUSTIFICATION goal_fidelity: the merged resolution recorded at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html:15-21 matches the tree, where reckon/crew/obligation_snapshot.py's merged blob 6b2d780024f0b0617b09c57d702c8c3e3968dab8 equals the primary parent's and holds one opener and one body.",
+    "reuse": "JUSTIFICATION reuse: the delta adds no definition; its paragraph and table rows extend the existing evidence-fragment store at docs/evidence/fragments/queued-work-needs-no-workaround/, and a search of docs/evidence and docs/plans for another mechanism recording a node's measured arms found this directory is the owner.",
+    "scope_discipline": "JUSTIFICATION scope_discipline: each delta commit touches exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html, inside the declared fragment directory; the product file and test file arrive in the merge from other nodes and are untouched by the two delta commits."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T012017685650-review-of-qwnw-red-file-a-sweep-resolves-review-heads-once-d3c1ed6a94d7",
+  "reviewed_base_sha": "65181b1b96f8048de716ec8c26637766e987d68d",
+  "reviewed_head_sha": "d3c1ed6a94d7e65491f75556ad8308dcbcebabcf",
+  "reviewed_node": "qwnw-red-file-a-sweep-resolves-review-heads-once",
+  "reviewed_run_id": "r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once",
+  "reviewer": "independent review worker",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T09:44:22.979073+00:00",
+  "total": 105
+}

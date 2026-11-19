@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite-1795089470531581012.log records '58 passed' at d9b857e053a7 with no FAILED line and EXIT=0; after_suite-1795089513679177159.log records '58 passed' at a89f772f7b29 with no FAILED line and EXIT=0; the set difference is empty (0).",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:44:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-composition.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record names head 7def72950a29e5cd2123626e0b873391cd6bfc21 and log scoped-gate-1795089050779708579 as the head arm, while the landed head is a89f772f7b2989c24882cec8950118010ee6ecaf whose green run is scoped-gate-1795089591926118072.log, so a reader comparing the fragment against the promoted head sees a revision the node does not land."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base d9b857e053a77af65ab77aad9d78f3ef3d3bb28a; 7def72950a29 changes 10 lines in tests/test_spa_composition.py (three stale literals replaced by the guarded expressions the surface keeps, plus a second inventory assertion) and a89f772f adds only the 39-line evidence fragment, with no product file touched and no assertion dropped without a stronger replacement.",
+    "done_when": "the done_when asks for a passing head run on all_debug with SLURM_JOB_ID unset, a base run with failing ids, a per-cause verdict, arms carrying 40-character revisions and a negative control; the manifest records base 2 failed, 12 passed EXIT=1 at d9b857e053a77af65ab77aad9d78f3ef3d3bb28a and head 14 passed EXIT=0 at a89f772f7b2989c24882cec8950118010ee6ecaf, but its ruff check and ruff format --check claim appears only in evidence_inputs and no log carries either.",
+    "goal": "the source node goal in crew/live/r-20261118T054325967299-qwnw-red-file-spa-composition.json is \"Make tests/test_spa_composition.py pass in full on the primary branch\"; the landed commits repair that file's three stale literals (tests/test_spa_composition.py:163, 167, 168 and 290) and scoped-gate-1795089591926118072.log records 14 passed EXIT=0 at a89f772f7b2989c24882cec8950118010ee6ecaf.",
+    "manifest": "read crew/runs/r-20261118T054325967299-qwnw-red-file-spa-composition/manifest.md; it names commits 7def72950a29e5cd2123626e0b873391cd6bfc21 and a89f772f7b2989c24882cec8950118010ee6ecaf, both gate logs, the three causes as test-wrong, and completed arms of 58 passed each.",
+    "write_paths": "the source node's write_paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path) contain both changed paths, tests/test_spa_composition.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-composition.html, and nothing in the diff falls outside them."
+  },
+  "justifications": {
+    "durability": "reverting docs/ui/sprint.jsx:332 to the unguarded read reddens tests/test_spa_composition.py:163, and each added assertion compares a literal against source read from disk rather than against a value the test supplied, though the guard is textual and a reformat of the surface reddens it without a behaviour change.",
+    "evidence": "the base arm negative-control-1795089129478280764.log records the two FAILED ids with EXIT=1 and the head arm scoped-gate-1795089591926118072.log records 14 passed with EXIT=0, but the done_when's ruff check and ruff format --check are stated in the manifest's evidence_inputs with no log behind them.",
+    "fit": "tests/test_spa_composition.py:159-168 keeps the file's existing exact-literal source assertions and adds only a comment explaining why the literal is the guarded read.",
+    "goal_fidelity": "tests/test_spa_composition.py:163, 167, 168 and 290 now pin docs/ui/sprint.jsx:332, 334, 372 and 369, the expressions the surface actually keeps, and the file reads 14 passed at a89f772f.",
+    "reuse": "the diff adds no function, class or module, and the only helper it uses, tests/test_spa_composition.py:_javascript_function, already existed in the file; a search across tests/ for a shared JSX-source assertion helper found none.",
+    "scope_discipline": "the two changed paths, tests/test_spa_composition.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-composition.html, both lie inside the source node's declared write_paths and nothing else changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal in crew/live/r-20261118T054325967299-qwnw-red-file-spa-composition.json is \"Make tests/test_spa_composition.py pass in full on the primary branch\"; the landed commits repair that file's three stale literals (tests/test_spa_composition.py:163, 167, 168 and 290) and scoped-gate-1795089591926118072.log records 14 passed EXIT=0 at a89f772f7b2989c24882cec8950118010ee6ecaf.\nVERDICT done_when: the done_when asks for a passing head run on all_debug with SLURM_JOB_ID unset, a base run with failing ids, a per-cause verdict, arms carrying 40-character revisions and a negative control; the manifest records base 2 failed, 12 passed EXIT=1 at d9b857e053a77af65ab77aad9d78f3ef3d3bb28a and head 14 passed EXIT=0 at a89f772f7b2989c24882cec8950118010ee6ecaf, but its ruff check and ruff format --check claim appears only in evidence_inputs and no log carries either.\nVERDICT write_paths: the source node's write_paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path) contain both changed paths, tests/test_spa_composition.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-composition.html, and nothing in the diff falls outside them.\nVERDICT manifest: read crew/runs/r-20261118T054325967299-qwnw-red-file-spa-composition/manifest.md; it names commits 7def72950a29e5cd2123626e0b873391cd6bfc21 and a89f772f7b2989c24882cec8950118010ee6ecaf, both gate logs, the three causes as test-wrong, and completed arms of 58 passed each.\nVERDICT diff: read both commits against base d9b857e053a77af65ab77aad9d78f3ef3d3bb28a; 7def72950a29 changes 10 lines in tests/test_spa_composition.py (three stale literals replaced by the guarded expressions the surface keeps, plus a second inventory assertion) and a89f772f adds only the 39-line evidence fragment, with no product file touched and no assertion dropped without a stronger replacement.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_spa_composition.py:163, 167, 168 and 290 now pin docs/ui/sprint.jsx:332, 334, 372 and 369, the expressions the surface actually keeps, and the file reads 14 passed at a89f772f.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base arm negative-control-1795089129478280764.log records the two FAILED ids with EXIT=1 and the head arm scoped-gate-1795089591926118072.log records 14 passed with EXIT=0, but the done_when's ruff check and ruff format --check are stated in the manifest's evidence_inputs with no log behind them.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two changed paths, tests/test_spa_composition.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-composition.html, both lie inside the source node's declared write_paths and nothing else changed.\nSCORE durability: 18\nJUSTIFICATION durability: reverting docs/ui/sprint.jsx:332 to the unguarded read reddens tests/test_spa_composition.py:163, and each added assertion compares a literal against source read from disk rather than against a value the test supplied, though the guard is textual and a reformat of the surface reddens it without a behaviour change.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_spa_composition.py:159-168 keeps the file's existing exact-literal source assertions and adds only a comment explaining why the literal is the guarded read.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the only helper it uses, tests/test_spa_composition.py:_javascript_function, already existed in the file; a search across tests/ for a shared JSX-source assertion helper found none.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-spa-composition.html:36 non-blocking: the record names head 7def72950a29e5cd2123626e0b873391cd6bfc21 and log scoped-gate-1795089050779708579 as the head arm, while the landed head is a89f772f7b2989c24882cec8950118010ee6ecaf whose green run is scoped-gate-1795089591926118072.log, so a reader comparing the fragment against the promoted head sees a revision the node does not land.",
+  "review_method": "Read-only source and recorded-log review; no suite rerun and no mutation experiment.",
+  "review_node": "review-of-qwnw-red-file-spa-composition-a89f772f7b29",
+  "review_run_id": "r-20261119T121354759045-review-of-qwnw-red-file-spa-composition-a89f772f7b29",
+  "reviewed_base_sha": "d9b857e053a77af65ab77aad9d78f3ef3d3bb28a",
+  "reviewed_commits": [
+    "7def72950a29e5cd2123626e0b873391cd6bfc21",
+    "a89f772f7b2989c24882cec8950118010ee6ecaf"
+  ],
+  "reviewed_head_sha": "a89f772f7b2989c24882cec8950118010ee6ecaf",
+  "reviewed_run_id": "r-20261118T054325967299-qwnw-red-file-spa-composition",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054325967299-qwnw-red-file-spa-composition/after_suite-1795089513679177159.log",
+      "observed_summary": "58 passed in 36.69s",
+      "revision": "a89f772f7b2989c24882cec8950118010ee6ecaf"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054325967299-qwnw-red-file-spa-composition/baseline_suite-1795089470531581012.log",
+      "observed_summary": "58 passed in 35.14s",
+      "revision": "d9b857e053a77af65ab77aad9d78f3ef3d3bb28a"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:06:48.758667+00:00",
+  "total": 111
+}

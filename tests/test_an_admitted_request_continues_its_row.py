@@ -21,7 +21,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import recovery, recovery_watch
-from reckon.crew.ticker import Ticker
+from reckon.crew.ticker import DIM_MARKER, Ticker
 
 PROJECT = "proj"
 
@@ -201,8 +201,11 @@ def test_session_counts_scope_each_sessions_own_figures_without_a_live_read(
     scoped = recovery.format_watch_transition(
         event, session="mine", ticker=Ticker(width=180, color=False)
     )
-    assert " 1w  0r  0h  0d  0q  0s" in scoped
+    # The pane draws a promotion cell between the queue and the stuck count, and
+    # marks a fleet with no oldest request by the same dash a dimmed figure takes.
+    no_promotion = f"0p@{DIM_MARKER:>2}"
+    assert f" 1w  0r  0h  0d  0q  {no_promotion}  0s" in scoped
     unscoped = recovery.format_watch_transition(
         event, ticker=Ticker(width=180, color=False)
     )
-    assert " 2w  0r  1h  0d  0q  0s" in unscoped
+    assert f" 2w  0r  1h  0d  0q  {no_promotion}  0s" in unscoped

@@ -38,6 +38,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import obligation_snapshot, review_records, station_store
 
@@ -46,6 +47,14 @@ from reckon.crew import obligation_snapshot, review_records, station_store
 # and a newly due duty show. This is the snapshot producer's own floor cadence,
 # kept as one number so the station and the producer do not drift.
 REFRESH_FLOOR_SECONDS = obligation_snapshot.FLOOR_TICK_SECONDS
+
+# What bounds a derivation nothing has moved: the fleet state is built from the
+# live pointers, run manifests and plans, which change on the scale of minutes
+# while a station ticks every second, so an unmoved fleet is re-derived on this
+# interval rather than on every tick. It is the floor above by value and named
+# apart so the gate that reads a change and the gate that reads a clock are not
+# mistaken for one another.
+FLEET_STATE_INTERVAL_SECONDS = REFRESH_FLOOR_SECONDS
 
 # The export is rewritten at most this often. A station ticks every second and
 # a fleet can move on several ticks in a row; a reader off the node needs the
@@ -75,6 +84,7 @@ class _Memory:
     at: datetime
     identity: str = ""
     heartbeat: str = ""
+    inputs: dict[str, Any] | None = None
 
 
 _REFRESHES: dict[tuple[str, str], _Memory] = {}
@@ -289,6 +299,71 @@ def stored_identity(row: Mapping[str, Any] | None) -> str:
     return str(payload.get("identity") or "")
 
 
+def _file_identity(path: Any) -> list[int] | None:
+    """What one file's write moves, in the memo store's own identity.
+
+    The identity is ``file_memo``'s rather than a second copy of the same
+    fields: one place defines what a write changes, so a reader here and a
+    reader of a memo answer each other's guarantee for free.
+    """
+    try:
+        return list(file_memo.file_signature(str(path)))
+    except (OSError, TypeError, ValueError):
+        return None
+
+
+def fleet_state_footprint(store: Any, project: str) -> dict[str, Any]:
+    """A cheap identity of the inputs one fleet-state derivation reads.
+
+    The derivation is built from three things: the live pointers, each run's
+    manifest, and the project's plans. Each is read here by a cheaper reading of
+    the same input — the pointer's stored signature, one stat per manifest, one
+    stat per plan — so a tick can tell whether the derivation has anything new
+    to read without paying for the derivation itself.
+
+    A pointer's signature is the one the station's own ingest recorded when the
+    pointer last moved, so an unchanged pointer costs no read and no decode. A
+    manifest and a plan move when a worker delivers and when a plan is edited,
+    and neither is re-derived by rules of its own before that write, so each is
+    stamped here. A reading that cannot be taken is ``None`` and compares
+    unreadable against a reading that was, so an unreadable tree makes the
+    derivation due rather than keeping it away.
+    """
+    from reckon.crew import plan_review
+
+    pointers: list[Any] | None = []
+    manifests: list[Any] | None = []
+    try:
+        rows = store.pointer_rows()
+        fields = store.pointer_fields()
+    except Exception:  # noqa: BLE001 - an unreadable store is not "unchanged"
+        pointers = None
+        manifests = None
+        rows = []
+        fields = {}
+    for row in rows:
+        if str(row.get("project") or "") != project:
+            continue
+        run_id = str(row.get("run_id") or row.get("path") or "")
+        pointers.append([run_id, str(row.get("signature") or "")])
+        record = fields.get(str(row.get("path") or "")) or {}
+        manifest = record.get("manifest_path")
+        if manifest:
+            manifests.append([run_id, _file_identity(manifest)])
+    try:
+        plans, _failed = plan_review._project_plan_paths(project)
+        plan_stamps: list[Any] | None = sorted(
+            [str(slug), _file_identity(path)] for slug, path in plans
+        )
+    except Exception:  # noqa: BLE001 - an unreadable tree is not "unchanged"
+        plan_stamps = None
+    return {
+        "pointers": None if pointers is None else sorted(pointers),
+        "manifests": None if manifests is None else sorted(manifests),
+        "plans": plan_stamps,
+    }
+
+
 def refresh(
     store: Any,
     *,
@@ -296,8 +371,9 @@ def refresh(
     changed: bool = True,
     now: datetime | None = None,
     sweep_failures: Mapping[str, Any] | None = None,
+    inputs: dict[str, Any] | None = None,
 ) -> list[str]:
-    """Derive and store each live session's obligations when the fleet moved.
+    """Derive and store each live session's obligations when an input moved.
 
     Returns the sessions whose stored row was rewritten. A row whose derived
     identity equals the stored one is left exactly as it stands -- its
@@ -310,11 +386,19 @@ def refresh(
     memory = _REFRESHES.get(key)
     sweep_failures = sweep_failures or {}
     sweep_record = json.dumps(sweep_failures, sort_keys=True)
+    footprint = fleet_state_footprint(store, project) if inputs is None else inputs
+    # A derivation is owed when an input it reads has moved, or when the
+    # interval has passed since the last one, whichever comes first. The clock
+    # is what bounds a change this gate does not see: a reading that cannot be
+    # taken is None and compares unequal to one that was, so an unreadable tree
+    # makes the derivation due rather than keeping it away.
     due = (
         (memory is not None and memory.identity != sweep_record)
         or changed
         or memory is None
-        or (instant - memory.at).total_seconds() >= REFRESH_FLOOR_SECONDS
+        or footprint is None
+        or memory.inputs != footprint
+        or (instant - memory.at).total_seconds() >= FLEET_STATE_INTERVAL_SECONDS
     )
     if not due:
         return []
@@ -387,7 +471,7 @@ def refresh(
                 )
             except Exception:  # noqa: BLE001 - one session's rewrite costs one session
                 _report_failure(project, "absent-snapshot")
-    _REFRESHES[key] = _Memory(at=instant, identity=sweep_record)
+    _REFRESHES[key] = _Memory(at=instant, identity=sweep_record, inputs=footprint)
     return written
 
 
@@ -573,9 +657,17 @@ def publish(
         submit(project, home=home, changed=changed, moment=now)
         return None
     pending = False
+    # One reading of the inputs serves both the stale marking and the gate, so
+    # a tick costs one footprint however many of them ask.
+    inputs = fleet_state_footprint(store, project)
     try:
         pending = _publish_pending(
-            store, project=project, home=home, changed=changed, now=now
+            store,
+            project=project,
+            home=home,
+            changed=changed,
+            now=now,
+            inputs=inputs,
         )
         refresh(
             store,
@@ -583,6 +675,7 @@ def publish(
             changed=changed,
             now=now,
             sweep_failures=prune_sweep_failures(store, project),
+            inputs=inputs,
         )
     except Exception:  # noqa: BLE001 - one project's input costs one pass
         _report_failure(project, "refresh")
@@ -603,6 +696,7 @@ def _publish_pending(
     home: str | Path,
     changed: bool,
     now: datetime | None,
+    inputs: dict[str, Any] | None = None,
 ) -> bool:
     """Keep the last answer dated and stale while a due refresh reads inputs.
 
@@ -615,10 +709,13 @@ def _publish_pending(
 
     instant = _utc_now() if now is None else now
     memory = _REFRESHES.get((str(store.root), project))
+    inputs = fleet_state_footprint(store, project) if inputs is None else inputs
     if (
         not changed
         and memory is not None
-        and (instant - memory.at).total_seconds() < REFRESH_FLOOR_SECONDS
+        and inputs is not None
+        and memory.inputs == inputs
+        and (instant - memory.at).total_seconds() < FLEET_STATE_INTERVAL_SECONDS
     ):
         return False
     marked = False

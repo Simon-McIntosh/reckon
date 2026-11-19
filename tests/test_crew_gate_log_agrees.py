@@ -136,6 +136,30 @@ def _complete_arguments(
     ]
 
 
+def _cited_payload(result) -> dict:
+    """The outcome a completion receipt cites, read back from its record file.
+
+    A completion reply is bounded: it carries the outcome's link rather than the
+    whole document, and an outcome too large for the reply budget is written to
+    the file the link names instead of being cut. The assertions below are about
+    the gate and its log, so they read the payload the receipt cites — resolved
+    through the run's archive, where a completed promotion moves the directory
+    the file was written into.
+    """
+    receipt = json.loads(result.output)
+    cited = resolve_run_path(receipt["record_path"])
+    return json.loads(cited.read_text(encoding="utf-8"))
+
+
+def _refusal_text(result) -> str:
+    """The refusal a completion receipt carries whole, wherever the reply puts it."""
+    payload = _cited_payload(result)
+    for key in ("detail", "error", "reason"):
+        if payload.get(key):
+            return str(payload[key])
+    raise AssertionError(f"receipt carries no refusal: {payload}")
+
+
 def _assert_cites_the_recorded_copy(
     record: dict, run_id: str, source: Path
 ) -> None:
@@ -175,11 +199,12 @@ def test_promotion_refuses_a_passing_gate_whose_cited_log_is_empty(
     )
 
     assert result.exit_code != 0
-    assert "is empty" in result.output
+    refusal = _refusal_text(result)
+    assert "is empty" in refusal
     # The refusal names which of the three shapes it found.
-    assert "Found: an empty log" in result.output
+    assert "Found: an empty log" in refusal
     # ... and the resolving verb.
-    assert "Re-run the check and cite its full captured output" in result.output
+    assert "Re-run the check and cite its full captured output" in refusal
     # A refusal must not have consumed the pointer.
     assert pointer_path(run_id).is_file()
 
@@ -197,7 +222,7 @@ def test_empty_log_of_whitespace_only_refuses_like_no_content(
     )
 
     assert result.exit_code != 0
-    assert "Found: an empty log" in result.output
+    assert "Found: an empty log" in _refusal_text(result)
 
 
 # ── A recorded exit status that contradicts the asserted one refuses ──────────
@@ -219,12 +244,10 @@ def test_promotion_refuses_a_recorded_exit_status_that_contradicts_the_assertion
     )
 
     assert result.exit_code != 0
-    assert "records EXIT=2" in result.output
-    assert (
-        "Found: a recorded exit status that contradicts the asserted one"
-        in result.output
-    )
-    assert "Re-run the check and cite its log" in result.output
+    refusal = _refusal_text(result)
+    assert "records EXIT=2" in refusal
+    assert "Found: a recorded exit status that contradicts the asserted one" in refusal
+    assert "Re-run the check and cite its log" in refusal
     assert pointer_path(run_id).is_file()
 
 
@@ -241,7 +264,7 @@ def test_an_agreeing_recorded_exit_status_does_not_refuse(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _cited_payload(result)["record"]
     stored = record["gate_check"]
     assert stored["exit_status"] == 0
     _assert_cites_the_recorded_copy(record, run_id, passing_log)
@@ -276,7 +299,7 @@ def test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _cited_payload(result)["record"]
     assert record["gate"] == "passed"
     assert record["gate_check"]["exit_status"] == 0
     _assert_cites_the_recorded_copy(record, run_id, executed_log)
@@ -317,9 +340,10 @@ def test_a_recorded_unexecuted_exit_beside_a_quoted_diagnostic_is_refused(
     )
 
     assert result.exit_code != 0
-    assert "Found: no evidence the command ran" in result.output
-    assert "diagnostic at line 1" in result.output
-    assert "bash: line 1: rekon crew frobnicate: command not found" in result.output
+    refusal = _refusal_text(result)
+    assert "Found: no evidence the command ran" in refusal
+    assert "diagnostic at line 1" in refusal
+    assert "bash: line 1: rekon crew frobnicate: command not found" in refusal
     assert pointer_path(run_id).is_file()
 
 
@@ -342,9 +366,10 @@ def test_promotion_refuses_a_log_showing_the_command_never_ran(
     )
 
     assert result.exit_code != 0
-    assert "command not found" in result.output
-    assert "Found: no evidence the command ran" in result.output
-    assert "Re-run the check and cite its log" in result.output
+    refusal = _refusal_text(result)
+    assert "command not found" in refusal
+    assert "Found: no evidence the command ran" in refusal
+    assert "Re-run the check and cite its log" in refusal
     assert pointer_path(run_id).is_file()
 
 
@@ -367,8 +392,9 @@ def test_recorded_pair_of_exit_zero_beside_a_command_not_found_log_is_refused(
     )
 
     assert result.exit_code != 0
-    assert "command not found" in result.output
-    assert "Found: no evidence the command ran" in result.output
+    refusal = _refusal_text(result)
+    assert "command not found" in refusal
+    assert "Found: no evidence the command ran" in refusal
 
 
 def test_command_not_found_at_the_head_without_a_summary_names_the_line(
@@ -390,9 +416,10 @@ def test_command_not_found_at_the_head_without_a_summary_names_the_line(
     )
 
     assert result.exit_code != 0
-    assert "Found: no evidence the command ran" in result.output
-    assert "diagnostic at line 1" in result.output
-    assert "bash: line 1: rekon crew frobnicate: command not found" in result.output
+    refusal = _refusal_text(result)
+    assert "Found: no evidence the command ran" in refusal
+    assert "diagnostic at line 1" in refusal
+    assert "bash: line 1: rekon crew frobnicate: command not found" in refusal
     assert pointer_path(run_id).is_file()
 
 
@@ -417,8 +444,9 @@ def test_a_capture_recording_exit_127_for_the_diagnostic_is_still_refused(
     )
 
     assert result.exit_code != 0
-    assert "Found: no evidence the command ran" in result.output
-    assert "diagnostic at line 1" in result.output
+    refusal = _refusal_text(result)
+    assert "Found: no evidence the command ran" in refusal
+    assert "diagnostic at line 1" in refusal
     assert pointer_path(run_id).is_file()
 
 
@@ -445,7 +473,7 @@ def test_fixture_command_not_found_beside_a_passing_summary_is_accepted(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _cited_payload(result)["record"]
     assert record["gate"] == "passed"
     _assert_cites_the_recorded_copy(record, run_id, captured_log)
     # The agreeing promotion consumed the pointer as usual.
@@ -478,7 +506,7 @@ def test_positive_exit_record_outranks_command_not_found_text_in_runner_output(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _cited_payload(result)["record"]
     assert record["gate"] == "passed"
     assert record["gate_check"]["exit_status"] == 0
 
@@ -502,7 +530,7 @@ def test_promotion_whose_log_and_command_agree_lands_unchanged(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _cited_payload(result)["record"]
     assert record["gate"] == "passed"
     assert record["gate_check"]["command"] == _COMMAND
     assert record["gate_check"]["exit_status"] == 0
@@ -551,7 +579,7 @@ def test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _cited_payload(result)["record"]
     assert record["gate"] == "failed"
     # A failing verdict already carries its failure in its outcome, so the
     # contradictory log adds no new information to refuse on.
@@ -576,5 +604,5 @@ def test_a_cited_log_path_that_cannot_be_read_is_left_to_the_promotion(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _cited_payload(result)["record"]
     assert record["gate"] == "passed"

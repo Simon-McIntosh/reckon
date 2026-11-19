@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/readiness.py:875",
+    "reckon/crew/admission/readiness.py:950",
+    "reckon/crew/admission/readiness.py:963",
+    "reckon/crew/admission/readiness.py:1350"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:27:52Z",
+  "findings": [
+    {
+      "file": "tests/test_an_unlanded_section_check_reads_only_its_own_rows.py",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: asked is annotated list[tuple[str, str | None]] but the stub appends (project, plan) with plan typed Mapping[str, Any] | None, so the annotation describes a value the stub never stores and a type checker reads the recorded stub argument as a string."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063324294922-qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite record the fence's two unrelated test files (test_staged_write_inventory.py, test_every_shared_home_lock_holds_across_nodes.py), not the importer arm the done_when names; that arm survives only as logs/arm-base.log and logs/arm-head.log, whose head header records revision 05c452b225 rather than the 40-character id the measure asks for, so the arms are not the inline JSON the done_when specifies even though the head arm adds no failure."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows.html",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states both runs are all_debug batch jobs, but the cited logs record only '# slurm-job-id' and '# host' and the sbatch-*.out files in the reviewed run's logs/ are empty, so the partition the done_when names has no artefact on disk and the claim rests on the worker's word."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified four production call sites of readiness._section_run_unlanded at reckon/crew/admission/readiness.py:875, :950, :963 and :1350, all of which reach the reader the repaired test stubs.",
+    "diff": "read commit by commit against 60ecc274f1bf7008b09057c6a5252423deb4cfe5: 05c452b2 swaps the two-argument lambda for a recording three-argument stub and adds assert asked == [('p', 'wanted-plan')], and b22b4a1 adds the 71-line evidence fragment; no other path changed.",
+    "done_when": "the done_when asks for a full-file pass at head as an all_debug job with SLURM_JOB_ID unset, a cause verdict, an importer arm adding no failure, and both arms as inline JSON with 40-character revisions; the importer arms log 6 failed, 254 passed at base and 1 failed, 259 passed at head with head adding none, but those arms are recorded only as logs/arm-base.log and logs/arm-head.log, so the named gate result is recorded while the arm's required inline-JSON form is not.",
+    "goal": "the node's goal is that tests/test_an_unlanded_section_check_reads_only_its_own_rows.py passes in full; readiness.py:618 is the three-argument _ledger_run_rows the test now stands in, the product is untouched, and logs/head-node-run.log reads '1 passed' EXIT=0.",
+    "manifest": "read; status complete, commits 05c452b2 and b22b4a1, the scoped-gate pytest command with its log, both suite arms at completed true with 0 failures, outside_scope entries, and rubric lines answered.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment and figures directory; the two-commit diff touches exactly the test file and the fragment, both inside that fence."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_an_unlanded_section_check_reads_only_its_own_rows.py:46 fails on the mutation logged at logs/negative-control-plan-argument-mutation.log, which reads 'assert [('p', None)] == [('p', 'wanted-plan')]', and the file's checked == [] assertion is reddened by the ordering mutation at logs/negative-control-ordering-mutation.log.",
+    "evidence": "logs/scoped-gate-1795016668325773489.log runs at revision b22b4a1880 and reads '1 passed' EXIT=0, logs/base-node-run.log reads '1 failed' EXIT=1 at 60ecc274, but the manifest's arms at manifest.md:14 are the fence's unrelated pair rather than the importer arm the done_when names.",
+    "fit": "the repair keeps the file's monkeypatch stand-in idiom used at tests/test_the_admission_service_holds_steady_memory.py:34, but the annotation at tests/test_an_unlanded_section_check_reads_only_its_own_rows.py:26 declares the second tuple element a str while the stub appends a Mapping.",
+    "goal_fidelity": "tests/test_an_unlanded_section_check_reads_only_its_own_rows.py:26-32 calls the reader through a three-argument stand-in matching reckon/crew/admission/readiness.py:618, and logs/head-node-run.log reads '1 passed' EXIT=0, so the file the goal names passes in full while the product file is unchanged.",
+    "reuse": "the change adds no mechanism: it calls the existing _section_run_unlanded and the existing three-argument _ledger_run_rows signature, and the stand-in idiom matches tests/test_queue_admission_split_keeps_its_surface.py:104, so no capability is duplicated.",
+    "scope_discipline": "git diff --stat 60ecc274f1bf7008b09057c6a5252423deb4cfe5..b22b4a188072b51144d4becb3f6b1134f573e369 lists only tests/test_an_unlanded_section_check_reads_only_its_own_rows.py and the qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows.html fragment, both inside the declared write paths, and no product file."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T155419148158-review-of-qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows-b22b4a188072",
+  "reviewed_base_sha": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "reviewed_head_sha": "b22b4a188072b51144d4becb3f6b1134f573e369",
+  "reviewed_run_id": "r-20261118T063324294922-qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261118T155419148158-review-of-qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows-b22b4a188072",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:00:26.599691+00:00",
+  "total": 107
+}

@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "The case fails whenever the dispatch command writes its run-id notice to stderr, because result.output then carries that notice first and json.loads raises JSONDecodeError; the base arm at 42fe90d reproduces exactly this and the head arm passes, so restoring result.output at that line reddens the case.",
+      "independence": "The expected values (backend alpha, route deterministic, picker_selection None) come from the route config the test installs, not from the value it parses; the assertion compares the command's own JSON document against fixed literals.",
+      "limit": "The guard holds only while the notice is written to stderr, so a click downgrade below 8.2 would let the old line pass again without the notice moving.",
+      "location": "tests/test_routing_explicit_lane_implies_deterministic.py:172"
+    },
+    {
+      "conditions_for_failure": "None of the other four changed parse sites can be made to fail: they pass with result.output at the base revision (6 passed at 42fe90d) and nothing reddens if any of them is reverted; they are consistency with the fixed case, not a guarded rule.",
+      "independence": "Not applicable: none of these four sites is guarded by a failing arm.",
+      "limit": "Reverting any one of the four leaves the file green at 7 passed.",
+      "location": "tests/test_routing_explicit_lane_implies_deterministic.py:92,105,119,152"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:29:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-explicit-lane-implies-deterministic.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: The record claims every other dispatch test already parses result.stdout and that this file was the outlier, which is false \u2014 tests/test_dispatch_names_a_model.py carries four json.loads(result.output) sites and tests/test_dispatch_attaches_the_figures.py one, so a reader taking the fragment's basis is misled about how settled the repository's convention is."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-explicit-lane-implies-deterministic.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: The row labelled 'head (green)' names 07023eb3fae4, which is not the delivered head and whose file still reads result.output at three of the five parse sites (git diff 07023eb3..95ef5488 changes 6 insertions and 2 deletions in that file), so the all_debug sbatch arm the row cites measures a weaker revision than the one that landed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the change touches only tests/test_routing_explicit_lane_implies_deterministic.py and an evidence fragment, and no runtime module reaches either; the product rule it relies on (the notice on stderr, the JSON document on stdout) lives at reckon/crew/dispatching/preparation.py:1577-1581 and is untouched by the diff.",
+    "diff": "Read commit by commit from 42fe90d0b0a46060bafde2490dda7d4002cda478: 95ef548861 fixes five json.loads(result.output.splitlines()[0]) sites to result.stdout and ruff-formats two monkeypatch.setattr calls in tests/test_routing_explicit_lane_implies_deterministic.py, adding, changing or deleting no assertion, and be742829be1 adds the 40-line fragment.",
+    "done_when": "The source brief requires the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, cause verdicts, no deleted or weakened assertion, and a suite arm pair with full 40-character revisions: scoped-gate-1795062116888074602.log records 7 passed and EXIT=0 at 95ef5488, but on host 98dci4-clu-3142 through the composed gate, and the sbatch job 1329534 the fragment cites measured 07023eb3, whose file still carried three of the five parse sites on result.output.",
+    "goal": "The source brief sets the goal as making tests/test_routing_explicit_lane_implies_deterministic.py pass in full on the primary branch; the delivered file reads 7 passed at head and the seven cases asserting backend, route and picker selection are unchanged.",
+    "manifest": "The source manifest.md names commits 95ef548861247af4c618919bd18450add00744ff and be742829be1627b5671f1f99bc1e620a28dbc1cd, a base-red log with the failing id, a 7-passed gate log and both suite arms; its outside_scope line discloses that every sbatch submission from the worker dies in the fence, and its artifacts line still cites the 07023eb3 head arm beside the 95ef5488 gate log.",
+    "write_paths": "The source scope declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's fragment and the plan figure directory; the delivered diff contains exactly tests/test_routing_explicit_lane_implies_deterministic.py and the fragment html, both inside it, and no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_routing_explicit_lane_implies_deterministic.py:172 reddens when result.output is restored to that case \u2014 the base arm at 42fe90d fails on the stderr notice \u2014 while the four other edited sites at lines 92, 105, 119 and 152 have no arm that fails if they are reverted.",
+    "evidence": "scoped-gate-1795062116888074602.log records 7 passed with EXIT=0 at 95ef5488 and baseline_suite-1795062138835374677.log records 58 passed with EXIT=0 at 42fe90d, but the delivered content's green run came through the gate path on host 98dci4-clu-3142, while the all_debug sbatch job the fragment cites measured 07023eb3.",
+    "fit": "tests/test_routing_explicit_lane_implies_deterministic.py:92 now reads result.stdout as 94 test files in this tree do, and the two reformatted monkeypatch.setattr calls at lines 66-71 match ruff format's output for the surrounding file.",
+    "goal_fidelity": "tests/test_routing_explicit_lane_implies_deterministic.py:172 is the only case the base arm fails, and the committed content reads 7 passed, so the goal's measure is reached.",
+    "reuse": "The diff adds no function, class or module; a search over tests/ for an owner of 'parse a dispatch command's JSON document' found only the inline json.loads convention (94 files on result.stdout, tests/test_dispatch_names_a_model.py among the result.output users) and no shared helper in tests/conftest.py to extend.",
+    "scope_discipline": "Every path in 42fe90d0..be742829be16 lies inside the declared scope \u2014 the test file and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-explicit-lane-implies-deterministic.html \u2014 and the two commits carry nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source brief sets the goal as making tests/test_routing_explicit_lane_implies_deterministic.py pass in full on the primary branch; the delivered file reads 7 passed at head and the seven cases asserting backend, route and picker selection are unchanged.\nVERDICT done_when: The source brief requires the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; scoped-gate-1795062116888074602.log records 7 passed EXIT=0 at 95ef5488 on host 98dci4-clu-3142 through the composed gate, and the sbatch job 1329534 the fragment cites measured 07023eb3, whose file differs by three parse sites.\nVERDICT write_paths: The source scope declares reckon, tests, the fragment directory and the fragment path; the delivered diff contains exactly tests/test_routing_explicit_lane_implies_deterministic.py and the fragment html, both inside it.\nVERDICT manifest: The source manifest.md names both commits, a base-red log with the failing id, a 7-passed gate log and both suite arms, and its outside_scope line discloses the sbatch fence fault that forced the gate-path measurement.\nVERDICT diff: Read commit by commit from 42fe90d0; 95ef548861 fixes five json.loads(result.output.splitlines()[0]) sites to result.stdout and ruff-formats two monkeypatch.setattr calls, adding no assertion, and be742829be1 adds the 40-line fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_routing_explicit_lane_implies_deterministic.py:172 was the only base-red case at 42fe90d and the committed content reads 7 passed.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795062116888074602.log records 7 passed EXIT=0 at 95ef5488 but through the gate path on host 98dci4-clu-3142, while the all_debug sbatch arm the fragment cites measured 07023eb3.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff 42fe90d0..be742829 touches only tests/test_routing_explicit_lane_implies_deterministic.py and the plan's evidence fragment, both declared.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_routing_explicit_lane_implies_deterministic.py:172 reddens when result.output is restored, as the base arm shows, but the four other edited sites at :92, :105, :119 and :152 have no arm that reddens if reverted.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_routing_explicit_lane_implies_deterministic.py:92 reads result.stdout as 94 test files in this tree do.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no definition; a search over tests/ for the owner of parsing a dispatch command's JSON document found only the inline json.loads convention and no helper in tests/conftest.py to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-explicit-lane-implies-deterministic.html:13 non-blocking: The fragment claims every other dispatch test parses result.stdout, but tests/test_dispatch_names_a_model.py carries four json.loads(result.output) sites.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-routing-explicit-lane-implies-deterministic.html:26 non-blocking: The row labelled 'head (green)' names 07023eb3fae4, not the delivered head, and that revision's file still reads result.output at three of the five parse sites.\n",
+  "review_method": "Read-only review of the source goal, done_when, declared write paths, manifest, both commits and their recorded logs; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T050334082454-review-of-qwnw-red-file-routing-explicit-lane-implies-deterministic-be742829be16",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "be742829be1627b5671f1f99bc1e620a28dbc1cd",
+  "reviewed_run_id": "r-20261118T062754281595-qwnw-red-file-routing-explicit-lane-implies-deterministic",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "95ef548861247af4c618919bd18450add00744ff",
+    "be742829be1627b5671f1f99bc1e620a28dbc1cd"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062754281595-qwnw-red-file-routing-explicit-lane-implies-deterministic/after_suite-1795062182023568737.log",
+      "observed_summary": "58 passed in 37.49s",
+      "revision": "95ef548861247af4c618919bd18450add00744ff"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062754281595-qwnw-red-file-routing-explicit-lane-implies-deterministic/baseline_suite-1795062138835374677.log",
+      "observed_summary": "58 passed in 35.37s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:02:50.847832+00:00",
+  "total": 108
+}

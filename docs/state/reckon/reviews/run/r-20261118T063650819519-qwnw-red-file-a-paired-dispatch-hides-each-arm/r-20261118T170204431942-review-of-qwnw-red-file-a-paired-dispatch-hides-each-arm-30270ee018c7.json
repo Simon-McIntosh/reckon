@@ -1,0 +1,100 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert listing(tuple(masks)) == \"\"",
+      "fails_if": "The fence's masks stop hiding the shadow's session directory, so the stub's ls of FENCE_TARGET returns the shadow-worktree entry; the value is read back from the argv the product composed and executed, not from a test-supplied expectation.",
+      "file": "tests/test_a_paired_dispatch_hides_each_arm.py",
+      "line": 492,
+      "test": "test_the_primary_arm_cannot_read_the_shadows_session_directory"
+    },
+    {
+      "assertion": "assert \"shadow-worktree\" in listing(())",
+      "fails_if": "The probe can no longer see the unmasked directory, so an empty masked listing is not evidence of a mask; this is the known-present control for the assertion above.",
+      "file": "tests/test_a_paired_dispatch_hides_each_arm.py",
+      "line": 493,
+      "test": "test_the_primary_arm_cannot_read_the_shadows_session_directory"
+    },
+    {
+      "assertion": "assert proc.returncode == 0, proc.stderr",
+      "fails_if": "The probe's stub exits non-zero, which is what the base fixture produced (results.txt on the read-only node tmp); this is the assertion the base run reddens on and so guards the fixture repair itself.",
+      "file": "tests/test_a_paired_dispatch_hides_each_arm.py",
+      "line": 480,
+      "test": "test_the_primary_arm_cannot_read_the_shadows_session_directory"
+    }
+  ],
+  "assertion_independence": "No literal input-echo assertion: every assertion in the modified test reads the executed fence's own output (results.txt written by the stub) or the product's composed argv, and the empty-listing assertion is paired with an unmasked known-present control at tests/test_a_paired_dispatch_hides_each_arm.py:493.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T07:34:08Z",
+  "findings": [
+    {
+      "file": "tests/test_a_paired_dispatch_hides_each_arm.py",
+      "line": "131",
+      "severity": "non-blocking",
+      "text": "non-blocking: relocating the stub into the arm's worktree is asserted by nothing in the suite, since the base run at ab67be8 passed both Arm-based tests with the stub beside the stub root, so reinstating the old location leaves pytest green and only the __main__ negative-control script reddens."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the landed change is confined to a test file and an evidence fragment, so no production runtime code reaches it.",
+    "diff": "read the three commits 30018d4aac, 8f0627078 and 30270ee against base ab67be8; the change is fixture-only, moving the probe in test_the_primary_arm_cannot_read_the_shadows_session_directory into its own declared writable directory and worktree, relocating the Arm stub into the arm's own worktree, and adding the evidence fragment.",
+    "done_when": "the run pointer's done_when requires the named file green as an all_debug job at head, each cause verdicted, an importer arm with both 40-character revisions inline, the base run's failing ids logged in the fragment, and ruff clean on the changed paths; the manifest records the head and base gate logs, both suite arms and the cause table in the fragment, but states no ruff result.",
+    "goal": "the source node's goal in dispatch-detail.json is that tests/test_a_paired_dispatch_hides_each_arm.py passes in full on the primary branch; the head gate log records 9 passed at 30270ee, and tests/test_a_paired_dispatch_hides_each_arm.py:449 now gives the probe its own directory rather than writing into the sealed node tmp.",
+    "manifest": "the source run's manifest.md reads status complete and records three commits, the head gate EXIT=0 with 9 passed, the base gate EXIT=1 with one failing id, both suite arms as inline JSON at ab67be8 and 30270ee, and the standalone control log; it records no ruff result.",
+    "write_paths": "the source pointer declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround as its write paths; the delivered diff touches only tests/test_a_paired_dispatch_hides_each_arm.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-paired-dispatch-hides-each-arm.html."
+  },
+  "justifications": {
+    "durability": "reverting the probe fixture reddens tests/test_a_paired_dispatch_hides_each_arm.py:480 exactly as the base log shows, but the stub relocation at tests/test_a_paired_dispatch_hides_each_arm.py:131 is guarded by nothing in the suite.",
+    "evidence": "the manifest's baseline_suite and after_suite both record 0 failures at full revisions and the gate logs carry 9 passed plus 1 failed, but the done_when's ruff check and ruff format --check on the changed paths are not recorded in the manifest even though both pass when re-run here.",
+    "fit": "the added comments at tests/test_a_paired_dispatch_hides_each_arm.py:452-461 follow the file's prose-comment idiom and ruff check and ruff format --check report nothing on the changed file.",
+    "goal_fidelity": "tests/test_a_paired_dispatch_hides_each_arm.py passes 9 of 9 at 30270ee per the gate log, and the only behaviour change is the fixture at tests/test_a_paired_dispatch_hides_each_arm.py:447-493, so the goal is met in the worktree pending promotion.",
+    "reuse": "no function or class is added; the change composes reckon/_backends.py:3021 launch_plan's existing writable_directories option as tests/test_a_fence_hides_the_primary.py:174 already does, and no capability owner is forked.",
+    "scope_discipline": "every path in the diff ab67be8..30270ee (tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-paired-dispatch-hides-each-arm.html) is inside the declared tests and docs/evidence/fragments paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal in dispatch-detail.json is that tests/test_a_paired_dispatch_hides_each_arm.py passes in full on the primary branch; the head gate log records 9 passed at 30270ee, and tests/test_a_paired_dispatch_hides_each_arm.py:449 now gives the probe its own directory rather than writing into the sealed node tmp.\nVERDICT done_when: the run pointer's done_when requires the named file green as an all_debug job at head, each cause verdicted, an importer arm with both 40-character revisions inline, the base run's failing ids logged in the fragment, and ruff clean on the changed paths; the manifest records the head and base gate logs, both suite arms and the cause table in the fragment, but states no ruff result.\nVERDICT write_paths: the source pointer declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround as its write paths; the delivered diff touches only tests/test_a_paired_dispatch_hides_each_arm.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-paired-dispatch-hides-each-arm.html.\nVERDICT manifest: the source run's manifest.md reads status complete and records three commits, the head gate EXIT=0 with 9 passed, the base gate EXIT=1 with one failing id, both suite arms as inline JSON at ab67be8 and 30270ee, and the standalone control log; it records no ruff result.\nVERDICT diff: read the three commits 30018d4aac, 8f0627078 and 30270ee against base ab67be8; the change is fixture-only, moving the probe in test_the_primary_arm_cannot_read_the_shadows_session_directory into its own declared writable directory and worktree, relocating the Arm stub into the arm's own worktree, and adding the evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_paired_dispatch_hides_each_arm.py passes 9 of 9 at 30270ee per the gate log, and the only behaviour change is the fixture at tests/test_a_paired_dispatch_hides_each_arm.py:447-493, so the goal is met in the worktree pending promotion.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite both record 0 failures at full revisions and the gate logs carry 9 passed plus 1 failed, but the done_when's ruff check and ruff format --check on the changed paths are not recorded in the manifest even though both pass when re-run here.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff ab67be8..30270ee (tests/test_a_paired_dispatch_hides_each_arm.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-paired-dispatch-hides-each-arm.html) is inside the declared tests and docs/evidence/fragments paths.\nSCORE durability: 16\nJUSTIFICATION durability: reverting the probe fixture reddens tests/test_a_paired_dispatch_hides_each_arm.py:480 exactly as the base log shows, but the stub relocation at tests/test_a_paired_dispatch_hides_each_arm.py:131 is guarded by nothing in the suite.\nSCORE fit: 16\nJUSTIFICATION fit: the added comments at tests/test_a_paired_dispatch_hides_each_arm.py:452-461 follow the file's prose-comment idiom and ruff check and ruff format --check report nothing on the changed file.\nSCORE reuse: 20\nJUSTIFICATION reuse: no function or class is added; the change composes reckon/_backends.py:3021 launch_plan's existing writable_directories option as tests/test_a_fence_hides_the_primary.py:174 already does, and no capability owner is forked.\nFINDING tests/test_a_paired_dispatch_hides_each_arm.py:131 non-blocking: relocating the stub into the arm's worktree is asserted by nothing in the suite, since the base run at ab67be8 passed both Arm-based tests with the stub beside the stub root, so reinstating the old location leaves pytest green and only the __main__ negative-control script reddens.",
+  "review_run_id": "r-20261118T170204431942-review-of-qwnw-red-file-a-paired-dispatch-hides-each-arm-30270ee018c7",
+  "reviewed_base_sha": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "reviewed_head_sha": "30270ee018c7724947912771193a49b18b76bc43",
+  "reviewed_run_id": "r-20261118T063650819519-qwnw-red-file-a-paired-dispatch-hides-each-arm",
+  "reviewed_worker_commits": [
+    "30018d4aac23f27ce8619f2833a54e051b73d659",
+    "8f062707822ce40e895d8e9fd28e1d0e3dabddda",
+    "30270ee018c7724947912771193a49b18b76bc43"
+  ],
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063650819519-qwnw-red-file-a-paired-dispatch-hides-each-arm/after_suite-1795020990705206066.log",
+      "revision": "30270ee018c7724947912771193a49b18b76bc43"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063650819519-qwnw-red-file-a-paired-dispatch-hides-each-arm/baseline_suite-1795020915762479460.log",
+      "revision": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T08:22:45.752188+00:00",
+  "total": 107
+}

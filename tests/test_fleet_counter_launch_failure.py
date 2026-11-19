@@ -2,7 +2,7 @@
 
 A run whose launcher exited before writing any stream record never reached a
 model, so it stops under the halted bucket like any other stop. The counter
-block keeps five cells, so that run's number arrives under the halted bucket
+block keeps seven cells, so that run's number arrives under the halted bucket
 without widening the block. These cases read the fleet the way a follower does,
 through the producer's own fleet partition and transition builder, so the counts
 on each row are the counts a pane receives.
@@ -19,14 +19,17 @@ from reckon.crew.ticker import STATS
 
 WIDTH = 180
 
-# The four-cell block a reading holding one launch-failed run, one ordinary
+# The seven-cell block a reading holding one launch-failed run, one ordinary
 # blocked run, one working run and one queued run renders, pinned as a literal
 # because the requirement is that this block keeps exactly the width it renders
-# today: a fifth cell or a wider label fails on the literal. Each cell is two
+# today: an eighth cell or a wider label fails on the literal. Each cell is two
 # right-aligned digits and its letter, one space between cells; a count above
-# two digits widens its own cell, which is why the counts here stay single.
-BLOCK = " 1w  0r  2h  0d  1q  0s"
-BLOCK_WIDTH = 23
+# two digits widens its own cell, which is why the counts here stay single. The
+# promotion queue's cell carries the reading's oldest request position beside
+# its count, and nothing is queued for promotion here, so that suffix is the
+# dim absence marker beside the block's own letters.
+BLOCK = " 1w  0r  2h  0d  1q  0p@ \N{EN DASH}  0s"
+BLOCK_WIDTH = 30
 
 
 def _snapshot(
@@ -93,14 +96,22 @@ def _launch_failed_and_blocked() -> dict[str, str]:
     )
 
 
-def test_the_counter_block_keeps_five_cells_and_its_width() -> None:
+def test_the_counter_block_keeps_seven_cells_and_its_width() -> None:
     """A launch failure's number does not widen the counter block."""
     rows = _launch_failed_and_blocked()
     launch = rows["r-launch"]
 
-    # Six cells and five single-space gaps, at the width the module states
+    # Seven cells and six single-space gaps, at the width the module states
     # for the block: the launch failure's number did not widen the block.
-    assert re.findall(r"\d[wrhdqs]", launch) == ["1w", "0r", "2h", "0d", "1q", "0s"]
+    assert re.findall(r"\d+[wrhdqps]", launch) == [
+        "1w",
+        "0r",
+        "2h",
+        "0d",
+        "1q",
+        "0p",
+        "0s",
+    ]
     assert BLOCK in launch
     assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS

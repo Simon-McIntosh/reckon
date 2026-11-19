@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:33:30Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_promotion.py",
+      "line": "561",
+      "severity": "non-blocking",
+      "text": "non-blocking: _completion_report re-implements the same reply-to-report read as _receipt at tests/test_an_unchanged_run_needs_no_suite_pair.py:169, docstring included, so the receipt contract now has two local copies that can drift."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm names only \"50 passed\" with no revision, command or all_debug/SLURM_JOB_ID condition, and the recorded gate ran at 9317a61b rather than the delivered head c0a3238b, so the fragment's pair cannot be reconciled against a log the way sibling fragments' arms are."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"Suite arms exit 0 at both revisions\" claim is measured over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which can reach the changed test file, so the delta is taken over a population that cannot see the change."
+    }
+  ],
+  "head_log_revision": "9317a61b41056dc7aa29850268e70f7f4a910a13",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit over 5417b373ff9230f07c1c8f403632835808fffc15..c0a3238b17f4f3d0be040855d8eb508cef150197; 9317a61b adds the _completion_report helper and rebinds four payload reads, and c0a3238b adds the 15-line evidence fragment, with no product file touched in either commit.",
+    "done_when": "the done_when demands a full pass at head as an all_debug job with SLURM_JOB_ID unset, the base run measured first with its failing ids beside the head run, both suite arms as inline JSON, and the base red log beside the head one in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html; the manifest and verify-gate.json record all of those, the base arm reads 4 failed 46 passed EXIT=1, and the head gate reads 50 passed EXIT=0 at 9317a61b rather than at the delivered head c0a3238b.",
+    "goal": "the node's goal is to make tests/test_crew_promotion.py pass in full on the primary branch; the diff at tests/test_crew_promotion.py:561 routes four payload reads through the report the completion receipt links, and the recorded gate reads \"50 passed\" EXIT=0.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054050436514-qwnw-red-file-crew-promotion/manifest.md, which states 50 of 50 passing at 9317a61b against 4 failed at base, names the scoped-gate, base-node and two suite logs, and carries both suite arms as inline JSON with full revisions.",
+    "write_paths": "the manifest's declared fence is reckon, tests, the plan's evidence fragment directory and its named fragment, and the figures directory; both paths in the diff, tests/test_crew_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html, sit inside it."
+  },
+  "justifications": {
+    "durability": "the base arm base-node.log reddens with exactly the four KeyError ids the head passes, so reinstating the reply read at tests/test_crew_promotion.py:583,1001,1079,1383 reproduces the failure.",
+    "evidence": "verify-gate.json records 50 passed EXIT=0 on partition all_debug at 9317a61b, one commit before the delivered head c0a3238b, and the suite arms at baseline_suite-1795049936448697823.log run two files that cannot reach the changed test file.",
+    "fit": "the helper at tests/test_crew_promotion.py:561 follows the module's private-helper idiom, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html:11 names no head revision, command or partition where sibling fragments carry all three.",
+    "goal_fidelity": "tests/test_crew_promotion.py:561 replaces the four reply reads that raised KeyError at base, and the head gate log scoped-gate-1795049277437857284.log reads \"50 passed\" EXIT=0.",
+    "reuse": "_completion_report at tests/test_crew_promotion.py:561 duplicates the existing _receipt helper at tests/test_an_unchanged_run_needs_no_suite_pair.py:169 instead of extending it or lifting one helper into tests/helpers.",
+    "scope_discipline": "both changed paths in the diff, tests/test_crew_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html, are inside the declared write paths and neither touches product code."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_crew_promotion.py pass in full on the primary branch; the diff at tests/test_crew_promotion.py:561 routes four payload reads through the report the completion receipt links, and the recorded gate reads \"50 passed\" EXIT=0.\nVERDICT done_when: the done_when demands a full pass at head as an all_debug job with SLURM_JOB_ID unset, the base run measured first with its failing ids beside the head run, both suite arms as inline JSON, and the base red log beside the head one in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html; the manifest and verify-gate.json record all of those, the base arm reads 4 failed 46 passed EXIT=1, and the head gate reads 50 passed EXIT=0 at 9317a61b rather than at the delivered head c0a3238b.\nVERDICT write_paths: the manifest's declared fence is reckon, tests, the plan's evidence fragment directory and its named fragment, and the figures directory; both paths in the diff, tests/test_crew_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html, sit inside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054050436514-qwnw-red-file-crew-promotion/manifest.md, which states 50 of 50 passing at 9317a61b against 4 failed at base, names the scoped-gate, base-node and two suite logs, and carries both suite arms as inline JSON with full revisions.\nVERDICT diff: read commit by commit over 5417b373ff9230f07c1c8f403632835808fffc15..c0a3238b17f4f3d0be040855d8eb508cef150197; 9317a61b adds the _completion_report helper and rebinds four payload reads, and c0a3238b adds the 15-line evidence fragment, with no product file touched in either commit.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_promotion.py:561 replaces the four reply reads that raised KeyError at base, and the head gate log scoped-gate-1795049277437857284.log reads \"50 passed\" EXIT=0.\nSCORE evidence: 15\nJUSTIFICATION evidence: verify-gate.json records 50 passed EXIT=0 on partition all_debug at 9317a61b, one commit before the delivered head c0a3238b, and the suite arms at baseline_suite-1795049936448697823.log run two files that cannot reach the changed test file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths in the diff, tests/test_crew_promotion.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html, are inside the declared write paths and neither touches product code.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm base-node.log reddens with exactly the four KeyError ids the head passes, so reinstating the reply read at tests/test_crew_promotion.py:583,1001,1079,1383 reproduces the failure.\nSCORE fit: 16\nJUSTIFICATION fit: the helper at tests/test_crew_promotion.py:561 follows the module's private-helper idiom, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html:11 names no head revision, command or partition where sibling fragments carry all three.\nSCORE reuse: 14\nJUSTIFICATION reuse: _completion_report at tests/test_crew_promotion.py:561 duplicates the existing _receipt helper at tests/test_an_unchanged_run_needs_no_suite_pair.py:169 instead of extending it or lifting one helper into tests/helpers.\nFINDING tests/test_crew_promotion.py:561 non-blocking: _completion_report re-implements the same reply-to-report read as _receipt at tests/test_an_unchanged_run_needs_no_suite_pair.py:169, docstring included, so the receipt contract now has two local copies that can drift.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html:11 non-blocking: the head arm names only \"50 passed\" with no revision, command or all_debug/SLURM_JOB_ID condition, and the recorded gate ran at 9317a61b rather than the delivered head c0a3238b, so the fragment's pair cannot be reconciled against a log the way sibling fragments' arms are.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion.html:14 non-blocking: the \"Suite arms exit 0 at both revisions\" claim is measured over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which can reach the changed test file, so the delta is taken over a population that cannot see the change.\n",
+  "review_run_id": "r-20261119T013027445433-review-of-qwnw-red-file-crew-promotion-c0a3238b17f4",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "c0a3238b17f4f3d0be040855d8eb508cef150197",
+  "reviewed_run_id": "r-20261118T054050436514-qwnw-red-file-crew-promotion",
+  "reviewed_worker_commits": [
+    "9317a61b41056dc7aa29850268e70f7f4a910a13",
+    "c0a3238b17f4f3d0be040855d8eb508cef150197"
+  ],
+  "reviewer_run_id": "r-20261119T013027445433-review-of-qwnw-red-file-crew-promotion-c0a3238b17f4",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:50:53.999194+00:00",
+  "total": 102
+}

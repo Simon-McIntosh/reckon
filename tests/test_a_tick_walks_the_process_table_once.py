@@ -21,8 +21,9 @@ alive while a pointer with no mark reads dead. The beat clock steps past
 ``BEAT_SECONDS`` between reads, as a pass over a loaded host does.
 
 The declared negative control is the base revision under the same fixture: with
-no region, the pass walks the table once per pointer, and the recording
-stand-in counts 40.
+no region the table is walked once per liveness read, and a terminal pointer
+reads liveness more than once in this pass, so the recording stand-in counts at
+least one walk per pointer and the count grows with the fleet.
 """
 
 from __future__ import annotations
@@ -45,8 +46,9 @@ from reckon.crew.process_signal import RUN_ID_ENV
 from tests.helpers.git import git as _git
 
 NEGATIVE_CONTROL_MUTATION = (
-    "at the base revision the recording stand-in counts 40 walks over 40"
-    " terminal pointers"
+    "at the base revision, no region holds the table: the recording stand-in"
+    " walks it once per liveness read, so the pass counts at least one walk per"
+    " terminal pointer instead of one per pass"
 )
 
 PROJECT = "tick-walk-fixture"
@@ -325,7 +327,15 @@ def test_one_pass_walks_the_table_once(
         f"the pass's populations differ from the base revision's: head={head}"
         f" base={base}"
     )
-    assert len(base_walks) == POINTERS, (
+    # The fixture reproduces the defect only while the regionless pass reaches
+    # the table per liveness read, and this pass reads a terminal pointer's
+    # liveness more than once: 79 walks over these pointers when this was
+    # written. The figure the fixture can state without encoding a read count
+    # the product owns is the fault's shape -- every pointer pays -- so the
+    # base arm must walk at least once per pointer, against the head arm's one
+    # walk for the whole pass.
+    assert len(base_walks) >= POINTERS, (
         f"the base revision walked the table {len(base_walks)} times over"
         f" {POINTERS} pointers, so this fixture no longer reproduces the defect"
+        f" (a regionless pass must reach the table at least once per pointer)"
     )

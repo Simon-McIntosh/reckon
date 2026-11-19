@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:125 (imports the crew command group at CLI start)",
+    "reckon/crew_dispatch_commands.py:1767 (imports facade helpers per verb)",
+    "reckon/crew_run_commands.py:1378 (imports _recorded_task_node per run verb)",
+    "reckon/crew/routing.py:65 (imports DispatchPlan at module load)",
+    "reckon/worker_git_shim.py:540 (imports worker_scratch_dir on the worker path)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T09:00:55Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires both suite arms recorded as inline JSON carrying full 40-character revisions, but the manifest names only baseline_suite-1795048560202574665.log and after_suite-1795048635752582024.log as paths, so a reader must open the logs to learn the arms' revisions and their 58 passed / 0 failed delta."
+    },
+    {
+      "file": "manifest.md",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths and the manifest records no such result; I ran both on the landed dispatch.py and they pass, so the fact holds but is unrecorded for the coordinator."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states each arm is an all_debug job with the scheduler variables dropped, but the three successful logs carry no partition or SLURM condition in their headers and their .scheduler sidecars are empty, so the partition condition rests on the gate helper's line rather than on a receipt in the log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head row cites 4f40d56e while the delivered head is 2c851cc9; the ratchet reads package sources only, so the result holds, but the fragment's head row is not the delivered revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against 73b9ac21a50d4566b8bc7ec2cf2c49160af28656; 4f40d56e replaces the dynamic import_module loop with the eight by-name imports plus a tuple at reckon/crew/dispatch.py:645-654 whose order matches _MODULE_EXPORTS at :22-640, and 2c851cc9 adds only the 57-line evidence fragment.",
+    "done_when": "dispatch-detail.json:admit_request.node.done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset, a base negative control with its failing ids in the evidence fragment, both suite arms as inline JSON with full 40-character revisions, and a clean ruff pair; the head gate, the base arm and the fragment's failure block satisfy the first two, but manifest.md:16 records the suite arms only as log paths and records no ruff result.",
+    "goal": "dispatch-detail.json:admit_request.node.goal is \"Make tests/test_every_module_is_reached.py pass in full on the primary branch\"; the landed reckon/crew/dispatch.py:13-20 imports the eight dispatching concern modules by name, and scoped-gate-1795048337759243008.log records 1 passed EXIT=0 at 4f40d56e where base-arm-1795048496780250888.log records 1 failed EXIT=1 naming comparisons, fences, launch and suite.",
+    "manifest": "read the reviewed run's manifest.md (16 lines, status complete); it records the gate command, four log paths, changed_paths, commits 4f40d56e and 2c851cc9 and a landing line, but carries no baseline_suite/after_suite JSON block and no ruff record.",
+    "write_paths": "the declared scope is reckon, tests, the evidence-fragment directory and its named html; the diff's two files are reckon/crew/dispatch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html, both inside it, and tests/test_every_module_is_reached.py:27-33 keeps its allowlist of three modules untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_every_module_is_reached.py:61 fails on the pre-change code, as base-arm-1795048496780250888.log shows for all four modules, and the diff adds no assertion that could hold regardless of the code.",
+    "evidence": "scoped-gate-1795048337759243008.log records 1 passed EXIT=0 and base-arm-1795048496780250888.log records 1 failed EXIT=1 at 73b9ac21 with the four ids, but manifest.md:16 lacks the inline-JSON suite arms the done_when requires and no ruff result is recorded.",
+    "fit": "the aliases and the tuple comment at reckon/crew/dispatch.py:641-644 follow the module's existing underscore-prefixed facade idiom, and ruff check and ruff format --check report no finding on the landed file.",
+    "goal_fidelity": "reckon/crew/dispatch.py:13-20 makes the four unreached concerns statically imported, and the recorded head gate at 4f40d56e is exactly the file the goal names.",
+    "reuse": "the change adds no capability of its own: it keeps the facade rebinding at reckon/crew/dispatch.py:655-664 over the same eight modules that reckon/crew.py:214 already loads, and a search for an existing by-name concern import found only that same pattern.",
+    "scope_discipline": "the delivered diff touches only reckon/crew/dispatch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html, both inside the declared write paths, with no test or allowlist edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json:admit_request.node.goal is \"Make tests/test_every_module_is_reached.py pass in full on the primary branch\"; the landed reckon/crew/dispatch.py:13-20 imports the eight dispatching concern modules by name, and scoped-gate-1795048337759243008.log records 1 passed EXIT=0 at 4f40d56e where base-arm-1795048496780250888.log records 1 failed EXIT=1 naming comparisons, fences, launch and suite.\nVERDICT done_when: dispatch-detail.json:admit_request.node.done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset, a base negative control with its failing ids in the evidence fragment, both suite arms as inline JSON with full 40-character revisions, and a clean ruff pair; the head gate, the base arm and the fragment's failure block satisfy the first two, but manifest.md:16 records the suite arms only as log paths and records no ruff result.\nVERDICT write_paths: the declared scope is reckon, tests, the evidence-fragment directory and its named html; the diff's two files are reckon/crew/dispatch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html, both inside it, and tests/test_every_module_is_reached.py:27-33 keeps its allowlist of three modules untouched.\nVERDICT manifest: read the reviewed run's manifest.md (16 lines, status complete); it records the gate command, four log paths, changed_paths, commits 4f40d56e and 2c851cc9 and a landing line, but carries no baseline_suite/after_suite JSON block and no ruff record.\nVERDICT diff: read both commits against 73b9ac21a50d4566b8bc7ec2cf2c49160af28656; 4f40d56e replaces the dynamic import_module loop with the eight by-name imports plus a tuple at reckon/crew/dispatch.py:645-654 whose order matches _MODULE_EXPORTS at :22-640, and 2c851cc9 adds only the 57-line evidence fragment.\nCALL_SITES: reckon/cli.py:125 (imports the crew command group at CLI start), reckon/crew_dispatch_commands.py:1767 (imports facade helpers per verb), reckon/crew_run_commands.py:1378 (imports _recorded_task_node per run verb), reckon/crew/routing.py:65 (imports DispatchPlan at module load), reckon/worker_git_shim.py:540 (imports worker_scratch_dir on the worker path)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:13-20 makes the four unreached concerns statically imported, and the recorded head gate at 4f40d56e is exactly the file the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795048337759243008.log records 1 passed EXIT=0 and base-arm-1795048496780250888.log records 1 failed EXIT=1 at 73b9ac21 with the four ids, but manifest.md:16 lacks the inline-JSON suite arms the done_when requires and no ruff result is recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delivered diff touches only reckon/crew/dispatch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html, both inside the declared write paths, with no test or allowlist edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_module_is_reached.py:61 fails on the pre-change code, as base-arm-1795048496780250888.log shows for all four modules, and the diff adds no assertion that could hold regardless of the code.\nSCORE fit: 19\nJUSTIFICATION fit: the aliases and the tuple comment at reckon/crew/dispatch.py:641-644 follow the module's existing underscore-prefixed facade idiom, and ruff check and ruff format --check report no finding on the landed file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no capability of its own: it keeps the facade rebinding at reckon/crew/dispatch.py:655-664 over the same eight modules that reckon/crew.py:214 already loads, and a search for an existing by-name concern import found only that same pattern.\nFINDING manifest.md:16 non-blocking: the done_when requires both suite arms recorded as inline JSON carrying full 40-character revisions, but the manifest names only baseline_suite-1795048560202574665.log and after_suite-1795048635752582024.log as paths, so a reader must open the logs to learn the arms' revisions and their 58 passed / 0 failed delta.\nFINDING manifest.md:5 non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths and the manifest records no such result; I ran both on the landed dispatch.py and they pass, so the fact holds but is unrecorded for the coordinator.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html:44 non-blocking: the fragment states each arm is an all_debug job with the scheduler variables dropped, but the three successful logs carry no partition or SLURM condition in their headers and their .scheduler sidecars are empty, so the partition condition rests on the gate helper's line rather than on a receipt in the log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-is-reached.html:54 non-blocking: the head row cites 4f40d56e while the delivered head is 2c851cc9; the ratchet reads package sources only, so the result holds, but the fragment's head row is not the delivered revision.",
+  "review_run_id": "r-20261119T010021860399-review-of-qwnw-red-file-every-module-is-reached-2c851cc96873",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "2c851cc968732b5eb155a97b944f51e700a6a143",
+  "reviewed_run_id": "r-20261118T044636937872-qwnw-red-file-every-module-is-reached",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044636937872-qwnw-red-file-every-module-is-reached/after_suite-1795048635752582024.log",
+      "revision": "4f40d56e262f8e76979ac52bcc51f057eb1ae7cf",
+      "summary": "58 passed in 36.75s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044636937872-qwnw-red-file-every-module-is-reached/baseline_suite-1795048560202574665.log",
+      "revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+      "summary": "58 passed in 36.58s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T09:44:52.775779+00:00",
+  "total": 110
+}

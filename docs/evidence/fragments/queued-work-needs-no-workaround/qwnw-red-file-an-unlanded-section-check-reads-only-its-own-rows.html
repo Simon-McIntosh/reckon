@@ -1,0 +1,71 @@
+<section id="qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows">
+<h3>An unlanded-section check reads only its own rows: base red, head green</h3>
+<p>The file failed on the test, not on the product. Its stand-in for
+<code>_ledger_run_rows</code> still took the two arguments the reader had on
+14 November; the reader gained a plan argument on 17 November
+(<code>e9f72b5f46</code>, <em>read one plan's ledger rows per section verdict</em>)
+so the ledger store could select one plan's rows in SQL instead of decoding a
+project-wide index. Every run of the file therefore raised <code>TypeError</code>
+at <code>readiness.py:618</code> before reaching a verdict, and the rule it
+asserts — that a row of another section never reaches the discard check, which
+is a file lookup on shared storage — was never exercised.</p>
+<p>Both runs below are separate <code>all_debug</code> batch jobs with
+<code>SLURM_JOB_ID</code> unset for the pytest process; the base run reads a
+tree extracted at the base revision, the head run reads the proposed head.</p>
+
+<h4 id="qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows-base">Base run — one failing id</h4>
+<pre># revision: 60ecc274f1bf7008b09057c6a5252423deb4cfe5
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063324294922-qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows/trees/base-60ecc274
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_unlanded_section_check_reads_only_its_own_rows.py
+# slurm-job-id: 1327031
+# host: 98dci4-clu-3141.iter.org
+# module.__file__: .../trees/base-60ecc274/reckon/crew/admission/readiness.py
+# cwd: .../trees/base-60ecc274
+F                                                                        [100%]
+=================================== FAILURES ===================================
+E       TypeError: test_rows_of_other_sections_never_reach_the_discard_check.&lt;locals&gt;.&lt;lambda&gt;() takes 2 positional arguments but 3 were given
+reckon/crew/admission/readiness.py:618: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_an_unlanded_section_check_reads_only_its_own_rows.py::test_rows_of_other_sections_never_reach_the_discard_check - TypeError: ... takes 2 positional arguments but 3 were given
+1 failed in 1.20s
+EXIT=1</pre>
+<p>Full log:
+<code>~/.config/reckon/crew/runs/r-20261118T063324294922-qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows/logs/base-node-run.log</code></p>
+
+<h4 id="qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows-head">Head run — the file in full</h4>
+<pre># revision: 05c452b22510c3db79c7da87b49a8126d78bac70
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_unlanded_section_check_reads_only_its_own_rows.py
+# slurm-job-id: 1327033
+# host: 98dci4-clu-3141.iter.org
+# module.__file__: .../qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows/reckon/crew/admission/readiness.py
+# cwd: .../qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows
+.                                                                        [100%]
+1 passed in 0.97s
+EXIT=0</pre>
+<p>Full log:
+<code>~/.config/reckon/crew/runs/r-20261118T063324294922-qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows/logs/head-node-run.log</code></p>
+
+<h4 id="qwnw-red-file-an-unlanded-section-check-reads-only-its-own-rows-controls">Controls: each assertion fires when the rule it states is broken</h4>
+<p>A green test proves nothing about whether it can fail. Each assertion the
+repaired file makes was falsified by a temporary product mutation, reverted
+when the run finished; the product at head is byte-identical to the base
+<code>readiness.py</code>.</p>
+<pre># mutation 1 — the discard check moved ahead of the
+#              section match, i.e. the defect the file is named for:
+#   - if run_id and revision and identifies(row) and not _release._discarded(run_id):
+#   + if run_id and revision and not _release._discarded(run_id) and identifies(row):
+FAILED tests/test_an_unlanded_section_check_reads_only_its_own_rows.py::test_rows_of_other_sections_never_reach_the_discard_check - AssertionError: assert ['r-0', 'r-1', ... 'r-99'] == []
+1 failed in 0.97s
+EXIT=1
+
+# mutation 2 — the reader stops naming the plan it is asked about:
+#   - rows = _ledger_run_rows(project, slug, cache)
+#   + rows = _ledger_run_rows(project, None, cache)
+FAILED tests/test_an_unlanded_section_check_reads_only_its_own_rows.py::test_rows_of_other_sections_never_reach_the_discard_check - AssertionError: assert [('p', None)] == [('p', 'wanted-plan')]
+1 failed in 0.97s
+EXIT=1</pre>
+<p>Logs:
+<code>.../logs/negative-control-ordering-mutation.log</code>
+and <code>.../logs/negative-control-plan-argument-mutation.log</code>.</p>
+</section>

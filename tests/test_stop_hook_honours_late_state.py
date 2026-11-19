@@ -240,18 +240,19 @@ def test_an_ack_recorded_after_the_snapshot_lets_the_stop_through(
     assert RUN_ID in json.loads(expired.stdout)["reason"]
 
 
-def test_an_unreadable_record_prompts_without_holding_the_stop(
+def test_an_unreadable_record_is_named_and_does_not_hold_the_stop(
     repository: Path, follower: None, tmp_path: Path
 ) -> None:
-    """A record the sweep could not read is listed and does not refuse a stop.
+    """A record the sweep could not read is named and does not refuse a stop.
 
     The sweep records a review record it could not read as a finding, and the
-    reader renders it into the duty list under its own kind. It is a reading of
-    a file caught mid-write rather than work a coordinator can act on, so it
-    reaches the checklist while the turn may still end. The prompt drive is
-    asserted to count its kind on the summary line first, so the silent stop
-    below is a kind that does not hold a turn open rather than a row that never
-    reached the list.
+    reader renders it into the duty list under its own kind. Its path is the
+    row's only identity — a collapsed count says nothing about which file was
+    skipped — so the row is printed in full, naming the record, while the turn
+    may still end: a file caught mid-write is a writer still finishing rather
+    than a stop this session made. The prompt drive is asserted to name the
+    path first, so the silent stop below is a row that reached the list and did
+    the turn no harm rather than a row that never reached the list.
     """
     half_written = tmp_path / "reviews" / "review-of-a-run.json"
     half_written.parent.mkdir(parents=True, exist_ok=True)
@@ -268,12 +269,10 @@ def test_an_unreadable_record_prompts_without_holding_the_stop(
 
     prompting = _drive("prompt", _stop_payload(repository))
     checklist = json.loads(prompting.stdout)["hookSpecificOutput"]["additionalContext"]
-    summary = [
-        line for line in checklist.splitlines() if "no action shortens them" in line
-    ]
+    summary = [line for line in checklist.splitlines() if str(half_written) in line]
     assert len(summary) == 1, checklist
-    assert f"{UNREADABLE_KIND} 1" in summary[0], checklist
-    assert str(half_written) not in checklist, checklist
+    assert summary[0].startswith(f"- [{UNREADABLE_KIND}]"), checklist
+    assert "no action shortens them" not in checklist, checklist
 
     stopping = _drive("stop", _stop_payload(repository))
     assert stopping.returncode == 0

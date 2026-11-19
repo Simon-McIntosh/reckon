@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:04:47Z",
+  "findings": [
+    {
+      "anchor": "plan.html:24",
+      "id": "wiring-1",
+      "reason": "two nodes dispatched together would each measure against a fence model the other is rewriting, and neither ordering nor a wait tells a batch which model s14's arm runs on.",
+      "text": "s14 declares `depends-on` s12 alone while s13 declares s12 and neither names the other, although both rewrite `reckon/_worker_fence.py` and `reckon/nested_launch.py` and s13 replaces the fence's write model (today a writable root bound at `--dev-bind / /` with a read-only list, verified at `reckon/_worker_fence.py:2002-2012`) with read-only-by-default plus grants, which is the policy under which s14's clause \"the carried file and its directory are not writable\" must hold",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:140",
+      "id": "wiring-2",
+      "reason": "an orchestrator dispatching from this body never runs the two new nodes and runs \u00a710 ahead of the declared waits it now holds.",
+      "text": "the followup body is the dispatch order and still reads \"\u00a79 follows \u00a74. \u00a710 runs last\", naming neither \u00a713 nor \u00a714, while plan.html:24 now makes both upstream of \u00a710",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:128",
+      "id": "done_when-1",
+      "reason": "those clauses can be left unimplemented and the node still passes every arm it declares.",
+      "text": "three deliverable clauses appear in no done-when arm: a write into the crew's own lock and state paths succeeding (the arm covers only worktree, run directory and scratch), the shared grant \"recorded on the run\", and a grant overlapping another run's being refused",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:128",
+      "id": "done_when-2",
+      "reason": "the arm must say the targets are temporary copies or it either endangers the operator's data or silently tests something else.",
+      "text": "the removal targets \"a sibling checkout, the home directory, a shared project root\" are named as live paths with nothing saying they are disposable layouts, so a test written literally attempts a recursive removal of the operator's home and of a real project root and destroys them if the guard regresses, while one that substitutes temp paths measures a different target than the one named",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:134",
+      "id": "reasoning-1",
+      "reason": "a node cannot satisfy a done-when whose two submissions it is documented as unable to make, which is exactly how \u00a712 landed with this measure still owed.",
+      "text": "the node's only scheduler-level measure is \"one job on betelgeuse under its reservation\" plus a base-revision control job on the same partition, and plan.html:156 records that the \u00a712 worker's submission there was refused with \"Access/permission denied\" because the partition is reached through a reservation the worker did not hold; the section names no holder and no route to it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7dbc1e9075ff3ecc0d998d873e3962314b612064",
+  "plan_fingerprint": "69c3e4d8df035f722ac4bb85fff585447c0a7e476ce3743afca0d5144e6f0745",
+  "plan_slug": "a-worker-or-its-job-cannot-overwrite-shared-files",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261119T070714637684-plan-review-of-a-worker-or-its-job-cannot-overwrite-shared-files",
+  "reviewed_blob_sha": "85dcc2fcddcf6a5c2356e428c5ce5c0d463517d5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every declared write path resolves (`reckon/_worker_fence.py`, `reckon/crew/dispatch_launch.py`, `reckon/nested_launch.py`, `tests/test_a_job_fence_starts_on_any_node.py`; `tests/test_a_worker_can_write_only_what_it_was_granted.py` is the node's own new file), \u00a712 resolves as `#s12`, and \u00a714's evidence jobs 1327697/1327709 are recorded at plan.html:156.",
+    "done_when": "a finding \u2014 \u00a713's done-when (plan.html:128) leaves three of its deliverable clauses unmeasured and names live operator paths as removal targets without declaring them disposable.",
+    "evidence_paths": "pass \u2014 both nodes' evidence is the run manifest and the scheduler jobs' ids and output recorded there, under the run directory, with no session scratchpad or node-local temporary path named.",
+    "naming": "pass \u2014 neither section carries a plan label, stage name or ticket number into a symbol, and \u00a713's test-file name states the mechanism rather than the tracker entry.",
+    "reasoning": "a finding \u2014 \u00a714's measure requires a betelgeuse job and a base-revision control job under a reservation that the plan's own \u00a712 record shows the submitting worker does not hold, so the endpoint it names is not reachable as written.",
+    "single_goal": "pass \u2014 \u00a713 carries one endpoint (a fence whose write policy is deny-by-default with declared grants) and \u00a714 one (a fenced job task on a node with no installed fence program); the grant-record and grant-listing clauses are inputs to the same endpoint, not a second deliverable.",
+    "wiring": "a finding \u2014 plan.html:24 places s13 and s14 both behind s12 and neither behind the other although both rewrite the same fence composition and s13 flips the write model s14's measure is taken against, and the dispatch order at plan.html:140 names neither new node."
+  },
+  "section_digests": {
+    "_document": "8bab1a62b144dd24b941310153445f6d7770fa76cea439b2a05f3f6c3030a491",
+    "s1": "02ecdc6ddfe6575cb01d7e9c9b2771837c17f6937b1e43b03bd3357d679530eb",
+    "s10": "2921806863fa66f192dc45d31056b040e9e07cc5f67e20df721264aafdecb087",
+    "s11": "a23ab44da2be981ee6a354e5c6393269b7bec3c26c755667911cf7cc88de1a44",
+    "s12": "53044d21d6e76db24a2a0c0bd2e8fc0cef89b2ce90b3bf713bd1770d356942cd",
+    "s13": "d72ebf8dbff5d3fe58b4a0aa65cd38ceeb0c6b9e2fa2d40ce7faf8b3db016cf5",
+    "s14": "8f9362c607ea0d2310ac1bd4c85d058093aa9bddb81aa1ac8e23baebaa0dc994",
+    "s2": "672162d0e96a24a032f95b7ade817c96cf03b6d88f8f4c83f57f8e7b253409ce",
+    "s3": "9b6d5901be84127eaa75a84242d4374832a661d904144efdfaa597367a03eaac",
+    "s4": "a3c7a8b5ec0e4c73942c7a4e34993f7eba319f6c9a0540d008b2b4f0eb300aff",
+    "s5": "b13609cff56884176ba39c5271b433dc1e3f45d3d68839601b924a79f1357c5a",
+    "s6": "4d339ca4c2860c39db4a36518f8045c9b620085666f9beffdd963261346af665",
+    "s7": "2099f1fb292d04b4514f50a5dac17e2c0480f9b2d27c3a83ba62c45c0c7e1afb",
+    "s8": "1b886461a44e82b5dcefddc891828d3bd8e080296db484cac33bf8e4d032637f",
+    "s9": "21591eb5ff8f91a9c46261fa442b1bb9853f3ad03fec0ffe3444cfdeb96f07d3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:23:48.341410+00:00",
+  "total": null
+}

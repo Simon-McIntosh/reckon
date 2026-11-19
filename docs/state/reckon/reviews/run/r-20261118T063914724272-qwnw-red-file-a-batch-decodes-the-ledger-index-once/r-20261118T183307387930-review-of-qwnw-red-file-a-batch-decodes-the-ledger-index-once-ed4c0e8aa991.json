@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1220",
+    "reckon/crew/admission/readiness.py:561",
+    "reckon/ledger.py:2684"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:01:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-batch-decodes-the-ledger-index-once.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names this file as where the base run's failing ids are logged beside the head run and no such file exists at ed4c0e8aa9, so the declared evidence path is unused and the red run is readable only from the run's own logs directory."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; one commit, one file, +31/-1, in which _payload_slot keeps the held payload in a local and, on a miss for a plan-filtered non-headers-only read, asks the new _plan_slice for that plan's rows from the unfiltered payload already in the region and caches the slice under the plan key.",
+    "done_when": "the done_when names that test file's full run at head as an all_debug job with SLURM_JOB_ID unset; logs/gate-all-debug.log records exactly the gate command at revision ed4c0e8aa9 with \"4 passed\" and a bare EXIT=0 line and its header records slurm_job_id_in_env: unset, while logs/negative-control-base.log records the same file at bc7b7bec with \"1 failed, 3 passed\" and EXIT=1.",
+    "goal": "the node's goal is that tests/test_a_batch_decodes_the_ledger_index_once.py passes in full on the primary branch, and the landed commit changes reckon/ledger.py so that a plan-filtered read slices its rows from the unfiltered payload the read pass already holds, which is the product cause the failing assertion measured.",
+    "manifest": "read; it records the gate log (4 passed, EXIT=0 at ed4c0e8aa9), the base run (1 failed, 3 passed, EXIT=1 at bc7b7bec), the reuse-region arm (5 failed at base against 4 at head, the head ids a subset of the base set) and both suite arms (58 passed, EXIT=0 each), and it states the cause as product-wrong rather than test-wrong.",
+    "write_paths": "read the reviewed node's declared paths (reckon, tests, and two evidence paths); the delivered diff touches only reckon/ledger.py, which is inside the declared reckon."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_decodes_the_ledger_index_once.py:286 asserts counter.payload <= 1 through a mock on ledger._index_payload and the base run of that file reddens it at 2 decodes over 10 entries, so restoring the second decode reddens the assertion again.",
+    "evidence": "logs/gate-all-debug.log carries the done_when's own command, revision and unset job id with 4 passed and EXIT=0, but the negative control is not at the evidence fragment the done_when names, and the reuse-region arm is recorded as prose rather than the inline JSON the measure asks for.",
+    "fit": "reckon/ledger.py:1873 adds a private module-level helper beside _payload_slot and _project_payload, typed and documented in the same idiom, reusing row_plan and promotion_order_key instead of restating them.",
+    "goal_fidelity": "reckon/ledger.py:1866 answers the plan read from the wider payload the pass holds, and the file that failed at bc7b7bec is 4 passed with EXIT=0 at ed4c0e8aa9.",
+    "reuse": "reckon/ledger.py:1893 composes the existing row_plan filter and promotion_order_key sort rather than a second index read, and the search of reckon/ for a slicer over a held payload found none, only load()'s inline plan filter at reckon/ledger.py:2719 and the SQL predicates in _index_payload.",
+    "scope_discipline": "the whole diff is reckon/ledger.py, inside the declared reckon write path, and carries no test, plan, state or configuration edit."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68\nreviewed_head_sha: ed4c0e8aa9918e78b8875049feaa765ba430a273\nVERDICT goal: the node's goal is that tests/test_a_batch_decodes_the_ledger_index_once.py passes in full on the primary branch, and the landed commit changes reckon/ledger.py so that a plan-filtered read slices its rows from the unfiltered payload the read pass already holds, which is the product cause the failing assertion measured.\nVERDICT done_when: the done_when names that test file's full run at head as an all_debug job with SLURM_JOB_ID unset; logs/gate-all-debug.log records exactly the gate command at revision ed4c0e8aa9 with \"4 passed\" and a bare EXIT=0 line and its header records slurm_job_id_in_env: unset, while logs/negative-control-base.log records the same file at bc7b7bec with \"1 failed, 3 passed\" and EXIT=1.\nVERDICT write_paths: read the reviewed node's declared paths (reckon, tests, and two evidence paths); the delivered diff touches only reckon/ledger.py, which is inside the declared reckon.\nVERDICT manifest: read; it records the gate log (4 passed, EXIT=0 at ed4c0e8aa9), the base run (1 failed, 3 passed, EXIT=1 at bc7b7bec), the reuse-region arm (5 failed at base against 4 at head, the head ids a subset of the base set) and both suite arms (58 passed, EXIT=0 each), and it states the cause as product-wrong rather than test-wrong.\nVERDICT diff: read commit by commit; one commit, one file, +31/-1, in which _payload_slot keeps the held payload in a local and, on a miss for a plan-filtered non-headers-only read, asks the new _plan_slice for that plan's rows from the unfiltered payload already in the region and caches the slice under the plan key.\nCALL_SITES: reckon/crew_dispatch_commands.py:1220, reckon/crew/admission/readiness.py:561, reckon/ledger.py:2684\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1866 answers the plan read from the wider payload the pass holds, and the file that failed at bc7b7bec is 4 passed with EXIT=0 at ed4c0e8aa9.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-all-debug.log carries the done_when's own command, revision and unset job id with 4 passed and EXIT=0, but the negative control is not at the evidence fragment the done_when names, and the reuse-region arm is recorded as prose rather than the inline JSON the measure asks for.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is reckon/ledger.py, inside the declared reckon write path, and carries no test, plan, state or configuration edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_batch_decodes_the_ledger_index_once.py:286 asserts counter.payload <= 1 through a mock on ledger._index_payload and the base run of that file reddens it at 2 decodes over 10 entries, so restoring the second decode reddens the assertion again.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:1873 adds a private module-level helper beside _payload_slot and _project_payload, typed and documented in the same idiom, reusing row_plan and promotion_order_key instead of restating them.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/ledger.py:1893 composes the existing row_plan filter and promotion_order_key sort rather than a second index read, and the search of reckon/ for a slicer over a held payload found none, only load()'s inline plan filter at reckon/ledger.py:2719 and the SQL predicates in _index_payload.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-batch-decodes-the-ledger-index-once.html:1 non-blocking: the done_when names this file as where the base run's failing ids are logged beside the head run and no such file exists at ed4c0e8aa9, so the declared evidence path is unused and the red run is readable only from the run's own logs directory.\n",
+  "review_run_id": "r-20261118T183307387930-review-of-qwnw-red-file-a-batch-decodes-the-ledger-index-once-ed4c0e8aa991",
+  "reviewed_base_sha": "bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68",
+  "reviewed_head_sha": "ed4c0e8aa9918e78b8875049feaa765ba430a273",
+  "reviewed_node": "qwnw-red-file-a-batch-decodes-the-ledger-index-once",
+  "reviewed_run_id": "r-20261118T063914724272-qwnw-red-file-a-batch-decodes-the-ledger-index-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:27:51.252919+00:00",
+  "total": 110
+}

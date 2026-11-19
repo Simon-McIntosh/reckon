@@ -340,18 +340,19 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def test_a_zero_allowance_holds_a_real_dispatch(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The allowance hold stops a real dispatch, not only a dry run that reports it.
+    """The allowance hold stops a real launch, not only a dry run that reports it.
 
     A dry run reports the allowance without acting on it, so a hold that is
     only ever exercised through a preview could be deleted with every case
     still green. Here the same lane document reaches a real dispatch, which
     must stop on the router's own verdict.
 
-    A real dispatch is what the check names: the dry-run answer carries
-    ``dry_run``, so its absence is the hold the launch path raised rather than
-    a preview reproducing it. Nothing was created either -- the hold is raised
-    before a pointer or a worktree exists -- so the live pointer directory is
-    still empty when it returns.
+    A real dispatch is what the check names: the dry-run answer carries a
+    ``dry_run`` flag, so its absence is the launch path answering rather than a
+    preview reproducing it. A hold is a wait for room, not a refusal, so what
+    the hold is shown to stop is the launch: the request is stored as one
+    queued pointer carrying the router's reason, and nothing behind the queue --
+    no worktree, no launch -- follows from it.
     """
     lane_path = dispatch_repo.parent / "lane-zero-allowance.json"
     lane_path.write_text(
@@ -392,14 +393,26 @@ def test_a_zero_allowance_holds_a_real_dispatch(
     )
 
     payload = backend_tests._payload(result)
-    assert result.exit_code == 75
-    assert payload["error"] == "lane-paused"
     assert "dry_run" not in payload
-    assert payload["lane_gate"]["state"] == "held"
-    assert payload["lane_gate"]["allowance"] == 0
-    assert "grants 0" in payload["detail"]
-    assert "the gate is full" in payload["detail"]
-    assert list((runs.crew_home() / "live").glob("*.json")) == []
+    assert result.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["queued"] is True
+    assert payload["phase"] == "queued"
+    assert payload["position"] == 1
+
+    gate = payload["lane_gate"]
+    assert gate["state"] == "held"
+    assert gate["allowance"] == 0
+    assert "grants 0" in gate["detail"]
+    assert "the gate is full" in gate["detail"]
+
+    # The hold is a wait for room, so the request is the one pointer stored and
+    # nothing behind the queue followed from it: the pointer names this request
+    # at the queued phase, and no launch did.
+    live = runs.list_live(project="proj")
+    assert [pointer["run_id"] for pointer in live] == [payload["run_id"]]
+    assert live[0]["phase"] == "queued"
+    assert live[0]["hold"]["held"] is True
 
 
 def _stopped_run(tmp_path: Path, run_id: str) -> dict:

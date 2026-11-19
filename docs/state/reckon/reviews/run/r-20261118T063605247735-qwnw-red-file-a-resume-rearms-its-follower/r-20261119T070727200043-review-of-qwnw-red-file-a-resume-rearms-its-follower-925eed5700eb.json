@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_derivation": "baseline_suite-1795070501834438287.log (b24fe95, 58 passed, EXIT=0, failure_ids []) differenced against after_suite-1795070544768195395.log (550de74, 58 passed, EXIT=0, failure_ids []): 0 added ids.",
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:2235",
+    "reckon/crew/dispatch_watch.py:881",
+    "reckon/crew/dispatching/requests.py:385"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:44:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resume-rearms-its-follower.html",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "The fragment states 'No assertion was dropped', but the diff removes two assertions from the case (the old `result[\"follower_rearmed\"] is False` and `SESSION in result[\"follower_note\"]`); the done_when's 'no assertion is deleted or weakened' clause is answered in intent, not literally, and a reader checking the clause against the diff finds a contradiction."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resume-rearms-its-follower.html",
+      "line": 34,
+      "severity": "non-blocking",
+      "text": "The discrimination claim ('with the owning-session lookup removed ... fails on its first assertion') rests on no recorded log; only the base revision's own red is on disk, so the strongest durability statement in the evidence is an unverified claim rather than a receipt."
+    },
+    {
+      "file": "tests/test_a_resume_rearms_its_follower.py",
+      "line": 228,
+      "severity": "non-blocking",
+      "text": "_write_owning_host re-implements the stand-in owning-host setup already written inline at tests/test_a_session_mismatch_never_skips_the_host_silently.py:177-204 (owner process, census record, harness session record, FIFO); no shared helper owns it, so the two copies will drift."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/resumption.py:2235 resumes through _rearm_session_follower, reckon/crew/dispatch_watch.py:881 hands the mismatched pair off, and reckon/crew/dispatching/requests.py:385 takes the same path from a dispatch.",
+    "diff": "Read commit by commit: 9f40f65 rewrites the third case and corrects the _rearm_session_follower docstring and comment, and 550de74 plus 925eed5 only add and amend the evidence fragment; reckon/crew/dispatch_watch.py carries no behaviour change.",
+    "done_when": "The done_when asks for the named file at head, a base run with a per-cause verdict, an importers arm with both revisions in JSON, and a negative control; the manifest records the base arm at b24fe95 (1 failed, 2 passed, EXIT=1), the head arm at 9f40f65 (3 passed, EXIT=0), the 30-file population arms (8 failed/191 passed vs 7 failed/192 passed), and the verdict 'test wrong'.",
+    "goal": "The run's goal is to make tests/test_a_resume_rearms_its_follower.py pass in full on the primary branch; the landed case at tests/test_a_resume_rearms_its_follower.py:460 passes 3 of 3 in head-a-resume-rearms-its-follower.log.",
+    "manifest": "Read in full: status complete, three commits cited, base/head/population/promotion logs named with exit codes, and the landing line stating the test-wrong verdict and the rule the case now asserts.",
+    "write_paths": "The manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and an unused figures directory; git diff --stat b24fe95..925eed5 shows three changed paths, all inside them."
+  },
+  "justifications": {
+    "durability": "Reinstating the calling-host-only hand-off reddens tests/test_a_resume_rearms_its_follower.py:501 and :502, but no log records that mutation; only the base revision's own red is on disk.",
+    "evidence": "The manifest and its logs, base-a-resume-rearms-its-follower.log (1 failed, 2 passed, EXIT=1 at b24fe95) and head-a-resume-rearms-its-follower.log (3 passed, EXIT=0 at 9f40f65), record the gate the done_when names.",
+    "fit": "test_a_resume_rearms_its_follower.py:228 follows the file's existing stub-and-census idiom and the three commit subjects are conventional.",
+    "goal_fidelity": "tests/test_a_resume_rearms_its_follower.py:460 now asserts the hand-off rule reckon/crew/dispatch_watch.py:884 implements, and the head arm at 9f40f65 reads 3 passed, EXIT=0.",
+    "reuse": "no shared owner exists: the search over tests/helpers/, tests/conftest.py and the four RECORD_SUFFIX writers found only per-file inline stand-in host setups, of which tests/test_a_session_mismatch_never_skips_the_host_silently.py:177-204 is the nearest copy.",
+    "scope_discipline": "Every path in the diff (reckon/crew/dispatch_watch.py, tests/test_a_resume_rearms_its_follower.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resume-rearms-its-follower.html) lies inside the declared write paths."
+  },
+  "node": "review-of-qwnw-red-file-a-resume-rearms-its-follower-925eed5700eb",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the run's goal is to make tests/test_a_resume_rearms_its_follower.py pass in full on the primary branch; the landed case at tests/test_a_resume_rearms_its_follower.py:460 passes 3 of 3 in head-a-resume-rearms-its-follower.log.\nVERDICT done_when: the done_when asks for the named file at head, a base run with a per-cause verdict, an importers arm with both revisions in JSON, and a negative control; the manifest records the base arm at b24fe95 (1 failed, 2 passed, EXIT=1), the head arm at 9f40f65 (3 passed, EXIT=0), the 30-file population arms (8 failed/191 passed vs 7 failed/192 passed), and the verdict 'test wrong'.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and an unused figures directory; git diff --stat b24fe95..925eed5 shows three changed paths, all inside them.\nVERDICT manifest: read in full: status complete, three commits cited, base/head/population/promotion logs named with exit codes, and the landing line stating the test-wrong verdict and the rule the case now asserts.\nVERDICT diff: read commit by commit: 9f40f65 rewrites the third case and corrects the _rearm_session_follower docstring and comment, and 550de74 plus 925eed5 only add and amend the evidence fragment; reckon/crew/dispatch_watch.py carries no behaviour change.\nCALL_SITES: reckon/crew/resumption.py:2235, reckon/crew/dispatch_watch.py:881, reckon/crew/dispatching/requests.py:385\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_resume_rearms_its_follower.py:460 now asserts the hand-off rule reckon/crew/dispatch_watch.py:884 implements, and the head arm at 9f40f65 reads 3 passed, EXIT=0.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest and its logs, base-a-resume-rearms-its-follower.log (1 failed, 2 passed, EXIT=1 at b24fe95) and head-a-resume-rearms-its-follower.log (3 passed, EXIT=0 at 9f40f65), record the gate the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff lies inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the calling-host-only hand-off reddens tests/test_a_resume_rearms_its_follower.py:501 and :502, but no log records that mutation; only the base revision's own red is on disk.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_resume_rearms_its_follower.py:228 follows the file's existing stub-and-census idiom and the commit subjects are conventional.\nSCORE reuse: 17\nJUSTIFICATION reuse: no shared owner exists for a stand-in owning host; the search over tests/helpers/, tests/conftest.py and the four RECORD_SUFFIX writers found only per-file inline setups (tests/test_a_session_mismatch_never_skips_the_host_silently.py:177-204).\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resume-rearms-its-follower.html:32 non-blocking: the fragment states 'No assertion was dropped' while the diff removes two assertions, so the done_when's no-deletion clause is answered only in intent.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resume-rearms-its-follower.html:34 non-blocking: the owning-session-lookup removal claim has no recorded log, so the durability statement is unreceipted.\nFINDING tests/test_a_resume_rearms_its_follower.py:228 non-blocking: _write_owning_host re-implements the inline stand-in owning-host setup at tests/test_a_session_mismatch_never_skips_the_host_silently.py:177-204.\n",
+  "review_run_id": "r-20261119T070727200043-review-of-qwnw-red-file-a-resume-rearms-its-follower-925eed5700eb",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "925eed5700ebead65e27cd66dff01bc674e47cb7",
+  "reviewed_run_id": "r-20261118T063605247735-qwnw-red-file-a-resume-rearms-its-follower",
+  "reviewed_section": "queued-work-needs-no-workaround \u00a729",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:09:50.446813+00:00",
+  "total": 106
+}

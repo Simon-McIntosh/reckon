@@ -1,0 +1,10 @@
+<section id="qwnw-red-file-the-fleet-gate-holds-dispatch">
+<h2>The fleet gate dispatch file passes on all_debug</h2>
+<p>Verdict: the test was wrong, the product was right. At base 42fe90d0b0a46060bafde2490dda7d4002cda478 the file read 1 failed, 19 passed.</p>
+<pre id="qwnw-red-file-the-fleet-gate-holds-dispatch-base">FAILED tests/test_the_fleet_gate_holds_dispatch.py::test_completion_and_promotion_continue_during_a_pause
+TypeError: PosixPath object is not subscriptable</pre>
+<p>The helper <code>_commit_work</code> takes a dispatch record and commits in the worktree that record names; the case passed the repository path, so the helper raised before any promotion ran. The call site now passes the record, matching every other caller, and no assertion changed.</p>
+<p>Head <code>b2344f8d87db5c7aaedcc43903b63d1c7ededa92</code> ran the file on all_debug with SLURM_JOB_ID unset: <code>20 passed</code>.</p>
+<p>Logs (run directory r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch): base-named-file-42fe90d0.log (EXIT=1) and scoped-gate-1795060415094938282.log (EXIT=0) under the crew run directory.</p>
+<p>The arm over the files importing the ledger helper (this file and tests/test_the_lane_override_is_explicit_and_recorded.py) fails only the sibling case that was already red at base, with the same id in both arms.</p>
+</section>
