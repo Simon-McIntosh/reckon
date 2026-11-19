@@ -3354,13 +3354,14 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
     launch as the supplied states name it rather than removing a run that has
     started.
 
-    A run whose live pointer names a live process is refused, because a worker
-    that is running is what must not be abandoned. A launch still composing has
-    taken a reservation but spawned nothing, and refusing the discard there left
-    the operator unable to cancel a request they can see moving: the pass
-    restored the request the discard had removed. Every launch path reads this
-    record at its last step before it starts a worker and refuses itself, so the
-    discard lands and the launch stops.
+    A run whose live pointer names a live process is refused, as is one whose
+    attempt names a live supervisor: a worker that is running is what must not
+    be abandoned. A launch still composing has recorded only its own door, and
+    refusing the discard there left the operator unable to cancel a request
+    they can see moving while the pass restored the request the discard had
+    removed. Every launch path reads this record at its last step before it
+    starts a worker and refuses itself, so the discard lands and the launch
+    eventually stops.
     """
     with _promotion_lock(run_id), _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -3377,11 +3378,21 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             raise CrewError(
                 f"cannot discard live run {run_id!r}: recorded pid {pid} is alive"
             )
-        # The pointer's pid is the one account that refuses a discard. A
-        # dispatch or a resume still composing has spawned nothing to abandon:
-        # every launch path re-reads the discard record at its last step before
-        # starting a worker and refuses itself, so a reservation taken by such a
-        # launch is not a reason to keep a request alive against its operator.
+        # A worker already exists beside a reservation that names its supervisor,
+        # so the run holds work still being done. The pointer's pid is the
+        # pointer's account of that; a launch composing in another process has
+        # recorded only its own pid, which is the door, not a worker. Such a
+        # launch started nothing and every launch path re-reads the discard
+        # record at its last step before a worker exists and refuses itself, so
+        # only a reservation naming a supervisor refuses here.
+        from reckon.crew.dispatch_launch import (
+            _reservation_refusal,
+            held_launch_reservation,
+        )
+
+        held = held_launch_reservation(run_dir(run_id))
+        if held is not None and held.get("supervisor_pid") is not None:
+            raise _reservation_refusal(run_id, held)
         path = pointer_path(run_id)
         # Before the pointer goes: a reader that sees the absence must find the
         # record behind it, and a record written afterwards leaves a window in
