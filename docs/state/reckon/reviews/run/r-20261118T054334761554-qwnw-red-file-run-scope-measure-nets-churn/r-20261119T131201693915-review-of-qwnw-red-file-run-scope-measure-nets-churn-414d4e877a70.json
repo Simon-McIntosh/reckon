@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs: baseline_suite.log (:1 '# revision: 42fe90d0b0a46060bafde2490dda7d4002cda478', :5 '58 passed in 47.74s', EXIT=0) and after_suite.log (:1 '# revision: 414d4e877a70458ac256e6b7b671cf8ec896ebb0', :5 '58 passed in 48.96s', EXIT=0) carry zero FAILED lines between them, so the after arm adds no failing id the base arm did not have. The manifest's declared baseline_suite-1795054405275083345.log and after_suite-1795054417310088429.log are 0 bytes (bwrap bind-mount failure in the sidecar), so the unnumbered suite logs are the readable pair.",
+  "completed_at": "",
+  "coverage_note": "Covers the two commits the run gained since its review at 84832e9c: 73f1b333 (the tightened acceptance guard and its new case) and 414d4e87 (the evidence fragment section). The earlier delta 42fe90d0..84832e9c is covered by review r-20261119T025653150733-review-of-qwnw-red-file-run-scope-measure-nets-churn-84832e9c7671.",
+  "dispatched_at": "2026-11-19T21:08:11Z",
+  "findings": [
+    {
+      "disposition": null,
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn/manifest.md",
+      "line": "5",
+      "severity": "blocking",
+      "text": "blocking: manifest.md:5 records status: complete while the record still carries no tests line, no test_logs, no artifacts and neither baseline_suite nor after_suite, so the done_when's 'both arms recorded as inline JSON carrying full 40-character revisions' is unmet."
+    },
+    {
+      "disposition": null,
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "410",
+      "severity": "non-blocking",
+      "text": "non-blocking: the parent read repeats, at reckon/crew/promotion_evidence.py:410-416, the invocation owned by the _merge_revisions clause at reckon/crew/promotion_scope.py:556, a duplicate implementation rather than an extension of it."
+    },
+    {
+      "disposition": null,
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative control names revision 84832e9c, but the red log is negative-control-tighten.log, which has no '# revision:' header, so the red arm is attested by nothing but the page's prose."
+    },
+    {
+      "disposition": null,
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn/scoped-gate-1795093114682895687.log.scheduler",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate ran with no scheduler receipt, so the site on all_debug with SLURM_JOB_ID unset is attested by the host line and the output alone; check the scheduler sidecar, which is 0 bytes, and the log's lack of a partition before citing the gate as an all_debug job."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:1364 and its import at :3849 reach the guard; the guard is _require_commits_beyond_base, called once there.",
+    "diff": "read 84832e9c..414d4e87 commit by commit: 73f1b333 replaces the ancestor test in _integration_brings_the_run with a parent read and adds test_a_later_commit_on_the_runs_branch_is_refused, and 414d4e87 appends the fragment section naming the parent test.",
+    "done_when": "the measure requires the named file at head on all_debug with SLURM_JOB_ID unset, the arms with full revisions, both arms inline and clean ruff; the head gate is logged, but the arms are absent from the reviewed manifest, and the red arm's revision is asserted in prose only.",
+    "goal": "the node goal is for tests/test_run_scope_measure_nets_churn.py to pass in full, and the gained commit 73f1b333 tightens the acceptance at reckon/crew/promotion_evidence.py:390-422 to the parent test with a new case at tests/test_run_scope_measure_nets_churn.py:233-269, whose head run passes.",
+    "manifest": "read manifest.md at the reviewed head: it states complete, the four commits and three changed paths, and a landing line, but no tests, test_logs, artifacts, baseline_suite or after_suite, so the gate and the arms are not recorded in the record and the arms' absence is recorded here rather than read.",
+    "write_paths": "the declared paths are reckon, tests and the queued-work-needs-no-workaround fragment; the gained commits touch only reckon/crew/promotion_evidence.py, tests/test_run_scope_measure_nets_churn.py and the fragment under the declared directory, so everything in 84832e9c..414d4e87 is inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "negative-control-tighten.log:12-13 shows the delta's case failing with 'DID NOT RAISE CrewError' at the code before 73f1b333, so tests/test_run_scope_measure_nets_churn.py:263 fails if the parent test is reverted to the ancestor test.",
+    "evidence": "the head gate at scoped-gate-1795093114682895687.log:6 reads '5 passed' at revision 414d4e87 with EXIT=0, but manifest.md:5 records none of it and the red arm at negative-control-tighten.log carries no revision header.",
+    "fit": "the added read follows the module's own inline subprocess.run idiom (reckon/crew/promotion_evidence.py:72, :225, :323) and adds no prohibited name; ruff check on both changed Python files reports the same two pre-existing I001 findings at base and head.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:419-422 now admits only a citation that names the run head among its parents, and the delta's own case at tests/test_run_scope_measure_nets_churn.py:263 reddens if that predicate is reverted.",
+    "reuse": "reckon/crew/promotion_evidence.py:410-416 re-implements the 'git rev-list --parents' read owned by promotion_scope._merge_revisions at reckon/crew/promotion_scope.py:556, which is already imported into this module, without factoring the owner.",
+    "scope_discipline": "git diff --stat 84832e9c 414d4e87 lists only promotion_evidence.py, the named test file and the node's own fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is for tests/test_run_scope_measure_nets_churn.py to pass in full, and the gained commit 73f1b333 tightens the acceptance at reckon/crew/promotion_evidence.py:390-422 to the parent test with a new case at tests/test_run_scope_measure_nets_churn.py:233-269.\nVERDICT done_when: the measure requires the named file at head on all_debug with SLURM_JOB_ID unset, both arms as inline JSON at full revisions and clean ruff; the head gate is logged at scoped-gate-1795093114682895687.log:6 (5 passed, EXIT=0, revision 414d4e87), but the reviewed manifest records neither arm nor the gate.\nVERDICT write_paths: the declared paths are reckon, tests and the fragment; the gained commits touch only reckon/crew/promotion_evidence.py, tests/test_run_scope_measure_nets_churn.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html.\nVERDICT manifest: manifest.md states status complete, commits 784dcda, 84832e9c, 73f1b333 and 414d4e87, and three changed paths, but no tests, test_logs, artifacts, baseline_suite or after_suite.\nVERDICT diff: read 84832e9c..414d4e87 commit by commit; 73f1b333 changes the guard and adds one case, 414d4e87 adds ten lines to the fragment.\nCALL_SITES: reckon/crew/promotion.py:1364\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:419-422 admits only a citation naming the run head among its parents.\nSCORE evidence: 10\nJUSTIFICATION evidence: scoped-gate-1795093114682895687.log:6 reads 5 passed with EXIT=0 at 414d4e87, yet manifest.md:5 records neither arm, and negative-control-tighten.log carries no revision header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 84832e9c 414d4e87 lists only the two declared paths plus the node's own fragment.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control-tighten.log:12-13 shows tests/test_run_scope_measure_nets_churn.py:263 failing with DID NOT RAISE CrewError before 73f1b333.\nSCORE fit: 18\nJUSTIFICATION fit: the parent read matches the module's inline subprocess.run idiom at reckon/crew/promotion_evidence.py:225 and ruff reports the same two pre-existing I001 findings at both arms.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion_evidence.py:410-416 duplicates the rev-list parent read owned at reckon/crew/promotion_scope.py:556 rather than extending it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn/manifest.md:5 blocking: status complete while the record carries no tests, test_logs, baseline_suite or after_suite, so the arms the done_when requires as inline JSON are absent.\nFINDING reckon/crew/promotion_evidence.py:410 non-blocking: the parent read duplicates promotion_scope._merge_revisions at reckon/crew/promotion_scope.py:556 instead of extending it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html:25 non-blocking: the red arm is dated 84832e9c in prose while negative-control-tighten.log carries no revision header.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn/scoped-gate-1795093114682895687.log.scheduler:1 non-blocking: the head gate has no scheduler receipt, so the all_debug job site is not openable evidence.",
+  "remarks": "Read 84832e9c..414d4e87 only, as the goal asks. The older delta 42fe90d0..84832e9c was reviewed at r-20261119T025653150733-review-of-qwnw-red-file-run-scope-measure-nets-churn-84832e9c7671. Gate log read, not re-run: scoped-gate-1795093114682895687.log. Suite arms read from baseline_suite.log and after_suite.log, since the NNN-suffixed siblings are 0 bytes.",
+  "review_run_id": "r-20261119T131201693915-review-of-qwnw-red-file-run-scope-measure-nets-churn-414d4e877a70",
+  "reviewed_at": "2026-11-19T21:40:00Z",
+  "reviewed_base_sha": "84832e9c76712dbc3c8af55a1d56b6516668185f",
+  "reviewed_head_sha": "414d4e877a70458ac256e6b7b671cf8ec896ebb0",
+  "reviewed_run_id": "r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn",
+  "rubric": "recorded six item verdicts and six dimension scores; findings carry severity",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:26:37.516736+00:00",
+  "total": 88
+}
