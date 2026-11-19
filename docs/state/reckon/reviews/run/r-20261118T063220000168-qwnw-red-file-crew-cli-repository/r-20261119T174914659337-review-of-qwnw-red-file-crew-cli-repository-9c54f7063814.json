@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1581",
+    "reckon/crew_dispatch_commands.py:303"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:26:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-cli-repository-head-revision-pass.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header now names 3e4c877c while the delivered head is 9c54f706, so the record's reviewed_head_sha and the green arm's header still disagree and the added note explains only the 606016915..3e4c877c window, not this commit; the tree the test reads is identical because 9c54f706 changes only this file, but the log alone does not show that."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-cli-repository-head-revision-pass.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair deleted the \"# host:\" line instead of updating it, so the committed gate log names no node and the done_when's \"a job on all_debug\" is corroborated only by SLURM_JOB_ID 1331800 in the run directory's head-revision-pass-3e4c877c.log, which records host 98dci4-clu-3142; the owner of that header reckon/crew/landing_measure.py:982 emits host from hostname."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063220000168-qwnw-red-file-crew-cli-repository/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests: line is \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_cli_repository.py\" without the \"env -u SLURM_JOB_ID -u SLURM_JOBID\" the gate log's own command header carries, so the command promotion fills its gate receipt from can re-run the file with SLURM_JOB_ID set, which the done_when forbids."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_crew_cli_repository.py:162 asserts the production notice at reckon/crew/dispatching/preparation.py:1581 and reddens if it returns to stdout, while the incremental commit is a log header whose only guard is the scratch script named in negative-control-log-revision.log, not a committed test.",
+    "evidence": "the gate log head-revision-pass.log:1 names revision 3e4c877c rather than the delivered head 9c54f706 and line 4 carries only a job id where the host line was deleted, so the recorded arm under-corroborates the done_when.",
+    "fit": "the rewritten header keeps the \"revision/host/tree/command\" shape reckon/crew/landing_measure.py:982 writes, except that the host line is dropped and the file ends without a trailing newline.",
+    "goal_fidelity": "tests/test_crew_cli_repository.py:161-163 at 9c54f706 is the repaired assertion the goal names, and the head arm of that file reports 1 passed EXIT=0 against the base arm's 1 failed EXIT=1.",
+    "reuse": "no function, class or module was added by the diff, so no capability is forked; the owner of the gate-log header wording is reckon/crew/landing_measure.py:982, which the change edits a copy of rather than re-implementing.",
+    "scope_discipline": "all three changed paths (tests/test_crew_cli_repository.py plus the two .log files) lie inside the declared write paths listed in dispatch-detail.json's node record."
+  },
+  "notes": "Reviewed only the commit this run gained since the previous review, 9c54f7063814 (previous record read 0d0e1c94..3e4c877c66ca); the revision pair recorded is the node's own base and the head it landed at. added_failure_count is 0 because the reviewed run's own arms read 58 passed EXIT=0 at 0d0e1c94 (baseline_suite-1795110029600137247.log) and 58 passed EXIT=0 at 9c54f706 (after_suite-1795110073262350168.log), with no failing id in either. Durability: the assertion added by 606016915b compares against the production notice at reckon/crew/landing_measure.py and reckon/crew/dispatching/preparation.py, not against a fixture value the test supplied, so reverting the notice to stdout reddens both the stderr assertion and json.loads(result.stdout); the log-header delta has no committed guard and its negative control is a scratch script, which the durability score records.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T174914659337-review-of-qwnw-red-file-crew-cli-repository-9c54f7063814",
+  "reviewed_base_sha": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385",
+  "reviewed_commits": [
+    "9c54f7063814a6b11b1c1ec8004b602851efaa34"
+  ],
+  "reviewed_head_sha": "9c54f7063814a6b11b1c1ec8004b602851efaa34",
+  "reviewed_node": "qwnw-red-file-crew-cli-repository",
+  "reviewed_run_id": "r-20261118T063220000168-qwnw-red-file-crew-cli-repository",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:56:47.136145+00:00",
+  "total": 103,
+  "verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read 0d0e1c94..9c54f706 commit by commit: 606016915b replaces json.loads(result.output) with result.stdout and adds the stderr notice assertion plus a docstring paragraph at tests/test_crew_cli_repository.py:11-19; 3e4c877c adds the two evidence logs; 9c54f706 rewrites only the header of head-revision-pass.log (revision 606016915->3e4c877c, job 1331800, an explanatory note, host line dropped), no path outside the declared scope.",
+    "done_when": "The done_when asks for the file passing as a job on all_debug with SLURM_JOB_ID unset and output on shared storage; the gate log at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-cli-repository-head-revision-pass.log:3-5 records \"env -u SLURM_JOB_ID -u SLURM_JOBID\" with SLURM_JOB_ID 1331800 and EXIT=0, so the measure is recorded green, but the manifest's re-runnable tests line omits that env prefix.",
+    "goal": "The reviewed node's goal is \"Make tests/test_crew_cli_repository.py pass in full on the primary branch\" (read from the reviewed run's dispatch-detail.json, admit_request.node.goal); at the delivered head 9c54f706 tests/test_crew_cli_repository.py:161-163 carries json.loads(result.stdout) and assert \"created run\" in result.stderr, and the run's head arm records \"1 passed in 3.76s\" EXIT=0 against the base arm's \"1 failed in 3.70s\" EXIT=1, so the file passes in the measured worktree while the primary-branch measurement belongs to the separate post-merge test node.",
+    "manifest": "Read the reviewed run's manifest.md; it states status complete with commits 606016915bd1, 3e4c877c66ca and 9c54f7063814, a baseline_suite row at 0d0e1c94 and an after_suite row at 9c54f706 that both read \"58 passed\" with completed:true, failure_count 0 and empty failure_ids, plus negative-control-log-revision.log, while its tests: line at manifest.md:13 drops the SLURM_JOB_ID unset the log header carries.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (dispatch-detail.json admit_request.node.write_paths); the delivered diff touches only tests/test_crew_cli_repository.py and the two .log files in that fragment directory, every path inside the declaration."
+  }
+}

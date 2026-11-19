@@ -37,11 +37,23 @@ from tests.test_receipt_names_the_rolled_back_row import _git, _rows
 
 PROJECT = "sample"
 RUN_ID = "failed-landing-row"
+# A run id the run store holds no row for, so a read naming it falls through
+# to the derived index instead of being answered from the store.
+UNSTORED_RUN_ID = "no-store-row-for-this-run"
 
 
 @pytest.fixture
 def repository(tmp_path, monkeypatch):
-    """A temporary repository whose ledger index resolves inside the test tree."""
+    """A temporary repository whose ledger index resolves inside the test tree.
+
+    The crew home resolves inside the test tree too, so the live pointer, the
+    open-run index and the run store this case reads and writes name nothing of
+    this machine's: a row a previous run left in a shared store would otherwise
+    make the promotion answer "already promoted" before it ever stages.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
     pick_cache = tmp_path / "pick-cache"
     pick_cache.mkdir()
     monkeypatch.setenv("RECKON_PICK_CACHE", str(pick_cache))
@@ -76,15 +88,18 @@ def test_a_rolled_back_row_is_reported_when_only_a_stale_index_names_it(
 ):
     """A cached index cannot make a real rollback read as a surviving row.
 
-    The promotion appends the run's per-run file, then stages and commits it
-    under a pinned index directory so the derived ledger index is built while
-    that file exists. A peer's ``.git/index.lock`` refuses the staging, so the
-    rollback drops the per-run file, then the run file is absent and the
-    aggregate holds no row. The index is then unwritable, so the receipt's
-    read-back is refused and falls back to the last-good snapshot — the one
-    built while the file existed. The receipt must report the rollback, not the
-    already-written wording, because the only source still naming the row is
-    the cache the reader's next promotion will rebuild.
+    The promotion appends the run's per-run file and writes the run's row into
+    the run store, then stages and commits it. The store answers a project-wide
+    read, so the derived ledger index — the cache that can outlive the rollback
+    — is published here by a read naming a run the store holds no row for,
+    while the per-run file is still on disk. A peer's ``.git/index.lock``
+    refuses the staging, so the rollback drops the per-run file and the store
+    row, then the run file is absent and the aggregate holds no row. The index
+    is then unwritable, so a later read is refused there and falls back to the
+    last-good snapshot — the one built while the file existed. The receipt must
+    report the rollback, not the already-written wording, because the only
+    source still naming the row is the cache the reader's next promotion will
+    rebuild.
     """
     index = ledger._run_index_path(PROJECT, repository)
     run_file = ledger.run_path(PROJECT, RUN_ID, repository)
@@ -95,12 +110,15 @@ def test_a_rolled_back_row_is_reported_when_only_a_stale_index_names_it(
     state = {"flipped": False}
 
     def hook(checkout, *args, **kwargs):
-        # On the landing's own staging call, the per-run file this promotion
-        # appended is on disk: publish the index now, so it names the row, then
-        # make it unwritable so the receipt's refresh is refused.
+        # On the landing's own staging call, the promotion's store write holds
+        # the run's row, so a project-wide read is answered from the store and
+        # never builds the derived index. A read naming a run the store does
+        # not hold falls through to the index, which publishes it with this
+        # run's row in it while the per-run file is on disk; the index is then
+        # made unwritable so the receipt's refresh is refused.
         if not state["flipped"] and args and args[0] == "add":
             assert run_file.is_file(), "the append must precede the staging"
-            ledger.load(PROJECT, repository, use_index=True)
+            ledger.load(PROJECT, repository, use_index=True, run_ids=[UNSTORED_RUN_ID])
             assert RUN_ID in _rows(repository)
             index.chmod(0o400)
             state["flipped"] = True

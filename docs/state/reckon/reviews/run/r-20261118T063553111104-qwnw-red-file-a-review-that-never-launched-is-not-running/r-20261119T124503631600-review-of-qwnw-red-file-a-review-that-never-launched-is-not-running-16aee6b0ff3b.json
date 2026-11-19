@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:2960 the stranded arm of classify_pointer",
+    "reckon/crew/recovery_classification.py:2070 the launch arm skipping a stranded pointer",
+    "reckon/crew/recovery_classification.py:885 the pointer-level stranded reading",
+    "reckon/crew/admission/launching.py:604 releasing a stranded queued request",
+    "reckon/crew/recovery_review_dispatch.py:3108 re-composing a standing review whose launch never started"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:06:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063553111104-qwnw-red-file-a-review-that-never-launched-is-not-running/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "summary": "non-blocking: the importer arm pair is recorded as prose rather than the inline JSON with full 40-character revisions the done_when names.",
+      "text": "non-blocking: the importer arm pair is recorded as prose plus log paths rather than the inline JSON carrying full 40-character revisions the done_when names, the full ids living only in the headers of logs/importer-base.log and logs/importer-head.log, so the arm is evidenced but not in the shape the measure asks for."
+    },
+    {
+      "file": "tests/test_a_review_that_never_launched_is_not_running.py",
+      "line": "224",
+      "severity": "non-blocking",
+      "summary": "non-blocking: the added detail assertion pins prose from an arm this node did not change.",
+      "text": "non-blocking: the added assertion pins the launcher-claim arm's prose 'claimed this run', a sentence this node did not change, so an unrelated wording edit to the pre-spawn reading reddens the file; the durable guard is the classification assertion on the line above, which is the one that fails on the base defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read all three commits against d9b857e0; b3a58628 adds the predicate at reckon/crew/recovery_liveness.py:670-680 and the guard at :702-705 and re-pins the named case, 04c43589 and 16aee6b0 only extend the 79-line evidence fragment, and no other file changes.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a product-or-test verdict per cause, no assertion deleted or weakened, an importer arm adding no failure with both arms as inline JSON at 40-character revisions, and a base negative control; manifest.md records the green head gate, the base arm red on the exact case, both verdicts in the fragment, the importer pair as prose at manifest.md:21 and the declared mutation log at logs/negative-control.log.",
+    "goal": "the reviewed goal is 'Make tests/test_a_review_that_never_launched_is_not_running.py pass in full on the primary branch'; reckon/crew/recovery_liveness.py:670-705 now dates an in-harness pointer only from a claim naming its holder, and scoped-gate-1795091628073414920.log records 6 passed EXIT=0 at 16aee6b0ff3b.",
+    "manifest": "read in full; it names the three commits b3a58628, 04c43589 and 16aee6b0, the base arm red on test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running at d9b857e0, the 6-passed EXIT=0 head gate at both b3a58628 and 16aee6b0, both armed-suite arms as inline JSON with full revisions at 58 passed EXIT=0, the 149-file importer pair at 39 against 38 ids with 0 added and 1 fixed, the declared mutation log, and six rubric self-checks.",
+    "write_paths": "the declared scope is reckon, tests, the queued-work-needs-no-workaround fragment directory and its named fragment; the diff d9b857e0..16aee6b0 touches reckon/crew/recovery_liveness.py, tests/test_a_review_that_never_launched_is_not_running.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-that-never-launched-is-not-running.html, all inside it."
+  },
+  "justifications": {
+    "durability": "removing the guard at reckon/crew/recovery_liveness.py:702-705 reddens tests/test_a_review_that_never_launches_is_not_running.py:223 with assert 'launch-failed' == 'running', as logs/base-arm.log records, and the positive branch stays covered by tests/test_a_launch_stopped_at_its_claim_is_redispatched.py:114-130, which passes in logs/importer-head.log.",
+    "evidence": "logs/base-arm.log fails only test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running with assert 'launch-failed' == 'running' at d9b857e0 and logs/negative-control.log reddens the claim-arm case, while the 149-file importer pair is prose at manifest.md:21 rather than the inline JSON the done_when names.",
+    "fit": "reckon/crew/recovery_liveness.py:670 follows the lazy-import and docstring idiom its neighbours at :645-668 carry, and the name states the fact the predicate reads.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:702-705 leaves an in-harness pointer whose claim names no holder undated, and the named file reads 6 passed EXIT=0 in scoped-gate-1795091628073414920.log at head 16aee6b0ff3b.",
+    "reuse": "reckon/crew/dispatch_claims.py:1120 read_claim already owns reading a run's claim and the new predicate calls it rather than parsing claim.json, though it reads the claim twice per in-harness pointer because :670 and :680 both enter the file.",
+    "scope_discipline": "the diff d9b857e0..16aee6b0 touches only reckon/crew/recovery_liveness.py, tests/test_a_review_that_never_launched_is_not_running.py and the declared fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal is 'Make tests/test_a_review_that_never_launched_is_not_running.py pass in full on the primary branch'; reckon/crew/recovery_liveness.py:670-705 now dates an in-harness pointer only from a claim naming its holder, and scoped-gate-1795091628073414920.log records 6 passed EXIT=0 at 16aee6b0ff3b.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a base run first, a product-or-test verdict per cause, no assertion deleted or weakened, an importer arm adding no failure with both arms as inline JSON at 40-character revisions, and a base negative control; manifest.md records the green head gate, the base arm red on the exact case, both verdicts in the fragment, the importer pair as prose at manifest.md:21 and the declared mutation log at logs/negative-control.log.\nVERDICT write_paths: the declared scope is reckon, tests, the queued-work-needs-no-workaround fragment directory and its named fragment; the diff d9b857e0..16aee6b0 touches reckon/crew/recovery_liveness.py, tests/test_a_review_that_never_launched_is_not_running.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-that-never-launched-is-not-running.html, all inside it.\nVERDICT manifest: read in full; it names the three commits b3a58628, 04c43589 and 16aee6b0, the base arm red on test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running at d9b857e0, the 6-passed EXIT=0 head gate at both b3a58628 and 16aee6b0, both armed-suite arms as inline JSON with full revisions at 58 passed EXIT=0, the 149-file importer pair at 39 against 38 ids with 0 added and 1 fixed, the declared mutation log, and six rubric self-checks.\nVERDICT diff: read all three commits against d9b857e0; b3a58628 adds the predicate at reckon/crew/recovery_liveness.py:670-680 and the guard at :702-705 and re-pins the named case, 04c43589 and 16aee6b0 only extend the 79-line evidence fragment, and no other file changes.\nCALL_SITES: reckon/crew/recovery_classification.py:2960, reckon/crew/recovery_classification.py:2070, reckon/crew/recovery_classification.py:885, reckon/crew/admission/launching.py:604, reckon/crew/recovery_review_dispatch.py:3108\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:702-705 leaves an in-harness pointer whose claim names no holder undated, and the named file reads 6 passed EXIT=0 in scoped-gate-1795091628073414920.log at head 16aee6b0ff3b.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-arm.log fails only test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running with assert 'launch-failed' == 'running' at d9b857e0 and logs/negative-control.log reddens the claim-arm case, while the 149-file importer pair is prose at manifest.md:21 rather than the inline JSON the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff d9b857e0..16aee6b0 touches only reckon/crew/recovery_liveness.py, tests/test_a_review_that_never_launched_is_not_running.py and the declared fragment, every one inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: removing the guard at reckon/crew/recovery_liveness.py:702-705 reddens tests/test_a_review_that_never_launched_is_not_running.py:223 with assert 'launch-failed' == 'running', as logs/base-arm.log records, and the positive branch stays covered by tests/test_a_launch_stopped_at_its_claim_is_redispatched.py:114-130, which passes in logs/importer-head.log.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:670 follows the lazy-import and docstring idiom its neighbours at :645-668 carry, and the name states the fact the predicate reads.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/dispatch_claims.py:1120 read_claim already owns reading a run's claim and the new predicate calls it rather than parsing claim.json, though it reads the claim twice per in-harness pointer because :670 and :680 both enter the file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063553111104-qwnw-red-file-a-review-that-never-launched-is-not-running/manifest.md:21 non-blocking: the importer arm pair is recorded as prose plus log paths rather than the inline JSON carrying full 40-character revisions the done_when names, the full ids living only in the headers of logs/importer-base.log and logs/importer-head.log, so the arm is evidenced but not in the shape the measure asks for.\nFINDING tests/test_a_review_that_never_launched_is_not_running.py:224 non-blocking: the added assertion pins the launcher-claim arm's prose 'claimed this run', a sentence this node did not change, so an unrelated wording edit to the pre-span reading reddens the file; the durable guard is the classification assertion on the line above, which is the one that fails on the base defect.",
+  "review_run_id": "r-20261119T124503631600-review-of-qwnw-red-file-a-review-that-never-launched-is-not-running-16aee6b0ff3b",
+  "reviewed_base_sha": "d9b857e053a77af65ab77aad9d78f3ef3d3bb28a",
+  "reviewed_head_sha": "16aee6b0ff3b7cf9387088a4b3549575a3dad10e",
+  "reviewed_run_id": "r-20261118T063553111104-qwnw-red-file-a-review-that-never-launched-is-not-running",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:40:00Z",
+  "total": 111
+}

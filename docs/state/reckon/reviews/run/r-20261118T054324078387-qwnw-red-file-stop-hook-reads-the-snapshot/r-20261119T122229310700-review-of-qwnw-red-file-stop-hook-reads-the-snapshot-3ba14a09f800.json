@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:2753",
+    "reckon/mcp.py:1344",
+    "reckon/doccheck.py:1972"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:28:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-hook-reads-the-snapshot.html",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "the after arm's revision cell reads this node's head while the caption promises a revision per arm, and line 53 says the head for a mutation log whose header records f32bf26c07"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-hook-reads-the-snapshot.html",
+      "line": 60,
+      "severity": "non-blocking",
+      "text": "the concurrent-replay and 8d50b0333f replay measurements name no log, so the load-dependent reading cannot be re-checked"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-hook-reads-the-snapshot.html",
+      "line": 9,
+      "severity": "non-blocking",
+      "text": "the all_debug batch job the done_when names is unrecorded; scoped-gate-1795090208677230144.log:2 names only the host 98dci4-clu-3142 and its scheduler sidecar is empty"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "f32bf26c07 adds the fragment and 3ba14a09f8 rewrites its negative-control paragraph; one file, 62 lines.",
+    "done_when": "scoped-gate-1795090208677230144.log:7 records 7 passed EXIT=0 at 3ba14a09f8 and after_suite-1795090109024150024.log:7 records 58 passed; the named partition is recorded nowhere.",
+    "goal": "read node.goal and qwnw-red-file-stop-hook-reads-the-snapshot.html:4, which records the file passing 7 of 7 at d9b857e053.",
+    "manifest": "read at the run directory; its gate command, logs, 40-character suite revisions and counts match the logs.",
+    "write_paths": "the diff touches only qwnw-red-file-stop-hook-reads-the-snapshot.html, one of the declared write paths."
+  },
+  "justifications": {
+    "durability": "The diff adds no executable assertion, so nothing in tests/ reddens if the diff regresses.",
+    "evidence": "scoped-gate-1795090208677230144.log:7 records 7 passed EXIT=0 at head, but no artefact records the all_debug partition.",
+    "fit": "qwnw-red-file-stop-hook-reads-the-snapshot.html:1 follows qwnw-red-file-passed-verdict-needs-exit-zero.html:1 but ends without a newline.",
+    "goal_fidelity": "qwnw-red-file-stop-hook-reads-the-snapshot.html:4 records the named file green at d9b857e053, which is the done_when's own already-passes branch.",
+    "reuse": "reckon/evidence.py:1657 compose_landed_record already owns evidence-fragment composition and the diff adds no definition.",
+    "scope_discipline": "The single changed path qwnw-red-file-stop-hook-reads-the-snapshot.html is one of the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read node.goal and qwnw-red-file-stop-hook-reads-the-snapshot.html:4, which records the file passing 7 of 7 at d9b857e053.\nVERDICT done_when: scoped-gate-1795090208677230144.log:7 records 7 passed EXIT=0 at 3ba14a09f8 and after_suite-1795090109024150024.log:7 records 58 passed; the named partition is recorded nowhere.\nVERDICT write_paths: the diff touches only qwnw-red-file-stop-hook-reads-the-snapshot.html, one of the declared write paths.\nVERDICT manifest: read at the run directory; its gate command, logs, 40-character suite revisions and counts match the logs.\nVERDICT diff: f32bf26c07 adds the fragment and 3ba14a09f8 rewrites its negative-control paragraph; one file, 62 lines.\nCALL_SITES: reckon/serve.py:2753, reckon/mcp.py:1344, reckon/doccheck.py:1972\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: qwnw-red-file-stop-hook-reads-the-snapshot.html:4 records the named file green at d9b857e053, which is the done_when's own already-passes branch.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795090208677230144.log:7 records 7 passed EXIT=0 at head, but no artefact records the all_debug partition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single changed path qwnw-red-file-stop-hook-reads-the-snapshot.html is one of the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: the diff adds no executable assertion, so nothing in tests/ reddens if the diff regresses.\nSCORE fit: 15\nJUSTIFICATION fit: qwnw-red-file-stop-hook-reads-the-snapshot.html:1 follows qwnw-red-file-passed-verdict-needs-exit-zero.html:1 but ends without a newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/evidence.py:1657 compose_landed_record already owns evidence-fragment composition and the diff adds no definition.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-hook-reads-the-snapshot.html:33 non-blocking: the after arm's revision cell reads this node's head while the caption promises a revision per arm, and line 53 says the head for a mutation log whose header records f32bf26c07 in negative-control-head-mutated-snapshot-read.log:1.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-hook-reads-the-snapshot.html:60 non-blocking: the concurrent-replay and 8d50b0333f replay measurements name no log, so the load-dependent reading cannot be re-checked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-hook-reads-the-snapshot.html:9 non-blocking: the all_debug batch job the done_when names is unrecorded; scoped-gate-1795090208677230144.log:2 names only the host 98dci4-clu-3142 and its scheduler sidecar is empty.\n",
+  "review_run_id": "r-20261119T122229310700-review-of-qwnw-red-file-stop-hook-reads-the-snapshot-3ba14a09f800",
+  "reviewed_base_sha": "d9b857e053a77af65ab77aad9d78f3ef3d3bb28a",
+  "reviewed_head_sha": "3ba14a09f800e214f77f2a3f2928d32cf2687a27",
+  "reviewed_run_id": "r-20261118T054324078387-qwnw-red-file-stop-hook-reads-the-snapshot",
+  "rubric": "",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T20:01:14.159046+00:00",
+  "total": 102
+}

@@ -368,9 +368,10 @@ def _mark_pointer(
                 else str(request.get("previous_phase") or "complete")
             )
             runs._write_json(runs.pointer_path(run_id), pointer)
-    except runs.PointerLockHeldError:
+    except (runs.PointerLockHeldError, CrewError, FileNotFoundError):
         # The durable request remains readable while another pointer mutation
-        # holds its short lock; requesting never waits behind that mutation.
+        # holds its short lock, and a promotion removes the pointer before its
+        # request is closed: neither is a reason to fail the request.
         return
 
 
@@ -589,6 +590,19 @@ def _execute(request: Mapping[str, Any]) -> dict[str, Any] | None:
         else acceptance.promote_review_run_itself
     )
     return operation(pointer, config=options.get("config"))
+
+
+def _outcome_already_recorded(request: Mapping[str, Any], phase: str) -> bool:
+    """Whether this attempt's outcome is already durable on its receipt.
+
+    A promotion writes its receipt before the request is unlinked, so the
+    receipt is the record a later fault must not overwrite.
+    """
+    receipt = _read(_receipt_path(str(request["run_id"])))
+    return (
+        receipt.get("request_id") == request.get("request_id")
+        and receipt.get("phase") == phase
+    )
 
 
 def _finish(request: Mapping[str, Any], phase: str, **result: Any) -> dict[str, Any]:
@@ -813,16 +827,90 @@ def _defer_to_a_queued_review(
     return True
 
 
-def _promoted_commits(result: Mapping[str, Any]) -> list[str]:
+def _declared_commits(result: Mapping[str, Any]) -> list[str]:
+    """The commits a promotion result already carries, without reading the store."""
     promoted = result.get("promotion") or result
-    record = promoted.get("record") or {}
-    commits = record.get("commits") or result.get("commits")
-    if commits:
-        return list(commits)
-    location = (result.get("ledger") or {}).get("path")
-    if location:
-        return list(_read(Path(location)).get("commits") or [])
+    record = promoted.get("record") if isinstance(promoted, Mapping) else {}
+    record = record if isinstance(record, Mapping) else {}
+    commits = record.get("commits") or result.get("commits") or ()
+    return [str(commit) for commit in commits]
+
+
+def _stored_commits(request: Mapping[str, Any], result: Mapping[str, Any]) -> list[str]:
+    """The commits of a promoted run read by its identity, never by its location.
+
+    A promotion whose ledger has retired returns the run store as the location
+    it wrote, and a run file it names need not be kept in the checkout. The
+    store answers for both: its rows are keyed by run, so a promoted run with no
+    commit in the checkout is read without decoding a database as JSON.
+    """
+    run_id = str(result.get("run_id") or request.get("run_id") or "")
+    project = str(result.get("project") or request.get("project") or "")
+    if not run_id or not project:
+        return []
+    try:
+        from reckon import run_store
+
+        rows = run_store.stored_run_rows(project, run_ids=[run_id]) or ()
+    except Exception:  # noqa: BLE001 - a stored read never fails a promoted run
+        return []
+    for row in rows:
+        if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
+            return [str(commit) for commit in row.get("commits") or ()]
     return []
+
+
+def _location_commits(result: Mapping[str, Any]) -> list[str]:
+    """Commits from a run document the promotion names as its write location.
+
+    Only a run file is a document. A retired ledger names the store, a
+    database, and a checkout may no longer keep the file at all, so a location
+    that does not decode as one object is answered as no commit rather than
+    failing the request.
+    """
+    location = str((result.get("ledger") or {}).get("path") or "")
+    if not location:
+        return []
+    try:
+        document = json.loads(Path(location).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return []
+    if not isinstance(document, Mapping):
+        return []
+    return [str(commit) for commit in document.get("commits") or ()]
+
+
+def _promoted_commits(
+    request: Mapping[str, Any], result: Mapping[str, Any]
+) -> list[str]:
+    """A promoted run's commits, from wherever its record is held."""
+    commits = _declared_commits(result)
+    if commits:
+        return commits
+    commits = _stored_commits(request, result)
+    if commits:
+        return commits
+    return _location_commits(result)
+
+
+def _raising_site(exc: BaseException) -> str:
+    """The module, function and line that raised, so a failure names its step."""
+    trace = exc.__traceback__
+    if trace is None:
+        return ""
+    while trace.tb_next is not None:
+        trace = trace.tb_next
+    frame = trace.tb_frame
+    module = str(frame.f_globals.get("__name__") or "")
+    function = frame.f_code.co_name
+    return f"{module}:{function}:{trace.tb_lineno}"
+
+
+def _failure_text(exc: BaseException) -> str:
+    """A stored error carrying the message beside the site that raised it."""
+    site = _raising_site(exc)
+    text = f"{type(exc).__name__}: {exc}"
+    return f"{text} (raised at {site})" if site else text
 
 
 class PromotionService:
@@ -1092,6 +1180,7 @@ class PromotionService:
             stage, stage_began = name, now
 
         stage_token = PROMOTION_STAGE.set(mark_stage)
+        result: Mapping[str, Any] | None = None
         try:
             run_id = str(request["run_id"])
             with runs._pointer_lock(f"promotion-request-{run_id}"):
@@ -1163,15 +1252,20 @@ class PromotionService:
                     result=result,
                 )
                 return
-            commits = _promoted_commits(result)
-            _finish(request, PROMOTED, result=result, commits=commits)
+            committed = _promoted_commits(request, result)
+            _finish(request, PROMOTED, result=result, commits=committed)
         except Exception as exc:  # noqa: BLE001 - retain every run's own failure
-            mark_stage("failed")
             request = {**request, "stage_seconds": stage_seconds}
+            if _outcome_already_recorded(request, PROMOTED):
+                # The promotion's outcome is durable already, so a fault while
+                # the request is closed cannot change what it recorded.
+                _request_path(str(request["run_id"])).unlink(missing_ok=True)
+                return
+            mark_stage("failed")
             phase = REFUSED if isinstance(exc, CrewError) else FAILED
             if isinstance(exc, CrewError) and _defer_to_a_queued_review(request, exc):
                 return
-            _finish(request, phase, ok=False, error=f"{type(exc).__name__}: {exc}")
+            _finish(request, phase, ok=False, error=_failure_text(exc))
         finally:
             PREPARATION_DONE.reset(token)
             PROMOTION_STAGE.reset(stage_token)

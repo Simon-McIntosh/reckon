@@ -46,7 +46,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -2858,7 +2858,22 @@ def _load_file_history(
         if stored:
             data, version = _aggregate_headers(project, root)
             data["runs"] = sorted(stored, key=promotion_order_key)
-            _report_damaged_run_records(project, ())
+            # A stored read does not decode the documents it answers from, so
+            # the damage it reports is the damage in the documents the store
+            # does not hold: those are the only copies of their own rows, and
+            # a torn one among them would otherwise be invisibly missing.
+            narrowed = bool(plan) or activity_since is not None or selected is not None
+            held = {str(row.get("run_id")) for row in stored}
+            if narrowed:
+                held = {
+                    str(row.get("run_id"))
+                    for row in (
+                        run_store.stored_run_rows(project, fields=("run_id",)) or ()
+                    )
+                }
+            _report_damaged_run_records(
+                project, _damaged_run_documents(project, root, held)
+            )
             return data, version
     _report_damaged_run_records(project, ())
     if use_index and _ledger_holds_content(project, root):
@@ -2907,6 +2922,37 @@ def _load_file_history(
             for row in data["runs"]
         ]
     return data, version
+
+
+def _damaged_run_documents(
+    project: str, root: str | Path | None, held: Collection[str]
+) -> tuple[Path, ...]:
+    """The run documents outside the store that will not read as a run.
+
+    A stored read answers history from rows the store already holds, so it
+    decodes no document and would report no damage at all. The documents it
+    never looks at are the ones whose run it does not hold, and each of those
+    is the only copy of its own row: one that will not parse is a loss a reader
+    must be told about rather than a redundant copy. The listing goes through
+    :func:`os.scandir` and a held document is never opened, so a store that
+    carries the project's history costs the directory walk and no decodes.
+    """
+    runs = ledger_path(project, root).parent / "runs"
+    try:
+        entries = list(os.scandir(runs))
+    except OSError:
+        return ()
+    damaged: list[Path] = []
+    for entry in entries:
+        name = entry.name
+        if not name.endswith(".json") or name.removesuffix(".json") in held:
+            continue
+        source = Path(entry.path)
+        try:
+            _read_run(source)
+        except LedgerError:
+            damaged.append(source)
+    return tuple(damaged)
 
 
 def promotion_order_key(record: Mapping[str, Any]) -> tuple[str, str]:

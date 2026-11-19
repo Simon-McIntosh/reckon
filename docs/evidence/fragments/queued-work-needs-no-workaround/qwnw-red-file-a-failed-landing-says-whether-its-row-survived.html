@@ -1,0 +1,30 @@
+<section id="qwnw-red-file-a-failed-landing-says-whether-its-row-survived-landing">
+<h2>A failed landing's receipt says whether its row survived</h2>
+<p>At the base revision <code>6192d39f0e8e4860995344bef7f40e7a02293d0b</code> the file is red in one case, and the failing assertion is the case's own precondition: the derived index it means to make stale was never published. One cause. Verdict: <strong>test wrong</strong>, no product change — the receipt's branch already reads the run's per-run file and the aggregate, and states the rollback correctly as soon as the case reaches the staging step.</p>
+<pre># revision: 6192d39f0e8e4860995344bef7f40e7a02293d0b (base product, base test file)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_landing_says_whether_its_row_survived.py
+F.
+FAILED tests/test_a_failed_landing_says_whether_its_row_survived.py::test_a_rolled_back_row_is_reported_when_only_a_stale_index_names_it - AssertionError: the provisional index must have been published
+1 failed, 1 passed in 0.74s
+EXIT=1</pre>
+<p><strong>Cause.</strong> The case publishes the index from inside the landing's staging hook with a plain <code>ledger.load(..., use_index=True)</code> and then makes that index unwritable. That read no longer touches the index: the promotion has already written the run's row into the run store, so a project-wide read is answered from the store. Nothing is published, and <code>index.chmod(0o400)</code> raises <code>FileNotFoundError</code> on a file that was never created. Measured at the hook: the pick cache held only <code>open-run-index</code>, <code>ledger.load</code> returned <code>['failed-landing-row']</code> from the store, and the index path was absent.</p>
+<p><strong>Repair.</strong> Publish the index through a read the store does not answer: naming a run the store holds no row for falls through to <code>_indexed_data</code>, which hashes the promotion's row into the index while its per-run file is on disk. The fixture also resolves the crew home inside the test tree, so the live pointer, the open-run index and the run store belong to the test — a row a previous run left in a shared store made the promotion answer <code>already_promoted</code> before it staged, a second way this case read red for a reason it does not test. No assertion is deleted or weakened; the head run keeps every one, including that the refused index still serves the rolled-back row.</p>
+<pre># head, as a batch job on all_debug with SLURM_JOB_ID unset
+# revision: de514aec026cd6bab2a91a0547e974d932d0e3ab (head)
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_landing_says_whether_its_row_survived.py
+..
+2 passed in 132.81s (0:02:12)
+EXIT=0</pre>
+<p>The 132 s is the case waiting out the index lock it holds on purpose: staging retries for the 64.5 s bound (130 attempts 0.5 s apart) before the failure the case is built on.</p>
+</section>
+
+<section id="qwnw-red-file-a-failed-landing-says-whether-its-row-survived-arms">
+<h2>Arms</h2>
+<p>The declared suite over this node's fence resolves to the project's write-census tests, because the node's write paths name directories holding no file pytest collects. Both arms read 58 passed.</p>
+<pre># command, resolved over each arm's own tree:
+#   PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+baseline  58 passed EXIT=0  6192d39f0e8e4860995344bef7f40e7a02293d0b
+after     58 passed EXIT=0  de514aec026cd6bab2a91a0547e974d932d0e3ab</pre>
+<p>A first baseline run of that arm read 2 failed, 56 passed, in a <code>git archive</code> extraction with no git directory: those two census cases read the checkout's index. The arm above re-ran in the same extracted tree after <code>git init</code>, an alternates link and <code>read-tree</code> — the shape the partitioned runner builds — and reads 58 passed like the head arm. The earlier reds belong to the extraction, not the revision.</p>
+<p>The composed partition route could not measure either arm or the scoped gate from inside this worker. <code>crew verify-gate --worker</code> and <code>crew suite run</code> both returned <code>exit_status 3</code> with <code>reason: carries no exit receipt</code>, and the scheduler receipt beside each log reads <code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on /newroot/tmp/auto2I1S9T: No such file or directory</code> — the fenced worker's partition-route failure the plan already carries. The same <code>sbatch</code> submission succeeds with the inherited worker fence dropped, which is how the head run, the negative control and both arms were measured; each ran on <code>98dci4-clu-3142.iter.org</code> and its log sits in this run directory beside this fragment.</p>
+</section>

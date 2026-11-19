@@ -157,6 +157,21 @@ def _build_fleet(home: Path, repo: Path) -> dict[str, Path]:
         os.utime(manifest, (stamp, stamp))
         if index % 10 in (2, 3):
             _store_review(store, run_id, head)
+        # The pointer is written in the shape the writer gives it now: the node
+        # body no listing reads lives in the run's own file, and the pointer's
+        # node names it. A by-id read hydrates the definition from there, so the
+        # pointer's own text is read and decoded once per derivation.
+        body_path = runs.node_body_path(run_id)
+        runs._write_json(
+            body_path,
+            {
+                "admission_findings": [],
+                "brief": f"fixture brief for {run_id}",
+                "done_when": "the fixture reads this run once",
+                "peer_scopes": [],
+            },
+        )
+        pointer["node"]["node_body"] = str(body_path)
         runs._write_json(runs.pointer_path(run_id), pointer)
     return {"home": home, "repo": repo, "store": store}
 
@@ -280,3 +295,34 @@ def test_the_snapshot_derives_the_per_reader_obligations(
         assert obligation_snapshot.payload_for(
             shared, session
         ) == obligation_snapshot.payload_for(per_reader, session)
+
+
+def test_a_by_id_read_is_the_callers_own(fleet: dict[str, Path]) -> None:
+    """The record a by-id read answers with belongs to the caller alone.
+
+    The listing hands out one shallow copy of the memoised document, so the
+    nested fields of a record read here are the memo's own unless the reader
+    copies them. A caller that marks the record it was shown — a resume stamps
+    its pointer, an admission pass rewrites one — must reach neither the file
+    nor the memo every later listing reads, so this case writes a nested field
+    of the record it read and then requires the file, a later listing and a
+    second read to all still hold the record as written.
+    """
+    run_id = "run-00005"
+    path = runs.pointer_path(run_id)
+    written = json.loads(path.read_text())
+    original = path.read_bytes()
+
+    read = runs.read_pointer(run_id)
+    read["node"]["write_paths"].append("invented.txt")
+    read["node"]["id"] = "invented"
+    read["phase"] = "complete"
+
+    assert path.read_bytes() == original, "a read wrote the pointer it read"
+    listed = {row["run_id"]: row for row in runs.list_live(project=PROJECT)}
+    assert listed[run_id]["node"] == written["node"]
+    again = runs.read_pointer(run_id)
+    # The definition a by-id read carries is hydrated from the run's own body
+    # file, so the fields the pointer itself holds are what must match.
+    assert {name: again["node"][name] for name in written["node"]} == written["node"]
+    assert again.get("phase") == written.get("phase")

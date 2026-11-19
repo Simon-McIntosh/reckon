@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:44:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 205,
+      "severity": "non-blocking",
+      "text": "deferrals_recorded and its helpers at 169-203 re-implement, as a third reader, the capability that reckon/crew/runs.py:2792 (recorded_promoted_acknowledgements) and reckon/crew/runs.py:3000 (run_acknowledgement) already own, and restate the record shape that reckon/crew/obligations.py:1794 (_acknowledgements_in_force) applies; they duplicate rather than extend the owner. The duplication is forced -- the prompt hook loads this module by path and cannot import reckon.crew -- but it is unguarded against drift: nothing asserts this reader and _acknowledgements_in_force agree on a record, and their project filters already differ (here `record.get('project') or project`, against runs.py:2812 `str(payload.get('project') or '')`), so a future shape moves one without the other. This is the very defect class the repaired commit fixed."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": 1855,
+      "severity": "non-blocking",
+      "text": "the repair's user-visible half -- a promoted run's deferral keeping the stop from blocking -- is asserted only through the predicate: tests/test_a_promoted_deferral_is_seen_by_the_hook_path.py calls obligation_snapshot.deferrals_recorded directly and never drives reapply_acknowledgements, and tests/test_an_acknowledgement_ends_on_its_condition.py:123 keeps a live pointer carrying the same deferral, so its early return is answered by the live file. A regression in this call (returning payload before consulting deferrals_recorded, or reading another project) leaves every test in the tree green."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-hook-reads-the-snapshot.html",
+      "line": 69,
+      "severity": "non-blocking",
+      "text": "the fragment states 'The two alias exports left behind by the render move are gone', but reckon/crew/obligations.py:1296-1297 still assign _render_overdue_remedy and _overdue_figure from the reader; the two names removed at 36e7a0e83c are _age_of_instant and refresh_overdue_remedy. A reader checking whether the alias bridge survives gets the wrong answer from the evidence record."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the recorded arm pair (tests/test_staged_write_inventory.py plus tests/test_every_shared_home_lock_holds_across_nodes.py) imports only reckon.interface_counts and reads the tree by AST census, so it is not the done_when's 'arm over the test files that import what you changed': 58 passed on both sides shows the census still accounts for the new module, not that the changed modules behave. The manifest also records no ruff result on the changed paths, which the done_when requires, and lists commits space-separated where the done_when asks for a comma-separated list."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 2307,
+      "severity": "non-blocking",
+      "text": "the payload_for delivery_summary call is re-wrapped across five lines with no behaviour change and no relation to the node's goal (the hook path never calls payload_for, which lives on the crew side); it is formatting noise inside a behavioural commit."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: prompt.txt:38 states the goal as making tests/test_obligations_hook_reads_the_snapshot.py pass in full, and at 36e7a0e83c that file is recorded green twice -- scoped-gate-1795124307354239197.log '9 passed' EXIT=0 and logs/node-file-job.log as all_debug job 1332542, '9 passed', EXIT=0.\nVERDICT done_when: node.json's done_when asks for the file green as an all_debug job on shared storage, a base run with its failing ids, both arms as inline JSON at 40-character revisions, and clean ruff on the changed paths; logs/node-file-job.log:3-8 records the job, and baseline_suite/after_suite carry 42fe90d0b0a46060bafde2490dda7d4002cda478 and 36e7a0e83c4e4afc2a4ea5be96d6195ad215e122 at 58 passed each, but the arm files import none of the changed modules and no ruff result is recorded.\nVERDICT write_paths: the six declared paths contain all nine changed paths in 42fe90d0..36e7a0e8, including the new reckon/node_runtime.py and reckon/hooks/coordinator_obligations.py, both under the declared 'reckon'.\nVERDICT manifest: read at .../r-20261118T062423234538-qwnw-red-file-obligations-hook-reads-the-snapshot/manifest.md; status complete, commits 7bc3ba71e57d0f88f87ea2a7db168ee42a33e1fe and 36e7a0e83c...122, the two gate logs named above, negative_control_log logs/negative-control-base.log ('2 failed, 7 passed', EXIT=1), and the 58-passed arm pair.\nVERDICT diff: read commit by commit -- 7bc3ba71e5 moves the overdue-remedy render and the runtime-root candidate into stdlib-only homes and gates the deferral read, 36e7a0e83c adds the promoted-record shape, reckon/node_runtime.py and its test; every hunk lands inside the declared scope, with one unrelated reflow at reckon/crew/obligation_snapshot.py:2307.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1855, reckon/hooks/coordinator_obligations.py:1377, reckon/hooks/coordinator_obligations.py:1958, reckon/crew/obligation_snapshot.py:631, reckon/crew/obligation_snapshot.py:681, reckon/crew/station_store.py:434, reckon/crew/dispatch_watch.py:542, reckon/crew/dispatch_watch.py:674, reckon/crew/dispatch_watch.py:1110, reckon/crew/fleet_supervisor.py:3878, reckon/checkout_trust.py:463, reckon/crew/runs.py:1496\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_obligations_hook_reads_the_snapshot.py runs '9 passed' EXIT=0 at 36e7a0e83c in logs/node-file-job.log and in scoped-gate-1795124307354239197.log, which is the goal prompt.txt:38 states.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/negative-control-base.log records the base arm '2 failed, 7 passed' with both failing ids quoted in the fragment, but the arm pair the manifest records (tests/test_staged_write_inventory.py:11) imports only reckon.interface_counts and no ruff run on the changed paths is recorded.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: all nine paths in 42fe90d0..36e7a0e8 sit inside the declared write paths, offset by the goal-unrelated re-wrap at reckon/crew/obligation_snapshot.py:2307.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_promoted_deferral_is_seen_by_the_hook_path.py:31 fails if _carried_deferral at reckon/crew/obligation_snapshot.py:189 drops the promoted shape, but no test drives reckon/hooks/coordinator_obligations.py:1855 with a promoted-only deferral, and the new test's own green run is recorded nowhere in the manifest.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/node_runtime.py follows the surrounding stdlib-only, docstringed idiom and its lazy 'from reckon import node_runtime' at reckon/crew/obligation_snapshot.py:381 matches the module's existing import discipline, while the cross-module private aliases at reckon/crew/obligations.py:1296-1297 are an idiom the repository does not otherwise use.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:205 duplicates the deferral-record reading owned by reckon/crew/runs.py:2792 and :3000 rather than extending it, though the new reckon/node_runtime.py does consolidate the two runtime-root copies it replaced.\nFINDING reckon/crew/obligation_snapshot.py:205 non-blocking: deferrals_recorded re-implements the deferral reader owned by reckon/crew/runs.py:2792 and :3000, duplicates obligations.py:1794's shape rule and now differs from it on the project filter, with no test pinning the two readers together.\nFINDING reckon/hooks/coordinator_obligations.py:1855 non-blocking: the promoted-deferral fix is guarded only at the predicate, so no test fails if this call stops consulting deferrals_recorded for a promoted-only deferral.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-obligations-hook-reads-the-snapshot.html:69 non-blocking: the fragment says the two alias exports are gone while reckon/crew/obligations.py:1296-1297 still assign two of them.\nFINDING tests/test_staged_write_inventory.py:11 non-blocking: the recorded arm pair does not import the changed modules, so it is not the done_when's arm over changed importers; no ruff result on the changed paths is recorded either.\nFINDING reckon/crew/obligation_snapshot.py:2307 non-blocking: an unrelated reformat of payload_for rides inside a behavioural commit.\n",
+  "review_run_id": "r-20261119T214334610252-review-of-qwnw-red-file-obligations-hook-reads-the-snapshot-36e7a0e83c4e",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "36e7a0e83c4e4afc2a4ea5be96d6195ad215e122",
+  "reviewed_run_id": "r-20261118T062423234538-qwnw-red-file-obligations-hook-reads-the-snapshot",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:58:00+00:00",
+  "total": 81
+}

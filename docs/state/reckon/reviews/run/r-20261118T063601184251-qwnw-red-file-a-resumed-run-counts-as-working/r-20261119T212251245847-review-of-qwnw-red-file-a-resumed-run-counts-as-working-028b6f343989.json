@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:30:04Z",
+  "findings": [
+    {
+      "file": "verify/ids-base-probe.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the header records revision=ccbce51f79b335075fa324ff1c086dc78c00e245 while that tree's HEAD is b24fe95a789c82cd33f22a912b4dbbf94d5e2193 (git -C verify/base-tree rev-parse HEAD), so the log cited at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:124 for \"passes in every run at the base revision\" names the primary revision as its own and a reader trusting the header reads the four-id account as vacuous."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html",
+      "line": 149,
+      "severity": "non-blocking",
+      "text": "the crash-seat cell quotes \"assert 3.100182317197323 < 3.0\" as a wider-run failure on the primary extraction, but no log under the run directory carries that line (grep finds it only in the agent session transcripts resume-1.jsonl and resume-3.jsonl), so the one claim that this id can fail rests on unlogged output."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html",
+      "line": 112,
+      "severity": "non-blocking",
+      "text": "the sentence \"a later job (1332127) did run\" names a job id that appears in no artefact, and verify/merge-head-slurm-job.log:1-5 carries no job id, so the done-when's all_debug clause is asserted rather than provable from the log."
+    },
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite carry log_path \"/home/ITER/mcintos/.config/reckon/crew/runs-placeholder\" and \".../from-placeholder\", neither of which exists, while the runs behind them do (verify/suite-base.log and verify/suite-head-repair.log), so the structured arm record points at nothing and only test_logs reaches the real files."
+    }
+  ],
+  "justifications": {
+    "durability": "the gained commit adds no assertion, and the only check that the record names all four ids is the uncommitted verify/check-four-ids.py in the run directory, so nothing in the repository fails if docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:115-186 loses an id.",
+    "evidence": "verify/ids-base-probe.log:3 states revision=ccbce51f79b335075fa324ff1c086dc78c00e245 for a tree whose HEAD is b24fe95a789c (git -C verify/base-tree rev-parse HEAD), so the probe the record leans on misnames its own revision.",
+    "fit": "the addition at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:115-186 follows the h3/p/table shape of the file's existing arms table at :35-64 and introduces no new vocabulary.",
+    "goal_fidelity": "the named file's gate figure is recorded at the merge head 0588a18c8a (verify/merge-head-run.log, 5 passed EXIT=0) and the delta reviewed here is the fragment alone (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:95-186), so no gate run exists at the reviewed head 028b6f3439 itself.",
+    "reuse": "the delta adds no definition to the repository; the search over reckon/clones.py and reckon/crew for an existing record-completeness or id-presence checker found none, and the one such script (verify/check-four-ids.py) is uncommitted.",
+    "scope_discipline": "the only path in git diff f95179643f..028b6f3439 is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html, inside the declared fragment path, with no test, plan or state document touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T212251245847-review-of-qwnw-red-file-a-resumed-run-counts-as-working-028b6f343989",
+  "review_text": "VERDICT goal: read the node goal \"Make tests/test_a_resumed_run_counts_as_working.py pass in full on the primary branch\" from prompt.txt lines 41-43; the gained commits keep it, verify/merge-head-run.log reading 5 passed EXIT=0 at # revision=0588a18c8a and the gain since the prior review adding no product line.\nVERDICT done_when: read done_when from node.json; comm -13 of verify/imp-base-failed.txt (24 ids) against verify/imp-head-merge-failed.txt (17 ids) reproduces exactly the four ids docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:135-156 now names and measures, and the declared-suite arms read 2 failed, 56 passed EXIT=1 at b24fe95a (verify/suite-base.log) against 58 passed EXIT=0 at 028b6f34 (verify/suite-head-repair.log).\nVERDICT write_paths: read the declared scope from prompt.txt (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, the figures path); git diff f95179643f..028b6f3439 changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html (+81 -10), inside it, while the 440 other paths in the dispatch's b24fe95a..028b6f34 diff are the primary branch arriving through merge 0588a18c8a.\nVERDICT manifest: read manifest.md; it records status complete, five commits, the gate at 0588a18c8a and the four-ids negative control, but its baseline_suite and after_suite log_path values are placeholder paths carrying no file (manifest.md:18-19).\nVERDICT diff: read the single gained commit 028b6f34 against the prior review's head f95179643f (recorded in review-records/r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working.at-f95179643f7ed325aefebfe201d5c32de7f469a3.json); it appends the repair round at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:95-113, the four-id table at :128-158 and the read-against-two-trees bullets at :160-186, and changes nothing else.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the named file's gate figure is recorded at the merge head 0588a18c8a (verify/merge-head-run.log, 5 passed EXIT=0) and the delta reviewed here is the fragment alone (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:95-186), so no gate run exists at the reviewed head 028b6f3439 itself.\nSCORE evidence: 13\nJUSTIFICATION evidence: verify/ids-base-probe.log:3 states revision=ccbce51f79b335075fa324ff1c086dc78c00e245 for a tree whose HEAD is b24fe95a789c (git -C verify/base-tree rev-parse HEAD), so the probe the record leans on misnames its own revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the only path in git diff f95179643f7ed325aefebfe201d5c32de7f469a3..028b6f343989736c9f3e9ad5aab3fc938e8d466f is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html, inside the declared fragment path, with no test, plan or state document touched.\nSCORE durability: 12\nJUSTIFICATION durability: the gained commit adds no assertion, and the only check that the record names all four ids is the uncommitted verify/check-four-ids.py in the run directory, so nothing in the repository fails if docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:115-186 loses an id.\nSCORE fit: 18\nJUSTIFICATION fit: the addition at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:115-186 follows the h3/p/table shape of the file's existing arms table at :35-64 and introduces no new vocabulary.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition to the repository; the search over reckon/clones.py and reckon/crew for an existing record-completeness or id-presence checker found none, and the one such script (verify/check-four-ids.py) is uncommitted.\nFINDING verify/ids-base-probe.log:3 non-blocking: the header records revision=ccbce51f79b335075fa324ff1c086dc78c00e245 while that tree's HEAD is b24fe95a789c82cd33f22a912b4dbbf94d5e2193 (git -C verify/base-tree rev-parse HEAD), so the log cited at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:124 for \"passes in every run at the base revision\" names the primary revision as its own and a reader trusting the header reads the four-id account as vacuous.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:149 non-blocking: the crash-seat cell quotes \"assert 3.100182317197323 < 3.0\" as a wider-run failure on the primary extraction, but no log under the run directory carries that line (grep finds it only in the agent session transcripts resume-1.jsonl and resume-3.jsonl), so the one claim that this id can fail rests on unlogged output.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:112 non-blocking: the sentence \"a later job (1332127) did run\" names a job id that appears in no artefact, and verify/merge-head-slurm-job.log:1-5 carries no job id, so the done-when's all_debug clause is asserted rather than provable from the log.\nFINDING manifest.md:18 non-blocking: baseline_suite and after_suite carry log_path \"/home/ITER/mcintos/.config/reckon/crew/runs-placeholder\" and \".../from-placeholder\", neither of which exists, while the runs behind them do (verify/suite-base.log and verify/suite-head-repair.log), so the structured arm record points at nothing and only test_logs reaches the real files.",
+  "reviewed_base_sha": "f95179643f7ed325aefebfe201d5c32de7f469a3",
+  "reviewed_head_sha": "028b6f343989736c9f3e9ad5aab3fc938e8d466f",
+  "reviewed_run_id": "r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working",
+  "reviewer_run_id": "r-20261119T212251245847-review-of-qwnw-red-file-a-resumed-run-counts-as-working-028b6f343989",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:37:30.963299+00:00",
+  "total": 99
+}
