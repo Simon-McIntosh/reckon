@@ -4449,7 +4449,7 @@ def crew_record_merge(
         raise click.ClickException(str(exc)) from exc
     pending_landing.clear_pending(run_id)
     _emit_crew_result(
-        {"ok": True, "run_id": run_id, "recorded_merge": merge_revision, **result},
+        {"run_id": run_id, "recorded_merge": merge_revision, **result},
         pretty,
     )
 
