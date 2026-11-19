@@ -667,16 +667,42 @@ def _claim_registered_seconds(record: Mapping[str, Any]) -> float | None:
     return registered.timestamp() if registered is not None else None
 
 
+def _claim_records_its_holder(record: Mapping[str, Any]) -> bool:
+    """Whether the run's claim names the process whose liveness decides it.
+
+    A station launch publishes ``holder_pid`` and ``holder_host`` beside its
+    claim's registration instant, and :func:`_launch_claim_holder_is_alive`
+    judges the launch by that process. A claim carrying no holder names no
+    process at all, so this host has nothing to call gone for it.
+    """
+    from reckon.crew.dispatch_claims import read_claim
+
+    claim = read_claim(_run_directory(record), str(record.get("run_id") or ""))
+    return bool(claim.get("holder_pid")) and bool(claim.get("holder_host"))
+
+
 def _claim_or_creation_seconds(record: Mapping[str, Any]) -> float | None:
     """When a launch with no attempt clock began, or None when nothing dates it.
 
     The attempt clock is the launch's own statement of when it began, and it is
     the reading whenever it exists. A cli launch cut off between composing its
     pointer and spawning its supervisor writes no attempt record, so it holds
-    no attempt clock at all and would read as one in flight forever. Such a launch is still dated: first from the claim its
-    dispatch registered in the run directory, and failing that from the pointer's
-    own ``created_at``, and a run holding neither is left undated.
+    no attempt clock at all and would read as one in flight forever. Such a
+    launch is still dated: first from the claim its dispatch registered in the
+    run directory, and failing that from the pointer's own ``created_at``, and a
+    run holding neither is left undated.
+
+    An ``in-harness`` launch is dated only from a claim that names its holder.
+    That kind covers both a station launch, which publishes the holder process
+    beside the claim, and a run whose liveness belongs to the harness that
+    called the dispatch: the second leaves no process on this host to find gone,
+    so a claim without a holder proves nothing about it and the pointer keeps
+    the reading it had.
     """
+    if str(record.get("launch") or "") == "in-harness" and not (
+        _claim_records_its_holder(record)
+    ):
+        return None
     claimed = _claim_registered_seconds(record)
     if claimed is not None:
         return claimed
@@ -692,11 +718,13 @@ def _stranded_launch_age_seconds(
     The clock is the current attempt's own start where a caller recorded one.
     A launch cut off before it composed that record holds only the claim its
     dispatch published, and a station launch composes its pointer through the
-    same path a cli launch does, so the fallback cannot be the launch kind's:
+    same path a cli launch does, so the fallback is not the launch kind's:
     every launch that recorded no attempt start is dated from its claim or its
-    creation. Without it such a launch never ages, and a run that stopped at
-    ``claim-published`` with the claim holder gone is held as in flight for as
-    long as its pointer lives, which is what leaves nothing to redispatch it.
+    creation, less the ``in-harness`` pointer whose claim names no holder (see
+    :func:`_claim_or_creation_seconds`). Without it such a launch never ages,
+    and a station launch that stopped at ``claim-published`` with its holder
+    gone is held as in flight for as long as its pointer lives, which is what
+    leaves nothing to redispatch it.
     """
     started = _attempt_started_seconds(record)
     if started is None:
