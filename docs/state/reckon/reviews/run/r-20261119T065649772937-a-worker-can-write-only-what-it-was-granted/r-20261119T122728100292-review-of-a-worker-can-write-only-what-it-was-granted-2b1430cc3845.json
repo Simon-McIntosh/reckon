@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795082366902560084.log at 8112e425 records '58 passed' and EXIT=0 with no FAILED line, after_suite-1795082409827082341.log at 2b1430cc records '64 passed' and EXIT=0 with no FAILED line, so the set difference between the two arms is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_backends.py:3336 (launch_plan composes fence_argv with write_roots)",
+    "reckon/crew/dispatching/launch.py:752 (dispatch composes launch_plan with _fence_write_roots)",
+    "reckon/crew/dispatch_admission.py:2407 (_fence_write_roots supplies the declared grants and the run scratch)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:50:03Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "2025",
+      "severity": "non-blocking",
+      "text": "non-blocking: the refusal loop rejects any declared grant containing .git, and the product itself hands the repository root as a grant when a backend declares sandbox workspace-write (reckon/_backends.py:317-318 via fenced_write_roots, reached from reckon/crew/dispatch_admission.py:2407), so a fenced launch on that supported tier now raises BackendError before start; no lane in the local flight.yaml declares workspace-write, so it is a trap rather than a live break."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "2022",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment still names it 'a filesystem root, a project root or the shared crew runs root' although 8cb82c53 withdrew the crew-runs-root refusal and 2b1430cc's own subject is that stale naming, so the commit's stated repair is incomplete six lines above the guard it documents."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1330",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'home in (None, Path.home())' compares a str against a Path, so the env-aware _mounts_path() branch is only reachable when home is None; a caller passing home=str(Path.home()) silently reads ~/.config/reckon/mounts.json and ignores RECKON_MOUNTS_PATH."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T065649772937-a-worker-can-write-only-what-it-was-granted/manifest.md",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_logs names importer-base.log and importer-head.log, but the files on disk are importers-base.log and importers-head.log, so two of the five cited logs cannot be opened under the names given."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-can-write-only-what-it-was-granted.html",
+      "line": "0",
+      "severity": "non-blocking",
+      "text": "non-blocking: a declared write path carries no delivered file, so the section's landed summary has to be authored by the coordinator from the manifest's artifacts rather than read from the fragment the dispatch expected."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 8112e425: 386a25a1 turns the dev-bind root into a read-only root with writable grants and adds the two refusals, 8cb82c53 withdraws the crew-runs-root refusal, 83842717 adds the launch_plan composition case, 5c502d80 adds the devtmpfs and /dev/shm mounts, f472783a makes the fixture's shm seam optional for the base arm, 2b1430cc trims a docstring; every hunk is inside reckon/_worker_fence.py and the node test.",
+    "done_when": "the done_when names tests/test_a_worker_can_write_only_what_it_was_granted.py with the section 13 cases, its negative control, and importers adding no failure against base; tests/test_a_worker_can_write_only_what_it_was_granted.py:199-370 assert the read-only root, the executed write/removal refusals, the incident replay and both grant refusals, negative-control-base.log shows 6 failed EXIT=1 at 8112e425, but the importer clause was not met: importers-head.log records 26 failed against importers-base.log's 10, 16 added, listed by the worker under outside_scope.",
+    "goal": "the node goal is 'Make a worker's fence read-only everywhere except the paths its dispatch grants'; reckon/_worker_fence.py:2099-2120 composes --ro-bind / / followed by a writable devtmpfs at /dev, and reckon/_worker_fence.py:2185-2196 binds every handed root writable after it, so the goal is met.",
+    "manifest": "read; it reports status complete, six commits from 386a25a1 to 2b1430cc, the node test 6 passed at head against 6 failed at base, after_suite-1795082409827082341.log 64 passed, baseline_suite-1795082366902560084.log 58 passed, and 16 importer failures under outside_scope; its test_logs line names importer-base.log and importer-head.log, and the files on disk are importers-base.log and importers-head.log.",
+    "write_paths": "the declared paths are reckon/_worker_fence.py, reckon/crew/dispatch_launch.py, reckon/nested_launch.py and the node test plus two evidence paths; the delivered diff 8112e425..2b1430cc touches only reckon/_worker_fence.py (+137/-14) and tests/test_a_worker_can_write_only_what_it_was_granted.py (+370), both inside the fence, and leaves the declared evidence fragment and figure unwritten."
+  },
+  "justifications": {
+    "durability": "negative-control-base.log runs the head copy of tests/test_a_worker_can_write_only_what_it_was_granted.py against a git archive of 8112e425 and gets 6 failed, the incident replay dying on:the-nineteen-november FileNotFoundError on shared-project/weights.bin and both grant cases reporting DID NOT RAISE BackendError, so reinstating the dev-bind root or dropping the refusal reddens the assertions; only the probe('finished') == '' line at tests/test_a_worker_can_write_only_what_it_was_granted.py:229 is close to a tautology.",
+    "evidence": "after_suite-1795082409827082341.log at 2b1430cc records '64 passed' and negative-control-base.log records '6 failed' EXIT=1 at 8112e425; the done_when's importer clause measured 16 added failures in importers-head.log, deferred to a repair round as the brief directs, so the recorded evidence covers the node's own measure but not the whole done_when.",
+    "fit": "the new helpers follow the module's neighbouring shape and docstring style at reckon/_worker_fence.py:1299-1341, but the comment at reckon/_worker_fence.py:2022 still names the crew-runs-root refusal that 2b1430cc withdrew.",
+    "goal_fidelity": "reckon/_worker_fence.py:2099-2120 and 2185-2196 replace the writable dev-bind root with a read-only root plus writable grants, which is exactly the goal.",
+    "reuse": "project_root_paths extends the existing owners rather than duplicating them: it composes protected_checkouts (reckon/_worker_fence.py:1368) and mounted_project_docs (reckon/flight.py:583), and a search of reckon/ for a pre-existing project-root list found none.",
+    "scope_discipline": "the two paths in the diff, reckon/_worker_fence.py and tests/test_a_worker_can_write_only_what_it_was_granted.py, are inside the declared write paths listed in dispatch-detail.json, and the devtmpfs hunk at reckon/_worker_fence.py:2099 is implied because a read-only root leaves /dev/null unopenable; the declared evidence fragment was not written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make a worker's fence read-only everywhere except the paths its dispatch grants'; reckon/_worker_fence.py:2099-2120 composes --ro-bind / / plus a writable devtmpfs, and reckon/_worker_fence.py:2185-2196 binds every handed root writable after it, so the goal is met.\nVERDICT done_when: the done_when names the node test's section 13 cases, its negative control and importers adding no failure against base; tests/test_a_worker_can_write_only_what_it_was_granted.py:199-370 asserts the cases and negative-control-base.log shows 6 failed at 8112e425, but importers-head.log records 26 failed against importers-base.log's 10 (16 added) so the importer clause is unmet and listed under outside_scope.\nVERDICT write_paths: the fenced paths are reckon/_worker_fence.py, reckon/crew/dispatch_launch.py, reckon/nested_launch.py and the node test plus two evidence paths; the diff touches only reckon/_worker_fence.py and the node test.\nVERDICT manifest: read; it reports status complete, six commits, 6 passed at head against 6 failed at base, after_suite 64 passed, baseline_suite 58 passed, and its test_logs line cites importer-base.log and importer-head.log where the files are importers-base.log and importers-head.log.\nVERDICT diff: read commit by commit against 8112e425; two paths changed, both inside the declared scope, with an evidence fragment and figure declared and not delivered.\nCALL_SITES: reckon/_backends.py:3336, reckon/crew/dispatching/launch.py:752, reckon/crew/dispatch_admission.py:2407\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:2099-2120 and 2185-2196 replace the writable dev-bind root with a read-only root plus writable grants, exactly as the goal states.\nSCORE evidence: 14\nJUSTIFICATION evidence: after_suite-1795082409827082341.log at 2b1430cc records '64 passed' and negative-control-base.log records '6 failed' EXIT=1 at 8112e425, both recorded on disk, while the done_when's importer clause measured 16 added failures in importers-head.log and was deferred.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: both diff paths are inside the write paths in dispatch-detail.json and the devtmpfs hunk at reckon/_worker_fence.py:2099 is implied by a read-only root, though the declared evidence fragment was left unwritten.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-base.log runs the head test against a git archive of 8112e425 and gets 6 failed, the incident replay losing shared-project/weights.bin and both grant cases reporting DID NOT RAISE BackendError, so the base regression reddens every case.\nSCORE fit: 15\nJUSTIFICATION fit: the new helpers match the style of reckon/_worker_fence.py:1299-1341, but the comment at reckon/_worker_fence.py:2022 still names the crew-runs-root refusal that 2b1430cc withdrew.\nSCORE reuse: 18\nJUSTIFICATION reuse: project_root_paths composes the existing owners protected_checkouts (reckon/_worker_fence.py:1368) and mounted_project_docs (reckon/flight.py:583) rather than duplicating them, and a search of reckon/ found no earlier project-root list.\nFINDING reckon/_worker_fence.py:2025 non-blocking: the refusal rejects any grant containing .git, including the repository root the product itself grants for a workspace-write backend (reckon/_backends.py:317-318), so that tier's fenced launches now raise BackendError; no lane in the live flight.yaml declares workspace-write.\nFINDING reckon/_worker_fence.py:2022 non-blocking: the comment still names the crew-runs-root refusal that 8cb82c53 withdrew, which is the stale naming 2b1430cc claims to repair.\nFINDING reckon/_worker_fence.py:1330 non-blocking: 'home in (None, Path.home())' compares str against Path, so a str home equal to the operator's home ignores RECKON_MOUNTS_PATH and reads the default registry.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T065649772937-a-worker-can-write-only-what-it-was-granted/manifest.md:46 non-blocking: test_logs cites importer-base.log and importer-head.log, but the files are importers-base.log and importers-head.log.\nFINDING docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-can-write-only-what-it-was-granted.html:0 non-blocking: a declared write path carries no delivered file, so the section's landed summary cannot be read from it.",
+  "review_node": "review-of-a-worker-can-write-only-what-it-was-granted-2b1430cc3845",
+  "review_run_id": "r-20261119T122728100292-review-of-a-worker-can-write-only-what-it-was-granted-2b1430cc3845",
+  "reviewed_base_sha": "8112e425380b9353cc8f515c334ca728fc43d2ba",
+  "reviewed_head_sha": "2b1430cc384563f6aa96014835d6d5fe47c4cd68",
+  "reviewed_run_id": "r-20261119T065649772937-a-worker-can-write-only-what-it-was-granted",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:03:15.909048+00:00",
+  "total": 101
+}
