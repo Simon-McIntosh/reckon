@@ -2328,7 +2328,14 @@ def _fleet_counts(
         "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
         - repairing,
     }
-    if any("delivery" in row and row["delivery"] is not None for row in rows):
+    # The promotion figures join the counts only when some row carries a
+    # delivery reading. An empty one is the classifier's "nothing delivered
+    # here" rather than a zero to publish, the same way ``reviewing`` and
+    # ``waiting`` join the result only when a run is in them: metadata with no
+    # reading behind it would sit in a dict of counts as a value that is not a
+    # count, and the fleet's figures are read as a partition that adds up to
+    # the rows it summarises.
+    if any(row.get("delivery") for row in rows):
         from .recovery_classification import delivery_summary
 
         delivery = delivery_summary(rows, pointers=pointers)
