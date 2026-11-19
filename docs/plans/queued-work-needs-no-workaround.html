@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1000">
+<meta name="plan-version" content="1001">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3069,7 +3069,10 @@
     <div class="r-comment-body"><p>tests/test_hook_scripts_correct_their_interpreter.py passes 7 of 7 at head 43f1cde93a (exit 0, all_debug job 1329351) from 2 failed and 4 passed at base 42fe90d0 (job 1329289): cause 1 product wrong — reckon/hooks/worker_inbox.py imported reckon without the shared interpreter bootstrap and now loads interpreter_bootstrap.py and calls it from main, reporting "checkout interpreter is missing" on stderr and exiting 1 rather than exiting silently and dropping a waiting message; cause 2 test wrong — the file pinned its importing-hook population to three literal names and its re-execution map had no entry for the fourth, now extended to four with a seeded message asserted in each arm, with no assertion weakened.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063827750740-qwnw-red-file-a-killed-worker-resumes-to-completion" data-who="reckon-build" data-when="2026-11-19T06:45:46Z">
-    <div class="r-comment-body"><p>The supervisor now keeps the Popen handle its worker&#x27;s pid came from, so the child&#x27;s finaliser can no longer reap the exit first — a worker killed by SIGTERM is recorded with signal 15 and signal_name SIGTERM instead of both null — and the resume fixture places its stub in the run&#x27;s own directory because a resumed attempt is fenced and the fence seals the node&#x27;s /tmp and overlays the run&#x27;s scratch on it; tests/test_a_killed_worker_resumes_to_completion.py reads 1 passed EXIT=0 as an all_debug job at 1e946a6526 against 1 failed EXIT=1 at base b24fe95a78, both declared suite arms read 0 failures EXIT=0, and the base product fails the signal assertion in six of six local repetitions.</p></div>
+    <div class="r-comment-body"><p>The supervisor now keeps the Popen handle its worker's pid came from, so the child's finaliser can no longer reap the exit first — a worker killed by SIGTERM is recorded with signal 15 and signal_name SIGTERM instead of both null — and the resume fixture places its stub in the run's own directory because a resumed attempt is fenced and the fence seals the node's /tmp and overlays the run's scratch on it; tests/test_a_killed_worker_resumes_to_completion.py reads 1 passed EXIT=0 as an all_debug job at 1e946a6526 against 1 failed EXIT=1 at base b24fe95a78, both declared suite arms read 0 failures EXIT=0, and the base product fails the signal assertion in six of six local repetitions.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261119T185940061621-review-of-qwnw-red-file-crew-shadow-paths-4859c874b8f5" data-who="reckon-build" data-when="2026-11-19T20:37:31.278Z">
+    <div class="r-comment-body"><p>review of r-20261118T063113406183-qwnw-red-file-crew-shadow-paths over 4e1219658f7e51b6145acf3d7d05a3cd17053145..4859c874b8f5aa492e1d1c2feb1c0d1509c95b2f parsed, 6 of 6 dimensions scored 0..20, added_failure_count 0, two non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
