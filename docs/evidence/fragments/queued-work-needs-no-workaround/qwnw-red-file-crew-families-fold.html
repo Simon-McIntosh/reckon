@@ -1,0 +1,72 @@
+<section id="qwnw-red-file-crew-families-fold-landing">
+  <h2>The crew families fold file passes in full, from two causes</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_crew_families_fold.py</code>
+  ran 17 cases at the base revision with two red, and the causes are not the
+  same kind.</p>
+
+  <p><em>Product wrong, repaired.</em>
+  <code>review.repair_run_review</code> read the record's bytes before judging
+  whether its path belongs to the run's review-records directory, so a path
+  outside that directory which is not there surfaced the operating system's
+  error instead of the rule the repair applies. The reproduction, from the
+  base run of the node file:</p>
+
+  <pre id="qwnw-red-file-crew-families-fold-reproduction">Error: [Errno 2] No such file or directory: '.../test_repair_and_check_successo0/missing.json'
+assert "record is outside the reviewed run's review-records directory" in ...</pre>
+
+  <p>Containment follows from the record's path and the run the caller named, so
+  it is now judged first; the read is attempted only for a path the named run
+  owns, where a genuine read fault still surfaces unchanged. Both branches were
+  driven by hand: an absent path outside the directory answers
+  <code>record is outside the reviewed run's review-records directory</code>,
+  and an absent path inside the run's own review-records directory answers the
+  operating system's <code>ENOENT</code> naming that path, creating no
+  directory.</p>
+
+  <p><em>Test wrong, updated to the rule the code now keeps.</em> The base run
+  of <code>test_complete_accept_path_updates_the_run_claim</code> observed no
+  completion call at all: the invocation left the run at
+  <code>promotion-requested</code> with its claim unwidened. Default CLI
+  completion became asynchronous when the wait option was added, and this file
+  was not migrated with the others that pin synchronous outcomes. The
+  invocation now names <code>--wait</code>; its assertions are unchanged, so
+  the rule it pins — an accepted companion path widens the run's claim before
+  completion, with the pre-widening scope recorded — is asserted as before. No
+  assertion was deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-crew-families-fold-measured">Measured</h3>
+
+  <table id="qwnw-red-file-crew-families-fold-arms">
+    <caption>The node file's own arms. Each is a log whose first lines name the
+    revision, tree, command and the imported module's path, and whose last line
+    reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node file, base (the negative control)</td>
+        <td><code>d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a</code>, extraction</td>
+        <td>2 failed, 15 passed, <code>EXIT=1</code>, failing
+        <code>test_complete_accept_path_updates_the_run_claim</code> and
+        <code>test_repair_and_check_successors_preserve_recorded_answers</code></td></tr>
+<tr><td>the node file, head</td>
+        <td><code>4bcdcfd8f3298a856a985cfa6e324948852a9bd5</code>, working tree</td>
+        <td>17 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the scoped gate, a job on <code>all_debug</code> with
+        <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>4bcdcfd8f3298a856a985cfa6e324948852a9bd5</code>, scratch tree</td>
+        <td>17 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the suite arms the project's runner resolved for this run</td>
+        <td><code>d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a</code> base,
+        <code>4bcdcfd8f3298a856a985cfa6e324948852a9bd5</code> after</td>
+        <td>58 passed both arms, <code>EXIT=0</code> both; see the note below</td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-crew-families-fold-suite-note">The brief's suite
+  substitution names two files from another node
+  (<code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>), and the
+  gate and the arm runner both read that line. Those arms measure those files,
+  not this node's, so the node file's own gate was measured with the command
+  naming it. The defect is the brief's, not the tree's.</p>
+</section>
