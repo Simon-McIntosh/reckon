@@ -112,6 +112,7 @@ def rehearsal(tmp_path, monkeypatch):
             "decoy": decoy,
             "chain": chain / "python",
             "run": run,
+            "home": home,
             "argv": argv,
             "recipe": json.loads(base64.urlsafe_b64decode(encoded)),
             "compose": compose,
@@ -440,10 +441,12 @@ def _carried_program(case):
     return program
 
 
-def _carried_recipe(case, program, *, checksum=None, program_value=None):
+def _carried_recipe(
+    case, program, *, checksum=None, program_value=None, path_value=None
+):
     config = {
         "fence_program": {
-            "path": str(program),
+            "path": path_value if path_value is not None else str(program),
             "checksum": checksum or hashlib.sha256(program.read_bytes()).hexdigest(),
             "source": "rpm:bubblewrap-0.4.1-6.el9",
             "version": "0.4.1",
@@ -485,6 +488,37 @@ def test_recipe_carries_the_configured_location_checksum_and_provenance(rehearsa
     )
 
 
+def test_a_home_relative_path_and_prefixed_checksum_resolve_by_the_flight_rule(
+    rehearsal, monkeypatch
+):
+    case = rehearsal
+    program = _carried_program(case)
+    monkeypatch.setenv("HOME", str(case["home"]))
+    digest = hashlib.sha256(program.read_bytes()).hexdigest()
+    recipe = _carried_recipe(
+        case,
+        program,
+        path_value="~/run/carried/bwrap",
+        checksum="sha256:" + digest.upper(),
+    )
+    # The expectation comes from the rule, not from the string the test wrote:
+    # a home-relative entry lands under the operator's home, and the recorded
+    # digest is carried in its bare lowercase spelling however it was written.
+    assert recipe["carried_program"]["path"] == str(case["home"] / "run/carried/bwrap")
+    assert recipe["carried_program"]["checksum"] == digest
+
+
+def test_a_tilde_user_path_resolves_as_the_modules_flight_rule_does(rehearsal):
+    case = rehearsal
+    program = _carried_program(case)
+    recipe = _carried_recipe(case, program, path_value="~root/carried/bwrap")
+    # One resolver owns this form: a `~user` entry means that user's home, as
+    # every other flight path in the module reads it, not a literal under ours.
+    assert recipe["carried_program"]["path"] == str(
+        Path("~root/carried/bwrap").expanduser()
+    )
+
+
 def test_carried_program_without_a_checksum_refuses_composition(rehearsal):
     case = rehearsal
     program = _carried_program(case)
@@ -519,7 +553,10 @@ def test_a_carried_checksum_mismatch_refuses_before_the_task(rehearsal):
     program = _carried_program(case)
     recorded = "0" * 64
     recipe = _carried_recipe(
-        case, program, checksum=recorded, program_value=str(case["run"] / "absent-bwrap")
+        case,
+        program,
+        checksum="sha256:" + recorded.upper(),
+        program_value=str(case["run"] / "absent-bwrap"),
     )
     marker = case["run"] / "command-ran"
     result = subprocess.run(
@@ -570,8 +607,10 @@ def test_the_carried_program_and_its_directory_are_not_writable(rehearsal):
             [
                 "/bin/sh",
                 "-c",
-                'printf replacement > "$1" && exit 9; '
-                'mkdir "$2/new" && exit 8; exit 0',
+                (
+                    'printf replacement > "$1" && exit 9; '
+                    'mkdir "$2/new" && exit 8; exit 0'
+                ),
                 "write-carried",
                 str(program),
                 str(program.parent),
