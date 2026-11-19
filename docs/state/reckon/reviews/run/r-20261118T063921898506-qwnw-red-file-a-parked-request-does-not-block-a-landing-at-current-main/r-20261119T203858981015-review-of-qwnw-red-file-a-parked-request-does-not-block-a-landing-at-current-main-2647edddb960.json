@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795120482846497095.log at 28fbf2bc2fe2b27addcf04248210222f2115c1ee reads '58 passed in 36.39s' with EXIT=0, after_suite-1795120525790518154.log at 2647edddb960be5cbd75d775a950a926d9b932d9 reads '58 passed in 38.06s' with EXIT=0, and neither log carries a FAILED line, so the set difference is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3907 crew_complete (writes the receipt file named by record_path at :3485)",
+    "reckon/crew/promotion_scope.py:703 _accepted_scope_exceptions (records waiting_request_claims on the acceptance at :882)",
+    "reckon/crew/dispatch_claims.py (supplies the parked peer's claim phase the case parametrises)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T21:22:54Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-gate quote cites 656144883dee332fa9bb68dca8c3552bebac3f1e, not the reviewed head 2647edddb960be5cbd75d775a950a926d9b932d9; the manifest records a 6-passed EXIT=0 run at the head itself (scoped-gate-1795120425593842930.log) that the fragment never cites, so the fragment quotes a tree one docs-only commit behind the one it ships in, and commit 2647edddb9's body claims otherwise."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063921898506-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: measurement_module reads 'none' although the head gate log's own header names a scratch tree ('# tree: /tmp/mcintos-landing-54cb22dd70fe-fARx0J/tree'), so the module path actually imported for the one measurement the done_when rests on is unrecorded while the base arm's log does record module.__file__."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s) the case reaches: the receipt writer, the acceptance recorder and the peer claim phases",
+    "diff": "read all three commits against base 28fbf2bc2fe2b27addcf04248210222f2115c1ee: c61492e341 changes 7 lines of tests/test_a_parked_request_does_not_block_a_landing.py (the receipt read at :221-224), 656144883d adds the 57-line evidence fragment, 2647edddb9 revises the fragment's quoted revisions; no product file is touched anywhere in the range.",
+    "done_when": "the done_when states the file passes in full at head as an all_debug job with SLURM_JOB_ID unset, the base run's failing ids, a verdict per cause, both arms as inline JSON at full 40-character revisions, the negative control logged in the fragment, and ruff clean; each is recorded - logs/base-parked-request.log (4 failed, 2 passed, EXIT=1), scoped-gate-1795120425593842930.log (6 passed, EXIT=0 at 2647edddb9), baseline_suite-1795120482846497095.log and after_suite-1795120525790518154.log (58 passed each, EXIT=0), the fragment's base-red quote, and gate JSON naming partition all_debug with measured_by worker.",
+    "goal": "the node goal is 'Make tests/test_a_parked_request_does_not_block_a_landing.py pass in full on the primary branch', and at head the file's four red parametrisations pass - scoped-gate-1795120425593842930.log records 6 passed EXIT=0 at 2647edddb9, the receipt read at tests/test_a_parked_request_does_not_block_a_landing.py:221-224 replacing the reply-shape read that raised KeyError.",
+    "manifest": "read the reviewed run's manifest.md; it states status complete, one cause with verdict 'test wrong', base 4 failed/2 passed, head 6 passed, both arms as inline JSON at full shas, and names four logs - each read on disk and each agreeing with the manifest's own summary line.",
+    "write_paths": "the declared paths are reckon, tests, the fragment file and the figure directory for this slug; the delivered diff touches exactly tests/test_a_parked_request_does_not_block_a_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main.html, both inside the fence."
+  },
+  "justifications": {
+    "durability": "restoring the pre-repair line json.loads(result.output)[\"record\"] at tests/test_a_parked_request_does_not_block_a_landing.py:224 is exactly the regression the base run shows red (logs/base-parked-request.log, 4 KeyError ids, EXIT=1), and the compared literal echoes the CLI-supplied path and reason while waiting_request_claims is derived from the peer pointer, so the assertion is not wholly self-supplied.",
+    "evidence": "the done_when's every element is recorded and each log agrees with its summary line, though the fragment quotes the head gate at 656144883d rather than 2647edddb9 and the manifest leaves measurement_module as none for a scratch-tree run.",
+    "fit": "the added-reading idiom is copied from the sibling case at tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:245-247, which reads the same receipt_path/record pair, and the two-line comment matches the surrounding style.",
+    "goal_fidelity": "tests/test_a_parked_request_does_not_block_a_landing.py:221-224 now reads the receipt the command names and scoped-gate-1795120425593842930.log records 6 passed EXIT=0 at the reviewed head, so the named file passes in full.",
+    "reuse": "the diff adds no definition at all; it consumes the receipt product code already writes at reckon/crew_run_commands.py:3485 and matches the sibling test's read, and a search of reckon/crew_run_commands.py for a test-facing receipt reader found none to extend.",
+    "scope_discipline": "the two paths in the delivered diff are both inside the declared write paths, and the change carries nothing the goal does not imply - no product source, plan, or figure is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_a_parked_request_does_not_block_a_landing.py pass in full on the primary branch'; scoped-gate-1795120425593842930.log records 6 passed EXIT=0 at 2647edddb9 and the receipt read at tests/test_a_parked_request_does_not_block_a_landing.py:221-224 is the whole change.\nVERDICT done_when: the done_when names the file passing in full as an all_debug job with SLURM_JOB_ID unset, the base run's failing ids, a per-cause verdict, both arms at full 40-character revisions, the negative control in the fragment, and ruff clean; each is recorded - logs/base-parked-request.log, scoped-gate-1795120425593842930.log, baseline_suite-1795120482846497095.log, after_suite-1795120525790518154.log and the fragment's base-red quote - and the gate JSON names partition all_debug, measured_by worker.\nVERDICT write_paths: declared paths are reckon, tests, the fragment file and the slug's figure directory; the diff touches tests/test_a_parked_request_does_not_block_a_landing.py and the fragment file only, both inside the fence.\nVERDICT manifest: read the reviewed run's manifest.md; it reports status complete, the single cause judged test-wrong, base 4 failed/2 passed, head 6 passed, both arms as inline JSON at full shas, and four logs, each of which I read and which agrees with the manifest's summary line.\nVERDICT diff: read all three commits against 28fbf2bc2fe2; c61492e341 changes 7 lines of the test, 656144883d adds the 57-line fragment, 2647edddb9 revises the fragment's quoted revisions, and no product file is touched.\nCALL_SITES: reckon/crew_run_commands.py:3907 crew_complete (writes the record_path receipt at :3485), reckon/crew/promotion_scope.py:703 _accepted_scope_exceptions (records waiting_request_claims at :882), reckon/crew/dispatch_claims.py (parked peer claim phases)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_parked_request_does_not_block_a_landing.py:221-224 reads the receipt the command names and scoped-gate-1795120425593842930.log records 6 passed EXIT=0 at the reviewed head.\nSCORE evidence: 17\nJUSTIFICATION evidence: every done_when element is recorded and reconciles with its log, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main.html:34 quotes the head gate at 656144883d and the manifest leaves measurement_module as none for a scratch-tree run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both paths in the delivered diff - tests/test_a_parked_request_does_not_block_a_landing.py and the evidence fragment - are inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating json.loads(result.output)[\"record\"] at tests/test_a_parked_request_does_not_block_a_landing.py:224 reproduces the four KeyError ids logs/base-parked-request.log records at EXIT=1, so the receipt read is a guard that reddens on the regression it repaired.\nSCORE fit: 20\nJUSTIFICATION fit: the receipt read matches tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:245-247 idiomatically, including the comment that explains the bounded reply.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it consumes the receipt reckon/crew_run_commands.py:3485 already writes, and a search of reckon/crew_run_commands.py for an existing test-facing receipt reader found none to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main.html:34 non-blocking: the head-gate quote cites 656144883d rather than the reviewed head 2647edddb9 whose own gate run the manifest records (scoped-gate-1795120425593842930.log), so the fragment never quotes the tree it ships in.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063921898506-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main/manifest.md:15 non-blocking: measurement_module reads 'none' while the head gate log's header names a scratch tree, so the module actually imported for the gate the done_when rests on is unrecorded.\n",
+  "review_node": "review-of-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-2647edddb960",
+  "review_run_id": "r-20261119T203858981015-review-of-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-2647edddb960",
+  "reviewed_base_sha": "28fbf2bc2fe2b27addcf04248210222f2115c1ee",
+  "reviewed_head_sha": "2647edddb960be5cbd75d775a950a926d9b932d9",
+  "reviewed_run_id": "r-20261118T063921898506-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main",
+  "reviewer": {
+    "backend": "omp",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T203858981015-review-of-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-2647edddb960"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:31:45.549121+00:00",
+  "total": 116
+}
