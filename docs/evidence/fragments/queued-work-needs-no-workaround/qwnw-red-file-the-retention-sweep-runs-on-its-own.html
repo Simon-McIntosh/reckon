@@ -1,0 +1,9 @@
+<section id="qwnw-red-file-the-retention-sweep-runs-on-its-own-fragment">
+  <h2>The retention sweep is pinned to the reader it calls</h2>
+  <p>The case that pins the pass to the shared ledger reader spied one layer beneath it, on <code>ledger._indexed_data</code>. That layer is no longer reached: once the run store holds a row, the reader answers a project's history from the store, and this fixture writes the store through <code>ledger.append_run</code>. The spy now sits on <code>ledger.runs</code>, the reader the pass calls once per mounted project, and the assertion that both projects are read is kept in meaning. A pass that parsed an aggregate, or carried its own notion of where a run's project is recorded, calls that reader for neither project and still fails.</p>
+  <table id="qwnw-red-file-the-retention-sweep-runs-on-its-own-arms">
+    <tr><th>arm</th><th>revision</th><th>result</th></tr>
+    <tr><td>base</td><td>42fe90d0b0a46060bafde2490dda7d4002cda478</td><td>6 ran, 1 failed</td></tr>
+    <tr><td>head</td><td>10ddfc42f86c7703bef033ed87dc8cd41e06e155</td><td>6 ran, 0 failed</td></tr>
+  </table>
+</section>
