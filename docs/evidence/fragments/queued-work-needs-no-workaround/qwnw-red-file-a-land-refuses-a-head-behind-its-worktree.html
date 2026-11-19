@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A land refuses a head behind its worktree — red file</title>
+</head>
+<body>
+<main class="plan-doc">
+
+<h1 id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-title">A land refuses a head behind its worktree</h1>
+
+<p id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-summary">
+<code>tests/test_a_land_refuses_a_head_behind_its_worktree.py</code> failed in
+full at base revision <code>35fb9f3ae769586b2f364485bf2d6fc31caf87f5</code>
+and passes in full at head. Two causes, and the file reached neither: every case
+died on the completion reply's shape before it could read a landing step.
+</p>
+
+<h2 id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-base">Base run (negative control)</h2>
+
+<p id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-base-ids">Three failing ids, all <code>KeyError: 'steps'</code>:</p>
+
+<ul id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-base-list">
+<li><code>test_a_head_behind_the_worktree_is_refused_before_merging</code></li>
+<li><code>test_a_head_equal_to_the_worktree_merges_as_today</code></li>
+<li><code>test_a_released_worktree_merges_and_reports_the_release</code></li>
+</ul>
+
+<p id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-head">Head run at
+<code>69d72e67a5addbae507a2f8ffa16261846d7caca</code>, submitted as an
+<code>all_debug</code> job with <code>PYTHONPATH=. .venv/bin/python -m pytest -p
+no:cacheprovider -q tests/test_a_land_refuses_a_head_behind_its_worktree.py</code>:
+<code>3 passed</code>, <code>EXIT=0</code>, log at
+<code>~/.config/reckon/crew/runs/r-20261118T054253768651-qwnw-red-file-a-land-refuses-a-head-behind-its-worktree/scoped-gate-1795086817937982492.log</code>.</p>
+
+<h2 id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-causes">Causes and verdicts</h2>
+
+<h3 id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-reply">1. The test read the bounded CLI reply as the landing record — test wrong</h3>
+<p><code>crew complete --land</code> answers with a bounded reply and retains the
+full promotion, land and release steps in the record it links under
+<code>record_path</code>; that bounded shape was deliberate, so
+<code>test_a_wave_of_landings_is_one_decision.py</code> holds it under 2 kB. The
+test now reads the record it links. No assertion was dropped: the promotion,
+land and release entries are the same entries the test already asserted.</p>
+
+<h3 id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-history">2. The citation guard read the repository's HEAD as the run's history — product wrong</h3>
+<p>With the worktree released, <code>_require_commits_beyond_base</code> fell back
+to the repository for its tree and read that tree's HEAD as the run's own
+history. The repository's HEAD follows the integration branch, so the run's work
+is by definition not on it before the landing, and every citation of a released
+worktree was refused:</p>
+<pre id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-refusal">run '…' cites 34a7915b759d29e475ffd3d168bec7bfa34380f8, which is not a commit this run made beyond its base 54f39849254d2b332daf31c3134a5f758d6576c2: the run's work is what it committed on its own history, so this citation belongs to an unmerged branch or predates the run.</pre>
+<p>The head a citation is joined to is now taken from the run's own worktree
+only. The repository fallback still resolves revisions through the shared object
+store; with no worktree there is no head to join to, and the base alone decides,
+so a citation behind the base or off its line is still refused.
+The same repair turns the release cases of
+<code>tests/test_a_clean_landing_releases_its_worktree.py</code> green.</p>
+
+<h2 id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-arms">Arms</h2>
+<p id="qwnw-red-file-a-land-refuses-a-head-behind-its-worktree-arms-body">Base and
+head arms of the declared suite, and the arm over the test files that import the
+changed module, are recorded in the node manifest.</p>
+
+</main>
+</body>
+</html>
