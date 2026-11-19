@@ -1942,9 +1942,8 @@ def fence_argv(
     needs its own git directory and its repository's shared object store
     writable, or a worker cannot commit the work it was dispatched to do; see
     :func:`worktree_git_write_roots`. A *declared* grant is judged before
-    anything is composed: a filesystem root, a project root or the shared crew
-    root that holds every run is refused by name rather than granted; see
-    :func:`declared_grant_refusal`.
+    anything is composed: a filesystem root or a project root is refused by
+    name rather than granted; see :func:`declared_grant_refusal`.
 
     A protected path is bound at its resolved target rather than at its own
     path, because bubblewrap cannot create a mount point below a symlink; see
