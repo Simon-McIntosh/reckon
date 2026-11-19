@@ -436,6 +436,22 @@ def _entry_commits(cwd: Path, entry: str) -> list[str]:
     return found
 
 
+def _entry_commits_strict(cwd: Path, entry: str) -> list[str]:
+    """The commits one citation entry names, with an instrument fault raised.
+
+    A caller choosing the revision the run's work reached reads an empty answer
+    as licence to leave an entry out of the comparison, so its resolver runs
+    strict: a git that ran out of its bound or could not start raises, rather
+    than arriving as a citation that names nothing.
+    """
+    found: list[str] = []
+    for candidate in [entry, *_citation_tokens(str(entry))]:
+        resolved = _resolve_commit(cwd, candidate, strict=True)
+        if resolved and resolved not in found:
+            found.append(resolved)
+    return found
+
+
 def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
     """Resolve the revision a promotion asserts landed, or the empty string.
 
@@ -490,18 +506,19 @@ def _descendant_commit(run_tree: Path, presented: Sequence[str]) -> str:
         text = str(entry).strip()
         if not text:
             continue
-        canonical = _resolve_commit(run_tree, text, strict=True)
-        if not canonical:
+        resolved = _entry_commits_strict(run_tree, text)
+        if not resolved:
             raise CrewError(
                 f"the citation {text!r} presented for this promotion names no "
                 f"commit in the run's tree {run_tree}, so the revision the run's "
                 "work reached cannot be chosen while it still has to be placed "
                 "in the history. Present the commit the run's work ended at"
             )
-        if canonical in seen:
-            continue
-        seen.add(canonical)
-        entries.append(canonical)
+        for canonical in resolved:
+            if canonical in seen:
+                continue
+            seen.add(canonical)
+            entries.append(canonical)
     if not entries:
         return ""
     descendants = [
