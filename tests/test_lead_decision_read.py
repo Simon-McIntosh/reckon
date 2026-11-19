@@ -450,13 +450,16 @@ def test_plan_recommendation_and_live_ownership_use_the_existing_resolver(
         }
 
     monkeypatch.setattr(plan_coordinator, "resolve_plan_coordinators", resolve)
-    row = serve_crew_view("decisions")["decisions"][0]
+    row = serve_crew_view("decisions")["plan_block"][0]
     assert "sample" in calls
     assert row["recommended_by"] == "review-session"
     assert row["recommendation_source"] == "reviewer"
     assert row["owner_session"] == "owner-session"
     assert row["plan_has_live_session"] is True
-    assert row["session"] == "owner-session"
+    # Nothing recorded the session this decision waits on, so the read names
+    # that absence rather than standing the plan's coordinator in for it.
+    assert row["session"] is None
+    assert "session" in row["absent"]
 
 
 def test_unowned_plan_is_explicit_without_queue_work(decision_home):
@@ -509,9 +512,13 @@ def test_a_direct_plan_answer_hides_its_linked_crew_question(decision_home):
     _, mounts = decision_home
     _plan(mounts["sample"], {"format": {"title": "Which format?"}})
     record_decision(_record(decision_key="format"))
-    assert serve_crew_view("decisions")["count"] == 2
+    before = serve_crew_view("decisions")
+    assert before["count"] == 1
+    assert [row["source"] for row in before["plan_block"]] == ["plan"]
     _plan(
         mounts["sample"],
         {"format": {"title": "Which format?", "choice": "compact", "by": "Plan owner"}},
     )
-    assert serve_crew_view("decisions")["decisions"] == []
+    after = serve_crew_view("decisions")
+    assert after["decisions"] == []
+    assert after["plan_block"] == []
