@@ -1,0 +1,57 @@
+<section id="qwnw-red-file-stop-hook-reads-the-snapshot-landing">
+  <h2>The stop hook's snapshot test passes at the base revision</h2>
+
+  <p><strong>What was measured.</strong> <code>tests/test_stop_hook_reads_the_snapshot.py</code>
+  passes in full at the node's base revision
+  <code>d9b857e053a77af65ab77aad9d78f3ef3d3bb28a</code>, so nothing was repaired:
+  the file names no failing id at the base the node was given, and no product or
+  test line changes in this node's diff. The seven cases were run as a batch job
+  on <code>all_debug</code> with <code>SLURM_JOB_ID</code> and
+  <code>SLURM_JOBID</code> removed from the pytest environment; the receipt is
+  <code>7 passed</code> and a bare <code>EXIT=0</code> last line.</p>
+
+  <h3 id="qwnw-red-file-stop-hook-reads-the-snapshot-arms">Arms</h3>
+
+  <table id="qwnw-red-file-stop-hook-reads-the-snapshot-arm-table">
+    <caption>Every arm names its revision, the tree it ran against, and ends
+    with a bare <code>EXIT=&lt;code&gt;</code> line.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base and head</td>
+        <td><code>d9b857e053</code></td>
+        <td><code>all_debug</code> job, extracted tree</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, twelve concurrent replays</td>
+        <td><code>d9b857e053</code></td>
+        <td>working tree</td>
+        <td>12 of 12 read 7 passed</td></tr>
+      <tr><td>the suite template, base arm</td>
+        <td><code>d9b857e053</code></td>
+        <td><code>all_debug</code> job, extracted tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the suite template, after arm</td>
+        <td>this node's head</td>
+        <td><code>all_debug</code> job, extracted tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-stop-hook-reads-the-snapshot-negative">Negative control</h3>
+
+  <p>No red run could be logged at the base revision, because the file has no
+  failing id there: the negative control this section's plan text asks for does
+  not exist at <code>d9b857e053</code>. The nearest recorded red is the 15
+  November whole-suite log at <code>8d50b0333f</code>, which lists one id,
+  <code>test_an_over_budget_derivation_allows_the_stop_with_its_reason</code>.
+  Replaying that same revision — the file extracted from
+  <code>git archive 8d50b0333f</code> under the run's scratch directory and run
+  with the worktree's interpreter — reads <code>7 passed</code>, so the recorded
+  id is a load-dependent reading of the suite run rather than a rule the code
+  has since stopped keeping.</p>
+
+  <p>Because a green run alone cannot show the file's checks bite, its arms were
+  also exercised under load: twelve copies of the file run concurrently against
+  the same working tree all read <code>7 passed in 18.5s</code>, and no case
+  moved off its assertion, so the run above is a stable reading of the file and
+  not an instrument that returned early.</p>
+</section>
