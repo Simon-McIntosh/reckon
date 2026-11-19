@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="897">
+<meta name="plan-version" content="898">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2760,7 +2760,10 @@
     <div class="r-comment-body"><p>`tests/test_promotion_queue_drains_at_slot_speed.py` passes in full at base and head (4 passed, EXIT=0, all_debug, SLURM_JOB_ID unset), so this node repaired no cause and changed no product or test line; its one red run measured a 2.06 s gap where twenty instrumented runs measure 6-24 ms from the promotion's completion write to the launch of the next request, and the fragment records both.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062615707658-qwnw-red-file-a-claimless-review-is-refused-at-store" data-who="reckon-build" data-when="2026-11-19T02:53:36Z">
-    <div class="r-comment-body"><p>The claimless-review test file passes in full at head; its one cause is the fixture manifest&#x27;s missing `messages_received: none`, verdict test wrong — base arm 2 failed 2 passed EXIT=1, head gate 4 passed EXIT=0, scoped suite 0 added failures (base and after arms both exit 0).</p></div>
+    <div class="r-comment-body"><p>The claimless-review test file passes in full at head; its one cause is the fixture manifest's missing `messages_received: none`, verdict test wrong — base arm 2 failed 2 passed EXIT=1, head gate 4 passed EXIT=0, scoped suite 0 added failures (base and after arms both exit 0).</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063918175084-qwnw-red-file-a-gate-names-its-arms-at-current-main" data-who="reckon-build" data-when="2026-11-18T17:43:42.841Z">
+    <div class="r-comment-body"><p>tests/test_a_gate_names_its_arms.py passes 5 of 5 at head 15e224be73 as an all_debug job (1327576) against 4 failed and 1 passed at base bc7b7bec (job 1327653), because the four cases read the suite delta, the refusal&#x27;s missing fields and its added failure ids from the record the completion reply&#x27;s record_path links rather than from the compact receipt itself — the reply became bounded at ba811581d3 and no assertion was deleted or weakened; the armed 58-test suite reports 58 passed on both arms (base job 1327655, head job 1327591) and ruff reports nothing new on the changed path.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
