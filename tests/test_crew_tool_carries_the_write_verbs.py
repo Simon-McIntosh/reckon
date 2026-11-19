@@ -417,15 +417,26 @@ def test_a_commitless_promotion_keeps_its_waiver_and_outcome(
     waiver and the outcome instead of a citation. A form that dropped either
     would offer a call the promotion refuses for the very reason the command
     was composed to answer.
+
+    The branch is offered on the unchanged-run proof rather than on the
+    citations alone, so this record stands for a commitless run and the proof
+    is supplied beside the two git reads the test already answers for. Every
+    option then reaches the form with the value the command carries — the
+    waiver sentence and the manifest's own outcome, not a placeholder — which
+    is what makes the form callable.
     """
     from reckon.crew import obligations as obligations_module
-    from reckon.crew import recovery_classification
+    from reckon.crew import promotion_evidence, recovery_classification
 
     base = "a" * 40
     monkeypatch.setattr(recovery_classification, "_review_tree", lambda record: None)
     monkeypatch.setattr(
         recovery_classification, "_canonical_commits", lambda tree, commits: [base]
     )
+    # The branch is offered on the unchanged-run proof, not on the citations
+    # alone: a run whose tree holds uncommitted work keeps its observe command
+    # so the refusal that names the work is what the coordinator meets.
+    monkeypatch.setattr(promotion_evidence, "_run_changed_nothing", lambda record: True)
 
     command = recovery_classification._promotion_command(
         "run-x", {"base_sha": base}, [base]
@@ -434,11 +445,24 @@ def test_a_commitless_promotion_keeps_its_waiver_and_outcome(
         f"the commitless branch did not compose the command under test: {command}"
     )
 
-    assert obligations_module.action_form(command) == (
-        'crew(action="complete", run_id="run-x", gate="not-run", '
-        'no_commit="<why the run produced no commit>", '
-        'outcome="<what the run produced>")'
-    )
+    form = obligations_module.action_form(command)
+    parsed = ast.parse(form, mode="eval").body
+    assert [keyword.arg for keyword in parsed.keywords] == [
+        "action",
+        "run_id",
+        "gate",
+        "no_commit",
+        "outcome",
+    ]
+    arguments = {
+        keyword.arg: ast.literal_eval(keyword.value) for keyword in parsed.keywords
+    }
+    tokens = shlex.split(command)
+    assert arguments["action"] == "complete"
+    assert arguments["run_id"] == tokens[tokens.index("--run") + 1]
+    assert arguments["gate"] == tokens[tokens.index("--gate") + 1]
+    assert arguments["no_commit"] == tokens[tokens.index("--no-commit") + 1]
+    assert arguments["outcome"] == tokens[tokens.index("--outcome") + 1]
 
 
 def test_a_repeated_option_renders_as_one_list_parameter() -> None:
