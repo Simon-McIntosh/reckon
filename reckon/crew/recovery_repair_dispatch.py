@@ -73,7 +73,29 @@ def dispatch_merge_repair(
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
     refusal = pending_landing.promoted_pointer_write_refusal(run_id, record)
-    if refusal:
+    # A round already open on the live pointer is reported as it stands: the
+    # pass reads it every sweep, and re-deciding it here either resumes a worker
+    # twice or turns a running repair into an obligation.
+    open_round = (_live_pointer_or_absent(run_id) or {}).get("merge_conflict") or {}
+    if open_round.get("round_id") == round_id and open_round.get("status") == "resumed":
+        return dict(open_round)
+    # A promoted delivery whose pending landing record names no conflict yet is
+    # a landing interrupted by the conflict being reported now: this round is
+    # the first owner of that conflict, so it rebuilds the pointer it resumes.
+    # Every other caller keeps the refusal. A round the record already names has
+    # an owner, and replaying it would read a promotion that already ran as
+    # though its worker were still live; and a promotion whose row cannot be
+    # read has no proved absence, so the wider refusal stands there too.
+    pending = pending_landing._read(pending_landing._record_path(run_id))
+    project = str(record.get("project") or "")
+    first_round = bool(
+        promoted
+        and pending is not None
+        and not pending.get("merge_conflict")
+        and project
+        and pending_landing._promoted_row(project, run_id) is not None
+    )
+    if refusal and not first_round:
         receipt.update(
             status="refused",
             reason=refusal,
@@ -127,7 +149,9 @@ def dispatch_merge_repair(
 
         pending = pending_landing._read(pending_landing._record_path(run_id))
         if pending is not None:
-            fresh = pending_landing.mark_pending_landing_repair(run_id, record)
+            fresh = pending_landing.mark_pending_landing_repair(
+                run_id, record, opening_repair=True
+            )
     previous = (fresh or {}).get("merge_conflict") or {}
     if previous.get("round_id") == round_id and previous.get("status") == "resumed":
         return dict(previous)
