@@ -181,6 +181,48 @@ def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monke
     assert not pending_landing._record_path(run["run_id"]).exists()
 
 
+def test_a_refused_push_keeps_the_run_and_its_recovery_state(deliveries, monkeypatch):
+    """A push the remote refuses leaves the run, its record and its worktree.
+
+    An interrupted promotion's recovery state is the pending record and the
+    worktree its reviewed head was authored in. A refused push is the failure
+    that leaves the merge itself sound, so nothing may be retired on the way
+    out: the refusal is written onto the record as the attempt's own error, the
+    record stays for the next pass to retry, and the worktree is left where the
+    worker can reach it.
+    """
+    deliver, _resumed = deliveries
+    run = deliver("refused", "first original", "first delivered + second delivered")
+    with monkeypatch.context() as interrupted:
+        interrupted.setattr(
+            crew_run_commands,
+            "_land_a_promoted_run",
+            lambda *a, **k: ({"ok": False, "interrupted": True}, 1),
+        )
+        result = _complete_land(run)
+    assert result.exit_code != 0, result.output
+    record_path = pending_landing._record_path(run["run_id"])
+    assert record_path.is_file()
+    assert not runs.pointer_path(run["run_id"]).exists()
+    remote_before = git(run["origin"], "rev-parse", "main")
+    hook = run["origin"] / "hooks" / "pre-receive"
+    hook.write_text("#!/bin/sh\necho 'push refused by fixture' >&2\nexit 1\n")
+    hook.chmod(0o755)
+
+    results = pending_landing.finish_pending_landings(only_run=run["run_id"])
+
+    assert results[0]["status"] == "failed", results
+    assert "push refused by fixture" in results[0]["error"], results
+    assert git(run["origin"], "rev-parse", "main") == remote_before
+    assert record_path.is_file()
+    record = pending_landing._read(record_path)
+    assert record["attempts"] == 1
+    assert "push refused by fixture" in record["last_error"]
+    assert not runs.pointer_path(run["run_id"]).exists()
+    assert run["worktree"].is_dir()
+    assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
+
+
 def _unfinished_promotion(deliver, name):
     """Deliver a run whose promotion stopped between its record and its row."""
     run = deliver(name, "first original", "first delivered")
@@ -311,12 +353,8 @@ def test_a_later_attempt_is_never_written_back(deliveries):
     run = _promoted_conflict(deliver)
     record_path = pending_landing._record_path(run["run_id"])
     captured = pending_landing._read(record_path)["pointer"]
-    newer = {
-        **captured,
-        "attempt": int(captured.get("attempt") or 0) + 1,
-        "phase": "running",
-    }
-    assert pending_landing.pointer_attempt(newer) != captured.get("attempt")
+    captured_attempt = int(captured.get("attempt") or 0)
+    newer = {**captured, "attempt": captured_attempt + 1, "phase": "running"}
     runs._write_json(runs.pointer_path(run["run_id"]), newer)
     written = runs.pointer_path(run["run_id"]).read_bytes()
 
@@ -326,6 +364,7 @@ def test_a_later_attempt_is_never_written_back(deliveries):
     assert results[0]["record"] == str(record_path)
     assert runs.pointer_path(run["run_id"]).read_bytes() == written
     assert runs.read_pointer(run["run_id"]) == newer
+    assert int(runs.read_pointer(run["run_id"])["attempt"]) == captured_attempt + 1
     assert run["worktree"].is_dir()
     assert git(run["worktree"], "rev-parse", "HEAD") == run["conflict_head"]
     assert pending_landing._record_path(run["run_id"]).is_file()
