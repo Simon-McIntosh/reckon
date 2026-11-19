@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="833">
+<meta name="plan-version" content="834">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2569,6 +2569,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261119T143202965251-review-of-qwnw-red-file-ticker-shows-the-lane-mean-d9ac641eac55" data-who="reckon-build" data-when="2026-11-19T16:17:48.721Z">
     <div class="r-comment-body"><p>Reviewed run r-20261118T062623373602-qwnw-red-file-ticker-shows-the-lane-mean at be17b57484..d9ac641eac: verdict test-wrong repair is correct and in scope (base red at the quoted assertion, head 11 passed), one non-blocking durability finding that the moved marker assertion is entailed by the cell-blankness assertion above it, scores goal_fidelity 18 evidence 15 scope_discipline 20 durability 16 fit 19 reuse 20, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T054251674730-qwnw-red-file-a-landed-head-releases-its-worktree" data-who="reckon-build" data-when="2026-11-19T10:21:01.201Z">
+    <div class="r-comment-body"><p>One cause, test wrong: the three cases read `crew complete --land`&#x27;s stdout for `steps`, which the bounded receipt no longer carries, so each now loads the archived outcome through the receipt&#x27;s `record_path` with a new `_full_report()` helper and every assertion stands unchanged — the reviewed head merges and pushes with the marker on `main` and the remote, the post-merge release frees the tree, a run whose recorded checkout the landing did not move still releases its tree, and a commit beyond the head is withheld with nothing landed; the named file passes 3/3 at e3038d3 as an all_debug job with `SLURM_JOB_ID` unset against 3 failed at 6acdab, and the one file importing it reads the same 1 failed 10 passed at both revisions, so no failure was added.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
