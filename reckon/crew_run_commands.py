@@ -3472,6 +3472,7 @@ def _complete_many(run_ids, parameters):
                 "ok",
                 "run_id",
                 "phase",
+                "driven",
                 "pointer_removed",
                 "ledger_path",
                 "merged",
