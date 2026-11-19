@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="499">
+<meta name="plan-version" content="500">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1874,7 +1874,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>review of a0352ad3d94d4717f9dae336d13c04aecfc692f7 against base 4dd916ef308f57b97a58e5406a5ef12f2e7f5508 scores 77/120 (goal_fidelity 12, evidence 12, scope_discipline 20, durability 11, fit 18, reuse 4), with 1 blocking finding at reckon/resources.py:854 and 3 non-blocking findings; the blocking one shows a sibling rewritten in place resolving at head where base refused.</p></div>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261119T065155186470-review-of-fleet-state-is-derived-on-change-d5da074183a6" data-who="reckon-build" data-when="2026-11-19T08:50:19.058Z">
-    <div class="r-comment-body"><p>Independent review of r-20261118T185401794543-fleet-state-is-derived-on-change at b24fe95a789c82cd33f22a912b4dbbf94d5e2193..d5da074183a60831cf3b816ea50e0d52d44df541: status parsed, goal_fidelity 18, evidence 15, scope_discipline 20, durability 17, fit 17, reuse 16, added_failure_count 0 and two non-blocking findings — the gate&#x27;s published-obligation comparison uses head&#x27;s own ungated derivation rather than the base revision&#x27;s, and the node&#x27;s declared negative-control string does not reproduce at base while the moved-input case is the real witness.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261118T185401794543-fleet-state-is-derived-on-change at b24fe95a789c82cd33f22a912b4dbbf94d5e2193..d5da074183a60831cf3b816ea50e0d52d44df541: status parsed, goal_fidelity 18, evidence 15, scope_discipline 20, durability 17, fit 17, reuse 16, added_failure_count 0 and two non-blocking findings — the gate's published-obligation comparison uses head's own ungated derivation rather than the base revision's, and the node's declared negative-control string does not reproduce at base while the moved-input case is the real witness.</p></div>
+</div>
+<div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
+    <div class="r-comment-body"><p>Each project&#x27;s fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer&#x27;s stored signature, one file_memo signature per run&#x27;s manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
 </div>
 </section>
 </main>
