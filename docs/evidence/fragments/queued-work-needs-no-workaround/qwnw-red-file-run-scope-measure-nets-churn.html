@@ -1,0 +1,35 @@
+<section id="qwnw-red-file-run-scope-measure-nets-churn-causes">
+<h3>Two failing ids, one cause</h3>
+<p>Base arm at <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>:</p>
+<pre>2 failed, 1 passed in 3.59s
+FAILED tests/test_run_scope_measure_nets_churn.py::test_a_merge_only_citation_charges_the_content_the_merge_brought
+FAILED tests/test_run_scope_measure_nets_churn.py::test_a_merge_only_citation_charges_the_paths_the_merge_brought
+EXIT=1</pre>
+<p>Both were refused as an unmerged citation:</p>
+<pre>reckon.crew.CrewError: run cites bc195a6c8964, which is not a commit this run made
+beyond its base e0ab799bb714: ... belongs to an unmerged branch or predates the run.</pre>
+<p><strong>Verdict: the product was wrong.</strong> The guard refused a merge that
+carries the run head, so the merge-only measurement never ran. A citation the run head descends into is now accepted.</p>
+<p>Head <code>784dcda3f72ab66707156da8f22cba1674e27c05</code>, the named file measured on
+partition <code>all_debug</code> in-process by <code>crew verify-gate --worker</code> — no scheduler
+receipt, the host runs the gate itself: <code>4 passed in 2.20s</code>, <code>EXIT=0</code>.</p>
+<p>Logs: <code>arm-base-target.log</code> and
+<code>scoped-gate-1795054334811684200.log</code> under the run directory.</p>
+</section>
+<section id="qwnw-red-file-run-scope-measure-nets-churn-merge-parent">
+<h3>The acceptance basis is a parent, not an ancestor</h3>
+<p>Review found the first repair accepted any commit the run head descended into.</p>
+<p>A commit made on top of the run head brings work the run never touched, and charging
+its first-parent diff would record another writer as this run. The guard now reads the citation parents:</p>
+<pre>git rev-list --parents -n 1 &lt;citation&gt;   # admitted only when the run head is one of them</pre>
+<p>The new case makes a commit on top of the run head in a second worktree and cites it.</p>
+<p>At <code>84832e9c</code> it failed with <code>DID NOT RAISE CrewError</code>; at the repair head it passes.</p>
+<p>Both suite arms, <code>58 passed</code> and <code>EXIT=0</code>, are in <code>baseline_suite.log</code> and <code>after_suite.log</code>.</p>
+</section>
+<section id="qwnw-red-file-run-scope-measure-nets-churn-parent-read">
+<h3>One parent read, one owner</h3>
+<p>Review found the guard repeated the <code>git rev-list --parents</code> call that
+<code>_merge_revisions</code> already owned. <code>promotion_scope._commit_parents</code> now owns it and both callers use it.</p>
+<pre>_merge_revisions:    len(_commit_parents(cwd, revision)) &gt; 1
+citation guard:      len(parents) &gt; 1 and run_head in parents</pre>
+</section>
