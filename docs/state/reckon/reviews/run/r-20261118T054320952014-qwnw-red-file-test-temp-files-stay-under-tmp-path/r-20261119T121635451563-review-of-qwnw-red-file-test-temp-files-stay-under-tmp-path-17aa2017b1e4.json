@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:45:06Z",
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "3652",
+      "severity": "non-blocking",
+      "text": "non-blocking: the proved-ended-worker setup the diff now names once in `_worker_has_stopped` (tests/test_crew.py:3004) is still spelled inline with the bare literal 999999999 at 3652-3655 and 3793-3794, so one file carries a named constant and three bare spellings of the same fact and the next change to how an ended worker is recorded has to be found in three places rather than one; the guard passes either way, so the node holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against the base, 4aa5562b0d adds `_worker_has_stopped` at tests/test_crew.py:3004 with four call sites (3684, 3703, 3725, 3774) and replaces the roster byte comparison with `ledger.members` reads at 3153 and 3219, while 17aa2017b1 adds only the 50-line evidence fragment.",
+    "done_when": "the done_when asks for that file green at head as an all_debug job with SLURM_JOB_ID unset beside a red base run, and gate-head.log (job 1330873, `env -u SLURM_JOB_ID`) reads `3 passed in 56.07s` EXIT=0 while gate-base.log reads `1 failed, 2 passed` EXIT=1 naming the five nested tests/test_crew.py ids.",
+    "goal": "the node goal is that tests/test_test_temp_files_stay_under_tmp_path.py passes in full, and that file at tests/test_test_temp_files_stay_under_tmp_path.py:39 names its three guarded files while gate-head.log records `3 passed` with `EXIT=0` at 4aa5562b0d.",
+    "manifest": "the reviewed manifest.md reads status complete, states each of the two causes as test-wrong, cites gate-base.log as its negative control, carries both suite arms as 58-passed JSON, and `crew check --manifest --run` over it returns `\"findings\": []`.",
+    "write_paths": "the declared scope is reckon, tests and the plan's fragment directory, and the delivered diff of 35fb9f3ae769586b2f364485bf2d6fc31caf87f5..17aa2017b1e4c1561080e4293f28500797b7f486 holds only tests/test_crew.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-test-temp-files-stay-under-tmp-path.html."
+  },
+  "justifications": {
+    "durability": "gate-base.log is the reverted state and reddens on it \u2014 `assert 'running' == 'blocked'` for a removed `_worker_has_stopped` call at tests/test_crew.py:3684 and FileNotFoundError for the restored crew.json read \u2014 so the guard fails if either repair regresses.",
+    "evidence": "gate-head.log's own `# command:` header names the done_when's file with an absolute interpreter and ends `EXIT=0`, and gate-base.log records the matching red arm at 35fb9f3.",
+    "fit": "the helper at tests/test_crew.py:3004 keeps the file's comment-per-decision idiom and names only the mechanism, and `_ABSENT_PID`/`_worker_has_stopped` carry no plan, phase or ticket label.",
+    "goal_fidelity": "tests/test_test_temp_files_stay_under_tmp_path.py:31-37 names the three guarded files and gate-head.log shows all three of that file's cases passing at the landed revision, so the goal's deliverable is present.",
+    "reuse": "`_worker_has_stopped` at tests/test_crew.py:3017-3018 wraps the file's existing `_set_pointer_pid` and `_record_attempt_worker` rather than reimplementing them, but leaves the identical two-call sequence inlined at 3652-3655 and 3793-3794.",
+    "scope_discipline": "the diff touches only tests/test_crew.py and the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared paths, with no product module changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_test_temp_files_stay_under_tmp_path.py passes in full, and that file at tests/test_test_temp_files_stay_under_tmp_path.py:39 names its three guarded files while gate-head.log records `3 passed` with `EXIT=0` at 4aa5562b0d.\nVERDICT done_when: the done_when asks for that file green at head as an all_debug job with SLURM_JOB_ID unset beside a red base run, and gate-head.log (job 1330873, `env -u SLURM_JOB_ID`) reads `3 passed in 56.07s` EXIT=0 while gate-base.log reads `1 failed, 2 passed` EXIT=1 naming the five nested tests/test_crew.py ids.\nVERDICT write_paths: the declared scope is reckon, tests and the plan's fragment directory, and the delivered diff of 35fb9f3ae769586b2f364485bf2d6fc31caf87f5..17aa2017b1e4c1561080e4293f28500797b7f486 holds only tests/test_crew.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-test-temp-files-stay-under-tmp-path.html.\nVERDICT manifest: the reviewed manifest.md reads status complete, states each of the two causes as test-wrong, cites gate-base.log as its negative control, carries both suite arms as 58-passed JSON, and `crew check --manifest --run` over it returns `\"findings\": []`.\nVERDICT diff: read commit by commit against the base, 4aa5562b0d adds `_worker_has_stopped` at tests/test_crew.py:3004 with four call sites (3684, 3703, 3725, 3774) and replaces the roster byte comparison with `ledger.members` reads at 3153 and 3219, while 17aa2017b1 adds only the 50-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_test_temp_files_stay_under_tmp_path.py:31-37 names the three guarded files and gate-head.log shows all three of that file's cases passing at the landed revision, so the goal's deliverable is present.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log's own `# command:` header names the done_when's file with an absolute interpreter and ends `EXIT=0`, and gate-base.log records the matching red arm at 35fb9f3.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff touches only tests/test_crew.py and the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared paths, with no product module changed.\nSCORE durability: 19\nJUSTIFICATION durability: gate-base.log is the reverted state and reddens on it \u2014 `assert 'running' == 'blocked'` for a removed `_worker_has_stopped` call at tests/test_crew.py:3684 and FileNotFoundError for the restored crew.json read \u2014 so the guard fails if either repair regresses.\nSCORE fit: 17\nJUSTIFICATION fit: the helper at tests/test_crew.py:3004 keeps the file's comment-per-decision idiom and names only the mechanism, and `_ABSENT_PID`/`_worker_has_stopped` carry no plan, phase or ticket label.\nSCORE reuse: 15\nJUSTIFICATION reuse: `_worker_has_stopped` at tests/test_crew.py:3017-3018 wraps the file's existing `_set_pointer_pid` and `_record_attempt_worker` rather than reimplementing them, but leaves the identical two-call sequence inlined at 3652-3655 and 3793-3794.\nFINDING tests/test_crew.py:3652 non-blocking: the proved-ended-worker setup the diff now names once in `_worker_has_stopped` (tests/test_crew.py:3004) is still spelled inline with the bare literal 999999999 at 3652-3655 and 3793-3794, so one file carries a named constant and three bare spellings of the same fact and the next change to how an ended worker is recorded has to be found in three places rather than one; the guard passes either way, so the node holds.",
+  "review_run_id": "r-20261119T121635451563-review-of-qwnw-red-file-test-temp-files-stay-under-tmp-path-17aa2017b1e4",
+  "reviewed_base_sha": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+  "reviewed_head_sha": "17aa2017b1e4c1561080e4293f28500797b7f486",
+  "reviewed_run_id": "r-20261118T054320952014-qwnw-red-file-test-temp-files-stay-under-tmp-path",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:12:36.974239+00:00",
+  "total": 105
+}
