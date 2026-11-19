@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-death-row-reads-any-final-record — base red run and head green run</title>
+</head>
+<body>
+<article id="qwnw-red-file-death-row-reads-any-final-record">
+<h1>qwnw-red-file-death-row-reads-any-final-record</h1>
+
+<p><code>tests/test_death_row_reads_any_final_record.py</code> was red on the primary branch
+at <code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code>: one failure, four passes. The
+cause is in the product, not in the test.</p>
+
+<h2 id="qwnw-red-file-death-row-reads-any-final-record-cause">Cause</h2>
+
+<p>The death reading asks a run's newest stream for the type of its last complete record.
+<code>_tail_record_type</code> (<code>reckon/crew/recovery_wait.py</code>) found the last
+newline's offset through <code>_last_newline_offset</code> — one read of the 64 KiB tail
+window — and then read that same window again for the record type. The module states the
+contract the test measures in its own comment: "One window answers the common case … such
+a chunk holds that record entire and the read stops there." An accounting case that counts
+the bytes the handle returns saw the duplication directly:</p>
+
+<pre id="qwnw-red-file-death-row-reads-any-final-record-repro">FAILED tests/test_death_row_reads_any_final_record.py::test_the_common_small_record_path_reads_one_window_not_the_stream - AssertionError: (131072, 3000142)
+assert 131072 &lt;= 65536
+ +  where 131072 = sum([65536, 65536])
+ +  and   65536 = recovery._STREAM_TAIL_BYTES</pre>
+
+<p>The four parametrized sizes — 1 KiB, 64.5 KiB, 65.5 KiB and 512 KiB — already passed at
+base, so the floor read that extends backwards past a record taller than the window was
+working; the accounting case was the only failure. The offset is now taken from the chunk
+that answers the record type, so a window holding the record ends the read after one. No
+assertion was deleted or weakened; the window itself is unchanged at 64 KiB, and the
+sizes' own boundary assertion still reports a window the case list no longer straddles.</p>
+
+<h2 id="qwnw-red-file-death-row-reads-any-final-record-runs">Runs</h2>
+
+<table id="qwnw-red-file-death-row-reads-any-final-record-table">
+<thead>
+<tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>base</td>
+<td><code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code></td>
+<td>1 failed, 4 passed — <code>EXIT=1</code></td>
+<td><code>negative-control-base-red.log</code> in the run directory, beside the
+<code>scoped-gate-1795099734450658310.log</code> head run</td>
+</tr>
+<tr>
+<td>head</td>
+<td><code>45a439059bf8f3021b23ba74851c4fa6a13ab059</code></td>
+<td>5 passed — <code>EXIT=0</code>, on <code>all_debug</code> host
+<code>98dci4-clu-3144.iter.org</code> with <code>SLURM_JOB_ID</code> unset</td>
+<td><code>scoped-gate-1795099734450658310.log</code></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="qwnw-red-file-death-row-reads-any-final-record-importers">Importing test files</h2>
+
+<p>The thirteen test files that import <code>reckon.crew.recovery_wait</code> were run as an
+arm at each revision. Both arms carry the same two failures, so the change adds none:</p>
+
+<table id="qwnw-red-file-death-row-reads-any-final-record-importers-table">
+<thead>
+<tr><th>arm</th><th>revision</th><th>result</th><th>failing ids</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>base</td>
+<td><code>7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061</code></td>
+<td>2 failed, 98 passed — <code>EXIT=1</code></td>
+<td><code>test_a_classification_reads_only_new_stream_lines.py::test_two_configured_ticks_over_an_unchanged_store_decode_no_document</code>,
+<code>test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid</code></td>
+</tr>
+<tr>
+<td>head</td>
+<td><code>45a439059bf8f3021b23ba74851c4fa6a13ab059</code></td>
+<td>2 failed, 98 passed — <code>EXIT=1</code></td>
+<td>the same two ids</td>
+</tr>
+</tbody>
+</table>
+
+<p>Both arms were extracted from their own revision and imported the module under test from
+that tree. The two failures are red on the primary branch before this node's change and sit
+outside its declared scope; they are reported under <code>outside_scope</code> rather than
+repaired here.</p>
+
+</article>
+</body>
+</html>
