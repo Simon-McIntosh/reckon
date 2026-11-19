@@ -407,19 +407,10 @@ def _integration_brings_the_run(
     """
     if not run_head:
         return False
-    parents = subprocess.run(
-        ["git", "rev-list", "--parents", "-n", "1", revision],
-        cwd=tree,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if parents.returncode:
+    parents = _commit_parents(tree, revision)
+    if len(parents) < 2:
         return False
-    fields = parents.stdout.split()
-    if len(fields) < 3:
-        return False
-    return run_head in fields[1:]
+    return run_head in parents
 
 
 def _require_commits_beyond_base(
@@ -2450,6 +2441,7 @@ from reckon.crew.promotion_release import (
 from reckon.crew.promotion_scope import (
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
+    _commit_parents,
     _merge_revisions,
     _repository_scope_paths,
     _revision_is_ancestor,
