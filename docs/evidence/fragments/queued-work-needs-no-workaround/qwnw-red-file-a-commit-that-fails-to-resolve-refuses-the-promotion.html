@@ -1,0 +1,40 @@
+<section id="qwnw-red-file-a-commit-that-fails-to-resolve-refuses-the-promotion-landing">
+  <h2>A pytest gate cites a log that carries a pytest summary</h2>
+
+  <p><strong>What changed.</strong> The case
+  <code>test_the_fourth_commit_is_promoted_when_every_citation_resolves</code>
+  was the only case in
+  <code>tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py</code>
+  whose promotion got past the revision choice, and it failed at the gate
+  evidence: its manifest declares
+  <code>tests: pytest -q tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py</code>
+  while the log the same fixture wrote held
+  <code>focused check passed</code> and <code>EXIT=0</code> and no pytest
+  summary. The promotion refuses exactly that — a pytest gate whose last run
+  reached no summary states a status for a suite that never reported one — so
+  the fixture declared evidence its own command could not have produced.</p>
+
+  <p><strong>Verdict: test wrong.</strong> The product rule is the one under
+  test elsewhere (<code>tests/test_a_receipt_agrees_with_its_log.py</code>
+  asserts the refusal), so nothing in <code>reckon/</code> changed. The fixture's
+  cited log now holds the tail a passing <code>pytest -q</code> run writes, and
+  no assertion is deleted or weakened: an unresolved citation still refuses, and
+  the passing case still asserts the promoted revision is the run's tip.</p>
+
+  <table id="qwnw-red-file-a-commit-that-fails-to-resolve-refuses-the-promotion-arms">
+    <caption>Base arm at the node's base revision, head arm at the committed
+    fix. Each log's first lines name the revision, tree and command; each ends
+    in <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, target file</td><td><code>eb5383455237f61036c7a3d193eb0f987c843af3</code></td>
+        <td>1 failed, 7 passed — <code>test_the_fourth_commit_is_promoted_when_every_citation_resolves</code></td></tr>
+      <tr><td>head, target file on <code>all_debug</code></td><td><code>7b1dcf0160ea8e873f3c2e99e6f0cd58cfc33b7f</code></td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> The base arm is the red log: the same
+  file at <code>eb5383455237</code>, whose single failure is the case the fix
+  repairs and which the head arm does not fail.</p>
+</section>
