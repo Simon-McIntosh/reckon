@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="511">
+<meta name="plan-version" content="512">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1876,6 +1876,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s96" data-id="c-run-r-20261119T120234196085-review-of-an-unchanged-live-listing-decodes-nothing-c81bf06d76ee" data-who="reckon-build" data-when="2026-11-19T13:06:05.718Z">
     <div class="r-comment-body"><p>Reviewed 96e3c4b8a3957e2624866e0dc773042892239333..c81bf06d76ee94cb0555214154d6cbbf07b8fb00 commit by commit and scored all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 20), finding no blocking defect: the unchanged listing decodes nothing, the gate's 64-passed EXIT=0 head arm and 58-passed EXIT=0 base arm are on disk, the four-path diff sits inside the six declared write paths, and three non-blocking findings are recorded against the two-stat identity pairing at runs.py:1508, the manifest's four-case negative control, and the wall-clock cost assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s96" data-id="c-run-r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing" data-who="reckon-build" data-when="2026-11-18T19:21:39Z">
+    <div class="r-comment-body"><p>Head c81bf06d76ee94cb0555214154d6cbbf07b8fb00 asks the pointer text cache for each live pointer before it asks the parse memo, and that fetch stats the file even when the text is kept: a pointer unlinked between the directory scan and the read raises there and the listing drops it, as the base revision dropped it, while an unchanged pass of 300 pointers reads no text and decodes none: 3.35ms against the base revision&#x27;s 18.44ms. The record handed out is one shallow copy of the memo&#x27;s view, so the closure rows, the review hold and both release passes stamp their own record; the two writers in recovery_liveness and admission.release no longer suppress the read-only refusal, and the consumer tests hold that the observation and the obligations arrive on the caller&#x27;s record and are absent from the next listing. ruff check and ruff format --check pass on the two staged source paths and the two modules they touch.</p></div>
 </div>
 <div class="r-comment" data-section="s97" data-id="c-run-r-20261119T065306517553-review-of-budget-and-picker-history-read-what-changed-08cf09dc1d2c" data-who="reckon-build" data-when="2026-11-19T09:41:15.246Z">
     <div class="r-comment-body"><p>Reviewed 4dd916ef30..08cf09dc1d (4 files, +522 -8) and recorded a parsed verdict — goal_fidelity 18, evidence 18, scope_discipline 14, durability 17, fit 16, reuse 5 — with added_failure_count 0 from the run's own arms (base 58 passed EXIT=0 at 4dd916ef30, after 61 passed EXIT=0 at 08cf09dc1d) and three non-blocking findings: a bespoke bounded memo duplicating reckon/file_memo.py:445, that cache mutated without the lock file_memo holds, and no assertion comparing the new rows with the load() answer they replaced.</p></div>
