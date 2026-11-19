@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="690">
+<meta name="plan-version" content="691">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2140,6 +2140,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T054046396867-qwnw-red-file-member-registration-commits" data-who="reckon-build" data-when="2026-11-19T00:24:35Z">
     <div class="r-comment-body"><p>tests/test_member_registration_commits.py was red for one cause, and the verdict is test wrong. The file, written in September, asserted that registration commits docs/state/&lt;project&gt;/crew.json; the roster is store-only now, so ledger.register_member states it is a store-only transaction regardless of its commit argument. Eight of ten cases now state the rule the code keeps: the row is read back from the store by a second checkout, no git path, staging entry or revision moves, the retained commit argument persists the owner row, a roster write that lost its version pairing is refused with the stored row surviving, an unnamed dispatch registers nothing, and a reap then a registration are two recorded store transactions. No assertion is weakened. The named file reads 8 failed and 2 passed (EXIT=1) at base 5417b373ff, and 9 passed (EXIT=0) at head 17b544d1e6; both suite arms carry no failure.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063643919650-qwnw-red-file-a-promotion-finishes-past-a-station-resume" data-who="reckon-build" data-when="2026-11-18T16:19:59.780Z">
+    <div class="r-comment-body"><p>no product or test change was needed — tests/test_a_promotion_finishes_past_a_station_resume.py already passes in full at base ab67be8bb1ec (2 passed, EXIT=0) on all_debug with SLURM_JOB_ID unset; the one commit adds the evidence fragment recording the green arms and the mutation arm (1 failed, 1 passed, EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
