@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="782">
+<meta name="plan-version" content="783">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2415,7 +2415,10 @@
     <div class="r-comment-body"><p>reckon/crew/recovery_classification.py — _delivery_reading now yields a delivery reading for a run classified `scoring` as well as `promotable`, so a run delivered and awaiting review is counted in the delivered family instead of falling through to the 0d default (28df8cc0ba2dcfcf53ff94183cf0a09a263c1ec0). Measure: tests/test_crew_watch_stream.py `3 passed` at that head as an all_debug job; base 42fe90d0b0a46060bafde2490dda7d4002cda478 `1 failed, 2 passed`, the late-reader row printing `0w  0r  0h  0d` where the assertion expects `1d`.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063119471468-qwnw-red-file-crew-record-liveness" data-who="reckon-build" data-when="2026-11-19T04:44:21Z">
-    <div class="r-comment-body"><p>local_liveness hands the record to runs.record_process_alive with its own probe instead of probing the raw pid, so the recorded start tick and the module&#x27;s probe substitution are no longer bypassed; the named file goes from 1 failed and 8 passed at base 42fe90d to 9 passed at head on all_debug, and the 25-file import arm adds no failure.</p></div>
+    <div class="r-comment-body"><p>local_liveness hands the record to runs.record_process_alive with its own probe instead of probing the raw pid, so the recorded start tick and the module's probe substitution are no longer bypassed; the named file goes from 1 failed and 8 passed at base 42fe90d to 9 passed at head on all_debug, and the 25-file import arm adds no failure.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063116637747-qwnw-red-file-crew-scoring-state" data-who="reckon-build" data-when="2026-11-19T04:43:20.665Z">
+    <div class="r-comment-body"><p>tests/test_crew_scoring_state.py passes in full at head 09765d4707 — 7 passed, EXIT=0 as an all_debug job — against 1 failed and 0 other failures of 6 passed at base 42fe90d0 (id: test_parsed_review_makes_completed_manifest_promotable); one cause, test wrong: the case&#x27;s pointer cited the literal abc123 and carried no gate arm and no tree, and since 121ec82a42 a promotion is offered only from current evidence, so the fixture builds the run&#x27;s own repository with its base and delivered commit and the manifest&#x27;s passing after_suite arm at that head, with every assertion left as it stood.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
