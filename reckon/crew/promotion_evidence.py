@@ -467,6 +467,13 @@ def _require_commits_beyond_base(
             )
     if commits:
         return
+    if _is_shadow(record):
+        # A shadow's deliverable is its retained patch, not a commit, so its
+        # tree holding uncommitted work is the shadow's normal state rather
+        # than work the release step would take with the worktree: the
+        # landing writes the patch before the tree is released, which is where
+        # a shadow's work is kept.
+        return
     roots = _declared_repository_roots(record, tree=tree)
     if not roots:
         return
@@ -2406,6 +2413,7 @@ from reckon.crew.promotion_release import (
 from reckon.crew.promotion_scope import (
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
+    _is_shadow,
     _merge_revisions,
     _repository_scope_paths,
     _revision_is_ancestor,
