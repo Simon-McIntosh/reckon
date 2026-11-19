@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "06ed97e3a38086e2e5feabb18d5965f8ded3886b",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:4127 dispatch_review_for_run",
+    "reckon/crew_dispatch_commands.py:3381",
+    "reckon/crew/recovery_watch.py:4497",
+    "reckon/crew/pending_landing.py:793",
+    "reckon/crew/dispatching/launch.py:309 _create_worktree",
+    "reckon/crew/dispatch_launch.py:3622 _supervisor_argv",
+    "reckon/crew/dispatch_launch.py:3944 _supervisor_argv",
+    "reckon/crew/dispatch_launch.py:3946 _spawn_detached_supervisor"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:36:10Z",
+  "findings": [
+    {
+      "file": "tests/test_reflex_review_outlives_its_follower.py",
+      "line": "118",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment claims every override bound on the facade was inert, but reckon/crew/dispatch.py:638-643 lists dispatching.launch in _CONCERN_MODULES and that module carries _create_worktree, so _CrewFacade.__setattr__ (reckon/crew.py:39-44) forwarded that one; only _supervisor_argv and _spawn_detached_supervisor stopped at dispatching._imports, and a reader who checks the stated cause finds one of three false."
+    },
+    {
+      "file": "tests/test_reflex_review_outlives_its_follower.py",
+      "line": "303",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repaired binding is guarded only by an arm skipped unless RECKON_REFLEX_LAUNCH=in-tree, so no check in the tree fails if the change regresses \u2014 the reverted code reports 2 passed under the mutation and 1 passed 1 skipped by default."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044645396232-qwnw-red-file-reflex-review-outlives-its-follower/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the baseline_suite/after_suite log_path values are truncated shell fragments that open nothing, and both arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts, so the done-when's \"arm over the test files that import what you changed\" is met by a measurement that cannot fail for this change."
+    }
+  ],
+  "head_log_revision": "9de7ad212070e2240ad62a57700cc803cd805659",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified eight production call sites: recovery_review_dispatch.py:4127 dispatch_review_for_run and its four callers, then the three module-global reads the rebound names feed.",
+    "diff": "read the single commit 9de7ad2120 against base 06ed97e3a380: the diff deletes the line binding dispatch to importlib.import_module('reckon.crew.dispatch'), imports reckon.crew.dispatching.launch and reckon.crew.dispatch_launch \u2014 the latter as `dispatch_launch` \u2014 binds _create_worktree on dispatching.launch and _supervisor_argv/_spawn_detached_supervisor on dispatch_launch, and adds the comment at :113-120.",
+    "done_when": "the head gate log node-gate-head-9de7ad212070e2240ad62a57700cc803cd805659.log reads \"1 passed, 1 skipped, EXIT=0\" at revision 9de7ad2120 with \"env -u SLURM_JOB_ID\" in its command, and node-gate-negative-control-9de7ad212070e2240ad62a57700cc803cd805659.log reads \"1 failed, 1 passed, EXIT=1\" with test_a_reflex_review_supervisor_survives_the_followers_group_in_tree the failing id; the done-when's arm clause is instead measured on tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the two modules the node rebound.",
+    "goal": "the goal is that tests/test_reflex_review_outlives_its_follower.py pass in full, and that file already read \"1 passed, 1 skipped, EXIT=0\" at base 06ed97e3 (node-gate-base-06ed97e3a38086e2e5feabb18d5965f8ded3886b.log), so the landed change does not turn a red file green: it rebinds the fixture's three launch overrides at tests/test_reflex_review_outlives_its_follower.py:111-137 and repairs a defect the file's own docstring names at tests/test_reflex_review_outlives_its_follower.py:14-18.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044645396232-qwnw-red-file-reflex-review-outlives-its-follower/manifest.md: status complete, commits 9de7ad212070e2240ad62a57700cc803cd805659, the gate 1 passed 1 skipped EXIT=0, the negative control 1 failed 1 passed EXIT=1, baseline_suite and after_suite both 58 passed EXIT=0 \u2014 but both log_path values are truncated shell fragments (\"/home/ITER 2>/dev/null\") that name no file.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround/.../<node>.html and a figures directory; the diff 06ed97e3a380..9de7ad2120 carries exactly one path, tests/test_reflex_review_outlives_its_follower.py, which is inside tests, and writes no fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_reflex_review_outlives_its_follower.py:303-306 skips the only arm that distinguishes the repair from its regression, so reverting it leaves the default gate green (node-gate-base log 1 passed, 1 skipped, EXIT=0) and even under RECKON_REFLEX_LAUNCH=in-tree the reverted code reports \"2 passed, EXIT=0\" in node-gate-negative-control-06ed97e3a38086e2e5feabb18d5965f8ded3886b.log.",
+    "evidence": "the head gate log records 1 passed, 1 skipped, EXIT=0 at 9de7ad2120 and node-gate-negative-control-9de7ad212070e2240ad62a57700cc803cd805659.log reds test_a_reflex_review_supervisor_survives_the_followers_group_in_tree at EXIT=1, but the arm clause is measured on files that import only reckon.interface_counts and the log_path values at manifest.md:15-16 open nothing.",
+    "fit": "the change follows the file's existing importlib idiom (tests/test_reflex_review_outlives_its_follower.py:111-112 imports modules by name) and carries no plan, sprint or ticket identifier, though the comment's \"inert\" claim at :118 does not hold for _create_worktree.",
+    "goal_fidelity": "the node-gate-base-06ed97e3a38086e2e5feabb18d5965f8ded3886b.log base arm reads \"1 passed, 1 skipped, EXIT=0\", so the rebinding at tests/test_reflex_review_outlives_its_follower.py:117-120 repairs the vacuity of the in-tree arm rather than the red file the goal names.",
+    "reuse": "nothing is defined \u2014 tests/test_reflex_review_outlives_its_follower.py:117-120 rebinds attributes already owned by reckon/crew/dispatching/launch.py:309 and reckon/crew/dispatch_launch.py:3622,3946, and a search over reckon/crew by capability (bind an override where its caller reads it) found the facade forwarding at reckon/crew.py:36-44 as the only owner, which the change works around rather than duplicating.",
+    "scope_discipline": "every changed line is in tests/test_reflex_review_outlives_its_follower.py:111-137, inside the declared \"tests\" path, with no product file, plan or state write."
+  },
+  "project": "reckon",
+  "raw_text": "see the emitted VERDICT/CALL_SITES/SCORE/JUSTIFICATION/FINDING lines recorded in item_verdicts, justifications, call_sites and findings above; the verbatim text is emission.txt in this run's directory",
+  "review_run_id": "r-20261119T014941777661-review-of-qwnw-red-file-reflex-review-outlives-its-follower-9de7ad212070",
+  "reviewed_base_sha": "06ed97e3a38086e2e5feabb18d5965f8ded3886b",
+  "reviewed_head_sha": "9de7ad212070e2240ad62a57700cc803cd805659",
+  "reviewed_run_id": "r-20261118T044645396232-qwnw-red-file-reflex-review-outlives-its-follower",
+  "reviewer_run_id": "r-20261119T014941777661-review-of-qwnw-red-file-reflex-review-outlives-its-follower-9de7ad212070",
+  "scores": {
+    "durability": 6,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:09:47.835836+00:00",
+  "total": 84
+}
