@@ -50,10 +50,28 @@
       <tr><td>declared suite, after arm</td>
         <td><code>b930698b5e105a2d831ea977a0bdf6ed9d434f4c</code></td>
         <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>duty-surface arm, base</td>
+        <td><code>eee07f8a5e18a6d5d98b26951db09a1504806918</code>, extraction</td>
+        <td>13 failed, 264 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>duty-surface arm, head</td>
+        <td><code>b930698b5e105a2d831ea977a0bdf6ed9d434f4c</code>, working tree</td>
+        <td>11 failed, 266 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>duty-surface arm, delta</td>
+        <td>base arm against head arm</td>
+        <td>0 added failures, 2 fixed (the two cases above)</td></tr>
     </tbody>
   </table>
 
   <p>The base arm reproduces the recorded defect and the head arm clears it, so
   the two failures were the product's: the tier the duty is decided by was
   absent from every bounded duty row.</p>
+
+  <p>The last three rows are the arm over the test files that name an
+  obligation, a duty or a review tier — forty-five files, run in this worktree
+  and in an extraction of the base revision, not as compute jobs. Eleven
+  failures stand in both arms and none is added at the head: the same eleven
+  ids fail at both revisions, so they are the environment's, not this change's.
+  An earlier sweep over all 232 test files that mention <code>obligations</code>
+  was abandoned — its base arm ran 30 minutes into a sandbox and its head arm
+  was cut off at 59% — and this bounded arm replaces it.</p>
 </section>
