@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A derivation builds the ledger index once — evidence</title>
+</head>
+<body>
+<article data-reckon="evidence" data-id="qwnw-red-file-a-derivation-builds-the-ledger-index-once">
+
+<h2 id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--summary">One derivation, one index decode</h2>
+
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--verdict">
+The named file passes in full at the head this node commits, and it failed in
+full at the base revision. Two causes, both repaired on the side the evidence
+names: the fixture built a tree the derivation does not owe, and the product
+decoded one ledger index twice for one derivation's answer.
+</p>
+
+<table id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--arms">
+  <caption>tests/test_a_derivation_builds_the_ledger_index_once.py, run as an
+  all_debug job with SLURM_JOB_ID unset</caption>
+  <thead>
+    <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>base</td>
+      <td><code>35fb9f3ae769586b2f364485bf2d6fc31caf87f5</code></td>
+      <td>3 failed, 0 passed — <code>EXIT=1</code></td>
+      <td><code>~/.config/reckon/crew/runs/r-20261118T054300199090-qwnw-red-file-a-derivation-builds-the-ledger-index-once/logs/gate-base.log</code></td>
+    </tr>
+    <tr>
+      <td>head</td>
+      <td><code>15a516675e9696c422165799b63b0f840af1239e</code></td>
+      <td>3 passed — <code>EXIT=0</code></td>
+      <td><code>~/.config/reckon/crew/runs/r-20261118T054300199090-qwnw-red-file-a-derivation-builds-the-ledger-index-once/logs/gate-head.log</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--cause-1">Cause 1 — test wrong: the fixture's held tree held no work</h3>
+
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once-1--repro">
+At base all three cases failed on the same assertion — <code>no held tree was
+reported</code> with <code>held_worktrees == {}</code>. The fixture created its
+tree with <code>git worktree add --detach</code> at the primary branch's own
+head, leaving a clean status and no commit <code>main</code> does not reach.
+<code>reckon.crew.obligations._tree_holds_unmerged_work</code> exists to refuse
+exactly that row: a tree that survived its run but holds nothing a landing
+would take "only costs someone a look, while a row claiming otherwise costs a
+reader their trust in every row beside it". The fixture now commits one file in
+the held tree, which is the state a retained worktree is in before its landing.
+</p>
+
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--no-assertion-weakened">
+No assertion was deleted or weakened: the three cases assert the same held
+tree, the same equality between the two routes and the same counts as before.
+</p>
+
+<h3 id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--cause-2">Cause 2 — product wrong: one derivation decoded the index twice</h3>
+
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--repro-two-decodes">
+With the fixture corrected, <code>test_one_derivation_builds_the_index_once</code>
+still failed, measuring <code>one derivation built the index 2 times</code>. A
+probe recording each <code>ledger._index_payload</code> call showed the two
+decodes differed only by their bound: one
+<code>activity_since=1794480600</code> from the utilisation reader, one
+unbounded from the held-worktree pass. The read pass keys its decoded payload
+on that bound (<code>ledger._payload_slot</code>), so the two readers cannot
+share a decode by key alone.
+</p>
+
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--shared-history">
+The bound is not free to drop. It is the change that keeps a long-lived monitor
+from paying a whole-history decode once per five-minute bucket (measured at
+10,770 rows, 5.9 s and a 1.61 GB peak). So the repair shares the other way:
+the derivation marks the history it read
+(<code>obligations.derivation_history</code>), the utilisation reader takes
+those rows and applies the same bound to them
+(<code>obligations.derivation_run_rows</code>), and a reader outside a
+derivation keeps its bounded read. The held-worktree pass now runs before the
+classification the utilisation reader is reached from; the two reads share no
+input, so neither answer depends on the order.
+</p>
+
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--count-control">
+The file's second case carried a count control asserting that the
+explicit-root route still built the index twice. That build no longer exists —
+the repair removes the second decode for every route — so the control now
+measures what distinguishes a count of one from a count that cannot see a
+build: a derivation whose memo the process has dropped builds again, so two
+such derivations read two builds. The equality assertion it also carries, that
+both routes answer with the same held rows, is unchanged.
+</p>
+
+<h3 id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--neighbours">Neighbour arm</h3>
+
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--neighbour-arm">
+Eight test files around the change — crew obligations, the three fleet-state
+derivation files, the published snapshot, held obligations, the obligation
+count and the bounded lane-rate read — read 6 failed and 38 passed at base
+<code>35fb9f3ae7</code> and 6 failed and 38 passed at head
+<code>15a516675e</code>, with the failing ids identical between the arms. No
+failure was added.
+</p>
+
+</article>
+</body>
+</html>
