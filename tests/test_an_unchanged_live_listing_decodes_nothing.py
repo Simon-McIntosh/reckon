@@ -311,10 +311,22 @@ def test_a_liveness_read_over_a_listing_leaves_the_next_listing_unchanged(
 
     assert recovery_liveness.launcher_host_is_gone(record=foreign) is True
 
+    stamp = foreign.get("launcher_host_observation")
+    assert isinstance(stamp, dict), (
+        "the observation did not reach the caller's own record, so this read "
+        "cannot tell a copy from a rejection"
+    )
+    assert stamp["process_gone"] is True
+
+    decodes.texts.clear()
+    again = runs._list_live_records(project="p")
     assert decodes.texts == [], "the next listing decoded a pointer it had listed"
-    assert runs._list_live_records(project="p") == _listed_by_the_files(live), (
+    assert again == _listed_by_the_files(live), (
         "the liveness read reached the memo through the record the listing handed out"
     )
+    assert "launcher_host_observation" not in next(
+        record for record in again if record.get("run_id") == "r-foreign"
+    ), "the stamp the caller made reached the next listing"
 
 
 def test_a_waiting_request_over_a_listing_leaves_the_next_listing_unchanged(
@@ -341,8 +353,18 @@ def test_a_waiting_request_over_a_listing_leaves_the_next_listing_unchanged(
         cache={},
     )
 
+    assert "upstream_obligations" in waiter and "upstream_live" in waiter, (
+        "the pass wrote neither field to the record it derived, so this read "
+        "cannot tell a copy from a rejection"
+    )
+
+    decodes.texts.clear()
+    again = runs._list_live_records(project="p")
     assert decodes.texts == [], "the next listing decoded a pointer it had listed"
-    assert runs._list_live_records(project="p") == _listed_by_the_files(live), (
-        "the admission pass reached the memo through the record the listing handed "
-        "out"
+    assert again == _listed_by_the_files(live), (
+        "the admission pass reached the memo through the record the listing handed out"
+    )
+    landed = next(record for record in again if record.get("run_id") == "r-waiter")
+    assert "upstream_obligations" not in landed, (
+        "the obligations the pass derived reached the next listing"
     )

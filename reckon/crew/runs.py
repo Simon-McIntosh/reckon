@@ -1490,17 +1490,23 @@ def _pointer_record(path: Path) -> Any:
     this listing shares its store with every other reader rather than keeping a
     second cache beside it.
 
-    The record comes back as one shallow copy of that owner's view: an unchanged
-    pass costs one stat per pointer, no parse, and a copy of the pointer's own
-    top-level keys rather than the memo's view, so a reader that stamps a field
-    of the record it was handed cannot reach the memo every later listing reads.
-    A reader that changes a pointer reads it through :func:`read_pointer`, whose
-    copy is deep enough for the nested fields those readers change.
+    The text is fetched here before the parse is looked up, and the fetch stats
+    the file even when the text itself is kept: a pointer unlinked between the
+    directory scan and this call raises from that stat, so the listing drops it
+    as a listing that read every text dropped it, and an unchanged pass reads no
+    text and decodes nothing.
+
+    The record comes back as one shallow copy of that owner's view, so a reader
+    that stamps a field of the record it was handed cannot reach the memo every
+    later listing reads. A reader that changes a pointer reads it through
+    :func:`read_pointer`, whose copy is deep enough for the nested fields those
+    readers change.
     """
     try:
+        text = _pointer_text(path)
         with file_memo.read_only_region():
             record = file_memo.memoized(
-                _POINTER_RECORD_KIND, path, lambda: json.loads(_pointer_text(path))
+                _POINTER_RECORD_KIND, path, lambda: json.loads(text)
             )
             return dict(record)
     except OSError:

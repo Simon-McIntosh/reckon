@@ -229,16 +229,11 @@ def resolve_waits(
             project=owner_project,
             exclude=str(pointer.get("run_id") or ""),
         )
-        try:
-            pointer["upstream_obligations"] = obligations
-            pointer["upstream_live"] = working
-        except TypeError:
-            # The caller handed in a listing's read-only record, which refuses
-            # the stamp rather than letting it reach the memo every later
-            # listing reads. The pass that persists the fields copies the record
-            # it derives first, and the caller of a bare record copy, so
-            # nothing is lost here.
-            pass
+        # The pointer is this pass's copy of the row, so the obligations land
+        # where the loop that persists them reads them, and a shared view
+        # reaching this writer raises rather than being quietly dropped.
+        pointer["upstream_obligations"] = obligations
+        pointer["upstream_live"] = working
     if ABANDONED in states:
         return BLOCKED_UPSTREAM_PHASE
     if all(state == SATISFIED for state in states):
