@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import file_memo
+from reckon._timestamps import parse_utc
 from reckon.crew import open_run_index
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
@@ -591,12 +592,37 @@ def _note_skipped_record(
     target = _READ_FAILURES.get() if into is None else into
     if target is None:
         return
-    entry = {"path": str(path), "error": f"{type(error).__name__}: {error}"}
+    _append_read_failure(
+        target, {"path": str(path), "error": f"{type(error).__name__}: {error}"}
+    )
+
+
+def _append_read_failure(target: list[dict[str, str]], entry: dict[str, str]) -> None:
+    """Add one finding to a collector, one entry per path, newest error wins."""
     for index, existing in enumerate(target):
         if existing["path"] == entry["path"]:
             target[index] = entry
             return
     target.append(entry)
+
+
+def note_read_failure(entry: Mapping[str, str]) -> None:
+    """Note a finding a memoised answer carries into the region open now.
+
+    A skip belongs to the call that made it, but a call answered from a memo
+    made no read: the file that answer was read past is still unreadable, so
+    every reader served that answer is met by the same fault and names it.
+    A serve with no region open names nowhere, which is the rule the read
+    itself follows, so a worker's read outside a sweep still reaches no later
+    sweep's findings.
+    """
+    target = _READ_FAILURES.get()
+    if target is None:
+        return
+    _append_read_failure(
+        target,
+        {"path": str(entry.get("path") or ""), "error": str(entry.get("error") or "")},
+    )
 
 
 def _note_malformed_record(
@@ -1102,18 +1128,13 @@ def _delivery_order(
         stamp = _review.run_id_dispatch_time(str(record.get("review_run_id") or ""))
     moment: datetime | None = None
     if stamp:
-        try:
-            moment = datetime.fromisoformat(stamp)
-        except ValueError:
-            moment = None
+        moment = parse_utc(stamp)
     try:
         modified = Path(path).stat().st_mtime_ns
     except OSError:
         modified = 0
     if moment is None:
         return datetime.min.replace(tzinfo=UTC), modified
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
     return moment, modified
 
 

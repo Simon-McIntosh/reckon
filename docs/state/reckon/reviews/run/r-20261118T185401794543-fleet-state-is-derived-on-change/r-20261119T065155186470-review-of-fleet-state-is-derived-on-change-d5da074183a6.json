@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station.py:1406 station tick loop calls station_obligations.publish",
+    "reckon/crew/station.py:699 Station._run duties worker calls station_obligations.publish",
+    "reckon/crew/station_obligations.py:662 publish reads the footprint once for both gates",
+    "reckon/crew/station_obligations.py:712 _publish_pending's stale-marking gate",
+    "reckon/crew/station_obligations.py:389 refresh's due gate"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T08:49:46Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_state_is_derived_on_change.py",
+      "line": "215",
+      "severity": "non-blocking",
+      "text": "non-blocking: _published compares the tick's stored row against head's own ungated obligation_snapshot.fleet_state(PROJECT, now=moment) at the same instant rather than against the base revision's derivation that the done_when names, so a regression inside the derivation moves both sides together and leaves the assertion green."
+    },
+    {
+      "file": "tests/test_fleet_state_is_derived_on_change.py",
+      "line": "241",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quiet-ticks case passes at base too (logs/negative-control-base-arm.log records it first and passing), so it guards the pre-existing interval gate rather than this change, and the node's declared negative-control string \"at the base revision the 30 quiet ticks derive the fleet state 30 times\" does not reproduce because the base derives once; the base arm's actual witness is the moved-input case at line 270."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the three commits against b24fe95a individually; ede0f0863c adds FLEET_STATE_INTERVAL_SECONDS, _file_identity, fleet_state_footprint, the footprint gate in refresh and _publish_pending, and the three-test file, while 5c46ba5e96 and d5da074183 only add and then correct the evidence fragment's measurement.",
+    "done_when": "done_when requires 30 quiet ticks to derive at most once, one derivation on the tick after each of a pointer, manifest and plan move, published obligations equal to the gate's own ungated answer, an interval case and a base arm; tests/test_fleet_state_is_derived_on_change.py:226-293 asserts exactly those and logs/negative-control-base-arm.log shows the moved-input case deriving 0 at b24fe95a.",
+    "goal": "The source node goal is \"Make the station derive the fleet state on input change or after 60 s\" (r-20261118T185401794543-fleet-state-is-derived-on-change/prompt.txt:38) and reckon/crew/station_obligations.py:396-401 makes refresh due when a pointer/manifest/plan footprint moves or the 60 s interval elapses.",
+    "manifest": "read the source manifest.md; it records commits ede0f0863c, 5c46ba5e96 and d5da074183, a completed baseline arm at b24fe95a and after arm at d5da0741 both EXIT=0 with zero failure ids, and it discloses that the declared negative-control string does not reproduce.",
+    "write_paths": "the node declared five paths; the diff changes three of them (reckon/crew/station_obligations.py, tests/test_fleet_state_is_derived_on_change.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/fleet-state-is-derived-on-change.html) and leaves reckon/crew/station.py and the figure path untouched as the manifest's scope_note states."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_state_is_derived_on_change.py:270 fails if the footprint gate stops seeing a rewritten pointer, which is what logs/negative-control-base-arm.log measured at base (0 where head derives 1), while :241 passes at base and so guards only the pre-existing interval gate.",
+    "evidence": "the gate tests/test_fleet_state_is_derived_on_change.py:226-293 is recorded complete at d5da0741 in after_suite-1795070002413971750.log with EXIT=0 and logs/negative-control-base-arm.log shows the moved-input case failing at b24fe95a, but the declared \"30 quiet ticks derive 30 times\" control does not reproduce at base, which derives once.",
+    "fit": "reckon/crew/station_obligations.py:302 wraps file_memo.file_signature the way reckon/crew/obligations.py:2781 does and the cross-module private read of plan_review._project_plan_paths matches the precedent at reckon/crew/routing.py:2985.",
+    "goal_fidelity": "reckon/crew/station_obligations.py:396-401 makes a derivation due on a moved pointer/manifest/plan footprint or at the 60 s interval, so both halves of the goal hold, while inputs the footprint does not read such as the review store and the ledger are bounded by the interval.",
+    "reuse": "_file_identity and fleet_state_footprint extend reckon/file_memo.py:277 and reckon/crew/plan_review.py:4493 rather than redefining them, but they sit beside the sibling footprint gate at reckon/crew/plan_review.py:4801 without sharing a due-check helper.",
+    "scope_discipline": "every path in b24fe95a..d5da0741 (reckon/crew/station_obligations.py, tests/test_fleet_state_is_derived_on_change.py, the evidence fragment) is inside the node's declared write paths and no other file changes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node goal is \"Make the station derive the fleet state on input change or after 60 s\" (r-20261118T185401794543-fleet-state-is-derived-on-change/prompt.txt:38) and reckon/crew/station_obligations.py:396-401 makes refresh due when a pointer/manifest/plan footprint moves or the 60 s interval elapses.\nVERDICT done_when: done_when requires 30 quiet ticks to derive at most once, one derivation on the tick after each of a pointer, manifest and plan move, published obligations equal to the gate's own ungated answer, an interval case and a base arm; tests/test_fleet_state_is_derived_on_change.py:226-293 asserts exactly those and logs/negative-control-base-arm.log shows the moved-input case deriving 0 at b24fe95a.\nVERDICT write_paths: the node declared five paths; the diff changes three of them (reckon/crew/station_obligations.py, tests/test_fleet_state_is_derived_on_change.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/fleet-state-is-derived-on-change.html) and leaves reckon/crew/station.py and the figure path untouched as the manifest's scope_note states.\nVERDICT manifest: read the source manifest.md; it records commits ede0f0863c, 5c46ba5e96 and d5da074183, a completed baseline arm at b24fe95a and after arm at d5da0741 both EXIT=0 with zero failure ids, and it discloses that the declared negative-control string does not reproduce.\nVERDICT diff: read the three commits against b24fe95a individually; ede0f0863c adds FLEET_STATE_INTERVAL_SECONDS, _file_identity, fleet_state_footprint, the footprint gate in refresh and _publish_pending, and the three-test file, while 5c46ba5e96 and d5da074183 only add and then correct the evidence fragment's measurement.\nCALL_SITES: reckon/crew/station.py:1406 station tick loop calls station_obligations.publish, reckon/crew/station.py:699 Station._run duties worker calls station_obligations.publish, reckon/crew/station_obligations.py:662 publish reads the footprint once for both gates, reckon/crew/station_obligations.py:712 _publish_pending's stale-marking gate, reckon/crew/station_obligations.py:389 refresh's due gate\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station_obligations.py:396-401 makes a derivation due on a moved pointer/manifest/plan footprint or at the 60 s interval, so both halves of the goal hold, while inputs the footprint does not read such as the review store and the ledger are bounded by the interval.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate tests/test_fleet_state_is_derived_on_change.py:226-293 is recorded complete at d5da0741 in after_suite-1795070002413971750.log with EXIT=0 and logs/negative-control-base-arm.log shows the moved-input case failing at b24fe95a, but the declared \"30 quiet ticks derive 30 times\" control does not reproduce at base, which derives once.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in b24fe95a..d5da0741 (reckon/crew/station_obligations.py, tests/test_fleet_state_is_derived_on_change.py, the evidence fragment) is inside the node's declared write paths and no other file changes.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_fleet_state_is_derived_on_change.py:270 fails if the footprint gate stops seeing a rewritten pointer, which is what logs/negative-control-base-arm.log measured at base (0 where head derives 1), while :241 passes at base and so guards only the pre-existing interval gate.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/station_obligations.py:302 wraps file_memo.file_signature the way reckon/crew/obligations.py:2781 does and the cross-module private read of plan_review._project_plan_paths matches the precedent at reckon/crew/routing.py:2985.\nSCORE reuse: 16\nJUSTIFICATION reuse: _file_identity and fleet_state_footprint extend reckon/file_memo.py:277 and reckon/crew/plan_review.py:4493 rather than redefining them, but they sit beside the sibling footprint gate at reckon/crew/plan_review.py:4801 without sharing a due-check helper.\nFINDING tests/test_fleet_state_is_derived_on_change.py:215 non-blocking: _published compares the tick's stored row against head's own ungated obligation_snapshot.fleet_state(PROJECT, now=moment) at the same instant rather than against the base revision's derivation that the done_when names, so a regression inside the derivation moves both sides together and leaves the assertion green.\nFINDING tests/test_fleet_state_is_derived_on_change.py:241 non-blocking: the quiet-ticks case passes at base too (logs/negative-control-base-arm.log records it first and passing), so it guards the pre-existing interval gate rather than this change, and the node's declared negative-control string \"at the base revision the 30 quiet ticks derive the fleet state 30 times\" does not reproduce because the base derives once; the base arm's actual witness is the moved-input case at line 270.",
+  "review_run_id": "r-20261119T065155186470-review-of-fleet-state-is-derived-on-change-d5da074183a6",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "d5da074183a60831cf3b816ea50e0d52d44df541",
+  "reviewed_run_id": "r-20261118T185401794543-fleet-state-is-derived-on-change",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T09:08:42.385890+00:00",
+  "total": 103
+}

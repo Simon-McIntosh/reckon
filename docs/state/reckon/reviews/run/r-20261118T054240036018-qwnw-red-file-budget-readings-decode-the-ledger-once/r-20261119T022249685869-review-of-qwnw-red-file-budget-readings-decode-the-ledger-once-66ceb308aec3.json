@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/pace_report.py:1617 latest_recorded",
+    "reckon/crew/routing.py:483 budget_module.latest_recorded",
+    "reckon/crew/dispatch_admission.py:462 budget_module.latest_recorded",
+    "reckon/crew/resumption.py:1155 budget_module.latest_recorded",
+    "reckon/crew/plan_review.py:4234 run_store.stored_run_payloads"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:25:58Z",
+  "findings": [
+    {
+      "file": "tests/test_budget_readings_decode_the_ledger_once.py",
+      "line": "99",
+      "severity": "non-blocking",
+      "text": "non-blocking: ledger.write_run_file bumps the generation and syncs the store already, and the _bump_generation at :100 stays, so this case named for generation-keyed invalidation now moves both memo-key terms at reckon/budget.py:687-689; removing the generation term leaves it green, and no other test covers that term."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base block quotes 3 failed 8 passed in 1.72s and paraphrased FAILED lines with no AssertionError and no quotes, while the base-node-test.log it names on :17 reads 1.79s and AssertionError: assert 'first' == 'external', so the quoted numbers came from another run of the same base and do not reconcile with the cited log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fix-control reading 2 failed 9 passed in 3.49s cites no log and no log carrying those numbers exists in the run directory, so the claim that the two store-written cases redden without change_token has no receipt, because the only stored red run is the base arm over the pre-change tests."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054240036018-qwnw-red-file-budget-readings-decode-the-ledger-once/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite at :15 and after_suite at :16 measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and scan flock sites and neither reckon.budget nor reckon.run_store, so the recorded delta is over a population that exercises nothing the diff changed."
+    }
+  ],
+  "head_log_revision": "1a51a431b9858d7082a71383d6a727e135b84ef1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "five production call sites verified by reading the changed functions' callers: four call budget.latest_recorded into the changed memo key, and one calls run_store.stored_run_payloads which now calls change_token.",
+    "diff": "read commit by commit against 6fa2b177; 1a51a431 adds reckon/run_store.py change_token and the memo key term at reckon/budget.py:689 with the three test rewrites, and 66ceb308 adds only the 38-line fragment.",
+    "done_when": "the done_when asks for the file green at head, a base arm logged with its failing ids, a named cause per failure and an importer arm adding no failure; base-node-test.log reads 3 failed EXIT=1 at 6fa2b177 naming the three ids, scoped-gate-1795052749803567273.log reads 11 passed EXIT=0 at 1a51a431, importer-baseline.log and importer-head.log read 26 and 18 failing ids whose comm is empty, and fragment lines 12-14 carry the base ids beside EXIT=1.",
+    "goal": "the node's goal is that tests/test_budget_readings_decode_the_ledger_once.py passes in full on the primary branch; scoped-gate-1795052749803567273.log reads 11 passed EXIT=0 at 1a51a431 after reckon/budget.py:689 keys the readings memo on run_store.change_token(), and 66ceb308 adds only the evidence fragment.",
+    "manifest": "read; status complete, commits 1a51a431 and 66ceb308, the node pytest command on its tests line, test_logs naming both scoped gate logs, baseline_suite and after_suite at 0 failures, importer arms at full 40-character revisions, and outside_scope none.",
+    "write_paths": "the declared paths are reckon, tests, the evidence fragment directory with its one fragment, and a figures directory; git diff 6fa2b177..66ceb308 touches four files and every one is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_readings_decode_the_ledger_once.py:150 and :159 redden to the pre-read when change_token() leaves the key at reckon/budget.py:689, but :99 now moves both memo-key terms through ledger.write_run_file, and change_token's archive half at reckon/run_store.py:411 is asserted by no test the diff adds.",
+    "evidence": "baseline_suite-1795052829612731894.log and after_suite-1795052905988182626.log each read 58 passed EXIT=0 at their 40-character revisions so the recorded delta is 0 added failures, but those arms import neither reckon.budget nor reckon.run_store, and the population that does is recorded outside the pair in the manifest's importer_arm_baseline and importer_arm_head lines, whose 26 and 18 failing ids in importer-baseline.log and importer-head.log commute to an empty added set.",
+    "fit": "reckon/run_store.py:407 sits beside store_stamp:370 in the same module and takes the same optional path argument, and the local `from reckon import run_store` at reckon/budget.py:685 follows the pattern already used at reckon/budget.py:541 and :577.",
+    "goal_fidelity": "tests/test_budget_readings_decode_the_ledger_once.py reads 11 passed at 1a51a431 in scoped-gate-1795052749803567273.log, and the product cause is repaired at reckon/budget.py:689 by adding run_store.change_token() to the readings memo key.",
+    "reuse": "reckon/run_store.py:407 is the first owner of the store-plus-archive token and stored_run_payloads:809 now calls it instead of spelling the pair out, and a repository-wide search for store_stamp found no other site building the same two-file token.",
+    "scope_discipline": "git diff 6fa2b177..66ceb308 lists exactly reckon/budget.py, reckon/run_store.py, tests/test_budget_readings_decode_the_ledger_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_budget_readings_decode_the_ledger_once.py passes in full on the primary branch; scoped-gate-1795052749803567273.log reads 11 passed EXIT=0 at 1a51a431 after reckon/budget.py:689 keys the readings memo on run_store.change_token(), and 66ceb308 adds only the evidence fragment.\nVERDICT done_when: the done_when asks for the file green at head, a base arm logged with its failing ids, a named cause per failure and an importer arm adding no failure; base-node-test.log reads 3 failed EXIT=1 at 6fa2b177 naming the three ids, scoped-gate-1795052749803567273.log reads 11 passed EXIT=0 at 1a51a431, importer-baseline.log and importer-head.log read 26 and 18 failing ids whose comm is empty, and fragment lines 12-14 carry the base ids beside EXIT=1.\nVERDICT write_paths: the declared paths are reckon, tests, the evidence fragment directory with its one fragment, and a figures directory; git diff 6fa2b177..66ceb308 touches four files and every one is inside them.\nVERDICT manifest: read; status complete, commits 1a51a431 and 66ceb308, the node pytest command on its tests line, test_logs naming both scoped gate logs, baseline_suite and after_suite at 0 failures, importer arms at full 40-character revisions, and outside_scope none.\nVERDICT diff: read commit by commit against 6fa2b177; 1a51a431 adds reckon/run_store.py change_token and the memo key term at reckon/budget.py:689 with the three test rewrites, and 66ceb308 adds only the 38-line fragment.\nCALL_SITES: reckon/pace_report.py:1617 latest_recorded, reckon/crew/routing.py:483 budget_module.latest_recorded, reckon/crew/dispatch_admission.py:462 budget_module.latest_recorded, reckon/crew/resumption.py:1155 budget_module.latest_recorded, reckon/crew/plan_review.py:4234 run_store.stored_run_payloads\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_budget_readings_decode_the_ledger_once.py reads 11 passed at 1a51a431 in scoped-gate-1795052749803567273.log, and the product cause is repaired at reckon/budget.py:689 by adding run_store.change_token() to the readings memo key.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline_suite-1795052829612731894.log and after_suite-1795052905988182626.log each read 58 passed EXIT=0 at their 40-character revisions so the recorded delta is 0 added failures, but those arms import neither reckon.budget nor reckon.run_store, and the population that does is recorded outside the pair in the manifest's importer_arm_baseline and importer_arm_head lines, whose 26 and 18 failing ids in importer-baseline.log and importer-head.log commute to an empty added set.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 6fa2b177..66ceb308 lists exactly reckon/budget.py, reckon/run_store.py, tests/test_budget_readings_decode_the_ledger_once.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html, every one inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_budget_readings_decode_the_ledger_once.py:150 and :159 redden to the pre-read when change_token() leaves the key at reckon/budget.py:689, but :99 now moves both memo-key terms through ledger.write_run_file, and change_token's archive half at reckon/run_store.py:411 is asserted by no test the diff adds.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/run_store.py:407 sits beside store_stamp:370 in the same module and takes the same optional path argument, and the local `from reckon import run_store` at reckon/budget.py:685 follows the pattern already used at reckon/budget.py:541 and :577.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/run_store.py:407 is the first owner of the store-plus-archive token and stored_run_payloads:809 now calls it instead of spelling the pair out, and a repository-wide search for store_stamp found no other site building the same two-file token.\nFINDING tests/test_budget_readings_decode_the_ledger_once.py:99 non-blocking: ledger.write_run_file bumps the generation and syncs the store already, and the _bump_generation at :100 stays, so this case named for generation-keyed invalidation now moves both memo-key terms at reckon/budget.py:687-689; removing the generation term leaves it green, and no other test covers that term.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html:11 non-blocking: the base block quotes 3 failed 8 passed in 1.72s and paraphrased FAILED lines with no AssertionError and no quotes, while the base-node-test.log it names on :17 reads 1.79s and AssertionError: assert 'first' == 'external', so the quoted numbers came from another run of the same base and do not reconcile with the cited log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-budget-readings-decode-the-ledger-once.html:27 non-blocking: the fix-control reading 2 failed 9 passed in 3.49s cites no log and no log carrying those numbers exists in the run directory, so the claim that the two store-written cases redden without change_token has no receipt, because the only stored red run is the base arm over the pre-change tests.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054240036018-qwnw-red-file-budget-readings-decode-the-ledger-once/manifest.md:15 non-blocking: baseline_suite at :15 and after_suite at :16 measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import reckon.interface_counts and scan flock sites and neither reckon.budget nor reckon.run_store, so the recorded delta is over a population that exercises nothing the diff changed.",
+  "review_run_id": "r-20261119T022249685869-review-of-qwnw-red-file-budget-readings-decode-the-ledger-once-66ceb308aec3",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "66ceb308aec3e636e440a3b3bb5b6bbdf72e682b",
+  "reviewed_run_id": "r-20261118T054240036018-qwnw-red-file-budget-readings-decode-the-ledger-once",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T022249685869-review-of-qwnw-red-file-budget-readings-decode-the-ledger-once-66ceb308aec3"
+  },
+  "reviewer_run_id": "r-20261119T022249685869-review-of-qwnw-red-file-budget-readings-decode-the-ledger-once-66ceb308aec3",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:09:25.859566+00:00",
+  "total": 108
+}

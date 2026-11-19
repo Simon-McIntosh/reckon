@@ -13,6 +13,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew_dispatch_commands
+from reckon.crew import runs
 from tests import test_dispatch_names_its_backend as existing_backend_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -276,8 +277,10 @@ def test_a_zero_reading_holds_a_real_dispatch_while_ample_and_absent_proceed(
     Every case here ran as a dry run, which reports the allowance without
     acting on it, so a claim that no value in the document holds a dispatch was
     only ever true of a preview: the zero document's preview exits clean while
-    naming the hold. A real dispatch acts on that same reading, so the zero
-    document stops it, and the ample reading and an absent document proceed.
+    naming the hold. A real dispatch acts on that same reading: it stores the
+    request as one queued pointer naming the router's verdict and reports it as
+    queued, so nothing launches on a lane that granted no room, while the ample
+    reading and an absent document proceed.
     """
     stamp = datetime.now(UTC).isoformat()
     ample = dispatch_repo.parent / "lane-ample.json"
@@ -338,8 +341,11 @@ def test_a_zero_reading_holds_a_real_dispatch_while_ample_and_absent_proceed(
     # is advisory there, and the real dispatch below acts on the same document.
     assert preview_payload["lane_allowance"]["held"] is True
 
-    assert zero_result.exit_code == 75
-    assert zero_payload["error"] == "lane-paused"
+    assert zero_result.exit_code == 0
+    assert zero_payload["ok"] is True and zero_payload["queued"] is True
     assert "dry_run" not in zero_payload
     assert zero_payload["lane_gate"]["allowance"] == 0.0
-    assert "grants 0" in zero_payload["detail"]
+    assert zero_payload["lane_gate"]["held"] is True
+    assert zero_payload["phase"] == "queued"
+    assert "grants 0" in zero_payload["reason"]
+    assert runs.read_pointer(zero_payload["run_id"])["phase"] == "queued"

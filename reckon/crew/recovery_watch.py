@@ -11,7 +11,7 @@ import socket
 import subprocess
 import time
 from contextlib import contextmanager, suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
@@ -781,7 +781,7 @@ def overdue_unreconciled_runs(
 
 def _utc_seconds() -> float:
     """Current time as epoch seconds, matching a file mtime's clock."""
-    return datetime.now(tz=timezone.utc).timestamp()
+    return datetime.now(tz=UTC).timestamp()
 
 
 # A producer that finds its project's seat held by a live producer on another
@@ -1030,7 +1030,7 @@ EXPLAINED_STATES = frozenset(
 
 
 def _promote_record_holds(record: Mapping[str, Any]) -> bool:
-    """Whether this live pointer's completed run has a committed ledger row.
+    """Whether this live pointer's completed run has durable promotion evidence.
 
     Promotion appends the run's ledger row and then removes the live pointer,
     so for the length of that window the pointer still exists while the work
@@ -1040,14 +1040,13 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     ledger row settles the run even when it declares no repository change, so
     row presence, rather than its commit list, answers this question.
 
-    The row is read from the run's own repository, the root promotion wrote it
-    under. Promotion writes the per-run file before it touches the aggregate,
-    so a single stat answers whether the row was committed.
+    The authoritative run store is read before the legacy file in the run's
+    own repository, using the same evidence reader as pointer retirement.
     An unreadable or absent row answers False — the run then takes the word its
     pointer earns, which is the safe direction because the alternative promises
     a landing nothing recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -1058,29 +1057,22 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     repo = str(record.get("repo") or "")
     if not run_id or not project or not repo:
         return False
-    try:
-        return ledger_module.run_path(project, run_id, repo).is_file()
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return False
+    return _promoted_row(project, run_id, root=repo) is not None
 
 
 def _recorded_pointer_word(record: Mapping[str, Any]) -> str:
-    """Name a settled pointer's committed work or recorded completion.
+    """Name a settled pointer's promoted work or recorded completion.
 
     The row existence check already established settlement. A row that cannot
     be decoded cannot establish a code landing, so its safe word is recorded.
     """
-    from reckon import ledger as ledger_module
+    from reckon.crew.pending_landing import _promoted_row
 
-    try:
-        path = ledger_module.run_path(
-            str(record.get("project") or ""),
-            str(record.get("run_id") or ""),
-            str(record.get("repo") or ""),
-        )
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger_module.LedgerError):
-        return "recorded"
+    row = _promoted_row(
+        str(record.get("project") or ""),
+        str(record.get("run_id") or ""),
+        root=str(record.get("repo") or ""),
+    )
     return (
         "promoted"
         if isinstance(row, Mapping)
@@ -1424,8 +1416,16 @@ def _watch_verdict(
         # command: the release the classifier names would launch over the
         # admission pass's release path, and nothing on the row says a
         # coordinator's move is what ends the wait.
+        #
+        # A block the worker's own manifest reports keeps the word that block
+        # already earned. The lane's refusal gates *when* the blocker can be
+        # worked and never lifts it, so painting such a row as a wait would
+        # hide the reader's work behind a clock that answers a different
+        # question — the same reason the classification keeps the manifest's
+        # reason beside the refusal rather than in place of it.
         next_action = None
-        if stored_phase != "held":
+        manifest_blocked = str(row.get("manifest_status") or "") == "blocked"
+        if stored_phase != "held" and not manifest_blocked:
             state = WAITING_STATUS
 
     # A dead worker is a row on the snapshot that observes the death, never one
@@ -1685,7 +1685,15 @@ def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
 
 
 _SNAPSHOT_CACHE: dict[str, tuple[str, dict[str, Any]]] = {}
-_SNAPSHOT_CACHE_LIMIT = 256
+# The cache has to hold every live run of the project at once, or a poll
+# recomputes the runs it just evicted: each recomputation classifies a run from
+# its streams, so a fleet one run over the bound re-reads streams every poll.
+# A snapshot is a small mapping, so the bound sits well above any fleet this
+# process watches and exists only to stop a leak.
+_SNAPSHOT_CACHE_LIMIT = 4096
+# A trim removes this share of the bound, so the directory checks it costs are
+# paid once per that many stores rather than on every store past the bound.
+_SNAPSHOT_CACHE_TRIM = 8
 
 
 def _remember_snapshot(
@@ -1707,11 +1715,20 @@ def _remember_snapshot(
     store[run_id] = (key, snapshot)
     if len(store) <= _SNAPSHOT_CACHE_LIMIT:
         return
+    # Past the bound, runs whose directory has gone are dropped first, then the
+    # oldest entries down to a margin below the bound. The margin is what keeps
+    # this from running on every store: without it each store past the bound
+    # checked every cached run's directory, which on a fleet larger than the
+    # bound was one directory check per pair of runs per poll.
     for rid in list(store):
         if rid != run_id and not runs.run_dir(rid).is_dir():
             del store[rid]
-    while len(store) > _SNAPSHOT_CACHE_LIMIT:
-        store.pop(next(iter(store)))
+    target = _SNAPSHOT_CACHE_LIMIT - _SNAPSHOT_CACHE_LIMIT // _SNAPSHOT_CACHE_TRIM
+    while len(store) > target:
+        oldest = next(iter(store))
+        if oldest == run_id:
+            break
+        store.pop(oldest)
 
 
 def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
@@ -2316,6 +2333,17 @@ def _fleet_counts(
         for snapshot in rows
     )
     buckets = [_bucket_of(state) for state in states]
+    # A row is delivered when its own row word says delivered, and the
+    # classifier's promotion debt reads only the promotable ones. Counting the
+    # fold alone would drop a run whose review is still owed — drawn delivered
+    # while it is classified ``scoring`` — out of every cell, so the state the
+    # pane draws it with counts here, one row once, and the fold adds the
+    # promotable rows the delivered states do not name.
+    delivered_rows = sum(
+        state in FLEET_UNPROMOTED_STATES
+        or str((snapshot.get("delivery") or {}).get("status") or "") == "delivered"
+        for snapshot, state in zip(rows, states, strict=True)
+    )
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states)
         - reviewing
@@ -2325,14 +2353,12 @@ def _fleet_counts(
         # word and the figure cannot disagree if there is one statement of
         # which bucket a state belongs to.
         "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
-        - repairing,
+        "unpromoted": delivered_rows - repairing,
     }
     if any("delivery" in row and row["delivery"] is not None for row in rows):
         from .recovery_classification import delivery_summary
 
         delivery = delivery_summary(rows, pointers=pointers)
-        counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
         counts["oldest_promotion_requested_at"] = delivery[

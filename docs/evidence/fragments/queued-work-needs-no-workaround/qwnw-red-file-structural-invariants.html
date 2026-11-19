@@ -1,0 +1,58 @@
+<section id="qwnw-red-file-structural-invariants-landing">
+  <h2>A test file red on the primary branch passes</h2>
+
+  <p><strong>The failure.</strong> <code>tests/test_structural_invariants.py</code>
+  ran <strong>1 failed, 6 passed</strong> at the base revision
+  <code>25255992b19bf9b2dc2bb9e4fd46d9e429f943f6</code> in the dispatch's
+  worktree. The one failing id was
+  <code>test_only_the_shared_parser_calls_fromisoformat</code>, and its message
+  named fifteen deviations from the rule it guards, across nine modules:
+  <code>crew/fleet_supervisor.py:fleet_test_obligations</code>,
+  <code>crew/plan_review.py:_answer_instant</code>,
+  <code>crew/plan_review.py:_commit_time</code>,
+  <code>crew/promotion_requests.py:_waited_seconds</code> (twice),
+  <code>crew/promotion_requests.py:promotion_queue_report</code>,
+  <code>crew/promotion_requests.py:_pending_requests</code>,
+  <code>crew/promotion_requests.py:failure_obligations</code>,
+  <code>crew/repository_maintenance.py:maintenance_due</code>,
+  <code>crew/review_records.py:_delivery_order</code>,
+  <code>crew/station.py:_prune_released_followers</code>,
+  <code>crew/station_obligations.py:refresh</code>,
+  <code>crew/station_obligations.py:_publish_pending</code> (twice), and
+  <code>hooks/coordinator_obligations.py:_instant</code>.</p>
+
+  <p><strong>The cause, and the verdict.</strong> One cause, and the product was
+  wrong. Each of those sites parsed a UTC ISO stamp with
+  <code>datetime.fromisoformat</code> and then hand-rolled the Z-suffix and
+  naive-to-UTC rule that <code>reckon/_timestamps.py</code> already fixes: a
+  fleet sample stamp, a follower-prune beat, three promotion-request ages, a
+  review delivery order, the repository-maintenance stamp, three station
+  obligation stamps, a plan review's answer and commit instants, and the
+  coordinator hook's stored instants. Each now calls
+  <code>reckon._timestamps.parse_utc</code>, so the forked parser rule is gone
+  rather than registered as another named exception. <strong>No registry entry
+  was added and no assertion was changed</strong>: the test file is untouched.</p>
+
+  <p>Control flow is preserved where it mattered. <code>parse_utc</code> returns
+  <code>None</code> where <code>fromisoformat</code> raised <code>ValueError</code>,
+  and every old <code>except</code> branch is now an explicit <code>None</code>
+  test; the two sites whose argument must be a <code>datetime</code> fall back to
+  the instant they are already writing with — the station obligation stamp and
+  the promotion failure age — which is exactly what the old exception would
+  have prevented the caller from reaching.</p>
+
+  <h3 id="qwnw-red-file-structural-invariants-measured">Measured</h3>
+
+  <p>Negative control, the base run logged beside the head run:
+  <code>base-structural-invariants.log</code> — <code>1 failed, 6 passed</code>,
+  <code>EXIT=1</code>, the failing id above. Head run, the scoped gate
+  <code>scoped-gate-1795005024362054785.log</code> submitted to
+  <code>all_debug</code> from the committed head
+  <code>d012fc6d3513e832a2402357e25cf346c4c5fa5a</code>: <strong>7 passed</strong>,
+  <code>EXIT=0</code>, no failure ids. Same command both sides.</p>
+
+  <h3 id="qwnw-red-file-structural-invariants-fragment-note">Note</h3>
+
+  <p>This fragment exists because the node's done-when names it: the base run
+  and its failing ids are recorded beside the head run.</p>
+</section>

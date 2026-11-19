@@ -1,0 +1,18 @@
+<section id="qwnw-red-file-review-promoted-before-its-run-evidence">
+<h3>A parked review's readiness is read, not its stored phase</h3>
+<p>One cause, test wrong. The drain refreshes every parked request's readiness from the request's own kind before it claims a promotion slot, so only a review's own request can stay parked on a record it has not written yet. The test parked a plain completion request in the waiting phase and later flipped that phase back to requested. After the refresh the review was read as ready and promoted in the first tick, which retired the review's request file, and the flip then wrote a phase-only stub over it that the next pass read as a request with no run id (<code>KeyError: 'run_id'</code> at <code>reckon/crew/promotion_requests.py:733</code>). The test now parks the review's own kind, dates the record's landing instead of rewriting the store, and asserts the run's single deferred attempt instead of assuming the run had been left alone. No assertion was removed or weakened.</p>
+<h4 id="qwnw-red-file-review-promoted-before-its-run-base">Base run: one failing id</h4>
+<pre># revision: 73b9ac21a50d4566b8bc7ec2cf2c49160af28656
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044642992061-qwnw-red-file-review-promoted-before-its-run/base-tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_promoted_before_its_run.py
+FAILED tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits - KeyError: 'run_id'
+1 failed, 4 passed in 9.41s
+EXIT=1</pre>
+<h4 id="qwnw-red-file-review-promoted-before-its-run-head">Head run: five passing</h4>
+<pre># revision: ce4dd521f8695cce08763b8cba0d3d4efcd30c26
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-review-promoted-before-its-run
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_promoted_before_its_run.py
+5 passed in 4.35s
+EXIT=0</pre>
+<p id="qwnw-red-file-review-promoted-before-its-run-gate">Both runs are separate <code>all_debug</code> jobs. The head run was submitted with <code>SLURM_JOB_ID</code> unset. The scoped gate repeats the same file through <code>crew verify-gate --partition all_debug</code> at revision <code>ce4dd521f8695cce08763b8cba0d3d4efcd30c26</code>: 5 passed, EXIT=0. The baseline and after suite arms both completed with 0 failures at revisions <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code> (58 passed) and <code>ce4dd521f8695cce08763b8cba0d3d4efcd30c26</code> (58 passed).</p>
+</section>

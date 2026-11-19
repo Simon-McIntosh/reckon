@@ -1,0 +1,90 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (35fb9f3ae769586b2f364485bf2d6fc31caf87f5, baseline_suite-1795087191306674732.log) EXIT=0 with 58 passed and failure_ids []; after_suite (cff110d53fe80ba313f7740d7fb7ae548cc593e5, after_suite-1795087234254065922.log) EXIT=0 with 58 passed and failure_ids []. Both arms ran the same command over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so added failures = 0.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew/pending_landing.py:refresh_group_repairs",
+    "reckon/crew/queue_landing.py:_land_deliveries"
+  ],
+  "completed_at": "2026-11-19T16:58:00+00:00",
+  "dispatched_at": "2026-11-19T15:43:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-finished-pending-landing-retires-its-run-cff110d53fe8",
+      "recorded_at": "2026-11-19T16:51:37.555998+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-finished-pending-landing-retires-its-run-cff110d53fe8",
+      "recorded_at": "2026-11-19T16:51:38.903039+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-finished-pending-landing-retires-its-run-cff110d53fe8",
+      "recorded_at": "2026-11-19T16:51:40.644791+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-finished-pending-landing-retires-its-run-cff110d53fe8",
+      "recorded_at": "2026-11-19T16:51:42.644641+00:00"
+    },
+    "4": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-finished-pending-landing-retires-its-run-cff110d53fe8",
+      "recorded_at": "2026-11-19T16:51:43.971751+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_finished_pending_landing_retires_its_run.py",
+      "line": "135 non-blocking",
+      "text": "test_a_delivered_repair_keeps_the_record_and_the_worktree replaced test_a_refused_push_keeps_the_run_and_its_recovery_state without keeping its pre-receive hook case, and no other test under tests/ carries a pre-receive fixture, so a refused push keeping the run and its recovery state is now unguarded."
+    },
+    {
+      "file": "tests/test_a_finished_pending_landing_retires_its_run.py",
+      "line": "319 non-blocking",
+      "text": "the attempt-difference assertion compares a value derived from newer, which the test spread from captured, against captured itself, and passes trivially when the stored pointer carries no attempt, so it states a fixture precondition rather than product behaviour."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html",
+      "line": "1 non-blocking",
+      "text": "the done_when names this fragment as where the base failing ids are logged beside the head run, and it is absent at cff110d5 while sibling qwnw-red-file-* fragments are present, so the named artifact was not delivered."
+    },
+    {
+      "file": "manifest.md",
+      "line": "7 non-blocking",
+      "text": "the commits field carries truncated ids bc57e4220e and cff110d53f where the done_when requires plain full commit ids separated by commas, so a reader resolving them gets a prefix pair rather than the revisions."
+    },
+    {
+      "file": "manifest.md",
+      "line": "11 non-blocking",
+      "text": "the tests field names the promotion scoped gate over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, not the target file the done_when measures, so the gate receipt promotion fills from that line does not name the measure."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_a_finished_pending_landing_retires_its_run.py pass in full; at cff110d5 the target file carries six tests and scoped-gate-1795087827399597220.log records \"6 passed in 6.85s\" with EXIT=0, against the change at reckon/crew/recovery_repair_dispatch.py:84 that journals a refused promoted repair onto the pending record.\nVERDICT done_when: the done_when asks for the target file passing at head as an all_debug job with SLURM_JOB_ID unset, per-cause verdicts, an importer arm, a base run with its failing ids logged beside the head run in the target fragment, full commit ids and a clean ruff on the changed paths; base-target-35fb9f3a.log records 3 failed and 3 passed with the failing ids, the importer arms record 14 failed and 439 passed at base against 11 failed and 442 passed at head with no head-only id, and the 6 passed head run sits in scoped-gate-1795087827399597220.log, but no log states the partition or that SLURM_JOB_ID was unset, the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html is absent from cff110d5, the commits field is abbreviated, and no ruff record exists.\nVERDICT write_paths: the reviewed node declared reckon, tests and the two queued-work-needs-no-workaround evidence paths; the diff 35fb9f3a..cff110d5 changes only reckon/crew/recovery_repair_dispatch.py and tests/test_a_finished_pending_landing_retires_its_run.py, both inside the declaration.\nVERDICT manifest: read the reviewed run's manifest.md; it reads status complete with commits \"bc57e4220e cff110d53f\" and an artifacts line claiming an all_debug head run, while its test_logs line is truncated mid-path at a fifth entry, omitting logs/base-target-35fb9f3a.log and both importer logs, and it records no ruff result.\nVERDICT diff: read both commits against base 35fb9f3a -- bc57e4220e extracts the refusal journal into _record_the_conflict and calls it in the promoted-pointer refusal branch of dispatch_merge_repair that returned before the pending record learned of the conflict, and cff110d53f rewrites the red file's promoted-repair fixtures to assert the record obligation instead of a pointer write-back.\n\nCALL_SITES: reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew/pending_landing.py:refresh_group_repairs, reckon/crew/queue_landing.py:_land_deliveries\n\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the target file passes in full at the landed head (6 passed in scoped-gate-1795087827399597220.log) and reckon/crew/recovery_repair_dispatch.py:84 supplies the journal the rewritten assertions read.\nSCORE evidence: 12\nJUSTIFICATION evidence: scoped-gate-1795087827399597220.log records the 6 passed head run, but the done_when's all_debug and unset-SLURM_JOB_ID condition and the fragment it names are unrecorded and absent from cff110d5.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 35fb9f3a..cff110d5 is one of the two declared areas, reckon/crew/recovery_repair_dispatch.py and tests/test_a_finished_pending_landing_retires_its_run.py, and nothing else changed.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the base early return at reckon/crew/recovery_repair_dispatch.py:84 leaves the pending record's merge_conflict unwritten and reddens tests/test_a_finished_pending_landing_retires_its_run.py:59, but the file's only refused-push case was replaced rather than kept.\nSCORE fit: 18\nJUSTIFICATION fit: _record_the_conflict follows the module's private-helper idiom and docstring style beside dispatch_merge_repair at reckon/crew/recovery_repair_dispatch.py:184.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/crew for a contributor that journals a conflict onto the pending record finds recovery_repair_dispatch.py as its only writer, and the new helper consolidates that owner instead of forking a second one.\n\nFINDING tests/test_a_finished_pending_landing_retires_its_run.py:135 non-blocking: test_a_delivered_repair_keeps_the_record_and_the_worktree replaced test_a_refused_push_keeps_the_run_and_its_recovery_state without keeping its pre-receive hook case, and no other test under tests/ carries a pre-receive fixture, so a refused push keeping the run and its recovery state is now unguarded.\nFINDING tests/test_a_finished_pending_landing_retires_its_run.py:319 non-blocking: the attempt-difference assertion compares a value derived from newer, which the test spread from captured, against captured itself, and passes trivially when the stored pointer carries no attempt, so it states a fixture precondition rather than product behaviour.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-finished-pending-landing-retires-its-run.html:1 non-blocking: the done_when names this fragment as where the base failing ids are logged beside the head run, and it is absent at cff110d5 while sibling qwnw-red-file-* fragments are present, so the named artifact was not delivered.\nFINDING manifest.md:7 non-blocking: the commits field carries truncated ids bc57e4220e and cff110d53f where the done_when requires plain full commit ids separated by commas, so a reader resolving them gets a prefix pair rather than the revisions.\nFINDING manifest.md:11 non-blocking: the tests field names the promotion scoped gate over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, not the target file the done_when measures, so the gate receipt promotion fills from that line does not name the measure.\n",
+  "review_run_id": "r-20261119T114102618665-review-of-qwnw-red-file-a-finished-pending-landing-retires-its-run-cff110d53fe8",
+  "reviewed_base_sha": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+  "reviewed_head_sha": "cff110d53fe80ba313f7740d7fb7ae548cc593e5",
+  "reviewed_run_id": "r-20261118T054257458080-qwnw-red-file-a-finished-pending-landing-retires-its-run",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:58:00+00:00",
+  "total": 105
+}

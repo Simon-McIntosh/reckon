@@ -1019,13 +1019,16 @@ def fleet_test_obligations(
     project: str, session: str, *, now: datetime
 ) -> list[dict[str, Any]]:
     """Route a fresh fleet sample to the coordinator that owns each offending run."""
+    from reckon._timestamps import parse_utc
+
     directory = state_directory()
     try:
         sample = json.loads((directory / TEST_PROCESS_SAMPLE).read_text())
         record = json.loads((directory / RECORD_NAME).read_text())
-        observed = datetime.fromisoformat(sample["observed_at"])
+        observed = parse_utc(sample["observed_at"])
         if (
-            sample["job_id"] != str(record["job_id"])
+            observed is None
+            or sample["job_id"] != str(record["job_id"])
             or not 0 <= (now - observed).total_seconds() <= 180
         ):
             return []

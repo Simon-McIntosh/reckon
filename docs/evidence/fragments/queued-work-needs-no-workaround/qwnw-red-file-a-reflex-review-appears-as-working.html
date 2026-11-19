@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<title>A reflex review launch reaches its session, already green at base</title>
+<style>
+  body { font: 15px/1.55 system-ui, sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { text-align: left; border-bottom: 1px solid #d8dde3; padding: .4rem .6rem; vertical-align: top; }
+  pre { background: #f4f6f8; padding: .75rem; overflow-x: auto; font-size: .9em; }
+</style>
+</head>
+<body>
+
+<h1 id="qwnw-red-file-a-reflex-review-appears-as-working-title">A reflex review launch reaches its session, already green at base</h1>
+
+<p id="qwnw-red-file-a-reflex-review-appears-as-working-summary"><code>tests/test_a_reflex_review_appears_as_working.py</code> passes in full at the node's base revision <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>: 2 passed, EXIT=0, run as an <em>all_debug</em> batch job with <code>SLURM_JOB_ID</code> removed from the measured command's environment. No assertion was changed, and no product code was touched. The same file at the run's head <code>aea8a7db3b09cf22cb69064f764cb9c2d04be7e4</code> reads 2 passed, EXIT=0. The file stopped being red on 8 November 2026, when its own reproduction commit was followed by the repair that made it pass; both are ancestors of this node's base.</p>
+
+<h2 id="qwnw-red-file-a-reflex-review-appears-as-working-history">Why the file is already green</h2>
+
+<p id="qwnw-red-file-a-reflex-review-appears-as-working-history-detail">The file arrived as a reproduction and its fix landed with it, three minutes apart. <code>57f325ecfb</code> (<em>test(crew): reproduce missing review launch transition</em>) added the test and nothing else; <code>3a37d86243</code> (<em>fix(crew): publish launches for newly working station runs</em>) seeded a newly working run as dispatched once its project has a stored fleet image, so the station transition fold emits the launch for a reflex review while keeping first-observation inventory silent. <code>git merge-base --is-ancestor</code> reports both as ancestors of the base revision, so the defect this node was queued to repair is no longer present in the tree the node starts from. The plan's §29 deliverable names this case outright: a file that already passes when the node starts, because another node's repair reached it, is delivered as such with the passing run.</p>
+
+<h2 id="qwnw-red-file-a-reflex-review-appears-as-working-control">Negative control: the defect the file was written for</h2>
+
+<p id="qwnw-red-file-a-reflex-review-appears-as-working-control-detail">A base run that passes proves nothing about whether the file can see the defect, so the control is the same file at the commit that added it, where the fix is absent. The tree at <code>57f325ecfb</code> was extracted under the run's scratch directory and run with <code>SLURM_JOB_ID</code> unset; it fails with the recorded symptom — the review is classified <code>working</code>, yet the station publishes no <code>working</code> transition row for the owned session:</p>
+
+<pre id="qwnw-red-file-a-reflex-review-appears-as-working-control-log">
+FAILED tests/test_a_reflex_review_appears_as_working.py::test_a_sweep_review_reaches_its_session_on_the_next_publish
+E           AssertionError: review classified working; working transition rows=0; rows=[]
+1 failed, 1 passed in 1.95s
+EXIT=1
+</pre>
+
+<h2 id="qwnw-red-file-a-reflex-review-appears-as-working-arms">Arms</h2>
+
+<table id="qwnw-red-file-a-reflex-review-appears-as-working-arms-table">
+<thead>
+<tr><th>arm</th><th>revision</th><th>result</th></tr>
+</thead>
+<tbody>
+<tr><td>control, the file before its repair</td><td>57f325ecfba62333c1d3cbc1e22e47828f1e5c47</td><td>1 failed, 1 passed; EXIT=1</td></tr>
+<tr><td>base gate, <em>all_debug</em> job, host 98dci4-clu-3141</td><td>5b0a1f537ef9bbca90907bd16f663732db844fb0</td><td>2 passed; EXIT=0</td></tr>
+<tr><td>head gate, <em>all_debug</em> job, host 98dci4-clu-3141</td><td>aea8a7db3b09cf22cb69064f764cb9c2d04be7e4</td><td>2 passed; EXIT=0</td></tr>
+</tbody>
+</table>
+
+<h3 id="qwnw-red-file-a-reflex-review-appears-as-working-head-log">Head run</h3>
+<pre id="qwnw-red-file-a-reflex-review-appears-as-working-head-ids">
+# revision: aea8a7db3b09cf22cb69064f764cb9c2d04be7e4
+..                                                                       [100%]
+2 passed in 1.87s
+EXIT=0
+</pre>
+
+<h3 id="qwnw-red-file-a-reflex-review-appears-as-working-base-log">Base run</h3>
+<pre id="qwnw-red-file-a-reflex-review-appears-as-working-base-ids">
+# revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
+..                                                                       [100%]
+2 passed in 2.14s
+EXIT=0
+</pre>
+
+<p id="qwnw-red-file-a-reflex-review-appears-as-working-logs">Logs sit under the run directory: <code>logs/control-57f325ecfb.log</code> holds the control run, whose header names the extracted tree and the command; <code>scoped-gate-1795045375309005199.log</code> holds the base gate run and <code>scoped-gate-1795045790407984643.log</code> the head gate run, each header naming the revision measured, the job's tree and the measured command.</p>
+
+</body>
+</html>

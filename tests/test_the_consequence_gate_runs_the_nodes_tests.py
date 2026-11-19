@@ -198,6 +198,17 @@ def _stored_review(run_id: str) -> None:
     review_module.store_review(record)
 
 
+def _full_outcome(result) -> dict[str, object]:
+    """The outcome a completion reply links rather than reproduces.
+
+    A completion reply is a compact receipt bounded to stay small, so it names
+    ``record_path`` — the file the full outcome is retained in — instead of
+    carrying the record itself. A test that reads the record opens that file.
+    """
+    receipt = json.loads(result.output)
+    return json.loads(Path(str(receipt["record_path"])).read_text())
+
+
 def _complete(run_id: str, repository: Path):
     return CliRunner().invoke(
         cli_main,
@@ -287,7 +298,7 @@ def test_the_declared_command_measures_the_nodes_fenced_test_files(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _full_outcome(result)["record"]["suite_delta"]
     assert suite_delta["suite_command"] == resolved
     assert suite_delta["after_suite"]["command"] == resolved
 
@@ -400,7 +411,7 @@ def test_a_scoped_pair_over_the_nodes_test_files_promotes(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _full_outcome(result)["record"]["suite_delta"]
     assert suite_delta["status"] == "clean"
     assert suite_delta["suite_command"] == RESOLVED
     assert suite_delta["added_failure_ids"] == []
@@ -431,7 +442,7 @@ def test_a_scoped_pair_over_the_whole_suite_is_refused(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 1, result.output
-    payload = json.loads(result.output)
+    payload = _full_outcome(result)
     assert payload["error"] == "suite-delta-refused"
     assert "baseline_suite.command_matches_suite_command" in payload["missing_fields"]
     assert "after_suite.command_matches_suite_command" in payload["missing_fields"]
@@ -460,7 +471,7 @@ def test_a_scoped_pair_over_another_nodes_files_is_refused(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 1, result.output
-    payload = json.loads(result.output)
+    payload = _full_outcome(result)
     assert payload["error"] == "suite-delta-refused"
     assert "after_suite.command_matches_suite_command" in payload["missing_fields"]
 
@@ -478,4 +489,4 @@ def test_a_project_with_no_declaration_records_no_suite_observation(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output)["record"]["suite_delta"] is None
+    assert _full_outcome(result)["record"]["suite_delta"] is None

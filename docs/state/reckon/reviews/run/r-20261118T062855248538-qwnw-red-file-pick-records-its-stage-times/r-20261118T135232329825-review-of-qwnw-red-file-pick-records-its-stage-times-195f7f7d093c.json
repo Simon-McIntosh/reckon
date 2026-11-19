@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gates on disk: baseline_suite-1795009295539722323.header.log at c61cd5f4 records '58 passed in 36.34s' with EXIT=0 and no FAILED line, and after_suite-1795009338584399268.header.log at 195f7f7d records '58 passed in 36.71s' with EXIT=0 and no FAILED line, so the set difference is empty (0 of 0).",
+  "call_site_count": 0,
+  "call_site_note": "the delivered diff holds a test file and an evidence fragment, so no production call site can reach it; the production path the test exercises and that this review read is reckon/crew/picker/__init__.py:134 (_record_pick_timings computes the flag) calling reckon/crew/dispatch_picker.py:56 (picker_dispatch_timeout) as the dispatcher does at reckon/crew/dispatch_picker.py:686",
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T22:01:48Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pick-records-its-stage-times.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence 'Both arms run the node's test file as a job on all_debug with SLURM_JOB_ID unset' presents as measurement a fact the arm script writes itself - the log's '# slurm partition: all_debug job <id>' line is a printf in base-arm.sh:17 and head-arm.sh:11, so it reads the same whatever scheduler ran the script, and the run directory's sbatch-base.log and sbatch-head.log are both empty, leaving no submission record; the two arms' results are otherwise real and reproducible, so the done_when's 'as a job on all_debug' clause is unverified rather than contradicted."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none found: the landed change is a test file plus an evidence fragment, and the production path the test exercises is reckon/crew/picker/__init__.py:134 through reckon/crew/dispatch_picker.py:56.",
+    "diff": "read both commits against c61cd5f4: b87d3dcc repoints the monkeypatch at tests/test_pick_records_its_stage_times.py:171 from reckon.crew.dispatch to reckon.crew.dispatch_picker (with the import rename at line 25) and corrects the module docstring's 'five-second dispatch budget' to 'the dispatch bound'; 195f7f7d093c adds the 66-line evidence fragment; nothing else changed.",
+    "done_when": "the done_when asks for tests/test_pick_records_its_stage_times.py green at head as an all_debug job with SLURM_JOB_ID unset and output on shared storage, a base arm, a cause verdict, and an arm over the test files importing the change; pick-records-its-stage-times-base.log records 1 failed/3 passed EXIT=1 at c61cd5f4 and pick-records-its-stage_times-head.log records 4 passed EXIT=0 at b87d3dcc, the manifest gives one cause with the verdict 'test wrong', while the all_debug clause rests on the arm script's own printed literal and the recorded suite arms run census files that cannot see this change.",
+    "goal": "the node goal is 'Make tests/test_pick_records_its_stage_times.py pass in full on the primary branch'; pick-records-its-stage-times-head.log records 4 passed EXIT=0 at b87d3dcc, the file failing 1 of 4 at c61cd5f4, and the diff's only product-relevant edit is the patch target at tests/test_pick_records_its_stage_times.py:171.",
+    "manifest": "read in full; it names status complete, commits b87d3dccf534ac679ad75591b02132d77a548256 and 195f7f7d093c8b6643caab363fd1486c747de854, base 1 failed/3 passed and head 4 passed with three log paths, and I confirmed each cited header, summary line and EXIT line against the files on disk.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's two files, tests/test_pick_records_its_stage_times.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pick-records-its-stage-times.html, are both inside them."
+  },
+  "justifications": {
+    "durability": "the lever change at tests/test_pick_records_its_stage_times.py:171 is guarded by the base arm, which reinstates the old reckon.crew.dispatch patch and reddens at pick-records-its-stage-times-base.log ('1 failed, 3 passed', EXIT=1, assert True is False at the within_bound assertion), so reverting the landed change fails the file.",
+    "evidence": "the two arms cited in the manifest reproduce on disk with revisions and EXIT lines (pick-records-its-stage-times-base.log EXIT=1, pick-records-its-stage-times-head.log EXIT=0) and the suite pair reads 58 passed EXIT=0 at both revisions, but neither the all_debug clause nor the importer-arm clause is evidenced by a log.",
+    "fit": "the changed line follows the sibling convention at tests/test_a_pick_names_its_slow_stage.py:51, which monkeypatches the same module global on reckon.crew.dispatch_picker, and the added comment at tests/test_pick_records_its_stage_times.py:169-170 states why the module rather than the facade is the lever and introduces no new name.",
+    "goal_fidelity": "pick-records-its-stage-times-head.log records 4 passed EXIT=0 at head b87d3dcc, against the same file's 1 failed/3 passed at c61cd5f4, so the stated goal of making the file pass in full is met.",
+    "reuse": "the diff adds no definition at all - the change repoints an existing monkeypatch at the module that already owns the figure (reckon/crew/dispatch_picker.py:50) - and a search of reckon/crew for another resolved-timeout mechanism found only picker_dispatch_timeout, which both reckon/crew/picker/__init__.py:75 and reckon/crew/dispatch_picker.py:686 already call.",
+    "reuse_placeholder": null,
+    "scope_discipline": "both paths in the diff, tests/test_pick_records_its_stage_times.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pick-records-its-stage-times.html, lie inside the declared write paths, and neither the test nor the fragment carries anything the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_pick_records_its_stage_times.py pass in full on the primary branch'; pick-records-its-stage-times-head.log records 4 passed EXIT=0 at b87d3dcc, and the diff's only product-relevant edit is the patch target at tests/test_pick_records_its_stage_times.py:171.\nVERDICT done_when: the done_when asks for that file green at head as an all_debug job with SLURM_JOB_ID unset, a base arm, a cause verdict and an arm over the test files importing the change; pick-records-its-stage-times-base.log records 1 failed/3 passed EXIT=1 at c61cd5f4 and pick-records-its-stage-times-head.log records 4 passed EXIT=0 at b87d3dcc, the manifest gives one cause with verdict 'test wrong', but the all_debug clause is the arm script's own printed literal and the recorded suite arms run census files that cannot see this change.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's two files, tests/test_pick_records_its_stage_times.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pick-records-its-stage-times.html, are both inside them.\nVERDICT manifest: read in full; it names status complete, commits b87d3dccf534ac679ad75591b02132d77a548256 and 195f7f7d093c8b6643caab363fd1486c747de854, base 1 failed/3 passed and head 4 passed with three log paths, and every cited header, summary line and EXIT line matches the files on disk.\nVERDICT diff: read both commits against c61cd5f4; b87d3dcc repoints the monkeypatch at tests/test_pick_records_its_stage_times.py:171 from reckon.crew.dispatch to reckon.crew.dispatch_picker, renames the import at line 25 and corrects the docstring's 'five-second dispatch budget' to 'the dispatch bound', and 195f7f7d093c adds the 66-line evidence fragment; nothing else changed.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: pick-records-its-stage-times-head.log records 4 passed EXIT=0 at head b87d3dcc against the same file's 1 failed/3 passed at c61cd5f4, so the stated goal is met in full.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arm logs are on shared storage with revision, tree, command, module, cwd and EXIT lines, but the all_debug claim at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pick-records-its-stage-times.html:38 is script-printed text and the recorded suite pair at both revisions runs census files that cannot see the change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (tests/test_pick_records_its_stage_times.py and the fragment) is inside the declared write paths, and no product file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm reinstates the old reckon.crew.dispatch patch and reddens at pick-records-its-stage-times-base.log ('1 failed, 3 passed', EXIT=1, assert True is False), so reverting tests/test_pick_records_its_stage_times.py:171 fails the file.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_pick_records_its_stage_times.py:171 now monkeypatches the module global exactly as the sibling tests/test_a_pick_names_its_slow_stage.py:51 does, and the added comment at lines 169-170 states the reason.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and repoints an existing monkeypatch at the module that already owns the figure, reckon/crew/dispatch_picker.py:50, whose picker_dispatch_timeout is the sole resolved-timeout mechanism found in reckon/crew.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pick-records-its-stage-times.html:38 non-blocking: the sentence presenting the arms as jobs on all_debug is a literal the arm script prints itself, and the run directory's sbatch-base.log and sbatch-head.log are empty, so the done_when's all_debug clause is unverified although the two arm results are real.\n",
+  "review_node": "review-of-qwnw-red-file-pick-records-its-stage-times-195f7f7d093c",
+  "review_run_id": "r-20261118T135232329825-review-of-qwnw-red-file-pick-records-its-stage-times-195f7f7d093c",
+  "reviewed_base_sha": "c61cd5f4766676317d1d85959c2983f55f74b41c",
+  "reviewed_head_sha": "195f7f7d093c8b6643caab363fd1486c747de854",
+  "reviewed_run_id": "r-20261118T062855248538-qwnw-red-file-pick-records-its-stage-times",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T135232329825-review-of-qwnw-red-file-pick-records-its-stage-times-195f7f7d093c"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T22:19:50.469669+00:00",
+  "total": 112
+}

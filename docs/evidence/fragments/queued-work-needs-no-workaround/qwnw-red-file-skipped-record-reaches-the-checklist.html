@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-skipped-record-reaches-the-checklist-landing">
+  <h2>A skipped review record reaches the checklist by name</h2>
+
+<p><strong>What was wrong.</strong> At the base revision
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>,
+  <code>tests/test_skipped_record_reaches_the_checklist.py</code> reported
+  <code>2 failed, 1 passed</code>. Both failures were product defects.</p>
+
+  <p><em>Cause one — a memoised answer dropped the finding it was read
+  past.</em>
+  <code>test_a_skipped_record_is_named_in_the_prompt_checklist</code> failed with
+  <code>the checklist names no skipped record</code>, and the checklist carried
+  only the collapsed line
+  <code>- [1 waiting, no action shortens them] unreadable-review-record 1 (oldest 0s)</code>
+  with no path. One pointer's classification is memoised twice, and a served
+  answer is read past the same half-written file without re-reading it, so the
+  finding the read had collected never reached the derivation.</p>
+
+  <p><em>Cause two — the derived row carried no run-id projection.</em>
+  <code>test_the_reader_reproduces_the_findings_the_writer_carried</code> failed
+  with <code>assert [] == ['…/reviews/skipped-record-fixture/r-reviewed.json']</code>.
+  With the first defect repaired the row appeared, but it was not the row the
+  sweep publishes: the published one carries the action form's
+  <code>run_ids</code> projection.</p>
+
+<p><em>Repaired.</em> The stored-review answer memo and the persisted
+  classification memo now hold the findings the read carried, and a served
+  answer notes them into whatever region is open where it is served; a serve
+  with no region open still names nowhere. The rebuilt row now carries
+  <code>run_ids</code> as the record's own path.</p>
+
+  <p><em>The checklist names the row in full.</em> A count never says which
+  record was skipped, and the path is the only thing the row is read by. The
+  row is printed, and the stop verdict still lets the turn end, so the two
+  decisions are taken by two named predicates rather than one: the printed row
+  and the held turn are no longer the same question.</p>
+
+<h3 id="qwnw-red-file-skipped-record-reaches-the-checklist-arms">Measured</h3>
+
+  <table id="qwnw-red-file-skipped-record-reaches-the-checklist-arm-table">
+    <caption>Each arm is a log whose header names the revision, the tree and
+    the command, and whose last line is a bare <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>named file, base extraction</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>named file, head extraction</td>
+        <td><code>3573a365ae9d2585d81de95436e6b09a466bbc57</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate, head, all_debug</td>
+        <td><code>3573a365ae9d2585d81de95436e6b09a466bbc57</code></td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, after arm</td>
+        <td><code>3573a365ae9d2585d81de95436e6b09a466bbc57</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The declared suite is the two files this dispatch arms for the node
+  (<code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>), run by
+  <code>crew suite run --partition all_debug</code> over each arm's own tree:
+  the same file list in both arms and <code>58 passed</code> in each, so the
+  change adds no failure.</p>
+
+</section>

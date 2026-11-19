@@ -208,6 +208,13 @@ def test_an_index_a_live_process_holds_open_is_kept(repository: Path) -> None:
 def test_the_runless_sweep_removes_an_index_whose_checkout_is_gone(
     repository: Path,
 ) -> None:
+    """An orphan the scoped pass cannot attribute leaves only with a wide sweep.
+
+    A project-scoped pass reclaims only the indexes recorded against that
+    project's own ledger, so one whose recorded checkout is gone is attributed
+    to no project and is reported as kept rather than removed. A pass naming no
+    project reclaims across the cache home, and there the orphan leaves.
+    """
     gone_checkout = repository.parent / "gone-checkout"
     (gone_checkout / "docs" / "state" / PROJECT).mkdir(parents=True)
     index = _publish_index(gone_checkout)
@@ -216,7 +223,17 @@ def test_the_runless_sweep_removes_an_index_whose_checkout_is_gone(
     shutil.rmtree(gone_checkout)
     assert not gone_checkout.exists()
 
-    report = gc_module.garbage_collect(repo=repository, project=PROJECT, apply=True)
+    scoped = gc_module.garbage_collect(repo=repository, project=PROJECT, apply=True)
+
+    rows = [row for row in scoped["ledger_indexes"] if row["path"] == str(index)]
+    assert len(rows) == 1, scoped["ledger_indexes"]
+    assert rows[0]["reason"] == "recorded-checkout-gone"
+    assert rows[0]["project"] == "unknown"
+    assert rows[0]["action"] == "keep"
+    assert rows[0]["removed"] is False
+    assert index.is_file(), "a scoped pass removed an index it could not name"
+
+    report = gc_module.garbage_collect(repo=repository, apply=True)
 
     rows = [row for row in report["ledger_indexes"] if row["path"] == str(index)]
     assert len(rows) == 1, report["ledger_indexes"]

@@ -1,0 +1,125 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "fails when the invocation adds no file to the run directory (the receipt write removed) or adds two; it passes only when exactly one file was added.",
+      "independence": "compared against the pre-invocation snapshot taken by the test from disk, not against a value the test handed the code under test.",
+      "limit": "it counts added paths only; a deleted path is caught at :337 as a KeyError rather than by this assertion.",
+      "location": "tests/test_an_open_operation_refuses_a_promotion_first.py:328-330 assert len(written) == 1"
+    },
+    {
+      "conditions_for_failure": "fails if the receipt is written anywhere other than the run's own directory, or under a name that is not completion-*.",
+      "independence": "the expected parent comes from the product's runs.run_dir, an independent source from the bytes the invocation wrote.",
+      "limit": "both sides would move together if run_dir itself were redefined to point at the wrong place.",
+      "location": "tests/test_an_open_operation_refuses_a_promotion_first.py:331-333 receipt_path.parent == run_dir(REVIEW_RUN) and completion-*"
+    },
+    {
+      "conditions_for_failure": "fails if a refused promotion's receipt reports ok true, or carries a detail that does not name the operation word of the parametrised state.",
+      "independence": "the detail is produced at reckon/crew_run_commands.py:3455-3462; the test only supplies the operation word it expects the product to echo.",
+      "limit": "a substring check accepts a detail that names the operation but describes a different refusal.",
+      "location": "tests/test_an_open_operation_refuses_a_promotion_first.py:334-336 receipt['ok'] is False and the state word in receipt['detail']"
+    },
+    {
+      "conditions_for_failure": "fails if any pre-existing ledger, plan or run file differs after the invocation; raises KeyError if one is deleted.",
+      "independence": "compares the second read of the tree against the first, both taken by the test from disk.",
+      "limit": "the named message is unreachable on deletion.",
+      "location": "tests/test_an_open_operation_refuses_a_promotion_first.py:337-340 every pre-existing path byte-identical"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:_require_committable_checkout",
+    "reckon/crew/promotion_scope.py:_open_operation_state",
+    "reckon/crew/promotion.py:3974",
+    "reckon/crew_run_commands.py:3466"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T08:38:59Z",
+  "findings": [
+    {
+      "file": "tests/test_an_open_operation_refuses_a_promotion_first.py",
+      "line": "337",
+      "severity": "non-blocking",
+      "text": "non-blocking: the snapshot comparison is rebuilt as a comprehension over `before`, so an invocation that DELETES a pre-existing ledger, plan or run file raises KeyError instead of the named 'the refusal rewrote ... leave alone' failure the single equality produced; the case still reddens, so the guard fires, but the deletion direction the diff stopped covering has lost its diagnostic."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph 'That the guard fires' records a mutation observation (with the product's receipt write removed, five cases fail on the new assertion) that no artefact in the run directory supports: logs/negative-control-base-8c7ea625.log runs the pre-change comparison at the base revision, so it exercises the assertion this diff removed, not the one it added, leaving the new assertion's failure mode claimed rather than shown."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 8c7ea625091640c12d6aa56bc8997803ae470037: 214b9886 replaces the single whole-directory equality at tests/test_an_open_operation_refuses_a_promotion_first.py:321-323 with a four-part receipt allowance at :321-340, and e304533b appends the 66-line fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html:1-66.",
+    "done_when": "the done_when asks for a base run first, a cause with a product-or-test verdict, no deleted or weakened assertion, an import arm over both revisions as full-sha JSON and a negative control; the manifest records the base red (5 failed / 2 passed, EXIT=1) and the head green, states verdict 'test wrong' naming ba811581d3, and its baseline_suite/after_suite JSONs read 58 passed at 8c7ea625091640c12d6aa56bc8997803ae470037 and e304533b9329d8bd4621f7156aba5187a5aba02b.",
+    "goal": "the node's goal is 'Make tests/test_an_open_operation_refuses_a_promotion_first.py pass in full on the primary branch'; the landed diff repairs that file at tests/test_an_open_operation_refuses_a_promotion_first.py:321-341 and changes no product source, and the source run's head arm records 7 passed / EXIT=0 at e304533b9329d8bd4621f7156aba5187a5aba02b.",
+    "manifest": "read; it records status complete, both commit ids 214b98869bc051713fd80f17521763d1d8c5e5e3 and e304533b9329d8bd4621f7156aba5187a5aba02b, the scoped gate 7 passed, the base negative control 5 failed / 2 passed EXIT=1, and two suite arms as inline JSON with 40-character revisions.",
+    "write_paths": "the declared paths are reckon, tests and the queued-work-needs-no-workaround evidence directory; git diff 8c7ea625091640c12d6aa56bc8997803ae470037..e304533b9329d8bd4621f7156aba5187a5aba02b touches only tests/test_an_open_operation_refuses_a_promotion_first.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_an_open_operation_refuses_a_promotion_first.py:328 reddens if the receipt stops being written and :332 reddens if the receipt lands outside runs.run_dir(), both independent of the values the test supplies, but the deletion direction at :337 reddens only as a KeyError and the mutation proving :328 was claimed rather than logged.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063930656031-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main/scoped-gate-1795029025920155861.log reads '7 passed in 1.40s' with EXIT=0 and logs/negative-control-base-8c7ea625.log reads '5 failed, 2 passed' with EXIT=1, but tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py import neither the changed file nor the receipt writer, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html:32-36 records a mutation with no log.",
+    "fit": "tests/test_an_open_operation_refuses_a_promotion_first.py:321-341 keeps the file's assert-with-message idiom, reuses the file's own _snapshot helper at :230 and introduces no new symbol, fixture or import.",
+    "goal_fidelity": "tests/test_an_open_operation_refuses_a_promotion_first.py:328-336 pins exactly the rule reckon/crew_run_commands.py:3466 now keeps, and the recorded head arm passes the whole file (7 passed, EXIT=0 at e304533b9329d8bd4621f7156aba5187a5aba02b).",
+    "reuse": "the diff adds no function, class or module; it composes _snapshot (tests/test_an_open_operation_refuses_a_promotion_first.py:230) and reckon.crew.runs.run_dir, and the receipt-writing capability's single owner is reckon/crew_run_commands.py:3466, which the test reads rather than re-implements.",
+    "scope_discipline": "git diff 8c7ea625091640c12d6aa56bc8997803ae470037..e304533b9329d8bd4621f7156aba5187a5aba02b --stat lists two paths, tests/test_an_open_operation_refuses_a_promotion_first.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html, both inside the node's declared write paths and neither a product file nor the plan."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_an_open_operation_refuses_a_promotion_first.py pass in full on the primary branch'; the landed diff repairs that file at tests/test_an_open_operation_refuses_a_promotion_first.py:321-341 and changes no product source, and the source run's head arm records 7 passed / EXIT=0 at e304533b9329d8bd4621f7156aba5187a5aba02b.\nVERDICT done_when: the done_when asks for a base run first, a cause with a product-or-test verdict, no deleted or weakened assertion, an import arm over both revisions as full-sha JSON and a negative control; the manifest records the base red (5 failed / 2 passed, EXIT=1) and the head green, states verdict 'test wrong' naming ba811581d3, and its baseline_suite/after_suite JSONs read 58 passed at 8c7ea625091640c12d6aa56bc8997803ae470037 and e304533b9329d8bd4621f7156aba5187a5aba02b.\nVERDICT write_paths: the declared paths are reckon, tests and the queued-work-needs-no-workaround evidence directory; git diff 8c7ea625091640c12d6aa56bc8997803ae470037..e304533b9329d8bd4621f7156aba5187a5aba02b touches only tests/test_an_open_operation_refuses_a_promotion_first.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html, both inside them.\nVERDICT manifest: read; it records status complete, both commit ids 214b98869bc051713fd80f17521763d1d8c5e5e3 and e304533b9329d8bd4621f7156aba5187a5aba02b, the scoped gate 7 passed, the base negative control 5 failed / 2 passed EXIT=1, and two suite arms as inline JSON with 40-character revisions.\nVERDICT diff: read both commits against 8c7ea625091640c12d6aa56bc8997803ae470037: 214b9886 replaces the single whole-directory equality at tests/test_an_open_operation_refuses_a_promotion_first.py:321-323 with a four-part receipt allowance at :321-340, and e304533b appends the 66-line fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html:1-66.\nCALL_SITES: reckon/crew/promotion_scope.py:_require_committable_checkout, reckon/crew/promotion_scope.py:_open_operation_state, reckon/crew/promotion.py:3974, reckon/crew_run_commands.py:3466\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_an_open_operation_refuses_a_promotion_first.py:328-336 pins exactly the rule reckon/crew_run_commands.py:3466 now keeps, and the recorded head arm passes the whole file (7 passed, EXIT=0 at e304533b9329d8bd4621f7156aba5187a5aba02b).\nSCORE evidence: 16\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063930656031-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main/scoped-gate-1795029025920155861.log reads '7 passed in 1.40s' with EXIT=0 and logs/negative-control-base-8c7ea625.log reads '5 failed, 2 passed' with EXIT=1, but tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py import neither the changed file nor the receipt writer, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html:32-36 records a mutation with no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 8c7ea625091640c12d6aa56bc8997803ae470037..e304533b9329d8bd4621f7156aba5187a5aba02b --stat lists two paths, tests/test_an_open_operation_refuses_a_promotion_first.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html, both inside the node's declared write paths and neither a product file nor the plan.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_an_open_operation_refuses_a_promotion_first.py:328 reddens if the receipt stops being written and :332 reddens if the receipt lands outside runs.run_dir(), both independent of the values the test supplies, but the deletion direction at :337 reddens only as a KeyError and the mutation proving :328 was claimed rather than logged.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_an_open_operation_refuses_a_promotion_first.py:321-341 keeps the file's assert-with-message idiom, reuses the file's own _snapshot helper at :230 and introduces no new symbol, fixture or import.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it composes _snapshot (tests/test_an_open_operation_refuses_a_promotion_first.py:230) and reckon.crew.runs.run_dir, and the receipt-writing capability's single owner is reckon/crew_run_commands.py:3466, which the test reads rather than re-implements.\nFINDING tests/test_an_open_operation_refuses_a_promotion_first.py:337 non-blocking: the snapshot comparison is rebuilt as a comprehension over `before`, so an invocation that DELETES a pre-existing ledger, plan or run file raises KeyError instead of the named 'the refusal rewrote ... leave alone' failure the single equality produced; the case still reddens, so the guard fires, but the deletion direction the diff stopped covering has lost its diagnostic.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main.html:33 non-blocking: the paragraph 'That the guard fires' records a mutation observation (with the product's receipt write removed, five cases fail on the new assertion) that no artefact in the run directory supports: logs/negative-control-base-8c7ea625.log runs the pre-change comparison at the base revision, so it exercises the assertion this diff removed, not the one it added, leaving the new assertion's failure mode claimed rather than shown.\n",
+  "review_method": "Read-only review of the source node record, its manifest, its four arm logs and the two landed commits; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T191811062936-review-of-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main-e304533b9329",
+  "reviewed_base_sha": "8c7ea625091640c12d6aa56bc8997803ae470037",
+  "reviewed_head_sha": "e304533b9329d8bd4621f7156aba5187a5aba02b",
+  "reviewed_run_id": "r-20261118T063930656031-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "214b98869bc051713fd80f17521763d1d8c5e5e3",
+    "e304533b9329d8bd4621f7156aba5187a5aba02b"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063930656031-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main/after_suite-1795029122400721275.log",
+      "observed_summary": "58 passed in 39.46s",
+      "revision": "e304533b9329d8bd4621f7156aba5187a5aba02b"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063930656031-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main/baseline_suite-1795029046303915143.log",
+      "observed_summary": "58 passed in 38.86s",
+      "revision": "8c7ea625091640c12d6aa56bc8997803ae470037"
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063930656031-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main/logs/negative-control-base-8c7ea625.log",
+      "observed_summary": "5 failed, 2 passed in 1.89s",
+      "revision": "8c7ea625091640c12d6aa56bc8997803ae470037"
+    },
+    "scoped_gate": {
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063930656031-qwnw-red-file-an-open-operation-refuses-a-promotion-first-at-current-main/scoped-gate-1795029025920155861.log",
+      "observed_summary": "7 passed in 1.40s",
+      "revision": "e304533b9329d8bd4621f7156aba5187a5aba02b"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T09:01:58.935031+00:00",
+  "total": 109
+}

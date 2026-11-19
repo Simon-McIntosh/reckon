@@ -168,17 +168,24 @@ def _write_worker_record(record: dict, *, seconds_before_now: float) -> Path:
     return worker
 
 
-def _commit_work(repo: Path) -> str:
-    """Commit the run's declared work and return the revision it cites."""
-    (repo / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
-    _git(repo, "add", "reckon/target.py")
-    _git(repo, "commit", "-q", "-m", "feat: the run's declared work")
-    return _git(repo, "rev-parse", "HEAD")
+def _commit_work(record: dict) -> str:
+    """Commit the run's declared work in its own tree and return the revision.
+
+    The work belongs to the run's worktree, not the repository the run was
+    dispatched from: promotion reads a citation against the tree the record
+    names, where a commit made on the repository's branch is not on the run's
+    history.
+    """
+    tree = Path(record["worktree"])
+    (tree / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
+    _git(tree, "add", "reckon/target.py")
+    _git(tree, "commit", "-q", "-m", "feat: the run's declared work")
+    return _git(tree, "rev-parse", "HEAD")
 
 
 def test_a_resumed_run_with_no_manifest_of_its_own_is_refused(home, repo) -> None:
     record = _dispatch_live_run(repo)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     run_id = record["run_id"]
 
     # The attempt before this one delivered, and this one has not: the resume
@@ -210,7 +217,7 @@ def test_a_resumed_run_with_no_manifest_of_its_own_is_refused(home, repo) -> Non
 
 def test_a_live_attempt_that_has_written_no_manifest_is_refused(home, repo) -> None:
     record = _dispatch_live_run(repo)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     run_id = record["run_id"]
 
     # A run in progress: the worker is alive and has delivered nothing yet.
@@ -226,7 +233,7 @@ def test_a_manifest_older_than_the_attempt_does_not_license_promotion(
     home, repo
 ) -> None:
     record = _dispatch_live_run(repo)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     run_id = record["run_id"]
 
     # A first dispatch: the manifest is fresh for this attempt by its baseline,
@@ -245,7 +252,7 @@ def test_a_manifest_older_than_the_attempt_does_not_license_promotion(
 
 def test_a_manifest_newer_than_the_attempt_licenses_promotion(home, repo) -> None:
     record = _dispatch_live_run(repo)
-    work = _commit_work(repo)
+    work = _commit_work(record)
     run_id = record["run_id"]
 
     # The same run, with the verdict written by the attempt now running.

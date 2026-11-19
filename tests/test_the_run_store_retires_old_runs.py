@@ -190,6 +190,20 @@ def test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_field
     assert not hot_ids()
 
 
+def test_a_ledger_whose_documents_are_gone_keeps_its_cached_rows(history):
+    root, _, records, _ = history
+    state = root / "docs" / "state" / "sample"
+    for path in state.iterdir():
+        path.unlink()
+    assert not any(state.iterdir()), "the fixture left a document behind"
+    with run_store.RunStore(root=root) as store:
+        for _ in range(2):
+            assert set(store.durable_rows("sample")) == {
+                record["run_id"] for record in records
+            }
+    assert len(hot_ids()) == len(records)
+
+
 def test_an_import_racing_retirement_does_not_recreate_a_hot_run(history, monkeypatch):
     root, now, records, _ = history
     inspected = threading.Event()

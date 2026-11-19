@@ -1,0 +1,84 @@
+<section id="qwnw-red-file-a-shadow-is-reviewed-on-its-patch-landing">
+  <h2>A shadow is reviewed on its patch</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_a_shadow_is_reviewed_on_its_patch.py</code> was red on the
+  primary branch. Three of its four cases passed; the fourth,
+  <code>test_a_run_that_is_not_a_shadow_keeps_todays_brief</code>, compares the
+  whole composed brief against a spelled-out expectation whose blocks are
+  spelled rather than read from the composer, so that a change to what the brief
+  states turns it red instead of moving both sides together.</p>
+
+  <p>The composer gained a block the expectation did not account for. Commit
+  <code>9c00916421095ef186210bec2e6ff03af439811e</code> (2026-11-17) inserts
+  <code>_reviewed_scope_block(record, head)</code> between the identity lines and
+  the review record contract of every composed brief, naming the reviewed node's
+  declared write paths and the paths its range delivered. The file was last
+  changed on 2026-10-24, so its expectation still expected the identity to be
+  followed directly by the contract.</p>
+
+  <p><strong>Verdict: the test was wrong, not the product.</strong> The scope
+  block is deliberate product behaviour: a reviewer scores a node against its
+  section's expected scope and can only do so when the brief names what the node
+  declared and what it changed. The test's rule — that a non-shadow brief is the
+  rubric, the identity and the record contract — is the test's rule, not the
+  code's, and the code no longer keeps it.</p>
+
+  <p>The repair spells the new block as its own constant, beside the identity and
+  record-contract constants it already spells, and places it where the composer
+  places it. Nothing is deleted or weakened: the assertion remains whole-text
+  equality over the composed brief, and the two absence assertions
+  (<code>"shadow" not in text</code>) are unchanged.</p>
+
+  <h3 id="qwnw-red-file-a-shadow-is-reviewed-on-its-patch-measured">Measured</h3>
+
+  <p>The named file ran once per arm, each as a job on <code>all_debug</code>,
+  with <code>SLURM_JOB_ID</code> unset for the file's process.</p>
+
+  <table id="qwnw-red-file-a-shadow-is-reviewed-on-its-patch-arms">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>job</th><th>command</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>018823953e18f9b55c468663ab0c2c421428bc2c</code></td>
+        <td>1327254 (all_debug)</td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_shadow_is_reviewed_on_its_patch.py</code></td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>5ef80e9b2dab31cfebbad64ab51b702a42380727</code></td>
+        <td>all_debug (crew verify-gate --worker)</td>
+        <td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_shadow_is_reviewed_on_its_patch.py</code></td>
+        <td>4 passed, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The base arm ran in a scratch extraction of the base revision, so its log
+  names the tree it measured and the module it imported — the extracted tree's
+  own <code>reckon/crew/recovery_review_subject.py</code> — rather than whatever
+  the process stood in.</p>
+
+  <h3 id="qwnw-red-file-a-shadow-is-reviewed-on-its-patch-control">Negative control</h3>
+
+  <p>At the base revision the composed brief already carried the scope block and
+  the expectation did not:</p>
+
+  <pre><code>FAILED tests/test_a_shadow_is_reviewed_on_its_patch.py::test_a_run_that_is_not_a_shadow_keeps_todays_brief
+  + Scope the reviewed node declared, and the diff it delivered
+  + Declared write paths: none. The repository is the scope a node declaring nothing is expected to change.
+  + </code></pre>
+
+  <p>At head the same command over the same file reads <code>4 passed</code>,
+  <code>EXIT=0</code>.</p>
+
+  <h3 id="qwnw-red-file-a-shadow-is-reviewed-on-its-patch-outside">Outside scope</h3>
+
+  <p>The declared suite's two arms both pass with no failure in either, so this
+  change adds no failure against the base. This gate measures only this node's
+  own change; verifying the merged result belongs to a separately dispatched
+  test node.</p>
+</section>

@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:01:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-gate-names-its-arms-at-current-main.html",
+      "line": 98,
+      "severity": "non-blocking",
+      "text": "the ruff `check` and `format --check` results the done_when requires are stated in the fragment and in manifest.md:20 but no log under logs/ records that run, so the done_when's ruff arm is claimed rather than shown."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-gate-names-its-arms-at-current-main.html",
+      "line": 59,
+      "severity": "non-blocking",
+      "text": "the head-arm row names 15e224be731faf4e10360f3a36786591ed97b7d1 while the run's head is 7f37243d45f4d975517a34781946a58f43bd240b, so the arm measured a commit behind the revision the review is filed against; the fragment commit touches only this html, which is why the figure still holds, but the record does not measure the head it speaks for."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the goal is that tests/test_a_gate_names_its_arms.py passes in full; the diff replaces four reply-reading call sites with one `_receipt` helper at tests/test_a_gate_names_its_arms.py:236, and I ran the gate command in the reviewed worktree at 7f37243d45f4 and read 5 passed in 4.23s.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, both arms as inline JSON on full 40-character revisions, and the base run as control; manifest.md:11 records both arms and manifest.md:13-16 the four logs, and the ruff arm the done_when also names is claimed at manifest.md:20 with no run log under logs/.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's two paths, tests/test_a_gate_names_its_arms.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-gate-names-its-arms-at-current-main.html, are both inside them.\nVERDICT manifest: read manifest.md:1-24; it records status complete, both commits (15e224be731faf4e10360f3a36786591ed97b7d1 and 7f37243d45f4d975517a34781946a58f43bd240b), the two gate arms and two suite arms with job ids and EXIT receipts, the negative control's four ids, and the sibling test reported under outside_scope.\nVERDICT diff: read commit by commit against bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68; 15e224be73 adds `_receipt` plus four one-line call-site substitutions in tests/test_a_gate_names_its_arms.py, and 7f37243d45f4 adds the 133-line evidence fragment; no product source is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_gate_names_its_arms.py:236 is the whole repair and the file reads 5 passed at 7f37243d45f4 where main b1d7f9e reads the four recorded KeyErrors.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-arm.log and logs/base-arm.log carry revision, tree, module, command and a bare EXIT= line for both arms, but the done_when's ruff arm is asserted at manifest.md:20 without a log and the job ids appear only in prose.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff is confined to tests/test_a_gate_names_its_arms.py and its permitted fragment, and the sibling file that fails the same way is reported under outside_scope at manifest.md:22 rather than edited.\nSCORE durability: 17\nJUSTIFICATION durability: the four assertions, e.g. tests/test_a_gate_names_its_arms.py:402 `payload[\"added_failure_ids\"] == [\"tests/test_one.py::test_new\"]`, redden if the record drops that field of the refusal; a reversion to a fat reply alone leaves them green because `_receipt` still resolves record_path.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_gate_names_its_arms.py:236 sits with the module's other helpers and reuses their docstring-and-local-helper idiom, adding no new name outside the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the three-line `json.loads(Path(json.loads(result.output)[\"record_path\"]).read_text())` idiom at tests/test_a_clean_landing_releases_its_worktree.py:126 is already inlined in two test files and has no owner in tests/conftest.py or reckon/, so `_receipt` names it rather than duplicating a mechanism the repository owns.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-gate-names-its-arms-at-current-main.html:98 non-blocking: the ruff `check` and `format --check` results the done_when requires are stated in the fragment and in manifest.md:20 but no log under logs/ records that run, so the done_when's ruff arm is claimed rather than shown.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-gate-names-its-arms-at-current-main.html:59 non-blocking: the head-arm row names 15e224be731faf4e10360f3a36786591ed97b7d1 while the run's head is 7f37243d45f4d975517a34781946a58f43bd240b, so the arm measured a commit behind the revision the review is filed against; the fragment commit touches only this html, which is why the figure still holds, but the record does not measure the head it names.",
+  "review_run_id": "r-20261118T183359289978-review-of-qwnw-red-file-a-gate-names-its-arms-at-current-main-7f37243d45f4",
+  "reviewed_base_sha": "bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68",
+  "reviewed_head_sha": "7f37243d45f4d975517a34781946a58f43bd240b",
+  "reviewed_run_id": "r-20261118T063918175084-qwnw-red-file-a-gate-names-its-arms-at-current-main",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:26:03.318822+00:00",
+  "total": 107
+}

@@ -226,10 +226,27 @@ def _write_pointer(
     _write_json(pointer_path(run_id), record)
 
 
-def _write_manifest(path: Path, *, red_log: Path | None) -> None:
+def _write_manifest(
+    path: Path, *, red_log: Path | None, arm_failure_ids: list[str] | None = None
+) -> None:
     lines = ["status: complete", "node: node-a", "commits: []"]
     if red_log is not None:
         lines.append(f"negative_control_log: {red_log}")
+    if arm_failure_ids is not None:
+        lines.append(
+            "after_suite: "
+            + json.dumps(
+                {
+                    "revision": "0" * 40,
+                    "command": "pytest -q tests",
+                    "exit_status": 1,
+                    "completed": True,
+                    "failure_count": len(arm_failure_ids),
+                    "failure_ids": list(arm_failure_ids),
+                },
+                sort_keys=True,
+            )
+        )
     lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -271,17 +288,29 @@ def test_promotion_refuses_a_passing_gate_without_the_declared_red_log(
 def test_promotion_refuses_a_log_that_does_not_name_the_declared_mutation(
     repository: Path, tmp_path: Path
 ) -> None:
-    """A failing log for another reason is not the negative control."""
+    """A failing log for another reason is not the negative control.
+
+    The declaration is a label the verdict row carries beside the log path, not
+    a string any log has to repeat: the control is admitted on the run's facts,
+    and the fact that decides this one is that its failing id is a test the
+    run's own head arm also fails. Without that arm the log would name no
+    comparison at all, so the fixture states the arm the refusal rests on.
+    """
     run_id = "r-20260919T090100000000-node-a"
     red = tmp_path / "other_failure.log"
-    red.write_text("FAILED tests/test_other.py - AssertionError\n", encoding="utf-8")
+    red.write_text(
+        "FAILED tests/test_other.py::test_elsewhere - AssertionError\n",
+        encoding="utf-8",
+    )
     manifest = tmp_path / "manifest.md"
-    _write_manifest(manifest, red_log=red)
+    _write_manifest(
+        manifest, red_log=red, arm_failure_ids=["tests/test_other.py::test_elsewhere"]
+    )
     _write_pointer(
         repository,
         run_id,
         write_paths=["tests/test_guard.py"],
-        negative_control="removing the guard turns the fixture red",
+        negative_control="removing the declared mutation",
         manifest_path=manifest,
     )
 
@@ -294,7 +323,9 @@ def test_promotion_refuses_a_log_that_does_not_name_the_declared_mutation(
             review_waiver=REVIEW_WAIVER,
         )
 
-    assert "removing the guard turns the fixture red" in str(refusal.value)
+    message = str(refusal.value)
+    assert "removing the declared mutation" in message
+    assert "adds no failure to the head arm's" in message
 
 
 def test_promotion_admits_a_red_log_that_names_the_declared_mutation(

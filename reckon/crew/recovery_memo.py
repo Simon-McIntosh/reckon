@@ -24,6 +24,7 @@ from .recovery_liveness import (
     ATTEMPT_RECORD_NAME,
     EXIT_RECORD_NAME,
     WORKER_RECORD_NAME,
+    _run_home_holds_records,
 )
 
 
@@ -179,11 +180,9 @@ def _write_classification_memo(
     """Persist one run's memo in its directory, atomically and best-effort.
 
     The memo is a cache written by a read, so it never brings a run's home into
-    being: a directory that is absent or empty is not yet the run's home, and a
-    memo written into it would make it one — leaving a run directory behind a
-    pointer that never had any, which a discard then finds a marker's place in,
-    reading a deliberate discard for a pointer that only ever vanished. A
-    directory that already holds the run's records is left to keep its memo.
+    being: :func:`_run_home_holds_records` is the one rule for that, shared
+    with the launcher observation the same read may write. A directory that
+    already holds the run's records is left to keep its memo.
 
     Every reader of the live fleet shares these files, so the write lands
     through a rename: a reader either sees the previous memo or this one, never
@@ -193,7 +192,7 @@ def _write_classification_memo(
     path = _classification_memo_path(record)
     if path is None:
         return
-    if not path.parent.is_dir() or not any(path.parent.iterdir()):
+    if not _run_home_holds_records(path.parent):
         return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
@@ -506,6 +505,12 @@ def _review_annotation_identities(record: Mapping[str, Any]) -> dict[str, str]:
     manifest = directory / review_module._MANIFEST_FILE_NAME
     signature = _file_identity(manifest)
     identities = {str(manifest): signature}
+    if signature == "absent":
+        # A run with no manifest yet has nothing to annotate a review from, and
+        # the read would raise rather than answer: the memo stores only what a
+        # computation returned, so every poll would open the missing file again
+        # and an unchanged run would cost an open instead of a stat.
+        return identities
     try:
         text = file_memo.memoized_key(
             "review_annotation_manifest",
@@ -663,15 +668,34 @@ def _read_review_once(
     reports to the next reader, and two readers that miss at once -- the review
     reflex on its own thread beside the tick -- cannot race on the cache's own
     structure.
+
+    The files the answer was read past travel with it. A reader meets a record
+    mid-write by skipping it, and a held answer serves the next reader without
+    that read: the file is still unreadable, so the findings the read collected
+    are noted again wherever the answer is served, into whatever region is open
+    then. Without them a later derivation of the same fleet reports no finding
+    at all and its duties disagree with the ones a sweep of the same files
+    publishes.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
         return reader()
     digest = _classification_key(_review_read_inputs(record, tree=tree))
-    return file_memo.memoized_key(
-        "stored_review_answer", (project, run_id, *selector, digest), reader
+
+    def read_carrying_findings() -> tuple[Any, tuple[dict[str, str], ...]]:
+        with collect_read_failures() as read_failures:
+            answer = reader()
+        return answer, tuple(dict(entry) for entry in read_failures)
+
+    answer, findings = file_memo.memoized_key(
+        "stored_review_answer",
+        (project, run_id, *selector, digest),
+        read_carrying_findings,
     )
+    for finding in findings:
+        note_read_failure(finding)
+    return answer
 
 
 # Tokens a terminal message carries that belong to the run rather than to the
@@ -990,6 +1014,8 @@ from .review_records import (  # noqa: E402
     _record_identity,
     _store_paths,
     _tick_store,
+    collect_read_failures,
+    note_read_failure,
     review_run_record_names,
     review_store_tick,
 )

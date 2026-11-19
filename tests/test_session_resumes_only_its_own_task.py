@@ -175,8 +175,13 @@ def test_a_new_node_does_not_continue_the_members_other_node_session(
 ) -> None:
     """The defect: the member's last session, keyed by member, not by task."""
     shared = "coordinator-one"
-    roster_path = repo / "docs" / "state" / "proj" / "crew.json"
-    roster_before = roster_path.read_bytes()
+    # The roster registers the member and is store-only, so the snapshot a
+    # dispatch must leave alone is the roster the store serves, not a file in
+    # the checkout.
+    roster_before = ledger.members("proj", root=repo)
+    # A comparison of two empty rosters would pass without observing the
+    # member the dispatch must leave alone.
+    assert [entry["id"] for entry in roster_before] == ["worker-a"]
     first = _dispatch(home, repo, "task-alpha", session=shared)
     _complete(first, ALPHA_SESSION)
     # A real captured session exists on the other task's run. The next
@@ -185,13 +190,13 @@ def test_a_new_node_does_not_continue_the_members_other_node_session(
     assert recorded["session_id"] == ALPHA_SESSION
     assert recorded["session_harness"] == "codex"
     assert recorded["session_model"] == "some-model"
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.members("proj", root=repo) == roster_before
 
     dispatched = _dispatch(home, repo, "task-beta", session=shared)
 
     assert dispatched["session_id"] is None
     assert _resume_carried(list(dispatched["argv"])) is None
-    assert roster_path.read_bytes() == roster_before
+    assert ledger.members("proj", root=repo) == roster_before
 
 
 # ── case 2: a second dispatch of the same task continues its session ────────

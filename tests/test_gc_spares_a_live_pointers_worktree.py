@@ -129,6 +129,20 @@ def _retained(repository: Path, run_id: str, tree: Path) -> None:
     ledger.append_run(PROJECT, record, root=repository, allow_create=True)
 
 
+def _unlanded_commit(tree: Path) -> None:
+    """A commit in the retained tree that the primary branch does not reach.
+
+    A retained tree is a duty while deleting it would lose work: an uncommitted
+    change, or a commit no primary ref reaches. A tree left at head with
+    nothing of its own holds nothing, so the tree the remedy names carries the
+    run's own unlanded commit.
+    """
+    (tree / "retained.txt").write_text("retained\n", encoding="utf-8")
+    identity = ("-c", "user.name=Worker", "-c", "user.email=worker@example.invalid")
+    _git(tree, *identity, "add", "retained.txt")
+    _git(tree, *identity, "commit", "-q", "-m", "test: retain unlanded work")
+
+
 def test_a_sweep_spares_a_parked_runs_worktree(fleet: Path) -> None:
     """A parked run's tree survives an applying sweep, whichever phase it carries.
 
@@ -208,6 +222,7 @@ def test_the_held_tree_remedy_names_a_run_scoped_sweep(fleet: Path) -> None:
     """A held tree's remedy confines the sweep to that run, and holds no released tree."""
     tree = _worktree(fleet, "held-node")
     _retained(fleet, RUN_HELD, tree)
+    _unlanded_commit(tree)
     now = datetime.now(tz=UTC)
 
     held = obligations_module._held_worktrees(PROJECT, SESSION, now=now)

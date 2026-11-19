@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:_build_fleet_state",
+    "reckon/crew/obligation_snapshot.py:_derive_fleet_state",
+    "reckon/crew/obligation_snapshot.py:2305 fleet_state",
+    "reckon/crew/station_obligations.py:426 fleet_state",
+    "reckon/crew/recovery_stream.py:_lane_rate_contributions"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:44:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_stream.py",
+      "line": "203",
+      "severity": "non-blocking",
+      "text": "non-blocking: the inline row filter repeats ledger._active_records (reckon/ledger.py:2019) in predicate and shape, so the index's activity rule now has two copies and a change to one silently admits a different row population under a derivation than outside it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-derivation-builds-the-ledger-index-once.html",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records that with the fixture corrected the file still failed, measuring one derivation built the index 2 times, but no log of that arm exists among the run's logs or in its manifest test_logs, so the product cause rests on a measurement no log records."
+    },
+    {
+      "file": "reckon/crew/recovery_stream.py",
+      "line": "193",
+      "severity": "non-blocking",
+      "text": "non-blocking: derivation_run_rows resolves the held pass by project alone (reckon/crew/obligations.py:3729), so where _ledger_read_root keeps the checkout's own root (reckon/crew/obligations.py:3375) the utilisation reader is answered from rows read against a different ledger file than its own bounded read names, and tests/test_a_derivation_builds_the_ledger_index_once.py:204 compares only held_worktrees across the two routes."
+    },
+    {
+      "file": "logs/gate-head.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log names the tree and the command but no scheduler or partition, and both declared arms ran under a bare pytest with SLURM_JOB_ID unrecorded, so the done_when's requirement that the arms be all_debug jobs is not visible from the records the run kept."
+    }
+  ],
+  "head_log_revision": "391c3990ff3445db898ec0eb69a7df08181a8743",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 35fb9f3ae7; 15a516675e carries the whole repair (the derivation_history marker and derivation_run_rows at reckon/crew/obligations.py:3701-3735 and the shared-rows branch at reckon/crew/recovery_stream.py:193-206, plus the reordered held-worktree pass at reckon/crew/obligation_snapshot.py:1926-1955, the fixture commit at tests/test_a_derivation_builds_the_ledger_index_once.py:96 and the count control at :208-215), while 1b6338b5e0 and 391c3990ff touch only the evidence fragment.",
+    "done_when": "the done_when requires the named file to pass in full at head as an all_debug job with SLURM_JOB_ID unset after a base-first run, per-cause verdicts, no assertion deleted or weakened, and an arm over the test files as inline JSON with 40-character revisions; logs/gate-head.log records 3 passed EXIT=0 and logs/gate-base.log 3 failed EXIT=1 at those revisions, and the manifest's baseline_suite/after_suite record 58 passed EXIT=0 at 35fb9f3ae7 and 391c3990ff, so the gate asserts the measure apart from the scheduler identity, which neither gate log carries.",
+    "goal": "the reviewed node's goal is that tests/test_a_derivation_builds_the_ledger_index_once.py pass in full on the primary branch (dispatch-detail.json admit_request.node.goal); the landed change repairs the derivation at reckon/crew/obligation_snapshot.py:1926-1955 and reckon/crew/recovery_stream.py:193-206 so one derivation decodes the ledger index once, and I re-ran the named file in a scratch tree at both revisions: 3 passed at 391c3990ff and 3 failed at 35fb9f3ae7.",
+    "manifest": "read at ~/.config/reckon/crew/runs/r-20261118T054300199090-qwnw-red-file-a-derivation-builds-the-ledger-index-once/manifest.md; it reads status complete with commits 15a516675e, 1b6338b5e0 and 391c3990ff, the gate at head 3 passed, the base arm 3 failed, negative_control_log naming logs/gate-base.log, and both suite arms 58 passed at 40-character revisions, and it names both causes the done_when asks it to name: the fixture's tree held no work, and the product decoded one index twice.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the fragment file and a figures directory; the diff touches reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew/recovery_stream.py, tests/test_a_derivation_builds_the_ledger_index_once.py and the fragment, every one inside the fence, with the figures directory untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_derivation_builds_the_ledger_index_once.py:186-189 reddens at 2 builds if the shared-rows branch at reckon/crew/recovery_stream.py:193-206 is reverted, but no recorded arm isolates that regression from the fixture gap that reddens the base arm first.",
+    "evidence": "logs/gate-head.log and logs/gate-base.log carry revision, tree, command, module path and a bare EXIT line, but the recorded red at 35fb9f3ae7 is the fixture's empty held_worktrees (logs/gate-base.log:19), not the count assertion, and the corrected-fixture measurement the fragment relies on is not logged.",
+    "fit": "reckon/crew/obligations.py:3701-3719 follows the module's own ContextVar-plus-contextmanager idiom used for _HELD_SOURCE_SIGNATURE at reckon/crew/obligations.py:3870, and the added names carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "the named file passes in full at 391c3990ff (3 passed, re-run here) because reckon/crew/recovery_stream.py:193 takes the derivation's own rows instead of decoding the index a second time, and it fails at 35fb9f3ae7 (3 failed, re-run here).",
+    "reuse": "derivation_run_rows extends the existing recorded_run_rows seam at reckon/crew/obligations.py:3673 rather than opening a second reader, but reckon/crew/recovery_stream.py:203-206 re-implements ledger._active_records (reckon/ledger.py:2019) inline.",
+    "scope_discipline": "the five paths in git diff 35fb9f3ae7..391c3990ff all lie inside the declared write paths, and the only test edits are the fixture's unlanded commit (tests/test_a_derivation_builds_the_ledger_index_once.py:96) and the count control at :208-215, both implied by the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that tests/test_a_derivation_builds_the_ledger_index_once.py pass in full on the primary branch (dispatch-detail.json admit_request.node.goal); the landed change repairs the derivation at reckon/crew/obligation_snapshot.py:1926-1955 and reckon/crew/recovery_stream.py:193-206 so one derivation decodes the ledger index once, and I re-ran the named file in a scratch tree at both revisions: 3 passed at 391c3990ff and 3 failed at 35fb9f3ae7.\nVERDICT done_when: the done_when requires the named file to pass in full at head as an all_debug job with SLURM_JOB_ID unset after a base-first run, per-cause verdicts, no assertion deleted or weakened, and an arm over the test files as inline JSON with 40-character revisions; logs/gate-head.log records 3 passed EXIT=0 and logs/gate-base.log 3 failed EXIT=1 at those revisions, and the manifest's baseline_suite/after_suite record 58 passed EXIT=0 at 35fb9f3ae7 and 391c3990ff, so the gate asserts the measure apart from the scheduler identity, which neither gate log carries.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the fragment file and a figures directory; the diff touches reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/crew/recovery_stream.py, tests/test_a_derivation_builds_the_ledger_index_once.py and the fragment, every one inside the fence, with the figures directory untouched.\nVERDICT manifest: read at ~/.config/reckon/crew/runs/r-20261118T054300199090-qwnw-red-file-a-derivation-builds-the-ledger-index-once/manifest.md; it reads status complete with commits 15a516675e, 1b6338b5e0 and 391c3990ff, the gate at head 3 passed, the base arm 3 failed, negative_control_log naming logs/gate-base.log, and both suite arms 58 passed at 40-character revisions, and it names both causes the done_when asks it to name: the fixture's tree held no work, and the product decoded one index twice.\nVERDICT diff: read commit by commit against base 35fb9f3ae7; 15a516675e carries the whole repair (the derivation_history marker and derivation_run_rows at reckon/crew/obligations.py:3701-3735 and the shared-rows branch at reckon/crew/recovery_stream.py:193-206, plus the reordered held-worktree pass at reckon/crew/obligation_snapshot.py:1926-1955, the fixture commit at tests/test_a_derivation_builds_the_ledger_index_once.py:96 and the count control at :208-215), while 1b6338b5e0 and 391c3990ff touch only the evidence fragment.\nCALL_SITES: reckon/crew/obligation_snapshot.py:_build_fleet_state, reckon/crew/obligation_snapshot.py:_derive_fleet_state, reckon/crew/obligation_snapshot.py:2305 fleet_state, reckon/crew/station_obligations.py:426 fleet_state, reckon/crew/recovery_stream.py:_lane_rate_contributions\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the named file passes in full at 391c3990ff (3 passed, re-run here) because reckon/crew/recovery_stream.py:193 takes the derivation's own rows instead of decoding the index a second time, and it fails at 35fb9f3ae7 (3 failed, re-run here).\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log and logs/gate-base.log carry revision, tree, command, module path and a bare EXIT line, but the recorded red at 35fb9f3ae7 is the fixture's empty held_worktrees (logs/gate-base.log:19), not the count assertion, and the corrected-fixture measurement the fragment relies on is not logged.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in git diff 35fb9f3ae7..391c3990ff all lie inside the declared write paths, and the only test edits are the fixture's unlanded commit (tests/test_a_derivation_builds_the_ledger_index_once.py:96) and the count control at :208-215, both implied by the goal.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_derivation_builds_the_ledger_index_once.py:186-189 reddens at 2 builds if the shared-rows branch at reckon/crew/recovery_stream.py:193-206 is reverted, but no recorded arm isolates that regression from the fixture gap that reddens the base arm first.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:3701-3719 follows the module's own ContextVar-plus-contextmanager idiom used for _HELD_SOURCE_SIGNATURE at reckon/crew/obligations.py:3870, and the added names carry no plan, sprint or ticket identifier.\nSCORE reuse: 16\nJUSTIFICATION reuse: derivation_run_rows extends the existing recorded_run_rows seam at reckon/crew/obligations.py:3673 rather than opening a second reader, but reckon/crew/recovery_stream.py:203-206 re-implements ledger._active_records (reckon/ledger.py:2019) inline.\nFINDING reckon/crew/recovery_stream.py:203 non-blocking: the inline row filter repeats ledger._active_records (reckon/ledger.py:2019) in predicate and shape, so the index's activity rule now has two copies and a change to one silently admits a different row population under a derivation than outside it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-derivation-builds-the-ledger-index-once.html:64 non-blocking: the fragment records that with the fixture corrected the file still failed, measuring one derivation built the index 2 times, but no log of that arm exists among the run's logs or in its manifest test_logs, so the product cause rests on a measurement no log records.\nFINDING reckon/crew/recovery_stream.py:193 non-blocking: derivation_run_rows resolves the held pass by project alone (reckon/crew/obligations.py:3729), so where _ledger_read_root keeps the checkout's own root (reckon/crew/obligations.py:3375) the utilisation reader is answered from rows read against a different ledger file than its own bounded read names, and tests/test_a_derivation_builds_the_ledger_index_once.py:204 compares only held_worktrees across the two routes.\nFINDING logs/gate-head.log:2 non-blocking: the gate log names the tree and the command but no scheduler or partition, and both declared arms ran under a bare pytest with SLURM_JOB_ID unrecorded, so the done_when's requirement that the arms be all_debug jobs is not visible from the records the run kept.",
+  "review_run_id": "r-20261119T114855484909-review-of-qwnw-red-file-a-derivation-builds-the-ledger-index-once-391c3990ff34",
+  "reviewed_base_sha": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+  "reviewed_head_sha": "391c3990ff3445db898ec0eb69a7df08181a8743",
+  "reviewed_run_id": "r-20261118T054300199090-qwnw-red-file-a-derivation-builds-the-ledger-index-once",
+  "reviewer_run_id": "r-20261119T114855484909-review-of-qwnw-red-file-a-derivation-builds-the-ledger-index-once-391c3990ff34",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:13:44.447071+00:00",
+  "total": 105
+}

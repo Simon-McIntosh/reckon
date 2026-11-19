@@ -7,6 +7,9 @@ row's section made one pass take many minutes with thirty requests waiting.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from reckon.crew.admission import readiness
 
 
@@ -20,7 +23,13 @@ def test_rows_of_other_sections_never_reach_the_discard_check(monkeypatch) -> No
         }
         for index in range(100)
     ]
-    monkeypatch.setattr(readiness, "_ledger_run_rows", lambda project, cache: rows)
+    asked: list[tuple[str, str | None]] = []
+
+    def ledger_rows(project: str, plan: Mapping[str, Any] | None, cache: Any) -> Any:
+        asked.append((project, plan))
+        return rows
+
+    monkeypatch.setattr(readiness, "_ledger_run_rows", ledger_rows)
     checked: list[str] = []
 
     def discarded(run_id: str) -> bool:
@@ -32,4 +41,7 @@ def test_rows_of_other_sections_never_reach_the_discard_check(monkeypatch) -> No
     held = readiness._section_run_unlanded("p", "wanted-plan", "s2", live=[])
 
     assert held is False
+    # The read names the plan it is asked about, so the store selects that
+    # plan's rows rather than decoding the project's whole ledger.
+    assert asked == [("p", "wanted-plan")]
     assert checked == []

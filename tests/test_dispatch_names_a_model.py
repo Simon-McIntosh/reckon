@@ -171,8 +171,11 @@ def dispatch(
 
 
 def payload(result) -> dict:
-    assert result.exit_code == 0, result.output
-    return json.loads(result.output.splitlines()[0])
+    # ``dispatch`` answers with one JSON document on stdout and may print
+    # progress notices to stderr (``reckon: created run ...``), which
+    # ``result.output`` folds in ahead of the document.
+    assert result.exit_code == 0, result.stdout + result.stderr
+    return json.loads(result.stdout.splitlines()[0])
 
 
 def _launch_argv(backend_name: str, repo: Path) -> list[str]:

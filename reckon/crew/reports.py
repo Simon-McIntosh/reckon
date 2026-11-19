@@ -3119,18 +3119,18 @@ def _write_scope_findings(
 ) -> list[str]:
     """Report changed paths outside the write scope, naming a joined list as one.
 
-    A list field is split on commas, not spaces, so a value whose entries are
-    separated by spaces arrives as one item holding internal whitespace. That
-    item lies outside every declared root, and a scope finding printing it among
-    the strays would render the single joined item as the several paths it names,
-    leaving the missing commas as the only sign it parsed one. When the item's
-    own whitespace-separated parts each lie within the declared scope, the value
-    is a space-separated list rather than a stray path, and the audit names that
-    reading in place of a scope finding for the item — the field, the single item
-    it parsed and the comma rule — so its author rewrites the value rather than
-    hunting a record the check is not comparing against. The parse is unchanged,
-    so the value stays a defect the worker fixes; every remaining stray path is
-    quoted, so one path can never read as several.
+    The guarded list fields are read entry by entry before this runs, so a
+    ``changed_paths`` value whose entries are separated by spaces has already
+    been split into those entries and each is read against the declared roots.
+    This rule therefore guards the shape for any caller that hands it an item
+    still holding internal whitespace: such an item lies outside every declared
+    root, and a scope finding printing it among the strays would render the
+    single joined item as the several paths it names, so when the item's own
+    whitespace-separated parts each lie within the declared scope the audit
+    names that reading in place of a scope finding for the item — the field, the
+    single item it parsed and the comma rule — and its author rewrites the value
+    rather than hunting a record the check is not comparing against. Every
+    remaining stray path is quoted, so one path can never read as several.
     """
     declared = tuple(declared)
     separated: set[str] = set()

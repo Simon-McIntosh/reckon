@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-19T11:54:46Z",
+  "dispatched_at": "2026-11-19T11:33:22Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html",
+      "line": 42,
+      "severity": "non-blocking",
+      "text": "The head-suite row states 58 passed, EXIT=0 and a job on all_debug at 01e09365, but none of the four logs the fragment cites at :47-48 carries that figure: after-suite-head.log runs the same revision and reads '61 passed', while the 58-passed census run at that revision is scoped-gate-1795050109280552634.log, which the fragment never names and whose header carries no partition line, so the all_debug claim rests on prose. The row also names the parent 01e09365 while the delivered head e84b7ee32d has its own census arm (scoped-gate-1795086937352205214.log, '58 passed', EXIT=0)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The node-file head arm named in test_logs is scoped-gate-1795050175190579266.log, whose header reads revision 01e09365 while the delivered head is e84b7ee32d; e84b7ee32d changes that very file (the _base_outside import, the fixture's yield and cleanup, the removed tempfile import) and no gate run of it at the delivered revision exists anywhere in the run directory, so the done_when's passes-in-full-at-head clause is recorded one commit behind the change. I ran the file from a tree extracted at e84b7ee32d and it reads '3 passed in 12.63s' with EXIT=0 at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T112816460120-review-of-qwnw-red-file-stop-before-spawn-spawns-nothing-e84b7ee32d0f/head-arm-node-file.log, so the code is sound and only the record is stale."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none: the delta touches no production module, and the runtime path it exercises, reckon/_worker_fence.py worker_tmp_mount_source, is unchanged by it.",
+    "diff": "Read 00c3211adb..e84b7ee32d commit by commit (one commit, two files): tests/test_stop_before_spawn_spawns_nothing.py drops the inlined /dev/shm-then-home loop from _stub_base and asks tests.test_fenced_worker_tmp_is_its_scratch._base_outside instead, removes the now-unused tempfile import, and the fragment replaces the unsupported exec and exit.json quotes with the assertion base-arm-stop-gate.log actually carries and corrects the base-extraction row to '56 passed, 2 errors'.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, both arms as inline JSON over the importer set, each cause with a product-or-test verdict and no assertion weakened; the census arms are recorded at both delivered revisions (baseline-suite-base.log '56 passed, 2 errors' EXIT=1 at 4d464485, scoped-gate-1795086937352205214.log '58 passed' EXIT=0 at e84b7ee32d) and no assertion changed in the delta, but the node file's own green arm, scoped-gate-1795050175190579266.log '3 passed', is at the parent 01e09365 rather than the delivered head.",
+    "goal": "The node goal is to make tests/test_stop_before_spawn_spawns_nothing.py pass in full on the primary branch; I extracted e84b7ee32d and ran the file there (head-arm-node-file.log) and it reads '3 passed in 12.63s' with EXIT=0, the re-pointed case at tests/test_stop_before_spawn_spawns_nothing.py:783 among them.",
+    "manifest": "Read the 15-line manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing/manifest.md: it carries tests, test_logs, baseline_suite and after_suite as inline JSON whose 40-character revisions match the cited logs' headers, and it names no product-or-test cause verdict, so the done_when's 'the manifest lists each cause with a verdict' clause is still unstated.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its qwnw-red-file-stop-before-spawn-spawns-nothing.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing; the delta's two files, tests/test_stop_before_spawn_spawns_nothing.py and that fragment, are inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_stop_before_spawn_spawns_nothing.py pass in full on the primary branch; the file extracted at e84b7ee32d reads '3 passed in 12.63s' EXIT=0 in head-arm-node-file.log.\nVERDICT done_when: both census arms are recorded at their own revisions (baseline-suite-base.log EXIT=1 at 4d464485, scoped-gate-1795086937352205214.log '58 passed' EXIT=0 at e84b7ee32d) but the node file's green arm is scoped-gate-1795050175190579266.log at the parent 01e09365.\nVERDICT write_paths: the delta touches tests/test_stop_before_spawn_spawns_nothing.py and the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html, both inside the declared paths.\nVERDICT manifest: the 15-line manifest carries tests, test_logs and both arms as inline JSON with 40-character revisions matching the log headers, but carries no cause verdict.\nVERDICT diff: one commit over two files, replacing the duplicated stub base with the owner at tests/test_fenced_worker_tmp_is_its_scratch.py:176 and correcting two fragment rows against their logs.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the case at tests/test_stop_before_spawn_spawns_nothing.py:783 passes at e84b7ee32d, '3 passed' EXIT=0.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795086937352205214.log records the census arm at e84b7ee32d while the node file's head arm in scoped-gate-1795050175190579266.log is at 01e09365.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths in the delta are tests/test_stop_before_spawn_spawns_nothing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html.\nSCORE durability: 17\nJUSTIFICATION durability: base-arm-stop-gate.log reds the case at 4d464485 ('1 failed, 2 passed', EXIT=1, naming test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit), so reinstating the stub base under pytest's root reddens it, though the delta's own delegation at tests/test_stop_before_spawn_spawns_nothing.py:376 is not itself asserted.\nSCORE fit: 18\nJUSTIFICATION fit: the added import at tests/test_stop_before_spawn_spawns_nothing.py:57 follows the repository's idiom of importing helpers from tests/test_* modules, and ruff check is clean on the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes the duplicate loop and asks tests/test_fenced_worker_tmp_is_its_scratch.py:176 _base_outside, the owner of the capability, and a search of reckon and tests for the /dev/shm-then-home loop finds no second copy at head.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-stop-before-spawn-spawns-nothing.html:42 non-blocking: the head row's 58-passed figure lives in scoped-gate-1795050109280552634.log, which the fragment does not cite, while the cited after-suite-head.log at the row's own revision reads 61 passed, and the all_debug claim has no log line behind it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing/manifest.md:15 non-blocking: the node-file head arm named there is at 01e09365, not the delivered e84b7ee32d that changes that file; a run at the delivered head reads '3 passed' EXIT=0.\n",
+  "review_run_id": "r-20261119T112816460120-review-of-qwnw-red-file-stop-before-spawn-spawns-nothing-e84b7ee32d0f",
+  "reviewed_base_sha": "00c3211adbff7facedef26b33c7e60930a9a3236",
+  "reviewed_head_sha": "e84b7ee32d0f2c7cef43235ecabb9a73895c5c5f",
+  "reviewed_run_id": "r-20261118T054130614240-qwnw-red-file-stop-before-spawn-spawns-nothing",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:10:34.211410+00:00",
+  "total": 106
+}

@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: baseline_suite-1795062224348162628.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 records '58 passed' with no FAILED line and EXIT=0, and after_suite-1795062267564124047.log at cd9161eb535febf46ea5b18cb569d911f0c7e638 also records '58 passed' with no FAILED summary, so the set difference between the after arm's failure ids and the base arm's is empty (0); the file's own red-to-green arms are logs/base-arm.log and logs/head-arm.slurm.log.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/routing.py:_tokens_for_bytes"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:27:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base row records only the summary \"1 failed, 3 passed\" and omits the failing id the done_when requires (\"the base run ... with its failing ids, logged beside the head run\" in this file), so the negative control is readable only by locating logs/base-arm.log in the run directory, which the row names as a bare filename that resolves nowhere on its own."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment asserts the head arm was \"run as an all_debug job\", but logs/head-arm.slurm.log:3 records \"# slurm-job-id: unset\" with no partition line and no .scheduler sidecar, and logs/head-run.sh:5 unsets SLURM_JOB_ID inside the head arm's own script, so the partition clause of the done_when rests on prose rather than on the log that records the run."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed manifest states no cause verdict in the form the done_when requires (\"the manifest lists each cause with a verdict, product wrong or test wrong\"), so the only such judgement is the fragment's sentence at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:9 stating the guard read red on the list's absence rather than on a product rule."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 42fe90d0b0; cd9161eb53 changes only the ALLOWLIST literal and its comment at tests/test_every_module_fits_a_worker_window.py:29-48, 4cb18d23cc adds the 27-line evidence fragment, and no product module, plan file, figure or assertion is touched.",
+    "done_when": "the done_when asks for the file green at head as an all_debug job with each cause given a product-or-test verdict, an arm over the change's importers adding no failure against the base, both arms as inline JSON with 40-character revisions, and the base run's failing ids logged in the evidence fragment; the manifest records full 40-character arms and a 58-passed suite pair, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:23 records only \"1 failed, 3 passed\" with no failing id, and logs/head-arm.slurm.log:3 records \"slurm-job-id: unset\" with no partition line and no scheduler sidecar beside it.",
+    "goal": "\u00a729's deliverable for this node is that tests/test_every_module_fits_a_worker_window.py passes in full, and the landed change repopulates ALLOWLIST at tests/test_every_module_fits_a_worker_window.py:29 with the eighteen modules measured over the 50,000-token bound, so the guard reads green at cd9161eb53 with 4 passed.",
+    "manifest": "read at its recorded path; it states status complete, head 4 passed against base 1 failed of 4, suite arms 58 passed at each revision, cites logs/base-arm.log and logs/head-arm.slurm.log, and both logs open and read as claimed with full revisions and bare EXIT= lines (base EXIT=1, head EXIT=0).",
+    "write_paths": "the reviewed manifest declares reckon, tests, the queued-work-needs-no-workaround fragment directory, its named fragment file and an unused figures directory, and both diff paths \u2014 tests/test_every_module_fits_a_worker_window.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html \u2014 sit inside them."
+  },
+  "justifications": {
+    "durability": "the change adds no assertion of its own and the guard covering it is the live ratchet at tests/test_every_module_fits_a_worker_window.py:63, which reinstating the base constant (an empty frozenset) reddens with all eighteen ids named as logs/base-arm.log:11 shows, and whose under-bound arm at :89 reddens an entry left behind after a split.",
+    "evidence": "the arms at logs/base-arm.log:8 and logs/head-arm.slurm.log:6 carry full revisions and EXIT lines, but logs/head-arm.slurm.log:3 shows no job id or partition and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:23 omits the base failing id, so two clauses of the done_when are unrecorded.",
+    "fit": "the rewritten comment at tests/test_every_module_fits_a_worker_window.py:28 and the frozenset literal at :29 follow the module's own ratchet idiom and its sorted quoted-path style, though the fragment ends without a trailing newline at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:27.",
+    "goal_fidelity": "the guard at tests/test_every_module_fits_a_worker_window.py:69 reads green because ALLOWLIST at :29 names the eighteen modules the base arm at logs/base-arm.log:11 reported over the bound, and no assertion was deleted or weakened to get there.",
+    "reuse": "the diff adds no definition at all, and the one capability it leans on \u2014 the context-fit byte-to-token estimate \u2014 stays with its owner at reckon/crew/routing.py:3562, imported at tests/test_every_module_fits_a_worker_window.py:20 rather than re-derived, with no second ratio found in a capability search over reckon/crew.",
+    "scope_discipline": "the diff touches only tests/test_every_module_fits_a_worker_window.py:29 and the declared evidence fragment, with no product module, plan, index or figure in it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a729's deliverable for this node is that tests/test_every_module_fits_a_worker_window.py passes in full, and the landed change repopulates ALLOWLIST at tests/test_every_module_fits_a_worker_window.py:29 with the eighteen modules measured over the 50,000-token bound, so the guard reads green at cd9161eb53 with 4 passed.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with each cause given a product-or-test verdict, an arm over the change's importers adding no failure against the base, both arms as inline JSON with 40-character revisions, and the base run's failing ids logged in the evidence fragment; the manifest records full 40-character arms and a 58-passed suite pair, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:23 records only \"1 failed, 3 passed\" with no failing id, and logs/head-arm.slurm.log:3 records \"slurm-job-id: unset\" with no partition line and no scheduler sidecar beside it.\nVERDICT write_paths: the reviewed manifest declares reckon, tests, the queued-work-needs-no-workaround fragment directory, its named fragment file and an unused figures directory, and both diff paths \u2014 tests/test_every_module_fits_a_worker_window.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html \u2014 sit inside them.\nVERDICT manifest: read at its recorded path; it states status complete, head 4 passed against base 1 failed of 4, suite arms 58 passed at each revision, cites logs/base-arm.log and logs/head-arm.slurm.log, and both logs open and read as claimed with full revisions and bare EXIT= lines (base EXIT=1, head EXIT=0).\nVERDICT diff: read commit by commit against 42fe90d0b0; cd9161eb53 changes only the ALLOWLIST literal and its comment at tests/test_every_module_fits_a_worker_window.py:29-48, 4cb18d23cc adds the 27-line evidence fragment, and no product module, plan file, figure or assertion is touched.\nCALL_SITES: reckon/crew/routing.py:_tokens_for_bytes\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the guard at tests/test_every_module_fits_a_worker_window.py:69 reads green because ALLOWLIST at :29 names the eighteen modules the base arm at logs/base-arm.log:11 reported over the bound, and no assertion was deleted or weakened to get there.\nSCORE evidence: 12\nJUSTIFICATION evidence: the arms at logs/base-arm.log:8 and logs/head-arm.slurm.log:6 carry full revisions and EXIT lines, but logs/head-arm.slurm.log:3 shows no job id or partition and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:23 omits the base failing id, so two clauses of the done_when are unrecorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/test_every_module_fits_a_worker_window.py:29 and the declared evidence fragment, with no product module, plan, index or figure in it.\nSCORE durability: 16\nJUSTIFICATION durability: the change adds no assertion of its own and the guard covering it is the live ratchet at tests/test_every_module_fits_a_worker_window.py:63, which reinstating the base constant (an empty frozenset) reddens with all eighteen ids named as logs/base-arm.log:11 shows, and whose under-bound arm at :89 reddens an entry left behind after a split.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten comment at tests/test_every_module_fits_a_worker_window.py:28 and the frozenset literal at :29 follow the module's own ratchet idiom and its sorted quoted-path style, though the fragment ends without a trailing newline at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:27.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all, and the one capability it leans on \u2014 the context-fit byte-to-token estimate \u2014 stays with its owner at reckon/crew/routing.py:3562, imported at tests/test_every_module_fits_a_worker_window.py:20 rather than re-derived, with no second ratio found in a capability search over reckon/crew.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:23 non-blocking: the base row records only the summary \"1 failed, 3 passed\" and omits the failing id the done_when requires (\"the base run ... with its failing ids, logged beside the head run\" in this file), so the negative control is readable only by locating logs/base-arm.log in the run directory, which the row names as a bare filename that resolves nowhere on its own.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:16 non-blocking: the fragment asserts the head arm was \"run as an all_debug job\", but logs/head-arm.slurm.log:3 records \"# slurm-job-id: unset\" with no partition line and no .scheduler sidecar, and logs/head-run.sh:5 unsets SLURM_JOB_ID inside the head arm's own script, so the partition clause of the done_when rests on prose rather than on the log that records the run.\nFINDING manifest.md:1 non-blocking: the reviewed manifest states no cause verdict in the form the done_when requires (\"the manifest lists each cause with a verdict, product wrong or test wrong\"), so the only such judgement is the fragment's sentence at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-module-fits-a-worker-window.html:9 stating the guard read red on the list's absence rather than on a product rule.",
+  "review_node": "review-of-qwnw-red-file-every-module-fits-a-worker-window-4cb18d23cc53",
+  "review_run_id": "r-20261119T045245424143-review-of-qwnw-red-file-every-module-fits-a-worker-window-4cb18d23cc53",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "4cb18d23cc53ab6413d81cd9fd88406811477c98",
+  "reviewed_run_id": "r-20261118T063014293587-qwnw-red-file-every-module-fits-a-worker-window",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T045245424143-review-of-qwnw-red-file-every-module-fits-a-worker-window-4cb18d23cc53"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:02:24.120617+00:00",
+  "total": 102
+}

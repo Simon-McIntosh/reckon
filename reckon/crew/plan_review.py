@@ -2202,14 +2202,9 @@ def _answer_instant(when: str) -> datetime | None:
     module wrote it. A stamp without one is read as UTC so a comparison against a
     commit's own time is never between two different zones.
     """
-    text = (when or "").strip()
-    if not text:
-        return None
-    try:
-        instant = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(when)
 
 
 def _commit_time(
@@ -2223,10 +2218,9 @@ def _commit_time(
     output = _git(repo, "show", "-s", "--format=%cI", commit)
     if not output or not output.strip():
         return None
-    try:
-        return datetime.fromisoformat(output.strip())
-    except ValueError:
-        return None
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(output)
 
 
 def _plan_text_at(
@@ -4740,6 +4734,223 @@ def _owed_review_skip_reason(
     if refusal:
         return refusal
     return None
+
+
+# The longest the owed-plan-review pass is left unrun while its inputs sit
+# still. The pass reads the project's plans, its stored plan reviews and its
+# authoring runs, and each of those changes on the scale of minutes rather than
+# of one tick, so the pass runs when one of them has moved since the pass before
+# and on this interval when none has. The interval is also the promise made to a
+# change that the gate does not see — a stored record rewritten in place keeps
+# its directory's stamp — because the interval ticks on the clock rather than on
+# the footprint: a review the ungated pass would have composed is composed at
+# most this much later.
+OWED_PLAN_REVIEW_PASS_SECONDS = 60.0
+
+
+def _owed_review_pass_state_path(project: str) -> Path:
+    """Where the gate records the footprint and moment of the last pass."""
+    return _reflex_state_path(project).with_suffix(".pass.json")
+
+
+def _owed_review_pass_state(project: str) -> dict[str, Any]:
+    """The gate's record of the last pass: its moment and what it read."""
+    try:
+        stored = json.loads(
+            _owed_review_pass_state_path(project).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return {}
+    return dict(stored) if isinstance(stored, Mapping) else {}
+
+
+def _live_authoring_identities(
+    pointers: Iterable[Mapping[str, Any]],
+) -> list[list[str]]:
+    """The runs in a live listing that would name a plan's author, as identities.
+
+    This is the live half of :func:`plan_authoring_runs`'s input. It is answered
+    from the listing the sweep already holds rather than from a second read of
+    the store, so a dispatch still in flight is a change the gate sees for the
+    cost of walking a list.
+    """
+    identities: list[list[str]] = []
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        author = _authoring_pointer(pointer)
+        if author is None:
+            continue
+        identities.append(
+            [str(author["plan"]), str(author["run_id"]), str(author["session"])]
+        )
+    return sorted(identities)
+
+
+def _owed_plan_edit_identity(info: Any) -> list[int]:
+    """What a plan file's write moves: its modification moment and its size.
+
+    Two fields rather than one, because a shared filesystem's timestamps are
+    coarser than the writes it records: a plan rewritten inside the second its
+    previous edit is stamped with can keep that stamp, and its new size is what
+    tells the gate the write happened.
+    """
+    return [int(info.st_mtime_ns), int(info.st_size)]
+
+
+def owed_plan_review_footprint(
+    project: str, *, pointers: Iterable[Mapping[str, Any]] | None = None
+) -> dict[str, Any]:
+    """A cheap identity of everything one owed-plan-review pass reads.
+
+    The pass reads three things: the project's plan files, its stored plan
+    reviews, and the runs that name a plan's author. Each is read here by its
+    own cheap reading rather than by the pass's expensive one — one stat per
+    plan, one listing of the store's record names, the run store's change token
+    and the ledger's write generation — so a sweep can tell whether the pass has
+    anything new to read without decoding a record or a row.
+
+    ``plans`` carries each plan's edit moment and size, so an edit made in place
+    is a change. ``reviews`` carries the store's record count and a digest of
+    its record names, so a record added or removed is a change; a record
+    rewritten in place keeps its name and is left to the interval, which is what
+    the interval is for. The names are listed rather than the directory stamped
+    because a directory's own stamp does not always move within the second a
+    record is added to it, and a change the gate missed would wait the whole
+    interval. ``runs`` carries the run store's token, the ledger's write
+    generation and, when a caller supplies the listing the sweep already holds,
+    the live runs that would author a plan.
+
+    A reading that cannot be taken is ``None`` and compares unequal to a reading
+    that was, so an unreadable store makes the pass due rather than keeping it
+    away.
+    """
+    from reckon import ledger, run_store
+
+    try:
+        plans, _failed = _project_plan_paths(project)
+        edits: list[Any] | None = []
+        for plan_slug, path in plans:
+            try:
+                info = path.stat()
+            except OSError:
+                edits.append([str(plan_slug), None, None])
+                continue
+            edits.append([str(plan_slug), *_owed_plan_edit_identity(info)])
+        edits = sorted(edits)
+    except Exception:  # noqa: BLE001 — an unreadable tree is not "unchanged"
+        edits = None
+    try:
+        names = "\n".join(str(path) for path in _record_files(project))
+        reviews = [
+            names.count("\n") + 1 if names else 0,
+            hashlib.sha256(names.encode("utf-8")).hexdigest()[:16],
+        ]
+    except Exception:  # noqa: BLE001 — an unreadable store is not "unchanged"
+        reviews = None
+    try:
+        ledger_generation: str | None = ledger.ledger_generation(project)
+    except Exception:  # noqa: BLE001 — an unreadable ledger is not "unchanged"
+        ledger_generation = None
+    try:
+        store_token = list(run_store.store_stamp() or ())
+    except Exception:  # noqa: BLE001 — an unreadable store is not "unchanged"
+        store_token = None
+    runs_read: dict[str, Any] = {
+        "store": store_token,
+        "ledger": ledger_generation,
+    }
+    if pointers is not None:
+        runs_read["live"] = _live_authoring_identities(pointers)
+    return {"plans": edits, "reviews": reviews, "runs": runs_read}
+
+
+def owed_plan_review_pass_due(
+    project: str,
+    *,
+    now_seconds: float | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Whether the owed-plan-review pass must run now, and why it must or not.
+
+    The pass is due when anything it reads has moved since the pass before, or
+    when :data:`OWED_PLAN_REVIEW_PASS_SECONDS` have passed since it, whichever
+    comes first. The first pass for a project is due because nothing records one
+    having run.
+
+    This reads; it never records a pass. A caller that runs the pass it was told
+    to run calls :func:`record_owed_plan_review_pass` afterwards, so a preview
+    that consulted the gate and wrote nothing leaves the next real pass due.
+    """
+    moment = time.time() if now_seconds is None else now_seconds
+    footprint = owed_plan_review_footprint(project, pointers=pointers)
+    state = _owed_review_pass_state(project)
+    recorded = state.get("inputs")
+    ran_at = state.get("at")
+    elapsed = moment - float(ran_at) if isinstance(ran_at, (int, float)) else None
+    answer: dict[str, Any] = {
+        "inputs": footprint,
+        "since_seconds": elapsed,
+        "due": True,
+    }
+    if not isinstance(recorded, Mapping):
+        answer["reason"] = "no owed-plan-review pass is recorded for this project"
+        return answer
+    changed = sorted(
+        key
+        for key in set(footprint) | set(recorded)
+        if footprint.get(key) != recorded.get(key)
+    )
+    if changed:
+        answer["reason"] = "the pass's inputs changed since its last run: " + ", ".join(
+            changed
+        )
+        return answer
+    if elapsed is None or elapsed >= OWED_PLAN_REVIEW_PASS_SECONDS:
+        answered = int(elapsed) if elapsed is not None else 0
+        answer["reason"] = (
+            f"{answered} s have passed since the last pass, at the "
+            f"{int(OWED_PLAN_REVIEW_PASS_SECONDS)} s interval"
+        )
+        return answer
+    answer["due"] = False
+    answer["reason"] = (
+        "nothing the pass reads has changed and "
+        f"{int(elapsed)} s of its {int(OWED_PLAN_REVIEW_PASS_SECONDS)} s "
+        "interval have passed"
+    )
+    return answer
+
+
+def record_owed_plan_review_pass(
+    project: str,
+    *,
+    now_seconds: float | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
+) -> None:
+    """Record that the pass ran now, with the footprint it ran against.
+
+    The footprint is taken after the pass rather than before it, because the
+    pass writes: a note it answers into a stored record moves the store it read,
+    and a footprint stamped before that write would report the pass's own write
+    as a change and run it again on the next sweep. Recording after the pass
+    costs one more cheap reading on the sweeps that run it, and buys the sweeps
+    that follow.
+
+    The record is an optimisation: a gate that cannot write it runs the pass
+    every sweep, which is slow but never wrong.
+    """
+    moment = time.time() if now_seconds is None else now_seconds
+    state = {
+        "at": moment,
+        "inputs": owed_plan_review_footprint(project, pointers=pointers),
+    }
+    path = _owed_review_pass_state_path(project)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass
 
 
 def compose_owed_plan_reviews(

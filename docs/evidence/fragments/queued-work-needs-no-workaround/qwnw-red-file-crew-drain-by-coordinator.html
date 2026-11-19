@@ -1,0 +1,76 @@
+<section id="qwnw-red-file-crew-drain-by-coordinator-fragment">
+<h3>Drain-by-coordinator: the dispatch case asserts a rule dispatch no longer refuses on</h3>
+<p>The named file ran 1 failed, 3 passed at the base revision. Both arms below are
+<code>all_debug</code> jobs submitted with <code>SLURM_JOB_ID</code> unset inside the job, on the
+worktree at the revision each names. The base arm is the negative control; its log sits beside
+the head arm under the run directory named in the manifest.</p>
+
+<h4 id="qwnw-red-file-crew-drain-by-coordinator-cause-1">Cause 1 — the refusal: test wrong</h4>
+<p><code>crew.dispatch</code> no longer raises <code>UnreconciledRuns</code> over an overdue backlog.
+A session's finished-but-unreconciled runs are duties it owes, not a fence: the dispatch runs
+and records the overdue runs on the run it writes, in <code>unreconciled_override.waived_runs</code>,
+and the fence reads only the asking session's pointers, so another session's row is neither
+counted, copied nor named on that record. The retirement is recorded in the product's own
+docstrings and asserted by <code>tests/test_a_dispatch_is_not_refused_on_its_backlog.py</code>,
+<code>tests/test_a_dispatch_classifies_only_its_own_runs.py</code> and
+<code>tests/test_closure_fence_agreement.py</code>, which pass at the base revision (12 passed).
+Nothing in the tree raises the refusal any more: the only construction of it left is the
+uncalled <code>_session_unreconciled_refusal</code>.</p>
+<p>The case asserted the retired rule — exit 6, <code>payload["runs"]</code> and
+<code>payload["peer_runs"]</code>, a detail sentence reading <code>1 unreconciled run(s)</code>
+and another naming <code>r-peer (session peer-session)</code>. It now asserts what the dispatch
+does instead, from the caller-visible document: exit zero, and exactly this session's overdue
+run on the record. The case it was written for is kept, namely that only the asking session's
+row is counted and the peer's is not; the <code>r-peer</code> absence is checked against a
+control read of the same fixture, since the drain still counts that pointer.</p>
+
+<h4 id="qwnw-red-file-crew-drain-by-coordinator-cause-2">Cause 2 — the stream: test wrong</h4>
+<p>The case parsed <code>command.output</code>. Under the installed Click (8.4.2)
+<code>result.output</code> is stdout and stderr interleaved in write order, and a dispatch that
+reaches the launch writes its load notice on stderr — by design, so that stdout stays the
+document a caller reads. Once dispatch stopped refusing, the case reached that notice and the
+document was no longer the first line. The case reads <code>command.stdout</code>, which the
+product's own comment states as the contract. It also stubs the spawn seam and waives the
+delivery gate, so it studies the backlog fence rather than starting a worker or stopping at the
+separate watcher refusal.</p>
+
+<h4 id="qwnw-red-file-crew-drain-by-coordinator-negative-control">Negative control — base run, red</h4>
+<pre># revision: 7d96b815d9cf590aa98251b510a841595cfdbfdc
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-drain-by-coordinator
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_drain_by_coordinator.py
+# slurm_job_id: unset
+...F                                                                     [100%]
+FAILED tests/test_crew_drain_by_coordinator.py::test_dispatch_refusal_counts_own_run_and_names_observed_peer - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 3 passed in 4.36s
+EXIT=1</pre>
+<p>The decoded stream the case choked on opened with the load notice and then the document:</p>
+<pre>s = 'reckon: created run r-20261118T151110545324-next-node\n{"admitted_from": null, "agent": ...'</pre>
+
+<h4 id="qwnw-red-file-crew-drain-by-coordinator-head-run">Head run, green</h4>
+<pre># revision: 8890651f2f137a6b6eab7b06e08bced06a15ae28
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-drain-by-coordinator
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_drain_by_coordinator.py
+# slurm_job_id: unset
+
+....                                                                     [100%]
+4 passed in 3.66s
+EXIT=0</pre>
+
+<h4 id="qwnw-red-file-crew-drain-by-coordinator-mutation">The new assertion fires when the scope is removed</h4>
+<p>Dropping <code>session=session</code> from the fence's overdue read makes the dispatch record
+both sessions' rows. The case fails on exactly that, so the dispatch's session scope is what it
+holds:</p>
+<pre>E         Left contains one more item: 'r-peer'
+E           [
+E               'r-own',
+E         +     'r-peer',
+E           ]
+FAILED tests/test_crew_drain_by_coordinator.py::test_dispatch_records_its_own_backlog_and_names_no_peer
+1 failed, 3 passed</pre>
+<p>The mutation was reverted before the head run above and before the commit it measures.</p>
+
+<h4 id="qwnw-red-file-crew-drain-by-coordinator-lint">Lint</h4>
+<p><code>ruff check</code> is clean on the changed file. <code>ruff format --check</code> reports one
+line in it, and the same line is unformatted at the base revision too, so the finding is carried
+and not added.</p>
+</section>

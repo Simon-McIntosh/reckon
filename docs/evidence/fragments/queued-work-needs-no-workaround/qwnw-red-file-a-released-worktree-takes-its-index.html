@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-a-released-worktree-takes-its-index-landing">
+  <h2>A released worktree takes its index</h2>
+
+  <p><strong>What changed.</strong> One case in
+  <code>tests/test_a_released_worktree_takes_its_index.py</code> waited for a
+  project-scoped sweep to remove a ledger index whose recorded checkout was
+  gone. That rule no longer holds. Since <code>e4f4dbf2c7</code> scoped a gc
+  pass to the project it runs for, an index whose recorded ledger path does not
+  resolve to that project is attributed to no project and is reported as kept:
+  reclaiming it would reach another checkout's cache, which is what the scoped
+  rule exists to prevent. <code>tests/test_gc_sweeps_ledger_indexes.py</code>
+  already pins that half of the rule — a scoped <code>--apply</code> keeps every
+  index it cannot attribute, and an unscoped pass removes it.</p>
+
+  <p>The case now asserts both halves against the same synthesised checkout: the
+  scoped pass reports the row with reason <code>recorded-checkout-gone</code>,
+  project <code>unknown</code>, action <code>keep</code> and
+  <code>removed</code> false, and leaves the file on disk; a pass naming no
+  project then still removes it. Every original assertion remains; the
+  scoped-keep assertions are additions, so nothing is deleted or weakened. No
+  product file changed.</p>
+
+  <h3 id="qwnw-red-file-a-released-worktree-takes-its-index-reproduction">Reproduction</h3>
+
+  <p>The case failed at the base revision
+  <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> before any edit:</p>
+
+  <pre><code>FAILED tests/test_a_released_worktree_takes_its_index.py::test_the_runless_sweep_removes_an_index_whose_checkout_is_gone - assert False is True
+1 failed, 4 passed in 1.15s
+EXIT=1</code></pre>
+
+  <p>The row is reported at all — <code>reason == "recorded-checkout-gone"</code>
+  passes — so the sweep sees the orphan and declines to remove it because the
+  named project does not own it. That is the rule the code keeps; the case
+  encoded the rule it replaced.</p>
+
+  <h3 id="qwnw-red-file-a-released-worktree-takes-its-index-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-released-worktree-takes-its-index-arms">
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>node file, base extraction</td><td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td><td>1 failed, 4 passed, EXIT=1</td></tr>
+      <tr><td>node file, head, all_debug job</td><td><code>e59ebb2001294e841e661dbf434325fe510f6ebf</code></td><td>5 passed, EXIT=0</td></tr>
+      <tr><td>node file, head with the scoped-keep branch disabled</td><td><code>e59ebb2001294e841e661dbf434325fe510f6ebf</code> plus a working-tree mutation</td><td>1 failed, 4 passed, EXIT=1</td></tr>
+      <tr><td>declared suite, base</td><td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td><td>0 failed, EXIT=0</td></tr>
+      <tr><td>declared suite, after</td><td><code>e59ebb2001294e841e661dbf434325fe510f6ebf</code></td><td>0 failed, EXIT=0</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-released-worktree-takes-its-index-control">Negative control</h3>
+
+  <p>The added assertions are load-bearing. Disabling the scoped-keep branch at
+  <code>reckon/crew/gc.py:714</code> (adding <code>and False</code> to
+  <code>if project is not None and attributed != project</code>) makes the
+  repaired case fail on its own addition,
+  <code>assert rows[0]["action"] == "keep"</code>, reading
+  <code>AssertionError: assert 'prune' == 'keep'</code>, with EXIT=1. The
+  mutation was reverted before the head arm was measured, and
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing
+  on the changed path.</p>
+
+  <h3 id="qwnw-red-file-a-released-worktree-takes-its-index-outside">Outside scope</h3>
+
+  <p>None. This gate measures only this node's own change; verifying the merged
+  result belongs to a separately dispatched test node.</p>
+</section>

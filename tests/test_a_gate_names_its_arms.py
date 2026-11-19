@@ -233,6 +233,17 @@ def _complete(run_id: str, repository: Path, *extra: str, land: bool = False):
     )
 
 
+def _receipt(result) -> dict:
+    """The full outcome a completion reply records and links.
+
+    The public reply is a bounded receipt — the run, the ledger row and the
+    path of the record — and the outcome itself, the suite delta and the
+    fields a refusal names, is the record that path holds. Reading it from
+    the reply is what a caller does, so it is what these cases read.
+    """
+    return json.loads(Path(json.loads(result.output)["record_path"]).read_text())
+
+
 def _declare_gate(run_id: str):
     return CliRunner().invoke(
         cli_main,
@@ -292,7 +303,7 @@ def test_declared_gpu_arms_land_and_the_row_names_them(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _receipt(result)["record"]["suite_delta"]
     assert suite_delta["status"] == "clean"
     assert suite_delta["suite_command"] == GPU_COMMAND
     assert suite_delta["added_failure_ids"] == []
@@ -320,7 +331,7 @@ def test_the_same_arms_undeclared_are_refused_naming_the_mismatch(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 1, result.output
-    payload = json.loads(result.output)
+    payload = _receipt(result)
     assert payload["error"] == "suite-delta-refused"
     assert "baseline_suite.command_matches_suite_command" in payload["missing_fields"]
     assert "after_suite.command_matches_suite_command" in payload["missing_fields"]
@@ -348,7 +359,7 @@ def test_a_mismatch_waiver_lands_with_its_reason_and_the_held_arms(
     result = _complete(run_id, repository, "--waive-suite-delta", reason)
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _receipt(result)["record"]["suite_delta"]
     assert suite_delta["status"] == "waived"
     assert suite_delta["waiver_reason"] == reason
     assert suite_delta["waived_arms"]["reason"] == reason
@@ -388,7 +399,7 @@ def test_a_waiver_never_covers_a_failure_the_held_arms_add(
     )
 
     assert result.exit_code == 1, result.output
-    payload = json.loads(result.output)
+    payload = _receipt(result)
     assert payload["error"] == "suite-delta-refused"
     assert payload["added_failure_ids"] == ["tests/test_one.py::test_new"]
     assert "never waives an added failure" in payload["detail"]

@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c9f02c221c821bfe5b9a9ff64185a44cca7cda49",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T09:34:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "the head row and the quoted header at :51 name revision a7bf330e6a, one commit behind the reviewed head 000a6047fe, while the gate log at the reviewed head (scoped-gate-1795080199969462902.log:2) is recorded only in the manifest, so a reader comparing the fragment's row against the promoted head sees a revision that is not it."
+    }
+  ],
+  "head_log_revision": "000a6047fe64741240ee8057a44f4a3e2c208881",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "searched the tree for runtime code that reads docs/evidence fragments; none exists, so the delivered HTML fragment has no production call site.",
+    "diff": "read both commits against base c9f02c221c821bfe5b9a9ff64185a44cca7cda49; a7bf330e6a adds the 76-line evidence fragment and 000a6047fe re-points its head row and quoted log at a7bf330e6a, touching no product source and no test.",
+    "done_when": "the done-when requires the file green at head as an all_debug job with SLURM_JOB_ID unset; scoped-gate-1795080199969462902.log:2-7 names revision 000a6047fe64741240ee8057a44f4a3e2c208881, host 98dci4-clu-3142.iter.org, \"3 passed in 5.80s\" and EXIT=0, so the gate asserts the measure and records its result.",
+    "goal": "the node's goal is that tests/test_a_one_plan_ledger_read.py passes in full; the delivered diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read.html:1-76, which records the passing run rather than repairing a red file, matching the done-when's \"if it already passes, deliver that passing run and stop\".",
+    "manifest": "read the reviewed run's manifest.md; it states status complete, commits a7bf330e6acd8eedc4384b51a72ac595b4385dca and 000a6047fe64741240ee8057a44f4a3e2c208881, test_logs scoped-gate-1795080199969462902.log, and a landing line naming the green head run and the 49-plan negative control.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read; git diff c9f02c221c821bfe5b9a9ff64185a44cca7cda49..000a6047fe64741240ee8057a44f4a3e2c208881 touches only that fragment, inside them."
+  },
+  "justifications": {
+    "durability": "the fragment adds no assertion and leans on the pre-existing tests/test_a_one_plan_ledger_read.py:103-108, which does redden on the regression as negative-control-19b28c494e.log shows, so the guarded product rule is proven but the delivered artefact itself is unmeasured.",
+    "evidence": "scoped-gate-1795080199969462902.log and negative-control-19b28c494e.log both carry the summary lines and EXIT codes the manifest reports, though the fragment's head row cites the earlier run scoped-gate-1795080045702623847.log at a7bf330e6a instead of the delivered head's run.",
+    "fit": "the fragment follows the sibling fragments' shape with node-prefixed ids such as qwnw-red-file-a-one-plan-ledger-read-arms at qwnw-red-file-a-one-plan-ledger-read.html:29 and introduces no forbidden identifier.",
+    "goal_fidelity": "the goal is met by the recorded green head run at scoped-gate-1795080199969462902.log:7 (3 passed, EXIT=0 at 000a6047fe64741240ee8057a44f4a3e2c208881) and by the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read.html:1-76.",
+    "reuse": "the diff adds no function, class or module, and the only capability it names is ledger.runs, whose owner reckon/ledger.py the cited test already exercises, so nothing is forked.",
+    "scope_discipline": "every line of the diff c9f02c221c821bfe5b9a9ff64185a44cca7cda49..000a6047fe64741240ee8057a44f4a3e2c208881 lies inside the declared write paths, and no file outside them was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_one_plan_ledger_read.py passes in full; the delivered diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read.html:1-76, which records the passing run rather than repairing a red file, matching the done-when's \"if it already passes, deliver that passing run and stop\".\nVERDICT done_when: the done-when requires the file green at head as an all_debug job with SLURM_JOB_ID unset; scoped-gate-1795080199969462902.log:2-7 names revision 000a6047fe64741240ee8057a44f4a3e2c208881, host 98dci4-clu-3142.iter.org, \"3 passed in 5.80s\" and EXIT=0, so the gate asserts the measure and records its result.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read; git diff c9f02c221c821bfe5b9a9ff64185a44cca7cda49..000a6047fe64741240ee8057a44f4a3e2c208881 touches only that fragment, inside them.\nVERDICT manifest: read the reviewed run's manifest.md; it states status complete, commits a7bf330e6acd8eedc4384b51a72ac595b4385dca and 000a6047fe64741240ee8057a44f4a3e2c208881, test_logs scoped-gate-1795080199969462902.log, and a landing line naming the green head run and the 49-plan negative control.\nVERDICT diff: read both commits against base c9f02c221c821bfe5b9a9ff64185a44cca7cda49; a7bf330e6a adds the 76-line evidence fragment and 000a6047fe re-points its head row and quoted log at a7bf330e6a, touching no product source and no test.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal is met by the recorded green head run at scoped-gate-1795080199969462902.log:7 (3 passed, EXIT=0 at 000a6047fe64741240ee8057a44f4a3e2c208881) and by the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read.html:1-76.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795080199969462902.log and negative-control-19b28c494e.log both carry the summary lines and EXIT codes the manifest reports, though the fragment's head row cites the earlier run scoped-gate-1795080045702623847.log at a7bf330e6a instead of the delivered head's run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every line of the diff c9f02c221c821bfe5b9a9ff64185a44cca7cda49..000a6047fe64741240ee8057a44f4a3e2c208881 lies inside the declared write paths, and no file outside them was touched.\nSCORE durability: 14\nJUSTIFICATION durability: the fragment adds no assertion and leans on the pre-existing tests/test_a_one_plan_ledger_read.py:103-108, which does redden on the regression as negative-control-19b28c494e.log shows, so the guarded product rule is proven but the delivered artefact itself is unmeasured.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the sibling fragments' shape with node-prefixed ids such as qwnw-red-file-a-one-plan-ledger-read-arms at qwnw-red-file-a-one-plan-ledger-read.html:29 and introduces no forbidden identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the only capability it names is ledger.runs, whose owner reckon/ledger.py the cited test already exercises, so nothing is forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-one-plan-ledger-read.html:35 non-blocking: the head row and the quoted header at :51 name revision a7bf330e6a, one commit behind the reviewed head 000a6047fe, while the gate log at the reviewed head (scoped-gate-1795080199969462902.log:2) is recorded only in the manifest, so a reader comparing the fragment's row against the promoted head sees a revision that is not it.\n",
+  "review_run_id": "r-20261119T092850468487-review-of-qwnw-red-file-a-one-plan-ledger-read-000a6047fe64",
+  "reviewed_base_sha": "c9f02c221c821bfe5b9a9ff64185a44cca7cda49",
+  "reviewed_head_sha": "000a6047fe64741240ee8057a44f4a3e2c208881",
+  "reviewed_run_id": "r-20261118T054247171332-qwnw-red-file-a-one-plan-ledger-read",
+  "reviewer_run_id": "r-20261119T092850468487-review-of-qwnw-red-file-a-one-plan-ledger-read-000a6047fe64",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:01:00.815484+00:00",
+  "total": 106
+}

@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795080330111855279.log at c9f02c221c821bfe5b9a9ff64185a44cca7cda49 and after_suite-1795080405236023627.log at 6af63006ef9bc953f45e4cec7ba557cfa77d59af: both report 58 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/node.py:1560 (validate_node's over-fence bounded check the fragment documents)",
+    "reckon/crew_dispatch_commands.py:1476 (the --over-fence option carrying the reason onto the node)",
+    "reckon/crew/dispatch_plan.py:840 (validate_node caller)",
+    "reckon/crew/dispatching/requests.py:253 (validate_node caller)",
+    "reckon/evidence.py:1610 (_fragment_body_bytes composing a fragment into the landed record)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T09:40:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html",
+      "line": "33",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base and head arm rows label the runs an all_debug job while the cited logs carry no env -u SLURM_JOB_ID and their .scheduler sidecars are empty, so the partition and the unset-variable half of the done_when rest on prose rather than on a line a reader can open."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run row names revision 19dc0c4e994d while the landed head is 6af63006ef, whose own gate log scoped-gate-1795080314463537249.log reads 10 passed and EXIT=0, so the fragment as committed describes its parent revision rather than the one a reader checks out."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against c9f02c221c82 commit by commit; 19dc0c4e99 adds the fragment recording the base and head runs, and 6af63006ef amends it with a head row, the two suite arms and the negative control, so the net diff is one new 70-line evidence file with no product or test change.",
+    "done_when": "the done_when asks for the named file passing at head, base-first delivery when already green, suite arms adding no failure and a negative control; the gate command `env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_budget_may_exceed_its_fence_with_a_reason.py'` is recorded at 6af63006ef with 10 passed and EXIT=0, baseline_suite and after_suite each record 58 passed with failure_count 0 and completed true, and negative-control-a-budget-fence.log ends 3 failed, 7 passed, EXIT=1.",
+    "goal": "the node goal is that tests/test_a_budget_may_exceed_its_fence_with_a_reason.py passes in full on the primary branch; it reads 10 passed at base c9f02c2 (scoped-gate-1795079548842750853.log) and 10 passed at head 6af63006ef (scoped-gate-1795080314463537249.log), and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:5 records that passing-run delivery as \u00a729 provides for a file already green at base.",
+    "manifest": "read; it records status complete, commits 19dc0c4e99 and 6af63006ef, the literal gate command, five log paths, baseline_suite and after_suite as inline JSON carrying full 40-character revisions and, because the file was already green at base, a one-row cause list that is empty, and its after arm's 58 passed matches after_suite-1795080405236023627.log's own summary line.",
+    "write_paths": "the declared paths are reckon, tests, the fragments directory, the exact fragment file and a docs/figures path; the diff c9f02c221c82..6af63006ef touches exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html, so the change stays inside the fence."
+  },
+  "justifications": {
+    "durability": "the guard the fragment documents is guarded by tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:188, whose removal of the recorded-reason condition reddens three cases in negative-control-a-budget-fence.log, but no test fails if the fragment itself is deleted, since tests/test_a_per_node_fragment_is_optional.py:159 accepts a plan with no fragment.",
+    "evidence": "the 10 passed EXIT=0 head run, the two 58-passed suite arms and the 3-failed EXIT=1 negative control are each on disk and reconcile with the manifest, but the done_when's \"all_debug job with SLURM_JOB_ID unset\" half has no line in any cited log, whose command is `env PYTHONPATH=. sh -c ...` with an empty .scheduler sidecar beside it.",
+    "fit": "the fragment follows the sibling section, table and negative-control idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1, but names its Measured heading with the -arms id at qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:26 where siblings use -measured for the heading and -arms for the table.",
+    "goal_fidelity": "the named file reads 10 passed at head 6af63006ef in scoped-gate-1795080314463537249.log and 10 passed at base c9f02c2 in scoped-gate-1795079548842750853.log, so the goal's clause is met and the fragment at qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:5 states the clause it is delivered under.",
+    "reuse": "the diff adds no definition, it is content carried by the repository's own fragment mechanism (reckon/evidence.py:1610 composes a fragment and reckon/evidence.py:854 links it), and a search of reckon/ for fragment composition found that owner rather than a second mechanism to fork.",
+    "scope_discipline": "the entire diff c9f02c221c82..6af63006ef is the one declared fragment path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html, and no product, test or figure path changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_a_budget_may_exceed_its_fence_with_a_reason.py passes in full on the primary branch; it reads 10 passed at base c9f02c2 (scoped-gate-1795079548842750853.log) and 10 passed at head 6af63006ef (scoped-gate-1795080314463537249.log), and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:5 records that passing-run delivery as \u00a729 provides for a file already green at base.\nVERDICT done_when: the done_when asks for the named file passing at head, base-first delivery when already green, suite arms adding no failure and a negative control; the gate command `env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_budget_may_exceed_its_fence_with_a_reason.py'` is recorded at 6af63006ef with 10 passed and EXIT=0, baseline_suite and after_suite each record 58 passed with failure_count 0 and completed true, and negative-control-a-budget-fence.log ends 3 failed, 7 passed, EXIT=1.\nVERDICT write_paths: the declared paths are reckon, tests, the fragments directory, the exact fragment file and a docs/figures path; the diff c9f02c221c82..6af63006ef touches exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html, so the change stays inside the fence.\nVERDICT manifest: read; it records status complete, commits 19dc0c4e99 and 6af63006ef, the literal gate command, five log paths, baseline_suite and after_suite as inline JSON carrying full 40-character revisions and, because the file was already green at base, a one-row cause list that is empty, and its after arm's 58 passed matches after_suite-1795080405236023627.log's own summary line.\nVERDICT diff: read both commits against c9f02c221c82 commit by commit; 19dc0c4e99 adds the fragment recording the base and head runs, and 6af63006ef amends it with a head row, the two suite arms and the negative control, so the net diff is one new 70-line evidence file with no product or test change.\nCALL_SITES: reckon/crew/node.py:1560 (validate_node's over-fence bounded check the fragment documents), reckon/crew_dispatch_commands.py:1476 (the --over-fence option carrying the reason onto the node), reckon/crew/dispatch_plan.py:840 (validate_node caller), reckon/crew/dispatching/requests.py:253 (validate_node caller), reckon/evidence.py:1610 (_fragment_body_bytes composing a fragment into the landed record)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the named file reads 10 passed at head 6af63006ef in scoped-gate-1795080314463537249.log and 10 passed at base c9f02c2 in scoped-gate-1795079548842750853.log, so the goal's clause is met and the fragment at qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:5 states the clause it is delivered under.\nSCORE evidence: 15\nJUSTIFICATION evidence: the 10 passed EXIT=0 head run, the two 58-passed suite arms and the 3-failed EXIT=1 negative control are each on disk and reconcile with the manifest, but the done_when's \"all_debug job with SLURM_JOB_ID unset\" half has no line in any cited log, whose command is `env PYTHONPATH=. sh -c ...` with an empty .scheduler sidecar beside it.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the entire diff c9f02c221c82..6af63006ef is the one declared fragment path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html, and no product, test or figure path changed.\nSCORE durability: 13\nJUSTIFICATION durability: the guard the fragment documents is guarded by tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:188, whose removal of the recorded-reason condition reddens three cases in negative-control-a-budget-fence.log, but no test fails if the fragment itself is deleted, since tests/test_a_per_node_fragment_is_optional.py:159 accepts a plan with no fragment.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the sibling section, table and negative-control idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1, but names its Measured heading with the -arms id at qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:26 where siblings use -measured for the heading and -arms for the table.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, it is content carried by the repository's own fragment mechanism (reckon/evidence.py:1610 composes a fragment and reckon/evidence.py:854 links it), and a search of reckon/ for fragment composition found that owner rather than a second mechanism to fork.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:33 non-blocking: the base and head arm rows label the runs an all_debug job while the cited logs carry no env -u SLURM_JOB_ID and their .scheduler sidecars are empty, so the partition and the unset-variable half of the done_when rest on prose rather than on a line a reader can open.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason.html:37 non-blocking: the head-run row names revision 19dc0c4e994d while the landed head is 6af63006ef, whose own gate log scoped-gate-1795080314463537249.log reads 10 passed and EXIT=0, so the fragment as committed describes its parent revision rather than the one a reader checks out.\n",
+  "review_node": "r-20261119T093737980927-review-of-qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason-6af63006ef9b",
+  "review_run_id": "r-20261119T093737980927-review-of-qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason-6af63006ef9b",
+  "reviewed_base_sha": "c9f02c221c821bfe5b9a9ff64185a44cca7cda49",
+  "reviewed_head_sha": "6af63006ef9bc953f45e4cec7ba557cfa77d59af",
+  "reviewed_run_id": "r-20261118T054303346847-qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T093737980927-review-of-qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason-6af63006ef9b"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:08:52.931093+00:00",
+  "total": 102
+}

@@ -1,0 +1,59 @@
+<section id="qwnw-red-file-an-unchanged-run-costs-one-stat-record">
+<h2>A poll over a run with no manifest opened that manifest on every poll</h2>
+<p>Cause, with verdict: <strong>the product was wrong</strong>. The snapshot reuse key
+reads the identity of every file a classification reads, and its review-annotation
+reader (<code>_review_annotation_identities</code>, <code>reckon/crew/recovery_memo.py</code>)
+then decoded the reviewed run's manifest to find the gate logs it names. The manifest's
+identity had just been read and it read <code>absent</code>, but the decode was attempted
+anyway. The decode raised <code>FileNotFoundError</code>, and
+<code>file_memo.memoized_key</code> stores only what a computation returned, so nothing
+was remembered and the next poll opened the same missing file again. The identities that
+read can contribute are only the manifest's own <code>absent</code> entry, which the raise
+produced anyway, so the reader now returns at the stat: the unchanged poll costs the stat
+at which failure asks and no open.</p>
+</section>
+
+<section id="qwnw-red-file-an-unchanged-run-costs-one-stat-negative-control">
+<h2>Negative control — the base revision's run of the named file</h2>
+<p>The named file over the base tree extracted at
+<code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code>, with no branch merged or pulled,
+fails on the unchanged-poll case. Excerpt from
+<code>logs/negative-control-base.log</code>:</p>
+<pre># revision: 60ecc274f1bf7008b09057c6a5252423deb4cfe5
+# command: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_unchanged_run_costs_one_stat.py
+F......                                                                  [100%]
+...
+E       AssertionError: an unchanged run's poll must open no file
+E       assert 1 == 0
+E        +  where 1 = &lt;tests.test_an_unchanged_run_costs_one_stat._IoCounter object at 0x7fcb8f93b620&gt;.opens
+tests/test_an_unchanged_run_costs_one_stat.py:187: AssertionError
+FAILED tests/test_an_unchanged_run_costs_one_stat.py::test_an_unchanged_poll_opens_no_file_and_stats_each
+1 failed, 6 passed in 1.55s
+EXIT=1</pre>
+</section>
+
+<section id="qwnw-red-file-an-unchanged-run-costs-one-stat-head">
+<h2>Head run on all_debug</h2>
+<p><code>tests/test_an_unchanged_run_costs_one_stat.py</code> ran in full as a job on
+<code>all_debug</code> at <code>bd39e3e702b9b73dfe033ab5674986f711c3aac7</code>:
+<b>7 passed</b>, <code>EXIT=0</code>. Log:
+<code>~/.config/reckon/crew/runs/r-20261118T063403304859-qwnw-red-file-an-unchanged-run-costs-one-stat/scoped-gate-1795016369779209043.log</code></p>
+</section>
+
+<section id="qwnw-red-file-an-unchanged-run-costs-one-stat-importer-arms">
+<h2>Arm over the test files that import the changed module</h2>
+<p>The ten files importing <code>reckon.crew.recovery_memo</code> — the module the repair
+touches, with the named file included — ran at the same list in both arms.</p>
+<table>
+<thead><tr><th>arm</th><th>revision</th><th>result</th><th>failing ids</th></tr></thead>
+<tbody>
+<tr><td>base</td><td><code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code></td><td>2 failed, 76 passed</td><td><code>test_an_unchanged_run_costs_one_stat.py::test_an_unchanged_poll_opens_no_file_and_stats_each</code>; <code>test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid</code></td></tr>
+<tr><td>head</td><td><code>bd39e3e702b9b73dfe033ab5674986f711c3aac7</code></td><td>1 failed, 77 passed</td><td><code>test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid</code></td></tr>
+</tbody>
+</table>
+<p>The head adds no failure the base did not already carry and clears the one this node
+answers. <code>test_no_module_decides_record_liveness_with_a_bare_pid</code> fails
+identically in both arms, so this change does not touch it and it is reported to the
+coordinator as outside this node's scope. Logs
+<code>logs/importer-arm-base.log</code> and <code>logs/importer-arm-head.log</code>.</p>
+</section>

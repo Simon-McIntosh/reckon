@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion_release.py:_release_run_workspace",
+    "reckon/crew_run_commands.py:5014"
+  ],
+  "completed_at": "2026-11-18T23:20:00.000Z",
+  "dispatched_at": "2026-11-18T23:09:15Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063509233344-qwnw-red-file-a-vanished-worktree-reads-as-no-referent/manifest.md",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "The commits line lists three ids (3e0c35785a, 9ff883f94f, 7d46e1f830) and omits 46490f2266, which is part of the delivered range 018823953e..46490f2266 and supplies the fragment content the head is reviewed against, so a reader comparing the manifest's commit list to the landed range finds one unaccounted commit."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html",
+      "line": 50,
+      "severity": "non-blocking",
+      "text": "The row and the prose at line 66 assert the head arm ran as 'an all_debug job' with SLURM_JOB_ID unset, but the cited scoped-gate-1795019286466438231.log header records only revision, host, tree and command and ends EXIT=0, its .log.scheduler sidecar is empty, and no other file in the run directory records the partition or the job environment, so the done_when's job-environment clause is claimed rather than shown."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html",
+      "line": 51,
+      "severity": "non-blocking",
+      "text": "The head rows cite revision 7d46e1f830 for both the file and the suite while the delivered head is 46490f2266, and commit 46490f's message says the rows now name logs 'whose header revisions match the delivered head'; the measured test blob is byte-identical between the two revisions (d623ec3a7d77a8a37e10e7cbf6da25566589274f), so the measurement covers the delivered test content, but the row pairs the delivered revision with an arm run at another one."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The changed assertions describe the payload of reckon/crew/promotion_release.py:_release_run_workspace, whose worktree_absent branch at 441-443 is the rule asserted, and reckon/crew_run_commands.py:5014 is the only production reader of the worktree_withheld key, so both were checked against the new assertions.",
+    "diff": "Read commit by commit against 018823953e18f9b55c468663ab0c2c421428bc2c: 3e0c35785a replaces the retired worktree_withheld assertion with worktree_released/worktree_absent/no-withheld in the test file, 9ff883f94f adds the 78-line evidence fragment, and 46490f2266 rewrites only the fragment's arm rows and log citations; no product file changes.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a product-wrong or test-wrong verdict, no assertion deleted or weakened, an importer arm adding no failure with both arms as inline JSON carrying 40-character revisions, and a base red run with its failing ids logged beside the head run in the evidence fragment; the manifest carries the test-wrong verdict, both suite arms as inline JSON with full 40-character revisions and the base red log, but the job-environment clause (all_debug, SLURM_JOB_ID unset) is carried by no log line.",
+    "goal": "The node goal is 'Make tests/test_a_vanished_worktree_reads_as_no_referent.py pass in full on the primary branch'; tests/test_a_vanished_worktree_reads_as_no_referent.py:174-177 now encodes the current release rule and scoped-gate-1795019286466438231.log records 2 passed EXIT=0 at 2 passed for that file, so the named file is green at head.",
+    "manifest": "Read in full; it records status complete, six rubric lines, the head gate at 2 passed EXIT=0, the base arm at 1 failed 1 passed EXIT=1, both declared suite arms at 58 passed with full 40-character revisions, the test-wrong verdict, and three commits in its commits line.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the named fragment under it and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent; the delivered diff touches exactly tests/test_a_vanished_worktree_reads_as_no_referent.py and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_a_vanished_worktree_reads_as_no_referent.py pass in full on the primary branch' (dispatch-detail.json node.goal); tests/test_a_vanished_worktree_reads_as_no_referent.py:174-177 carries the new release assertions and scoped-gate-1795019286466438231.log records 2 passed EXIT=0 at revision 7d46e1f830 for that file, so the named file is green at head.\nVERDICT done_when: the done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a product-wrong or test-wrong verdict, no assertion deleted or weakened, an importer arm adding no failure with both arms as inline JSON carrying 40-character revisions, and a base red run with its failing ids logged beside the head run in the evidence fragment; the manifest records the test-wrong verdict, both suite arms as inline JSON at full 40-character revisions and the base red log at negative-control-base.log, but no line in the gate log or its empty .log.scheduler sidecar records the partition or SLURM_JOB_ID.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent; the delivered diff touches exactly tests/test_a_vanished_worktree_reads_as_no_referent.py and the evidence fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html, both inside them.\nVERDICT manifest: read in full; it records status complete, three commits, the head gate at 2 passed EXIT=0, the base arm at 1 failed 1 passed EXIT=1 with the KeyError id, both declared suite arms at 58 passed with full 40-character revisions, and the test-wrong verdict, but its commits line lists three ids and omits the delivered head 46490f2266.\nVERDICT diff: read commit by commit against 018823953e18f9b55c468663ab0c2c421428bc2c; 3e0c35785a swaps the retired worktree_withheld assertion for worktree_released true, worktree_absent true and no withheld key in tests/test_a_vanished_worktree_reads_as_no_referent.py:170-178, 9ff883f94f adds the 78-line evidence fragment, 46490f2266 rewrites only that fragment's arm rows and log citations, and no product file changes.\nCALL_SITES: reckon/crew/promotion_release.py:_release_run_workspace, reckon/crew_run_commands.py:5014\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_vanished_worktree_reads_as_no_referent.py:174-177 now asserts the released/absent rule and the file reads 2 passed EXIT=0 at head in scoped-gate-1795019286466438231.log, delivering the goal's passing file (goal_fidelity docked one for 'on the primary branch' landing still pending in the diff).\nSCORE evidence: 15\nJUSTIFICATION evidence: the base red arm at negative-control-base.log records 1 failed 1 passed EXIT=1 with the KeyError id and the head arm at scoped-gate-1795019286466438231.log records 2 passed EXIT=0, but neither the log header nor the empty .log.scheduler sidecar records the all_debug partition or the unset SLURM_JOB_ID the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff 018823953e..46490f2266 is the test file plus docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html, with no product path touched.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the withheld branch in reckon/crew/promotion_release.py:441-443 reddens tests/test_a_vanished_worktree_reads_as_no_referent.py:174-176, because release['worktree_released'] would read False and the withheld key would reappear; the assertions read the returned payload, not the input the test handed in.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_vanished_worktree_reads_as_no_referent.py:149-177 keeps the file's Case A/B layout and comment idiom, and the fragment follows the sibling fragments' table-plus-reproduction shape.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or module; the change extends tests/test_a_vanished_worktree_reads_as_no_referent.py:170-178 and cites the payload fields worktree_released and worktree_absent already owned by reckon/crew/promotion_release.py:441-443, the same rule tests/test_a_clean_landing_releases_its_worktree.py asserts.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063509233344-qwnw-red-file-a-vanished-worktree-reads-as-no-referent/manifest.md:7 non-blocking: the commits line omits 46490f2266, which is inside the delivered range and supplies the fragment content under review, so the record's commit list does not account for the whole diff.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html:50 non-blocking: the row and the prose at line 66 claim an all_debug job with SLURM_JOB_ID unset, but scoped-gate-1795019286466438231.log records only revision, host, tree, command and EXIT=0 and its .log.scheduler sidecar is empty, so the done_when's job-environment clause is unsupported by the cited artefacts.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-vanished-worktree-reads-as-no-referent.html:51 non-blocking: the head rows cite 7d46e1f830 while the delivered head is 46490f2266, and the measured test blob is identical (d623ec3a7d) so no measurement is lost, but the row pairs the delivered revision with an arm run at another one.\n",
+  "review_run_id": "r-20261118T163940302167-review-of-qwnw-red-file-a-vanished-worktree-reads-as-no-referent-46490f22666e",
+  "reviewed_base_sha": "018823953e18f9b55c468663ab0c2c421428bc2c",
+  "reviewed_head_sha": "46490f22666ed8adde07cd89c52dcac7fa7ebc43",
+  "reviewed_run_id": "r-20261118T063509233344-qwnw-red-file-a-vanished-worktree-reads-as-no-referent",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:18:39.016594+00:00",
+  "total": 112
+}

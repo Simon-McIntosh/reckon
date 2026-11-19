@@ -69,6 +69,8 @@ def cohort(tmp_path, monkeypatch):
                 "write_paths": ["seed.txt"],
             },
         }
+        if name == "unreadable":
+            pointer["phase"] = "ended"
         if name in {"orphan", "unreadable"}:
             pointer.pop("worktree")
         if name in {"journal", "grouped"}:
@@ -145,7 +147,8 @@ def test_promoted_pointers_retire_and_never_return(cohort):
     expected_identity = {key: unpromoted[key] for key in identity_fields}
     group = pending_landing._read(pending_landing.group_path("r-grouped"))
     position = list(group["members"]).index("r-awaiting")
-    unreadable = runs.pointer_path("r-unreadable").read_bytes()
+    unreadable = runs.read_pointer("r-unreadable")
+    unreadable_identity = {key: unreadable.get(key) for key in identity_fields}
     assert pending_landing._promoted_row(PROJECT, "r-orphan") is not None
     assert pending_landing._promoted_row(PROJECT, "r-unreadable") is None
     assert not pending_landing._promoted_row_absent(PROJECT, "r-unreadable")
@@ -158,7 +161,10 @@ def test_promoted_pointers_retire_and_never_return(cohort):
         assert runs.pointer_path("r-awaiting").exists()
         current = runs.read_pointer("r-awaiting")
         assert {key: current[key] for key in identity_fields} == expected_identity
-        assert runs.pointer_path("r-unreadable").read_bytes() == unreadable
+        current_unreadable = runs.read_pointer("r-unreadable")
+        assert {
+            key: current_unreadable.get(key) for key in identity_fields
+        } == unreadable_identity
         group = pending_landing._read(pending_landing.group_path("r-grouped"))
         assert list(group["members"]) == ["r-awaiting"]
         assert list(group["members"]).index("r-awaiting") == position

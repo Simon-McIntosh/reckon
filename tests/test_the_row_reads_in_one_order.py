@@ -7,8 +7,8 @@ fleet counters, which every row carries at fixed widths, and then the lane's
 rate, the model and the effort. The trailing three are added left to right only
 while the pane has room, so a narrow pane drops the effort first and the rate
 last and never wraps. Two facts inside the row are asserted here as well: the
-counters read w, r, n, d and q, and a review's job cell drops the prefix and
-the reviewed head's digest the stage cell already says.
+counters read w, r, h, d, q, p and s, and a review's job cell drops the prefix
+and the reviewed head's digest the stage cell already says.
 
 This file renders rows through :meth:`Ticker.render` and reads the columns off
 the rendered characters, so an assertion is about the cell a reader sees rather
@@ -177,11 +177,13 @@ def test_the_stage_and_job_cells_hold_the_row_s_own_columns(grid):
 
 
 def test_the_counters_are_labelled_w_r_h_d_q(grid):
-    """The five counters carry one distinct lower-case letter each.
+    """The seven counters carry one distinct lower-case letter each.
 
     The waiting bucket counts the runs the scheduler has admitted and not
     started, so it reads q, its own name's initial, and no two counters share a
-    letter or need a case to tell them apart. The review bucket reads r because
+    letter or need a case to tell them apart. The promotion queue reads p and
+    carries the oldest request's position after its own count, and the stuck
+    figure reads s beside the buckets it recounts. The rate cell reads r because
     its work is a review in progress rather than a worker implementing.
     """
     assert ticker_module.STAT_LETTER == {
@@ -190,10 +192,14 @@ def test_the_counters_are_labelled_w_r_h_d_q(grid):
         "help": "h",
         "delivered": "d",
         "waiting": "q",
+        "promotion queue": "p",
         "stuck": "s",
     }
     line = plain(grid.render(_event(working=3, blocked=1, unpromoted=7, waiting=2)))
-    assert "3w  0r  1h  7d  2q  0s" in line
+    # The promotion cell carries the oldest request's position after its own
+    # count; with none recorded it shows the pane's own no-figure marker.
+    marker = ticker_module.DIM_MARKER
+    assert f"3w  0r  1h  7d  2q  0p@ {marker}  0s" in line
 
 
 def test_a_review_shows_the_job_under_review_beside_its_stage(grid):
@@ -292,28 +298,39 @@ def test_a_narrow_pane_drops_the_effort_then_the_model_then_the_rate(lane_row):
         )
         return plain(narrower.render(event))
 
-    wide = row_at(180)
+    wide_width = 180
+    wide = row_at(wide_width)
     assert "tok/s" in wide and "sonnet5" in wide and "medium" in wide
 
-    # Effort dropped, rate and model kept.
-    no_effort = row_at(132)
+    # The fixed head's own width, read off a row at the floor where no trailing
+    # cell is added, so the thresholds below follow the head's declared widths
+    # rather than a literal that goes stale when a counter or a column widens.
+    head = len(row_at(ticker_module.MIN_WIDTH))
+    rate_group = ticker_module.GAP + ticker_module.RATE
+    model_group = ticker_module.GAP + ticker_module.model_cell_width(("sonnet5",))
+
+    # Effort dropped, rate and model grouped: exactly enough room for those two.
+    both_width = head + rate_group + model_group
+    no_effort = row_at(both_width)
     assert "tok/s" in no_effort and "sonnet5" in no_effort
     assert "medium" not in no_effort
 
-    # Model dropped too, rate kept.
-    rate_only = row_at(124)
+    # Model dropped too, rate kept: exactly enough room for the rate alone.
+    rate_width = head + rate_group
+    rate_only = row_at(rate_width)
     assert "tok/s" in rate_only
     assert "sonnet5" not in rate_only and "medium" not in rate_only
 
-    # Rate dropped last: none of the three remains at the floor.
-    none_left = row_at(ticker_module.MIN_WIDTH)
+    # Rate dropped last: one column short of the rate's own group keeps none.
+    floor_width = head + rate_group - 1
+    none_left = row_at(floor_width)
     assert "tok/s" not in none_left
     assert "sonnet5" not in none_left and "medium" not in none_left
 
     for width, line in (
-        (180, wide),
-        (132, no_effort),
-        (124, rate_only),
-        (ticker_module.MIN_WIDTH, none_left),
+        (wide_width, wide),
+        (both_width, no_effort),
+        (rate_width, rate_only),
+        (floor_width, none_left),
     ):
         assert len(line) <= width, (width, line)

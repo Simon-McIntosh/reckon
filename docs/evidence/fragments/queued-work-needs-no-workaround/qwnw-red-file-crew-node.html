@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-crew-node — tests/test_crew_node.py at base and head</title>
+</head>
+<body>
+<h1>qwnw-red-file-crew-node</h1>
+<p>Negative control: the base revision's run of <code>tests/test_crew_node.py</code>, with its failing ids, beside the head run named by the node's done-when.</p>
+
+<h2 id="qwnw-red-file-crew-node-base">Base — b24fe95a789c82cd33f22a912b4dbbf94d5e2193</h2>
+<p>Command: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_node.py</code>, as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, in a fresh extraction of the base revision.</p>
+<pre>
+FAILED tests/test_crew_node.py::test_dispatch_without_a_specification_level_exits_two - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 14 passed in 1.04s
+EXIT=1
+</pre>
+
+<h2 id="qwnw-red-file-crew-node-head">Head — ac634797082f3a03f2d0defcc2a9e339a0eb5927</h2>
+<p>The same command at the delivered head.</p>
+<pre>
+15 passed in 1.06s
+EXIT=0
+</pre>
+
+<h2 id="qwnw-red-file-crew-node-cause">The one cause: the whole-plan guard disregarded a named node</h2>
+<p>The failing test dispatches one node with <code>--plan project-a-plan --node node-a --dry-run</code> and reads the contract-validation document. At the base revision the command read any plan without <code>--section</code> as a request for the whole plan, so the request never reached the single-node path: the runner printed the usage refusal <code>--dry-run cannot queue a whole plan; name --section to preview one node</code> and <code>json.loads(result.output)</code> failed on the usage text ahead of the JSON. The rule the test asserts — a node with no specification level is refused at contract validation with exit 2 and a machine-readable finding — is still kept by the code; the defect was the branch that discarded the node the caller named, and it would also have queued every section of the plan for the same invocation without <code>--dry-run</code>.</p>
+<p>Verdict: product wrong. The guard now fires only for a request that names no node, which is the request it describes.</p>
+</body>
+</html>

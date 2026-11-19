@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-or-its-job-cannot-overwrite-shared-files">
+  <meta name="plan-evidence-for" content="a-worker-or-its-job-cannot-overwrite-shared-files">
+  <title>A job's fence names its program | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A job's fence names its program</h1>
+      <p class="lead">A submitted job's task started the fence by the bare name in its carried argv's first element, so a node whose search path holds no fence program could not start it and the task never ran. The recipe now carries the program's absolute location, resolved on the dispatching node, and the task runs that location or refuses by name before its command starts.</p>
+    </header>
+
+    <section id="a-job-fence-names-its-program-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/_worker_fence.py</code>: <code>fence_program()</code> resolves the fence program once, on the node composing the fence, and <code>fence_argv</code> writes the result into the recipe's new <code>program</code> field. An unresolvable program composes an empty field rather than an absent one.</li>
+        <li><code>reckon/nested_launch.py</code>: the task bootstrap reads <code>program</code>, refuses with <code>FENCE_PROGRAM_STATUS</code> when it is empty, not absolute, absent or not executable &mdash; naming the node, the program and where it looked &mdash; and substitutes it for the recipe's argv head, so the prepare step and the task's own fence both exec the carried location and never search the job node's path. <code>os.execvp</code> became <code>os.execv</code>; a recipe that names no program is never treated as an unfenced launch.</li>
+        <li><code>tests/test_a_job_fence_starts_on_any_node.py</code>: six cases added &mdash; the prepare step runs the carried program with an empty search path; an absent carried program refuses and names the node and the location; a recipe with no carried program refuses rather than searching even where the program is findable; a program present only at the carried location starts the task; a program present but not executable refuses; and a recipe whose head is an option still starts the task from the field.</li>
+      </ul>
+    </section>
+
+    <section id="a-job-fence-names-its-program-measured">
+      <h2>Measured</h2>
+      <ul>
+        <li>Head: <code>tests/test_a_job_fence_starts_on_any_node.py</code> passes 10 cases and the two opt-in scheduler cases ran on <code>all_debug</code> from this branch &mdash; sbatch job <code>1327763</code> and srun job <code>1327767</code> on node <code>98dci4-clu-3141</code> &mdash; each a task native to another node, whose granted directory was empty on arrival, whose marker was written there, and whose redirect onto the shared interpreter was refused with <code>Read-only file system</code>. The refusal is not the absence of an error: the message names the node, the program and the location, and no task output follows it.</li>
+        <li>Negative control: the same test file against the base revision's product modules in a scratch tree - 6 failed, 4 passed, 2 skipped, <code>EXIT=1</code>; base runs the recipe head as the program (<code>FileNotFoundError</code> on the empty search path) and starts the task where the carried field is absent.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

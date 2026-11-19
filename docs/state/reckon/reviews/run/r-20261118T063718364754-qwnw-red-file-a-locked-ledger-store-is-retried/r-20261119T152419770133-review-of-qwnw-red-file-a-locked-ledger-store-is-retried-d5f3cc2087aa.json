@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/ledger.py:3900 _index_append",
+    "reckon/run_store.py:2260 import_ledger",
+    "reckon/run_store.py append_and_indexed_run_ids"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:02:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_locked_ledger_store_is_retried.py",
+      "line": "106",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added assertion re-implements the lock-refusal message check the repository already owns in `_assert_lock_refusal` at tests/test_a_locked_store_refusal_names_the_lock.py:13, narrower (no path, remedy or cause), so the one message now has two independent expectations that can drift apart."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-locked-ledger-store-is-retried.html",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states \"Nothing outside this node's write scope was found\" and cites \"this node's single commit\", but the reviewed manifest's own outside_scope lists three items and the node lands two commits, so the record contradicts itself for a reader who trusts either half."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against a7ac07a91d918a57176c0d218abc4ae06e7ebab0; e3a8c463ab rewrites the third case and the module docstring in one test file (+13 -8), d5f3cc2087aa adds the 77-line evidence fragment, and no product source moved.",
+    "done_when": "the done_when asks for a full pass of the file as an all_debug job, each cause with a test/product verdict, no weakened assertion, equal suite arms as inline JSON with 40-character revisions, and a red base arm; the manifest records the head arm 3 passed EXIT=0, the base arm 1 failed/2 passed EXIT=1 with the failing id named, the suite arms both 58 passed at a7ac07a9 and e3a8c463ab, and the verdict \"test wrong\" with the cause (7a8fdac445) named.",
+    "goal": "the node goal is \"Make tests/test_a_locked_ledger_store_is_retried.py pass in full on the primary branch\"; the head gate log scoped-gate-1795101242119728524.log:7 records \"3 passed in 1.33s\" at e3a8c463ab, and the file now carries the third case as test_a_lock_past_the_bound_is_refused_then_imported (tests/test_a_locked_ledger_store_is_retried.py:94) instead of the superseded payload assertion.",
+    "manifest": "read; it states status complete, the scoped gate at tests/test_a_locked_ledger_store_is_retried.py with both log paths, the base arm as negative_control_log, complete suite arms with full revisions, and an outside_scope list of three items.",
+    "write_paths": "read the manifest's declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment, its figure directory); the diff's two paths, tests/test_a_locked_ledger_store_is_retried.py and the fragment HTML, both fall inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_locked_ledger_store_is_retried.py:102 reddens if ledger.py:3900 returns a {\"status\": \"failed\"} payload instead of raising, and :106 reddens if ledger.py:3925 stops routing a lock past the bound to the wait-bound remedy; the added :107 absence check passes for many reasons but still reddens if the refusal writes the row before raising.",
+    "evidence": "scoped-gate-1795101242119728524.log:2-7 and base-arm-a-locked-ledger-store-is-retried.log:1-7 carry revision, command, the failure id and EXIT lines, but no header names the all_debug partition the done_when requires, so that clause rests on the verb's invocation rather than on a recorded artefact.",
+    "fit": "tests/test_a_locked_ledger_store_is_retried.py:102 uses the module-level `import pytest` plus `pytest.raises(...) as caught` idiom the sibling tests/test_a_locked_store_refusal_names_the_lock.py:34 already uses, and no forbidden name was introduced.",
+    "goal_fidelity": "tests/test_a_locked_ledger_store_is_retried.py:94-114 asserts the refusal and the import repair, and the gate log shows the whole file green at head; the goal's \"on the primary branch\" half is still the promotion's to land, since d5f3cc20 is not an ancestor of the review worktree's b1d7f9e595.",
+    "reuse": "the landed test duplicates the lock-refusal-message assertion already owned by tests/test_a_locked_store_refusal_names_the_lock.py:13, which is the one place that checks the same message plus the path, the remedy and the cause; no new production definition was added, so nothing forks a shipped mechanism.",
+    "scope_discipline": "the two diff paths, tests/test_a_locked_ledger_store_is_retried.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-locked-ledger-store-is-retried.html, are both inside the declared write paths and no other path changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_a_locked_ledger_store_is_retried.py pass in full on the primary branch\"; the head gate log scoped-gate-1795101242119728524.log:7 records \"3 passed in 1.33s\" at e3a8c463ab, and the file now carries the third case as test_a_lock_past_the_bound_is_refused_then_imported (tests/test_a_locked_ledger_store_is_retried.py:94) instead of the superseded payload assertion.\nVERDICT done_when: the done_when asks for a full pass of the file as an all_debug job, each cause with a test/product verdict, no weakened assertion, equal suite arms as inline JSON with 40-character revisions, and a red base arm; the manifest records the head arm 3 passed EXIT=0, the base arm 1 failed/2 passed EXIT=1 with the failing id named, the suite arms both 58 passed at a7ac07a9 and e3a8c463ab, and the verdict \"test wrong\" with the cause (7a8fdac445) named.\nVERDICT write_paths: read the manifest's declared paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment, its figure directory); the diff's two paths, tests/test_a_locked_ledger_store_is_retried.py and the fragment HTML, both fall inside them.\nVERDICT manifest: read; it states status complete, the scoped gate at tests/test_a_locked_ledger_store_is_retried.py with both log paths, the base arm as negative_control_log, complete suite arms with full revisions, and an outside_scope list of three items.\nVERDICT diff: read commit by commit against a7ac07a91d918a57176c0d218abc4ae06e7ebab0; e3a8c463ab rewrites the third case and the module docstring in one test file (+13 -8), d5f3cc2087aa adds the 77-line evidence fragment, and no product source moved.\nCALL_SITES: reckon/ledger.py:3900 _index_append, reckon/run_store.py:2260 import_ledger, reckon/run_store.py append_and_indexed_run_ids\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_locked_ledger_store_is_retried.py:94-114 asserts the refusal and the import repair, and the gate log shows the whole file green at head; the goal's \"on the primary branch\" half is still the promotion's to land, since d5f3cc20 is not an ancestor of the review worktree's b1d7f9e595.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795101242119728524.log:2-7 and base-arm-a-locked-ledger-store-is-retried.log:1-7 carry revision, command, the failure id and EXIT lines, but no header names the all_debug partition the done_when requires, so that clause rests on the verb's invocation rather than on a recorded artefact.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two diff paths, tests/test_a_locked_ledger_store_is_retried.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-locked-ledger-store-is-retried.html, are both inside the declared write paths and no other path changed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_locked_ledger_store_is_retried.py:102 reddens if ledger.py:3900 returns a {\"status\": \"failed\"} payload instead of raising, and :106 reddens if ledger.py:3925 stops routing a lock past the bound to the wait-bound remedy; the added :107 absence check passes for many reasons but still reddens if the refusal writes the row before raising.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_locked_ledger_store_is_retried.py:102 uses the module-level `import pytest` plus `pytest.raises(...) as caught` idiom the sibling tests/test_a_locked_store_refusal_names_the_lock.py:34 already uses, and no forbidden name was introduced.\nSCORE reuse: 13\nJUSTIFICATION reuse: the landed test duplicates the lock-refusal-message assertion already owned by tests/test_a_locked_store_refusal_names_the_lock.py:13, which is the one place that checks the same message plus the path, the remedy and the cause; no new production definition was added, so nothing forks a shipped mechanism.\nFINDING tests/test_a_locked_ledger_store_is_retried.py:106 non-blocking: the added assertion re-implements the lock-refusal message check the repository already owns in `_assert_lock_refusal` at tests/test_a_locked_store_refusal_names_the_lock.py:13, narrower (no path, remedy or cause), so the one message now has two independent expectations that can drift apart.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-locked-ledger-store-is-retried.html:75 non-blocking: the fragment states \"Nothing outside this node's write scope was found\" and cites \"this node's single commit\", but the reviewed manifest's own outside_scope lists three items and the node lands two commits, so the record contradicts itself for a reader who trusts either half.",
+  "review_run_id": "r-20261119T152419770133-review-of-qwnw-red-file-a-locked-ledger-store-is-retried-d5f3cc2087aa",
+  "reviewed_base_sha": "a7ac07a91d918a57176c0d218abc4ae06e7ebab0",
+  "reviewed_commits": [
+    "e3a8c463ab0341dd244569d048295699cee6c4cf",
+    "d5f3cc2087aa1d74ea748a6cffe4d342726ca1d0"
+  ],
+  "reviewed_head_sha": "d5f3cc2087aa1d74ea748a6cffe4d342726ca1d0",
+  "reviewed_node": "qwnw-red-file-a-locked-ledger-store-is-retried",
+  "reviewed_run_id": "r-20261118T063718364754-qwnw-red-file-a-locked-ledger-store-is-retried",
+  "rubric": "dimension",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:24:15.363215+00:00",
+  "total": 101
+}

@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:1032 _promote_record_holds",
+    "reckon/crew/recovery_watch.py:2583 fleet_transitions",
+    "reckon/crew/recovery_watch.py:2008 _watch_snapshot"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:45:19Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promoted-live-run-does-not-reannounce.html",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "Neither the fragment nor the manifest records the ruff measure the done_when requires for the done_when's changed paths and the manifest's tests line names only pytest; my own run over this tree reports All checks passed and 1 file already formatted, so the claim holds but is unrecorded and a later reader cannot tell it was measured."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production module is touched, so no production call site reaches this change; the fixture drives reckon/crew/recovery_watch.py:1032 _promote_record_holds, :2583 fleet_transitions and :2008 _watch_snapshot.",
+    "diff": "read commit by commit against 5b0a1f537e: b5da12e062 adds _landed_repository and cites its rev-parse in the ledger row (20 added, 2 removed, no assertion touched), and four docs commits add the fragment, so no product module is changed.",
+    "done_when": "done_when requires the file passing in full as an all_debug job with SLURM_JOB_ID unset, a red base arm with its failing ids, a no-added-failure arm pair, ruff clean and a control in the fragment; node-gate-head-b5da12e062.log, node-gate-base-5b0a1f537e.log and the two 58-passed census arms are recorded, and no ruff result is.",
+    "goal": "the node's goal is tests/test_a_promoted_live_run_does_not_reannounce.py passing in full on the primary branch; the diff's fixture helper seeds the pointer's checkout as a repository whose main branch carries the cited commit, and a scratch extraction of 5b13ec9162 reads 2 passed in a run I made.",
+    "manifest": "read; status complete, five commits through 5b13ec9162, the literal gate command, both suite arms as inline JSON at full 40-character revisions with zero failures, and node-gate-base-5b0a1f537e.log as the negative control.",
+    "write_paths": "declared tests plus the fragment path and a figures directory; the delivered diff is exactly tests/test_a_promoted_live_run_does_not_reannounce.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promoted-live-run-does-not-reannounce.html."
+  },
+  "justifications": {
+    "durability": "restoring the pre-repair fixture line (tests/test_a_promoted_live_run_does_not_reannounce.py:70 back to commits of HEAD) reddens the precondition at line 118, which node-gate-base-5b0a1f537e.log shows at EXIT=1, and the announce-once assertions the file exists for sit untouched after it and are reached again at the repaired fixture.",
+    "evidence": "node-gate-head-b5da12e062.log closes on 2 passed EXIT=0 and node-gate-base-5b0a1f537e.log closes on 1 failed, 1 passed EXIT=1 naming test_a_promoted_live_run_is_held_and_announced_once, both recorded in the manifest, but the done_when's ruff measure is recorded nowhere and the head gate ran at the parent b5da12e062 whose test blob is the delivered one.",
+    "fit": "the helper at tests/test_a_promoted_live_run_does_not_reannounce.py:42 follows the file's fixture idiom, imports the suite's own tests.helpers.git owner instead of calling subprocess, and its docstring states the mechanism with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_a_promoted_live_run_does_not_reannounce.py:42-56 seeds the pointer's checkout as a repository whose main branch carries the cited commit, and a scratch extraction of 5b13ec9162 reads 2 passed (probe-gate-at-5b13ec9162.log), which is the goal's full-file pass.",
+    "reuse": "the addition calls tests/helpers/git.py:12 git, the suite's owner of the git invocation; the nearest same-capability helper, tests/helpers/landing_repository.py:17 _write_origin_and_checkout, couples a bare origin and a plan document and cannot seed a bare checkout, so it is not an owner this could extend.",
+    "scope_discipline": "git diff 5b0a1f537e..5b13ec9162 touches only tests/test_a_promoted_live_run_does_not_reannounce.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promoted-live-run-does-not-reannounce.html, both inside the node's declared write paths, and no product line is changed."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T071703793933-review-of-qwnw-red-file-a-promoted-live-run-does-not-reannounce-5b13ec91628c",
+  "review_text": "VERDICT goal: the node's goal is tests/test_a_promoted_live_run_does_not_reannounce.py passing in full on the primary branch; the diff's fixture helper seeds the pointer's checkout with a landed head at tests/test_a_promoted_live_run_does_not_reannounce.py:42-56 and a scratch extraction of 5b13ec9162 reads 2 passed.\nVERDICT done_when: node-gate-head-b5da12e062.log reads 2 passed EXIT=0 and node-gate-base-5b0a1f537e.log reads 1 failed, 1 passed EXIT=1 with its failing id, both recorded, and the ruff measure the done_when names is recorded nowhere.\nVERDICT write_paths: declared tests plus the fragment; the diff carries exactly tests/test_a_promoted_live_run_does_not_reannounce.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promoted-live-run-does-not-reannounce.html.\nVERDICT manifest: read; status complete, five commits through 5b13ec9162, the literal gate command, both suite arms as inline JSON at full 40-character revisions with zero failures, and the negative control log named.\nVERDICT diff: read commit by commit against 5b0a1f537e; b5da12e062 is a fixture-only change adding 20 lines and removing 2, and the four later commits add the fragment, so no product module is touched.\nCALL_SITES: reckon/crew/recovery_watch.py:1032 _promote_record_holds, reckon/crew/recovery_watch.py:2583 fleet_transitions, reckon/crew/recovery_watch.py:2008 _watch_snapshot\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_promoted_live_run_does_not_reannounce.py:42-56 seeds the pointer's checkout as a repository whose main branch carries the cited commit, and a scratch extraction of 5b13ec9162 reads 2 passed.\nSCORE evidence: 16\nJUSTIFICATION evidence: node-gate-head-b5da12e062.log records 2 passed EXIT=0 and node-gate-base-5b0a1f537e.log records 1 failed EXIT=1, but no ruff result is recorded and the head gate ran at the parent b5da12e062.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 5b0a1f537e..5b13ec9162 touches only tests/test_a_promoted_live_run_does_not_reannounce.py and the declared fragment path.\nSCORE durability: 17\nJUSTIFICATION durability: restoring the pre-repair fixture at tests/test_a_promoted_live_run_does_not_reannounce.py:70 reddens the precondition at line 118, which node-gate-base-5b0a1f537e.log shows at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at tests/test_a_promoted_live_run_does_not_reannounce.py:42 follows the file's fixture idiom and imports tests/helpers/git.py rather than calling subprocess itself.\nSCORE reuse: 17\nJUSTIFICATION reuse: the addition calls tests/helpers/git.py:12 git and no reachable owner of a bare landed checkout exists, tests/helpers/landing_repository.py:17 being coupled to a bare origin and a plan document.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promoted-live-run-does-not-reannounce.html:43 non-blocking: the fragment and the manifest record no ruff result for the changed test file, which the done_when requires.\n",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "5b13ec91628cc09f1c5d5264012eadb6066bf0a1",
+  "reviewed_run_id": "r-20261118T044623279330-qwnw-red-file-a-promoted-live-run-does-not-reannounce",
+  "reviewer_run_id": "r-20261119T071703793933-review-of-qwnw-red-file-a-promoted-live-run-does-not-reannounce-5b13ec91628c",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:12:43.805751+00:00",
+  "total": 106
+}

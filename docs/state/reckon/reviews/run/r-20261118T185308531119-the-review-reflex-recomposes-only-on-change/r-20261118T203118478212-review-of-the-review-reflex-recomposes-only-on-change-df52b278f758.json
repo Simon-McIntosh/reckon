@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite-1795033407348331636.log reports 58 passed with no FAILED line at 96e3c4b8a3957e2624866e0dc773042892239333 and after_suite-1795033450425355968.log reports 60 passed with no FAILED line at df52b278f758c9d37dbbd797b1f571ac507f593c, so the set difference is empty (0).",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:1743 dispatch_awaiting_reviews calls dispatch_review_for_run for each awaiting run",
+    "reckon/crew/recovery_watch.py:4472",
+    "reckon/crew/pending_landing.py:793",
+    "reckon/crew/plan_review.py:5002",
+    "reckon/crew_dispatch_commands.py:3381 crew dispatch --review entry point",
+    "reckon/crew/resumption.py:3031 resume sweep calls dispatch_awaiting_reviews"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T20:54:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-the-review-reflex-recomposes-only-on-change-df52b278f758",
+      "recorded_at": "2026-11-18T22:32:22.598361+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "3842",
+      "severity": "blocking",
+      "text": "blocking: the claim exclusion tests report.get(\"claim\"), but the only caller at :4835 hands it the report built at :4823-4829, which carries run_id, dispatched, refused, backend and reason and no claim key because the claim goes to record_dispatch(claim=claim) at :4821 only, so a claim-naming refusal is remembered; once the holder releases, stored_claim_refusal returns None at :4144 while _settled_composed_refusal answers from the stale entry since neither this run's pointer, its review records nor its lanes' admission changed, so the run's review is never composed again, which is the loop tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py exists to prevent and which that test escapes only because its _pass rewrites the same run pointer before every sweep."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "3814",
+      "severity": "non-blocking",
+      "text": "non-blocking: the identity watches the run pointer, the review records and the lane documents, while the composition's refusals also rest on the roster snapshot, the lane's budget verdict over its whole run history and, for a plan subject, the plan document, so a refusal whose cause moves without a write to one of the three watched inputs is answered from memory indefinitely; the three cheap reads are a trade the module comment at :3721-3738 states, so this is recorded rather than blocking."
+    },
+    {
+      "file": "tests/test_a_refused_review_is_not_recomposed_unchanged.py",
+      "line": "185",
+      "severity": "non-blocking",
+      "text": "non-blocking: the four count assertions are independent of the values the test hands in and redden on the base arm, but neither case exercises a claim-naming refusal, so no assertion in the file reddens if the exclusion at recovery_review_dispatch.py:3842 keeps failing to exclude, and the autouse fixture at :56-67 hides the seam by returning silently where the memory is absent."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified six production call sites that reach dispatch_review_for_run, the station sweep at reckon/crew/recovery_review_acceptance.py:1743 being the one the change is measured on.",
+    "diff": "read all three commits against 96e3c4b8a3957e2624866e0dc773042892239333: df143dc1c3 adds the refusal memory, its three identity helpers and the two call sites in reckon/crew/recovery_review_dispatch.py (+173/-1) plus the 233-line test; 6e2f5b79f7 makes the autouse fixture return where the memory is absent; df52b278f7 only widens one return annotation, and nothing outside the two declared code paths changed.",
+    "done_when": "the done_when asks tests/test_a_refused_review_is_not_recomposed_unchanged.py to build 50 awaiting runs behind a refusing lane and assert 50 compositions on the first sweep, none on the second, 50 again once the lane is admitted, and exactly 1 when one run's review record lands, with 50 on the second sweep at base; the file at tests/test_a_refused_review_is_not_recomposed_unchanged.py:177,185,200,231 asserts those four counts and negative-control-base.log records the base reddening with assert 100 == 50 and assert 50 == 1.",
+    "goal": "the node's goal is to compose a review dispatch for an awaiting run only when its inputs changed; reckon/crew/recovery_review_dispatch.py:4152 gates the non-preview path on _settled_composed_refusal and :4835 remembers each composed refusal, so the goal is implemented for every refusal the memory stores, though the claim-refusal exclusion its own docstring names is dead (finding at :3842).",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185308531119-the-review-reflex-recomposes-only-on-change/manifest.md; it records commits df143dc1c3 6e2f5b79f7 df52b278f7, a head gate of 60 passed EXIT=0 in after_suite-1795033450425355968.log, a base arm of 58 passed EXIT=0 in baseline_suite-1795033407348331636.log, and a red control in negative-control-base.log whose summary is 2 failed.",
+    "write_paths": "the declared scope is reckon/crew/recovery_review_acceptance.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_refused_review_is_not_recomposed_unchanged.py, the section's evidence fragment and its figures directory; the delivered diff changes only reckon/crew/recovery_review_dispatch.py and the test file, both declared, and the fragment and figures paths are declared but unused."
+  },
+  "justifications": {
+    "durability": "restoring the base's unconditional composition by deleting the gate at reckon/crew/recovery_review_dispatch.py:4152 reddens tests/test_a_refused_review_is_not_recomposed_unchanged.py:185 with 100 against 50, and dropping the lane identity at :3789 reddens :200 because the third sweep would stay settled, but no assertion in that file exercises the excluded claim path, so the finding at :3842 regresses silently.",
+    "evidence": "after_suite-1795033450425355968.log carries a header naming revision df52b278f758c9d37dbbd797b1f571ac507f593c and a tail of 60 passed then EXIT=0, and negative-control-base.log carries the same test red at 96e3c4b with the ids the manifest quotes, but the done_when also required matched arms as an all_debug partition job under sbatch and ruff on the staged paths, and the manifest's tests line and every arm header name only the inner pytest command, with no partition, sbatch or ruff record anywhere in the run directory.",
+    "fit": "the private helpers and their docstrings follow the shape of the neighbouring stored_claim_refusal at reckon/crew/recovery_review_dispatch.py:3682, but the docstring at :3834-3839 states an exclusion the code cannot perform, so the module states two different behaviours at :3842 and :4823.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:4152 returns the remembered refusal while its three inputs hold and :4835 stores one after each composed refusal, so an unchanged sweep composes nothing, but :3842's guard leaves a claim-naming refusal in that memory past its cause (finding at :3842), so the goal holds only for refusals the identity watches.",
+    "reuse": "a search of reckon/file_memo.py and reckon/crew for the capability found file_memo.file_signature (:277) and review_records.review_entries_signature (:2692) reused by reference at :3751 and :3793, found that file_memo.memoized (:401) and memoized_key (:439) always compute on a miss and so cannot answer a read-back without recomposing, and found the lane-document read at :3789 following the existing backend lane_document idiom in reckon/crew/dispatch_plan.py:1739 and reckon/crew/routing.py:3825, so nothing the change adds forks a capability the repository owns.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery_review_dispatch.py and tests/test_a_refused_review_is_not_recomposed_unchanged.py, both declared at node.write_paths in dispatch-detail.json, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to compose a review dispatch for an awaiting run only when its inputs changed; reckon/crew/recovery_review_dispatch.py:4152 gates the non-preview path on _settled_composed_refusal and :4835 remembers each composed refusal, so the goal is implemented for every refusal the memory stores, though the claim-refusal exclusion its own docstring names is dead (finding at :3842).\nVERDICT done_when: the done_when asks tests/test_a_refused_review_is_not_recomposed_unchanged.py to build 50 awaiting runs behind a refusing lane and assert 50 compositions on the first sweep, none on the second, 50 again once the lane is admitted, and exactly 1 when one run's review record lands, with 50 on the second sweep at base; the file at tests/test_a_refused_review_is_not_recomposed_unchanged.py:177,185,200,231 asserts those four counts and negative-control-base.log records the base reddening with assert 100 == 50 and assert 50 == 1.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_review_acceptance.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_refused_review_is_not_recomposed_unchanged.py, the section's evidence fragment and its figures directory; the delivered diff changes only reckon/crew/recovery_review_dispatch.py and the test file, both declared, and the fragment and figures paths are declared but unused.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185308531119-the-review-reflex-recomposes-only-on-change/manifest.md; it records commits df143dc1c3 6e2f5b79f7 df52b278f7, a head gate of 60 passed EXIT=0 in after_suite-1795033450425355968.log, a base arm of 58 passed EXIT=0 in baseline_suite-1795033407348331636.log, and a red control in negative-control-base.log whose summary is 2 failed.\nVERDICT diff: read all three commits against 96e3c4b8a3957e2624866e0dc773042892239333: df143dc1c3 adds the refusal memory, its three identity helpers and the two call sites in reckon/crew/recovery_review_dispatch.py (+173/-1) plus the 233-line test; 6e2f5b79f7 makes the autouse fixture return where the memory is absent; df52b278f7 only widens one return annotation, and nothing outside the two declared code paths changed.\nVERDICT call_sites: verified six production call sites that reach dispatch_review_for_run, the station sweep at reckon/crew/recovery_review_acceptance.py:1743 being the one the change is measured on.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:1743, reckon/crew/recovery_watch.py:4472, reckon/crew/pending_landing.py:793, reckon/crew/plan_review.py:5002, reckon/crew_dispatch_commands.py:3381, reckon/crew/resumption.py:3031\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:4152 returns the remembered refusal while its three inputs hold and :4835 stores one after each composed refusal, so an unchanged sweep composes nothing, but :3842's guard leaves a claim-naming refusal in that memory past its cause (finding at :3842), so the goal holds only for refusals the identity watches.\nSCORE evidence: 14\nJUSTIFICATION evidence: after_suite-1795033450425355968.log carries a header naming revision df52b278f758c9d37dbbd797b1f571ac507f593c and a tail of 60 passed then EXIT=0, and negative-control-base.log carries the same test red at 96e3c4b with the ids the manifest quotes, but the done_when also required matched arms as an all_debug partition job under sbatch and ruff on the staged paths, and the manifest's tests line and every arm header name only the inner pytest command, with no partition, sbatch or ruff record anywhere in the run directory.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/recovery_review_dispatch.py and tests/test_a_refused_review_is_not_recomposed_unchanged.py, both declared at node.write_paths in dispatch-detail.json, and adds nothing the goal does not imply.\nSCORE durability: 13\nJUSTIFICATION durability: restoring the base's unconditional composition by deleting the gate at reckon/crew/recovery_review_dispatch.py:4152 reddens tests/test_a_refused_review_is_not_recomposed_unchanged.py:185 with 100 against 50, and dropping the lane identity at :3789 reddens :200 because the third sweep would stay settled, but no assertion in that file exercises the excluded claim path, so the finding at :3842 regresses silently.\nSCORE fit: 16\nJUSTIFICATION fit: the private helpers and their docstrings follow the shape of the neighbouring stored_claim_refusal at reckon/crew/recovery_review_dispatch.py:3682, but the docstring at :3834-3839 states an exclusion the code cannot perform, so the module states two different behaviours at :3842 and :4823.\nSCORE reuse: 17\nJUSTIFICATION reuse: a search of reckon/file_memo.py and reckon/crew for the capability found file_memo.file_signature (:277) and review_records.review_entries_signature (:2692) reused by reference at :3751 and :3793, found that file_memo.memoized (:401) and memoized_key (:439) always compute on a miss and so cannot answer a read-back without recomposing, and found the lane-document read at :3789 following the existing backend lane_document idiom in reckon/crew/dispatch_plan.py:1739 and reckon/crew/routing.py:3825, so nothing the change adds forks a capability the repository owns.\nFINDING reckon/crew/recovery_review_dispatch.py:3842 blocking: the claim exclusion tests report.get(\"claim\"), but the only caller at :4835 hands it the report built at :4823-4829, which carries run_id, dispatched, refused, backend and reason and no claim key because the claim goes to record_dispatch(claim=claim) at :4821 only, so a claim-naming refusal is remembered; once the holder releases, stored_claim_refusal returns None at :4144 while _settled_composed_refusal answers from the stale entry since neither this run's pointer, its review records nor its lanes' admission changed, so the run's review is never composed again, which is the loop tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py exists to prevent and which that test escapes only because its _pass rewrites the same run pointer before every sweep.\nFINDING reckon/crew/recovery_review_dispatch.py:3814 non-blocking: the identity watches the run pointer, the review records and the lane documents, while the composition's refusals also rest on the roster snapshot, the lane's budget verdict over its whole run history and, for a plan subject, the plan document, so a refusal whose cause moves without a write to one of the three watched inputs is answered from memory indefinitely; the three cheap reads are a trade the module comment at :3721-3738 states, so this is recorded rather than blocking.\nFINDING tests/test_a_refused_review_is_not_recomposed_unchanged.py:185 non-blocking: the four count assertions are independent of the values the test hands in and redden on the base arm, but neither case exercises a claim-naming refusal, so no assertion in the file reddens if the exclusion at recovery_review_dispatch.py:3842 keeps failing to exclude, and the autouse fixture at :56-67 hides the seam by returning silently where the memory is absent.",
+  "review_node": "review-of-the-review-reflex-recomposes-only-on-change-df52b278f758",
+  "review_run_id": "r-20261118T203118478212-review-of-the-review-reflex-recomposes-only-on-change-df52b278f758",
+  "reviewed_base_sha": "96e3c4b8a3957e2624866e0dc773042892239333",
+  "reviewed_head_sha": "df52b278f758c9d37dbbd797b1f571ac507f593c",
+  "reviewed_run_id": "r-20261118T185308531119-the-review-reflex-recomposes-only-on-change",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T203118478212-review-of-the-review-reflex-recomposes-only-on-change-df52b278f758"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T21:28:38.204752+00:00",
+  "total": 94
+}

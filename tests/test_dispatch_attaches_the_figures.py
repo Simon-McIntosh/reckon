@@ -481,7 +481,9 @@ def test_crew_dispatch_image_reaches_the_argv(
         ],
     )
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output)
+    # The dispatch document is stdout; the run's identity notice goes to
+    # stderr, and ``result.output`` mixes the two streams.
+    payload = json.loads(result.stdout)
     _CREATED_RUN_IDS.add(str(payload["run_id"]))
     argv = [str(token) for token in payload["argv"]]
     directory = crew.run_dir(payload["run_id"])

@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:50:16Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "The reviewed run's manifest never names the importer arm, though the done_when has three clauses and that is one of them: importer-base.log and importer-head.log sit on disk with identical failure ids (9 failed, 382 passed, 7 skipped at each revision) but no field of the manifest cites them, and neither log carries a scheduler or partition header while importer-sbatch.log is empty, so the 'on all_debug' venue the done_when names cannot be read from any artefact and the clause rests on an untraceable local run."
+    },
+    {
+      "file": "reckon/nested_launch.py",
+      "line": 533,
+      "severity": "non-blocking",
+      "text": "The bootstrap's _checksum restates the 'strip a sha256: prefix and lower-case' rule that reckon/_worker_fence.py:88 _checksum_text owns, with a slice rather than removeprefix; the standard-library-only constraint on the embedded template justifies the copy, but the two spellings can drift and the docstring at reckon/_worker_fence.py:92 asserts they already agree, so a change to one silently mis-describes the other."
+    }
+  ],
+  "notes": "Verdict per rubric item is stored under verdicts. Durability rests on negative-control-base.log (the six carried-program cases red at base) and on the two per-change revert logs (revert-fold.log reddens test_a_tilde_user_path_resolves_as_the_modules_flight_rule_does on the pre-repair resolver; revert-checksum-strip.log reddens test_a_home_relative_path_and_prefixed_checksum_resolve_by_the_flight_rule on the missing prefix strip). test_a_home_relative_path_and_prefixed_checksum_resolve_by_the_flight_rule at tests/test_a_job_fence_starts_on_any_node.py:507 asserts its path against case['home'] while the fixture also points HOME at that same directory, so the assertion cannot distinguish the passed home from Path.home(); the checksum half of the same test is falsified by revert-checksum-strip.log.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T122926930019-review-of-a-fenced-job-runs-on-a-node-without-the-fence-program-7c4233aefee0",
+  "reviewed_base_sha": "57235c8b2555ac3c25bd007c0ccecca87413a1e4",
+  "reviewed_commits": [
+    "d2b394f4b6226a54b282ed129b11338d8030c173",
+    "7c4233aefee0bc8a9b746c52f770ebb91f1a9c49"
+  ],
+  "reviewed_head_sha": "7c4233aefee0bc8a9b746c52f770ebb91f1a9c49",
+  "reviewed_node": "a-fenced-job-runs-on-a-node-without-the-fence-program",
+  "reviewed_run_id": "r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:03:39.871893+00:00",
+  "total": 105,
+  "verdicts": {
+    "diff": "Read commit by commit from 57235c8 to 7c4233ae: d2b394f4b6 adds FENCE_PROGRAM_KEY, _checksum_text and carried_fence_program plus the carried seal at reckon/_worker_fence.py:2177 and the verify-and-substitute branch at reckon/nested_launch.py:520-568 with 214 test lines, and 7c4233ae replaces the hand-rolled path resolver with the module's _resolve_declared_path and adds the two resolver cases.",
+    "done_when": "The three clauses are the \u00a714 test cases, the base-revision negative control, and the importer arm on all_debug at -n 4: after_suite-repair.log at 7c4233ae records 76 passed/2 skipped/EXIT=0 and negative-control-base.log records 6 failed/EXIT=1 plus EXIT=127 for the base scheduler refusal, but the importer logs share identical 9 failure ids with no scheduler header and manifest.md:16 names no importer log, leaving the all_debug venue unrecorded.",
+    "goal": "The node goal is 'Run a fenced job task under a checksummed fence program carried on shared storage'; reckon/_worker_fence.py:88-140 carries path/checksum/source/version into every fence recipe, reckon/_worker_fence.py:2177-2185 seals the carried directory after every writable grant, and reckon/nested_launch.py:547-568 hashlib-verifies the file before substituting it for the task's program, which the betelgeuse receipt (measure-run/betelgeuse-report.json, job 1330716, system_fence_program=false) shows running on 98dci4-gpu-0003.",
+    "manifest": "Read the reviewed run's manifest.md: status complete, commits d2b394f4b6 and 7c4233ae, the literal gate command, six test_logs, negative_control_log, and both suite arms at 0 failures; it records no importer-arm result and no measurement_module or measurement_cwd for the base-suite-clone arm.",
+    "write_paths": "The declared paths are reckon/nested_launch.py, reckon/_worker_fence.py, tests/test_a_job_fence_starts_on_any_node.py and the \u00a714 evidence fragment and figure; the delivered diff touches exactly the three code files and no file outside them, and the declared evidence fragment and figure are simply not delivered."
+  }
+}

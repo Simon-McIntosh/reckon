@@ -134,7 +134,11 @@ def _pointer(
 def test_a_commitless_promotion_reads_a_vanished_worktree_as_no_change(
     repository: Path, tmp_path: Path
 ) -> None:
-    """No worktree to measure is no repository change, and the absence is named."""
+    """No worktree to measure is no repository change, and the absence is named.
+
+    A tree that is already gone holds nothing to release, so the release reads
+    ``worktree_absent`` rather than withholding a tree no command could free.
+    """
     base = _git(repository, "rev-parse", "HEAD")
     run_id = "r-vanished-no-commit"
     worktree = _removed_worktree(repository, tmp_path, run_id)
@@ -167,7 +171,10 @@ def test_a_commitless_promotion_reads_a_vanished_worktree_as_no_change(
     # A parsed JSON payload: the bug printed none and raised instead.
     assert isinstance(json.loads(json.dumps(promoted)), dict)
     assert promoted["pointer_removed"] is True
-    assert promoted["release"]["worktree_withheld"] == "tree is no longer available"
+    release = promoted["release"]
+    assert release["worktree_released"] is True
+    assert release["worktree_absent"] is True
+    assert "worktree_withheld" not in release
     assert not pointer_path(run_id).exists()
     assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [run_id]
 

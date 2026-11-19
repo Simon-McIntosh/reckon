@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:855-870 _node_fragment_href",
+    "reckon/resources.py:65 EVIDENCE_FRAGMENTS_SUBTREE"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:47:10Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html",
+      "line": 45,
+      "severity": "non-blocking",
+      "text": "The receipt reads 'importers, head 990f0090fa: pop-head.log' but pop-head.log's own header line 1 declares '# revision: 072fc0976b95631793a051759962531c1d5e7790', so a reader rebuilding the arm at the stated revision cannot match the named log, which is the one thing the gained commit exists to make possible."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/evidence.py:855-870 and reckon/resources.py:65 reach the fragment path; neither reads the receipts text.",
+    "diff": "990f0090fa..1b4a29a731 is one commit of +17 -1 on the fragment; six of seven receipt lines match their log headers, line 45 does not.",
+    "done_when": "prompt.txt:354; entity-level met by the run's logs, manifest-level unmet because manifest.md carries no baseline_suite or after_suite JSON.",
+    "goal": "the run's goal is that tests/test_refused_promotion_request_settles.py passes in full on the primary branch, and the gained commit 1b4a29a731 exists to let a receipt be rebuilt; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html:38-46 now names a log and an exit per arm.",
+    "manifest": "read; records tests, test_logs, negative_control_log, landing and all three commits, but no suite-arm JSON.",
+    "write_paths": "prompt.txt:99-104; the single gained commit lies inside docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the run's goal is that tests/test_refused_promotion_request_settles.py passes in full on the primary branch, and the gained commit 1b4a29a731 exists to let a receipt be rebuilt \u2014 docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html:38-46, whose seven receipt lines each name a log under the run directory and its exit status.\nVERDICT done_when: the done_when at prompt.txt:354 requires the file green at head as an all_debug job with SLURM_JOB_ID unset, every cause given a verdict, and both importer arms recorded as inline JSON with full 40-character revisions; the run's logs now carry the green and red pair and the measured arms, but manifest.md still carries no baseline_suite or after_suite JSON despite the prior review's blocking finding on exactly that, so the manifest half of the measure is met by the logs rather than by the record.\nVERDICT write_paths: declared paths at prompt.txt:99-104 are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the fragment itself and docs/figures/...; the one gained commit changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html, inside them.\nVERDICT manifest: read at the run directory, now recording tests, test_logs, negative_control_log, landing and the three commits including 1b4a29a73141, but still with no baseline_suite or after_suite JSON, so the arm figures it states are not carried as the dated record the done_when asks for.\nVERDICT diff: read commit by commit over 990f0090fa..1b4a29a731, one commit adding 17 lines and a trailing newline to the fragment receipts list; six of its seven lines match their named log's own header and summary, and line 45 does not.\nCALL_SITES: reckon/evidence.py:855-870 (_node_fragment_href resolves the fragment's presence to serve its link), reckon/resources.py:65 keeps evidence fragments out of typed-research discovery\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the receipts list at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html:38-46 names a log and an exit per arm, which is what the gain set out to add, and one of the seven labels misstates its log's revision.\nSCORE evidence: 13\nJUSTIFICATION evidence: node-base.log (42fe90d0, 1 failed 4 passed EXIT=1), node-head.log (990f0090fa, 5 passed EXIT=0) and after_suite-1795100383699413629.log (1b4a29a731, 58 passed EXIT=0) back the fragment's figures, but manifest.md still records no baseline_suite or after_suite JSON as the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only gained commit touches docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html alone, inside the declared fragment path.\nSCORE durability: 11\nJUSTIFICATION durability: the gained commit adds prose only; no test asserts that a receipt line names a log that exists or that its exit agrees, so deleting the list at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html:38 leaves the suite green.\nSCORE fit: 19\nJUSTIFICATION fit: the added h3 and ul at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html:32-46 keep the file's element-id convention, every id beginning with the node id, and match the surrounding section prose.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition; a capability search over reckon/ for rendering a run's arm receipts (gate_receipt, evidence/fragments) found reckon/crew/stage_receipts.py and reckon/hooks/worker_inbox.py, both about stage and inbox deliveries rather than gate arms, so no owner exists for this list.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html:45 non-blocking: the receipt reads 'importers, head 990f0090fa: pop-head.log' but pop-head.log's own header line 1 declares '# revision: 072fc0976b95631793a051759962531c1d5e7790', so a reader rebuilding the arm at the stated revision cannot match the named log, which is the one thing the gained commit exists to make possible.",
+  "review_run_id": "r-20261119T151355138829-review-of-qwnw-red-file-refused-promotion-request-settles-1b4a29a73141",
+  "reviewed_base_sha": "990f0090fa48b6db5ef9eba638923995c5428bfe",
+  "reviewed_head_sha": "1b4a29a73141bfbe9319fd961476dcfd7d1ed4f2",
+  "reviewed_run_id": "r-20261118T062806164054-qwnw-red-file-refused-promotion-request-settles",
+  "scores": {
+    "durability": 11,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:13:44.918426+00:00",
+  "total": 102
+}
