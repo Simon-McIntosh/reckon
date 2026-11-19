@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="654">
+<meta name="plan-version" content="655">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2031,7 +2031,10 @@
     <div class="r-comment-body"><p>tests/test_pointer_classification_is_memoised.py passes in full at base 577adbbe and at head a3f0e25f3068 (10 passed, EXIT=0, all_debug jobs with SLURM_JOB_ID unset), so the recorded red-file defect does not reproduce and no source or test changed; the fragment records both arms and two persisted-memo mutations that leave the file green, because reckon/_backends.py serves the second stream read from a process-wide cache keyed by the stream's stat identity, so the file does not discriminate the memo it names inside one process.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T162412973258-review-of-qwnw-red-file-page-paints-from-the-index-0da1c6f4ca1c" data-who="reckon-build" data-when="2026-11-19T08:09:28.084Z">
-    <div class="r-comment-body"><p>Review of r-20261118T062858962857-qwnw-red-file-page-paints-from-the-index read base 23b901694b4bfec73d95be3a082d4c336d9a4101 against head 0da1c6f4ca1c7c2a008616fb3fd9e7e809d32968 and records parsed scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 20, reuse 20 with zero added failures and two non-blocking findings, stored under the reviewed run&#x27;s review-records/ and checked ok.</p></div>
+    <div class="r-comment-body"><p>Review of r-20261118T062858962857-qwnw-red-file-page-paints-from-the-index read base 23b901694b4bfec73d95be3a082d4c336d9a4101 against head 0da1c6f4ca1c7c2a008616fb3fd9e7e809d32968 and records parsed scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 20, reuse 20 with zero added failures and two non-blocking findings, stored under the reviewed run's review-records/ and checked ok.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063650819519-qwnw-red-file-a-paired-dispatch-hides-each-arm" data-who="reckon-build" data-when="2026-11-18T16:20:05.477Z">
+    <div class="r-comment-body"><p>tests/test_a_paired_dispatch_hides_each_arm.py passes 9 of 9 at 30270ee as an all_debug job (EXIT=0) against 1 failed and 8 passed at ab67be8; two causes, both test wrong and the product unchanged — the probe wrote its results in tmp_path, which holds the sealed reports and review stores beneath the crew home, so the fence kept the whole node tmp read-only and the stub died on its first write, and the same launch named the masked session directory as its own worktree, whose grant comes after the masks and re-opened it; the probe now declares its own writable directory and runs in a worktree of its own, and its stub sits in that worktree so the file&#x27;s own standalone negative control runs red again as its docstring claims.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
