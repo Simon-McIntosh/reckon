@@ -1,0 +1,76 @@
+<section id="qwnw-red-file-a-one-plan-ledger-read-landing">
+  <h2>One plan's ledger read decodes only its own documents</h2>
+
+  <p><strong>What this node found.</strong> The named check,
+  <code>tests/test_a_one_plan_ledger_read.py</code>, already passes in full at
+  the base revision <code>c9f02c221c821bfe5b9a9ff64185a44cca7cda49</code>, so
+  this node changed no product source and no test. The rule the file asserts —
+  a read naming one plan pushes that selection into the run index's own query
+  instead of decoding every run document first — is carried by
+  <code>reckon/ledger.py</code> as landed before this dispatch. What remained
+  unproven on this node was that the measure runs where the done-when says it
+  must: as an <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset,
+  its output on shared storage.</p>
+
+  <p><strong>Measured.</strong> Both runs below are the same file and the same
+  command; they differ only in the <code>reckon/ledger.py</code> the test file
+  is measured against. The head run is a job submitted to
+  <code>all_debug</code> through <code>crew verify-gate --worker</code>, which
+  exports the revision into a scratch tree, unsets the scheduler identity and
+  writes the log under the run directory. The negative control runs the head
+  test file against the pre-fix ledger at
+  <code>19b28c494ed17c302a6b6be1d99ef7a9cd154805</code>, so the counting
+  instrument is shown to see every plan before the head run reports an
+  absence of other plans' decodes.</p>
+
+  <table id="qwnw-red-file-a-one-plan-ledger-read-arms">
+    <caption>Each arm names the revision it measured and its own log's
+    summary line.</caption>
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>head</td>
+        <td><code>c9f02c221c821bfe5b9a9ff64185a44cca7cda49</code></td>
+        <td><code>3 passed</code>, <code>EXIT=0</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054247171332-qwnw-red-file-a-one-plan-ledger-read/scoped-gate-1795079608339699130.log</code></td>
+      </tr>
+      <tr>
+        <td>negative control</td>
+        <td><code>19b28c494ed17c302a6b6be1d99ef7a9cd154805</code></td>
+        <td><code>1 failed, 2 passed</code>, <code>EXIT=1</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054247171332-qwnw-red-file-a-one-plan-ledger-read/negative-control-19b28c494e.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The head run's header and summary:</p>
+
+  <pre id="qwnw-red-file-a-one-plan-ledger-read-head-log">
+# revision: c9f02c221c821bfe5b9a9ff64185a44cca7cda49
+# host: 98dci4-clu-3142.iter.org
+# tree: /tmp/mcintos-landing-3bd975b1357d-dejmt5/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_one_plan_ledger_read.py'
+...                                                                      [100%]
+3 passed in 5.73s
+EXIT=0
+  </pre>
+
+  <p>The negative control's failure is the one the file's own docstring names,
+  and its ids are the base run's failing ids:</p>
+
+  <pre id="qwnw-red-file-a-one-plan-ledger-read-negative-control">
+# negative control: head test file against the pre-fix ledger
+# revision: 19b28c494ed17c302a6b6be1d99ef7a9cd154805
+F..
+FAILED tests/test_a_one_plan_ledger_read.py::test_a_one_plan_read_decodes_no_other_plans_documents - AssertionError: a one-plan read decoded other plans' run documents: 49 plans, first ['plan-00', 'plan-01', 'plan-02', 'plan-03', 'plan-04']
+assert not ['plan-00', 'plan-01', ...]
+1 failed, 2 passed in 7.50s
+EXIT=1
+  </pre>
+
+  <p>The positive control inside the file, <code>test_the_unfiltered_read_decodes_every_plan</code>,
+  passed in both arms, so the counter is not silent: it reports all 50 plans
+  when the read is unfiltered and no other plan when the read names one.</p>
+</section>
