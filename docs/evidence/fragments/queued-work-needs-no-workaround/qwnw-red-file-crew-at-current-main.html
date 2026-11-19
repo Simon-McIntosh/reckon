@@ -64,4 +64,26 @@ all_debug (host 98dci4-clu-3142) with SLURM_JOB_ID unset in the task, log
 <code>58 passed</code>, <code>EXIT=0</code>: baseline at 8c7ea625 from
 <code>baseline_suite-1795030392681577943.log</code> and head at 86c3a7204b from
 <code>after_suite-1795030467650039222.log</code>.</p>
+<h4 id="qwnw-red-file-crew-at-current-main-merge">Merge repair against d628c376</h4>
+<p>The landing conflicted in <code>tests/test_crew.py</code> alone: primary
+repaired the same five cases by another route, in 4aa5562b0. Both
+preparations are kept at all four call sites — primary's
+<code>_worker_has_stopped</code>, which records the pid and the attempt record
+of a worker that has ended, and this branch's
+<code>_let_the_worker_stop_when_it_wrote_its_verdict</code>, which ages the
+attempt's start and its newest stream past the stall window. The roster fix
+agreed on both sides and is kept once.</p>
+<p>The merged tree then failed one case this branch never touched:
+<code>test_dispatch_launches_a_cli_backend_and_records_the_run</code>. It
+reproduces on primary's own tree at d628c376, in a scratch checkout with no
+commit of this branch present, so it is inherited rather than introduced
+here. The cause is primary's own change: the live pointer now keeps the
+node's body and the channel's peer list in the run's directory, and the
+assertion still compared the pointer's raw bytes to the whole record.
+Verdict: the test was wrong, and it is repaired to read both back through
+<code>runs.node_definition</code> and <code>runs.peer_channel_peers</code>,
+the accessors that answer for a pointer written before or after the move. The
+record-versus-pointer equality is kept whole — excluding only the two parts
+the product stores beside the pointer — so the case still states one record
+rather than two.</p>
 </section>
