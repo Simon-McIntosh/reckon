@@ -262,6 +262,11 @@ def test_the_snapshot_derives_the_per_reader_obligations(
         _CallCounter(runs, "_list_live_records") as listings,
     ):
         monkeypatch.setattr(obligations, "live_pointer_snapshot", _base_reads)
+        monkeypatch.setattr(
+            obligations,
+            "_live_pointers",
+            lambda project: runs.list_live(project=project),
+        )
         per_reader = obligation_snapshot.fleet_state(PROJECT, now=OBSERVED_AT)
     # The two arms must differ in the read pattern they take, or the equality
     # below compares one path with itself.

@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-session-spends-a-priority-budget">
   <meta name="plan-title" content="A session spends a priority budget">
   <meta name="plan-summary" content="Each session holds a priority budget it spends across its queued work, moves at any time, and reads back beside the whole queue from the CLI, MCP or Python.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="queued-work-needs-no-workaround">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;descoped&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;descoped&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;],&quot;s4&quot;:[&quot;a-session-spends-a-priority-budget#s2&quot;]}">
   <title>A session spends a priority budget | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
-<meta name="plan-modified" content="2026-11-18">
+<meta name="plan-version" content="16">
+<meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
   <main class="plan-doc">
@@ -73,7 +73,7 @@
 <p>Negative control: the cross-session case against the base revision admits the session with fewer live runs first, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s2.html</code>.</p>
 
     <h2 id="s3">§3 — A run's priority carries to its review and its promotion</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> The priority a run held when it launched is inherited by the review composed for it and by its promotion request. Both queues order by it, ties falling back to their current order. A coordinator promotes a delivered run, so that its review and its promotion move ahead, by setting its priority through the same reprioritise verb, charged to the same session budget. The points return when the run lands or is discarded.</p>
 <p><strong>Done when.</strong> Tests with a temporary repository and crew home show the following:</p>
 <ul>
@@ -84,7 +84,7 @@
 <p>Negative control: the promotion-order case against the base revision drains in request order, and the failing run is logged. The gate runs on <code>all_debug</code>, and its log is written to <code>docs/evidence/fragments/a-session-spends-a-priority-budget/s3.html</code>.</p>
 
     <h2 id="s4">§4 — The queue reads as a queue, from the CLI, MCP and Python</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> One read answers "where does my work stand". It is served as <code>reckon crew view queue</code>, as the MCP <code>crew(view="queue")</code>, and as an importable function that returns the same document. It lists every queued and awaiting-upstream request and every pending review and promotion. Each row carries:</p>
 <ul>
   <li>its position in the order admission would launch it next;</li>
@@ -111,10 +111,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-sspb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build a-session-spends-a-priority-budget" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-sspb-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-14" data-recommends-skill="/reckon-build a-session-spends-a-priority-budget" data-resolved-at="2026-11-19T06:49:35+00:00" data-resolved-by="reckon-28">
     <h4 class="r-fu-title">Review, then build §2 and §5 together, then §3 and §4</h4>
     <div class="r-fu-body"><p>§2 is independent; §3 and §4 wait on §2's budget. §5 is descoped by the lead's decision of 2026-11-14 (workers are not run as SLURM jobs). Route the build to codex at the lead's direction of 2026-11-14.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-session-spends-a-priority-budget</pre>
+    <p class="r-fu-outcome"><p>done — no followup. Sections 2, 3 and 4 landed on main (land commits <code>6be0eae587</code>, <code>4dc84a2a0a</code>, <code>60ecc274f1</code>); section 5 was descoped by the lead's decision of 2026-11-14.</p></p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -130,14 +131,26 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39" data-who="reckon-build" data-when="2026-11-18T00:43:01.227Z">
     <div class="r-comment-body"><p>the review of r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends at 7967827dca397c70b8fb81753a1f5274365c843f is stored parsed, scoring goal_fidelity 19, evidence 15, scope_discipline 16, durability 17, fit 16, reuse 18, with added_failure_count 0 derived from the reviewed run's own arms, and four non-blocking findings.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab" data-who="reckon-build" data-when="2026-11-18T09:51:42.438Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p stored at .../review-records/&lt;run&gt;.json and &lt;run&gt;.at-b7884a4b93ab.json, both passing crew check --review --record; scores goal_fidelity 15, evidence 13, scope_discipline 19, durability 14, fit 16, reuse 15 (total 92), revisions read 8d870f62598f..b7884a4b93ab, added_failure_count 0; one blocking finding at reckon/crew/queue_edit.py:705 (a 4-point raise on a delivered run whose review is still queued charges the same points twice, reproduced as in_use=8 for holders r1 and review-of-r1), plus two non-blocking findings (a tautological assertion at the new test line 174, and the reviewed manifest's missing measurement_module/measurement_cwd).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e" data-who="reckon-build" data-when="2026-11-18T13:49:08.001Z">
+    <div class="r-comment-body"><p>A parsed review record is stored for run r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p, naming base 8d870f62598f1d922ceed7015b570a65c61d8283 and head 93cbdf66fd2e612bafb95e8a2c8c9e296b41b54c, scoring goal_fidelity 17, evidence 17, scope_discipline 19, durability 16, fit 17, reuse 18, with added_failure_count 0 and no ids, and three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p" data-who="reckon-build" data-when="2026-11-18T05:23:46Z">
+    <div class="r-comment-body"><p>A run's priority reaches both queues, and one raise is charged once. queue_order._precedence ranks two delivered reviews by the points their run held; queue_edit.reprioritise accepts a delivered run, resolves the review queued for it, and writes the raise onto that review and onto the queued promotion request. The session is charged for the raise in one place: with a queued review carrying it, the review is charged and excluded from the budget judgement while the run's marker is cleared; with no queued review the mark charges the run until its pointer retires. Measure: section gate 7 passed in 0.60s, EXIT=0 at 637e28986c; negative control reverting queue_edit.py and runs.py to b7884a4b93 gives 2 failed, 5 passed, EXIT=1 with "assert 8 == 4" naming both holders, and a CLI smoke on a delivered run with its queued review reads total 4 with holders ['review-of-r1'], the run's marker absent and the review's override 4.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc" data-who="reckon-build" data-when="2026-11-18T08:08:56.033Z">
     <div class="r-comment-body"><p>review stored with no total score; 5 finding(s)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d" data-who="reckon-build" data-when="2026-11-18T10:15:14.766Z">
-    <div class="r-comment-body"><p>Review of run r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and at 1441625a6e, over the commits it gained since its a0bf002e72 review, stores a parsed record scoring goal_fidelity 18, evidence 13, scope_discipline 18, durability 16, fit 18, reuse 20 with zero added failures and three findings — one blocking on the truncated manifest.md:8 and two non-blocking on the evidence paragraph (docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html:8) and the untested queue composition drops (tests/test_crew_view_serves_every_view.py:347); no retained log at the head runs the section&#x27;s own gate, which was verified in a scratch tree instead — revisions read a0bf002e72bcb5d4275feb5335cd7515002fda50..1441625a6e1d4cff9bc2deb4dc03f1580ffcd143.</p></div>
+    <div class="r-comment-body"><p>Review of run r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and at 1441625a6e, over the commits it gained since its a0bf002e72 review, stores a parsed record scoring goal_fidelity 18, evidence 13, scope_discipline 18, durability 16, fit 18, reuse 20 with zero added failures and three findings — one blocking on the truncated manifest.md:8 and two non-blocking on the evidence paragraph (docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html:8) and the untested queue composition drops (tests/test_crew_view_serves_every_view.py:347); no retained log at the head runs the section's own gate, which was verified in a scratch tree instead — revisions read a0bf002e72bcb5d4275feb5335cd7515002fda50..1441625a6e1d4cff9bc2deb4dc03f1580ffcd143.</p></div>
 </div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab" data-who="reckon-build" data-when="2026-11-18T09:51:42.438Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p stored at .../review-records/&lt;run&gt;.json and &lt;run&gt;.at-b7884a4b93ab.json, both passing crew check --review --record; scores goal_fidelity 15, evidence 13, scope_discipline 19, durability 14, fit 16, reuse 15 (total 92), revisions read 8d870f62598f..b7884a4b93ab, added_failure_count 0; one blocking finding at reckon/crew/queue_edit.py:705 (a 4-point raise on a delivered run whose review is still queued charges the same points twice, reproduced as in_use=8 for holders r1 and review-of-r1), plus two non-blocking findings (a tautological assertion at the new test line 174, and the reviewed manifest's missing measurement_module/measurement_cwd).</p></div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and" data-who="reckon-build" data-when="2026-11-18T05:23:50Z">
+    <div class="r-comment-body"><p>The queue reads as a queue on all three surfaces. reckon/crew/queue_view.py derives one document - every queued and awaiting-upstream request with its place, session, project, plan section, lane, points, wait, the admission ordering's own reason and the hold that stops it, then the pending reviews and promotions, then each session's budget beside the points in use and free - and the CLI and the MCP tool serve it unchanged through mcp_views.serve_crew_view("queue"). Places come from queue_admission.queued_placements, review rows are the queue's own review requests, promotion rows are the drain's report, and a hold is composed once by verdicts.queued_hold, which the obligations view now delegates to; the repair rounds added the view (and decisions) to CrewArgs.view and documented queue, decisions and review-need in the build skill. Measure: tests/test_the_queue_reads_as_a_queue.py 2 passed EXIT=0 with the order [('r-a-raised', 1, 'priority override 3'), ('r-b-plain', 2, 'roadmap priority'), ('r-a-waits', None, 'waiting upstream: plan-a#s2'), ('r-b-held', None, 'waiting upstream: no ref recorded')] identical on the function, the CLI and the MCP tool, budgets coordinator-a(budget=10,in_use=3,free=7) and coordinator-b(budget=10,in_use=0,free=10), and one pass launching exactly the request the view placed first. Full figures in the s4.html and node fragments.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569" data-who="reckon-build" data-when="2026-11-18T13:47:29.609Z">
+    <div class="r-comment-body"><p>review of a run already landed (60ecc274f1); stored record at 084e2d7a is the deliverable; retiring the pointer</p></div>
 </div>
 </section>
 </main>

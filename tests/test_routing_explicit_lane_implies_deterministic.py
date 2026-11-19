@@ -63,8 +63,12 @@ def route_config(repo, monkeypatch):
     """Resolve flight to the shipped route default and forbid a picker call."""
     config = deepcopy(CONFIG)
     config["routing"] = {"picker": "route"}
-    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config)
-    monkeypatch.setattr(crew_dispatch_commands, "_layer_flight_config", lambda *_a, **_k: config)
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config
+    )
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_layer_flight_config", lambda *_a, **_k: config
+    )
     return config
 
 
@@ -85,7 +89,7 @@ def test_backend_without_route_implies_deterministic(repo, route_config, monkeyp
     calls = _forbid_picker(monkeypatch)
     result = _invoke(repo, extra=["--backend", "alpha"])
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["backend"] == "alpha"
     assert payload["route"] == "deterministic"
     assert payload["picker_selection"] is None
@@ -98,7 +102,7 @@ def test_local_without_route_implies_deterministic(repo, route_config, monkeypat
     calls = _forbid_picker(monkeypatch)
     result = _invoke(repo, extra=["--local"])
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["backend"] == "alpha"
     assert payload["route"] == "deterministic"
     assert payload["picker_selection"] is None
@@ -112,7 +116,7 @@ def test_set_default_backend_without_route_implies_deterministic(
     calls = _forbid_picker(monkeypatch)
     result = _invoke(repo, extra=["--set", "default_backend=alpha"])
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["backend"] == "alpha"
     assert payload["route"] == "deterministic"
     assert payload["picker_selection"] is None
@@ -145,7 +149,7 @@ def test_no_lane_no_route_still_routes_by_picker(repo, route_config, monkeypatch
     calls = _forbid_picker(monkeypatch)
     result = _invoke(repo)
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["backend"] == "beta"
     assert payload["route"] == "picker"
     assert payload["picker_selection"]["backend"] == "beta"
@@ -165,7 +169,7 @@ def test_explicit_lane_real_dispatch_records_deterministic(
     _forbid_picker(monkeypatch)
     result = _invoke(repo, extra=["--backend", "alpha"], dry_run=False)
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output.splitlines()[0])
+    payload = json.loads(result.stdout.splitlines()[0])
     assert payload["backend"] == "alpha"
     assert payload["route"] == "deterministic"
     home = _store._config_home()

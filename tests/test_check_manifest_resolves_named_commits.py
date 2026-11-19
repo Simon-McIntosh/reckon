@@ -27,6 +27,9 @@ from reckon.crew.reports import audit_manifest
 from reckon.crew.runs import _write_json, pointer_path
 
 RUN_ID = "r-20260921T000000000000-unresolvable-citation"
+# The log the fixture manifest cites, as a path beside that manifest: the audit
+# reads a path relative to the directory its manifest lives in.
+TEST_LOG_NAME = "logs/citation-check.log"
 
 
 def _git(root: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
@@ -76,7 +79,14 @@ def _resolves(root: Path, revision: str) -> bool:
     return probe.returncode == 0
 
 
-def _manifest(commits: str) -> str:
+def _manifest(commits: str, *, test_log: str = TEST_LOG_NAME) -> str:
+    """A manifest whose only unresolved question is the citation it records.
+
+    Every other field the audit reads is stated in the shape it accepts — the
+    log is cited by a path beside the manifest and the message declaration is
+    present — so a finding list longer than the citation is the citation's own
+    and cannot be an unrelated gate answering first.
+    """
     return (
         "node: resolve-citations\n"
         "status: complete\n"
@@ -84,12 +94,26 @@ def _manifest(commits: str) -> str:
         "changed_paths: []\n"
         "tests: uv run pytest tests/test_check_manifest_resolves_named_commits.py"
         " -q -> passed\n"
-        "test_logs: /tmp/citation-check.log\n"
+        f"test_logs: {test_log}\n"
+        "messages_received: none\n"
         "artifacts: none\n"
         "evidence_inputs: none\n"
         "follow_ons: none\n"
         "blockers: none\n"
     )
+
+
+def _write_test_log(directory: Path) -> Path:
+    """Write the log the fixture cites, in the directory its manifest lives in."""
+    path = directory / TEST_LOG_NAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "# command: uv run pytest tests/test_check_manifest_resolves_named_commits.py -q\n"
+        "1 passed\n"
+        "EXIT=0\n",
+        encoding="utf-8",
+    )
+    return path
 
 
 def test_the_unresolvable_citation_is_reported_and_the_resolving_one_is_not(
@@ -187,6 +211,7 @@ def test_the_command_reports_the_unresolvable_citation(
     fabricated = "b" * 40
     manifest = tmp_path / "manifest.md"
     manifest.write_text(_manifest(f"[{resolving}, {fabricated}]"), encoding="utf-8")
+    _write_test_log(manifest.parent)
     _write_json(
         pointer_path(RUN_ID),
         {

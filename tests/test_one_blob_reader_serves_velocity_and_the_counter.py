@@ -170,15 +170,30 @@ def test_counter_and_plan_metas_read_the_same_bytes_through_one_reader(
     assert trees[MODULE_PATH].body[0].name == "example"
 
 
+def _invokes_a_batched_object_read(node) -> bool:
+    """True when ``node`` names both halves of a ``git cat-file --batch`` read.
+
+    ``--batch`` alone is not the grammar under test: ``crew dispatch --batch``
+    is a CLI flag holding the same literal. A batched object read names
+    ``cat-file`` beside it, so requiring both keeps the scan pointed at readers
+    while a private loop reintroduced on either side still names both.
+    """
+    constants = {
+        item.value
+        for item in ast.walk(node)
+        if isinstance(item, ast.Constant) and isinstance(item.value, str)
+    }
+    return {"cat-file", "--batch"} <= constants
+
+
 def _functions_invoking_batch() -> set[tuple[str, str]]:
     found = set()
     for path in sorted((ROOT / "reckon").rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and any(
-                isinstance(item, ast.Constant) and item.value == "--batch"
-                for item in ast.walk(node)
-            ):
+            if isinstance(
+                node, (ast.FunctionDef, ast.AsyncFunctionDef)
+            ) and _invokes_a_batched_object_read(node):
                 found.add((path.relative_to(ROOT).as_posix(), node.name))
     return found
 

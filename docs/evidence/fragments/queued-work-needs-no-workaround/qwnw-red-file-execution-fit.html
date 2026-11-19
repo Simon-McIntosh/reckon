@@ -1,0 +1,33 @@
+<section id="qwnw-red-file-execution-fit-landing">
+  <h2>Execution-fit evidence reads stdout, and a review run supplies its manifest</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_execution_fit.py</code>
+  parsed each dispatch record from <code>CliRunner</code>, whose
+  <code>Result.output</code> from Click 8.2 interleaves stdout and stderr. The
+  parse then met the product's own notice, <code>reckon: created run ...</code>,
+  which <code>reckon/crew/dispatching/preparation.py</code> prints to stderr so
+  stdout stays the command's JSON document. The test reads
+  <code>result.stdout</code> now. A review run's promotion also reads the run's
+  own manifest, so the test writes the manifest a worker would have left before
+  it promotes the overridden run.</p>
+
+  <table id="qwnw-red-file-execution-fit-arms">
+    <caption>The same file at the base revision and at this head, each run as a
+    job on all_debug with its log on shared storage.</caption>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>1 failed: JSONDecodeError in
+        <code>test_execution_measure_requires_a_capable_role_or_recorded_override</code>;
+        <code>EXIT=1</code></td>
+      </tr>
+    <tr>
+        <td>head</td>
+        <td><code>65963c0b68e686b13324f9ac62fe6555246e90ea</code></td>
+        <td>1 passed; <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+</section>

@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-session-spends-a-priority-budget-landed">
+  <meta name="plan-title" content="A session spends a priority budget — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A session spends a priority budget: 11 committed run(s), 11 section-anchored comment(s), and 22 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-session-spends-a-priority-budget">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-11-18T13:49:08.001Z">
+  <meta name="plan-commits" content="895cf057ab81319a9a21412a25c7d5898fe1655c,f8aa2b2d136899cf6982ecd900c9da9e4da15db7,522df5161d5b343f9c8c0e312b036badf61e06fe,c10a2fcb68841de0d7b735bf68c3dc9a9142fcec,e82343123a7cb22cb99bc3a02d6901ece32a53e8,d319d0d3454958bf8aeaeaed8521a8969de16d73,0e35e058387ab0e298733699fc6fb8473ecdee4f,0cff38996c4e7e3f4f96b876f5b58ad6db6d556a,5b88b2d99aca1ae7af7fa4241ed70ea61c4829dd,a511935220c2e75bf2a9866dbcd5ebc7012b078c,b9d2c8fe8f0371a4285343ddc50a733ecbd7bc84,b7dd46560df6abe470a636e7a6aae27efe79a00a,b7884a4b93abdbc93cbbeca7eae275f00a61e7e9,637e28986c03824d65a60cd358d66bb8a8eddc7e,93cbdf66fd2e612bafb95e8a2c8c9e296b41b54c,9579aa15608f0325f6b8b34ffb20590715328ee7,e278c21f39d501b5e8a143e42b77c0606942fee2,d6b78b4dd98e408273396bfaee97aee3b041de88,a0bf002e72bcb5d4275feb5335cd7515002fda50,ae3237b0e545757e44a82256196a08c658adae4b,1441625a6e1d4cff9bc2deb4dc03f1580ffcd143,084e2d7ac569d9098bec868a3a6b24ed7f1e1343">
+  <title>A session spends a priority budget — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A session spends a priority budget — landed record</h1>
+  <p>Closure synthesis for A session spends a priority budget: 11 committed run(s), 11 section-anchored comment(s), and 22 landed commit(s). <span class="source" data-source="reckon" data-source-kind="ledger">11 run(s)</span></p>
+
+  <section id="overview" data-evidence-origin="overview">
+    <h2>Sections</h2>
+    <p class="section-summary" data-section="s1"><strong>§1 — Why: priority is a per-request afterthought, and the queue cannot be read</strong> set out to <span class="source" data-source="a-session-spends-a-priority-budget#s1" data-source-kind="plan">plan</span> and is declared done; nothing landed <span class="source" data-source="a-session-spends-a-priority-budget#s1" data-source-kind="plan">declaration</span>.</p>
+    <p class="section-summary" data-section="s2"><strong>§2 — Each session holds a priority budget and spends it at submission or later</strong> set out to <q class="done-when">Done when. Tests with a temporary repository and crew home show the following:</q> <span class="source" data-source="a-session-spends-a-priority-budget#s2" data-source-kind="plan">plan</span>. Landed: <q>the budget and the lane now read a request&#x27;s points from one definition, and the budget counts a session&#x27;s points in every project.</q> <span class="source" data-source="c-run-r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends" data-source-kind="comment">landed</span>. Measured: no gate command recorded, unrecorded tests added, unrecorded suite failures <span class="source" data-source="r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39" data-source-kind="run">run r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39</span>, after 3 earlier attempts <span class="source" data-source="a-session-spends-a-priority-budget#s2" data-source-kind="section">s2</span>.</p>
+    <p class="section-summary" data-section="s3"><strong>§3 — A run&#x27;s priority carries to its review and its promotion</strong> set out to <q class="done-when">Done when. Tests with a temporary repository and crew home show the following:</q> <span class="source" data-source="a-session-spends-a-priority-budget#s3" data-source-kind="plan">plan</span>. Landed: <q>A run&#x27;s priority reaches both queues, and one raise is charged once. queue_order._precedence ranks two delivered reviews by the points their run held; queue_edit.reprioritise accepts a delivered run, resolves the review queued for it, and writes the raise onto that review and onto the queued promotion request. The session is charged for the raise in one place: with a queued review carrying it, the review is charged and excluded from the budget judgement while the run&#x27;s marker is cleared; with no queued review the mark charges the run until its pointer retires. Measure: section gate 7 passed in 0.60s, EXIT=0 at 637e28986c; negative control reverting queue_edit.py and runs.py to b7884a4b93 gives 2 failed, 5 passed, EXIT=1 with &quot;assert 8 == 4&quot; naming both holders, and a CLI smoke on a delivered run with its queued review reads total 4 with holders [&#x27;review-of-r1&#x27;], the run&#x27;s marker absent and the review&#x27;s override 4.</q> <span class="source" data-source="c-run-r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p" data-source-kind="comment">landed</span>. Measured: no gate command recorded, unrecorded tests added, unrecorded suite failures <span class="source" data-source="r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e" data-source-kind="run">run r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e</span>, after 2 earlier attempts <span class="source" data-source="a-session-spends-a-priority-budget#s3" data-source-kind="section">s3</span>.</p>
+    <p class="section-summary" data-section="s4"><strong>§4 — The queue reads as a queue, from the CLI, MCP and Python</strong> set out to <q class="done-when">Done when. A test queues requests from two sessions with different priorities, waits and holds, and reads the same order and reasons from the function, the CLI and the MCP tool. A test runs one admission pass and reads the request it launched at position 1 of the view taken just before. Negative control: the same tests run against the base revision fail, because the base serves no queue view and no MCP read, and the failing run is logged. The gate runs on all_debug , and its log is written to docs/evidence/fragments/a-session-spends-a-priority-budget/s4.html .</q> <span class="source" data-source="a-session-spends-a-priority-budget#s4" data-source-kind="plan">plan</span>. Landed: <q>The queue reads as a queue on all three surfaces. reckon/crew/queue_view.py derives one document - every queued and awaiting-upstream request with its place, session, project, plan section, lane, points, wait, the admission ordering&#x27;s own reason and the hold that stops it, then the pending reviews and promotions, then each session&#x27;s budget beside the points in use and free - and the CLI and the MCP tool serve it unchanged through mcp_views.serve_crew_view(&quot;queue&quot;). Places come from queue_admission.queued_placements, review rows are the queue&#x27;s own review requests, promotion rows are the drain&#x27;s report, and a hold is composed once by verdicts.queued_hold, which the obligations view now delegates to; the repair rounds added the view (and decisions) to CrewArgs.view and documented queue, decisions and review-need in the build skill. Measure: tests/test_the_queue_reads_as_a_queue.py 2 passed EXIT=0 with the order [(&#x27;r-a-raised&#x27;, 1, &#x27;priority override 3&#x27;), (&#x27;r-b-plain&#x27;, 2, &#x27;roadmap priority&#x27;), (&#x27;r-a-waits&#x27;, None, &#x27;waiting upstream: plan-a#s2&#x27;), (&#x27;r-b-held&#x27;, None, &#x27;waiting upstream: no ref recorded&#x27;)] identical on the function, the CLI and the MCP tool, budgets coordinator-a(budget=10,in_use=3,free=7) and coordinator-b(budget=10,in_use=0,free=10), and one pass launching exactly the request the view placed first. Full figures in the s4.html and node fragments.</q> <span class="source" data-source="c-run-r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and" data-source-kind="comment">landed</span>. Measured: no gate command recorded, unrecorded tests added, unrecorded suite failures <span class="source" data-source="r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569" data-source-kind="run">run r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569</span>, after 3 earlier attempts <span class="source" data-source="a-session-spends-a-priority-budget#s4" data-source-kind="section">s4</span>.</p>
+    <p class="section-summary" data-section="s5"><strong>§5 — A worker runs as its own scheduler job, so the partition is the worker queue</strong> set out to <q class="done-when">Done when. A test with a stub scheduler dispatches more workers than the old roster cap, reads one job submission per worker on the named partition, and reads no refusal naming the roster. A test raises a pending worker&#x27;s priority and reads the scheduler asked to reorder it. A live measurement on rigel dispatches 30 workers. It reads 30 worker jobs in the scheduler, pending or running, and no worker process on the fleet node. At a moment when more of them are generating than the gate&#x27;s width, it reads the router&#x27;s in-flight count at the width and its waiting count above zero. Negative control: the first test against the base revision refuses past 25, naming the roster cap, and the failing run is logged. The gate runs on all_debug , and the live measurement&#x27;s log is written to docs/evidence/fragments/a-session-spends-a-priority-budget/s5.html .</q> <span class="source" data-source="a-session-spends-a-priority-budget#s5" data-source-kind="plan">plan</span> and is declared descoped; nothing landed <span class="source" data-source="a-session-spends-a-priority-budget#s5" data-source-kind="plan">declaration</span>.</p>
+  </section>
+  <section id="landed-nodes" data-evidence-origin="overview">
+    <h2>Landed nodes</h2>
+    <table>
+      <thead><tr><th>Node</th><th>Section</th><th>Attempts</th><th>Gate</th><th>Commits</th><th>Worker time</th><th>Source</th><th>Fragment</th></tr></thead>
+      <tbody>
+      <tr><td>review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c</td><td>s2</td><td>1 attempt</td><td>not-run</td><td>—</td><td>12m 16s</td><td><span class="source" data-source="r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c" data-source-kind="run">r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c</span></td><td>—</td></tr>
+      <tr><td>sspb-each-session-holds-a-priority-budget-and-spends</td><td>s2</td><td>1 attempt</td><td>passed</td><td>895cf057ab81319a9a21412a25c7d5898fe1655c, f8aa2b2d136899cf6982ecd900c9da9e4da15db7, 522df5161d5b343f9c8c0e312b036badf61e06fe, c10a2fcb68841de0d7b735bf68c3dc9a9142fcec, e82343123a7cb22cb99bc3a02d6901ece32a53e8, d319d0d3454958bf8aeaeaed8521a8969de16d73, 0e35e058387ab0e298733699fc6fb8473ecdee4f, 0cff38996c4e7e3f4f96b876f5b58ad6db6d556a, 5b88b2d99aca1ae7af7fa4241ed70ea61c4829dd</td><td>375m 48s</td><td><span class="source" data-source="r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends" data-source-kind="run">r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends</span></td><td><a class="node-fragment" href="/reckon/evidence/fragments/a-session-spends-a-priority-budget/sspb-each-session-holds-a-priority-budget-and-spends.html">fragment</a></td></tr>
+      <tr><td>review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca</td><td>s2</td><td>1 attempt</td><td>not-run</td><td>—</td><td>60m 16s</td><td><span class="source" data-source="r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca" data-source-kind="run">r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca</span></td><td>—</td></tr>
+      <tr><td>review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39</td><td>s2</td><td>1 attempt</td><td>not-run</td><td>—</td><td>10m 18s</td><td><span class="source" data-source="r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39" data-source-kind="run">r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39</span></td><td>—</td></tr>
+      <tr><td>sspb-a-run-s-priority-carries-to-its-review-and-its-p</td><td>s3</td><td>1 attempt</td><td>passed</td><td>a511935220c2e75bf2a9866dbcd5ebc7012b078c, b9d2c8fe8f0371a4285343ddc50a733ecbd7bc84, b7dd46560df6abe470a636e7a6aae27efe79a00a, b7884a4b93abdbc93cbbeca7eae275f00a61e7e9, 637e28986c03824d65a60cd358d66bb8a8eddc7e, 93cbdf66fd2e612bafb95e8a2c8c9e296b41b54c</td><td>0s</td><td><span class="source" data-source="r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p" data-source-kind="run">r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p</span></td><td><a class="node-fragment" href="/reckon/evidence/fragments/a-session-spends-a-priority-budget/sspb-a-run-s-priority-carries-to-its-review-and-its-p.html">fragment</a></td></tr>
+      <tr><td>review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab</td><td>s3</td><td>1 attempt</td><td>not-run</td><td>—</td><td>0s</td><td><span class="source" data-source="r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab" data-source-kind="run">r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab</span></td><td>—</td></tr>
+      <tr><td>review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e</td><td>s3</td><td>1 attempt</td><td>not-run</td><td>—</td><td>0s</td><td><span class="source" data-source="r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e" data-source-kind="run">r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e</span></td><td>—</td></tr>
+      <tr><td>sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and</td><td>s4</td><td>1 attempt</td><td>passed</td><td>9579aa15608f0325f6b8b34ffb20590715328ee7, e278c21f39d501b5e8a143e42b77c0606942fee2, d6b78b4dd98e408273396bfaee97aee3b041de88, a0bf002e72bcb5d4275feb5335cd7515002fda50, ae3237b0e545757e44a82256196a08c658adae4b, 1441625a6e1d4cff9bc2deb4dc03f1580ffcd143, 084e2d7ac569d9098bec868a3a6b24ed7f1e1343</td><td>0s</td><td><span class="source" data-source="r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and" data-source-kind="run">r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and</span></td><td><a class="node-fragment" href="/reckon/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html">fragment</a></td></tr>
+      <tr><td>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc</td><td>s4</td><td>1 attempt</td><td>not-run</td><td>—</td><td>0s</td><td><span class="source" data-source="r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc" data-source-kind="run">r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc</span></td><td>—</td></tr>
+      <tr><td>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d</td><td>s4</td><td>1 attempt</td><td>not-run</td><td>—</td><td>0s</td><td><span class="source" data-source="r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d" data-source-kind="run">r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d</span></td><td>—</td></tr>
+      <tr><td>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569</td><td>s4</td><td>1 attempt</td><td>not-run</td><td>—</td><td>0s</td><td><span class="source" data-source="r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569" data-source-kind="run">r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569</span></td><td>—</td></tr>
+      </tbody>
+    </table>
+  </section>
+  <section id="figures" data-evidence-origin="overview">
+    <h2>Figures</h2>
+    <p>No run named a figure.</p>
+  </section>
+  <section id="totals" data-evidence-origin="overview">
+    <h2>Totals</h2>
+    <p class="overview-totals">11 run(s) across 3 landed section(s) and 11 attempt(s), 458m 38s of worker time against 8.0 declared hour(s) <span class="source" data-source="reckon" data-source-kind="ledger">ledger</span>. Reviews: 15 finding(s) raised across 4 stored review(s), 0 folded, 0 exempted and 15 open <span class="source" data-source="r-20261114T150736946671-plan-review-of-a-session-spends-a-priority-budget" data-source-kind="review">r-20261114T150736946671-plan-review-of-a-session-spends-a-priority-budget</span><span class="source" data-source="r-20261114T151036137967-plan-review-of-a-session-spends-a-priority-budget" data-source-kind="review">r-20261114T151036137967-plan-review-of-a-session-spends-a-priority-budget</span><span class="source" data-source="r-20261114T172903149288-plan-review-of-a-session-spends-a-priority-budget" data-source-kind="review">r-20261114T172903149288-plan-review-of-a-session-spends-a-priority-budget</span><span class="source" data-source="r-20261115T013459915279-plan-review-of-a-session-spends-a-priority-budget" data-source-kind="review">r-20261115T013459915279-plan-review-of-a-session-spends-a-priority-budget</span>; by review: r-20261114T150736946671-plan-review-of-a-session-spends-a-priority-budget raised 5 (0 folded, 0 exempted, 5 open); r-20261114T151036137967-plan-review-of-a-session-spends-a-priority-budget raised 6 (0 folded, 0 exempted, 6 open); r-20261114T172903149288-plan-review-of-a-session-spends-a-priority-budget raised 2 (0 folded, 0 exempted, 2 open); r-20261115T013459915279-plan-review-of-a-session-spends-a-priority-budget raised 2 (0 folded, 0 exempted, 2 open).</p>
+  </section>
+
+  <section id="s2">
+    <h2>§2 — Each session holds a priority budget and spends it at submission or later</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c">
+      <p><small>reckon-build · 2026-11-15T07:27:44.750Z</small></p>
+      <div class="r-comment-body"><p>independent review of r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends at head e82343123a against base 95e530385e: 6/6 checklist items answered, all six dimensions scored, 2 blocking and 3 non-blocking findings; the budget and the lane ordering are implemented and the focused gate reproduces, but the per-session bound is charged per project and one of the two priority readers under-counts a reprioritised request, so the node should not land until those two are repaired.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca">
+      <p><small>reckon-build · 2026-11-15T09:26:28.918Z</small></p>
+      <div class="r-comment-body"><p>review of r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends at head 5b88b2d99aca over base e82343123a: six dimensions scored (goal_fidelity 17, evidence 14, scope_discipline 19, durability 15, fit 17, reuse 15; total 97), four non-blocking findings and zero added failures; both prior blocking defects confirmed repaired in reckon/crew/runs.py, so the round does not block on this review.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends">
+      <p><small>reckon-build · 2026-11-15T08:15:45Z</small></p>
+      <div class="r-comment-body"><p>the budget and the lane now read a request's points from one definition, and the budget counts a session's points in every project.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39">
+      <p><small>reckon-build · 2026-11-18T00:43:01.227Z</small></p>
+      <div class="r-comment-body"><p>the review of r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends at 7967827dca397c70b8fb81753a1f5274365c843f is stored parsed, scoring goal_fidelity 19, evidence 15, scope_discipline 16, durability 17, fit 16, reuse 18, with added_failure_count 0 derived from the reviewed run's own arms, and four non-blocking findings.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c</code></td>
+        <td>review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>12m 16s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261114T201954663461-sspb-each-session-holds-a-priority-budget-and-spends</code></td>
+        <td>sspb-each-session-holds-a-priority-budget-and-spends</td>
+        <td><code>895cf057ab81319a9a21412a25c7d5898fe1655c</code><br><code>f8aa2b2d136899cf6982ecd900c9da9e4da15db7</code><br><code>522df5161d5b343f9c8c0e312b036badf61e06fe</code><br><code>c10a2fcb68841de0d7b735bf68c3dc9a9142fcec</code><br><code>e82343123a7cb22cb99bc3a02d6901ece32a53e8</code><br><code>d319d0d3454958bf8aeaeaed8521a8969de16d73</code><br><code>0e35e058387ab0e298733699fc6fb8473ecdee4f</code><br><code>0cff38996c4e7e3f4f96b876f5b58ad6db6d556a</code><br><code>5b88b2d99aca1ae7af7fa4241ed70ea61c4829dd</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>375m 48s</td>
+        <td><code>{&quot;added&quot;:987,&quot;files&quot;:18,&quot;removed&quot;:36}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca</code></td>
+        <td>review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>60m 16s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39</code></td>
+        <td>review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>10m 18s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c">
+      <h3>review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T071351735512-review-of-sspb-each-session-holds-a-priority-budget-and-spends-e82343123a7c/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca">
+      <h3>review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T082153530911-review-of-sspb-each-session-holds-a-priority-budget-and-spends-5b88b2d99aca/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39">
+      <h3>review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39 &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T003120464269-review-of-sspb-each-session-holds-a-priority-budget-and-spends-7967827dca39/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+  </section>
+
+  <section id="s3">
+    <h2>§3 — A run&#x27;s priority carries to its review and its promotion</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab">
+      <p><small>reckon-build · 2026-11-18T09:51:42.438Z</small></p>
+      <div class="r-comment-body"><p>Independent review of run r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p stored at .../review-records/&lt;run&gt;.json and &lt;run&gt;.at-b7884a4b93ab.json, both passing crew check --review --record; scores goal_fidelity 15, evidence 13, scope_discipline 19, durability 14, fit 16, reuse 15 (total 92), revisions read 8d870f62598f..b7884a4b93ab, added_failure_count 0; one blocking finding at reckon/crew/queue_edit.py:705 (a 4-point raise on a delivered run whose review is still queued charges the same points twice, reproduced as in_use=8 for holders r1 and review-of-r1), plus two non-blocking findings (a tautological assertion at the new test line 174, and the reviewed manifest's missing measurement_module/measurement_cwd).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e">
+      <p><small>reckon-build · 2026-11-18T13:49:08.001Z</small></p>
+      <div class="r-comment-body"><p>A parsed review record is stored for run r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p, naming base 8d870f62598f1d922ceed7015b570a65c61d8283 and head 93cbdf66fd2e612bafb95e8a2c8c9e296b41b54c, scoring goal_fidelity 17, evidence 17, scope_discipline 19, durability 16, fit 17, reuse 18, with added_failure_count 0 and no ids, and three non-blocking findings.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p">
+      <p><small>reckon-build · 2026-11-18T05:23:46Z</small></p>
+      <div class="r-comment-body"><p>A run's priority reaches both queues, and one raise is charged once. queue_order._precedence ranks two delivered reviews by the points their run held; queue_edit.reprioritise accepts a delivered run, resolves the review queued for it, and writes the raise onto that review and onto the queued promotion request. The session is charged for the raise in one place: with a queued review carrying it, the review is charged and excluded from the budget judgement while the run's marker is cleared; with no queued review the mark charges the run until its pointer retires. Measure: section gate 7 passed in 0.60s, EXIT=0 at 637e28986c; negative control reverting queue_edit.py and runs.py to b7884a4b93 gives 2 failed, 5 passed, EXIT=1 with "assert 8 == 4" naming both holders, and a CLI smoke on a delivered run with its queued review reads total 4 with holders ['review-of-r1'], the run's marker absent and the review's override 4.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p</code></td>
+        <td>sspb-a-run-s-priority-carries-to-its-review-and-its-p</td>
+        <td><code>a511935220c2e75bf2a9866dbcd5ebc7012b078c</code><br><code>b9d2c8fe8f0371a4285343ddc50a733ecbd7bc84</code><br><code>b7dd46560df6abe470a636e7a6aae27efe79a00a</code><br><code>b7884a4b93abdbc93cbbeca7eae275f00a61e7e9</code><br><code>637e28986c03824d65a60cd358d66bb8a8eddc7e</code><br><code>93cbdf66fd2e612bafb95e8a2c8c9e296b41b54c</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>0s</td>
+        <td><code>{&quot;added&quot;:666,&quot;files&quot;:11,&quot;removed&quot;:49}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab</code></td>
+        <td>review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>0s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e</code></td>
+        <td>review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>0s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab">
+      <h3>review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e">
+      <h3>review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+  </section>
+
+  <section id="s4">
+    <h2>§4 — The queue reads as a queue, from the CLI, MCP and Python</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc">
+      <p><small>reckon-build · 2026-11-18T08:08:56.033Z</small></p>
+      <div class="r-comment-body"><p>review stored with no total score; 5 finding(s)</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d">
+      <p><small>reckon-build · 2026-11-18T10:15:14.766Z</small></p>
+      <div class="r-comment-body"><p>Review of run r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and at 1441625a6e, over the commits it gained since its a0bf002e72 review, stores a parsed record scoring goal_fidelity 18, evidence 13, scope_discipline 18, durability 16, fit 18, reuse 20 with zero added failures and three findings — one blocking on the truncated manifest.md:8 and two non-blocking on the evidence paragraph (docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html:8) and the untested queue composition drops (tests/test_crew_view_serves_every_view.py:347); no retained log at the head runs the section's own gate, which was verified in a scratch tree instead — revisions read a0bf002e72bcb5d4275feb5335cd7515002fda50..1441625a6e1d4cff9bc2deb4dc03f1580ffcd143.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and">
+      <p><small>reckon-build · 2026-11-18T05:23:50Z</small></p>
+      <div class="r-comment-body"><p>The queue reads as a queue on all three surfaces. reckon/crew/queue_view.py derives one document - every queued and awaiting-upstream request with its place, session, project, plan section, lane, points, wait, the admission ordering's own reason and the hold that stops it, then the pending reviews and promotions, then each session's budget beside the points in use and free - and the CLI and the MCP tool serve it unchanged through mcp_views.serve_crew_view("queue"). Places come from queue_admission.queued_placements, review rows are the queue's own review requests, promotion rows are the drain's report, and a hold is composed once by verdicts.queued_hold, which the obligations view now delegates to; the repair rounds added the view (and decisions) to CrewArgs.view and documented queue, decisions and review-need in the build skill. Measure: tests/test_the_queue_reads_as_a_queue.py 2 passed EXIT=0 with the order [('r-a-raised', 1, 'priority override 3'), ('r-b-plain', 2, 'roadmap priority'), ('r-a-waits', None, 'waiting upstream: plan-a#s2'), ('r-b-held', None, 'waiting upstream: no ref recorded')] identical on the function, the CLI and the MCP tool, budgets coordinator-a(budget=10,in_use=3,free=7) and coordinator-b(budget=10,in_use=0,free=10), and one pass launching exactly the request the view placed first. Full figures in the s4.html and node fragments.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569">
+      <p><small>reckon-build · 2026-11-18T13:47:29.609Z</small></p>
+      <div class="r-comment-body"><p>review of a run already landed (60ecc274f1); stored record at 084e2d7a is the deliverable; retiring the pointer</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and</code></td>
+        <td>sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and</td>
+        <td><code>9579aa15608f0325f6b8b34ffb20590715328ee7</code><br><code>e278c21f39d501b5e8a143e42b77c0606942fee2</code><br><code>d6b78b4dd98e408273396bfaee97aee3b041de88</code><br><code>a0bf002e72bcb5d4275feb5335cd7515002fda50</code><br><code>ae3237b0e545757e44a82256196a08c658adae4b</code><br><code>1441625a6e1d4cff9bc2deb4dc03f1580ffcd143</code><br><code>084e2d7ac569d9098bec868a3a6b24ed7f1e1343</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>0s</td>
+        <td><code>{&quot;added&quot;:570,&quot;files&quot;:12,&quot;removed&quot;:14}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc</code></td>
+        <td>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>0s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d</code></td>
+        <td>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>0s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569</code></td>
+        <td>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>0s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc">
+      <h3>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T064027010184-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-a0bf002e72bc/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d">
+      <h3>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T091932261647-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-1441625a6e1d/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569">
+      <h3>review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569 &mdash; no record composed</h3>
+      <p>This run landed no commits and its manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569/manifest.md names no readable report path, so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+  </section>
+ </main>
+</body>
+</html>

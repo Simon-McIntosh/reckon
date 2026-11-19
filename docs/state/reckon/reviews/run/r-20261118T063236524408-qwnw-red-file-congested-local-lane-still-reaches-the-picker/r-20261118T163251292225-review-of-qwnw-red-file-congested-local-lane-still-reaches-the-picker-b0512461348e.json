@@ -1,0 +1,92 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T22:36:34Z",
+  "findings": [
+    {
+      "file": "tests/test_congested_local_lane_still_reaches_the_picker.py",
+      "line": 64,
+      "severity": "non-blocking",
+      "summary": "The repaired line inlines the body of tests/test_dispatch_names_its_backend.py:159 _payload (json.loads(result.stdout.splitlines()[0])), a helper this module already imports as base, so the rule that the JSON document is the first line of stdout now has a second place to keep in step."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that tests/test_congested_local_lane_still_reaches_the_picker.py pass in full, and commit a881f00fca187f5ca9c963c2a688f0b96a3a5536 changes tests/test_congested_local_lane_still_reaches_the_picker.py:64 to read the dispatch document from result.stdout, with the recorded head gate returning 4 passed EXIT=0.\nVERDICT done_when: the done_when asks the node file to pass in full at head as an all_debug job, and gate-node-file-head.json records revision b0512461348eb14b4571b4c43aac50a04dc20a4d, partition all_debug and exit_status 0, while scoped-gate-1795018019177073359.log ends its pytest summary at '4 passed in 1.02s' with a bare EXIT=0 line; the log's command line does not say whether SLURM_JOB_ID was unset.\nVERDICT write_paths: the source node's declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and the three commits change only tests/test_congested_local_lane_still_reaches_the_picker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-congested-local-lane-still-reaches-the-picker.html, both inside that scope.\nVERDICT manifest: the reviewed run's manifest.md names commits a881f00fca, 570564c55b and b0512461348, records negative_control_log ending EXIT=1 with one failing id, and records baseline_suite and after_suite as completed with 0 failures each.\nVERDICT diff: read 0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385..b0512461348eb14b4571b4c43aac50a04dc20a4d commit by commit; it is two paths, +86/-1, one test line with its comment plus one evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_congested_local_lane_still_reaches_the_picker.py:64 now reads the JSON document from result.stdout, which is the channel the command writes it to, and the head gate log records 4 passed EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-node-file-head.json records revision b0512461348eb14b4571b4c43aac50a04dc20a4d at partition all_debug with exit_status 0, but the log header shows the command as 'env PYTHONPATH=. sh -c ...' with no record that SLURM_JOB_ID was unset.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three commits touch only tests/test_congested_local_lane_still_reaches_the_picker.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-congested-local-lane-still-reaches-the-picker.html, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the repaired line's defect is shown red at the base revision in negative-control-base-congested-lane.log with 'FAILED tests/test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing[beta]' and EXIT=1, so reverting the line to result.output reddens the recorded base arm rather than leaving the suite green.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_congested_local_lane_still_reaches_the_picker.py:61-63 states the same rule in the same prose as the sibling helper's docstring at tests/test_dispatch_names_its_backend.py:160-167, and no new name is introduced.\nSCORE reuse: 14\nJUSTIFICATION reuse: tests/test_congested_local_lane_still_reaches_the_picker.py:64 reproduces the body of tests/test_dispatch_names_its_backend.py:159 _payload instead of calling base._payload(result) through the module the file already imports as base.\nFINDING tests/test_congested_local_lane_still_reaches_the_picker.py:64 non-blocking: the repaired line inlines the body of tests/test_dispatch_names_its_backend.py:159 _payload (json.loads(result.stdout.splitlines()[0])), a helper this module already imports as base, so the rule that the JSON document is the first line of stdout now has a second copy to keep in step.\n",
+  "review_method": "Read-only artefact and diff review of the recorded gate, negative-control and suite-arm logs; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T163251292225-review-of-qwnw-red-file-congested-local-lane-still-reaches-the-picker-b0512461348e",
+  "reviewed_base_sha": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385",
+  "reviewed_head_sha": "b0512461348eb14b4571b4c43aac50a04dc20a4d",
+  "reviewed_run_id": "r-20261118T063236524408-qwnw-red-file-congested-local-lane-still-reaches-the-picker",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    {
+      "paths": [
+        "tests/test_congested_local_lane_still_reaches_the_picker.py"
+      ],
+      "sha": "a881f00fca187f5ca9c963c2a688f0b96a3a5536",
+      "subject": "test(crew): read the congested-lane dispatch document from stdout"
+    },
+    {
+      "paths": [
+        "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-congested-local-lane-still-reaches-the-picker.html"
+      ],
+      "sha": "570564c55b1992600fc6b16bb61e501b2738fa43",
+      "subject": "docs(evidence): record the congested-lane arm against its base"
+    },
+    {
+      "paths": [
+        "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-congested-local-lane-still-reaches-the-picker.html"
+      ],
+      "sha": "b0512461348eb14b4571b4c43aac50a04dc20a4d",
+      "subject": "docs(evidence): add the partition arm to the congested-lane record"
+    }
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063236524408-qwnw-red-file-congested-local-lane-still-reaches-the-picker/after_suite-1795018113740134929.log",
+      "revision": "b0512461348eb14b4571b4c43aac50a04dc20a4d"
+    },
+    "base_arm_node_file": {
+      "exit_status": 1,
+      "failure_ids": [
+        "test_congested_local_lane_routing[beta]"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063236524408-qwnw-red-file-congested-local-lane-still-reaches-the-picker/negative-control-base-congested-lane.log",
+      "revision": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385",
+      "summary": "1 failed, 3 passed in 1.51s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063236524408-qwnw-red-file-congested-local-lane-still-reaches-the-picker/baseline_suite-1795018038801044820.log",
+      "revision": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385"
+    },
+    "node_file_gate": {
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063236524408-qwnw-red-file-congested-local-lane-still-reaches-the-picker/scoped-gate-1795018019177073359.log",
+      "partition": "all_debug",
+      "revision": "b0512461348eb14b4571b4c43aac50a04dc20a4d",
+      "summary": "4 passed in 1.02s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T22:59:58.721534+00:00",
+  "total": 106
+}

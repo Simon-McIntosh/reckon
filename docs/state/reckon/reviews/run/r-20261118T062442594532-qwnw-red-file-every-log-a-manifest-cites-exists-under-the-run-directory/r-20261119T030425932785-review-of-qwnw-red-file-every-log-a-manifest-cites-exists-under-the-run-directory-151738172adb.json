@@ -1,0 +1,29 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own arms in baseline_suite-1795055841642052257.log (42fe90d0, 58 passed, EXIT=0) and after_suite-1795055885599375866.log (fb364da3, 58 passed, EXIT=0), both naming zero FAILED ids, so the added set is empty; the instrument is shown seeing a failure present on the same test file at negative-control-base-run.log (2 FAILED ids, EXIT=1 at 42fe90d).",
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:20:36Z",
+  "findings": [
+    "manifest.md:7 blocking: the reviewed run's manifest is truncated at 911 bytes, ending mid-token with U+2026 after `docs/evidence/fragme`, and carries status: complete while omitting tests:, test_logs:, baseline_suite, after_suite, evidence_inputs and landing; the done_when requires it to record each cause with a product-wrong or test-wrong verdict beside the arms, and the gate receipt is read from the tests: line, so the run's own record cannot support promotion although the gate logs beside it (19 passed at fb364da3, 2 failed at 42fe90d) can."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py passes in full; tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py:12-16 now cites one 40-hex object id and writes it into each log's head, and scoped-gate-1795055762732556359.log records 19 passed, EXIT=0 at fb364da3.\nVERDICT done_when: the done_when wants a base run first, then the file passing at head as an all_debug job, each cause given a product-wrong or test-wrong verdict and no assertion deleted; negative-control-base-run.log records 2 failed, 17 passed, EXIT=1 at 42fe90d with both ids naming the abbreviated arm revision, the head gate log records 19 passed, EXIT=0 at fb364da3, and the diff removes no assertion.\nVERDICT write_paths: declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround plus that directory's named fragment and figure directory; tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-every-log-a-manifest-cites-exists-under-the-run-directory.html both lie inside them, and no reckon/ file appears in the diff.\nVERDICT manifest: the reviewed run's manifest at manifest.md is 911 bytes and stops mid-token on line 7 after docs/evidence/fragme plus U+2026, declaring status complete while carrying no tests:, test_logs:, baseline_suite, after_suite, evidence_inputs or landing field, so the run's own record of its gate is absent.\nVERDICT diff: read commit by commit against 42fe90d0, fb364da3 adds the REVISION constant and substitutes it for abc1234 in _log and _manifest (+5/-2) and 15173817 adds the 52-line evidence fragment, with no product code changed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py:12-16 cites the same 40-hex id in the log head and the arm, so the accepting cases reach their assertions, and scoped-gate-1795055762732556359.log records 19 passed at fb364da3.\nSCORE evidence: 13\nJUSTIFICATION evidence: both arms are readable at negative-control-base-run.log and scoped-gate-1795055762732556359.log, but manifest.md records no tests:, test_logs: or arm JSON, so the run's own gate record is missing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 42fe90d0..15173817 names only tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both declared, with no reckon/ file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py:104-121 redden when the fixture's revision reverts to abc1234, which negative-control-base-run.log shows at 42fe90d, though the change adds no assertion of its own.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_every_log_a_manifest_cites_exists_under_the_run_directory.py:12 puts the constant beside COMMAND in the file's own idiom, with a comment stating why the id must be full.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and leaves reckon/crew/manifest_faults.py:89 arm_revision_reason, the rule it satisfies, unmodified.\nFINDING manifest.md:7 blocking: the reviewed run's manifest is truncated at 911 bytes, ending mid-token with U+2026 after docs/evidence/fragme, and carries status complete while omitting tests:, test_logs:, baseline_suite, after_suite, evidence_inputs and landing; the done_when requires it to record each cause with a product-wrong or test-wrong verdict beside the arms, and the gate receipt is read from the tests: line, so the run's own record cannot support promotion although the gate logs beside it (19 passed at fb364da3, 2 failed at 42fe90d) can.\n",
+  "review_run_id": "r-20261119T030425932785-review-of-qwnw-red-file-every-log-a-manifest-cites-exists-under-the-run-directory-151738172adb",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "151738172adb95af3cac6b203237128ba5bfd30e",
+  "reviewed_run_id": "r-20261118T062442594532-qwnw-red-file-every-log-a-manifest-cites-exists-under-the-run-directory",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:56:27.071815+00:00",
+  "total": 108
+}

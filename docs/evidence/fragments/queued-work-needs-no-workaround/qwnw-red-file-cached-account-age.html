@@ -1,0 +1,107 @@
+<section id="qwnw-red-file-cached-account-age-landing">
+  <h2>A test file red on the primary branch passes: the cached account age file</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_cached_account_age.py</code>
+  was red at the base revision in one case,
+  <code>test_a_live_reading_is_untouched_by_the_cache_fallback</code>, which
+  asserts that a live account-surface answer wins over a supplied cache copy.
+  The case injected a transport answering 89.0% utilisation and read 53.0% back
+  — the cached figure — because the dialect's live path never reached the
+  injected answer.</p>
+
+  <p><strong>Verdict: the test was wrong.</strong> The dialect's account read
+  owns the credential, the transport and the parse: it loads the stored login
+  and refuses before it calls the transport when the store holds no usable
+  login. The case supplied a transport but no login, so the read resolved to
+  unknown for a reason the case never named, and the cache fallback then
+  supplied the figure the assertion read. It silently depended on a login the
+  machine happens to hold outside the repository.</p>
+
+  <pre id="qwnw-red-file-cached-account-age-reproduction"><code>1 failed, 8 passed
+FAILED tests/test_cached_account_age.py::test_a_live_reading_is_untouched_by_the_cache_fallback - assert 53.0 == 89.0
+E       assert 53.0 == 89.0
+tests/test_cached_account_age.py:214: AssertionError</code></pre>
+
+<p>and the read the case never reached, driven directly with the same
+  transport:</p>
+
+  <pre id="qwnw-red-file-cached-account-age-detail"><code>{&#x27;headroom&#x27;: &#x27;unknown&#x27;, &#x27;utilisation_pct&#x27;: None, ...,
+ &#x27;detail&#x27;: &#x27;account credential unreadable - no stored credential at
+            ~/.claude/.credentials.json&#x27;}</code></pre>
+
+  <p>The product rule is kept, not changed: a known live answer is returned
+  untouched and carries no cache age, which is what the case asserts. The fix
+  adds a <code>_live_credential(now)</code> helper whose login is alive at the
+  case's own <code>now</code>, and stubs
+  <code>_backends._load_claude_credential</code> with it in the two cases that
+  both drive the live read through an injected transport. That is the pattern
+  the sibling account-surface suites already use. No assertion was removed,
+  weakened or re-pinned; the case now exercises the path it names and reads
+  nothing outside the repository.</p>
+
+  <h3 id="qwnw-red-file-cached-account-age-measured">Measured</h3>
+
+  <table id="qwnw-red-file-cached-account-age-arms">
+    <caption>Every arm ran as a job on <code>all_debug</code> with
+    <code>SLURM_JOB_ID</code> unset. Each log's first lines name the revision,
+    host, tree, command and the module imported, and its last line reads
+    <code>EXIT=&lt;code&gt;</code>. An extraction is the base revision unpacked
+    under <code>$TMPDIR</code> into a git tree whose HEAD is that revision, with
+    <code>.venv</code> linked to the project environment.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node file, head</td>
+        <td><code>db44decb7d072586d67eb2c4dc7af5b4469877c8</code>, working tree</td>
+        <td>9 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>node file, base (negative control)</td>
+        <td><code>c0fb13cc00320b3c4ff9c098209a126fa2afc56c</code>, extraction</td>
+        <td>1 failed, 8 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>declared suite, after arm</td>
+        <td><code>db44decb7d072586d67eb2c4dc7af5b4469877c8</code>, working tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>c0fb13cc00320b3c4ff9c098209a126fa2afc56c</code>, extraction</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The declared suite is the list the project's own gate resolves for this
+  node's write scope: <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>. Both arms
+  run that same list, so the delta is the change rather than the test set, and
+  since both pass the change adds no failure. The base node arm imported
+  <code>reckon/_backends.py</code> from the extraction — the log prints that
+  absolute path — so it is the base product that was under test, not the working
+  tree's.</p>
+
+  <h3 id="qwnw-red-file-cached-account-age-control">Negative control</h3>
+
+  <p>At the base revision the failing id is
+  <code>tests/test_cached_account_age.py::test_a_live_reading_is_untouched_by_the_cache_fallback</code>
+  with <code>assert 53.0 == 89.0</code> at line 214: the cached 53.0 answered
+  where the live 89.0 was injected. The red log is
+  <code>logs/node-base.1.log</code> (<code>EXIT=1</code>); its sibling for the
+  same file at head is <code>logs/head-run.log</code> (green,
+  <code>EXIT=0</code>). Both sit under the run directory
+  <code>.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/</code>.</p>
+
+  <h3 id="qwnw-red-file-cached-account-age-outside">Outside scope</h3>
+
+  <p><strong>The project's own gate submission could not run, so these arms were
+  submitted by hand.</strong> <code>crew verify-gate --worker</code> and
+  <code>crew suite run</code> both returned <code>"exit_status": 3</code>,
+  <code>"reason": "carries no exit receipt"</code> against an empty arm log, and
+  the scheduler file beside it holds one line:
+  <code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on /newroot/tmp/auto2I1S9T: No such file or directory</code>.</p>
+
+  <p>The same message appears intermittently for hand-submitted
+  <code>sbatch --wait</code> jobs on the same partition — about one submission in
+  four failed while the rest ran — and a job that ran an inner <code>srun</code>
+  refused with <code>cpus_per_cpu set by two different environment variables</code>.
+  The failure precedes pytest, so it is scaffolding rather than code under test;
+  it is recorded under <code>failure_attribution</code> and
+  <code>retry_failures</code> in the manifest. Each arm above was re-submitted
+  until a job started, and every log names the host it ran on.</p>
+
+  <p>This gate measures only this node's own change.</p>
+</section>

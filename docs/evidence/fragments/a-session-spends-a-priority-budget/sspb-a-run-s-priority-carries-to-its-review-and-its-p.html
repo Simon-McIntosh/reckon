@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Node sspb-a-run-s-priority-carries-to-its-review-and-its-p, plan §3.">
+<title>A run's priority carries to its review and its promotion</title>
+</head>
+<body>
+<main>
+<h1 id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-title">A run's priority carries to its review and its promotion</h1>
+
+<section id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-mechanism">
+<h2>Mechanism</h2>
+<ul>
+<li id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-review-order">The review class in <code>reckon.crew.queue_order._precedence</code> now reads
+the points the review's own queued record carries, so two reviews are ordered by their
+runs' points and fall back to the shared fair-share pass when the points are equal. The
+review already inherited its run's points through
+<code>recovery_review_dispatch._composed_review_options</code>; what was missing was a
+reader that ranked by them.</li>
+<li id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-delivered-raise"><code>reckon.crew.queue_edit.reprioritise</code> accepts a run in one of
+<code>runs.DELIVERED_POINTER_PHASES</code> (<code>complete</code>,
+<code>promotion-requested</code>, <code>promotion-waiting</code>). The raise is charged to
+the session's budget and marked on the pointer with
+<code>runs.PRIORITY_DELIVERED_MARK</code>, which is what
+<code>runs._holds_priority</code> reads: a delivered run's points returned at launch, so
+only a mark saying they were spent again charges them. Landing retires the live pointer,
+and the budget is read from the pointers, so the points come back with no second ledger.
+The mark charges the run only where nothing else holds the same raise. Where the run's
+review is still queued, the review is the record admission ranks, so the raise is judged
+against the session once — the review's points are excluded from that judgement and the
+run's mark is cleared — and the session reads the raise once rather than twice.</li>
+<li id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-carry">A raise is also written onto the queued review and the queued promotion
+request for that run, because both queues rank their own records rather than the run's
+pointer. Without that write the raise would move nothing a queue reads.</li>
+</ul>
+</section>
+
+<section id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-negative-result">
+<h2>Negative result: one done-when bullet was already true</h2>
+<p id="sspb-a-run-s-priority-carries-to-its-review-and-its-p-promotion-case">"Of two promotion requests, the priority-4 one is drained first" passes against
+base revision <code>8d870f62598f</code> unchanged. <code>request_promotion</code> snapshots
+its run's at-launch points into <code>priority_override</code>, and
+<code>_pending_requests</code> already passed each request through the shared precedence,
+where a non-review request's points outrank fair share. That bullet is therefore a guard
+this node adds, not a defect it repairs; the review ordering and the delivered-run raise
+are the two behaviours the base revision lacks. Both fail against the base revision with
+the node's tests, and the red log is recorded in the section's gate log
+(<code>s3.html</code>).</p>
+</section>
+</main>
+</body>
+</html>

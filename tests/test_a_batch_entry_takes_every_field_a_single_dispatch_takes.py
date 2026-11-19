@@ -362,7 +362,17 @@ def test_a_compound_duration_is_the_minutes_it_says() -> None:
 
 
 def test_a_compound_duration_queues(batch_repo: Path) -> None:
-    result = _queue(batch_repo, [_entry("long-one", "s1", time_budget="1h30m")])
+    result = _queue(
+        batch_repo,
+        [
+            _entry(
+                "long-one",
+                "s1",
+                time_budget="1h30m",
+                over_fence_reason="the measured gate takes ninety minutes",
+            )
+        ],
+    )
     assert result["ok"] is True, json.dumps(result["results"], indent=2)
     pointer = _pointer_for_node("long-one")
     assert pointer["node"]["time_budget"] == "1h30m"

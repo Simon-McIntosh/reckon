@@ -11,6 +11,11 @@ until it delivers again, so counting its state alone put a repairing run under
 ``d``: the reader saw delivered work with no worker on it. A repair round that
 holds a live attempt is working again, and it counts under the working figure.
 
+A requested promotion is not the same fact either: a delivered run waits on the
+coordinator, while a promotion request waits on the queue that runs it. That is
+its own cell, drawn after ``q`` and before the stuck figure, so the pane never
+reads requested work as work nobody has asked for.
+
 These cases go through the producer's own partition and transition builder, so
 each figure asserted here is the figure a pane receives rather than a fixture's
 opinion of one.
@@ -132,30 +137,41 @@ def test_a_delivered_run_with_a_live_repair_attempt_counts_as_working() -> None:
     assert idle["unpromoted"] == 1, idle
 
 
-def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s() -> None:
-    """The row renders six counter cells, letters in order, at one fixed width.
+def test_the_row_carries_seven_right_aligned_cells_in_the_order_w_r_h_d_q_p_s() -> None:
+    """The row renders seven counter cells, letters in order, at one fixed width.
 
     Every cell renders even on a fleet holding no review and no stuck request,
     so the block never changes shape as that work starts and stops and the
     clause after it keeps its column. Each count is right-aligned to the
     block's fixed digit width, so the letters hold their columns across one-
-    and two-digit fleets.
+    and two-digit fleets. The promotion queue's cell carries the oldest
+    request's position beside its count, because a queue figure alone does not
+    say how long the head of it has waited.
     """
     counts, rows = _reading(
         _snapshot("r-work", "north", "working"),
         _snapshot("r-review", "review-of-r-work-abc123", "working", role="review"),
     )
     line = _render(rows[0])
-    assert re.findall(r"\d+([wrhdqs])", line) == ["w", "r", "h", "d", "q", "s"], line
-
-    plain, plain_rows = _reading(_snapshot("r-work", "north", "working"))
-    assert plain.get("reviewing", 0) == 0
-    assert re.findall(r"\d+([wrhdqs])", _render(plain_rows[0])) == [
+    assert re.findall(r"\d+([wrhdqps])", line) == [
         "w",
         "r",
         "h",
         "d",
         "q",
+        "p",
+        "s",
+    ], line
+
+    plain, plain_rows = _reading(_snapshot("r-work", "north", "working"))
+    assert plain.get("reviewing", 0) == 0
+    assert re.findall(r"\d+([wrhdqps])", _render(plain_rows[0])) == [
+        "w",
+        "r",
+        "h",
+        "d",
+        "q",
+        "p",
         "s",
     ]
 
@@ -165,10 +181,13 @@ def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s() -> N
         "help",
         "delivered",
         "waiting",
+        "promotion queue",
         "stuck",
     )
     assert ticker_module._COUNT_FIELD["in review"] == "reviewing"
+    assert ticker_module._COUNT_FIELD["promotion queue"] == "promotion_queued"
     assert ticker_module.STAT_LETTER["in review"] == "r"
+    assert ticker_module.STAT_LETTER["promotion queue"] == "p"
 
     digits = ticker_module.STAT_DIGITS
     cells = ticker_module.Ticker()._stats(
@@ -178,6 +197,8 @@ def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s() -> N
             "blocked": 1,
             "unpromoted": 7,
             "waiting": 4,
+            "promotion_queued": 6,
+            "oldest_promotion_position": 5,
             "stuck": 5,
         }
     )
@@ -188,6 +209,7 @@ def test_the_row_carries_six_right_aligned_cells_in_the_order_w_r_h_d_q_s() -> N
         f"{1:>{digits}}h",
         f"{7:>{digits}}d",
         f"{4:>{digits}}q",
+        f"{6:>{digits}}p@{5:>{digits}}",
         f"{5:>{digits}}s",
     ]
     assert len("".join(text for text, _ in cells)) == ticker_module.STATS

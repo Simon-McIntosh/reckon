@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:36:28Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the block labelled \"head arm\" names d38cb5fa, three commits before the delivered head f770d6cf, so the done-when's \"passes in full at head\" is evidenced at an earlier revision; the intervening commits are documentation only so the result stands, but the label should name the revision it actually measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/manifest.md",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commits line repeats 904fe07a6d9b40c7d268bef5dc2ed2abbd4ea606 twice and gives the delivered head as the ten-character f770d6cf47, while the evidence fence requires plain full commit ids, so the delivered head is traced by a short sha."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line records a bare pytest invocation whose wording differs from the command the gate logs ran (env PYTHONPATH=. sh -c '...'), so a promotion receipt built from it would name a command the run did not execute."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read all four commits from 73b9ac21a50d to f770d6cf47e7; they add only the 46-line evidence fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html and change no production or test file, matching the commit subjects and bodies.",
+    "done_when": "The evidence fence asks for the named file green as a job on all_debug with SLURM_JOB_ID unset, its base and head runs logged beside each other in the fragment, a suite pair that adds no failure, and a negative control; the fragment at qwnw-red-file-finished-worker-processes-end.html:4-41 carries jobs 1328790 and 1328886 both reading 6 passed EXIT=0, the base and after arms at 58 passed EXIT=0, and mutation-a.log and mutation-b.log both reading 4 failed EXIT=1, though neither measured run names the delivered head.",
+    "goal": "The reviewed node's goal is that tests/test_finished_worker_processes_end.py pass in full, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html:4-16 records 6 passed at 73b9ac21 and 6 passed at d38cb5fa with no product or test file changed anywhere in the diff, so the goal's deliverable is the recorded passing run.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/manifest.md, which records the two named-file jobs, base and after arms at 73b9ac21 and 904fe07a with 58 passed EXIT=0, the scoped gate at 7a551c00, and mutation-a.log as its negative control, but its commits line abbreviates and repeats ids and its tests line states a different command than its own logs record.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its named fragment, and a figures path, and the diff's only path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html lies inside them."
+  },
+  "justifications": {
+    "durability": "the diff adds no test, and mutation-a.log shows the retained test at tests/test_finished_worker_processes_end.py:185 failing four named cases with EXIT=1 once the supervisor's terminal signal is suppressed.",
+    "evidence": "base-arm.log and head-arm.log record 6 passed EXIT=0 at jobs 1328790 and 1328886, but the \"head arm\" measured d38cb5fa and the suite arms measured 73b9ac21 and 904fe07a, so no measurement ran at the delivered head f770d6cf.",
+    "fit": "the fragment follows the section/heading/pre evidence idiom of docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html:1 and names no repository-forbidden identifier.",
+    "goal_fidelity": "the goal is the named file passing in full, and qwnw-red-file-finished-worker-processes-end.html:4-16 records 6 passed at both the base and the run's own first head.",
+    "reuse": "the diff adds no function, class or module, and a search of docs/evidence/fragments for an anchor already covering this node found only the earlier wftl-a-finished-workers-processes-end-codex.html under another plan, which this fragment neither extends nor duplicates.",
+    "scope_discipline": "the only added path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html, inside the declared fragment path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is that tests/test_finished_worker_processes_end.py pass in full, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html:4-16 records 6 passed at 73b9ac21 and 6 passed at d38cb5fa with no product or test file changed anywhere in the diff, so the goal's deliverable is the recorded passing run.\nVERDICT done_when: The evidence fence asks for the named file green as a job on all_debug with SLURM_JOB_ID unset, its base and head runs logged beside each other in the fragment, a suite pair that adds no failure, and a negative control; the fragment at qwnw-red-file-finished-worker-processes-end.html:4-41 carries jobs 1328790 and 1328886 both reading 6 passed EXIT=0, the base and after arms at 58 passed EXIT=0, and mutation-a.log and mutation-b.log both reading 4 failed EXIT=1, though neither measured run names the delivered head.\nVERDICT write_paths: The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its named fragment, and a figures path, and the diff's only path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html lies inside them.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/manifest.md, which records the two named-file jobs, base and after arms at 73b9ac21 and 904fe07a with 58 passed EXIT=0, the scoped gate at 7a551c00, and mutation-a.log as its negative control, but its commits line abbreviates and repeats ids and its tests line states a different command than its own logs record.\nVERDICT diff: Read all four commits from 73b9ac21a50d to f770d6cf47e7; they add only the 46-line evidence fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html and change no production or test file, matching the commit subjects and bodies.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal is the named file passing in full, and qwnw-red-file-finished-worker-processes-end.html:4-16 records 6 passed at both the base and the run's own first head.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-arm.log and head-arm.log record 6 passed EXIT=0 at jobs 1328790 and 1328886, but the \"head arm\" measured d38cb5fa and the suite arms measured 73b9ac21 and 904fe07a, so no measurement ran at the delivered head f770d6cf.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only added path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html, inside the declared fragment path.\nSCORE durability: 17\nJUSTIFICATION durability: the diff adds no test, and mutation-a.log shows the retained test at tests/test_finished_worker_processes_end.py:185 failing four named cases with EXIT=1 once the supervisor's terminal signal is suppressed.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the section/heading/pre evidence idiom of docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html:1 and names no repository-forbidden identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and a search of docs/evidence/fragments for an anchor already covering this node found only the earlier wftl-a-finished-workers-processes-end-codex.html under another plan, which this fragment neither extends nor duplicates.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-finished-worker-processes-end.html:12 non-blocking: the block labelled \"head arm\" names d38cb5fa, three commits before the delivered head f770d6cf, so the done-when's \"passes in full at head\" is evidenced at an earlier revision; the intervening commits are documentation only so the result stands, but the label should name the revision it actually measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/manifest.md:7 non-blocking: the commits line repeats 904fe07a6d9b40c7d268bef5dc2ed2abbd4ea606 twice and gives the delivered head as the ten-character f770d6cf47, while the evidence fence requires plain full commit ids, so the delivered head is traced by a short sha.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/manifest.md:11 non-blocking: the tests line records a bare pytest invocation whose wording differs from the command the gate logs ran (env PYTHONPATH=. sh -c '...'), so a promotion receipt built from it would name a command the run did not execute.\n",
+  "review_run_id": "r-20261119T015234113818-review-of-qwnw-red-file-finished-worker-processes-end-f770d6cf47e7",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "f770d6cf47e70e2f666739a5e83376fcededa81c",
+  "reviewed_run_id": "r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:10:48.962845+00:00",
+  "total": 108
+}

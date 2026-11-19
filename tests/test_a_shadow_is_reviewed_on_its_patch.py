@@ -45,6 +45,20 @@ NON_SHADOW_RECORD_CONTRACT = (
     "incomplete when the review has not finished and no verdict can be acted on."
 )
 
+# The scope block every composed brief carries between the identity and the
+# record contract: the paths the reviewed node declared, and the diff its range
+# delivered. A non-shadow record here declares nothing and names no base, so
+# the block states the repository-wide scope and an unreadable range. Spelled
+# like the two blocks above rather than read from the composer, so a change to
+# what the brief states about a reviewed node still turns this red.
+NON_SHADOW_SCOPE_BLOCK = (
+    "Scope the reviewed node declared, and the diff it delivered\n"
+    "Declared write paths: none. The repository is the scope a node declaring "
+    "nothing is expected to change.\n"
+    "Delivered diff: unreadable — the reviewed range cannot be resolved from "
+    "this run's record, so read the run's own commits before scoring its scope."
+)
+
 SHADOW_CONTRACT_SENTENCE = (
     "An empty commits list and a head equal to the base are this run's "
     "contract, not a finding."
@@ -115,7 +129,7 @@ def test_the_shadow_block_reads_worktree_and_base_from_the_record(
 
 
 def test_a_run_that_is_not_a_shadow_keeps_todays_brief(tmp_path: Path) -> None:
-    """A non-shadow brief is the rubric, the identity, and the record contract."""
+    """A non-shadow brief is the rubric, the identity, the scope and the contract."""
     record = _plain_record(tmp_path)
 
     text = recovery_review_subject._review_brief_text(record, HEAD)
@@ -125,6 +139,8 @@ def test_a_run_that_is_not_a_shadow_keeps_todays_brief(tmp_path: Path) -> None:
         + "\n\n"
         + NON_SHADOW_IDENTITY
         + "\n"
+        + NON_SHADOW_SCOPE_BLOCK
+        + "\n\n"
         + NON_SHADOW_RECORD_CONTRACT
         + "\n"
     )

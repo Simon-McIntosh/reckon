@@ -1,0 +1,90 @@
+<section id="qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-landing">
+  <h2>A named lane request queues and takes the reserve</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/dispatch_admission.py</code>,
+  <code>reckon/crew/admission/attempts.py</code>,
+  <code>reckon/crew/admission/launching.py</code> and
+  <code>reckon/crew/dispatching/preparation.py</code>. One admission pass
+  submits its candidates to a pool of width eight, so each launch's
+  concurrency-ceiling read saw the pointer population as it stood before its
+  siblings published a seat. A pass holding one freed seat therefore launched
+  every queued request it considered. <code>LaunchBatch.submit</code> now hands
+  each attempt the number of launches the pass has started and not yet settled,
+  and the bound reads that figure as seats taken — in the roster refusal and in
+  the reservation occupancy the cores and memory bounds are judged on.</p>
+
+  <h3 id="qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-cause">The cause, and its verdict</h3>
+
+  <p><strong>Product wrong.</strong> The test asserts a rule the code was meant
+  to keep and did not: a seat admits one launch.</p>
+
+  <p>The reproduction, before the repair, at
+  <code>ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5</code>, from
+  <code>qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-base-arm.txt</code>:</p>
+
+  <pre><code>E       AssertionError: {'gate': 'open', 'launched': ['r-codex', 'r-local-a', 'r-local-b'], 'held': [], 'failed': [], ...}
+E       assert ['r-codex', '..., 'r-local-b'] == ['r-codex']
+E         Left contains 2 more items, first extra item: 'r-local-a'
+...
+E       AssertionError: {'gate': 'open', 'launched': ['r-review', 'r-local-waiting'], 'held': [], 'failed': [], ...}
+E       assert ['r-review', ...ocal-waiting'] == ['r-review']
+E         Left contains one more item: 'r-local-waiting'
+2 failed, 8 passed in 8.93s</code></pre>
+
+  <p>The same three-pointer queue launched nothing at the cap and then all
+  three at one freed seat. With the pass's pool narrowed to width one, the same
+  base tree passes all ten tests
+  (<code>qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-probe-pool-width-1.txt</code>
+  beside this record, <code>EXIT=0</code>):
+  the identical population read serially gives the expected answer, which is
+  what identified the concurrent submission as the fault rather than the
+  reserve reading — reached as it was, with a request on another lane queued
+  measuring the local lane against a limit three seats short of the cap.</p>
+
+  <h3 id="qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-arms">Measured</h3>
+
+  <p>Every arm below ran as its own <code>all_debug</code> job
+  (<code>1327486</code>; the gate is
+  <code>scoped-gate-1795020782871701636</code>), with
+  <code>SLURM_JOB_ID</code> unset for the run itself. Each log's first lines
+  name the arm, the revision, the tree and the command, and its last line is a
+  bare <code>EXIT=&lt;code&gt;</code>. The base tree was extracted from the
+  worktree's own object store into the job's scratch, so the arm reads the base
+  revision and no branch was merged or pulled.</p>
+
+  <table id="qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-table">
+    <caption>The named file at both revisions, and the node's importing-file arm.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control, base</td><td><code>ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5</code></td>
+        <td>2 failed, 8 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>gate, head</td><td><code>adb6f4755dd6897f8f317c3ca03f77fcf221f75d</code></td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importing files, base</td><td><code>ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5</code></td>
+        <td>17 failed, 479 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importing files, head</td><td><code>adb6f4755dd6897f8f317c3ca03f77fcf221f75d</code></td>
+        <td>13 failed, 483 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The importing arm is the 57 test files that import
+  <code>dispatch_admission</code>, <code>admission.attempts</code>,
+  <code>admission.launching</code> or <code>dispatching.preparation</code>. The
+  head arm's 13 failing ids are a strict subset of the base arm's 17: no id
+  fails at head that did not already fail at base, and four that failed at base
+  pass at head.</p>
+
+  <h3 id="qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-logs">The logs</h3>
+
+  <p>Beside this record:
+  <code>qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-base-arm.txt</code>,
+  <code>...-head-arm.txt</code>, <code>...-importing-base-arm.txt</code> and
+  <code>...-importing-head-arm.txt</code>.</p>
+
+  <p><strong>lint.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> report nothing new on the four changed
+  paths: the one <code>RUF100</code> in
+  <code>reckon/crew/dispatching/preparation.py</code> and the one blank line
+  <code>launching.py</code> would gain are both present at the base revision
+  and untouched by this change.</p>
+</section>

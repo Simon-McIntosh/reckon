@@ -1,0 +1,33 @@
+<section id="qwnw-red-file-a-paired-dispatch-hides-each-arm">
+<h2>A paired dispatch hides each arm: two fixture defects, product unchanged</h2>
+<p>At base <code>ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5</code> the named file ran 1 failed, 8 passed on all_debug, the single id being <code>test_the_primary_arm_cannot_read_the_shadows_session_directory</code>. At head <code>8f062707822ce40e895d8e9fd28e1d0e3dabddda</code> the same file ran 9 passed. Both causes are test wrong; no product source changed, and no assertion was deleted or weakened.</p>
+<table id="qwnw-red-file-a-paired-dispatch-hides-each-arm-causes">
+<thead><tr><th>Cause</th><th>Verdict</th><th>Rule the product keeps, and the test now asserts it</th></tr></thead>
+<tbody>
+<tr><td>The probe wrote <code>results.txt</code> in <code>tmp_path</code>, which holds the crew home and therefore the sealed reports and review stores, and passed no writable root for it.</td><td>test wrong</td><td>The fence seals the node tmp read-only, re-opens only a declared root, and skips a declared root at or above a sealed delivery store rather than re-opening the store through it (<code>fence_writable_roots</code>, <code>shared_store_seal_roots</code>). The probe declares its own directory.</td></tr>
+<tr><td>The same launch ran with <code>worktree</code> set to the very session directory it was masking.</td><td>test wrong</td><td>A grant is the last word on its own path, so the worktree grant re-opened the mask; the fence composes masks before grants (<code>fence_argv</code>). The probe runs in a worktree of its own.</td></tr>
+</tbody>
+</table>
+<p>The file's own standalone control was also dead: it built its arms beneath the worker scratch root, whose worktree the fence mounts over <code>/tmp</code>, so the stub beside that worktree was gone at the path the launch was handed. The stub now lives in the arm's worktree, a granted root re-bound at its own path, and the control runs red as declared.</p>
+<pre id="qwnw-red-file-a-paired-dispatch-hides-each-arm-arms">base, all_debug (negative control)
+# revision: ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_paired_dispatch_hides_each_arm.py
+......F..                                                                [100%]
+FAILED tests/test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory
+1 failed, 8 passed
+EXIT=1
+
+head, all_debug
+# revision: 8f062707822ce40e895d8e9fd28e1d0e3dabddda
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_paired_dispatch_hides_each_arm.py
+.........                                                                [100%]
+9 passed
+EXIT=0
+
+declared standalone control at head
+the primary arm's masks dropped, so its empty-listing assertion must fail
+partner-run-dir [ls: cannot access .../runs/r-...-shadow-node: No such file or directory,]
+own-run-write-ok
+own-worktree-write-ok
+EXIT=1</pre>
+</section>

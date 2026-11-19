@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed manifest names no baseline_suite/after_suite, so added_failures_from_gate_logs over its declared logs (baseline_suite-1795054405275083345.log, after_suite-1795054417310088429.log: both 0 bytes, bwrap failure in the .scheduler sidecars) returns unmeasured. The count of 0 is taken from the reviewed run's own recorded arms instead: arm-base-importers.log and arm-head-importers.log both report `1 failed, 139 passed` with the same id tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run, and arm-base-suite.log / arm-head-suite.log both report `58 passed` with EXIT=0. Neither arm log carries a revision header, so the count rests on the run's own arms but not on a revision the log names.",
+  "call_sites": "reckon/crew/promotion.py:_require_commits_beyond_base",
+  "completed_at": "",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-run-scope-measure-nets-churn-84832e9c7671",
+      "recorded_at": "2026-11-19T13:04:04.227904+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-19T12:01:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-run-scope-measure-nets-churn-84832e9c7671",
+      "recorded_at": "2026-11-19T13:04:03.529843+00:00"
+    }
+  },
+  "findings": [
+    "blocking: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn/manifest.md:5 records status: complete while carrying no test result, no baseline_suite and no after_suite, and no messages_received line; `crew check --manifest --run r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn` returns ok:false with those four findings, so the node cannot land on the record it delivered even though its gate is green.",
+    "non-blocking: tests/test_run_scope_measure_nets_churn.py:183 rewrites the case's fixture from in_scope.txt to docs/state/sample/state.json and its asserted refusal from one path to the other, and manifest.md:12 names only the product repair; the done_when requires the manifest to name a test updated to the rule it now asserts, which it does not, so a reviewer at promotion reads a weakened test as an unexplained change.",
+    "non-blocking: reckon/crew/promotion_evidence.py:473 accepts any commit the run head descends into rather than the integration merge that carries it as a parent, so a citation of a later commit on the same branch (including another run's merge) passes the guard and its first-parent diff is charged to this run's changed_lines, which is wider than the docstring at :390 claims."
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against the base: 784dcda3 fixes the citation guard in reckon/crew/promotion_evidence.py and rewrites two cases plus one new case in tests/test_run_scope_measure_nets_churn.py, and 84832e9c adds only the evidence fragment.",
+    "done_when": "The done_when requires both importer arms as inline JSON carrying full 40-character revisions; the reviewed manifest carries neither baseline_suite nor after_suite and arm-base-importers.log / arm-head-importers.log open with no revision header, so the record cannot show which revisions the arms measured.",
+    "goal": "The node's goal is to make tests/test_run_scope_measure_nets_churn.py pass in full on the primary branch; reckon/crew/promotion_evidence.py:473 now accepts a citation the run head descends into, and the reviewed run's scoped-gate-1795054334811684200.log reads `4 passed in 2.20s` at revision 784dcda3 with EXIT=0.",
+    "manifest": "The reviewed manifest.md:5 states status: complete while carrying no tests line, no test_logs, no artifacts and null baseline_suite/after_suite, and `crew check --manifest --run` refuses it with four findings.",
+    "write_paths": "The declared write paths are reckon, tests and the queued-work-needs-no-workaround fragment; every path in 42fe90d0b0a46060bafde2490dda7d4002cda478..84832e9c76712dbc3c8af55a1d56b6516668185f lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_run_scope_measure_nets_churn.py:158 and :229 fail if the acceptance at reckon/crew/promotion_evidence.py:473 is reverted, as arm-base-target.log shows with both ids failing at the base, and :229 compares against git's own numstat rather than the test's input.",
+    "evidence": "The reviewed manifest.md:5 records no test command, no baseline_suite and no after_suite, and its declared baseline_suite-1795054405275083345.log and after_suite-1795054417310088429.log are 0 bytes from a bwrap failure, so the run's own suite pair is unreadable.",
+    "fit": "reckon/crew/promotion_evidence.py:390 follows the module's predicate-and-docstring idiom (compare _run_changed_nothing at :826) and introduces no prohibited name.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:473 accepts a merge that descends from the run head, which is exactly the refusal the node's two failing ids recorded, and the named gate at 84832e9c re-runs to `4 passed`.",
+    "reuse": "reckon/crew/promotion_evidence.py:406 delegates to promotion_scope._revision_is_ancestor, the module that owns ancestry reading (reckon/crew/promotion_scope.py:3304), rather than adding a second merge-base probe.",
+    "scope_discipline": "All three changed paths (reckon/crew/promotion_evidence.py, tests/test_run_scope_measure_nets_churn.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-run-scope-measure-nets-churn.html) are inside the declared write paths and carry nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "remarks": "Gate re-run for the single file the done_when names, in a scratch tree at the reviewed head, is gate-review-head.log under the review run directory: 4 passed, EXIT=0. Production call sites read: reckon/crew/promotion.py:1364 (the _require_commits_beyond_base lambda inside complete) and its import at :3849.",
+  "review_run_id": "r-20261119T025653150733-review-of-qwnw-red-file-run-scope-measure-nets-churn-84832e9c7671",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "84832e9c76712dbc3c8af55a1d56b6516668185f",
+  "reviewed_run_id": "r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn",
+  "rubric": "",
+  "scores": {
+    "durability": 18,
+    "evidence": 8,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:14:46.790616+00:00",
+  "total": 99
+}

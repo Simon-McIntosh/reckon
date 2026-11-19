@@ -3156,20 +3156,25 @@ def crew_queue_edit(
 
 
 @crew_queue.command(name="reprioritise")
-@click.option("--run", "run_id", required=True, help="Queued request to re-rank.")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    help="Queued request or delivered run to re-rank.",
+)
 @click.option(
     "--priority",
     type=int,
     required=True,
     help="Explicit priority override; higher sorts ahead of the roadmap key.",
 )
-@click.option("--reason", default="", help="Why the request is being re-ranked.")
+@click.option("--reason", default="", help="Why the request or run is being re-ranked.")
 @click.option(
     "--project", default=None, help="Project owning the request; cross-checks it."
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_queue_reprioritise(run_id, priority, reason, project, pretty):
-    """Store an explicit priority override on a waiting request."""
+    """Store an explicit priority override on a waiting request or delivered run."""
     _accept_a_matching_project(run_id, project)
     from reckon.crew import queue_edit as queue_edit_module
     from reckon.crew.node import CrewError
@@ -3476,18 +3481,23 @@ def _complete_many(run_ids, parameters):
             if key in result
         }
         report["record_path"] = str(path)
+        # A batch reply carries one row per run and keeps each row short; a
+        # single run's reply is one document, and its refusal is carried whole
+        # because a refusal cut at a fixed width loses the remedy it names —
+        # the flag a caller reads to answer it.
+        excerpt = 240 if len(run_ids) > 1 else None
         for key in ("error", "detail", "reason"):
             if result.get(key):
-                report[key] = str(result[key])[:240]
+                text = str(result[key])
+                report[key] = text if excerpt is None else text[:excerpt]
                 break
         else:
             steps = result.get("steps")
             if isinstance(steps, Mapping):
                 for stage, entry in steps.items():
                     if isinstance(entry, Mapping) and entry.get("ok") is False:
-                        report["error"] = f"{stage}: {entry.get('error') or 'refused'}"[
-                            :240
-                        ]
+                        text = f"{stage}: {entry.get('error') or 'refused'}"
+                        report["error"] = text if excerpt is None else text[:excerpt]
                         break
         reports.append(report)
     reply = (
@@ -3520,6 +3530,34 @@ def _complete_many(run_ids, parameters):
             "record_path": str(path),
         }
     _emit_crew_result(reply, parameters.get("pretty", False))
+
+
+def _refuse_a_presentation_that_names_nothing(run_id, gate, commits, no_commit) -> None:
+    """Refuse a queued promotion presenting a commit that resolves to nothing.
+
+    A queued promotion answers with its request receipt before any promotion
+    runs, so a guard behind the request reports a presentation naming nothing
+    on the drain's turn, with the request already recorded. Judging the
+    presentation here, on the command that queues it, keeps the refusal on the
+    caller's turn. A gate that did not pass and a run that declares no commit
+    to register present nothing to resolve, and a run whose tree cannot be read
+    is unmeasured rather than refused.
+    """
+    from reckon.crew import promotion_evidence
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    if str(gate).strip().lower() != "passed" or str(no_commit).strip():
+        return
+    if not [str(sha).strip() for sha in commits if str(sha).strip()]:
+        return
+    try:
+        record = runs_module.read_pointer(run_id)
+    except CrewError:
+        # A pointer that is gone names no tree to ask. The promotion that
+        # reports the vanished run is the caller's next step, not this one.
+        return
+    promotion_evidence.require_resolvable_presentation(run_id, record, commits)
 
 
 def _refuse_an_unfileable_review_record(
@@ -3912,6 +3950,15 @@ def crew_complete(
     from reckon.crew.promotion_requests import COMMAND_REPLY
 
     public_reply = COMMAND_REPLY.get() is None and _COMPLETION_REPLIES.get() is None
+    if land and not dry_run and (isinstance(run_id, (tuple, list)) or public_reply):
+        # The guard runs over every named run before the reply path below,
+        # which writes one receipt per run: a refusal must leave the crew home
+        # untouched rather than file a receipt for a landing the run cannot
+        # name a live pointer for. The check inside the body below still runs
+        # for the queued replay, where the pointer can go between the two.
+        named = run_id if isinstance(run_id, (tuple, list)) else (run_id,)
+        for each in named:
+            _refuse_a_landing_without_its_pointer(str(each))
     if isinstance(run_id, (tuple, list)) or public_reply:
         if not isinstance(run_id, (tuple, list)):
             run_id = (run_id,)
@@ -3950,6 +3997,15 @@ def crew_complete(
     )
     driven = False
     if not wait and not dry_run and COMMAND_REPLY.get() is None:
+        from reckon.crew.node import CrewError
+
+        # Judged ahead of the queued request for the same reason the review
+        # record above is: this path answers with its request receipt before
+        # any promotion runs, so this guard runs on the caller's turn.
+        try:
+            _refuse_a_presentation_that_names_nothing(run_id, gate, commits, no_commit)
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
         # The drain forwards every stored option as a keyword, so the snapshot
         # carries only names this command declares: a name bound here by an
         # import or a local reaches the drain as an unknown keyword and the

@@ -2090,46 +2090,46 @@ def _resolve_plan_ref(
 #: Compact dos/don'ts surfaced by read_plan(..., with_schema=True).
 _DOS_DONTS = {
     "do": [
-        "read_plan first to get the current version; pass it as expected_version.",
-        "use edit_plan with an ops list — one call may carry several ops applied in order.",
-        "give every followup one /reckon-build invocation line; store guidance in the plan.",
-        "slug='index' is a composed compatibility read; edit named project resources with doc_type.",
-        "use canonical artifact types plan, research, or evidence; doc reads as research.",
-        "use project:slug or project:slug#stage provenance refs; unqualified same-project refs remain valid.",
-        "depends_on/blocks take the same grammar: bare slug = local, project:slug = external; read_plan(project, slug) resolves them in its deps list.",
-        "use depends_on only for executable prerequisites; research, evidence, and specifications use informs.",
-        "landed/outcome records carry evidence_for naming the plan(s) whose execution they record — the plan-to-generated-evidence back-link; informs is reserved for INPUTS that feed future work.",
-        "use roadmap for pending work, completion, ready/blocked sets, sprint order, critical paths, and wiring findings.",
-        "use edit_plan mode='text' for exact version-safe authored HTML replacements — one old_html/new_html pair, or a replacements list applied in order as one versioned write; use mode='state' for structured ops.",
+        "read_plan first for the current version; pass it as expected_version.",
+        "use edit_plan with an ops list; one call carries several ops in order.",
+        "give every followup one /reckon-build invocation line.",
+        "slug='index' is a composed compatibility read; edit named resources with doc_type.",
+        "use canonical types plan, research, or evidence; doc reads as research.",
+        "use project:slug or project:slug#stage refs; bare same-project refs stay valid.",
+        "depends_on/blocks share one plan-ref grammar; read_plan resolves them in deps.",
+        "use depends_on only for executable prerequisites; research, evidence and specs use informs.",
+        "landed/outcome records carry evidence_for naming the plans whose execution they record; informs is reserved for INPUTS.",
+        "use roadmap for pending work, completion, ready/blocked sets, sprint order, critical paths, wiring findings.",
+        "use edit_plan mode='text' for version-safe authored HTML replacements — one old_html/new_html pair or a replacements list applied in order; mode='state' for structured ops.",
     ],
     "dont": [
         "never set plan-version yourself — the server owns it.",
         "off-enum status/roi/effort/type or capability requirements are rejected at the write boundary.",
-        "research/evidence cannot carry meaningful plan-only workflow or scheduling fields.",
+        "research/evidence cannot carry plan-only workflow or scheduling fields.",
         "distributed index writes are rejected with legacy_index_read_only guidance.",
-        "create=True on an existing plan, or a normal edit on a missing plan, is rejected.",
-        "never execute through an error-level roadmap wiring finding; repair and rescan first.",
+        "create=True on an existing plan, or an edit on a missing plan, is rejected.",
+        "never execute through an error-level roadmap wiring finding; repair and rescan.",
     ],
 }
 
 #: The edit_plan op vocabulary, inlined for the context injector.
 _OP_VOCAB = {
-    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, followups.<id>.prompt; one top-level field on a sprint/milestone/blocker/project resource; review scalars and the priority list. impl clamps to 0..1, plan-only. A terminal plan 'status' is not settable here — use close.",
-    "close": "{op:'close', status:'<terminal>', outcome, by[, superseded_by]} — closes a plan in one write: sets the status and resolves every open followup with the outcome, reporting every failing terminal guard together. A terminal 'set' of status is refused naming this op.",
-    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. target 'sections' writes a section (item: id, title, body) or attaches a record to an <h2 id> already in the file (item: id, no body); effort_hours, capability and links are required on either shape. followup prompt is one /reckon-build line.",
-    "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status derives from resolved_at.",
-    "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
-    "accept": "{op:'accept', key, by} — sets decisions[key].choice from its stored recommendation (recommended/recommended_by) in one action, recording when and by whom; refused when the decision carries no recommendation.",
-    "withdraw": "{op:'withdraw', key, reason, by} — withdraws an unlocked decision in one versioned write, keeping its reason and date in the plan and taking it out of the roadmap's blockers; a locked decision, an absent decision or a withdrawal with no reason is refused naming the decision.",
+    "set": "{op:'set', path:'<dotted>', value:<any>} — artifact scalars, decisions.<key>.<field>, followups.<id>.prompt, review scalars, the priority list, one top-level field on a sprint/milestone/blocker/project; impl clamps to 0..1, plan-only. A terminal 'status' is refused — use close.",
+    "close": "{op:'close', status:'<terminal>', outcome, by[, superseded_by]} — closes a plan in one write: sets status and resolves every open followup with the outcome, naming every failing terminal guard together.",
+    "append": "{op:'append', target:'<collection>', item:<obj|str>[, section][, key]} — plan followups/research/questions/comments/decisions; sprint items; timeline events; review findings. target 'sections' writes a section (item: id, title, body) or attaches a record to an existing <h2 id> (item: id, no body); effort_hours, capability and links are required on either shape.",
+    "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by and outcome/resolution; a finding's status derives from resolved_at.",
+    "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], keeping its authored title/context/choices.",
+    "accept": "{op:'accept', key, by} — sets decisions[key].choice from its stored recommendation (recommended/recommended_by), recording when and by whom; refused with no recommendation.",
+    "withdraw": "{op:'withdraw', key, reason, by} — withdraws an unlocked decision in one write, keeping its reason and date and taking it out of the roadmap's blockers; a locked or absent decision, or a withdrawal with no reason, is refused naming it.",
     "gate": "{op:'gate', id, section, gated_sections:[...], measure, required_evidence} — declares one open evidence gate.",
-    "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is enabled.",
-    "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
+    "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is on.",
+    "fail": "{op:'fail', id, evidence} — closes a declared gate as failed, preserving its negative evidence.",
     "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
-    "insert_section": "{op:'insert_section', id, title, body, effort_hours, capability, links} — writes a new h2 with its typed section record; effort_hours, capability and links are required.",
-    "append_evidence": "{op:'append_evidence', plan, anchor, title, body} — appends one <section id=anchor> to that plan's cumulative landing record docs/evidence/archive/<plan>-landed.html, creating the record when absent and refusing an anchor that already exists.",
-    "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions, preserves item metadata.",
-    "push": "{op:'push'} — marks the selected sprint active (pushed) in one versioned write and leaves every other sprint's status untouched.",
-    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type. A plan created at or beyond the project's declared pending-plan limit succeeds and its response carries a warning naming the limit, the pending count and the three pending plans nearest to closing.",
+    "insert_section": "{op:'insert_section', id, title, body, effort_hours, capability, links} — writes a new h2 with its typed section record; the same fields append requires on 'sections' are required.",
+    "append_evidence": "{op:'append_evidence', plan, anchor, title, body} — appends one <section id=anchor> to that plan's landing record docs/evidence/archive/<plan>-landed.html, creating it when absent and refusing a repeated anchor.",
+    "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selects the source sprint; checks both versions, preserves item metadata.",
+    "push": "{op:'push'} — marks the selected sprint active in one versioned write, leaving other sprints untouched.",
+    "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type. A plan at or beyond the project's pending-plan limit succeeds with a warning naming the limit, the pending count and the three pending plans nearest to closing.",
 }
 
 
@@ -2868,6 +2868,14 @@ def _crew(
     ``obligations`` derives the duties one coordinator session still owes — each
     with its kind, run, age and next command — from the live pointers, the
     review store and the ledger, and needs ``session``.
+    ``queue`` answers where the queue's work stands: every queued and
+    awaiting-upstream request of ``project`` in the order admission launches by,
+    each with its place, its session, plan section and lane, its priority, the
+    wait it has served, the reason the admission ordering records for its place,
+    and the hold that stops it where one does; then every pending review and
+    every pending promotion, and each session's priority budget beside the
+    points in use and the points free. Pass ``session`` to narrow it to one
+    session's rows.
     ``velocity`` reports what the fleet delivered over the window ``since`` to
     ``until`` — promotions split implementation against review, landed lines in
     six classes, the seven-day deletion share, dispatch-to-completion and

@@ -84,11 +84,20 @@ def fixture(tmp_path, monkeypatch):
     )
     directory = runs.run_dir(run_id)
     directory.mkdir(parents=True)
-    binary = tmp_path / "bin" / "codex"
+    # The resumed worker is fenced, and a fenced worker's /tmp is its own
+    # scratch: a stub under pytest's temporary tree reads as absent inside the
+    # fence and the launch dies before the stub runs. The run directory is a
+    # grant of the resumed attempt's fence, so the stub lives there beside the
+    # receipt it writes.
+    binary = directory / "bin" / "codex"
     binary.parent.mkdir()
     received = directory / "received.json"
+    # The interpreter is named by its resolved path for the same reason: a gate
+    # job copies the tree beneath /tmp and runs that copy's interpreter, and a
+    # shebang naming a path inside the fence's own scratch root makes the
+    # program unreadable to bwrap even when the stub itself is granted.
     binary.write_text(
-        f"#!{sys.executable}\n"
+        f"#!{Path(sys.executable).resolve()}\n"
         "import json, sys\nfrom pathlib import Path\n"
         f"Path({str(received)!r}).write_text(json.dumps({{'argv': sys.argv, 'stdin': sys.stdin.read()}}))\n"
         'print(\'{"type":"thread.started","thread_id":"fixture-session"}\', flush=True)\n'

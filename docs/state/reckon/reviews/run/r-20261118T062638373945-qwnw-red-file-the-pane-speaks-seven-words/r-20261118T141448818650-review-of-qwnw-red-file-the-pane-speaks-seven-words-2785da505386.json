@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/ticker.py:3929 _stats cell loop",
+    "reckon/crew/ticker.py:3932 _COUNT_FIELD lookup",
+    "reckon/crew/ticker.py:3941 oldest_promotion_position suffix",
+    "reckon/crew/ticker.py:789 STATS width over _MAX_CELLS",
+    "reckon/crew/ticker.py:1178 _state_hue",
+    "reckon/crew/recovery_watch.py:3031 promotion_queued count"
+  ],
+  "completed_at": "2026-11-18T16:33:25.092602+00:00",
+  "dispatched_at": "2026-11-18T16:19:35Z",
+  "findings": [
+    {
+      "file": "tests/test_the_pane_speaks_seven_words.py",
+      "line": "96",
+      "severity": "non-blocking",
+      "text": "non-blocking: the _stats sample dict supplies no promotion_queued or oldest_promotion_position, so the seventh cell's count lookup at reckon/crew/ticker.py:3932 and its @position suffix at :3941-3942 are not asserted and a regression dropping either would leave this guard green while the figure the change exists to pin disappears; already folded into repair node repair-of-qwnw-red-file-the-pane-speaks-seven-words-b7dcd55e3e36 by the earlier review."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read both commits against 1766ca118859: b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 changes tests/test_the_pane_speaks_seven_words.py:69-90 (+6/-2) and 2785da505386706e5cc40cb31553fa61b05f6b04 adds the 73-line fragment only, so no product file changed.",
+    "done_when": "The done_when requires a base run first, each cause with a product-or-test verdict, no deleted or weakened assertion, both arms as inline JSON carrying full 40-character revisions, a negative-control fragment under docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, and clean ruff; at 2785da5053 all are present (negative-control.log 1 failed 2 passed EXIT=1 at 1766ca118859, manifest baseline_suite 0 failures at 1766ca11 and after_suite 0 failures at 2785da50, fragment landed), with the gate half run one evidence-only commit before the final head.",
+    "goal": "The source node.goal is \"Make tests/test_the_pane_speaks_seven_words.py pass in full on the primary branch\"; tests/test_the_pane_speaks_seven_words.py is byte-identical between the gate's b7dcd55e3e and the head 2785da5053, where scoped-gate-1795001661040433791.log:7 records \"3 passed\", and the landed diff retunes the counter case at tests/test_the_pane_speaks_seven_words.py:69-90 to the seven-cell table reckon/crew/ticker.py:738-783 defines.",
+    "manifest": "Read manifest.md in the reviewed run directory; it reads status complete, names both commits b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 and 2785da505386706e5cc40cb31553fa61b05f6b04, and its earlier placeholders are gone \u2014 tests: carries the real gate command, test_logs: names scoped-gate-1795001661040433791.log and negative-control.log, both of which open, and baseline_suite/after_suite carry exit_status 0, completed true and failure_count 0 at 40-character revisions.",
+    "write_paths": "The source node.write_paths are [\"reckon\",\"tests\",\"docs/evidence/fragments/queued-work-needs-no-workaround\"]; the two changed paths, tests/test_the_pane_speaks_seven_words.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, both lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_pane_speaks_seven_words.py:74-90 pins the literal seven-cell tuple and the count-field mapping, so reverting reckon/crew/ticker.py:783 or :748 reddens it, but the sample at :96-107 passes no promotion_queued key and leaves ticker.py:3932-3942 unasserted.",
+    "evidence": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html:37-48 states the head 3 passed EXIT=0 and the base 1 failed, 2 passed EXIT=1, matching scoped-gate-1795001661040433791.log and negative-control.log, though the same figures are left as a body table plus quoted stderr rather than the inline arm JSON the manifest carries.",
+    "fit": "tests/test_the_pane_speaks_seven_words.py:70-73 keeps the file's comment-then-literal idiom and reads ticker's own private tables as it already does at :36-42.",
+    "goal_fidelity": "tests/test_the_pane_speaks_seven_words.py is unchanged between the gate's b7dcd55e3e and the head 2785da5053, and scoped-gate-1795001661040433791.log:7 records all three cases passing.",
+    "reuse": "the diff defines no function, class or module \u2014 only assertions and a fragment \u2014 and searching tests/ for the counter census by capability found only sibling pins at tests/test_crew_ticker_layout.py and tests/test_the_pane_counts_reviews_under_r.py, so no owner is forked.",
+    "scope_discipline": "git diff 1766ca118859..2785da5053 touches only tests/test_the_pane_speaks_seven_words.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, both inside the declared scope, and changes no product file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node.goal is \"Make tests/test_the_pane_speaks_seven_words.py pass in full on the primary branch\"; tests/test_the_pane_speaks_seven_words.py is byte-identical between the gate's b7dcd55e3e and the head 2785da5053, where scoped-gate-1795001661040433791.log:7 records \"3 passed\", and the landed diff retunes the counter case at tests/test_the_pane_speaks_seven_words.py:69-90 to the seven-cell table reckon/crew/ticker.py:738-783 defines.\nVERDICT done_when: The done_when requires a base run first, each cause with a product-or-test verdict, no deleted or weakened assertion, both arms as inline JSON carrying full 40-character revisions, a negative-control fragment under docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, and clean ruff; at 2785da5053 all are present (negative-control.log 1 failed 2 passed EXIT=1 at 1766ca118859, manifest baseline_suite 0 failures at 1766ca11 and after_suite 0 failures at 2785da50, fragment landed), with the gate half run one evidence-only commit before the final head.\nVERDICT write_paths: The source node.write_paths are [\"reckon\",\"tests\",\"docs/evidence/fragments/queued-work-needs-no-workaround\"]; the two changed paths, tests/test_the_pane_speaks_seven_words.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, both lie inside them.\nVERDICT manifest: Read manifest.md in the reviewed run directory; it reads status complete, names both commits b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 and 2785da505386706e5cc40cb31553fa61b05f6b04, and its earlier placeholders are gone \u2014 tests: carries the real gate command, test_logs: names scoped-gate-1795001661040433791.log and negative-control.log, both of which open, and baseline_suite/after_suite carry exit_status 0, completed true and failure_count 0 at 40-character revisions.\nVERDICT diff: Read both commits against 1766ca118859: b7dcd55e3e367b19c0e36a9dc6ab05d7b8b46814 changes tests/test_the_pane_speaks_seven_words.py:69-90 (+6/-2) and 2785da505386706e5cc40cb31553fa61b05f6b04 adds the 73-line fragment only, so no product file changed.\nCALL_SITES: reckon/crew/ticker.py:3929 _stats cell loop, reckon/crew/ticker.py:3932 _COUNT_FIELD lookup, reckon/crew/ticker.py:3941 oldest_promotion_position suffix, reckon/crew/ticker.py:789 STATS width over _MAX_CELLS, reckon/crew/ticker.py:1178 _state_hue, reckon/crew/recovery_watch.py:3031 promotion_queued count\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_pane_speaks_seven_words.py is unchanged between the gate's b7dcd55e3e and the head 2785da5053, and scoped-gate-1795001661040433791.log:7 records all three cases passing.\nSCORE evidence: 17\nJUSTIFICATION evidence: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html:37-48 states the head 3 passed EXIT=0 and the base 1 failed, 2 passed EXIT=1, matching scoped-gate-1795001661040433791.log and negative-control.log, though the same figures are left as a body table plus quoted stderr rather than the inline arm JSON the manifest carries.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 1766ca118859..2785da5053 touches only tests/test_the_pane_speaks_seven_words.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-pane-speaks-seven-words.html, both inside the declared scope, and changes no product file.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_pane_speaks_seven_words.py:74-90 pins the literal seven-cell tuple and the count-field mapping, so reverting reckon/crew/ticker.py:783 or :748 reddens it, but the sample at :96-107 passes no promotion_queued key and leaves ticker.py:3932-3942 unasserted.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_the_pane_speaks_seven_words.py:70-73 keeps the file's comment-then-literal idiom and reads ticker's own private tables as it already does at :36-42.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff defines no function, class or module \u2014 only assertions and a fragment \u2014 and searching tests/ for the counter census by capability found only sibling pins at tests/test_crew_ticker_layout.py and tests/test_the_pane_counts_reviews_under_r.py, so no owner is forked.\nFINDING tests/test_the_pane_speaks_seven_words.py:96 non-blocking: the _stats sample dict supplies no promotion_queued or oldest_promotion_position, so the seventh cell's count lookup at reckon/crew/ticker.py:3932 and its @position suffix at :3941-3942 are not asserted and a regression dropping either would leave this guard green while the figure the change exists to pin disappears; already folded into repair node repair-of-qwnw-red-file-the-pane-speaks-seven-words-b7dcd55e3e36 by the earlier review.",
+  "review_run_id": "r-20261118T141448818650-review-of-qwnw-red-file-the-pane-speaks-seven-words-2785da505386",
+  "reviewed_base_sha": "1766ca118859247ca28cefa0064b27175002d0ce",
+  "reviewed_head_sha": "2785da505386706e5cc40cb31553fa61b05f6b04",
+  "reviewed_run_id": "r-20261118T062638373945-qwnw-red-file-the-pane-speaks-seven-words",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T16:45:04.133893+00:00",
+  "total": 110
+}

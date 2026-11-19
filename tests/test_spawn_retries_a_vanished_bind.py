@@ -202,7 +202,12 @@ def _vanish_then_live(
     refused = _refusal_script(
         tmp_path / "refused.sh", refusal, _backends.resolved_destination(protected)
     )
-    live = _script(tmp_path / "live.sh", "sleep 30\n")
+    # The second try has to still be running when the startup watch runs out
+    # its window: a child that exits inside the watch wrote no byte, and the
+    # launch records such a child as the launch failure it is. ``exec`` keeps
+    # the long sleep on the pid the launch was handed, so stopping the test's
+    # processes stops it rather than orphaning it.
+    live = _script(tmp_path / "live.sh", "exec sleep 300\n")
     spawn = _recording_spawn(monkeypatch, [[str(refused)], [str(live)]])
     return protected, argv, spawn
 
@@ -336,6 +341,10 @@ def test_the_supervisor_seam_retries_the_spawn(
     )
     spec = {
         "run_id": RUN_ID,
+        # The spec a supervisor receives always names the run directory it
+        # records into: the launcher writes it, and the seam reads it to place
+        # a step's scratch beside the run.
+        "run_directory": str(directory),
         "prompt_path": str(directory / "prompt.txt"),
         "log_path": str(directory / "stream.jsonl"),
         "stderr_path": str(directory / "stderr.log"),

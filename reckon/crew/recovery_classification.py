@@ -910,7 +910,14 @@ def _review_pointer(review_run_id: str) -> Mapping[str, Any] | None:
     dispatch that composed the review, and the stranded-launch reading is taken
     from the same mapping: one read answers both questions about the pointer.
     """
+    from reckon.crew.open_run_index import pointers
     from reckon.crew.runs import read_pointer
+
+    snapshot = pointers()
+    if snapshot is not None:
+        return next(
+            (row for row in snapshot if row.get("run_id") == review_run_id), None
+        )
 
     try:
         pointer = read_pointer(review_run_id)
@@ -1153,10 +1160,11 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
 
     checkout = claim_repository(record)
     try:
+        from reckon.crew.pending_landing import _promotion_evidence
+
         root = ledger._run_ledger_root(project, str(record.get("repo") or ""))
-        path = ledger.run_path(project, run_id, root)
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger.LedgerError):
+        row = _promotion_evidence(project, run_id, root=root)
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError, CrewError):
         return checkout, "", False
     if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
         return checkout, "", False
@@ -1917,9 +1925,24 @@ def classify_pointer(
             stored_review = served_review.get("record")
             review = dict(stored_review) if isinstance(stored_review, Mapping) else None
             review_error = str(served_review.get("error") or "")
+            # The files that answer was read past travel with it: a served
+            # classification made no read, and without these a later derivation
+            # of the same fleet reports no finding while the sweep that wrote
+            # the memo named the path.
+            for finding in served_review.get("findings") or ():
+                note_read_failure(finding)
         else:
-            review, review_error = _stored_review(record)
-            memo["review"] = {"record": review, "error": review_error}
+            # The read's own findings are captured here so the memo can carry
+            # them, then noted to the region the caller opened around this call.
+            with collect_read_failures() as read_failures:
+                review, review_error = _stored_review(record)
+            memo["review"] = {
+                "record": review,
+                "error": review_error,
+                "findings": [dict(entry) for entry in read_failures],
+            }
+            for finding in read_failures:
+                note_read_failure(finding)
     review_complete = _review_is_complete(review)
     # The branch that decides whether the run still owes a review is the only
     # one that pays for recognising a dispatched review, so the pair starts
@@ -1967,7 +1990,9 @@ def classify_pointer(
             # Optional echoes can be absent from a later attempt's manifest.
             # Recheck a retained refusal against the issued tree and commits.
             reported_orientation = {**manifest_data, **issued_orientation}
-        _apply_orientation_check(orientation_record, None, reported=reported_orientation)
+        _apply_orientation_check(
+            orientation_record, None, reported=reported_orientation
+        )
         if recheck_without_echoes:
             orientation_record["orientation_check"]["echoes_absent"] = True
         memo["orientation_check"] = orientation_record.get("orientation_check")
@@ -3527,9 +3552,16 @@ def _delivery_reading(
 
 
 def delivery_summary(
-    rows: Sequence[Mapping[str, Any]], *, session: str | None = None
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Count one classified population and locate its oldest promotion request."""
+    """Count one classified population and locate its oldest promotion request.
+
+    ``pointers`` — the fleet reading the caller already holds — is passed to the
+    queue report, so counting a population inside a fleet read lists no fleet.
+    """
     selected = [
         row
         for row in rows
@@ -3564,7 +3596,7 @@ def delivery_summary(
         )
         places = {
             row["run_id"]: row["position"]
-            for row in promotion_queue_report()["requests"]
+            for row in promotion_queue_report(pointers=pointers)["requests"]
         }
         position = places.get(oldest["run_id"])
         requested_at = (oldest.get("delivery") or {}).get("requested_at")
@@ -3776,4 +3808,8 @@ from .recovery_watch import (  # noqa: E402
     _pointer_role,
     _utc_seconds,
     _watch_verdict,
+)
+from .review_records import (  # noqa: E402
+    collect_read_failures,
+    note_read_failure,
 )

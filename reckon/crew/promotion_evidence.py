@@ -407,12 +407,18 @@ def _require_commits_beyond_base(
     The comparison is made in the run's own tree, so a citation that resolves
     to an abbreviated revision still equals the base it names, and a citation
     that resolves nowhere is left to the guard whose refusal names the
-    repository it consulted rather than answered here with this one. The tree
-    is the one the record names, read the way every other reader reads it: a
-    record that names no readable directory is not measured here rather than
-    measured against whatever repository the promotion happens to run in. A
-    tree git cannot read, or a base that does not resolve in it, leaves the
-    guard silent: an unmeasured citation is not a defect in the citation.
+    repository it consulted rather than answered here with this one. A tree git
+    cannot read, or a base that does not resolve in it, leaves the guard
+    silent: an unmeasured citation is not a defect in the citation.
+
+    Reachability is asked about the run's *worktree* head, never the
+    repository's. A released worktree is read through the repository that
+    shares its object store, and that repository's head follows the integration
+    branch: a run whose tree is already gone therefore reads as an unmerged
+    branch when measured against it, and the commit the run made was refused
+    after the tree it belonged to no longer existed. With no worktree to read,
+    the observable question is the one the base answers — the citation is the
+    run's work if it descends from the base the run was dispatched against.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
@@ -424,7 +430,15 @@ def _require_commits_beyond_base(
     from reckon.crew.promotion_scope import _declared_manifest_commits
     from reckon.crew.queue_landing import _delivered_revision
 
-    canonical_head = _commit_canonical_id(tree, "HEAD")
+    # Only the run's own worktree answers whether a citation is on the run's
+    # line. A record whose worktree is gone is read through the repository
+    # that shares its object store, whose head follows the integration branch,
+    # so a head read there refuses the run's own commit as an unmerged branch.
+    canonical_head = (
+        _commit_canonical_id(tree, "HEAD")
+        if _record_worktree(record) is not None
+        else None
+    )
     # A history-derived presentation must not hide a foreign manifest citation.
     # Reachable merge imports are valid citations but not owned commit records.
     citations = dict.fromkeys(
@@ -974,6 +988,53 @@ def _commits_a_presentation_covers(
     return covered
 
 
+def _unresolved_presentation_refusal(
+    run_id: str, tree: Path, unresolved: Sequence[str]
+) -> CrewError:
+    """The one refusal a presentation naming no object is reported with."""
+    return CrewError(
+        f"run {run_id!r} presents "
+        + ", ".join(repr(entry) for entry in unresolved)
+        + " as a commit, but that identifier does not resolve to a "
+        f"commit object in the run repository ({tree}). The presented "
+        "list is what the boundary check and the ledger resolve, so a "
+        "value that names nothing is not evidence and is reported "
+        "rather than dropped from the comparison. Cite the commit the "
+        "run actually wrote, or leave the value out of the presentation"
+    )
+
+
+def require_resolvable_presentation(
+    run_id: str,
+    record: Mapping[str, Any],
+    presented: Iterable[str],
+) -> None:
+    """Refuse a presented commit that resolves to no object in the run's tree.
+
+    A presentation is what the out-of-scope boundary check and the ledger
+    resolve, so a presented value that names nothing is a defective citation
+    and not a count short of the manifest's. The presentation is judged where
+    it is read: ``crew complete`` queues a promotion rather than running one,
+    so a guard that runs only on the drain refuses a request already written,
+    on the service's turn instead of the caller's. Measured at the request
+    boundary: a passing completion presenting one commit that resolves and a
+    forty-character value that resolves nowhere, against a run whose pointer
+    names a readable repository, answered ``{"ok": true, "phase":
+    "promotion-requested"}`` and queued the value the boundary check cannot
+    resolve.
+
+    The refusal stays silent when the run's tree cannot be read, so a citation
+    is never refused for a store nobody was able to ask about.
+    """
+    cited = [str(entry).strip() for entry in presented if str(entry).strip()]
+    tree = _run_commit_directory(record) if cited else None
+    if tree is None:
+        return
+    unresolved = [entry for entry in cited if _commit_canonical_id(tree, entry) is None]
+    if unresolved:
+        raise _unresolved_presentation_refusal(run_id, tree, unresolved)
+
+
 def _require_gate_evidence(
     run_id: str,
     record: Mapping[str, Any],
@@ -1111,16 +1172,7 @@ def _require_gate_evidence(
         # that only begins with an absence word is still not a declaration, so
         # `nonesuch` is refused here as the citation attempt it looks like.
         if unresolved_presented and not declared_absent:
-            raise CrewError(
-                f"run {run_id!r} presents "
-                + ", ".join(repr(entry) for entry in unresolved_presented)
-                + " as a commit, but that identifier does not resolve to a "
-                f"commit object in the run repository ({tree}). The presented "
-                "list is what the boundary check and the ledger resolve, so a "
-                "value that names nothing is not evidence and is reported "
-                "rather than dropped from the comparison. Cite the commit the "
-                "run actually wrote, or leave the value out of the presentation"
-            )
+            raise _unresolved_presentation_refusal(run_id, tree, unresolved_presented)
         resolving_declared = {
             canonical
             for candidate in declared

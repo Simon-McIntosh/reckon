@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/ledger.py:2570 load",
+    "reckon/ledger.py:3155 _load_file_history internal",
+    "reckon/ledger.py:4205 crew view records",
+    "reckon/roadmap.py:1936",
+    "reckon/crew/recovery_watch.py:2479",
+    "reckon/crew/recovery_watch.py:3142",
+    "reckon/crew/plan_review.py:4313",
+    "reckon/mcp_views.py:4902",
+    "reckon/mcp_views.py:4933"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:03:58Z",
+  "emission": "VERDICT goal: the goal is making tests/test_read_verbs_retire_behind_crew_view.py pass in full on the primary branch; the diff repairs reckon/ledger.py:2646 and reckon/ledger.py:4266 and logs/head-gate.log reads 16 passed EXIT=0 at the head. VERDICT done_when: the gate and its negative control are on disk at logs/head-gate.log and logs/base-gate.log with the failing id, and the inline-JSON arms are the suite-fence pair rather than the ten-file import arm. VERDICT write_paths: both diff paths sit inside the declared reckon and docs/evidence/fragments scope, with no test file touched. VERDICT manifest: read; it states the base red, the head green, both arms, module path and cwd, and carries no ruff record the done_when names. VERDICT diff: four commits against d233bdfbcd, one two-predicate repair in reckon/ledger.py (+11/-2) plus a 19-line evidence fragment. CALL_SITES: reckon/ledger.py:2570, reckon/ledger.py:3155, reckon/ledger.py:4205, reckon/roadmap.py:1936, reckon/crew/recovery_watch.py:2479, reckon/crew/recovery_watch.py:3142, reckon/crew/plan_review.py:4313, reckon/mcp_views.py:4902, reckon/mcp_views.py:4933",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": 4266,
+      "severity": "non-blocking",
+      "text": "non-blocking: reckon/ledger.py:4266 read_records runs the run_id projection of the store itself and then calls load, whose _load_file_history reads the same store again at reckon/ledger.py:2634, so every history read pays two store scans of the project's rows where the resolved predicate could be passed into load once."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-read-verbs-retire-behind-crew-view.html",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "non-blocking: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-read-verbs-retire-behind-crew-view.html:13 records the head as 9cc92a03bf under job 1326419 while the landed head is 58c50380dc, whose gate log logs/head-gate.log was produced by job 1326428 at 16 passed, so the fragment quotes a run whose log the later run overwrote and a reader comparing reviewed_head_sha against the fragment finds a different run."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": 2646,
+      "severity": "non-blocking",
+      "text": "non-blocking: reckon/ledger.py:2646 the comment states the store answers once it holds a row for that project, but the predicate reads the filtered selection at reckon/ledger.py:2634 (plan, run_ids, activity_since all passed through), so a selection matching no stored row falls through and re-reads the whole committed index for an answer the store already gave."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified 9 production call sites of the two changed functions: load and the crew ledger read in reckon/ledger.py plus roadmap, recovery_watch, plan_review and mcp_views.",
+    "diff": "Read all four commits against d233bdfbcd5975eff8abc4985b9a2753bc00cc19: one product repair of two predicates in reckon/ledger.py (+11/-2) and a 19-line evidence fragment, with the earlier auxiliary-import attempt reverted in 9cc92a03bf so no dead code remains.",
+    "done_when": "The done_when asks for the named file in full at head, a base run first, a cause verdict per failure, an import arm with both arms in inline JSON carrying 40-character revisions, a negative control in the evidence fragment and ruff clean; logs/head-gate.log and logs/base-gate.log carry the gate pair and the failing id, the cause verdict is in the manifest's evidence_inputs, but the inline-JSON arms are the suite-fence pair rather than the ten-file import arm whose head measurement sits at 9cc92a03bf.",
+    "goal": "The goal is to make tests/test_read_verbs_retire_behind_crew_view.py pass in full; the diff repairs the reader predicates at reckon/ledger.py:2646 and reckon/ledger.py:4266 and the named file reads 16 passed EXIT=0 at the head in the run's logs/head-gate.log.",
+    "manifest": "Read the reviewed run's manifest.md; it records status complete, 16 passed at head against 1 failed and 15 passed at base, both suite arms as inline JSON with full 40-character revisions, and the module path and cwd of the base-tree measurement, while carrying no ruff record the done_when names.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; both paths in the diff (reckon/ledger.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-read-verbs-retire-behind-crew-view.html) are inside them and no test file was touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T140937440094-review-of-qwnw-red-file-read-verbs-retire-behind-crew-view-58c50380dc8f",
+  "reviewed_base_sha": "d233bdfbcd5975eff8abc4985b9a2753bc00cc19",
+  "reviewed_head_sha": "58c50380dc8fadabf6ae5873f3afe077da47dba9",
+  "reviewed_run_id": "r-20261118T062819813154-qwnw-red-file-read-verbs-retire-behind-crew-view",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T16:20:00+00:00",
+  "total": 107
+}

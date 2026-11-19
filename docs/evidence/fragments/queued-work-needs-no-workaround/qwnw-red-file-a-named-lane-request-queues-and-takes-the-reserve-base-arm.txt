@@ -1,0 +1,155 @@
+# arm: negative control (base)
+# revision: ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5
+# tree: /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X
+# command: cd /tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/qwnw-base-8IPf2X && PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_named_lane_request_queues_and_takes_the_reserve.py
+# slurm: run with SLURM_JOB_ID unset; job 1327486 partition all_debug
+........FF                                                               [100%]
+=================================== FAILURES ===================================
+_ test_a_full_roster_keeps_every_lane_queued_and_the_named_lane_takes_the_next_seat _
+
+dispatch_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-0/test_a_full_roster_keeps_every0/repo')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2609f7fd40>
+
+    def test_a_full_roster_keeps_every_lane_queued_and_the_named_lane_takes_the_next_seat(
+        dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A pass at the cap loses nothing, and the freed seat goes to codex."""
+        _reserve_the_roster(dispatch_repo, monkeypatch, occupants=LIMIT)
+        config = _config()
+        for run_id, backend, local in (
+            ("r-codex", NAMED, False),
+            ("r-local-a", LOCAL, True),
+            ("r-local-b", LOCAL, True),
+        ):
+            _pointer(run_id, dispatch_repo, backend=backend, local=local, phase="queued")
+        recorded: list = []
+        launcher = _launcher(recorded)
+    
+        at_the_cap = _admit(config, launcher)
+    
+        assert at_the_cap["launched"] == [], at_the_cap
+        assert recorded == [], "nothing may launch into a full roster"
+        assert at_the_cap["failed"] == [], at_the_cap
+        for run_id in ("r-codex", "r-local-a", "r-local-b"):
+            assert run_id in at_the_cap["held"], run_id
+            assert runs.read_pointer(run_id)["phase"] == "queued", run_id
+    
+        # One seat frees: the named request takes it, and the local queue stays
+        # short of the seats the reserve keeps for it.
+        runs.pointer_path(f"r-occupant-{LIMIT - 1}").unlink()
+        next_pass = _admit(config, launcher)
+    
+>       assert next_pass["launched"] == ["r-codex"], next_pass
+E       AssertionError: {'gate': 'open', 'launched': ['r-codex', 'r-local-a', 'r-local-b'], 'held': [], 'failed': [], ...}
+E       assert ['r-codex', '..., 'r-local-b'] == ['r-codex']
+E         
+E         Left contains 2 more items, first extra item: 'r-local-a'
+E         
+E         Full diff:
+E           [
+E               'r-codex',
+E         +     'r-local-a',
+E         +     'r-local-b',
+E           ]
+
+tests/test_a_named_lane_request_queues_and_takes_the_reserve.py:464: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-codex
+reckon: created run r-local-b
+reckon: created run r-local-a
+_________ test_a_queued_review_edited_to_codex_keeps_its_reviewed_run __________
+
+dispatch_repo = PosixPath('/tmp/reckon-crew-scratch/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/pytest-of-mcintos/pytest-0/test_a_queued_review_edited_to0/repo')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2609b8b690>
+
+    def test_a_queued_review_edited_to_codex_keeps_its_reviewed_run(
+        dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Moving a waiting review changes the lane, not the run it reviews."""
+        _reserve_the_roster(dispatch_repo, monkeypatch, occupants=LIMIT)
+        config = _config()
+        _pointer(
+            "r-delivered",
+            dispatch_repo,
+            backend=LOCAL,
+            local=True,
+            phase="working",
+            node_id="delivered-node",
+            pid=os.getpid(),
+        )
+        _pointer(
+            "r-review",
+            dispatch_repo,
+            backend=LOCAL,
+            local=True,
+            phase="queued",
+            node_id="review-of-r-delivered",
+        )
+        _pointer(
+            "r-local-waiting",
+            dispatch_repo,
+            backend=LOCAL,
+            local=True,
+            phase="queued",
+            node_id="local-waiting",
+        )
+    
+        from reckon.crew import queue_edit, recovery_review_delivery
+    
+        # The edit resolves the lane's own flight config; this test states it.
+        monkeypatch.setattr(queue_admission, "_resolve_lane_config", lambda _record: config)
+        queue_edit.edit("r-review", backend=NAMED)
+        moved = runs.read_pointer("r-review")
+        assert moved["backend"] == NAMED, moved
+    
+        recorded: list = []
+        # A full roster holds it: the moved review waits rather than being lost.
+        at_the_cap = _admit(config, _launcher([]))
+        assert at_the_cap["launched"] == [], at_the_cap
+        assert at_the_cap["failed"] == [], at_the_cap
+        assert runs.read_pointer("r-review")["phase"] == "queued"
+    
+        # One seat frees, and the named request takes it from the local queue.
+        runs.pointer_path(f"r-occupant-{LIMIT - 1}").unlink()
+        admitted = _admit(config, _launcher(recorded))
+    
+>       assert admitted["launched"] == ["r-review"], admitted
+E       AssertionError: {'gate': 'open', 'launched': ['r-review', 'r-local-waiting'], 'held': [], 'failed': [], ...}
+E       assert ['r-review', ...ocal-waiting'] == ['r-review']
+E         
+E         Left contains one more item: 'r-local-waiting'
+E         
+E         Full diff:
+E           [
+E               'r-review',
+E         +     'r-local-waiting',
+E           ]
+
+tests/test_a_named_lane_request_queues_and_takes_the_reserve.py:520: AssertionError
+----------------------------- Captured stderr call -----------------------------
+reckon: created run r-review
+reckon: created run r-local-waiting
+=========================== short test summary info ============================
+FAILED tests/test_a_named_lane_request_queues_and_takes_the_reserve.py::test_a_full_roster_keeps_every_lane_queued_and_the_named_lane_takes_the_next_seat - AssertionError: {'gate': 'open', 'launched': ['r-codex', 'r-local-a', 'r-local-b'], 'held': [], 'failed': [], ...}
+assert ['r-codex', '..., 'r-local-b'] == ['r-codex']
+  
+  Left contains 2 more items, first extra item: 'r-local-a'
+  
+  Full diff:
+    [
+        'r-codex',
+  +     'r-local-a',
+  +     'r-local-b',
+    ]
+FAILED tests/test_a_named_lane_request_queues_and_takes_the_reserve.py::test_a_queued_review_edited_to_codex_keeps_its_reviewed_run - AssertionError: {'gate': 'open', 'launched': ['r-review', 'r-local-waiting'], 'held': [], 'failed': [], ...}
+assert ['r-review', ...ocal-waiting'] == ['r-review']
+  
+  Left contains one more item: 'r-local-waiting'
+  
+  Full diff:
+    [
+        'r-review',
+  +     'r-local-waiting',
+    ]
+2 failed, 8 passed in 8.93s
+EXIT=1

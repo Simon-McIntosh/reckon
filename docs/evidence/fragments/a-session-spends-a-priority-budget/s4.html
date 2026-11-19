@@ -1,0 +1,47 @@
+# revision: e278c21f39; base revision: 8d870f62598f1d922ceed7015b570a65c61d8283
+# worktree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and
+# partition: all_debug
+#
+# THE ONE QUEUE READ
+# The same document, read on all three surfaces: the importable function
+# reckon.crew.queue_view.queue_view, `reckon crew view queue`, and the crew MCP
+# tool's crew(view="queue"). Both transports serve serve_crew_view("queue"),
+# which calls the function, so parity is structural rather than asserted twice.
+#
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -s -rP tests/test_the_queue_reads_as_a_queue.py
+MEASURE: order=[('r-a-raised', 1, 'priority override 3'), ('r-b-plain', 2, 'roadmap priority'), ('r-a-waits', None, 'waiting upstream: plan-a#s2'), ('r-b-held', None, 'waiting upstream: no ref recorded')] surfaces=['cli', 'function', 'mcp']
+MEASURE: coordinator-a(budget=10,in_use=3,free=7) coordinator-b(budget=10,in_use=0,free=10)
+MEASURE: viewed_first=(r-head, place 1, priority 0, reason 'roadmap priority') launched=['r-head']
+# The order is the admission ordering's own: two rows carry the place that
+# queued_placements gives them, the two waiting rows carry no place and name the
+# wait they are under, and the held row's hold names the reason it recorded
+# ("waiting for the lead's word"). A pass then launches exactly the request the
+# view places first, so the read and the next admission pass cannot disagree.
+2 passed in 7.51s
+EXIT=0
+#
+# NEGATIVE CONTROL — the base revision, unchanged
+# `git archive 8d870f62598f1d922ceed7015b570a65c61d8283 | tar -x` into a scratch
+# tree, this node's test file copied in unchanged, run with the same interpreter.
+# Both tests fail because the read does not exist there at all:
+#   FAILED test_the_same_order_and_reasons_come_from_every_surface
+#          ImportError: cannot import name 'queue_view' from 'reckon.crew'
+#   FAILED test_a_pass_launches_the_request_the_view_places_first
+#          ImportError: cannot import name 'queue_view' from 'reckon.crew'
+2 failed in 2.05s
+EXIT=1
+#
+# NEGATIVE CONTROL — neither surface served the view at base
+# The same tree also refuses the read on the two transports that now serve it,
+# naming the view set it does serve. Prefixes as captured (the message is
+# longer than the capture retained):
+#   crew view queue --project proj
+#     {"error": "invalid_view", "message": "view must be summary, flight, live,
+#      scopes, drain, records, ledger, budget, lanes, routing, directory, fleet,
+#      runs, forgotten, obligations, models, velocity, scores, review-need, ...",
+#      "ok": false, "operation": "read"}   EXIT=1
+#   crew(view="queue") on the crew MCP tool
+#     {'ok': False, 'error': 'invalid_view', 'message': 'view must be summary,
+#      flight, live, scopes, drain, records, ledger, budget, lanes, routing,
+#      directory, fleet, runs, forgotten, obligations, models, velocity,
+#      scores, review-need, ...', 'operation': 'read'}

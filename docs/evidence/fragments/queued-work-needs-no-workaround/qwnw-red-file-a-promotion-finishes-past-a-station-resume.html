@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-a-promotion-finishes-past-a-station-resume-landing">
+  <h2>A promotion finishes past a station resume</h2>
+
+  <p><strong>What changed.</strong> Nothing in the product or the test. The
+  named file already passes in full at this node's base revision
+  <code>ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5</code>, so the done-when's own
+  branch applies: deliver that passing run and stop. The node's only commit
+  carries this record.</p>
+
+  <h3 id="qwnw-red-file-a-promotion-finishes-past-a-station-resume-measured">Measured</h3>
+
+  <p>Four arms, three green and one deliberately red. All run
+  <code>tests/test_a_promotion_finishes_past_a_station_resume.py</code>; each
+  log's first lines name its revision, tree and command and its last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-a-promotion-finishes-past-a-station-resume-arms">
+    <caption>Two of the arms are the worker sandbox run and the promotion
+    gate's scratch extraction on <code>all_debug</code>; the third is the
+    done-when's own job on <code>all_debug</code> with
+    <code>SLURM_JOB_ID</code> unset.</caption>
+    <thead><tr><th>arm</th><th>revision, tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>sandbox run, base</td>
+        <td><code>ab67be8bb1ec</code>, working tree</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate, <code>all_debug</code></td>
+        <td><code>ab67be8bb1ec</code>, scratch extraction</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>done-when job, <code>all_debug</code> job 1327333</td>
+        <td><code>ab67be8bb1ec</code>, working tree</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>mutation arm</td>
+        <td><code>ab67be8bb1ec</code>, working tree</td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base and head suite arms both resolve to the run's declared population
+  and both report <code>exit_status: 0</code>, <code>failure_count: 0</code> at
+  <code>ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5</code>. Since the node changes
+  no source, the two arms are the same population at the same revision and the
+  delta is empty by construction.</p>
+
+  <h3 id="qwnw-red-file-a-promotion-finishes-past-a-station-resume-control">Negative control</h3>
+
+  <p>The recorded base run has no failing ids because it passes; nothing was
+  deleted or weakened to reach that state. To show the passing run is not
+  recorded against a check that cannot fire, the cleanup's own rule was
+  falsified: a pytest plugin (outside the tree, under <code>$TMPDIR</code>)
+  rebinds <code>promotion._retire_a_pointer_whose_attempt_ended</code> to the
+  pre-feature refusal. Under it the ended-attempt case fails with</p>
+
+  <pre><code>run 'r-20261112T175326514846-a-promotion-finishes-past-a-resume' changed while
+promotion ran: attempt 4 was recorded after this promotion read the pointer;
+its promotion is recorded and its pointer is kept with its attempt on the
+landing record</code></pre>
+
+  <p>and the live-launch case still passes, which is the refusal the second case
+  asserts. So the green arms are green because the cleanup finishes past an
+  ended attempt. The red log is
+  <code>negative-control-mutation.log</code> in the node's run directory.</p>
+
+  <p>This gate measures only this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5 (baseline_suite-1795020480289751227.log) records 58 passed EXIT=0 with no FAILED line and failure_ids [], and after_suite at 34df1d0ff2768032797cfb6083efc4c44884e55b (after_suite-1795020524253498424.log) records 58 passed EXIT=0 with no FAILED line and failure_ids [], so the set difference of failing test ids is empty (0). The raised-region run (negative-control-region-refused.log, EXIT=1, 4 FAILED ids) is the run's declared negative control, not an added failure against the reviewed head.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/reports.py:2829 (_composed_record_id_findings)",
+    "reckon/crew/reports.py:2788 (_fragment_plan_of)",
+    "reckon/evidence.py:854 (_fragment_href)",
+    "reckon/resources.py:65 (EVIDENCE_FRAGMENTS_SUBTREE)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T16:58:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence says \"The two runs are logged beside each other\" and names target-test-base.log and negative-control-region-refused.log, but target-test-base.log is the unmutated green run, so the null-region run that carries the :46-52 measurement and the quoted key ('<index sqlite>', False, False, None) survives only in the run's stream.jsonl transcript and a reader cannot re-derive the negative result from the cited logs."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment is a whole <!doctype html> document with its own <html>, <head> and <title> while plan landing records are composed by concatenating fragments into one document (reckon/crew/reports.py:2837-2842), so this fragment plants a second document header inside the composed record; 26 of this plan's 256 fragments already take the same shape, so it is not unique to this node but it is the minority form."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit over ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5..34df1d0ff2768032797cfb6083efc4c44884e55b; one commit 34df1d0ff2 adds 74 lines of HTML and no product or test line, and the region it measures is real (reckon/ledger.py:2103 defined, opened at reckon/crew/promotion.py:1305 and :2370).",
+    "done_when": "read in the source manifest; its measure is a full pass of the target file as an all_debug job with SLURM_JOB_ID unset on shared storage, and target-test-base.log records revision ab67be8, \"slurm_job_id: unset\", \"5 passed in 14.45s\", EXIT=0, corroborated by sacct job 1327325 all_debug COMPLETED exit 0:0, with the negative control negative-control-region-refused.log EXIT=1 and four FAILED ids and both arms 58 passed at full 40-character revisions.",
+    "goal": "the node goal is \"Make tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py pass in full on the primary branch\", and the file passes at both ends of the reviewed diff \u2014 5 passed at base ab67be8 in target-test-base.log and 5 passed at head 34df1d0 in scoped-gate-1795020427461063303.log \u2014 so the landed change is the evidence fragment the done_when prescribes when the file is already green, at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:1-74.",
+    "manifest": "read; status complete, commits 34df1d0ff2768032797cfb6083efc4c44884e55b, tests carries the literal target-file command and test_logs names the four logs, and baseline_suite/after_suite are inline JSON with revision, command, exit_status, log_path, completed true, failure_count 0 and empty failure_ids at ab67be8 and 34df1d0.",
+    "write_paths": "the source node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus two narrower spellings of it, and the diff's one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html, is inside every one of them."
+  },
+  "justifications": {
+    "durability": "the landed change is documentation with no assertion of its own, and the guard it reports on is inert by the node's own measurement, since tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:230-233 asserts repeated == {} while neither promotion fixture reads a key twice, so removing reckon/crew/promotion.py:1305's region leaves the file green.",
+    "evidence": "the mandatory run and the negative control are both recorded and re-openable, but the fragment's central null-region measurement at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:46-52 is cited at :66-70 to target-test-base.log, which is the unmutated green run, so that measurement appears in no log the manifest or the fragment names.",
+    "fit": "the fragment uses the full-document doctype-plus-meta header form shared by 26 of the 256 fragments in that directory (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-batch-entry-takes-every-field-a-single-dispatch.html:1) rather than the dominant `<section id=...>` form at qwnw-a-clean-landing-releases-its-worktree.html:1, and the record is composed by concatenation (reckon/crew/reports.py:2837-2842).",
+    "goal_fidelity": "the target file is green at both reviewed revisions (target-test-base.log \"5 passed\" at ab67be8, scoped-gate-1795020427461063303.log \"5 passed\" at 34df1d0), and the landed fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:18-27 is exactly the record the done_when asks for when the base run is already green.",
+    "reuse": "the diff adds no function, class or module and writes one file into the fragment capability the repository already owns, audited at reckon/crew/reports.py:2829 and addressed at reckon/evidence.py:854, so nothing is forked.",
+    "scope_discipline": "git diff ab67be8..34df1d0 lists exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html, and it is inside the declared write paths with nothing else touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Make tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py pass in full on the primary branch\", and the file passes at both ends of the reviewed diff \u2014 5 passed at base ab67be8 in target-test-base.log and 5 passed at head 34df1d0 in scoped-gate-1795020427461063303.log \u2014 so the landed change is the evidence fragment the done_when prescribes when the file is already green, at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:1-74.\nVERDICT done_when: read in the source manifest; its measure is a full pass of the target file as an all_debug job with SLURM_JOB_ID unset on shared storage, and target-test-base.log records revision ab67be8, \"slurm_job_id: unset\", \"5 passed in 14.45s\", EXIT=0, corroborated by sacct job 1327325 all_debug COMPLETED exit 0:0, with the negative control negative-control-region-refused.log EXIT=1 and four FAILED ids and both arms 58 passed at full 40-character revisions.\nVERDICT write_paths: the source node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus two narrower spellings of it, and the diff's one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html, is inside every one of them.\nVERDICT manifest: read; status complete, commits 34df1d0ff2768032797cfb6083efc4c44884e55b, tests carries the literal target-file command and test_logs names the four logs, and baseline_suite/after_suite are inline JSON with revision, command, exit_status, log_path, completed true, failure_count 0 and empty failure_ids at ab67be8 and 34df1d0.\nVERDICT diff: read commit by commit over ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5..34df1d0ff2768032797cfb6083efc4c44884e55b; one commit 34df1d0ff2 adds 74 lines of HTML and no product or test line, and the region it measures is real (reckon/ledger.py:2103 defined, opened at reckon/crew/promotion.py:1305 and :2370).\nCALL_SITES: reckon/crew/reports.py:2829 (_composed_record_id_findings), reckon/crew/reports.py:2788 (_fragment_plan_of), reckon/evidence.py:854 (_fragment_href), reckon/resources.py:65 (EVIDENCE_FRAGMENTS_SUBTREE)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the target file is green at both reviewed revisions (target-test-base.log \"5 passed\" at ab67be8, scoped-gate-1795020427461063303.log \"5 passed\" at 34df1d0), and the landed fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:18-27 is exactly the record the done_when asks for when the base run is already green.\nSCORE evidence: 14\nJUSTIFICATION evidence: the mandatory run and the negative control are both recorded and re-openable, but the fragment's central null-region measurement at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:46-52 is cited at :66-70 to target-test-base.log, which is the unmutated green run, so that measurement appears in no log the manifest or the fragment names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ab67be8..34df1d0 lists exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html, and it is inside the declared write paths with nothing else touched.\nSCORE durability: 12\nJUSTIFICATION durability: the landed change is documentation with no assertion of its own, and the guard it reports on is inert by the node's own measurement, since tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:230-233 asserts repeated == {} while neither promotion fixture reads a key twice, so removing reckon/crew/promotion.py:1305's region leaves the file green.\nSCORE fit: 16\nJUSTIFICATION fit: the fragment uses the full-document doctype-plus-meta header form shared by 26 of the 256 fragments in that directory (docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-batch-entry-takes-every-field-a-single-dispatch.html:1) rather than the dominant `<section id=...>` form at qwnw-a-clean-landing-releases-its-worktree.html:1, and the record is composed by concatenation (reckon/crew/reports.py:2837-2842).\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and writes one file into the fragment capability the repository already owns, audited at reckon/crew/reports.py:2829 and addressed at reckon/evidence.py:854, so nothing is forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:66 non-blocking: the sentence says \"The two runs are logged beside each other\" and names target-test-base.log and negative-control-region-refused.log, but target-test-base.log is the unmutated green run, so the null-region run that carries the :46-52 measurement and the quoted key ('<index sqlite>', False, False, None) survives only in the run's stream.jsonl transcript and a reader cannot re-derive the negative result from the cited logs.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once.html:1 non-blocking: the fragment is a whole <!doctype html> document with its own <html>, <head> and <title> while plan landing records are composed by concatenating fragments into one document (reckon/crew/reports.py:2837-2842), so this fragment plants a second document header inside the composed record; 26 of this plan's 256 fragments already take the same shape, so it is not unique to this node but it is the minority form.\n",
+  "review_node": "review-of-qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once-34df1d0ff276",
+  "review_run_id": "r-20261118T165329539205-review-of-qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once-34df1d0ff276",
+  "reviewed_base_sha": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "reviewed_head_sha": "34df1d0ff2768032797cfb6083efc4c44884e55b",
+  "reviewed_run_id": "r-20261118T063647367320-qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T165329539205-review-of-qwnw-red-file-a-promotion-decodes-the-ledger-index-at-most-once-34df1d0ff276"
+  },
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T17:22:08.199051+00:00",
+  "total": 99
+}

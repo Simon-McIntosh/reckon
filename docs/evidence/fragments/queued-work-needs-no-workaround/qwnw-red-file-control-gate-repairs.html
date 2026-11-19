@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="queued-work-needs-no-workaround">
+<meta name="plan-node" content="qwnw-red-file-control-gate-repairs">
+<title>qwnw-red-file-control-gate-repairs — tests/test_control_gate_repairs.py passes</title>
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="qwnw-red-file-control-gate-repairs-what">What landed</h2>
+
+<p><code>tests/test_control_gate_repairs.py</code> passes in full at the node's
+head: 5 passed. Four of its five tests were already green at the base revision;
+the fifth,
+<code>test_a_promotion_presenting_an_unresolvable_sha_names_it_in_the_refusal</code>,
+was red, and the cause was in the product rather than in the test.</p>
+
+<h3 id="qwnw-red-file-control-gate-repairs-base-arm">The base arm, and the failing id</h3>
+
+<p>Run at base revision <code>0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385</code> in
+an extracted tree under the node's scratch directory, before any edit:</p>
+
+<pre id="qwnw-red-file-control-gate-repairs-base-log"># rev=0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_control_gate_repairs.py
+FAILED tests/test_control_gate_repairs.py::test_a_promotion_presenting_an_unresolvable_sha_names_it_in_the_refusal - AssertionError: {"ok": true, "phase": "promotion-rulequested", "record_path": ".../crew/runs/r-presented-cli/completion-1795015228578649691.json", "run_id": "r-presented-cli"}
+assert 0 != 0
+1 failed, 4 passed in 1.44s
+EXIT=1</pre>
+
+<p>The observed receipt is the defect: <code>crew complete --gate passed
+--commit &lt;resolved&gt; --commit 0123456789abcdef0123456789abcdef01234567</code>
+answered <code>{"ok": true, "phase": "promotion-requested"}</code> and wrote a
+promotion request carrying a value that resolves to no commit object. The
+write-time gate-evidence guard already refuses such a value — measured by the
+unit call in the same file, which raised before any repair — but
+<code>crew complete</code> without <code>--wait</code> answers with its request
+receipt before any promotion runs, so that guard was never reached on the path
+the test exercises.</p>
+
+<h3 id="qwnw-red-file-control-gate-repairs-cause">Cause and verdict</h3>
+
+<ul>
+  <li><strong>Product wrong.</strong> The presentation is now judged where it is
+  read: <code>reckon/crew_run_commands.py</code> calls the new
+  <code>require_resolvable_presentation</code> ahead of
+  <code>request_promotion</code>, so a passing completion that presents a value
+  naming nothing is refused on the caller's turn, with the value quoted in the
+  refusal and no request written. <em>Test wrong.</em> No test assertion is
+  deleted or weakened; no test was changed at all.</li>
+  <li><strong>The guard keeps the promotion drain's rule.</strong> The refusal
+  was extracted from <code>_require_gate_evidence</code> into
+  <code>require_resolvable_presentation</code> in
+  <code>reckon/crew/promotion_evidence.py</code>, which both the drain and the
+  request boundary call, so the two sites share one message rather than two
+  copies of it. A run whose tree cannot be read still promotes: an unmeasured
+  citation is not a refused one.</li>
+</ul>
+
+<h3 id="qwnw-red-file-control-gate-repairs-head">The head arm</h3>
+
+<p>Run at head <code>b45e1306bc6525bab45d3d19379122fe8b51a3bb</code> as a job on
+<code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, revision
+<code>b45e1306bc6525bab45d3d19379122fe8b51a3bb</code>, log on shared storage
+<code>~/.config/reckon/crew/runs/r-20261118T063229537205-qwnw-red-file-control-gate-repairs/scoped-gate-1795016802799577277.log</code>:</p>
+
+<pre id="qwnw-red-file-control-gate-repairs-head-log"># revision: b45e1306bc6525bab45d3d19379122fe8b51a3bb
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_control_gate_repairs.py'
+.....                                                                    [100%]
+5 passed
+EXIT=0</pre>
+
+<p>Arms over the test files that import what changed add no failure against the
+base: the completion-path arm resolves to the same failing ids at both arms
+(<code>test_a_short_commit_list_is_reported.py::test_a_shortfall_promotion_completes_and_reports_on_the_record</code>
+and
+<code>test_promotion_checks_read_only_what_moved.py::test_a_full_promotion_reads_no_unbounded_working_tree</code>),
+both reproduced in an extracted base tree before the change; the node's own file
+goes from 1 failed to 0. Both arms are recorded with full revisions in the
+manifest.</p>
+
+<h3 id="qwnw-red-file-control-gate-repairs-outside">Outside this node's scope</h3>
+
+<p>Two failures in adjacent test files are pre-existing at the base revision and
+unchanged by this repair. They are recorded in the manifest's
+<code>outside_scope</code> rather than repaired here.</p>
+
+</main>
+</body>
+</html>

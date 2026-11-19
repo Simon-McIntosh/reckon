@@ -75,6 +75,88 @@ CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 # and the capability a refusal names are the same string.
 FENCE_BINARY = "bwrap"
 
+
+# The flight key naming a fence program carried on shared storage. A job node
+# whose own path holds no fence program runs the carried copy instead, so the
+# key carries what a reader needs to trust it: the location, the checksum the
+# file must have, and the source and version it was built from. Named at the
+# top level beside ``protected_paths`` because it is the fence's own setting,
+# not one of the worker's self-imposed budget limits under ``fences``.
+FENCE_PROGRAM_KEY = "fence_program"
+
+
+def _checksum_text(value: object) -> str:
+    """Return one checksum as the bare lower-case hex the comparison uses.
+
+    A layer may write the value with the algorithm prefix a tool such as
+    ``sha256sum`` prints, so both spellings name the same digest. The prefix is
+    dropped here and the job's bootstrap does the same, which is what lets the
+    recorded value reach a comparison rather than a string test.
+    """
+    return str(value or "").strip().lower().removeprefix("sha256:")
+
+
+def carried_fence_program(
+    config: Mapping[str, Any] | None, home: str | Path | None = None
+) -> dict[str, str] | None:
+    """Return the flight-named fence program a job may run, or None.
+
+    The location is resolved against the same home every other flight path is,
+    and the checksum is required: a carried program whose bytes are not the
+    bytes a layer recorded is exactly what the job's task must refuse, so a
+    setting that omits the checksum is a composition error rather than a fence
+    nobody verified. ``source`` and ``version`` are recorded beside the
+    checksum so the file can be explained, and are carried as written: they
+    are provenance, not inputs to the decision.
+    """
+    if not isinstance(config, Mapping):
+        return None
+    declared = config.get(FENCE_PROGRAM_KEY)
+    if declared is None:
+        return None
+    if not isinstance(declared, Mapping):
+        raise BackendError(
+            f"flight key {FENCE_PROGRAM_KEY} must be a mapping of path, "
+            "checksum, source and version"
+        )
+    path = _resolve_declared_path(declared.get("path"), home)
+    checksum = _checksum_text(declared.get("checksum"))
+    if path is None:
+        raise BackendError(
+            f"flight key {FENCE_PROGRAM_KEY}.path names no location for the "
+            "carried fence program"
+        )
+    if not checksum:
+        raise BackendError(
+            f"flight key {FENCE_PROGRAM_KEY}.checksum records no checksum, so "
+            "the carried fence program cannot be verified before it is run"
+        )
+    return {
+        "path": str(path),
+        "checksum": checksum,
+        **{
+            key: str(declared[key])
+            for key in ("source", "version")
+            if declared.get(key) not in (None, "")
+        },
+    }
+
+
+def fence_program() -> str:
+    """The fence program's absolute location on the node composing the fence.
+
+    A submitted job's task runs on another node and starts the fence itself, so
+    the location is resolved here, once, and carried in the recipe. The job
+    node never searches its own path for the program: on a partition whose node
+    holds no fence program there is no search that could succeed, and a search
+    that finds some other ``bwrap`` would run a program the dispatching node
+    never chose. An unresolvable program returns an empty string, which the
+    task refuses by name rather than reads as an unfenced launch.
+    """
+    found = shutil.which(FENCE_BINARY)
+    return "" if found is None else os.path.abspath(found)
+
+
 # Each fenced worker runs in a pid namespace of its own, with a procfs mounted
 # for that namespace over the host's. kill(2) resolves a pid in the caller's
 # namespace, so a worker can signal only the processes it started: a cleanup
@@ -2092,6 +2174,17 @@ def fence_argv(
         fenced += ["--bind", str(source), str(destination)]
         if Path(source).is_dir():
             directory_sources.append(str(source))
+    # A fence program carried on shared storage runs a job's task where the
+    # node holds none of its own. Its directory is sealed last, after every
+    # grant, so a fenced worker and the job it submits can read and execute the
+    # program but cannot replace it: a grant over a shared parent must never be
+    # the last word on the directory the program lives in.
+    carried_program = carried_fence_program(config, home)
+    if carried_program is not None:
+        carried_directory = Path(carried_program["path"]).parent
+        if carried_directory.exists():
+            target = str(resolved_destination(carried_directory))
+            fenced += ["--ro-bind", target, target]
     # The scheduler starts tasks outside this mount namespace. Carry the
     # composed mounts rather than rediscovering protection from job-local env,
     # including masks, credentials and the worktree's exclusive seals.
@@ -2108,6 +2201,18 @@ def fence_argv(
         )
     recipe = {
         "argv": list(fenced),
+        # The program's location on *this* node, resolved once here. A job's
+        # task runs on another node, whose search path need not name the fence
+        # program at all, so the recipe carries the resolved path rather than
+        # leaving argv[0]'s bare name to be looked up there. A host that cannot
+        # resolve it composes an empty field, and the task then refuses by name
+        # before it starts rather than running unfenced.
+        "program": fence_program(),
+        # The flight-named copy on shared storage, with its checksum and the
+        # source and version it was built from. A job node whose own path holds
+        # no fence program runs this one after verifying the checksum, and
+        # refuses before its task starts when the file is absent or differs.
+        "carried_program": carried_program,
         "directories": [str(path) for path in directories],
         "directory_sources": sorted(set(directory_sources)),
         "scratch": str(scratch),

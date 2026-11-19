@@ -1,0 +1,82 @@
+<section id="qwnw-red-file-congested-local-lane-still-reaches-the-picker-landing">
+  <h2>A congested local lane reaches the picker, and its test reads the document stdout carries</h2>
+
+  <p><strong>What changed.</strong> One cause, one verdict: the test was wrong.
+  <code>tests/test_congested_local_lane_still_reaches_the_picker.py</code> read
+  the dispatch response from Click's <code>Result.output</code>, the stream
+  <code>CliRunner</code> interleaves in write order. A launched dispatch writes
+  the notice <code>reckon: created run &lt;id&gt;</code> to stderr, so on the
+  <code>beta</code> arm — the parameter that routes to a metered backend and
+  actually records a run — the first line of that mixed stream is the notice and
+  <code>json.loads</code> raised before any routing assertion ran. The command's
+  own rule, unchanged and asserted by the sibling module
+  <code>tests/test_dispatch_names_its_backend.py</code> through its
+  <code>_payload</code> helper, is that the JSON document is the first line of
+  stdout on every exit. The arm now reads <code>result.stdout</code>; no
+  assertion was deleted or weakened, and every parameter's assertions
+  (exit code <code>3</code> for a picker hold, <code>0</code> otherwise, the
+  routed backend, the hold payload, and <code>queued</code> with a zero lane
+  allowance) are the ones the file already carried.</p>
+
+  <h3 id="qwnw-red-file-congested-local-lane-still-reaches-the-picker-measured">Measured</h3>
+
+  <p>Both arms run the same file with the same interpreter from the tree the arm
+  is about: the base arm from an extraction of
+  <code>0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385</code> under the run's scratch
+  directory, the head arm from this worktree at
+  <code>a881f00fca187f5ca9c963c2a688f0b96a3a5536</code>.</p>
+
+  <table id="qwnw-red-file-congested-local-lane-still-reaches-the-picker-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Failing ids</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385</code></td>
+        <td>1 failed, 3 passed, <code>EXIT=1</code></td>
+        <td><code>test_congested_local_lane_routing[beta]</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>a881f00fca187f5ca9c963c2a688f0b96a3a5536</code></td>
+        <td>4 passed, <code>EXIT=0</code></td>
+        <td>none</td>
+      </tr>
+      <tr>
+        <td>head, partition job</td>
+        <td><code>570564c55b1992600fc6b16bb61e501b2738fa43</code></td>
+        <td>4 passed in 1.14s on <code>all_debug</code>, <code>EXIT=0</code></td>
+        <td>none</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The failing id at the base revision is the whole of the difference: the
+  <code>alpha</code>, <code>hold</code> and <code>explicit</code> parameters
+  passed before the change and pass after it, so the repair moved nothing but
+  the channel the payload is read from.</p>
+
+  <h3 id="qwnw-red-file-congested-local-lane-still-reaches-the-picker-control">Negative control</h3>
+
+  <p>The base run's first line is the reproduction, quoted from its log:</p>
+
+  <pre id="qwnw-red-file-congested-local-lane-still-reaches-the-picker-repro"><code>s = 'reckon: created run r-20261118T151349150091-congestion-test', idx: 0
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+FAILED tests/test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing[beta]
+1 failed, 3 passed in 1.51s</code></pre>
+
+  <p>The head run is the same command over the same file, its log ending in
+  <code>EXIT=0</code> with four ids passed. The logs are on disk at the paths the
+  run's manifest records under <code>negative_control_log</code> and
+  <code>test_logs</code>.</p>
+
+  <h3 id="qwnw-red-file-congested-local-lane-still-reaches-the-picker-outside">Outside scope</h3>
+
+  <p><code>ruff format --check</code> reports the same single pre-existing hunk
+  in this file at both revisions (two long <code>monkeypatch.setattr</code> calls
+  at the base revision's lines 39 and 40); the comments and the changed line this
+  node added are already in format. It is the project's standing backlog and not
+  this node's to fix in passing. This gate measures only this node's own change;
+  verifying the merged result belongs to a separately dispatched test node.</p>
+</section>

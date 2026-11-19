@@ -1,0 +1,68 @@
+<section id="qwnw-red-file-one-brief-an-agent-can-act-on-landing">
+  <h2>The brief's reach list is compared against sections the fixture makes ready</h2>
+
+  <p><strong>What was red.</strong> <code>tests/test_one_brief_an_agent_can_act_on.py</code>
+  failed at the base revision with one id:
+  <code>test_every_figure_in_the_brief_equals_its_roadmap_field</code>, on
+  <code>assert len(ranked) &gt;= 3</code> reporting <code>2 &gt;= 3</code>. The
+  fixture places its one blocked run on <code>plan-a#s2</code>, which is also the
+  critical path's head, and then expected that section to open the ready-section
+  reach list. A section carrying a live run is not a ready section: the roadmap's
+  readiness verdict is <code>plan_ready and not blockers</code> and the run is a
+  named hold, so the payload reports the head row with <code>"ready": false</code>
+  and the fixture ranked two ready sections. The file has been red since the
+  reach expectation was written, in the commit that added a fifth plan to reach
+  three ranked sections without noticing the head carries a run.</p>
+
+  <p><strong>Verdict: test wrong.</strong> A section with work in flight is not
+  work to start, and the brief's <code>ready</code> filter is a pass-through of
+  the payload's own verdict rather than an analysis of its own. No product rule
+  was repaired.</p>
+
+  <p><strong>What changed.</strong> A second releasing plan, <code>plan-f</code>,
+  whose first section releases its own second and carries no run, makes the
+  ranked population three genuinely ready sections. The written expectation now
+  names them: the two releasing sections at reach one, ordered by ref, then the
+  independent plan's section at reach zero. That ordering still discriminates
+  reach from name — a list sorted by name alone would open with
+  <code>plan-d#s1</code> — and the expectation's comment records why the head is
+  absent from it. No assertion is deleted or weakened; both the count and the
+  reached-for expectation survive.</p>
+
+  <h3 id="qwnw-red-file-one-brief-an-agent-can-act-on-arms">Measured</h3>
+
+  <table id="qwnw-red-file-one-brief-an-agent-can-act-on-arm-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, head arm</td>
+        <td><code>0c3ac2aa7cf7ee1d646101df782931b13dd296bf</code>, working tree</td>
+        <td>11 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, base arm</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code>, extraction</td>
+        <td>1 failed, 10 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the declared suite, head arm</td>
+        <td><code>0c3ac2aa7cf7ee1d646101df782931b13dd296bf</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-one-brief-an-agent-can-act-on-control">Negative control</h3>
+
+  <p>The base arm above is the control: at
+  <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code> the named file reports</p>
+
+  <pre id="qwnw-red-file-one-brief-an-agent-can-act-on-control-ids"><code>FAILED tests/test_one_brief_an_agent_can_act_on.py::test_every_figure_in_the_brief_equals_its_roadmap_field - AssertionError: assert 2 &gt;= 3</code></pre>
+
+  <p>— one id the head arm does not fail. A second mutation was applied to falsify
+  the corrected expectation rather than to find a defect: the brief's reach sort
+  was replaced by a ref-only sort and the same file then failed only
+  <code>test_every_figure_in_the_brief_equals_its_roadmap_field</code>, the
+  expectation opening with <code>plan-e#s1</code> against a produced list opening
+  with <code>plan-d#s1</code>. The sort was restored and the file re-run green
+  before the commit.</p>
+</section>

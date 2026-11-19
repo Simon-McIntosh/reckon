@@ -4015,6 +4015,7 @@ CREW_VIEWS: tuple[str, ...] = (
     "live",
     "scopes",
     "drain",
+    "queue",
     "records",
     "ledger",
     "budget",
@@ -4057,7 +4058,9 @@ def crew_view_refusal_detail() -> str:
         "is the cross-project view; plan-review reads a plan review and its "
         "unanswered findings; findings reads stored review findings grouped by "
         "the repository path they name; forgotten is the terminal unpromoted "
-        "runs whose session nobody has followed or dispatched for"
+        "runs whose session nobody has followed or dispatched for; queue is where the "
+        "waiting requests, reviews and promotions stand in the order admission "
+        "launches by, with each session's priority budget"
     )
 
 
@@ -4888,6 +4891,12 @@ def serve_crew_view(
                 "view": view,
                 **crew_module.drain(project, session=session),
             }
+        if view == "queue":
+            from reckon.crew import queue_view as queue_view_module
+
+            return queue_view_module.queue_view(
+                project, session=session, checkout_path=checkout_path
+            )
         if view == "ledger":
             data, version = ledger_module.load(project, checkout_path)
             return {

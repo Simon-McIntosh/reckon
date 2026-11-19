@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:1119-1120 read_plan schema view result assembly (result['op_vocab'], result['dos_donts'])",
+    "reckon/mcp.py:_read_plan_tool discovery_view calls at 1661-1662 and 1715-1716",
+    "reckon/mcp.py:_read_plan resource_view call at 1861-1862"
+  ],
+  "completed_at": "2026-11-18T17:30:00.000Z",
+  "dispatched_at": "2026-11-18T16:04:57Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": 2095,
+      "severity": "non-blocking",
+      "text": "The trim drops more than restatement: the base entry read 'give every followup one /reckon-build invocation line; store guidance in the plan.' and the head keeps only the invocation-line half, while no other entry in _DOS_DONTS or _OP_VOCAB states where guidance belongs (grep of the head file finds 'store guidance in the plan' only at reckon/_store.py:3099, a refusal message outside this payload), so an agent reading the schema view loses a rule the payload used to carry and the fragment's 'removed and nothing else ... every rule is still stated once in the same payload' at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html:22 overstates the repair."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html",
+      "line": 38,
+      "severity": "non-blocking",
+      "text": "The arm row asserts the run was 'an all_debug job' with SLURM_JOB_ID unset, but the log it cites (scoped-gate-1795012852013448923.log) records only revision, host, tree, command and EXIT=0 - no partition, no job id, and nothing about SLURM_JOB_ID - and the worker's own submission attempt in the run directory, mcp-views-arms.sbatch.log, contains only 'bwrap: Can't bind mount ... No such file or directory', so it launched no job; the only evidence for a submitted job is that the log's host 98dci4-clu-3141 differs from the allocation node 98dci4-clu-3026."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html",
+      "line": 56,
+      "severity": "non-blocking",
+      "text": "The fragment names baseline_suite-1795012130905818384.log and after_suite-1795012174397430595.log as the declared suite's two arms, but the after arm it names is at revision fc8a10f3ff, not at the delivered head 2ca4b39ac6, whose after arm is after_suite-1795013115368736792.log; both receipts read '58 passed' so the conclusion holds, but the citation pairs the delivered revision with an arm run at another one."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Four production call sites reach the changed literals: the schema view assembly in read_plan, two _read_plan_tool branches and the resource-view call, all reading _OP_VOCAB/_DOS_DONTS; reckon/mcp_views.py:3352 requires both keys in the schema payload, and reckon/mcp_edit_plan.py:1572 points callers at the payload.",
+    "diff": "Read all three commits against 23b901694b: fc8a10f3ff shortens string literals inside _DOS_DONTS and _OP_VOCAB only (28 insertions, 28 deletions in reckon/mcp.py); a7d0b66a78 adds the 59-line evidence fragment; 2ca4b39ac6 corrects two log names in that fragment. No other file changes and the test file is untouched.",
+    "done_when": "The done_when asks for the file green at head as a job on all_debug with SLURM_JOB_ID unset, each cause named with a verdict, no assertion deleted or weakened, and an importer arm adding no failure with both arms as inline JSON; the manifest's imports record is an on-disk JSON file plus prose, not the inline JSON the done_when names, and the job-environment clause rests on prose rather than a log line.",
+    "goal": "The node goal is 'Make tests/test_mcp_views.py pass in full on the primary branch'; the head arm records 39 passed EXIT=0 at the delivered head 2ca4b39ac6, reached at the same scratch path where the base arm records 1 failed 38 passed, so the named file is green at head.",
+    "manifest": "Read in full; it names the three commits, the head gate and its EXIT=0, the base failing id and its 24868 <= (24*1024) assertion, both importer arms with 40-character revisions, both declared suite arms, and six out-of-scope ids that fail identically at base and head.",
+    "write_paths": "The declared paths are reckon, tests, the two evidence-fragment paths and the figures path; the delivered diff touches exactly reckon/mcp.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_mcp_views.py pass in full on the primary branch'; reckon/mcp.py:2091-2143 is the payload that breached the bound, and the head arm records 39 passed EXIT=0 at 2ca4b39ac6 against 1 failed 38 passed at 23b901694b.\nVERDICT done_when: the done_when names tests/test_mcp_views.py green at head as an all_debug job with SLURM_JOB_ID unset plus an importer arm as inline JSON; the manifest records the green file and the importer pair but only as prose plus import-arms.json, and the job-environment clause is carried by no log line.\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/...; the delivered diff is reckon/mcp.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html.\nVERDICT manifest: read in full; it states the head file passes 39/39 at 2ca4b39ac6, the base failure as 'assert 24868 <= (24 * 1024)', 58 passed on both declared suite arms, and six identical out-of-scope failures on both importer arms.\nVERDICT diff: read the three commits against 23b901694b; 28 string literals inside _DOS_DONTS/_OP_VOCAB shortened in fc8a10f3ff, a 59-line evidence fragment added in a7d0b66a78, and two log names corrected in 2ca4b39ac6.\nCALL_SITES: reckon/mcp.py:1119, reckon/mcp.py:1661, reckon/mcp.py:1715, reckon/mcp.py:1861, reckon/mcp_views.py:3352\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2091-2143 sheds 579 bytes of prose so the view measures 24,289 against the 24,576 bound, meeting the goal while deleting one rule none of its neighbours restates.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log mcp-views-head.log records '# revision: 2ca4b39ac6...' and '39 passed ... EXIT=0' against the base arm's 'assert 24868 <= (24 * 1024)', but the all_debug/SLURM_JOB_ID-unset clause the done_when names is asserted at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html:38 with no log line behind it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 23b901694b..2ca4b39ac6 reports only reckon/mcp.py and the declared fragment path, and tests/test_mcp_views.py:804 is unchanged by the node.\nSCORE durability: 18\nJUSTIFICATION durability: the pre-existing assertion at tests/test_mcp_views.py:804 compares compact_size(schema) against the literal 24*1024 - an independent source - and the base arm shows it red at 24,868, so restoring roughly 300 bytes of the removed prose reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: the whole change is string-literal edits inside the existing _DOS_DONTS and _OP_VOCAB dicts at reckon/mcp.py:2091 and :2116, with the comment at :2090 and every key and signature intact.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is uploaded or forked - the change edits two dicts in place and the bound is measured by the existing reckon/mcp_views.py compact_size, whose schema requirement lists op_vocab and dos_donts at mcp_views.py:3352.\nFINDING reckon/mcp.py:2095 non-blocking: the trim also removed the clause 'store guidance in the plan' from the followup entry, which no other entry in the payload restates, so the fragment's 'removed and nothing else ... every rule is still stated once in the same payload' at line 22 of the fragment overstates the repair.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html:38 non-blocking: the all_debug row asserts a job property the cited log does not record, and the worker's own sbatch attempt (mcp-views-arms.sbatch.log) failed with a bwrap bind-mount error.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-mcp-views.html:56 non-blocking: the cited after-suite arm after_suite-1795012174397430595.log is at fc8a10f3ff, not the delivered head 2ca4b39ac6, whose after arm is after_suite-1795013115368736792.log.",
+  "review_run_id": "r-20261118T144958173058-review-of-qwnw-red-file-mcp-views-2ca4b39ac6a0",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "2ca4b39ac6a0bf7114e62606be30033996f4d674",
+  "reviewed_run_id": "r-20261118T062927969028-qwnw-red-file-mcp-views",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T16:28:50.494409+00:00",
+  "total": 109
+}

@@ -1510,6 +1510,12 @@ def test_cli_dispatch_reports_a_hold_on_its_own_exit_code(home, repo) -> None:
     """A held node is retried later; a malformed one is rewritten. Different codes."""
     _record("proj", repo, backend="native", budget_block=_known(100.0), run_id="r-1")
 
+    # The section is named so the command dispatches this node rather than
+    # queueing every implementable section of the plan: a plan named with no
+    # section is a whole-plan queue, which stores requests for admission to
+    # hold later instead of answering a hold on this dispatch. Without a
+    # document for it the fixture's repository takes the pre-HTML plan path,
+    # so the plan's own visibility gate passes on the base commit.
     result = CliRunner().invoke(
         cli_main,
         [
@@ -1519,6 +1525,8 @@ def test_cli_dispatch_reports_a_hold_on_its_own_exit_code(home, repo) -> None:
             "proj",
             "--plan",
             "plan-a",
+            "--section",
+            "s1",
             "--node",
             "node-a",
             "--goal",

@@ -1,0 +1,136 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T22:02:50Z",
+  "findings": [
+    {
+      "anchor": "plan.html:347",
+      "id": "wiring-1",
+      "reason": "two thirds of the remaining work has no queueing instruction, and the plan's own declarations are the only other place it appears.",
+      "text": "the driving followup names \u00a72\u2013\u00a716 and \u00a719\u2013\u00a725 to queue, but \u00a729 (24 effort hours, the red-files repair) and \u00a731 (sweep-failure ownership) are still declared implementable and appear in no followup or relationship, so a coordinator or dispatcher following the plan's chain leaves both untouched",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:281,301,325,329",
+      "id": "anchors_resolve-1",
+      "reason": "a done section whose cited evidence path resolves to no file leaves its claim uncheckable and the pointer must be corrected or the fragment committed.",
+      "text": "\u00a7\u00a716, 21, 27 and 28 are each declared done and each says its gate or failing-run log is written to docs/evidence/fragments/queued-work-needs-no-workaround/s{16,21,27,28}.html, but only s19, s20, s22\u2013s26 and s30 exist at those s-numbered paths, so a reader checking the delivered sections' evidence finds nothing",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:335,339",
+      "id": "anchors_resolve-2",
+      "reason": "the data-id anchors resolve, so only the display text is affected and no node's path changes.",
+      "text": "the h2 headings for s30 and s31 omit the `\u00a730`/`\u00a731` prefix every other section heading carries, so a citation of either section by number resolves to no heading the surface shows",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "354364cf1f5a1ca7b605ee941ab96ba3339ff302",
+  "plan_fingerprint": "8bd69e7a5fc436d786f71b3e1488dfd3ee8b61a6179a882f787e5ff9c8865871",
+  "plan_slug": "queued-work-needs-no-workaround",
+  "plan_version": 611,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "anchors_resolve-2",
+      "reason": "the data-id anchors resolve, so only the display text is affected and no node's path changes.",
+      "when": "2026-11-18T22:18:23.347996+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2e394bffda961b05101e1797501a1f8c94b1a9b6",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "a followup now names sections 29 and 31 as the remaining work to queue, with its build invocation",
+      "reason": "",
+      "when": "2026-11-18T22:26:11.490666+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "sections 16, 21, 27 and 28 are landed; a landing leaves its landing line, run record and gate log, and writes a fragment only for a negative result, so the cited fragment paths are optional and the evidence is in the run records",
+      "when": "2026-11-18T22:27:16.394277+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "sections 16, 21, 27 and 28 are landed; a landing leaves its landing line, run record and gate log, and writes a fragment only for a negative result, so the cited fragment paths are optional and the evidence is in the run records",
+      "when": "2026-11-18T22:27:16.394277+00:00"
+    },
+    "anchors_resolve-2": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "the data-id anchors resolve, so only the display text is affected and no node's path changes.",
+      "when": "2026-11-18T22:18:23.347996+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2e394bffda961b05101e1797501a1f8c94b1a9b6",
+      "commit_basis": "edit",
+      "note": "a followup now names sections 29 and 31 as the remaining work to queue, with its build invocation",
+      "reason": "",
+      "when": "2026-11-18T22:26:11.490666+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/queued-work-needs-no-workaround/r-20261118T215944923786-plan-review-of-queued-work-needs-no-workaround.json",
+  "review_run_id": "r-20261118T215944923786-plan-review-of-queued-work-needs-no-workaround",
+  "reviewed_blob_sha": "77273ffaa14568fb3950b09a4e9b8c549de391b8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 four done sections (\u00a716, \u00a721, \u00a727, \u00a728) cite their gate log as docs/evidence/fragments/queued-work-needs-no-workaround/s16.html, s21.html, s27.html and s28.html, and none of the four files exists; every other anchor checked resolves, including the extensionless /reckon/ hrefs, tests/test_the_reflex_resumes_an_unpromoted_run.py, the cited commits and the cited sections of the sibling plans.",
+    "done_when": "pass \u2014 each live section (\u00a73, \u00a729, \u00a731) states a measurable check with a declared negative control, and every completed section's done-when names one too; the base-revision controls are named per section.",
+    "evidence_paths": "pass \u2014 gate logs and censuses are addressed under docs/evidence/fragments/queued-work-needs-no-workaround/ or ~/.cache/reckon-suite-at-head/, both durable and openable; none names a node-local temporary directory.",
+    "naming": "pass \u2014 the plan text uses the product's own vocabulary (crew ack, promotion-requested, commits:) and asks no code symbol to carry a plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 \u00a729's cited measurement reconciles exactly with the log it names (1,037 failed, 21,127 passed, 41 errors, and 393 distinct files red at 8d50b0333f), \u00a731's stated root cause matches the store's structure (station_obligations.py:174 keys the stored sweep failure by session and _with_sweep_failures at :214 raises it into that session's payload), and no section prescribes a code path, step sequence or function to call.",
+    "single_goal": "pass \u2014 each node carries one endpoint (a batch entry's field set, one red test file, one obligation-ownership rule); the multi-bullet done-whens are checks of a single endpoint rather than separate deliverables.",
+    "wiring": "a finding \u2014 the plan's only open followup (f-qwnw-001, plan.html:347) still instructs queueing \u00a72\u2013\u00a716 and \u00a719\u2013\u00a725 while \u00a729 and \u00a731 are declared implementable and named nowhere in it."
+  },
+  "section_digests": {
+    "_document": "f1aecff039024775d5640c918c821fada6adaee7b0dd90a955a5394d3c89e882",
+    "s1": "965e293bc718e24bc6e0b306c2e31f4694e8d3d1f2aafc97e86aac0ccdc0eb46",
+    "s10": "501d0d72406c2fda4dc47939b9700d2c42eb9011387b4df7abdfcc55d906d345",
+    "s11": "4dc7e37e7c9ff6d074c540a19ff75d7db784999f7b811a999a052a00fcbacb39",
+    "s12": "cf244a99091ee04721474e6caad0adad1fb1c907edc99e9fd73b86fb3251685c",
+    "s13": "8cdf1aaa77a692163d0b36bc751a206e8f6c96460d0e44b85d9feb5a76f99659",
+    "s14": "e033ab0daa427195a357d93c3b5969c3fae24f311a8dafa8b2a6bad8db0b518e",
+    "s15": "c271f7bcaa272ebd4bf87d7b1e7153251ec38aa5863fd8a3d7f12cdf1c66bd06",
+    "s16": "e958886ca859d584799d4d94514466d7e14ba4c818ac307fcb864c7eb39fa549",
+    "s17": "dd6b738e7e017fe3bc312e85841a1a6a4b4d5dc818c618040249040acf51ff19",
+    "s18": "cce913fd1fd3cd0d62df97ae997ebb6708c0f8082d5fb90425f676f105322724",
+    "s19": "eaeead248338c8d630a84c78ae20179b603aa87fc7b0a599cced40377f9d8297",
+    "s2": "872b1ec9c49f32d972d450016002b1265e846673cd1aef42c41aaccc50583998",
+    "s20": "0e0d4849ea6b6f69d5354bef8f8699320f369433778609f009cf726a6657a1ee",
+    "s21": "1ba6fbba19ed595b11f5efb9d35bd3b6620bad888924989e016324a2ad6a714e",
+    "s22": "fce0ba09ddb9ec3bc2b594b7cd00683449d9a170142add8d81af3fdd14b02100",
+    "s23": "43fe6c8d8a3118b055dc76b75bd328396172198ba8c599d5fd70be079950e6f4",
+    "s24": "04f04dd8812de5d9c7b9410b01df1ecca1b5d54a6033156ef6c0e016e94d83a8",
+    "s25": "afd11e98028c6beb77d132f656f7e433fab87c40e3e0f5257920383e880c2cd9",
+    "s26": "86ee010dedc3babeebe536a7600e36d642ff7e96b15d2ca37ba6543b3da2caa0",
+    "s27": "77553fb962d6e701c89758fbdc77af812395fd33dff4a7bb97d3449f9a7a549a",
+    "s28": "7456663a1516834f96910a588c2bfef971ac8759485a26e01d93ff834ae5b664",
+    "s29": "686297f9ec76495ef83e0a8d37508cdd135e76797ea84024eaec7dc24e571e08",
+    "s3": "2a385591edce8d1cb26d41f176fb084cd634d113eb130d2581ce97000bcb3eea",
+    "s30": "6b2330c549684f55894c7eeec6454c27341b1abe4b6cafad0b7a63b290fd6025",
+    "s31": "848c2c788588c554df778192bf0b0d967123b96110b58223986e61493801c7d4",
+    "s4": "0116c3c4a34b6e607b2564cc4300d3784ba5d7596a0000d0b59c40e1801dcd1a",
+    "s5": "81cc22db14da433d65d2cbfd466e233d778e9b5d50552dc7a013e94a3b25ad15",
+    "s6": "91849d1cd49d8e783c893b01272f0e0f505aed67e379d52d354011a619270a1d",
+    "s7": "0eb7720abb0f46f8d48d47fcf646be85ae58c8a5cc37c98f7ad06ac2f9deb6ff",
+    "s8": "5dcf0f324a6b831b76a043e465731eff46456979ae084bcfc764ff0d40816359",
+    "s9": "b22a82394cfc2b7163b7fbd8be1087fdb6ec66a16524e9d194431d418894d798"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T22:17:58.901095+00:00",
+  "total": null
+}

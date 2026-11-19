@@ -1,0 +1,96 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "result.returncode == 0 and receipt['empty'] and receipt['redirect_refused'] with PATH empty",
+      "fails_if": "The prepare step execs the carried argv head by name again (os.execvp on 'bwrap') rather than the program field; with PATH='' the exec raises FileNotFoundError and no receipt is written, which is the base failure negative-control.log records.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "line": 311,
+      "test": "test_prepare_runs_the_carried_program_with_an_empty_search_path"
+    },
+    {
+      "assertion": "result.returncode == 127 and the node name and absent path in stderr and not marker.exists()",
+      "fails_if": "The bootstrap's program check is removed or softened to a fallback search; the base modules started the task instead of refusing, which negative-control.log records as returncode 0 on this case.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "line": 356,
+      "test": "test_recipe_without_a_carried_program_refuses_rather_than_searching"
+    },
+    {
+      "assertion": "result.returncode == 127 and 'not executable' in stderr and not marker.exists()",
+      "fails_if": "os.access(program, os.X_OK) is dropped from reckon/nested_launch.py:519; the task then execs the inert file or raises a traceback instead of the named refusal.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "line": 392,
+      "test": "test_program_that_exists_but_cannot_run_refuses_before_the_task"
+    },
+    {
+      "assertion": "result.returncode == 0 and marker.exists() with argv[0] set to '--dev-bind'",
+      "fails_if": "prefix[0] = program at reckon/nested_launch.py:536 is removed so the recipe head is exec'd; '--dev-bind' is then the program and the run fails, which negative-control.log records as FileNotFoundError: '--dev-bind'.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "line": 413,
+      "test": "test_program_is_read_from_its_field_and_never_from_the_recipe_head"
+    }
+  ],
+  "assertion_independence": "No assertion compares a value against the same variable it passed in: the expected status is the literal 127 the test declares at line 276, the node name is socket.gethostname() computed by the test, and marker absence is read from the filesystem. The stderr substring checks name the product's refusal wording and the path the test supplied, so they pin the naming requirement rather than guard behaviour on their own; the returncode and marker assertions carry that duty. All six added cases fail at base 8c7ea62509 per negative-control.log (6 failed, EXIT=1).",
+  "base_log_revision": "8c7ea625091640c12d6aa56bc8997803ae470037",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/nested_launch.py:748 _task_command",
+    "reckon/nested_launch.py:754 _task_command",
+    "reckon/nested_launch.py:762 _task_command",
+    "reckon/_worker_fence.py:2133 fence_worker_argv",
+    "reckon/nested_launch.py:542 job_fence"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T19:57:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-job-fence-names-its-program.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: The recorded measurement names only the two all_debug jobs (1327763, 1327767), while the done_when also requires one job on betelgeuse; the manifest's outside_scope records that the betelgeuse submission was refused with \"Access/permission denied\", so half of the scheduler measure is unmeasured and belongs to a node able to submit there."
+    }
+  ],
+  "head_log_revision": "0ec273d6269ec6a27c886566adfed7c3ab5a3a6f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit 091fb14450 (fence_program, the recipe program field, the bootstrap refusal and substitution, os.execvp to os.execv) and 0ec273d626 (the evidence fragment) against base 8c7ea62509; four files, no path from another node and no change the goal does not imply.",
+    "done_when": "docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:122 names a product-built recipe run with an empty search path, an absent program case that exits non-zero before the task with the node and program named and the marker absent, a case where the program exists only at the carried location, and a betelgeuse plus an all_debug job; tests/test_a_job_fence_starts_on_any_node.py:283,321,341,361 cover the three test cases, but no betelgeuse job is recorded anywhere in the reviewed run.",
+    "goal": "The node goal is \"Make a fenced job run the fence program named by an explicit carried field on every node\"; reckon/_worker_fence.py:79 fence_program resolves the absolute location at composition, reckon/_worker_fence.py:2133 writes it as the recipe's new program field, and reckon/nested_launch.py:518-536 refuses or substitutes it for the carried argv head, so the job node never searches its own path.",
+    "manifest": "The reviewed run's manifest.md declares status complete, two commits, a 68 passed 2 skipped gate and both arms completed with EXIT=0 and zero failure ids, and in outside_scope records that its betelgeuse submission was refused with \"Batch job submission failed: Access/permission denied\".",
+    "write_paths": "The reviewed pointer declares reckon/nested_launch.py, reckon/_worker_fence.py, tests/test_a_job_fence_starts_on_any_node.py, the evidence fragment and a figures directory; all four paths in 8c7ea62509..0ec273d626 are inside that list and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "negative-control.log records all six added cases as FAILED at base 8c7ea62509 with EXIT=1, and the assertions stand on values the test computes itself (NOT_STARTED=127, socket.gethostname()) rather than on what it passed in, so restoring the bare-name os.execvp or dropping the program field reddens tests/test_a_job_fence_starts_on_any_node.py:283 and :361.",
+    "evidence": "tests/test_a_job_fence_starts_on_any_node.py:283-415 passes 10 cases with 2 skipped at head 0ec273d626 when re-run from an extracted tree, and negative-control.log records the six new cases failing at 8c7ea62, but docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-job-fence-names-its-program.html:34 records only the all_debug jobs the done_when says must be a betelgeuse job and an all_debug one.",
+    "fit": "fence_program at reckon/_worker_fence.py:79 follows the module's existing FENCE_BINARY idiom and comment style, but reckon/nested_launch.py:606 substitutes the child's status through a string replace where _task_command already carries values in the spec dict.",
+    "goal_fidelity": "reckon/nested_launch.py:519-536 refuses an absent, non-absolute or non-executable carried program before the command runs and never falls back to a search, though nothing in the diff shows the run's record carrying that refusal as the deliverable's last sentence requires.",
+    "reuse": "No owner for resolving the fence program's own location existed: reckon/crew/dispatch_launch.py:1350 resolve_launch_executable resolves the harness element and its docstring excludes the fence, and reckon/_worker_fence.py:176 fence_capability_problem only checks presence, so the addition extends the FENCE_BINARY owner beside it rather than duplicating either.",
+    "scope_discipline": "The two commits 091fb14450 and 0ec273d626 change only the three declared source/test paths and the declared evidence fragment path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is \"Make a fenced job run the fence program named by an explicit carried field on every node\"; reckon/_worker_fence.py:79 fence_program resolves the absolute location at composition, reckon/_worker_fence.py:2133 writes it as the recipe's new program field, and reckon/nested_launch.py:518-536 refuses or substitutes it for the carried argv head, so the job node never searches its own path.\nVERDICT done_when: docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:122 names a product-built recipe run with an empty search path, an absent program case that exits non-zero before the task with the node and program named and the marker absent, a case where the program exists only at the carried location, and a betelgeuse plus an all_debug job; tests/test_a_job_fence_starts_on_any_node.py:283,321,341,361 cover the three test cases, but no betelgeuse job is recorded anywhere in the reviewed run.\nVERDICT write_paths: The reviewed pointer declares reckon/nested_launch.py, reckon/_worker_fence.py, tests/test_a_job_fence_starts_on_any_node.py, the evidence fragment and a figures directory; all four paths in 8c7ea62509..0ec273d626 are inside that list and the figures directory is unused.\nVERDICT manifest: The reviewed run's manifest.md declares status complete, two commits, a 68 passed 2 skipped gate and both arms completed with EXIT=0 and zero failure ids, and in outside_scope records that its betelgeuse submission was refused with \"Batch job submission failed: Access/permission denied\".\nVERDICT diff: Read commit 091fb14450 (fence_program, the recipe program field, the bootstrap refusal and substitution, os.execvp to os.execv) and 0ec273d626 (the evidence fragment) against base 8c7ea62509; four files, no path from another node and no change the goal does not imply.\nCALL_SITES: reckon/nested_launch.py:748 _task_command, reckon/nested_launch.py:754 _task_command, reckon/nested_launch.py:762 _task_command, reckon/_worker_fence.py:2133 fence_worker_argv, reckon/nested_launch.py:542 job_fence\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:519-536 refuses an absent, non-absolute or non-executable carried program before the command runs and never falls back to a search, though nothing in the diff shows the run's record carrying that refusal as the deliverable's last sentence requires.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_a_job_fence_starts_on_any_node.py:283-415 passes 10 cases with 2 skipped at head 0ec273d626 when re-run from an extracted tree, and negative-control.log records the six new cases failing at 8c7ea62, but docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-job-fence-names-its-program.html:34 records only the all_debug jobs the done_when says must be a betelgeuse job and an all_debug one.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The two commits 091fb14450 and 0ec273d626 change only the three declared source/test paths and the declared evidence fragment path.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log records all six added cases as FAILED at base 8c7ea62509 with EXIT=1, and the assertions stand on values the test computes itself (NOT_STARTED=127, socket.gethostname()) rather than on what it passed in, so restoring the bare-name os.execvp or dropping the program field reddens tests/test_a_job_fence_starts_on_any_node.py:283 and :361.\nSCORE fit: 18\nJUSTIFICATION fit: fence_program at reckon/_worker_fence.py:79 follows the module's existing FENCE_BINARY idiom and comment style, but reckon/nested_launch.py:606 substitutes the child's status through a string replace where _task_command already carries values in the spec dict.\nSCORE reuse: 18\nJUSTIFICATION reuse: No owner for resolving the fence program's own location existed: reckon/crew/dispatch_launch.py:1350 resolve_launch_executable resolves the harness element and its docstring excludes the fence, and reckon/_worker_fence.py:176 fence_capability_problem only checks presence, so the addition extends the FENCE_BINARY owner beside it rather than duplicating either.\nFINDING docs/evidence/fragments/a-worker-or-its-job-cannot-overwrite-shared-files/a-job-fence-names-its-program.html:34 non-blocking: The recorded measurement names only the two all_debug jobs (1327763, 1327767), while the done_when also requires one job on betelgeuse; the manifest's outside_scope records that the betelgeuse submission was refused with \"Access/permission denied\", so half of the scheduler measure is unmeasured and belongs to a node able to submit there.",
+  "review_run_id": "r-20261118T194046777125-review-of-a-job-fence-names-its-program-0ec273d6269e",
+  "reviewed_base_sha": "8c7ea625091640c12d6aa56bc8997803ae470037",
+  "reviewed_head_sha": "0ec273d6269ec6a27c886566adfed7c3ab5a3a6f",
+  "reviewed_run_id": "r-20261118T175413034315-a-job-fence-names-its-program",
+  "reviewed_worker_commits": [
+    "091fb1445033f12c8d5f3b0460b4447428ec82b6",
+    "0ec273d6269ec6a27c886566adfed7c3ab5a3a6f"
+  ],
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T20:27:57.556568+00:00",
+  "total": 105
+}

@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795042850728611064.log (revision 4dd916ef30) records \"58 passed\" with no FAILED id and EXIT=0, and after_suite-1795042893631634817.log (revision 08cf09dc1d) records \"61 passed\" with no FAILED id and EXIT=0, so the set difference over the shared files is empty (0).",
+  "base_log_revision": "4dd916ef308f57b97a58e5406a5ef12f2e7f5508",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/budget.py:672 latest_recorded -> _ledger_readings -> ledger.stored_history",
+    "reckon/crew/routing.py:483 routing -> budget.latest_recorded",
+    "reckon/crew/dispatch_admission.py:429 admission -> budget.latest_recorded",
+    "reckon/crew/section_holds.py:127 section holds -> ledger.picker_runs",
+    "reckon/crew/dispatch_picker.py:304 picker ledger rows -> ledger.picker_runs",
+    "reckon/mcp_views.py:1786 section attempts -> ledger.picker_runs"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T09:40:49Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1747",
+      "severity": "non-blocking",
+      "text": "non-blocking: _STORED_HISTORY with _MAX_STORED_HISTORIES, _hold_history and _recent_history is a second bounded memo with its own eviction and clear, duplicating the capability reckon/file_memo.py:445 memoized_key already owns (bounded LRU, lock, clear) rather than extending it; the delta state is new, but the container should be the owner's or a bounded-map helper added to it, and the same fold should drop the second cache layer reckon/crew/section_holds.py:131 now holds over the same history."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1772",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module-level cache is read and mutated with no lock, and _hold_history's `_STORED_HISTORY.pop(next(iter(_STORED_HISTORY)))` plus _recent_history's pop-then-recently-reinsert can raise KeyError when two server threads evict the same oldest key between the iteration and the pop; picker_runs is reached from ThreadingHTTPServer handlers (reckon/serve.py:4344) via reckon/mcp_views.py:1786, so the race surfaces as a failed MCP read rather than a logged cache miss, which is why file_memo.py:40 holds a lock over the cache it owns."
+    },
+    {
+      "file": "tests/test_budget_and_picker_history_read_what_changed.py",
+      "line": "215",
+      "severity": "non-blocking",
+      "text": "non-blocking: the only equality check between the incremental answer and a cold read compares two runs of the same new code path (_verdict after clear_stored_history against _verdict before it, and picker_runs against picker_runs); no assertion compares stored_history's rows or ordering against the load(project, root, picker_only=True) answer that path replaced, so a projection or ordering divergence introduced by the new path would leave the suite green while the picker's routing input changed."
+    }
+  ],
+  "head_log_revision": "08cf09dc1d2c7cfd5979a206a1db7e5fdd4e3e29",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified six production call sites: budget.latest_recorded's ledger path, picker_runs itself, and the four production callers of picker_runs listed in call_sites.",
+    "diff": "read all three commits against base 4dd916ef30 \u2014 ad7a0a8775 adds stored_history, stored_run_signature and the budget call plus the first form of the test; 4d3102ae46 finishes the gate file; 08cf09dc1d adds the 16-entry bound and the LRU eviction helpers over the same cache.",
+    "done_when": "the done_when names a 2,000-row temporary crew home counted through a stand-in on the store read, asserting 0 decodes on the unchanged repeat, at most 10 after 5 promotions and equal answers; tests/test_budget_and_picker_history_read_what_changed.py:185-216 asserts exactly those counts, and the base negative control is the recorded red log (2000 decoded, EXIT=1) the gate reproduces.",
+    "goal": "the node goal is that the budget's ledger readings and picker_runs read only rows promoted since their last read; reckon/ledger.py:1880-1916 decodes the signature delta only, reckon/ledger.py:1919-1925 routes picker_runs through it, and reckon/budget.py:708-716 routes _ledger_readings through the same call while keeping the full-load fallback.",
+    "manifest": "read; it reports status complete, commits ad7a0a8775/4d3102ae46/08cf09dc1d, the scoped gate at 08cf09dc1d (61 passed, EXIT=0), base arm 58 passed EXIT=0 at 4dd916ef30, after arm 61 passed EXIT=0, a red negative control at the base modules (EXIT=1) and an outside_scope entry for reckon/run_store.py; each named log on disk matches the values it states.",
+    "write_paths": "the node's declared write_paths are reckon/budget.py, reckon/ledger.py, the node test, an evidence fragment and a figures directory; the diff touches the first three plus reckon/run_store.py, outside the declaration and disclosed in the manifest's outside_scope as the per-row signature read the declared files cannot take."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_and_picker_history_read_what_changed.py:193 reddens with the whole-population decode restored (2000, as the negative-control log shows) and :228 reddens if the generation fallback at reckon/ledger.py:1893-1898 is removed, but the cache-under-write guard at :1911-1915 has no assertion that reddens when it is dropped.",
+    "evidence": "the gate is tests/test_budget_and_picker_history_read_what_changed.py plus the two carried files, scoped-gate-1795042751549239978.log records \"61 passed\" and EXIT=0 at 08cf09dc1d, and negative-control-base-modules.log records \"1 failed\" with \"the unchanged repeat decoded 2000 rows\" and EXIT=1.",
+    "fit": "the module comment, private-helper and lazy-import idiom match the siblings at reckon/ledger.py:1804-1836, but _history_token at reckon/ledger.py:1789 takes the run_store module as an Any-typed keyword argument, a shape no other function in the file uses because they import it inside the body.",
+    "goal_fidelity": "reckon/ledger.py:1880-1916 answers both readers from the rows whose signature moved, and reckon/budget.py:708-716 takes that same stored_history path, so a verdict after 5 promotions decodes 5 rows rather than the 2,000 the negative-control log records at base.",
+    "reuse": "reckon/file_memo.py:445 memoized_key is the repository's owner of a bounded memo with clear(), and reckon/ledger.py:1747-1786 builds a second one (_STORED_HISTORY, _MAX_STORED_HISTORIES, _hold_history, _recent_history) beside it instead of extending that owner.",
+    "scope_discipline": "the diff's four paths are reckon/budget.py, reckon/ledger.py, reckon/run_store.py and the new test; reckon/run_store.py:902-956 lies outside the node's declared write_paths and is disclosed in the manifest's outside_scope rather than hidden."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the budget's ledger readings and picker_runs read only rows promoted since their last read; reckon/ledger.py:1880-1916 decodes the signature delta only, reckon/ledger.py:1919-1925 routes picker_runs through it, and reckon/budget.py:708-716 routes _ledger_readings through the same call while keeping the full-load fallback.\nVERDICT done_when: the done_when names a 2,000-row temporary crew home counted through a stand-in on the store read, asserting 0 decodes on the unchanged repeat, at most 10 after 5 promotions and equal answers; tests/test_budget_and_picker_history_read_what_changed.py:185-216 asserts exactly those counts, and the base negative control is the recorded red log (2000 decoded, EXIT=1) the gate reproduces.\nVERDICT write_paths: the node's declared write_paths are reckon/budget.py, reckon/ledger.py, the node test, an evidence fragment and a figures directory; the diff touches the first three plus reckon/run_store.py, outside the declaration and disclosed in the manifest's outside_scope as the per-row signature read the declared files cannot take.\nVERDICT manifest: read; it reports status complete, commits ad7a0a8775/4d3102ae46/08cf09dc1d, the scoped gate at 08cf09dc1d (61 passed, EXIT=0), base arm 58 passed EXIT=0 at 4dd916ef30, after arm 61 passed EXIT=0, a red negative control at the base modules (EXIT=1) and an outside_scope entry for reckon/run_store.py; each named log on disk matches the values it states.\nVERDICT diff: read all three commits against base 4dd916ef30 \u2014 ad7a0a8775 adds stored_history, stored_run_signature and the budget call plus the first form of the test; 4d3102ae46 finishes the gate file; 08cf09dc1d adds the 16-entry bound and the LRU eviction helpers over the same cache.\nCALL_SITES: reckon/budget.py:672 latest_recorded -> _ledger_readings -> ledger.stored_history, reckon/crew/routing.py:483 routing -> budget.latest_recorded, reckon/crew/dispatch_admission.py:429 admission -> budget.latest_recorded, reckon/crew/section_holds.py:127 section holds -> ledger.picker_runs, reckon/crew/dispatch_picker.py:304 picker ledger rows -> ledger.picker_runs, reckon/mcp_views.py:1786 section attempts -> ledger.picker_runs\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1880-1916 answers both readers from the rows whose signature moved, and reckon/budget.py:708-716 takes that same stored_history path, so a verdict after 5 promotions decodes 5 rows rather than the 2,000 the negative-control log records at base.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is tests/test_budget_and_picker_history_read_what_changed.py plus the two carried files, scoped-gate-1795042751549239978.log records \"61 passed\" and EXIT=0 at 08cf09dc1d, and negative-control-base-modules.log records \"1 failed\" with \"the unchanged repeat decoded 2000 rows\" and EXIT=1.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff's four paths are reckon/budget.py, reckon/ledger.py, reckon/run_store.py and the new test; reckon/run_store.py:902-956 lies outside the node's declared write_paths and is disclosed in the manifest's outside_scope rather than hidden.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_budget_and_picker_history_read_what_changed.py:193 reddens with the whole-population decode restored (2000, as the negative-control log shows) and :228 reddens if the generation fallback at reckon/ledger.py:1893-1898 is removed, but the cache-under-write guard at :1911-1915 has no assertion that reddens when it is dropped.\nSCORE fit: 16\nJUSTIFICATION fit: the module comment, private-helper and lazy-import idiom match the siblings at reckon/ledger.py:1804-1836, but _history_token at reckon/ledger.py:1789 takes the run_store module as an Any-typed keyword argument, a shape no other function in the file uses because they import it inside the body.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/file_memo.py:445 memoized_key is the repository's owner of a bounded memo with clear(), and reckon/ledger.py:1747-1786 builds a second one (_STORED_HISTORY, _MAX_STORED_HISTORIES, _hold_history, _recent_history) beside it instead of extending that owner.\nFINDING reckon/ledger.py:1747 non-blocking: _STORED_HISTORY with _MAX_STORED_HISTORIES, _hold_history and _recent_history is a second bounded memo with its own eviction and clear, duplicating the capability reckon/file_memo.py:445 memoized_key already owns (bounded LRU, lock, clear) rather than extending it; the delta state is new, but the container should be the owner's or a bounded-map helper added to it, and the same fold should drop the second cache layer reckon/crew/section_holds.py:131 now holds over the same history.\nFINDING reckon/ledger.py:1772 non-blocking: the module-level cache is read and mutated with no lock, and _hold_history's `_STORED_HISTORY.pop(next(iter(_STORED_HISTORY)))` plus _recent_history's pop-then-recently-reinsert can raise KeyError when two server threads evict the same oldest key between the iteration and the pop; picker_runs is reached from ThreadingHTTPServer handlers (reckon/serve.py:4344) via reckon/mcp_views.py:1786, so the race surfaces as a failed MCP read rather than a logged cache miss, which is why file_memo.py:40 holds a lock over the cache it owns.\nFINDING tests/test_budget_and_picker_history_read_what_changed.py:215 non-blocking: the only equality check between the incremental answer and a cold read compares two runs of the same new code path (_verdict after clear_stored_history against _verdict before it, and picker_runs against picker_runs); no assertion compares stored_history's rows or ordering against the load(project, root, picker_only=True) answer that path replaced, so a projection or ordering divergence introduced by the new path would leave the suite green while the picker's routing input changed.\n",
+  "review_node": "review-of-budget-and-picker-history-read-what-changed-08cf09dc1d2c",
+  "review_run_id": "r-20261119T065306517553-review-of-budget-and-picker-history-read-what-changed-08cf09dc1d2c",
+  "reviewed_base_sha": "4dd916ef308f57b97a58e5406a5ef12f2e7f5508",
+  "reviewed_head_sha": "08cf09dc1d2c7cfd5979a206a1db7e5fdd4e3e29",
+  "reviewed_run_id": "r-20261118T185356027067-budget-and-picker-history-read-what-changed",
+  "reviewer_run_id": "r-20261119T065306517553-review-of-budget-and-picker-history-read-what-changed-08cf09dc1d2c",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:05:15.874883+00:00",
+  "total": 88
+}

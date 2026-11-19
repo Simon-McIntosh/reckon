@@ -709,8 +709,13 @@ def _recorded_release(
     the release because a caller reports both, and an unreadable record is
     treated as carrying none, so a damaged row is repaired rather than frozen.
     """
+    from reckon import run_store
+
     try:
-        if per_run:
+        stored = run_store.stored_run_rows(project, run_ids=[run_id])
+        if stored:
+            row = stored[0]
+        elif per_run:
             loaded = json.loads(path.read_text(encoding="utf-8"))
             row = loaded if isinstance(loaded, dict) else {}
         else:
@@ -723,7 +728,7 @@ def _recorded_release(
                 ),
                 {},
             )
-    except (OSError, ValueError, ledger.LedgerError):
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError):
         return None
     release = row.get("release") if isinstance(row, Mapping) else None
     if isinstance(release, Mapping) and release:
@@ -760,6 +765,8 @@ def _record_release_on_ledger(
     release kept the tree and this one released it, this one is the true
     reading and replaces it; any other recorded release still stands.
     """
+    from reckon import run_store
+
     path = ledger.run_path(project, run_id, root)
     per_run = path.is_file()
     if not per_run:
@@ -802,6 +809,11 @@ def _record_release_on_ledger(
             if per_run:
                 updated = _update_run_record(path, run_id, {"release": dict(release)})
             else:
+                stored = run_store.stored_run_rows(project, run_ids=[run_id])
+                if stored:
+                    updated = {**stored[0], "release": dict(release)}
+                    ledger._sync_amended_run(project, updated)
+                    return dict(release), updated
                 with ledger._ledger_write_lock(project):
                     data, version = ledger._load_aggregate(project, root)
                     updated = None

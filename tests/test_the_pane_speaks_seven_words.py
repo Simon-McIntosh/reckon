@@ -67,14 +67,17 @@ def test_rows_use_the_pane_words_and_first_row_says_new() -> None:
 
 
 def test_counter_labels_and_hues_share_the_pane_words() -> None:
-    # The stuck figure is a count beside the pane words, not one of them.
-    assert set(ticker._MAX_CELLS) - {"stuck"} <= WORDS
+    # Two figures are counts beside the pane words, not one of them: the stuck
+    # alarm beside the queue it belongs to, and the promotion queue with the
+    # oldest request's position beside it. Every other counter is a pane word.
+    assert set(ticker._MAX_CELLS) - {"stuck", "promotion queue"} <= WORDS
     assert ticker._MAX_CELLS == (
         "working",
         "in review",
         "help",
         "delivered",
         "waiting",
+        "promotion queue",
         "stuck",
     )
     assert ticker._COUNT_FIELD == {
@@ -82,6 +85,7 @@ def test_counter_labels_and_hues_share_the_pane_words() -> None:
         "help": "blocked",
         "delivered": "unpromoted",
         "waiting": "waiting",
+        "promotion queue": "promotion_queued",
         "stuck": "stuck",
     }
     assert all(

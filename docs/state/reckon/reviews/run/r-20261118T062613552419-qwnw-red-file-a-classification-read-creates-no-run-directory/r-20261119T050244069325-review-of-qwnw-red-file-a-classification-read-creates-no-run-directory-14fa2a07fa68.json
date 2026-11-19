@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: baseline_suite-1795060388436513686.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 records 58 passed, EXIT=0 and after_suite-1795063596.log at 14fa2a07fa684392371fa315e5f413d9963c7da1 records 58 passed, EXIT=0; neither log carries a FAILED line, so the set difference is empty (0).",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:2862",
+    "reckon/crew/dispatch_sessions.py:2263",
+    "reckon/crew/dispatch_sessions.py:2414",
+    "reckon/crew/recovery_liveness.py:1738",
+    "reckon/crew/recovery_liveness.py:1816",
+    "reckon/crew/recovery_classification.py:3529"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:29:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-classification-read-creates-no-run-directory.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the head arm ran as a job on all_debug with SLURM_JOB_ID unset, but gate.log, the only head-arm log whose header names the delivered revision 14fa2a07, carries no host, tree or module line, and the log that does carry tree/module headers (node-test-head.log) names revision 99010b05b6, not the delivered head; the head arm's provenance is asserted in prose the log cannot confirm, so the done_when's job condition is unverified from artefacts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062613552419-qwnw-red-file-a-classification-read-creates-no-run-directory/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's tests line names the command with .venv/bin/python, while gate.log (the log at the delivered head) records its header command as plain `python`; the line is required to be the literal text a shell was handed, and a promotion pairing this line with the cited log re-runs a command that log did not record."
+    },
+    {
+      "file": "tests/test_a_classification_read_creates_no_run_directory.py",
+      "line": "76",
+      "severity": "non-blocking",
+      "text": "non-blocking: the absent-home and empty-home cases can only reach the guard's early refusal, so the create_parents=False half of the repair at reckon/crew/recovery_liveness.py:1696 is unexercised by any test; reverting that keyword argument leaves the suite green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 42fe90d0b0: dc17a32f0a is the product repair (guard predicate plus create_parents plumbing), d02250d94f and 3df81832a9 are the single fixture setup and its formatting, 14fa2a07fa is the evidence fragment; no test assertion was added, deleted or edited, and all 5 paths are inside the declared scope.",
+    "done_when": "the done_when names the file passing at head as an all_debug job with SLURM_JOB_ID unset, an arm over importing test files recorded as inline JSON with full 40-character revisions, a base negative control logged in the fragment, and ruff clean on the changed paths; the manifest's baseline_suite and after_suite carry 40-character revisions and 58 passed EXIT=0 both, the fragment names the two base failing ids, but the head arm's all_debug provenance and the ruff result are recorded nowhere.",
+    "goal": "the node goal is to make tests/test_a_classification_read_creates_no_run_directory.py pass in full on the primary branch; that file's blob is identical at 42fe90d0 and 14fa2a07 (git diff of the two blobs is empty), negative-control-base.log at the base records 2 failed, 1 passed, EXIT=1 and gate.log at 14fa2a07 records 3 passed, EXIT=0, so the deliverable is the product repair at reckon/crew/recovery_liveness.py:1685.",
+    "manifest": "read in full; it reports status complete, cites the two suite arm logs and three gate logs, and states 3 passed at head against 2 failed at base, but its tests line names a command (.venv/bin/python) that differs from the cited gate.log header, and it names the directory pair `reckon`/`tests` as its scope rather than the files it touched.",
+    "write_paths": "the declared paths are the directories reckon and tests, the fragment directory and its html file, and a figures directory; the five paths in 42fe90d0..14fa2a07 are three reckon/crew modules, one test file and the fragment, every one inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_classification_read_creates_no_run_directory.py:76,94 redden when the guard is removed (negative-control-base.log shows both at 42fe90d0), but no test reddens if the create_parents=False argument at reckon/crew/recovery_liveness.py:1696 or the fixture stream at tests/test_a_foreign_run_is_freed_by_its_allocation_ending.py:109 is reverted.",
+    "evidence": "baseline_suite-1795060388436513686.log and after_suite-1795063596.log each record 58 passed EXIT=0 with full 40-character revisions, but gate.log's header at 14fa2a07 carries no host, tree or module line, so the done_when's all_debug job condition and its ruff clause are asserted only in prose.",
+    "fit": "the private helper and its cross-module import follow the existing idiom of reckon/crew/recovery_wait.py:1831 importing _run_exit_record from recovery_liveness, and ruff check over the three changed modules reports the same findings at base and head and none new at head (ruff-changed-modules.log: PLW0603 in recovery_memo.py at line 48 base and 49 head, EXIT=1 both arms (PLW0603 is two rows in the log for one finding), and ruff format --check reads already formatted).",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:1685 refuses the observation write when the run's directory is absent or empty and reckon/crew/recovery_memo.py:195 now calls the same predicate, which is what makes tests/test_a_classification_read_creates_no_run_directory.py:76,94 pass at head after failing at base.",
+    "reuse": "reckon/crew/recovery_memo.py:195 folded its private copy of the empty-directory test into _run_home_holds_records, and a search of reckon/crew for an existing predicate over a run's directory contents found no other owner; runs._write_json only forwards to the create_parents parameter reckon/_store.py:645 already owns.",
+    "scope_discipline": "the two directories named in the diff, reckon/crew and tests, plus the fragment html are all inside the declared write paths, and the changes/figures directory declared was not touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_a_classification_read_creates_no_run_directory.py pass in full on the primary branch; that file is unchanged across 42fe90d0..14fa2a07 and negative-control-base.log records 2 failed, 1 passed, EXIT=1 at the base while gate.log records 3 passed, EXIT=0 at 14fa2a07, so the deliverable is the repair at reckon/crew/recovery_liveness.py:1685.\nVERDICT done_when: the done_when asks for the file passing at head as an all_debug job with SLURM_JOB_ID unset, suite arms recorded as inline JSON with full 40-character revisions, a base control in the fragment and ruff clean; both suite logs carry 58 passed EXIT=0 at the stated revisions but gate.log's header names no host and no log records a ruff result.\nVERDICT write_paths: the declared paths are reckon, tests, the fragment directory and html and a figures directory; the five paths in the diff (three reckon/crew modules, one test, the fragment) are all inside them.\nVERDICT manifest: read; it reports status complete with 3 passed at head and cites its logs, but its tests line names .venv/bin/python while gate.log's header names python, so the line is not the literal command that produced the cited log.\nVERDICT diff: read commit by commit against 5 paths, +124 -9: dc17a32f0a the guard predicate and create_parents plumbing, d02250d94f and 3df81832a9 one fixture setup plus formatting, 14fa2a07fa the fragment; no assertion edited.\nCALL_SITES: reckon/crew/dispatch_launch.py:2862, reckon/crew/dispatch_sessions.py:2263, reckon/crew/dispatch_sessions.py:2414, reckon/crew/recovery_liveness.py:1738, reckon/crew/recovery_liveness.py:1816, reckon/crew/recovery_classification.py:3529\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1685 refuses the write when the home is absent or empty.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate.log at 14fa2a07 records 3 passed EXIT=0 but its header carries no host, tree or module line, so the all_debug job condition and the ruff clause are unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five paths in 42fe90d0..14fa2a07 lie inside the declared write paths, reckon/crew and tests and the fragment.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_classification_read_creates_no_run_directory.py:76,94 redden on the reinstated guard removal per negative-control-base.log, but nothing reddens if create_parents=False at reckon/crew/recovery_liveness.py:1696 is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_memo.py:195 imports the private predicate the way reckon/crew/recovery_wait.py:1831 imports _run_exit_record, and ruff reports the same findings at base and head and none new at head.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/recovery_memo.py:195 folded its private empty-directory test into _run_home_holds_records, and no other owner of that predicate was found in reckon/crew; runs._write_json forwards to the create_parents parameter reckon/_store.py:645 owns.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-classification-read-creates-no-run-directory.html:36 non-blocking: the fragment states the head arm ran as an all_debug job, but the only head log naming 14fa2a07 has no host line and the log with tree/module headers names 99010b05b6, so that condition is prose only.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062613552419-qwnw-red-file-a-classification-read-creates-no-run-directory/manifest.md:12 non-blocking: the tests line names .venv/bin/python while the cited gate.log header names python, so the line is not the literal command that ran.\nFINDING tests/test_a_classification_read_creates_no_run_directory.py:76 non-blocking: both cases stop at the guard's early refusal, so the create_parents=False half at reckon/crew/recovery_liveness.py:1685 has no test that reddens when it is reverted.",
+  "review_node": "review-of-qwnw-red-file-a-classification-read-creates-no-run-directory-14fa2a07fa68",
+  "review_run_id": "r-20261119T050244069325-review-of-qwnw-red-file-a-classification-read-creates-no-run-directory-14fa2a07fa68",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "14fa2a07fa684392371fa315e5f413d9963c7da1",
+  "reviewed_run_id": "r-20261118T062613552419-qwnw-red-file-a-classification-read-creates-no-run-directory",
+  "reviewer": {
+    "backend": "deepseek",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T050244069325-review-of-qwnw-red-file-a-classification-read-creates-no-run-directory-14fa2a07fa68"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:09:01.212399+00:00",
+  "total": 104
+}

@@ -116,6 +116,11 @@ class LaunchBatch:
     def submit(self, key, pointer, **kwargs):
         if self.remaining[key] is not None:
             self.remaining[key] -= 1
+        # The launches this pass has started and not yet settled are seats it
+        # has already committed. Their pointers may not be published when a
+        # sibling launch reads the concurrency bound, so the count rides the
+        # launch and the bound is read as if those seats were taken.
+        kwargs["seats_in_flight"] = len(self.pending)
         future = self.pool.submit(
             copy_context().run, _attempt_launch, pointer, **kwargs
         )
@@ -134,6 +139,7 @@ def _attempt_launch(
     moment,
     lane,
     tick,
+    seats_in_flight: int = 0,
 ):
     result = {
         "launched": [],
@@ -171,6 +177,7 @@ def _attempt_launch(
             launcher=launcher,
             config_for=config_for,
             readiness_cache=readiness_cache,
+            seats_in_flight=seats_in_flight,
         )
         record = _launching._require_launched_record(candidate)
     except BudgetHold as exc:
@@ -188,6 +195,7 @@ def _attempt_launch(
                     config_for=config_for,
                     backend_override=str(rebound["backend"]),
                     readiness_cache=readiness_cache,
+                    seats_in_flight=seats_in_flight,
                 )
                 record = _launching._require_launched_record(candidate)
             except ScopeConflict as rebind_refusal:

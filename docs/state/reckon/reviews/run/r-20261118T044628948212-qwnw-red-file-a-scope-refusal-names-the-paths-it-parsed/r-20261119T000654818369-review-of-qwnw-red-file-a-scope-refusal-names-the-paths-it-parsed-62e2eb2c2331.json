@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1400 (crew_check_manifest -> audit_manifest)",
+    "reckon/crew/crew.py:203 (re-export of audit_manifest)",
+    "reckon/crew/reports.py:3094 (audit_manifest -> _write_scope_findings)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T00:09:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "3136",
+      "severity": "non-blocking",
+      "text": "non-blocking: the separated-item branch the new docstring describes as a guard for \"any caller that hands it an item still holding internal whitespace\" has no such caller \u2014 audit_manifest at reckon/crew/reports.py:3094 is the only caller and hands it entries already split from _GUARDED_LIST_KEYS \u2014 and the rewritten case at tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96 was the only test reaching it, so the branch is now both unreachable and untested while the prose claims a callable guard."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044628948212-qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed/head-run-939e86f494.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log's header names revision, tree, module.__file__ and cwd but no SLURM job id and no statement that SLURM_JOB_ID was unset, and sbatch-head.out is empty, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" is recorded only as manifest prose and cannot be re-read from the log."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read the three commits against 5b0a1f537ef9 one by one \u2014 8765a44f04 rewrites the red case and the module docstring, 939e86f494 changes only the _write_scope_findings docstring in reckon/crew/reports.py, and 62e2eb2c23 adds the 76-line evidence fragment; no product behaviour changes.",
+    "done_when": "The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a base run, a cause verdict, a 40-character-revision suite arm pair and a negative control; the manifest records all of those (test_logs negative-control-base-5b0a1f537e.log reads \"1 failed, 4 passed\" EXIT=1, baseline_suite/after_suite read 58 passed at 5b0a1f53... and 939e86f4...), but no log header names a SLURM job id or that SLURM_JOB_ID was unset and sbatch-head.out is empty, so that one clause rests on the manifest's prose.",
+    "goal": "The node goal is a named test file passing in full on the primary branch; commit 8765a44f04 rewrites the single red case in tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96 and head-run-939e86f494.log:6-7 records \"5 passed\" with EXIT=0, so the file the goal names is green at the landed head.",
+    "manifest": "Read the reviewed run's manifest.md; it reads status complete, names three commits, lists the cause as test wrong with the superseded joined-item reading as its reason, records both arms as inline JSON with 40-character revisions, and names its gate, control and suite logs.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (plus its node fragment and figures directory); the three paths in 5b0a1f53..62e2eb2c all sit inside them and nothing else changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_scope_refusal_names_the_paths_it_parsed.py:104 asserts the parsed entries equal the three declared paths, which reddens if _split_entry_tokens's whitespace splitting is removed at reckon/crew/reports.py:979, but the only branch the docstring change describes (reckon/crew/reports.py:3136) lost its last exercising assertion and has no production caller.",
+    "evidence": "baseline_suite-1795046084914806050.log and after_suite-1795046127753109415.log each read \"58 passed\" with EXIT=0 at their 40-character revisions, but head-run-939e86f494.log:1-5 carries no job identity, so the all_debug/SLURM_JOB_ID-unset half of the done_when is asserted only in the manifest.",
+    "fit": "reckon/crew/reports.py:3121-3134 keeps the long-form docstring idiom of its neighbours and the rewritten case at tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96 follows the file's existing naming and helper use.",
+    "goal_fidelity": "tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96-107 now asserts the entry-splitting reading the product keeps, and head-run-939e86f494.log:7 records all five cases passing at 939e86f494e1.",
+    "reuse": "The diff adds no definition at all \u2014 it rewrites one existing test case and one docstring \u2014 and the entry-splitting capability it documents is owned once by _split_entry_tokens at reckon/crew/reports.py:979, tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:74 already pins it, and the new assertion calls the owner through audit_manifest rather than reimplementing it.",
+    "scope_discipline": "The diff of 5b0a1f537ef9..62e2eb2c reaches only reckon/crew/reports.py, tests/test_a_scope_refusal_names_the_paths_it_parsed.py and the node's own evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is a named test file passing in full on the primary branch; commit 8765a44f04 rewrites the single red case in tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96 and head-run-939e86f494.log:6-7 records \"5 passed\" with EXIT=0, so the file the goal names is green at the landed head.\nVERDICT done_when: The done_when asks for the file green at head as an all_debug job with SLURM_JOB_ID unset, a base run, a cause verdict, a 40-character-revision suite arm pair and a negative control; the manifest records all of those (test_logs negative-control-base-5b0a1f537e.log reads \"1 failed, 4 passed\" EXIT=1, baseline_suite/after_suite read 58 passed at 5b0a1f53... and 939e86f4...), but no log header names a SLURM job id or that SLURM_JOB_ID was unset and sbatch-head.out is empty, so that one clause rests on the manifest's prose.\nVERDICT write_paths: The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (plus its node fragment and figures directory); the three paths in 5b0a1f53..62e2eb2c all sit inside them and nothing else changed.\nVERDICT manifest: Read the reviewed run's manifest.md; it reads status complete, names three commits, lists the cause as test wrong with the superseded joined-item reading as its reason, records both arms as inline JSON with 40-character revisions, and names its gate, control and suite logs.\nVERDICT diff: Read the three commits against 5b0a1f537ef9 one by one \u2014 8765a44f04 rewrites the red case and the module docstring, 939e86f494 changes only the _write_scope_findings docstring in reckon/crew/reports.py, and 62e2eb2c23 adds the 76-line evidence fragment; no product behaviour changes.\nCALL_SITES: reckon/crew_run_commands.py:1400 (crew_check_manifest -> audit_manifest), reckon/crew/crew.py:203 (re-export of audit_manifest), reckon/crew/reports.py:3094 (audit_manifest -> _write_scope_findings)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96-107 now asserts the entry-splitting reading the product keeps, and head-run-939e86f494.log:7 records all five cases passing at 939e86f494e1.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline_suite-1795046084914806050.log and after_suite-1795046127753109415.log each read \"58 passed\" with EXIT=0 at their 40-character revisions, but head-run-939e86f494.log:1-5 carries no job identity, so the all_debug/SLURM_JOB_ID-unset half of the done_when is asserted only in the manifest.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: The diff of 5b0a1f537ef9..62e2eb2c reaches only reckon/crew/reports.py, tests/test_a_scope_refusal_names_the_paths_it_parsed.py and the node's own evidence fragment, all inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_scope_refusal_names_the_paths_it_parsed.py:104 asserts the parsed entries equal the three declared paths, which reddens if _split_entry_tokens's whitespace splitting is removed at reckon/crew/reports.py:979, but the only branch the docstring change describes (reckon/crew/reports.py:3136) lost its last exercising assertion and has no production caller.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/reports.py:3121-3134 keeps the long-form docstring idiom of its neighbours and the rewritten case at tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96 follows the file's existing naming and helper use.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no definition at all \u2014 it rewrites one existing test case and one docstring \u2014 and the entry-splitting capability it documents is owned once by _split_entry_tokens at reckon/crew/reports.py:979, tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:74 already pins it, and the new assertion calls the owner through audit_manifest rather than reimplementing it.\nFINDING reckon/crew/reports.py:3136 non-blocking: the separated-item branch the new docstring describes as a guard for \"any caller that hands it an item still holding internal whitespace\" has no such caller \u2014 audit_manifest at reckon/crew/reports.py:3094 is the only caller and hands it entries already split from _GUARDED_LIST_KEYS \u2014 and the rewritten case at tests/test_a_scope_refusal_names_the_paths_it_parsed.py:96 was the only test reaching it, so the branch is now both unreachable and untested while the prose claims a callable guard.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044628948212-qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed/head-run-939e86f494.log:1 non-blocking: the gate log's header names revision, tree, module.__file__ and cwd but no SLURM job id and no statement that SLURM_JOB_ID was unset, and sbatch-head.out is empty, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" is recorded only as manifest prose and cannot be re-read from the log.",
+  "review_run_id": "r-20261119T000654818369-review-of-qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed-62e2eb2c2331",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "62e2eb2c23316bafc6ae6499fa58dd039236fa19",
+  "reviewed_run_id": "r-20261118T044628948212-qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "suite_delta_note": "Derived from the reviewed run's own arms: baseline_suite-1795046084914806050.log ends '58 passed in 35.40s' with EXIT=0 at 5b0a1f537ef9bbca90907bd16f663732db844fb0 and after_suite-1795046127753109415.log ends '58 passed in 36.26s' with EXIT=0 at 939e86f494e11d20d9ce3ad3e53665875149a3f8; both carry failure_count 0 and an empty failure_ids list, so the set difference of failing ids is empty.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T00:18:41.987341+00:00",
+  "total": 104
+}

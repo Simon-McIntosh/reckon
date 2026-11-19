@@ -289,10 +289,17 @@ def test_a_refused_envelope_puts_the_run_file_back(
     data, version = ledger.load(PROJECT, repo)
     data["runs"][0].pop("time_budget")
 
-    monkeypatch.setattr(ledger._store, "_write_json_envelope", refuse_envelope)
-    with pytest.raises(OSError, match="No space left on device"):
-        ledger.write(PROJECT, data, version, repo)
-    monkeypatch.undo()
+    # The patch is scoped rather than undone by hand: this ``monkeypatch`` is
+    # the same instance the autouse isolation fixture set ``RECKON_HOME``
+    # through, so ``monkeypatch.undo()`` here would restore the operator's own
+    # configuration home halfway through the test. The read below would then
+    # answer from that home's run store rather than from the repository this
+    # test built -- a different project's rows -- which is a failure about the
+    # environment, not about the refusal.
+    with monkeypatch.context() as patch:
+        patch.setattr(ledger._store, "_write_json_envelope", refuse_envelope)
+        with pytest.raises(OSError, match="No space left on device"):
+            ledger.write(PROJECT, data, version, repo)
 
     reread, _ = ledger.load(PROJECT, repo)
     assert reread["runs"][0]["time_budget"] == "12m"

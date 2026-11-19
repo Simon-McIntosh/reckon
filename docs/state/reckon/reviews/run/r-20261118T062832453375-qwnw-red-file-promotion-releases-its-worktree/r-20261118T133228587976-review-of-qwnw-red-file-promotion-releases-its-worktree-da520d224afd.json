@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's own arm logs both record 58 passed with EXIT=0 and no FAILED line: baseline_suite-1795008410834934790.log at 84df41f817943ad9f228ac90491b8faf87dbd2c1 and after_suite-1795008453036103494.log at da520d224afd7166824760d0794cb34a6dd4ba77, so the set difference is empty.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1327 (complete runs the independent preconditions the fixture now satisfies)",
+    "reckon/crew/promotion_evidence.py:1265 (refusal owner for a passing gate citing no commit past its base)",
+    "reckon/crew/promotion_scope.py:3283 (composes the landing_check the changed expectation reads)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T14:32:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-releases-its-worktree.html",
+      "line": "71",
+      "severity": "non-blocking",
+      "text": "non-blocking: the row at line 72 labels 2043ca4984a3322e92590a37f3b13ce32da9f026 as the gate revision, but the gate log the record cites opens with revision da520d224afd7166824760d0794cb34a6dd4ba77; the test file is identical at both revisions so the measurement stands, while the table's revision column cannot be reconciled with the log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-releases-its-worktree.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the gate ran on all_debug with SLURM_JOB_ID unset, which is the run condition the done-when names, but no cited log header records the partition, the job or SLURM_JOB_ID; scoped-gate-1795008531121824805.log carries only revision, host 98dci4-clu-3141 and a /tmp/mcintos-landing-* tree, so the condition is prose rather than evidence."
+    },
+    {
+      "file": "tests/test_promotion_releases_its_worktree.py",
+      "line": "315",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture now cites the commit its divergent worktree made, so it complies with the refusal at reckon/crew/promotion_evidence.py:1265 rather than exercising it; a regression dropping that refusal leaves this file green, and the one test that reaches that rule, tests/test_promotion_release.py::test_a_non_ancestor_worktree_is_kept_and_named_in_the_result, is red on the earlier expectation as the reviewed run records under outside_scope, so no passing test guards the rule this node discovered."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites: reckon/crew/promotion.py:1327, reckon/crew/promotion_evidence.py:1265, reckon/crew/promotion_scope.py:3283",
+    "diff": "Read commit by commit against base 84df41f817943ad9f228ac90491b8faf87dbd2c1: 0038797da1 adds the fourth landing_check key to the withheld-case expectation, 2043ca4984 cites the fixture's own commit instead of declaring no_commit and narrows the review waiver to the commitless cases, da520d22 adds the evidence fragment; two paths, both inside the declared scope, no product source touched.",
+    "done_when": "The done-when is a full-file pass at head on all_debug with SLURM_JOB_ID unset, a base arm naming its failing ids, an importer arm, a negative control and full-sha arm JSON; logs/base-run.log records 1 failed and 3 passed at EXIT=1 for tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case, scoped-gate-1795008531121824805.log records 4 passed at EXIT=0 for head da520d22, both suite arms record 58 passed at EXIT=0 with full 40-character revisions, and the two elements no log records are the all_debug / SLURM_JOB_ID-unset run condition and the ruff result.",
+    "goal": "The node goal is to make tests/test_promotion_releases_its_worktree.py pass in full on the primary branch; the delivered head da520d22 reads 4 passed at EXIT=0 in scoped-gate-1795008531121824805.log, and the reviewed head is not an ancestor of this worktree's head 94359be6, so the primary-branch half of the goal is still landing's to satisfy.",
+    "manifest": "Read; it reports status complete, three commits, base 1 failed and 3 passed, head 4 passed on all_debug with SLURM_JOB_ID unset, both suite arms 58 passed, and names scoped-gate-1795008531121824805.log, logs/base-run.log and scoped-gate-1795007122394161885.log, all confirmed on disk and reconciled against the summary lines they carry; it records no ruff run.",
+    "write_paths": "The declared paths are reckon, tests, the plan's evidence-fragment directory and file, and an unused figures directory; the diff touches only tests/test_promotion_releases_its_worktree.py and the fragment, both inside the fence."
+  },
+  "justifications": {
+    "durability": "The changed expectation at tests/test_promotion_releases_its_worktree.py:346 reddens if the landing_check composition at reckon/crew/promotion_scope.py:3283 stops reporting the unstaged list, but the no_commit refusal at reckon/crew/promotion_evidence.py:1265 gains no guard because the fixture now satisfies it rather than making it fire.",
+    "evidence": "scoped-gate-1795008531121824805.log and logs/base-run.log carry the gate and its negative control with summary lines and EXIT records, and scoped-gate-1795007122394161885.log isolates the second cause at 0038797da1 with the refusal quoted at line 91, yet neither the all_debug run condition nor any ruff result appears in a log.",
+    "fit": "The two hunks follow the file's existing idiom, since the four-key landing_check read already appears at tests/test_promotion_never_amends_its_commit.py:220 and the helpers.git import is already at tests/test_promotion_releases_its_worktree.py:22, and the comments name the rule rather than a ticket.",
+    "goal_fidelity": "tests/test_promotion_releases_its_worktree.py at da520d22 reads 4 passed at EXIT=0 in scoped-gate-1795008531121824805.log, meeting the goal at the delivered revision while the merge into the primary branch is unlanded.",
+    "reuse": "The diff adds no function, class or module; it reuses tests/helpers/git.py's git() for the cited sha and the existing crew.complete entry point, and a search of tests/helpers and reckon/crew for an existing way to cite a fixture's own commit found only that helper, which it calls.",
+    "scope_discipline": "Every path in the diff is inside the declared write paths, namely tests/test_promotion_releases_its_worktree.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, though the 83-line fragment reports more than the 14-line test change it accompanies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_promotion_releases_its_worktree.py pass in full on the primary branch; the delivered head da520d22 reads 4 passed at EXIT=0 in scoped-gate-1795008531121824805.log, while the reviewed head is not an ancestor of this worktree's head 94359be6, so the primary-branch half of the goal is still landing's to satisfy.\nVERDICT done_when: the done-when is a full-file pass at head on all_debug with SLURM_JOB_ID unset, a base arm naming its failing ids, an importer arm, a negative control and full-sha arm JSON; logs/base-run.log records 1 failed and 3 passed at EXIT=1 for tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case, scoped-gate-1795008531121824805.log records 4 passed at EXIT=0 at head da520d22, and both suite arms record 58 passed at EXIT=0 with full 40-character revisions; no log records the all_debug run condition or a ruff result.\nVERDICT write_paths: the declared paths are reckon, tests, the plan's evidence-fragment directory and file, and an unused figures directory; the diff touches only tests/test_promotion_releases_its_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-releases-its-worktree.html, both inside the fence.\nVERDICT manifest: read; it reports status complete, three commits, base 1 failed and 3 passed, head 4 passed on all_debug with SLURM_JOB_ID unset, both suite arms 58 passed, and names scoped-gate-1795008531121824805.log, logs/base-run.log and scoped-gate-1795007122394161885.log, all confirmed on disk and reconciled against the summary lines they carry; it records no ruff run.\nVERDICT diff: read commit by commit against base 84df41f817943ad9f228ac90491b8faf87dbd2c1: 0038797da1 adds the fourth landing_check key to the withheld-case expectation, 2043ca4984 cites the fixture's own commit instead of declaring no_commit and narrows the review waiver to the commitless cases, da520d22 adds the evidence fragment; two paths, no product source touched.\nCALL_SITES: reckon/crew/promotion.py:1327, reckon/crew/promotion_evidence.py:1265, reckon/crew/promotion_scope.py:3283\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_promotion_releases_its_worktree.py at da520d22 reads 4 passed at EXIT=0 in scoped-gate-1795008531121824805.log, meeting the goal at the delivered revision while the merge into the primary branch is unlanded.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795008531121824805.log and logs/base-run.log carry the gate and its negative control with summary lines and EXIT records, and scoped-gate-1795007122394161885.log isolates the second cause at 0038797da1 with the refusal quoted at line 91, yet neither the all_debug run condition nor a ruff result appears in any log.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, though the 83-line fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-releases-its-worktree.html reports more than the 14-line test change it accompanies.\nSCORE durability: 14\nJUSTIFICATION durability: the changed expectation at tests/test_promotion_releases_its_worktree.py:346 reddens if the landing_check composition at reckon/crew/promotion_scope.py:3283 stops reporting the unstaged list, but the no_commit refusal at reckon/crew/promotion_evidence.py:1265 gains no guard because the fixture now satisfies it rather than making it fire.\nSCORE fit: 18\nJUSTIFICATION fit: the two hunks follow the file's existing idiom, since the four-key landing_check read already appears at tests/test_promotion_never_amends_its_commit.py:220 and the helpers.git import is already at tests/test_promotion_releases_its_worktree.py:22.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, reusing tests/helpers/git.py's git() and the existing crew.complete entry point, and a search of tests/helpers and reckon/crew for an existing way to cite a fixture's own commit found only that helper, which it calls.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-releases-its-worktree.html:71 non-blocking: the table labels 2043ca4984a3322e92590a37f3b13ce32da9f026 as the gate revision while the gate log it cites opens with revision da520d224afd7166824760d0794cb34a6dd4ba77, so the revision column cannot be reconciled with the log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-releases-its-worktree.html:47 non-blocking: the fragment states the gate ran on all_debug with SLURM_JOB_ID unset, the run condition the done-when names, but no cited log header records the partition, the job or SLURM_JOB_ID.\nFINDING tests/test_promotion_releases_its_worktree.py:315 non-blocking: the fixture now cites the commit its divergent worktree made, so it complies with the refusal at reckon/crew/promotion_evidence.py:1265 rather than exercising it, and a regression dropping that refusal leaves this file green while the one test that reaches it, tests/test_promotion_release.py::test_a_non_ancestor_worktree_is_kept_and_named_in_the_result, is red.\n",
+  "review_node": "review-of-qwnw-red-file-promotion-releases-its-worktree-da520d224afd",
+  "review_run_id": "r-20261118T133228587976-review-of-qwnw-red-file-promotion-releases-its-worktree-da520d224afd",
+  "reviewed_base_sha": "84df41f817943ad9f228ac90491b8faf87dbd2c1",
+  "reviewed_head_sha": "da520d224afd7166824760d0794cb34a6dd4ba77",
+  "reviewed_run_id": "r-20261118T062832453375-qwnw-red-file-promotion-releases-its-worktree",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T133228587976-review-of-qwnw-red-file-promotion-releases-its-worktree-da520d224afd"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:51:25.482457+00:00",
+  "total": 101
+}

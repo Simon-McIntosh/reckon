@@ -3,8 +3,12 @@
 Three behaviours are checked here, each making the guarded thing happen and
 reading the answer rather than resting on the suite being green:
 
-* ``--dry-run`` on a run failing three guards reports all three together, with
-  the one invocation that then promotes the run.
+* ``--dry-run`` on a run failing three guards reports all of them together —
+  four refusals, because a cited log with no exit record is a refusal of its
+  own — with the one invocation that answers the guards a flag can answer.
+  Run as it stands it files a durable promotion request, which is what
+  ``crew complete`` does now; ``--wait`` is what performs the promotion in the
+  call, and it refuses this run for the evidence the log does not carry.
 * a reason-taking flag refuses a value that begins with ``--``, so an omitted
   reason is reported as a missing reason rather than swallowed.
 * a manifest carrying the gate receipt in the contracted form promotes with no
@@ -199,8 +203,9 @@ def _three_guard_run(repository: Path, tmp_path: Path, run_id: str) -> None:
     """A run that fails the impl, review and gate-receipt guards at once.
 
     Its manifest cites a runnable command and a log that records no exit
-    status, so the fill supplies the command and the log path and the check is
-    refused only for the status the log does not carry.
+    status, so the fill supplies the command and the log path and cannot supply
+    the status: the check is refused for the exit status it does not carry, and
+    the log is refused for the record it never reached.
     """
     _set_plan(repository, impl=0.5)
     _pointer(
@@ -211,7 +216,7 @@ def _three_guard_run(repository: Path, tmp_path: Path, run_id: str) -> None:
     )
 
 
-def test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes(
+def test_the_dry_run_reports_every_refusal_and_the_invocation_that_answers_them(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20261019T090000000000-node-a"
@@ -235,22 +240,41 @@ def test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes(
 
     assert report["dry_run"] is True
     assert report["would_promote"] is False
-    assert report["refusal_count"] == 3, refusals
+    assert report["refusal_count"] == 4, refusals
     assert "impl did not move" in refusals
     assert "review" in refusals
     assert "the check that produced it" in refusals
+    # The log's own absence is a refusal beside the check's: the status the
+    # check does not carry is the status the log never recorded, and neither
+    # is a remedy the other states.
+    assert "carries no terminal EXIT" in refusals
     # Nothing was written: every record the promotion would touch reads back
     # byte-identical, the pointer included.
     assert _stores(repository, config_home) == before
 
-    # The emitted invocation is run as it stands, and promotes.
+    # The emitted invocation answers the guards a flag can answer. Run as it
+    # stands it files a durable promotion request rather than promoting in the
+    # call, so the run is still live when it returns and the fleet's admission
+    # service drains the request.
     argv = shlex.split(report["invocation"])
     assert argv[:4] == ["reckon", "crew", "complete", "--run"]
     result = CliRunner().invoke(
         cli_module.main, ["crew", *argv[2:], "--checkout-path", str(repository)]
     )
     assert result.exit_code == 0, result.output
-    assert not pointer_path(run_id).exists()
+    receipt = json.loads(result.output)
+    assert receipt["phase"] == "promotion-requested", receipt
+    assert receipt["run_id"] == run_id
+    assert pointer_path(run_id).exists()
+    # ``--wait`` performs the promotion in the call, and refuses it on the log a
+    # passing gate cannot be read from: the emitted flags answer the guards a
+    # flag answers, and no flag writes the exit record the log never reached.
+    waited = CliRunner().invoke(
+        cli_module.main,
+        ["crew", *argv[2:], "--wait", "--checkout-path", str(repository)],
+    )
+    assert waited.exit_code != 0, waited.output
+    assert "carries no terminal EXIT" in waited.output
     assert "promoted" in result.output or "run_id" in result.output
 
 
