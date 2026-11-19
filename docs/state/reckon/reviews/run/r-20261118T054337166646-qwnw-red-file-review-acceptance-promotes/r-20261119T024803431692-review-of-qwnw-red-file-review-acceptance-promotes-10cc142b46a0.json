@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:1789 (the sweep invoking accept_clean_review per pointer)",
+    "reckon/crew/recovery_review_acceptance.py:735 (the missing-and-not-implementation refusal the changed test asserts)",
+    "reckon/crew/promotion_requests.py:587 (the acceptance handler reference)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:30:28Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "2",
+      "severity": "blocking",
+      "text": "the reviewed run's manifest is eight lines with status complete and no tests or test_logs, no baseline_suite or after_suite, and changed_paths tests/test_review_acceptance-placeholder naming no real file; crew check --manifest refuses it with \"status is complete but no test result is recorded\", \"baseline_suite is missing\", \"after_suite is missing\" and \"messages_received: none\", so promotion can fill no gate receipt from the record the worker delivered."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-acceptance-promotes.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "the done_when requires the base run of the named file with its failing ids, logged beside the head run under this path, and no such file exists at head 10cc142b; git log --all lists no commit creating it and git ls-tree -r 10cc142b has no match, so the ids survive only in the run directory's base-arm.log rather than where the plan section records landing evidence."
+    },
+    {
+      "file": "head-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the worker's own head arm produced no gate log, holding only a slurm_script quoting failure at line 4, so the 6-passed head result comes from the landing harness's scoped gate, whose header at scoped-gate-1795054590377013242.log:4 names neither the all_debug partition nor the env -u SLURM_JOB_ID unset form and therefore does not itself evidence the done_when job conditions."
+    },
+    {
+      "file": "suite-arms.json",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "both baseline_suite and after_suite run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed test file, so the recorded 0/0 failure delta says nothing about this change and the added_failure_count of 0 rests on the base-arm and head-gate pair instead."
+    }
+  ],
+  "head_log_revision": "10cc142b46a0e2c7b29fd0982785e23f4117ff7f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the single commit 10cc142b against base 42fe90d0: tests/test_review_acceptance_promotes.py gains a keyword-only role parameter on _write_run, writes it into both the pointer and its node, builds the unmerged case as role test and updates both docstrings, with no assertion added, deleted or weakened.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a verdict, and the base run with its failing ids under docs/evidence/fragments/queued-work-needs-no-workaround/; the head pass is recorded at scoped-gate-1795054590377013242.log:1-6 and the base arm is red at base-arm.log:7 with EXIT=1 (\"1 failed, 5 passed, 1 error\"), but manifest.md names no cause or verdict and the required fragment does not exist at head.",
+    "goal": "the node's goal is that tests/test_review_acceptance_promotes.py passes in full on the primary branch; at head 10cc142b the file runs 6 passed with EXIT=0 (scoped-gate-1795054590377013242.log:6 records \"6 passed in 3.17s\"), and the single commit 10cc142b touches only that file.",
+    "manifest": "the reviewed run's manifest.md is eight lines: it states status complete and commits 10cc142b, but carries no tests, no test_logs, no suite arms and no negative_control_log, and its changed_paths is the placeholder tests/test_review_acceptance-placeholder; crew check --manifest refuses it on four findings.",
+    "write_paths": "the declared fence is reckon, tests, the queued-work-needs-no-workaround fragment directory and its figures directory; git diff 42fe90d0..10cc142b touches only tests/test_review_acceptance_promotes.py, inside the fence."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, so the guard is the base arm's reddening: reinstating role implement at tests/test_review_acceptance_promotes.py:238 makes test_an_unmerged_run_is_not_promoted fail as base-arm.log:7 records, and removing the missing-and-not-implementation guard at reckon/crew/recovery_review_acceptance.py:735 reddens on it too.",
+    "evidence": "scoped-gate-1795054590377013242.log:1-6 and base-arm.log:7 close the head pass and the base failing ids, but the reviewed run's own manifest.md names no gate, log or arm and crew check --manifest refuses it on four findings.",
+    "fit": "the new keyword-only parameter role: str = \"implement\" at tests/test_review_acceptance_promotes.py:162 follows the fixture's existing keyword style, and ruff check and ruff format --check both report nothing on the file.",
+    "goal_fidelity": "tests/test_review_acceptance_promotes.py:162-240 builds the unmerged run with role test and scoped-gate-1795054590377013242.log:6 records \"6 passed in 3.17s\" at head 10cc142b, so the named file passes in full.",
+    "reuse": "no definition is added: the change extends the existing _write_run fixture with a parameter instead of a second run builder, and the search of tests/helpers and reckon/crew for a role-scoped run constructor found only _write_run.",
+    "scope_discipline": "git diff 42fe90d0..10cc142b touches one path, tests/test_review_acceptance_promotes.py, inside the declared tests write path and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_review_acceptance_promotes.py passes in full on the primary branch; at head 10cc142b the file runs 6 passed with EXIT=0 (scoped-gate-1795054590377013242.log:6 records \"6 passed in 3.17s\"), and the single commit 10cc142b touches only that file.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a verdict, and the base run with its failing ids under docs/evidence/fragments/queued-work-needs-no-workaround/; the head pass is recorded at scoped-gate-1795054590377013242.log:1-6 and the base arm is red at base-arm.log:7 with EXIT=1 (\"1 failed, 5 passed, 1 error\"), but manifest.md names no cause or verdict and the required fragment does not exist at head.\nVERDICT write_paths: the declared fence is reckon, tests, the queued-work-needs-no-workaround fragment directory and its figures directory; git diff 42fe90d0..10cc142b touches only tests/test_review_acceptance_promotes.py, inside the fence.\nVERDICT manifest: the reviewed run's manifest.md is eight lines: it states status complete and commits 10cc142b, but carries no tests, no test_logs, no suite arms and no negative_control_log, and its changed_paths is the placeholder tests/test_review_acceptance-placeholder; crew check --manifest refuses it on four findings.\nVERDICT diff: read the single commit 10cc142b against base 42fe90d0: tests/test_review_acceptance_promotes.py gains a keyword-only role parameter on _write_run, writes it into both the pointer and its node, builds the unmerged case as role test and updates both docstrings, with no assertion added, deleted or weakened.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:1789 (the sweep invoking accept_clean_review per pointer), reckon/crew/recovery_review_acceptance.py:735 (the missing-and-not-implementation refusal the changed test asserts), reckon/crew/promotion_requests.py:587 (the acceptance handler reference)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_review_acceptance_promotes.py:162-240 builds the unmerged run with role test and scoped-gate-1795054590377013242.log:6 records \"6 passed in 3.17s\" at head 10cc142b, so the named file passes in full.\nSCORE evidence: 10\nJUSTIFICATION evidence: scoped-gate-1795054590377013242.log:1-6 and base-arm.log:7 close the head pass and the base failing ids, but the reviewed run's own manifest.md names no gate, log or arm and crew check --manifest refuses it on four findings.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 42fe90d0..10cc142b touches one path, tests/test_review_acceptance_promotes.py, inside the declared tests write path and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: the diff adds no assertion, so the guard is the base arm's reddening: reinstating role implement at tests/test_review_acceptance_promotes.py:238 makes test_an_unmerged_run_is_not_promoted fail as base-arm.log:7 records, and removing the missing-and-not-implementation guard at reckon/crew/recovery_review_acceptance.py:735 reddens on it too.\nSCORE fit: 19\nJUSTIFICATION fit: the new keyword-only parameter role: str = \"implement\" at tests/test_review_acceptance_promotes.py:162 follows the fixture's existing keyword style, and ruff check and ruff format --check both report nothing on the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added: the change extends the existing _write_run fixture with a parameter instead of a second run builder, and the search of tests/helpers and reckon/crew for a role-scoped run constructor found only _write_run.\nFINDING manifest.md:2 blocking: the reviewed run's manifest is eight lines with status complete and no tests or test_logs, no baseline_suite or after_suite, and changed_paths tests/test_review_acceptance-placeholder naming no real file; crew check --manifest refuses it with \"status is complete but no test result is recorded\", \"baseline_suite is missing\", \"after_suite is missing\" and \"messages_received: none\", so promotion can fill no gate receipt from the record the worker delivered.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-acceptance-promotes.html:1 blocking: the done_when requires the base run of the named file with its failing ids, logged beside the head run under this path, and no such file exists at head 10cc142b; git log --all lists no commit creating it and git ls-tree -r 10cc142b has no match, so the ids survive only in the run directory's base-arm.log rather than where the plan section records landing evidence.\nFINDING head-arm.log:1 non-blocking: the worker's own head arm produced no gate log, holding only a slurm_script quoting failure at line 4, so the 6-passed head result comes from the landing harness's scoped gate, whose header at scoped-gate-1795054590377013242.log:4 names neither the all_debug partition nor the env -u SLURM_JOB_ID unset form and therefore does not itself evidence the done_when job conditions.\nFINDING suite-arms.json:1 non-blocking: both baseline_suite and after_suite run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed test file, so the recorded 0/0 failure delta says nothing about this change and the added_failure_count of 0 rests on the base-arm and head-gate pair instead.\n",
+  "review_run_id": "r-20261119T024803431692-review-of-qwnw-red-file-review-acceptance-promotes-10cc142b46a0",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "10cc142b46a0e2c7b29fd0982785e23f4117ff7f",
+  "reviewed_run_id": "r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T024803431692-review-of-qwnw-red-file-review-acceptance-promotes-10cc142b46a0"
+  },
+  "reviewer_run_id": "r-20261119T024803431692-review-of-qwnw-red-file-review-acceptance-promotes-10cc142b46a0",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:10:59.073913+00:00",
+  "total": 104
+}
