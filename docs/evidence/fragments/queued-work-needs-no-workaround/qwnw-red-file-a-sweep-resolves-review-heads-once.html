@@ -51,18 +51,30 @@ EXIT=1</code></pre>
         <td>1 failed (<code>test_one_derivation_resolves_each_reviewed_head_once</code>), 3 passed, <code>EXIT=1</code></td>
       </tr>
       <tr>
-        <td>head run of the node's file, job on <code>all_debug</code></td>
-        <td><code>74dd0d0420cc2c470219387eae1a3354e1e487a4</code></td>
+        <td>node gate at the repaired head, batch job on <code>all_debug</code> with the job id removed</td>
+        <td><code>99db1c1af75fbbbf624eb737791bf9c371d56a8d</code></td>
         <td><code>pytest -q tests/test_a_sweep_resolves_review_heads_once.py</code></td>
         <td>4 passed, <code>EXIT=0</code></td>
       </tr>
       <tr>
+        <td>base arm of the declared suite</td>
+        <td><code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code></td>
+        <td><code>pytest -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>after arm of the declared suite</td>
+        <td><code>99db1c1af75fbbbf624eb737791bf9c371d56a8d</code></td>
+        <td><code>pytest -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
         <td>imports arm — the 82 test files naming
         <code>obligation_snapshot</code></td>
-        <td>base <code>9e1dc0dc…</code> vs head <code>74dd0d04…</code></td>
+        <td>base <code>9e1dc0dc…</code> vs head <code>65181b1b…</code></td>
         <td><code>pytest -q &lt;the 82 files&gt;</code> in each tree</td>
-        <td>both arms recorded as inline JSON in the manifest; the two trees name
-        the same file set</td>
+        <td>head 22 failed &lt;= base 34 failed, so no head-only id; the two trees
+        name the same file set</td>
       </tr>
     </tbody>
   </table>
