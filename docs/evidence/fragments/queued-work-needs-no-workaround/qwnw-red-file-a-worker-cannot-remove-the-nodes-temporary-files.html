@@ -1,0 +1,26 @@
+<section id="qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files-base-refusal">
+<h2>Base run: the literal argv no longer matched the composed fence</h2>
+<p>The node's test file failed one case at base <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> on all_debug as an srun task: seven cases passed and <code>test_the_composed_fence_argv_for_a_fixed_root_set_is_literal</code> failed. The mount list matched; the assertion over the whole argv stopped at the <code>--setenv RECKON_WORKER_FENCE</code> triple the composition appends after its mounts, three extra items the expected list did not carry. Verdict: <em>test wrong</em>. Commit <code>edd79b651054fe81edd10a831013a1baa0451da2</code> ("fix(fence): re-enter worker protection in scheduler tasks") deliberately carries the composed mounts into a scheduler task as a recipe, and its own tests cover that recipe; the literal-argv case still encoded the pre-recipe shape.</p>
+<pre># revision: b24fe95a789c82cd33f22a912b4dbbf94d5e2193
+# host: 98dci4-clu-3142.iter.org
+# tree: /tmp/mcintos-landing-ef46c5a3566b-x47HN2/tree
+module: /tmp/mcintos-landing-ef46c5a3566b-x47HN2/tree/reckon/_worker_fence.py
+cwd: /tmp/mcintos-landing-ef46c5a3566b-x47HN2/tree
+.......F                                                                 [100%]
+E         At index 31 diff: '--setenv' != '--'
+FAILED tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py::test_the_composed_fence_argv_for_a_fixed_root_set_is_literal
+1 failed, 7 passed in 3.49s
+EXIT=1</pre>
+</section>
+<section id="qwnw-red-file-a-worker-cannot-remove-the-nodes-temporary-files-head-pass">
+<h2>Head run: the same file passes in full</h2>
+<p>At head <code>ce86d1f8b2d4db12f84dff7aac2cc5a948fc1fe8</code> the file passes in full (8 passed) on all_debug as a job of its own, with its output on shared storage. The repaired case asserts the mounts unchanged, then the <code>--setenv</code> triple and the recipe it encodes, field for field: the mounts as the recipe's own argv, the resolved program, the runtime paths and the scratch root, the directory sources in their sorted order, the scratch, and the absolute-path limit of the task route.</p>
+<pre># revision: ce86d1f8b2d4db12f84dff7aac2cc5a948fc1fe8
+# host: 98dci4-clu-3142.iter.org
+# tree: /tmp/mcintos-landing-95bd35be154d-AShCBt/tree
+module: /tmp/mcintos-landing-95bd35be154d-AShCBt/tree/reckon/_worker_fence.py
+cwd: /tmp/mcintos-landing-95bd35be154d-AShCBt/tree
+........                                                                 [100%]
+8 passed in 3.46s
+EXIT=0</pre>
+</section>
