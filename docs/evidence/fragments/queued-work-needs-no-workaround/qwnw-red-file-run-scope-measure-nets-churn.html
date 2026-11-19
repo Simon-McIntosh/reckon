@@ -15,3 +15,13 @@ carries the run head, so the merge-only measurement never ran. A citation the ru
 <p>Logs: <code>arm-base-target.log</code> and
 <code>scoped-gate-1795054334811684200.log</code> under the run directory.</p>
 </section>
+<section id="qwnw-red-file-run-scope-measure-nets-churn-merge-parent">
+<h3>The acceptance basis is a parent, not an ancestor</h3>
+<p>Review found the first repair accepted any commit the run head descended into.</p>
+<p>A commit made on top of the run head brings work the run never touched, and charging
+its first-parent diff would record another writer as this run. The guard now reads the citation parents:</p>
+<pre>git rev-list --parents -n 1 &lt;citation&gt;   # admitted only when the run head is one of them</pre>
+<p>The new case makes a commit on top of the run head in a second worktree and cites it.</p>
+<p>At <code>84832e9c</code> it failed with <code>DID NOT RAISE CrewError</code>; at the repair head it passes.</p>
+<p>Both suite arms, <code>58 passed</code> and <code>EXIT=0</code>, are in <code>baseline_suite.log</code> and <code>after_suite.log</code>.</p>
+</section>
