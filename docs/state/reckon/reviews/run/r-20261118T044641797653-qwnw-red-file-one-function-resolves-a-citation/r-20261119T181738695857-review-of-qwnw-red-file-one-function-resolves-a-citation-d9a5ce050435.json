@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/crew/merge.py:470 _copy_objects",
+    "reckon/crew/merge.py:926 _copy_objects",
+    "reckon/crew/merge.py:1653 _copy_objects",
+    "reckon/crew/pending_landing.py:356 head_on_remote_branch",
+    "reckon/crew/pending_landing.py:1200 head_on_remote_branch",
+    "reckon/crew/crew_run_commands.py:4517 head_on_remote_branch",
+    "reckon/crew/recovery_review_acceptance.py:280 head_on_remote_branch",
+    "reckon/crew/reports.py:2054 _revision_is_committed",
+    "reckon/crew/promotion.py:785 _primary_branch_revision",
+    "reckon/crew/recovery_classification.py:1105 _primary_branch_revision",
+    "reckon/crew/recovery_classification.py:3461 _primary_branch_revision."
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:20:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the green-run block carries only \"2 passed / EXIT=0\", with no revision or command header, so the page alone cannot tie the passing run to d9a5ce05 while the base block above it carries both."
+    }
+  ],
+  "head_log_revision": "d9a5ce0504354e337adb8a16710939bd90dd87b3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "read commit by commit from 73b9ac21 to d9a5ce05; 2ac68d544b replaces five hand-rolled peel sites with the shared resolver, ed49ec95b6 repoints the port-22 test at that answer, and three docs commits record the two importer arms by revision.",
+    "done_when": "the done_when asks for the named file green at head, an arm over the importing test files adding no failure against base, and the base run red; manifest.md records tests: tests/test_one_function_resolves_a_citation.py, test_logs:, artifacts: and negative_control_log:, and every log behind them is on shared storage.",
+    "goal": "the node's goal is that tests/test_one_function_resolves_a_citation.py passes in full on the primary branch; at d9a5ce05 a grep for a commit peel under reckon leaves exactly reckon/crew/recovery_review_subject.py:302, and the five former readers now call `_resolve_commit`.",
+    "manifest": "read at manifest.md:1-19; it reports the named file passing at head, names the scoped gate and the base control log by path, and carries both suite arms as inline JSON at 40-character revisions.",
+    "write_paths": "the declared paths are reckon, tests and the fragment directory; all six paths in the diff sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_one_function_resolves_a_citation.py:44 reddens on the regression \u2014 reproduced here, where the unremediated tree fails over four named sites \u2014 while the run's own added assertion is only the stub repoint at tests/test_a_remote_read_is_bounded.py:170.",
+    "evidence": "the scoped gate scoped-gate-1795111645201330202.log reads \"2 passed in 3.64s\" at d9a5ce05 with EXIT=0 and negative-control-base.log reads \"1 failed, 1 passed\" at 73b9ac21 with EXIT=1, though neither names the all_debug job the done_when requires.",
+    "fit": "the call-time `from reckon.crew.recovery import _resolve_commit` at reckon/crew/merge.py:444 follows the same local-import idiom as reckon/crew/routing.py:811, and no new name is introduced.",
+    "goal_fidelity": "at d9a5ce05 the only commit peel left under reckon is reckon/crew/recovery_review_subject.py:302, so the set assertion at tests/test_one_function_resolves_a_citation.py:44 holds.",
+    "reuse": "every touched site delegates to the owner at reckon/crew/recovery_review_subject.py:259; the capability search over reckon found only `_commit_resolves_in` and `_resolve_abbreviated_commit` wrappers around that same resolver, so nothing is duplicated.",
+    "scope_discipline": "the diff's six paths are reckon/crew/merge.py, reports.py, recovery_classification.py, recovery_review_acceptance.py, tests/test_a_remote_read_is_bounded.py and the fragment, all inside the declared reckon, tests and fragment paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_one_function_resolves_a_citation.py passes in full on the primary branch; at d9a5ce05 a grep for a commit peel under reckon leaves exactly reckon/crew/recovery_review_subject.py:302, and the five former readers now call `_resolve_commit`.\nVERDICT done_when: the done_when asks for the named file green at head, an arm over the importing test files adding no failure against base, and the base run red; manifest.md records tests: tests/test_one_function_resolves_a_citation.py, test_logs:, artifacts: and negative_control_log:, and every log behind them is on shared storage.\nVERDICT write_paths: the declared paths are reckon, tests and the fragment directory; all six paths in the diff sit inside them.\nVERDICT manifest: read at manifest.md:1-19; it reports the named file passing at head, names the scoped gate and the base control log by path, and carries both suite arms as inline JSON at 40-character revisions.\nVERDICT diff: read commit by commit from 73b9ac21 to d9a5ce05; 2ac68d544b replaces five hand-rolled peel sites with the shared resolver, ed49ec95b6 repoints the port-22 test at that answer, and three docs commits record the two importer arms by revision.\nCALL_SITES: reckon/crew/merge.py:470 _copy_objects, reckon/crew/merge.py:926 _copy_objects, reckon/crew/merge.py:1653 _copy_objects, reckon/crew/pending_landing.py:356 head_on_remote_branch, reckon/crew/pending_landing.py:1200 head_on_remote_branch, reckon/crew/crew_run_commands.py:4517 head_on_remote_branch, reckon/crew/recovery_review_acceptance.py:280 head_on_remote_branch, reckon/crew/reports.py:2054 _revision_is_committed, reckon/crew/promotion.py:785 _primary_branch_revision, reckon/crew/recovery_classification.py:1105 _primary_branch_revision, reckon/crew/recovery_classification.py:3461 _primary_branch_revision.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: at d9a5ce05 the only commit peel left under reckon is reckon/crew/recovery_review_subject.py:302, so the set assertion at tests/test_one_function_resolves_a_citation.py:44 holds.\nSCORE evidence: 16\nJUSTIFICATION evidence: the scoped gate scoped-gate-1795111645201330202.log reads \"2 passed in 3.64s\" at d9a5ce05 with EXIT=0 and negative-control-base.log reads \"1 failed, 1 passed\" at 73b9ac21 with EXIT=1, though neither names the all_debug job the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's six paths are reckon/crew/merge.py, reports.py, recovery_classification.py, recovery_review_acceptance.py, tests/test_a_remote_read_is_bounded.py and the fragment, all inside the declared reckon, tests and fragment paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_one_function_resolves_a_citation.py:44 reddens on the regression \u2014 reproduced here, where the unremediated tree fails over four named sites \u2014 while the run's own added assertion is only the stub repoint at tests/test_a_remote_read_is_bounded.py:170.\nSCORE fit: 19\nJUSTIFICATION fit: the call-time `from reckon.crew.recovery import _resolve_commit` at reckon/crew/merge.py:444 follows the same local-import idiom as reckon/crew/routing.py:811, and no new name is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: every touched site delegates to the owner at reckon/crew/recovery_review_subject.py:259; the capability search over reckon found only `_commit_resolves_in` and `_resolve_abbreviated_commit` wrappers around that same resolver, so nothing is duplicated.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:26 non-blocking: the green-run block carries only \"2 passed / EXIT=0\", with no revision or command header, so the page alone cannot tie the passing run to d9a5ce05 while the base block above it carries both.\n",
+  "review_run_id": "r-20261119T181738695857-review-of-qwnw-red-file-one-function-resolves-a-citation-d9a5ce050435",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "d9a5ce0504354e337adb8a16710939bd90dd87b3",
+  "reviewed_run_id": "r-20261118T044641797653-qwnw-red-file-one-function-resolves-a-citation",
+  "reviewer": "review-of-qwnw-red-file-one-function-resolves-a-citation",
+  "reviewer_run_id": "r-20261119T181738695857-review-of-qwnw-red-file-one-function-resolves-a-citation-d9a5ce050435",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:47:42.852513+00:00",
+  "total": 111
+}
