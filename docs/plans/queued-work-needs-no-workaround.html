@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="780">
+<meta name="plan-version" content="781">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2410,6 +2410,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree" data-who="reckon-build" data-when="2026-11-19T03:48:00.069Z">
     <div class="r-comment-body"><p>tests/test_refused_promotion_leaves_the_worktree.py accepts a binary receipt that a live peer holds, the one class whose acceptance promotion may refuse; base 42fe90d fails with DID NOT RAISE CrewError; head 33a80ab passes 1 passed; suite arms 58 passed on both sides</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063103175947-qwnw-red-file-crew-watch-stream" data-who="reckon-build" data-when="2026-11-19T03:52:03Z">
+    <div class="r-comment-body"><p>reckon/crew/recovery_classification.py — _delivery_reading now yields a delivery reading for a run classified `scoring` as well as `promotable`, so a run delivered and awaiting review is counted in the delivered family instead of falling through to the 0d default (28df8cc0ba2dcfcf53ff94183cf0a09a263c1ec0). Measure: tests/test_crew_watch_stream.py `3 passed` at that head as an all_debug job; base 42fe90d0b0a46060bafde2490dda7d4002cda478 `1 failed, 2 passed`, the late-reader row printing `0w  0r  0h  0d` where the assertion expects `1d`.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
