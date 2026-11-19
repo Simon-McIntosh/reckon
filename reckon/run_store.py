@@ -443,6 +443,44 @@ def _archive_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}.archive{path.suffix}")
 
 
+def _plan_owned_identities(
+    connection: sqlite3.Connection,
+    schemas: Iterable[str],
+    *,
+    project: str | None,
+    plan: str,
+    run_ids: Iterable[str] | None,
+    node: str | None,
+) -> list[str]:
+    """The rows whose plan owner answers *plan*, in the store's order.
+
+    The owner is :func:`reckon.ledger.row_plan`, so the store asks it about the
+    three fields it reads — the row's own plan, the implementation move it
+    reported, the node definition it ran — rather than comparing the ``plan``
+    column, which is that answer at write time and can outlive the detail a
+    rotation washes out afterwards. The candidates arrive through
+    :func:`_plan_owner_sql` so a plan read decodes the rows that expression
+    admits rather than every row in the project; the owner then decides.
+    """
+    from reckon import ledger
+
+    owned = []
+    for run_id, payload, detail in _record_rows(
+        connection,
+        schemas=schemas,
+        project=project,
+        run_ids=run_ids,
+        node=node,
+        plan=plan,
+        fields=PLAN_OWNER_FIELDS,
+        narrowed=True,
+    ):
+        record = {**json.loads(payload), **(json.loads(detail) if detail else {})}
+        if ledger.row_plan(record) == plan:
+            owned.append(str(run_id))
+    return owned
+
+
 def _record_rows(
     connection: sqlite3.Connection,
     *,
@@ -453,15 +491,35 @@ def _record_rows(
     node: str | None = None,
     fields: tuple[str, ...] | None = None,
     activity_since: float | None = None,
+    narrowed: bool = False,
 ) -> Iterator[tuple[Any, ...]]:
     """Read selected records through the single durable/detail join.
 
-    Plan and activity selection search their indexed columns. Activity
-    predicates consume a buffered narrow projection after its cursor closes,
-    then only matching identities fetch the requested payload.
+    A plan filter resolves the identities :func:`reckon.ledger.row_plan` names
+    through a narrowed candidate query before any payload is fetched, and
+    activity predicates consume a buffered narrow projection after its cursor
+    closes, so only matching identities fetch the requested payload.
     Python selection, decoding and consumption therefore hold no read lock.
     Encoded rows are buffered per query; identity batches stay below driver limits.
     """
+    if plan is not None and not narrowed:
+        yield from _record_rows(
+            connection,
+            schemas=schemas,
+            project=project,
+            run_ids=_plan_owned_identities(
+                connection,
+                schemas,
+                project=project,
+                plan=plan,
+                run_ids=run_ids,
+                node=node,
+            ),
+            node=node,
+            fields=fields,
+            activity_since=activity_since,
+        )
+        return
     selected = None if run_ids is None else sorted(set(map(str, run_ids)))
     batches = (
         [None]
@@ -903,62 +961,25 @@ PLAN_OWNER_FIELDS = ("plan", "impl_move", "node_definition")
 
 
 def _plan_owner_sql() -> str:
-    """A row's plan, in the precedence :func:`reckon.ledger.row_plan` states."""
+    """The owner precedence as a narrowing expression over both halves of a row.
+
+    :func:`reckon.ledger.row_plan` decides which plan a row belongs to; this
+    expression lets the store reach the rows that decision can keep without
+    decoding every row in the project first. It reads the three fields that
+    owner reads, in the same order, from the detail half over the durable half.
+    A row it lets through that the owner does not name is discarded by the
+    owner before any caller sees it, so an over-wide expression costs a decode
+    and never an answer; a row it drops that the owner names would be a wrong
+    answer, which is why ``tests/test_a_plan_read_asks_the_row_owner.py``
+    compares the narrowing against the owner over every combination of the
+    three fields.
+    """
     merged = "json_patch(r.payload, COALESCE(d.detail, '{}'))"
     fields = ("plan", "impl_move.plan", "node_definition.plan")
     terms = [
         f"NULLIF(trim(json_extract({merged}, '$.{field}')), '')" for field in fields
     ]
-    return "COALESCE(" + ", ".join(terms) + ", '')"
-
-
-def plan_owner_rows(
-    project: str,
-    *,
-    path: str | Path | None = None,
-    run_ids: Iterable[str] | None = None,
-) -> list[tuple[str, dict[str, Any]]] | None:
-    """Each stored row's run id beside the fields that decide its plan.
-
-    The ``plan`` column is the answer :func:`reckon.ledger.row_plan` gave when
-    the row was written. A rotation washes wide detail out of the store
-    afterwards, and the node definition a brief-carried row's plan is read from
-    is detail, so the column can outlive the evidence it was derived from. A
-    reader that asks which rows a plan owns therefore asks that owner about
-    every row the store holds, which needs nothing but the three fields it
-    reads.
-
-    The projection is taken in SQL — each encoded row is searched for those
-    keys rather than decoded whole — and the answer keeps the order a stored
-    read answers. None means the store is absent, exactly as
-    :func:`stored_run_rows` reports an absent store.
-    """
-    target = store_path() if path is None else Path(path)
-    if not target.exists():
-        return None
-    connection = _open_readonly(target)
-    try:
-        if not _refuse_owed_migration(connection, target):
-            return []
-        projections = []
-        for run_id, payload, detail in _record_rows(
-            connection,
-            schemas=_read_attached_tables(connection, target),
-            project=project,
-            run_ids=run_ids,
-            fields=PLAN_OWNER_FIELDS,
-        ):
-            projections.append(
-                (
-                    str(run_id),
-                    {**json.loads(payload), **(json.loads(detail) if detail else {})},
-                )
-            )
-        return projections
-    except sqlite3.Error as error:
-        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
-    finally:
-        connection.close()
+    return "COALESCE(" + ", ".join([*terms, "''"]) + ")"
 
 
 def project_snapshot(project: str) -> dict[str, Any]:
