@@ -310,11 +310,17 @@ def test_each_not_fresh_reason_speaks_once_and_leaves_the_snapshot_alone(
 ) -> None:
     """A remedy speaks once and changes nothing; a reload shows the list.
 
-    The absent and aged cases each name their reason and the remedy. The
+    The absent and aged cases each name their reason and the remedy; the
+    absent one holds a live run, because a producer's absence is silent for a
+    session that dispatched nothing. The
     stale-code case is no longer a remedy: a live producer on older code is
     reloading, so it answers with the last snapshot's list under the reloading
     heading and withholds the remedy instead.
     """
+    # The absent case must be exactly the running hook: an absent producer is
+    # silent for a session that dispatched nothing, so a session holding one
+    # live run is what earns the no-producer line this case asserts.
+    _live_run(repository, tmp_path, run_id=BLOCKED_RUN_ID, node_id=BLOCKED_NODE_ID)
     absent = _drive(_prompt_payload(repository), tmp_path=tmp_path)
     path = obligation_snapshot.snapshot_path(PROJECT, SESSION)
     line = _line(absent)

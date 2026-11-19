@@ -1846,7 +1846,16 @@ def reapply_acknowledgements(
     pointers as they read now. The acknowledgement's own deadline bounds the
     effect: a deferral that has expired is not in force, so the duty returns to
     the list and the stop blocks again.
+
+    The read is paid only when a deferral is recorded: with none in force at
+    publish and none since, re-partitioning cannot change the list, and the
+    derivation module that reads them carries the rest of the crew facade,
+    which the prompt path must never load.
     """
+    if not payload.get("acknowledged") and not snapshot_module().deferrals_recorded(
+        project
+    ):
+        return payload
     module = _obligations_module()
     items = list(payload.get("obligations") or ())
     identities = {(item.get("run_id"), item.get("kind")) for item in items}

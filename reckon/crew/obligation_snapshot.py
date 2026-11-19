@@ -166,6 +166,46 @@ def live_pointer_path(run_id: str) -> Path:
     return crew_home() / "live" / f"{run_id}.json"
 
 
+def _deferral_files() -> list[Path]:
+    """Every file that could hold one deferral, promoted records first."""
+    paths: list[Path] = []
+    for directory in (crew_home() / "acknowledgements", crew_home() / "live"):
+        try:
+            paths.extend(sorted(directory.glob("*.json")))
+        except OSError:
+            continue
+    return paths
+
+
+def _read_deferral(path: Path) -> dict[str, Any]:
+    """One deferral record from a file, or an empty mapping."""
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return record if isinstance(record, dict) else {}
+
+
+def deferrals_recorded(project: str) -> bool:
+    """Whether any run of this project carries a recorded deferral.
+
+    Applying a deferral can only change a list when one is recorded, and
+    reading the records and their conditions costs the crew facade -- every
+    derivation module with it -- which the prompt path must not load. A
+    deferral lives on a live run's pointer and, once the run is promoted, in
+    one file under the record's own directory; both paths are repeated here for
+    the reason this module repeats the config home.
+    """
+    for path in _deferral_files():
+        record = _read_deferral(path)
+        if not record or not record.get("acknowledgement"):
+            continue
+        if str(record.get("project") or project) != project:
+            continue
+        return True
+    return False
+
+
 def cleanup_intent_path(run_id: str) -> Path:
     """Path of the release the terminal cleanup queue holds for one run.
 
@@ -316,28 +356,34 @@ def station_runtime_candidate(
     """The node's station root and which candidate produced it.
 
     The order is the store's own -- this node's runtime directory, then the
-    per-user runtime directory, then ``TMPDIR`` -- asked of the store rather
-    than restated, so a test pins the two against each other. The store is
-    imported at the call: the prompt hook loads this module by file path on a
-    turn's opening, and the crew package a module-scope import would drag in is
-    paid only by a read that has reached the point of opening the database.
+    per-user runtime directory, then ``TMPDIR`` -- restated here: the prompt
+    hook loads this module by file path and cannot reach ``reckon.crew``.
     """
-    from reckon.crew import station_store
-
-    return station_store.runtime_root_source(
-        environ=environ, run_user_root=run_user_root
+    env = os.environ if environ is None else environ
+    runtime = str(env.get("XDG_RUNTIME_DIR") or "").strip()
+    if runtime:
+        return Path(runtime), "runtime-directory"
+    run_user = (
+        Path(run_user_root)
+        if run_user_root is not None
+        else Path("/run/user/" + str(os.getuid()))
     )
+    if run_user.is_dir():
+        return run_user, "per-user-runtime"
+    scratch = str(env.get("TMPDIR") or "").strip()
+    if scratch:
+        return Path(scratch), "scratch"
+    return None, "none"
 
 
 STATION_SNAPSHOT_NAME = "station-snapshot.json"
 STATION_HEARTBEAT_NAME = "station-heartbeat.json"
+STATION_DATABASE_NAME = "station.sqlite3"
 
 
 def station_database_name() -> str:
-    """The store's own file name, asked of the store rather than restated."""
-    from reckon.crew import station_store
-
-    return station_store.DATABASE_NAME
+    """The store's own file name, restated for the same reason."""
+    return STATION_DATABASE_NAME
 
 
 # A heartbeat older than this is reported stale rather than trusted: the
@@ -1179,7 +1225,58 @@ def _row_with_age(row: Any, instant: datetime) -> Any:
         return row
     measured = dict(row)
     measured[_AGE_SECONDS] = _age_in_seconds(measured.pop(_AGE_SINCE, None), instant)
-    return _derivation_module().refresh_overdue_remedy(measured, now=instant)
+    return refresh_overdue_remedy(measured, now=instant)
+
+
+def _age_of_instant(value: Any, *, now: datetime) -> int:
+    """The non-negative age in seconds of one stored instant."""
+    stamp = _parse_instant(value)
+    if stamp is None:
+        return 0
+    return max(0, int((now - stamp).total_seconds()))
+
+
+def _overdue_figure(seconds: int) -> str:
+    """How an overdue interval is printed in a duty's remedy text."""
+    digits = max(0, int(seconds))
+    return f"{digits // 60}m {digits % 60}s"
+
+
+def _render_overdue_remedy(
+    remedy: Mapping[str, Any], *, age: int, now: datetime
+) -> str:
+    """Compose an overdue duty's text from its intervals at one clock reading."""
+    figure = _overdue_figure(int(age))
+    stage = str(remedy.get("stage") or "")
+    if stage:
+        stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
+        text = (
+            f"review overdue by {figure}: the station's tick has run "
+            f"{_overdue_figure(stage_age)} in its {stage} stage, which holds "
+            "the reflex's sweep"
+        )
+        dispatch = str(remedy.get("dispatch") or "")
+        if dispatch:
+            return f"{text}; dispatch the review now with: {dispatch}"
+        return f"{text}; dispatch the review for session {remedy.get('session')!r} now"
+    return (
+        f"review overdue by {figure}: session {remedy.get('session')!r} "
+        "has an armed follower, but its reflex has not dispatched this "
+        "run's review; inspect the follower's review pass"
+    )
+
+
+def refresh_overdue_remedy(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
+    """One duty row whose time-dependent remedy text is composed at ``now``."""
+    refreshed = dict(row)
+    remedy = refreshed.get("overdue_remedy")
+    age = refreshed.get("age_seconds")
+    if not isinstance(remedy, Mapping) or isinstance(age, bool):
+        return refreshed
+    if not isinstance(age, int):
+        return refreshed
+    refreshed["next_command"] = _render_overdue_remedy(remedy, age=age, now=now)
+    return refreshed
 
 
 def _unreadable_record_remedy(finding: Mapping[str, Any]) -> str:
@@ -2199,8 +2296,12 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             state.unreconciled.get(session, state.unreconciled.get("", 0))
         ),
     }
-    delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
-    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
+    delivery = module.recovery_classification.delivery_summary(
+        state.rows, session=session
+    )
+    summary.update(
+        {key: value for key, value in delivery.items() if key != "remove_pointers"}
+    )
     return {
         "project": state.project,
         "session": session,
