@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="76">
+<meta name="plan-version" content="77">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -466,6 +466,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261119T070603914339-review-of-a-promoted-run-with-no-live-worker-gives-up-its-pointer-34f98b12266e" data-who="reckon-build" data-when="2026-11-19T08:09:34.573Z">
     <div class="r-comment-body"><p>An independent review of run r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer at head 34f98b12266e15e762088a522889fa5f0606e9d0 against base 0be7b97a81c3d7771f57391a1991460b9cc44d52 is recorded as parsed with all six dimensions scored (goal_fidelity 17, evidence 17, scope_discipline 19, durability 16, fit 18, reuse 12), added_failure_count 0 with no added failure ids, five item verdicts plus the CALL_SITES line naming five production call sites, and three findings, all non-blocking: _measured_workspace_refusal at reckon/crew/pending_landing.py:1158 re-implements the inspection block landed_workspace_refusal owns at :1106, _release_measured_pointer retires at :1219 without the landing_check refusal its sibling applies at :113, and the reviewed manifest.md:5 lists one of the three commits in its range.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer" data-who="reckon-build" data-when="2026-11-18T20:17:47Z">
+    <div class="r-comment-body"><p>The release starts from recovery_repair_dispatch._reviewed_run_is_busy, the crew&#x27;s existing read of whether a run&#x27;s own worker still holds its finding. A run that shows no turn in progress is released exactly as at 0be7b97a, whether or not it names a process. A run that does show one — a later attempt its repair mark has been superseded by, or a resumed turn its stream never finished — is released only when the process its record names is proved dead by process_liveness.record_process_liveness, whose tri-state answers from the placed run&#x27;s scheduler job, then the recorded pid under the kernel start tick taken at registration, then the session walk; the unknown arm keeps the run and is reported once with the busy reason it carries. There is no second liveness implementation in pending_landing: the previous WORKER_* tri-state and its _named_process_state are deleted, and the only new helper is a four-line call into process_liveness. A measurement run is released on its promotion alone once its tree is clean and at its promoted head. Measured: the four cases this node added behave as the section states — a stale resumed turn with a recorded dead pid is released, a turn in progress naming no process is kept and reported, a kept worktree holding uncommitted work or a commit past the promoted head is refused by the workspace check — and all ten cases of tests/test_a_merged_promoted_run_is_released.py pass unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-16T23:25:00Z">
     <div class="r-comment-body"><p>§3 landed (head <code>e44a9454d7</code>, review 120 of 120, no added failures). A repeated completion call now re-evaluates a parked request and dates the check, and a request parked for more than 30 minutes is an obligation naming its condition. The worker's replay showed the base drain already promotes a repaired request when a slot is free, so the section's first case was already met; the congested case is §12.</p></div>
