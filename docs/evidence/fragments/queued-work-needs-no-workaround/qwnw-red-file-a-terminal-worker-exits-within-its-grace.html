@@ -1,0 +1,37 @@
+<section id="qwnw-red-file-a-terminal-worker-exits-within-its-grace">
+<h2 id="qwnw-red-file-a-terminal-worker-exits-within-its-grace-head">A terminal worker exits within its grace: the spawn guard refused a launch it superseded</h2>
+
+<p id="qwnw-red-file-a-terminal-worker-exits-within-its-grace-base">The file was red at base <code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code>: <code>1 failed, 8 passed</code> of 9 cases. The failing id was
+<code>tests/test_a_terminal_worker_exits_within_its_grace.py::test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline</code>,
+and it failed before its own subject was reached: the supervisor printed
+<code>run 'r-terminal-grace' no longer names this supervisor's launch attempt</code> to stderr and spawned no worker, so the case's driver timed out waiting for the worker record
+(<code>the stub worker's record not met within 15s</code>).</p>
+
+<p id="qwnw-red-file-a-terminal-worker-exits-within-its-grace-cause">One cause, verdict <strong>product wrong</strong>. The spawn guard in <code>_supervisor_spawn_worker</code> refused whenever the pointer named the launch's own attempt number with a
+<em>different</em> start instant. A resume reaches its supervisor through <code>supervised_launch</code>, which writes the spec and the attempt marker and starts the supervisor, and writes the pointer's attempt and start only afterwards, in
+<code>record_resumption</code>. While that supervisor runs the pointer therefore still carries the dispatch-time instant at the same attempt number, and that is the launch the resume has taken over.</p>
+
+<p id="qwnw-red-file-a-terminal-worker-exits-within-its-grace-repair">The repair compares the two stamps for order instead of difference. A pointer instant <em>later</em> than the spec's belongs to a launch made after this one was built and is still
+refused: the recovered-attempt case in <code>tests/test_admission_survives_a_kill.py</code> still raises <code>SupersededSupervisorError</code> for it. An <em>earlier</em> instant is the identity this launch supersedes, so the worker starts;
+stamps that do not parse keep the difference test, and the reservation and live-worker refusals are untouched.</p>
+
+<p id="qwnw-red-file-a-terminal-worker-exits-within-its-grace-repro">The defect was reproduced before the repair against the case's own fixture: the pointer named attempt 1 with start <code>2026-10-02T00:00:00Z</code>, the spec named attempt 1
+with a fresh start, and the supervisor raised instead of spawning (no <code>worker.json</code>). After the repair the same script printed <code>worker record: True</code>.
+Two arms hold the guard's rule: a pointer stamp later than the spec's still refuses, and a pointer stamp older than the spec's own now spawns
+(<code>tests/test_admission_survives_a_kill.py::test_a_launch_supersedes_the_stamp_a_pointer_already_names</code>, red at <code>b24fe95a</code> with <code>SupersededSupervisorError</code>, green at the head).</p>
+
+<p id="qwnw-red-file-a-terminal-worker-exits-within-its-grace-head-run">Head measurement: the named file passes <code>9 passed</code> at <code>4a6768580030748024</code> as an all_debug job with <code>SLURM_JOB_ID</code> unset from the
+environment the test sees, output on shared storage, <code>EXIT=0</code>. The red arm follows, from the base revision.</p>
+
+<pre id="qwnw-red-file-a-terminal-worker-exits-within-its-grace-red-log">
+# revision: b24fe95a789c82cd33f22a912b4dbbf94d5e2193
+# tree: /tmp/reckon-crew-scratch/r-20261118T063519139605-qwnw-red-file-a-terminal-worker-exits-within-its-grace/base-arm-b24fe95
+# partition: in-place base arm; the head arm is the all_debug job
+# host: 98dci4-clu-3051.iter.org
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_terminal_worker_exits_within_its_grace.py
+....F....                                                                [100%]
+FAILED tests/test_a_terminal_worker_exits_within_its_grace.py::test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline - AssertionError: [AssertionError("the stub worker's record not met within 15s")]
+1 failed, 8 passed in 118.04s (0:01:58)
+EXIT=1
+</pre>
+</section>
