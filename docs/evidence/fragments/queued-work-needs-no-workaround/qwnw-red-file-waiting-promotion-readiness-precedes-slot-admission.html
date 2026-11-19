@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission-landing">
+  <h2>A parked readiness recheck already clears its budget</h2>
+
+  <p><strong>What changed.</strong> Nothing in the product or in the test. This
+  node's measure is a run of
+  <code>tests/test_waiting_promotion_readiness_precedes_slot_admission.py</code>
+  at its base revision on the partition its done-when names, and that run
+  collects four passes. The red-file cause was repaired before this node was
+  dispatched: <code>bdd03eaf6c</code> added the cases, <code>c524dd7eb7</code>
+  made a full promotion slot not block a parked request's readiness refresh,
+  and <code>be128087c1</code> reused the readiness verdict the refresh had
+  already reached instead of reading every completed review a second time, so
+  each parked request is judged once per wake.</p>
+
+  <h3 id="qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission-measured">Measured</h3>
+
+  <p>The gate ran as a job on <code>all_debug</code> against a scratch copy of
+  the base tree. Its log's first lines name the revision, host, tree and
+  command, and its last line reads <code>EXIT=0</code>. The two cases that
+  carry the budget are the same one parametrised test, and the figure each
+  prints is the one the assertion reads.</p>
+
+  <table id="qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, gate arm on <code>all_debug</code></td>
+        <td><code>35fb9f3ae76</code>, scratch tree on the compute node</td>
+        <td>4 passed in 2.02 s, <code>EXIT=0</code>; the hundred-request wake
+        reads 0.080743 s for the incomplete batch and 0.212739 s for the
+        complete batch, against <code>assert elapsed &lt; 1.0</code></td></tr>
+      <tr><td>the node's file, first run on the login node, cold page cache
+        and cold bytecode</td>
+        <td><code>35fb9f3ae76</code>, working tree</td>
+        <td>2 failed, 2 passed, <code>EXIT=1</code>; both failures are
+        <code>test_one_wake_rechecks_a_hundred_parked_requests_under_one_second</code>,
+        at 2.6199708618223667 s and 3.0291179167106748 s</td></tr>
+      <tr><td>the node's file, three further runs on the login node</td>
+        <td><code>35fb9f3ae76</code>, working tree</td>
+        <td>4 passed each time; 0.160533 s / 0.329758 s, 0.172372 s /
+        0.335248 s, 0.178746 s / 0.355121 s</td></tr>
+      <tr><td>the declared suite's base and after arms</td>
+        <td><code>35fb9f3ae76</code>, both arms</td>
+        <td>0 failures each, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission-control">The failed run</h3>
+
+  <p>The first run of the file in this worktree is the only one that failed, and
+  it is recorded rather than dismissed. Its two failing ids are the two
+  parameters of the timing case, and the figure each asserted against is
+  2.62 s and 3.03 s where the budget is one second. The same revision passes on
+  the compute node and on three repeats on the login node once the bytecode and
+  the page cache are warm, and the trace of that first run spends its time in
+  807 <code>fsync</code> calls at 1.879 s of the sample — the durability write
+  behind each of the hundred request and pointer records the wake writes.</p>
+
+  <p>That figure is a property of the filesystem the run's temporary home lands
+  on, not of the recheck: a warm run of the same code costs 0.15 to 0.39 s. The
+  case therefore has between two and twelve times its budget of headroom on the
+  partition the done-when names, and its budget is the product rule §29 exists
+  to hold, so the test is left as it asserts and the product is left as it
+  already is.</p>
+</section>
