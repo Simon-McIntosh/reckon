@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="659">
+<meta name="plan-version" content="660">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2046,7 +2046,10 @@
     <div class="r-comment-body"><p>repaired tests/test_an_open_operation_refuses_a_promotion_first.py to the rule `crew complete` keeps — a refused invocation adds only its own completion receipt beside the run's files and rewrites nothing — so the file reads 7 passed EXIT=0 on an all_debug job at head e304533b against 5 failed / 2 passed EXIT=1 at base 8c7ea625; the cause is test wrong (ba811581d3 made `crew complete` record its receipt in the run directory, after this file's earlier repair at 6239b615cc), no product rule broke, and no assertion was deleted or weakened</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044632177552-qwnw-red-file-cached-account-age" data-who="reckon-build" data-when="2026-11-19T00:06:13.752Z">
-    <div class="r-comment-body"><p>tests/test_cached_account_age.py passes in full at db44decb7d - 9 passed, EXIT=0, as an all_debug job with SLURM_JOB_ID unset - against 1 failed and 8 passed, EXIT=1, for the same file as a job at c0fb13cc. The cause was the test, not the product: the live-reading case injected a transport but no stored login, so the dialect refused before consulting it and the cache fallback served the 53.0 the assertion read against. That case and its sibling now stub _load_claude_credential with a login alive at the test&#x27;s own now, with no assertion removed or weakened and the product rule that a known live reading wins untouched unchanged.</p></div>
+    <div class="r-comment-body"><p>tests/test_cached_account_age.py passes in full at db44decb7d - 9 passed, EXIT=0, as an all_debug job with SLURM_JOB_ID unset - against 1 failed and 8 passed, EXIT=1, for the same file as a job at c0fb13cc. The cause was the test, not the product: the live-reading case injected a transport but no stored login, so the dialect refused before consulting it and the cache fallback served the 53.0 the assertion read against. That case and its sibling now stub _load_claude_credential with a login alive at the test's own now, with no assertion removed or weakened and the product rule that a known live reading wins untouched unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261119T004442546038-review-of-qwnw-red-file-cached-account-age-2e696678d92c" data-who="reckon-build" data-when="2026-11-19T08:47:49.898Z">
+    <div class="r-comment-body"><p>review of qwnw-red-file-cached-account-age at 2e696678: parsed, scores 19/15/20/15/19/15 (total 103) over base c0fb13cc, 0 added failures; three non-blocking findings and no blocking one, so the node is fit to promote.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
