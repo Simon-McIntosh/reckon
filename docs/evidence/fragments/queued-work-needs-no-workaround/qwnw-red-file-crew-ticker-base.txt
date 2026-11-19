@@ -1,0 +1,240 @@
+# revision: 6fa2b177c511a297d3440956aa64eaa759d4554a
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-crew-ticker
+# child SLURM_JOB_ID: <unset>
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py
+.F.FF......................                                              [100%]
+=================================== FAILURES ===================================
+_______ test_ticker_emits_only_changes_and_ends_after_the_last_promotion _______
+
+home = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054237825179-qwnw-red-file-crew-ticker/pytest-of-mcintos/pytest-1/test_ticker_emits_only_changes0/config')
+
+    def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> None:
+        _write_pointer(home, "r-existing", "existing-node", phase="starting")
+        sleeps = 0
+    
+        def advance(_seconds: float) -> None:
+            nonlocal sleeps
+            sleeps += 1
+            if sleeps == 1:
+                return
+            if sleeps == 2:
+                _write_pointer(home, "r-new", "new-node", phase="starting")
+            elif sleeps == 3:
+                _set_phase("r-new", "working")
+            elif sleeps == 4:
+                _deliver(
+                    home,
+                    "r-new",
+                    "blocked",
+                    blocker="dependency unavailable; retry after configuration changes",
+                )
+            elif sleeps == 5:
+                _deliver(home, "r-new", "complete")
+                _record_ledger_row("r-new")
+            elif sleeps == 6:
+                crew.pointer_path("r-new").unlink()
+            elif sleeps == 7:
+                crew.pointer_path("r-existing").unlink()
+            else:
+                pytest.fail("ticker did not end after the last pointer was reconciled")
+    
+        stream = recovery.watch_ticker(
+            "proj", stall_window="1h", poll_interval=0, sleeper=advance
+        )
+        baseline = next(stream)
+        transitions = list(stream)
+    
+        assert baseline["event"] == "baseline"
+>       assert [
+            (event["node"], event["from_state"], event["to_state"]) for event in transitions
+        ] == [
+            ("new-node", None, "dispatched"),
+            ("new-node", "dispatched", "working"),
+            ("new-node", "working", "blocked"),
+            # A completed manifest without an independent review sits as
+            # completed_unpromoted until the review lands, which is the state a
+            # departure then leaves.
+            ("new-node", "blocked", "completed_unpromoted"),
+            ("new-node", "completed_unpromoted", "promoted"),
+            ("existing-node", "dispatched", "withdrawn"),
+        ]
+E       AssertionError: assert [('new-node',... 'withdrawn')] == [('new-node',... 'withdrawn')]
+E         
+E         At index 4 diff: ('new-node', 'completed_unpromoted', 'complete') != ('new-node', 'completed_unpromoted', 'promoted')
+E         
+E         Full diff:
+E           [
+E               (
+E                   'new-node',
+E                   None,
+E                   'dispatched',
+E               ),
+E               (
+E                   'new-node',
+E                   'dispatched',
+E                   'working',
+E               ),
+E               (
+E                   'new-node',
+E                   'working',
+E                   'blocked',
+E               ),
+E               (
+E                   'new-node',
+E                   'blocked',
+E                   'completed_unpromoted',
+E               ),
+E               (
+E                   'new-node',
+E                   'completed_unpromoted',
+E         -         'promoted',
+E         ?          ^^  ^  -
+E         +         'complete',
+E         ?          ^  ^^^
+E               ),
+E               (
+E                   'existing-node',
+E                   'dispatched',
+E                   'withdrawn',
+E               ),
+E           ]
+
+tests/test_crew_ticker.py:152: AssertionError
+______________ test_counter_cells_stay_apart_at_every_digit_width ______________
+
+    def test_counter_cells_stay_apart_at_every_digit_width() -> None:
+        """Two counts never run into each other, whatever their digit width.
+    
+        Every counter is its count right-aligned to a fixed digit width and followed
+        by the bucket's letter, with one space between cells, so ``10w 12r`` is two
+        tokens at any digit width and the abutting ``10w12r`` is never printed as
+        one. The right alignment is what lets that hold together with the block's
+        own width: a single-digit count pads inside its own cell rather than
+        shifting the letters beside it, so every letter keeps its column and the
+        block's right edge holds one screen column whatever the counts. Both ends are
+        read off the rendered row rather than from the module's width constant,
+        because the property is the row's — a renderer that stops reserving the
+        width inside its cells shortens the block and has to fail here.
+        """
+        escapes = re.compile(r"\x1b\[[0-9;]*m")
+        counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)s")
+    
+        block_ends: set[int] = set()
+        row_ends: set[int] = set()
+        cases = (
+            (10, 12, 0, 0, 0, 0),
+            (99, 0, 99, 0, 0, 1),
+            (99, 99, 99, 99, 0, 12),
+            (1, 0, 0, 0, 0, 0),
+            (3, 4, 1, 0, 2, 99),
+        )
+        for index, (working, reviewing, blocked, unpromoted, queued, stuck) in enumerate(
+            cases
+        ):
+            # A grid per case: the renderer remembers the last destination state of
+            # a run, so reusing one run id would suppress the rows after the first.
+            grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
+            row = escapes.sub(
+                "",
+                grid.render(
+                    _event(
+                        run_id=f"r-digits-{index}",
+                        working=working,
+                        reviewing=reviewing,
+                        blocked=blocked,
+                        unpromoted=unpromoted,
+                        waiting=queued,
+                        stuck=stuck,
+                    )
+                ),
+            )
+            match = counters.search(row)
+>           assert match is not None, (
+                working,
+                reviewing,
+                blocked,
+                unpromoted,
+                queued,
+                row,
+            )
+E           AssertionError: (10, 12, 0, 0, 0, '21:35:45  ?          ticker-node                          new → help              –  10w 12r  0h  0d  0q  0p@ –  0s')
+E           assert None is not None
+
+tests/test_crew_ticker.py:263: AssertionError
+____________ test_a_count_above_the_fixed_width_widens_its_own_row _____________
+
+    def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
+        """A count three digits wide carries its digits rather than being cut.
+    
+        The block reserves two digits per count, so any fleet up to ninety-nine
+        keeps one block width. A larger count is the case that forces a choice, and
+        the renderer widens that one row instead of eliding the figure: a reader
+        watching a queue pass a hundred needs the number, not a marker. The extra
+        column lengthens the row by one, and the counts stay six tokens.
+        """
+        escapes = re.compile(r"\x1b\[[0-9;]*m")
+        counters = re.compile(r"(\d+)w\s+(\d+)r\s+(\d+)h\s+(\d+)d\s+(\d+)q\s+(\d+)s")
+    
+        def render(index: int, **counts: int) -> str:
+            grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
+            return escapes.sub("", grid.render(_event(run_id=f"r-wide-{index}", **counts)))
+    
+        kept = render(0, working=99, blocked=99, unpromoted=99, waiting=99)
+        widened = render(1, working=100, blocked=9, unpromoted=0, waiting=0)
+    
+        # The figure survives whole, as five tokens, with the wide count's own cell
+        # carrying the third digit.
+        assert "100w" in widened, widened
+        match = counters.search(widened)
+>       assert match is not None, widened
+E       AssertionError: 21:35:45  ?          ticker-node                          new → help              –  100w  0r  9h  0d  0q  0p@ –  0s
+E       assert None is not None
+
+tests/test_crew_ticker.py:327: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion - AssertionError: assert [('new-node',... 'withdrawn')] == [('new-node',... 'withdrawn')]
+  
+  At index 4 diff: ('new-node', 'completed_unpromoted', 'complete') != ('new-node', 'completed_unpromoted', 'promoted')
+  
+  Full diff:
+    [
+        (
+            'new-node',
+            None,
+            'dispatched',
+        ),
+        (
+            'new-node',
+            'dispatched',
+            'working',
+        ),
+        (
+            'new-node',
+            'working',
+            'blocked',
+        ),
+        (
+            'new-node',
+            'blocked',
+            'completed_unpromoted',
+        ),
+        (
+            'new-node',
+            'completed_unpromoted',
+  -         'promoted',
+  ?          ^^  ^  -
+  +         'complete',
+  ?          ^  ^^^
+        ),
+        (
+            'existing-node',
+            'dispatched',
+            'withdrawn',
+        ),
+    ]
+FAILED tests/test_crew_ticker.py::test_counter_cells_stay_apart_at_every_digit_width - AssertionError: (10, 12, 0, 0, 0, '21:35:45  ?          ticker-node                          new → help              –  10w 12r  0h  0d  0q  0p@ –  0s')
+assert None is not None
+FAILED tests/test_crew_ticker.py::test_a_count_above_the_fixed_width_widens_its_own_row - AssertionError: 21:35:45  ?          ticker-node                          new → help              –  100w  0r  9h  0d  0q  0p@ –  0s
+assert None is not None
+3 failed, 24 passed in 1.43s
+EXIT=1
