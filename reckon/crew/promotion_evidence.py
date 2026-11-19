@@ -413,6 +413,16 @@ def _require_commits_beyond_base(
     measured against whatever repository the promotion happens to run in. A
     tree git cannot read, or a base that does not resolve in it, leaves the
     guard silent: an unmeasured citation is not a defect in the citation.
+
+    The history a citation is joined to is the head of the tree the run worked
+    in, never the repository's. The repository fallback exists so a released
+    worktree stays readable through the object store it shares; its HEAD
+    follows the integration branch, so read as the run's history it refuses
+    every citation of a run whose worktree was released before its promotion —
+    the run's work is by definition not on that branch yet, and a released
+    tree leaves no duty behind to refuse over. With no worktree there is no
+    head to join to, so the base alone decides: a citation behind the base, or
+    off its line, is still refused.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
@@ -424,7 +434,10 @@ def _require_commits_beyond_base(
     from reckon.crew.promotion_scope import _declared_manifest_commits
     from reckon.crew.queue_landing import _delivered_revision
 
-    canonical_head = _commit_canonical_id(tree, "HEAD")
+    run_tree = _record_worktree(record)
+    canonical_head = (
+        _commit_canonical_id(run_tree, "HEAD") if run_tree is not None else None
+    )
     # A history-derived presentation must not hide a foreign manifest citation.
     # Reachable merge imports are valid citations but not owned commit records.
     citations = dict.fromkeys(
