@@ -184,7 +184,15 @@ def test_an_old_wait_surfaces_its_age_without_becoming_blocked(
     line = recovery.format_watch_transition(event)
 
     assert snapshot["state"] == "wait-aged"
-    assert counts == {"working": 0, "blocked": 0, "unpromoted": 0, "waiting": 1}
+    assert counts == {
+        "working": 0,
+        "blocked": 0,
+        "unpromoted": 0,
+        "promotion_queued": 0,
+        "oldest_promotion_position": None,
+        "oldest_promotion_requested_at": None,
+        "waiting": 1,
+    }
     assert event["blocked"] == 0 and event["waiting"] == 1
     assert "7200s" in snapshot["detail"]
     # The pane keeps the wait word and its bucket; the overdue age stays on the
@@ -209,7 +217,14 @@ def test_a_crash_without_a_wait_declaration_stays_abandoned(
 
     assert row["classification"] == "abandoned"
     assert snapshot["state"] == "abandoned"
-    assert counts == {"working": 0, "blocked": 1, "unpromoted": 0}
+    assert counts == {
+        "working": 0,
+        "blocked": 1,
+        "unpromoted": 0,
+        "promotion_queued": 0,
+        "oldest_promotion_position": None,
+        "oldest_promotion_requested_at": None,
+    }
     assert "waiting" not in counts
 
 
