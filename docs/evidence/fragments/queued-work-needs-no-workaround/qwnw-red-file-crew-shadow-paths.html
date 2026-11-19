@@ -1,0 +1,18 @@
+<section id="qwnw-red-file-crew-shadow-paths-base-and-head">
+<h2>The shadow-path file red at base and green at head</h2>
+<p><code>tests/test_crew_shadow_paths.py</code> failed at base <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> and passes at head <code>15e05c95cb088acf5c37dc5028b565749440b999</code>. One cause, and it was the product's.</p>
+<p>The product was wrong: <code>_require_commits_beyond_base</code> refused any run citing no commit beyond its base whose tree still holds its declared work uncommitted. A shadow run's declared work <em>is</em> uncommitted by design — its own guard, <code>_refuse_commits_for_a_shadow</code>, refuses it a citation, and its deliverable is the patch the landing captures from that tree — so the clause was unsatisfiable for every shadow and the comparison arm could not record its evidence at all. The clause now applies only to a run whose deliverable belongs in a commit; the shadow branch of the same guard already carries that reading for the citation clause. No assertion was deleted or weakened, and the test file is unchanged by this node.</p>
+<p>A probe made the guard happen in both directions: a normal run with the same uncommitted declared path was still refused (<code>cites no commit beyond its base 40c66607bce0… while its worktree holds its own declared work uncommitted: reckon/_backends.py</code>), and the shadow run with the same tree was silent. Head run: all_debug job 1329771, <code>5 passed</code>, <code>EXIT=0</code>.</p>
+<pre># base run, all_debug job 1329775, revision 42fe90d0b0a46060bafde2490dda7d4002cda478
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_shadow_paths.py
+=================== short test summary info ====================
+FAILED tests/test_crew_shadow_paths.py::test_two_effort_arms_on_one_backend_keep_separate_patches - reckon.crew.CrewError: run 'r-20261119T052402164398-node-a' cites no commit beyond its base f691ddd8b854ccd0100baaebc5c13121450c9721 while its worktree holds its own declared work uncommitted: reckon/_backends.py
+1 failed, 4 passed in 23.77s
+EXIT=1</pre>
+<pre># head run, all_debug job 1329771, revision 15e05c95cb088acf5c37dc5028b565749440b999
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_shadow_paths.py
+.....                                                                    [100%]
+5 passed in 22.11s
+EXIT=0</pre>
+<p>Arm over the twenty test files that import the changed module: base <code>1 failed, 139 passed</code> and head <code>1 failed, 139 passed</code>, both <code>EXIT=1</code>, the same id <code>tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run</code> (<code>KeyError: 'steps'</code>) in both — so the change adds no failure against the base. That failure is outside this node's declared red file and is recorded under outside_scope.</p>
+</section>
