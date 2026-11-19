@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s103">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-19">
+  <title>A memoised pointer record reverifies its identity | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-memoised-pointer-record-reverifies-its-identity-landing" data-node="a-memoised-pointer-record-reverifies-its-identity" data-reckon="landed" data-when="2026-11-19">
+  <h2>A memoised pointer record reverifies its identity</h2>
+
+  <p id="a-memoised-pointer-record-reverifies-its-identity-what"><strong>What landed.</strong> A listing now hands the parse memo the stat identity its text was read at, instead of letting a second stat inside the store decide which file the record belongs to. <code>reckon.file_memo.memoized</code> takes an optional <code>identity</code>: the value is answered only from what was stored under that identity, and is stored only while the file still reports it — in the read-only region path as well as outside it. <code>runs._pointer_text</code> returns the identity it stat'ed before reading the text, taken through <code>file_memo.signature_from_stat</code>, and <code>runs._pointer_record</code> passes it to the store.</p>
+
+  <p id="a-memoised-pointer-record-reverifies-its-identity-why"><strong>Why it was wrong.</strong> Pointer writers replace a file by rename. The listing stat'ed the pointer's text, read it, and then the store took its own stat: a rename landing between the two paired the old text's record with the replacing file's identity, and the region path stored that pairing without the re-verification after compute the unregioned path performs. Every later listing that found the new file unchanged answered with the old record until the pointer moved again.</p>
+
+  <h3 id="a-memoised-pointer-record-reverifies-its-identity-cases">Three cases on a temporary crew home</h3>
+
+  <p id="a-memoised-pointer-record-reverifies-its-identity-case-a"><strong>The rename itself.</strong> The test warms a listing over two pointers, then installs a stand-in on <code>file_memo.memoized</code> that replaces the target by rename as the store is entered — the one point between the text fetch and the store's own work. The stand-in is shown to have fired (<code>fired == ["r-target"]</code>) and the file to have a new inode holding <code>phase: complete</code> before any assertion about the record is read. The listing that meets the rename returns either file's record; the next listing returns the new one.</p>
+
+  <p id="a-memoised-pointer-record-reverifies-its-identity-case-b"><strong>An unchanged pass decodes nothing.</strong> 300 pointers are listed twice; the recording stand-in on <code>runs.json</code> is first shown decoding all 300 on the cold pass, then decodes none on the second, and the second listing equals the files decoded directly.</p>
+
+  <p id="a-memoised-pointer-record-reverifies-its-identity-case-c"><strong>One rename, one decode.</strong> Over 300 pointers, the pointer that met the rename is the only one decoded afterwards — one decode on the following listing, where a stale entry would have needed none and a re-read of every pointer would have cost 300.</p>
+
+  <h3 id="a-memoised-pointer-record-reverifies-its-identity-negative">The negative control</h3>
+
+  <p id="a-memoised-pointer-record-reverifies-its-identity-negative-line">At base <code>eed783c702</code> the same test file fails 2 of 3 cases: the listing after the rename still answers <code>working</code> after the file holds <code>complete</code> (<em>assert 'working' == 'complete'</em>) and the following listing decodes none of the pointers it should re-read. The log is <code>negative-control-base.log</code> under the run directory, ending <code>EXIT=1</code>.</p>
+
+  <h3 id="a-memoised-pointer-record-reverifies-its-identity-arms">Matched arms</h3>
+
+  <p id="a-memoised-pointer-record-reverifies-its-identity-arms-line">The node's test files, resolved over each arm's own tree, ran as matched arms on the <code>all_debug</code> partition: the base arm at <code>eed783c702</code> over the two test files that tree carries, 58 passed. The verbatim gate command in the worktree passed 61 of 61, and the after arm at <code>e823cf2f99</code> over all three files passed 61 of 61. Both arms end <code>EXIT=0</code> with no failing id.</p>
+
+</article>
+</body>
+</html>
