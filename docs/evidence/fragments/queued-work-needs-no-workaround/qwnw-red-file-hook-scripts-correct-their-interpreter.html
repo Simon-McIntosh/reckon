@@ -4,8 +4,8 @@
 ran as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset in the
 test process, twice: once over an extraction of the base revision
 <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> (job 1329289) and once over
-the worktree at head <code>601b13a105d228ed07c1954450cda91cf4cbd561</code> (job
-1329290). The base arm failed two cases and passed four; the base failing ids are
+the worktree at its head (job 1329334, whose log's own header names the revision
+and the tree it ran at). The base arm failed two cases and passed four; the base failing ids are
 <code>test_every_reckon_importing_hook_uses_the_shared_bootstrap</code> and
 <code>test_importing_hooks_reexecute_under_old_python</code>. The head arm passed
 all seven.</p>
@@ -40,7 +40,7 @@ extended, and the missing-interpreter case now covers the new hook too.</p>
 <p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
 tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>
 reports the same figure at both arms: 58 passed, exit 0 (jobs 1329313 at the base
-revision and 1329286 at head). One earlier base arm (job 1329284) read 2 failed
+revision and 1329336 at head). One earlier base arm (job 1329284) read 2 failed
 because the extraction it ran against was extracted with <code>git archive</code>
 and carried no repository, so the inventory test's own tree reader saw no bytes at
 all; the extraction's content was then committed and the arm re-run. The first
@@ -61,7 +61,7 @@ FAILED tests/test_hook_scripts_correct_their_interpreter.py::test_importing_hook
 2 failed, 4 passed in 4.74s
 EXIT=1
 </pre>
-<pre># head arm, job 1329290, all_debug, revision 601b13a105d228ed07c1954450cda91cf4cbd561
+<pre># head arm, job 1329334, all_debug, revision 16c1b885031a64711ab07833753ecc818abd27ab
 # command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_hook_scripts_correct_their_interpreter.py
 .......                                                                  [100%]
 7 passed in 3.50s
