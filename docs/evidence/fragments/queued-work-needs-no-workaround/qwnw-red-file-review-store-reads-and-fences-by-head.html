@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-review-store-reads-and-fences-by-head-landing">
+  <h2>The review-store read suite is green at head</h2>
+
+  <p><strong>What changed.</strong> One test file:
+  <code>tests/test_review_store_reads_and_fences_by_head.py</code>. At the base
+  revision the suite failed once, at
+  <code>test_the_promotion_remedy_cites_resolved_commits</code>; the two remedy
+  cases beside it were passing for reasons unrelated to the cases they name.</p>
+
+  <p><strong>Cause one, test wrong.</strong> The remedy is composed only from
+  completed attempt evidence: <code>completion_offer</code> answers for a
+  manifest that records a finished, passing arm naming the tree's own head, and
+  the composer falls back to <code>reckon crew observe --run &lt;id&gt;</code>
+  otherwise. The fixture recorded no arm, so the case exercised only that
+  fallback. It failed by reproducing
+  <code>reckon crew observe --run r-remedy-commits</code>. The product rule is
+  intact; the fixture now records the head arm through a helper beside the
+  existing manifest writer, so the case asserts the remedy the component
+  composes.</p>
+
+  <p><strong>Cause two, test wrong.</strong>
+  <code>test_the_remedy_cites_nothing_for_prose_naming_no_commit</code> asserted
+  only that no <code>--commit</code> appears, which the <code>observe</code>
+  fallback also satisfies, so it passed without observing the rule it names. It
+  is now driven as the case it claims: a run committing nothing past its base,
+  carrying a stored review, a run tree and a manifest whose <code>commits</code>
+  field is prose naming no revision. The prose is then the composer's only
+  candidate, and the case also asserts the classification is
+  <code>promotable</code> and the remedy is <code>reckon crew complete</code>, so
+  a fallback cannot answer it. No assertion was deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-review-store-reads-and-fences-by-head-measured">Measured</h3>
+
+  <table id="qwnw-red-file-review-store-reads-and-fences-by-head-arms">
+    <caption>Each arm is a log whose header names the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's six cases, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>1 failed, 5 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's six cases, head, job on <code>all_debug</code></td>
+        <td><code>886a26b72188fb122940b17ae1b8b199dda82845</code></td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the test-file arm baseline</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the test-file arm after</td>
+        <td><code>886a26b72188fb122940b17ae1b8b199dda82845</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-review-store-reads-and-fences-by-head-control">Negative control</h3>
+
+  <p>The base run is the failing control and is logged beside the head run:
+  <code>FAILED
+  tests/test_review_store_reads_and_fences_by_head.py::test_the_promotion_remedy_cites_resolved_commits
+  - AssertionError: reckon crew observe --run r-remedy-commits</code>, followed by
+  <code>1 failed, 5 passed</code> and <code>EXIT=1</code>. The head arm fails no
+  case, so that id is the defect rather than a case that fails everywhere.</p>
+
+  <p>This gate measures only this node's own change. Verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
