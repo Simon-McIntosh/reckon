@@ -1,16 +1,46 @@
 <section id="qwnw-red-file-finished-worker-processes-end-red-file">
 <h2>Red file: the finished worker's guard was built by an earlier node; this file passes at base</h2>
-<p>On the assigned base revision <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code> the file <code>tests/test_finished_worker_processes_end.py</code> already passes in full: <strong>6 passed</strong> as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, and 6 passed in the held allocation. It is a whole-tree test file from the node that made a terminal run release its launch tree, and its only commit is <code>bc4aae395e62</code> with the follow-up <code>dd003bc93b11</code>; the base this node was assigned already carries them. No product source and no test file is changed in this node; nothing is reimplemented.</p>
+<p>On the assigned base revision <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code> the file <code>tests/test_finished_worker_processes_end.py</code> already passes in full: <strong>6 passed</strong> as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset:</p>
 <pre># named file, base arm, worktree at 73b9ac21a50d4566b8bc7ec2cf2c49160af28656
-# slurm: job 1328790 on all_debug, SLURM_JOB_ID unset inside the job script
+# slurm: job 1328790 on all_debug, SLURM_JOB_ID unset by the job script
 # module.__file: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-finished-worker-processes-end/reckon/crew/dispatch_launch.py
 # cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-finished-worker-processes-end
 # command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_finished_worker_processes_end.py
 ......                                                                   [100%]
 6 passed in 199.06s (0:03:19)
 EXIT=0</pre>
-<p><strong>Cause, and verdict: none reproduces.</strong> The base run names no failing id, so there is no product or test cause to adjudicate and no assertion to touch:</p>
+<pre># named file, head arm, worktree at d38cb5fada6df32f948a84e1532731cb932bb7b3
+# slurm: job 1328886 on all_debug, SLURM_JOB_ID unset by the job script
+# module.__file: the worktree's own reckon/crew/dispatch_launch.py
+# cwd: the worktree
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_finished_worker_processes_end.py
+......                                                                   [100%]
+6 passed in 199.52s (0:03:19)
+EXIT=0</pre>
+<p><strong>Cause, and verdict: none reproduces.</strong> No failing id exists at the base revision, so there is no product or test cause to adjudicate:</p>
 <pre># failing ids at the base revision: none
-# in the held allocation, same revision: 6 passed in 202.94s</pre>
-<p><strong>The guarded thing made to happen.</strong> A green run does not show the cleanup guard bites, so the supervisor's terminal signal was disabled in two scratch extractions of the base revision and the same file re-run against each. The rows are appended below once measured.</p>
+# failing ids at the head revision: none</pre>
+<p><strong>The guarded thing made to happen.</strong> A green run does not show the cleanup guard bites, so the supervisor's terminal handling was mutated in two scratch extractions of the base revision and the same file re-run against each. Suppressing the terminal signal leaves the whole launch tree alive and the four terminal cases fail on their minute bound; dropping the forced-exit receipt from the exit record fails the same four cases on the receipt key. The natural-exit case and the grace-bound case stay green in both, so the red is the cleanup guard and not an incidental error.</p>
+<pre># mutation A, tree /tmp/reckon-crew-scratch/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/mut/a
+# the terminal signal is suppressed: delivered = [] if True else signal_worker(...)
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_finished_worker_processes_end.py
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[lingering] - AssertionError: terminal run still owns live processes after one minute: [595, 598, 599, 600]
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[root-exits-on-term] - AssertionError: terminal run still owns live processes after one minute: [602, 605, 606, 607]
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[rewriting] - AssertionError: terminal run still owns live processes after one minute: [617, 620, 621, 622]
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[crashed] - AssertionError: terminal run still owns live processes after one minute: [633, 636, 637, 638]
+4 failed, 2 passed in 256.55s (0:04:16)
+EXIT=1</pre>
+<pre># mutation B, tree /tmp/reckon-crew-scratch/r-20261118T044638072128-qwnw-red-file-finished-worker-processes-end/mut/b
+# the exit record drops forced_exit: forced_exit=None at the command's exit-record call
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_finished_worker_processes_end.py
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[lingering] - KeyError: 'forced_exit'
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[root-exits-on-term] - KeyError: 'forced_exit'
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[rewriting] - KeyError: 'forced_exit'
+FAILED tests/test_finished_worker_processes_end.py::test_terminal_pointer_ends_every_launched_process[crashed] - KeyError: 'forced_exit'
+4 failed, 2 passed in 200.12s (0:03:20)
+EXIT=1</pre>
+
+<p>No product source and no test file changed in this node, so the arm over test files importing changed code adds nothing to the scoped gate: both suite arms resolve to the same two census tests over the same tree. The baseline arm at <code>73b9ac21a50d</code> and the after arm at <code>d38cb5fada6d</code> each report exit 0 with 0 failures and <code>completed: true</code>, and the scoped worker gate at <code>d38cb5fe</code> reports exit 0 with 0 failures.</p>
+<p><code>ruff check</code> and <code>ruff format --check</code> report nothing new on the changed paths: the only changed path is this fragment, and no Python path changes, so there is nothing for either to measure.</p>
+<p><strong>Environment note for later readers.</strong> A fenced submission from this worker fails before its own first line: the fence recipe carries this node's own /tmp grants, and on the all_debug node the bind of the run's scratch over /tmp is absent there (<code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on /newroot/tmp/auto2I1S9T: No such file or directory</code>). The measurement and gate jobs were therefore submitted with <code>RECKON_WORKER_FENCE</code> unset, which the shim's own refusal names as the route a separate partition job takes. The jobs read the shared tree and write only their own logs under the run directory.</p>
 </section>
