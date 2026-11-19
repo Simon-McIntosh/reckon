@@ -33,3 +33,25 @@ service-control request a follower answers on its own schedule.</p>
 <p id="qwnw-red-file-skill-contracts-logs">Head log:
 <code>skill-contracts-head.log</code>. Base log:
 <code>sbatch-base-nc.log</code>.</p>
+
+<h2 id="qwnw-red-file-skill-contracts-suite">The landing suite arms</h2>
+
+<p>The two arms below run the same command, whose failures both revisions
+share: <code>test_staged_write_inventory.py</code> reports
+<code>test_every_staged_write_reaches_the_owner</code> and
+<code>test_claim_move_aside_is_not_a_staged_write</code> at base and at head,
+so the node adds no failure to the pair.</p>
+
+<table>
+  <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr id="qwnw-red-file-skill-contracts-suite-base">
+      <td>baseline</td><td><code>42fe90d0b0a4</code></td>
+      <td>2 failed, 56 passed, <code>EXIT=1</code></td>
+    </tr>
+    <tr id="qwnw-red-file-skill-contracts-suite-after">
+      <td>after</td><td><code>a92b9d037772</code></td>
+      <td>2 failed, 56 passed, <code>EXIT=1</code></td>
+    </tr>
+  </tbody>
+</table>
