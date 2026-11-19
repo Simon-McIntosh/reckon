@@ -9,7 +9,10 @@ session or quotes the commands that lead to its own retry, so a reader that
 judged the failure by its text published "arm the follower" or a bare dispatch
 as the remedy for a wait nothing the session arms can clear. Each clears when a
 lane slot opens or the claiming run ends, so each keeps the waiting reading and
-the request stays a queued run.
+the request stays a queued run. The queue keeps the plain waiting reading; a
+claim reads as a wait on the run whose landing releases it, named with the path
+it holds and publishing no command, because a command here would send a
+coordinator to act on a peer's claim. Neither reading blocks a stop.
 
 The follower condition is the case the session does owe, and it must keep
 reading that way. The retry back-off the admission pass stamps on a failed
@@ -44,6 +47,8 @@ PLAN = "fixture-plan"
 OBSERVED_AT = datetime(2026, 10, 24, 1, 30, tzinfo=UTC)
 PEER_RUN = "r-20261023T220036362628-a-peer-holds-the-path"
 CLAIMED_PATH = "reckon/crew/recovery_watch.py"
+# The coarser claim kind's exact path, which its refusal names as the overlap.
+DIRECTORY_CLAIMED_PATH = "docs/figures/a-peer/a-figure.svg"
 
 
 @pytest.fixture()
@@ -129,8 +134,8 @@ def _directory_claim_conflict() -> str:
             run_id=PEER_RUN,
             node_id="a-peer-holds-the-path",
             candidate_path="docs/figures",
-            claimed_path="docs/figures/a-peer/a-figure.svg",
-            alternatives=["docs/figures/a-peer/a-figure.svg"],
+            claimed_path=DIRECTORY_CLAIMED_PATH,
+            alternatives=[DIRECTORY_CLAIMED_PATH],
         )
     )
 
@@ -163,15 +168,14 @@ def _duty_kind(run_id: str) -> str:
 @pytest.mark.parametrize(
     ("run_id", "failure"),
     [
+        # A full queue names no holder, so it keeps the plain waiting reading.
         ("r-queue-full", _queue_full),
-        ("r-scope-conflict", _scope_conflict),
-        ("r-directory-claim", _directory_claim_conflict),
     ],
 )
 def test_a_wait_refusal_keeps_the_queued_reading(
     repository: Path, run_id: str, failure: Any
 ) -> None:
-    """Neither refusal raises a session duty: each clears on its own."""
+    """A queue cap keeps the request waiting, with no session duty raised."""
     _write_queued(run_id, failure=failure())
     row = _row(run_id)
     assert row["classification"] == "queued"
@@ -180,19 +184,52 @@ def test_a_wait_refusal_keeps_the_queued_reading(
 
 
 @pytest.mark.parametrize(
-    ("run_id", "failure"),
+    ("run_id", "failure", "held_path"),
     [
-        ("r-queue-full", _queue_full),
-        ("r-scope-conflict", _scope_conflict),
-        ("r-directory-claim", _directory_claim_conflict),
+        ("r-scope-conflict", _scope_conflict, CLAIMED_PATH),
+        # The coarser claim kind names the same two facts as the exact one: the
+        # path the live claim covers and the run that holds it.
+        ("r-directory-claim", _directory_claim_conflict, DIRECTORY_CLAIMED_PATH),
+    ],
+)
+def test_a_claim_refusal_reads_as_a_wait_on_its_holder(
+    repository: Path, run_id: str, failure: Any, held_path: str
+) -> None:
+    """A claimed path is a wait on the run whose landing releases it."""
+    _write_queued(run_id, failure=failure())
+    row = _row(run_id)
+    assert row["classification"] == "queued", row
+    refusal = row.get("session_refusal")
+    assert isinstance(refusal, dict), row
+    assert refusal["holder_run_id"] == PEER_RUN, refusal
+    assert refusal["held_path"] == held_path, refusal
+    assert refusal["recorded_at"] == "2026-10-24T01:00:00+00:00", refusal
+    # A command here would send a coordinator to act on a peer's claim.
+    assert refusal["next_command"] == "", refusal
+    assert PEER_RUN not in row["next_action"], row["next_action"]
+
+
+@pytest.mark.parametrize(
+    ("run_id", "failure", "kind"),
+    [
+        ("r-queue-full", _queue_full, obligations_module.QUEUED_RUN_DUTY_KIND),
+        ("r-scope-conflict", _scope_conflict, obligations_module.SCOPE_HELD_DUTY_KIND),
+        (
+            "r-directory-claim",
+            _directory_claim_conflict,
+            obligations_module.SCOPE_HELD_DUTY_KIND,
+        ),
     ],
 )
 def test_a_wait_refusal_lists_as_a_queued_run(
-    repository: Path, run_id: str, failure: Any
+    repository: Path, run_id: str, failure: Any, kind: str
 ) -> None:
     """The obligations view lists it under the wait, not under the session."""
     _write_queued(run_id, failure=failure())
-    assert _duty_kind(run_id) == obligations_module.QUEUED_RUN_DUTY_KIND
+    assert _duty_kind(run_id) == kind
+    if kind == obligations_module.SCOPE_HELD_DUTY_KIND:
+        # A waiting row is printed and never holds a stop open.
+        assert kind in obligations_module.NON_BLOCKING_DUTY_KINDS
 
 
 def test_an_unregistered_follower_still_lists_as_the_sessions_duty(
