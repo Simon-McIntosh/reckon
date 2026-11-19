@@ -35,6 +35,7 @@ rather than averaging it in silently.
 from __future__ import annotations
 
 import contextlib
+import functools
 import hashlib
 import json
 import logging
@@ -45,6 +46,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -1738,52 +1740,59 @@ def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 # The rows one process has already decoded from a project's store, so a repeat
-# read decodes only what was promoted since. The entry is keyed by the store,
-# the project and the projection, because a picker-projected row and a full
-# record are different answers to the same history and neither can be derived
-# from the other once decoded (the picker projection leaves out fields the full
-# record keeps). Each entry holds the token its rows were read under and the
-# per-row signature the store answered at that read.
-_STORED_HISTORY: dict[
-    tuple[str, str, bool],
-    tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]],
-] = {}
+# read decodes only what was promoted since. An entry is keyed by the store, the
+# project and the projection, because a picker-projected row and a full record
+# are different answers to the same history and neither can be derived from the
+# other once decoded (the picker projection leaves out fields the full record
+# keeps). It holds the token its rows were read under and the per-row signature
+# the store answered at that read.
+_Entry = tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]]
 
 # How many stored histories one process keeps: eight projects, each read
 # through both the picker projection and the full record. Each entry holds a
 # project's decoded rows, so the bound is what stops a monitor that reads many
 # projects from holding every project's history at once; a read whose entry was
 # evicted decodes its project's rows again, exactly as every read used to.
+# ``functools.lru_cache`` owns the bound, the least-recently-used eviction and
+# the clear, so this module adds no eviction loop of its own beside
+# :mod:`reckon.file_memo`'s bounded memo.
 _MAX_STORED_HISTORIES = 16
+
+# The readers run in threads (:class:`ThreadingHTTPServer` answers one MCP read
+# per handler), and each one reads a history, decodes what was promoted, then
+# replaces the entry. The lock guards that read-then-replace so a reader never
+# answers from a half-replaced entry, and ``lru_cache`` guards its own table, so
+# no reader can evict an entry out from under another.
+_HELD_LOCK = threading.Lock()
+
+
+@functools.lru_cache(maxsize=_MAX_STORED_HISTORIES)
+def _history_cell(key: tuple[str, str, bool]) -> list[Any]:
+    """The one cell a history keeps, created on first touch.
+
+    Caching the cell rather than the entry lets a read replace the entry in one
+    store while the cell itself stays in place; touching the cell is also what
+    marks the history recently used, so the eviction order is the read order.
+    """
+    return [None]
 
 
 def clear_stored_history() -> None:
     """Forget every history this process decoded from a run store."""
-    _STORED_HISTORY.clear()
+    with _HELD_LOCK:
+        _history_cell.cache_clear()
 
 
-def _hold_history(
-    key: tuple[str, str, bool],
-    entry: tuple[
-        tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]
-    ],
-) -> None:
-    """Keep one project's rows, evicting the least recently used history."""
-    _STORED_HISTORY[key] = entry
-    while len(_STORED_HISTORY) > _MAX_STORED_HISTORIES:
-        _STORED_HISTORY.pop(next(iter(_STORED_HISTORY)))
+def _held_history(key: tuple[str, str, bool]) -> _Entry | None:
+    """The entry one history holds now, or ``None`` when it holds none."""
+    with _HELD_LOCK:
+        return _history_cell(key)[0]
 
 
-def _recent_history(
-    key: tuple[str, str, bool],
-) -> (
-    tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, Any]]] | None
-):
-    """The rows held for one history, moved to the young end of the bound."""
-    held = _STORED_HISTORY.pop(key, None)
-    if held is not None:
-        _STORED_HISTORY[key] = held
-    return held
+def _hold_history(key: tuple[str, str, bool], entry: _Entry) -> None:
+    """Replace one history's entry in a single store."""
+    with _HELD_LOCK:
+        _history_cell(key)[0] = entry
 
 
 def _history_token(project: str, target: Path, *, run_store: Any) -> tuple[Any, ...]:
@@ -1837,6 +1846,17 @@ def _stored_auxiliary(project: str, root: str | Path | None) -> dict[str, Any]:
     return auxiliary
 
 
+def _handed_rows(rows: Mapping[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """One answer, in promotion order, with a dict of its own for every row.
+
+    The held history keeps the rows it decoded, so an answer that shared them
+    would let a caller change what the next reader is handed; :func:`load`
+    always handed out dicts of its own, and every reader keeps that. The values
+    inside a row are shared, which is what a reader of a record expects.
+    """
+    return sorted((dict(row) for row in rows.values()), key=promotion_order_key)
+
+
 def stored_history(
     project: str,
     root: str | Path | None = None,
@@ -1869,11 +1889,9 @@ def stored_history(
     target = run_store.store_path()
     key = (str(target), project, picker_only)
     token = _history_token(project, target, run_store=run_store)
-    held = _recent_history(key)
+    held = _held_history(key)
     if held is not None and held[0] == token:
-        return sorted(held[2].values(), key=promotion_order_key), _stored_auxiliary(
-            project, root
-        )
+        return _handed_rows(held[2]), _stored_auxiliary(project, root)
 
     signature = run_store.stored_run_signature(project, path=target)
     if signature is None:
@@ -1906,7 +1924,7 @@ def stored_history(
     if not rows:
         return None
     complete = wanted is None or all(run_id in decoded for run_id in wanted)
-    answer = sorted(rows.values(), key=promotion_order_key)
+    answer = _handed_rows(rows)
     auxiliary = _stored_auxiliary(project, root)
     # Kept only when no write landed under the read and every row this read
     # asked for arrived: a row promoted between the signature and the rows, or

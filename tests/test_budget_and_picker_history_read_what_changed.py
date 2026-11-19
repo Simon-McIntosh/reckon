@@ -10,8 +10,11 @@ The population here is the production shape: 2,000 promoted rows in a temporary
 crew home, counted through a stand-in on the store's own read. The first read
 decodes the population; a repeat with nothing promoted decodes nothing and
 answers exactly as the first did; five promotions then cost five rows per reader
-rather than the history again, and both answers match the full read the same
-revision answers when it holds nothing.
+rather than the history again. What the incremental path answers is compared
+against ``ledger.load(project, root, picker_only=True)``, the read it replaced,
+rows and order alike, so a projection or an ordering only the new path produces
+would fail here rather than leave the picker's routing input changed in silence.
+The held histories are bounded, and readers in several threads keep their own.
 
 The base revision decodes the whole population on the unchanged repeat, so the
 row count asserted below measures this change rather than the fixture.
@@ -20,6 +23,7 @@ row count asserted below measures this change rather than the fixture.
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -157,6 +161,11 @@ def _verdict(root: Path) -> dict[str, Any]:
     }
 
 
+def _order(rows: list[dict[str, Any]]) -> list[str]:
+    """The run ids of one answer, in the order the answer carries them."""
+    return [str(row["run_id"]) for row in rows]
+
+
 def _amend(root: Path, run_id: str, value: str) -> None:
     """Rewrite one promoted row in place, keeping its encoded size.
 
@@ -239,8 +248,6 @@ def test_the_held_histories_stay_bounded(
     pays for them again, which is what every read used to pay.
     """
     root = crew_home
-    if not hasattr(ledger, "_MAX_STORED_HISTORIES"):
-        pytest.skip("this tree holds no stored history to bound")
     projects = [
         f"{PROJECT}-{index:02d}" for index in range(ledger._MAX_STORED_HISTORIES + 4)
     ]
@@ -258,9 +265,103 @@ def test_the_held_histories_stay_bounded(
     decoded = _count_decodes(monkeypatch)
     for project in projects:
         assert len(ledger.picker_runs(project, root=root)) == 5
-    assert len(ledger._STORED_HISTORY) == ledger._MAX_STORED_HISTORIES
+    assert ledger._history_cell.cache_info().currsize == ledger._MAX_STORED_HISTORIES
 
     decoded.clear()
     first = {row["run_id"] for row in ledger.picker_runs(projects[0], root=root)}
     assert first == {f"r-seed-00-{row:02d}" for row in range(5)}
     assert sum(decoded) == 5
+
+
+def test_the_stored_history_answers_what_the_full_read_answers(
+    crew_home: Path,
+) -> None:
+    """The incremental path answers the rows and order the full read answers.
+
+    ``ledger.load(project, root, picker_only=True)`` is the read this path
+    replaced, and the picker routes on its row order. Comparing the stored
+    history against that read is what catches a projection or an ordering the
+    new path introduces: an answer that only equals the new path's own earlier
+    answer would keep the suite green while the picker's input changed.
+    """
+    root = crew_home
+    _seed(POPULATION)
+    stored, auxiliary = ledger.stored_history(PROJECT, root, picker_only=True)
+    full, _version = ledger.load(PROJECT, root, True)
+    assert _order(stored) == _order(full["runs"])
+    assert stored == full["runs"]
+    assert auxiliary["members"] == full["members"]
+    assert auxiliary["holds"] == full["holds"]
+    assert _order(stored) == _order(ledger.picker_runs(PROJECT, root=root))
+    assert stored == ledger.picker_runs(PROJECT, root=root)
+
+    # The same equality after a promotion, where the answer is a held history
+    # with decoded rows merged into it rather than a cold read.
+    _promote(root, PROMOTED)
+    assert ledger.picker_runs(PROJECT, root=root)[-1]["run_id"].startswith(
+        "r-promoted-"
+    )
+    cold, _version = ledger.load(PROJECT, root, True)
+    assert _order(ledger.picker_runs(PROJECT, root=root)) == _order(cold["runs"])
+    assert ledger.picker_runs(PROJECT, root=root) == cold["runs"]
+
+
+def test_concurrent_reads_keep_their_own_history(crew_home: Path) -> None:
+    """Readers in several threads keep their own history and none is lost.
+
+    The server answers one MCP read per handler thread, and every handler
+    touches the held histories. Evicting and replacing an entry from two
+    threads at once used to be able to take the entry one of them was about to
+    store, which surfaced as a failed read rather than a cache miss.
+    """
+    root = crew_home
+    projects = [
+        f"{PROJECT}-{index:02d}" for index in range(ledger._MAX_STORED_HISTORIES + 4)
+    ]
+    with run_store.RunStore(run_store.store_path()) as store:
+        for index, project in enumerate(projects):
+            for row in range(3):
+                store.append(
+                    project,
+                    _record(
+                        row,
+                        run_id=f"r-seed-{index:02d}-{row:02d}",
+                        completed=NOW - timedelta(minutes=row),
+                    ),
+                )
+
+    def read(project: str) -> list[str]:
+        return [row["run_id"] for row in ledger.picker_runs(project, root=root)]
+
+    rounds = 6
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        answers = [
+            (project, pool.submit(read, project)) for project in projects * rounds
+        ]
+    for project, future in answers:
+        expected = {
+            f"r-seed-{projects.index(project):02d}-{row:02d}" for row in range(3)
+        }
+        assert set(future.result()) == expected
+
+
+def test_an_answer_a_caller_changes_does_not_change_the_held_history(
+    crew_home: Path,
+) -> None:
+    """What a reader is handed is its own, so its change stays with it.
+
+    The rows a read decoded are held for the next reader, and ``load`` always
+    handed out a dict of its own for every row. A caller that writes into the
+    answer it got — a patched field, a row it drops — must not thereby change
+    what the next reader is handed.
+    """
+    root = crew_home
+    _seed(POPULATION)
+    cold, _version = ledger.load(PROJECT, root, True)
+    answer = ledger.picker_runs(PROJECT, root=root)
+    assert answer[0]["gate"] == "passed"
+    answer[0]["gate"] = "failed"
+    answer.pop()
+    repeated = ledger.picker_runs(PROJECT, root=root)
+    assert _order(repeated) == _order(cold["runs"])
+    assert repeated == cold["runs"]
