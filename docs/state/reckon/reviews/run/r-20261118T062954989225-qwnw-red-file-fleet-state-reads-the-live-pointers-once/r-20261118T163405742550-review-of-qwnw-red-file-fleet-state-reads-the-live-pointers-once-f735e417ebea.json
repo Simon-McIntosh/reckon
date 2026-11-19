@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:867 live_pointer_snapshot wraps its yield in runs.published_pointers",
+    "reckon/crew/obligation_snapshot.py:1908 _derive_fleet_state opens live_pointer_snapshot(project)",
+    "reckon/crew/obligations.py:4818 the obligations view opens live_pointer_snapshot(project)",
+    "reckon/crew/station_subscriber.py:359 live_work_populations opens live_pointer_snapshot(pointers=snapshot)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:26:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1620,
+      "severity": "non-blocking",
+      "text": "return dict(data) is a shallow copy, so a served record keeps the population's nested objects while the docstring at runs.py:1615 promises a dict of the caller's own; the direct read it replaces parsed an independent document, so a nested mutation inside a published pass would rewrite what later readers in that pass are served. No live corruption was found: the mutation seams copy the node mapping."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1592,
+      "severity": "non-blocking",
+      "text": "published_pointers stats pointer_path(run_id) afresh at publish time instead of carrying the identity each record was read under, so the claim at runs.py:1579 fails in the window between the listing read and this stat: a pointer rewritten then is paired with the new identity, and read_pointer serves the older listed content as current. The window is in-process for obligations.live_pointer_snapshot, but station_subscriber.live_work_populations at station_subscriber.py:359 is handed a listing its caller read earlier."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html",
+      "line": 63,
+      "severity": "non-blocking",
+      "text": "The fragment says the station-pid rule and the copy promise were exercised directly, but no test names published_pointers and no log in the run directory records such an exercise, so the sentence claims work a reader cannot open; the copy promise it names is the shallow copy reported above."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html",
+      "line": 36,
+      "severity": "non-blocking",
+      "text": "The head-arm row names a gate job on all_debug, but the log it cites (scoped-gate-1795011675896785088.log) records only revision a6ce199ff387, host 98dci4-clu-3141, tree, command, 2 passed and EXIT=0: no partition, no job id, and nothing about SLURM_JOB_ID, so the clause the done_when names rests on prose."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Three production call sites publish the population: obligation_snapshot.py:1908 (_derive_fleet_state), obligations.py:4818 (the obligations view) and station_subscriber.py:359 (live_work_populations); the reads served inside them are review.py's recorded_suite_delta_waiver and promotion_requests.read_promotion's pointer fallback.",
+    "diff": "Read commit by commit against the base: a6ce199ff387 adds _pointer_identity, the _POINTER_POPULATION ContextVar, published_pointers, _pointer_as_read, the served-read arm in read_pointer and the published region around live_pointer_snapshot's yield; 088339dcc738 and f735e417ebea add only the 82-line fragment.",
+    "done_when": "The measure asks for the file green as an all_debug job with SLURM_JOB_ID unset, each cause verdicted, an importer arm adding no failure, and the base failing ids in the fragment; the logs carry the green file, the 117-to-112 importer arms with 0 ids added, and the base 900-decode failure at the fragment line 75, but no log line carries the job-environment clause.",
+    "goal": "The goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full; the file is untouched by the diff and its head gate reads 2 passed EXIT=0 at a6ce199ff387 (scoped-gate-1795011675896785088.log) and f735e417ebea (node-file-at-head.log), against 1 failed, 1 passed EXIT=1 at 23b901694b4b (base-arm-test-fleet-state.log).",
+    "manifest": "Read in full; it names commits a6ce199ff387, 088339dcc738 and f735e417ebea, the 2 passed EXIT=0 gate, the base arm's 900-decode failure, the 371-file importer arms with 117 and 112 ids and 0 added, both suite arms at 58 passed, and six rubric self-check lines, and every figure opened on disk matches it.",
+    "write_paths": "The declared scope is reckon, tests, the named evidence fragment and the figures path; the delivered diff touches exactly reckon/crew/runs.py, reckon/crew/obligations.py and the new fragment, all inside it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full; the file is untouched by the diff and its head gate reads 2 passed EXIT=0 at a6ce199ff387 (scoped-gate-1795011675896785088.log) and f735e417ebea (node-file-at-head.log), against 1 failed, 1 passed EXIT=1 at 23b901694b4b (base-arm-test-fleet-state.log).\nVERDICT done_when: The measure asks for the file green as an all_debug job with SLURM_JOB_ID unset, each cause verdicted, an importer arm adding no failure, and the base failing ids in the fragment; the logs carry the green file, the 117-to-112 importer arms with 0 ids added, and the base 900-decode failure at the fragment line 75, but no log line carries the job-environment clause.\nVERDICT write_paths: The declared scope is reckon, tests, the named evidence fragment and the figures path; the delivered diff touches exactly reckon/crew/runs.py, reckon/crew/obligations.py and the new fragment, all inside it.\nVERDICT manifest: Read in full; it names commits a6ce199ff387, 088339dcc738 and f735e417ebea, the 2 passed EXIT=0 gate, the base arm's 900-decode failure, the 371-file importer arms with 117 and 112 ids and 0 added, both suite arms at 58 passed, and six rubric self-check lines, and every figure opened on disk matches it.\nVERDICT diff: Read commit by commit against the base: a6ce199ff387 adds _pointer_identity, the _POINTER_POPULATION ContextVar, published_pointers, _pointer_as_read, the served-read arm in read_pointer and the published region around live_pointer_snapshot's yield; 088339dcc738 and f735e417ebea add only the 82-line fragment.\nCALL_SITES: reckon/crew/obligations.py:867, reckon/crew/obligation_snapshot.py:1908, reckon/crew/obligations.py:4818, reckon/crew/station_subscriber.py:359\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_fleet_state_reads_the_live_pointers_once.py is unchanged by the diff and reads 2 passed EXIT=0 at f735e417ebea against 1 failed, 1 passed EXIT=1 at 23b901694b4b (base-arm-test-fleet-state.log).\nSCORE evidence: 16\nJUSTIFICATION evidence: the head gate at a6ce199ff387 (scoped-gate-1795011675896785088.log, 2 passed, EXIT=0), the base arm, and both importer arms are recorded and readable, but no log line carries the all_debug/SLURM_JOB_ID clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (runs.py, obligations.py, the fragment) is inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_fleet_state_reads_the_live_pointers_once.py:238 asserts decodes.count <= POINTERS and reddens with the 900-decode failure base-arm-test-fleet-state.log records when the published region is absent, but no test reaches published_pointers at runs.py:1571.\nSCORE fit: 19\nJUSTIFICATION fit: the ContextVar region beside _POINTER_TEXT (runs.py:1391) follows the file idiom, and ruff check and ruff format --check report nothing on the two changed files at the reviewed head.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner serves a by-id read from a pass population - open_run_index.read_scope at open_run_index.py:42 publishes a tuple for filtering and obligations._VIEW_LIVE_POINTERS at obligations.py:815 holds rows by project - so published_pointers at runs.py:1571 extends the owner of the by-id read.\nFINDING reckon/crew/runs.py:1620 non-blocking: return dict(data) is a shallow copy, so a served record keeps the population's nested objects while the docstring at runs.py:1615 promises a dict of the caller's own; the direct read it replaces parsed an independent document, so a nested mutation inside a published pass would rewrite what later readers in that pass are served. No live corruption was found: the mutation seams copy the node mapping.\nFINDING reckon/crew/runs.py:1592 non-blocking: published_pointers stats pointer_path(run_id) afresh at publish time instead of carrying the identity each record was read under, so the claim at runs.py:1579 fails in the window between the listing read and this stat: a pointer rewritten then is paired with the new identity, and read_pointer serves the older listed content as current. The window is in-process for obligations.live_pointer_snapshot, but station_subscriber.live_work_populations at station_subscriber.py:359 is handed a listing its caller read earlier.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html:63 non-blocking: The fragment says the station-pid rule and the copy promise were exercised directly, but no test names published_pointers and no log in the run directory records such an exercise, so the sentence claims work a reader cannot open; the copy promise it names is the shallow copy reported above.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-state-reads-the-live-pointers-once.html:36 non-blocking: The head-arm row names a gate job on all_debug, but the log it cites (scoped-gate-1795011675896785088.log) records only revision a6ce199ff387, host 98dci4-clu-3141, tree, command, 2 passed and EXIT=0: no partition, no job id, and nothing about SLURM_JOB_ID, so the clause the done_when names rests on prose.",
+  "review_run_id": "r-20261118T163405742550-review-of-qwnw-red-file-fleet-state-reads-the-live-pointers-once-f735e417ebea",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "f735e417ebea1a5dcee4a7095b911a15b3c9145f",
+  "reviewed_run_id": "r-20261118T062954989225-qwnw-red-file-fleet-state-reads-the-live-pointers-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:52:13.979179+00:00",
+  "total": 107
+}
