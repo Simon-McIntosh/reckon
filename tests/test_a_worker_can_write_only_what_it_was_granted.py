@@ -137,7 +137,7 @@ class World:
         shm.mkdir(exist_ok=True)
         self.shm = shm
         monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", self.node_tmp)
-        monkeypatch.setattr(_worker_fence, "NODE_SHM_ROOT", shm)
+        monkeypatch.setattr(_worker_fence, "NODE_SHM_ROOT", shm, raising=False)
         monkeypatch.setenv(
             "RECKON_WORKER_SCRATCH_ROOT", str(self.root / "crew-scratch")
         )
