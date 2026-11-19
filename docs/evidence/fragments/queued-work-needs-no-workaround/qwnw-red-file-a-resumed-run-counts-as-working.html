@@ -76,7 +76,9 @@
   and
   <code>test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner</code>
   — the two inventory ids the declared suite's base arm also fails, and a
-  producer-arm id no arm's head run fails. There is no head-only id.</p>
+  producer-arm id no pre-merge head run fails. The pre-merge arm has no
+  head-only id; the merged arm's four added ids are each accounted for in
+  <cite>Every id the importer arm adds</cite> below.</p>
 
   <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-evidence">Evidence inputs</h3>
 
@@ -87,7 +89,7 @@
     <code>recovery_watch</code>, recorded in <code>verify/importers.txt</code></li>
     <li>instrument check: the same population still exits <code>EXIT=1</code>
     after the change, so the exit status alone says nothing; the delta is read
-    from the failing ids, where head carries no id the base arm did not.</li>
+    from the failing ids, where the pre-merge head carries no id the base arm did not; the merged arms' four added ids are each accounted for below.</li>
   </ul>
 
   <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-repair">Repair round</h3>
@@ -103,14 +105,80 @@
 
   <p>At the merge head the node's gate reads 5 passed, <code>EXIT=0</code>; the
   declared suite reads 58 passed, <code>EXIT=0</code>; the importer arm reads 17
-  failed, 801 passed, <code>EXIT=1</code>. Four ids appear there that the base
-  arm does not fail, and they are load-sensitive producer and classification
-  cases rather than this change: at the same revision
-  <code>tests/test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing</code>
-  passed twice and failed twice in four runs on the primary extraction alone,
-  with the host at load average 35 on 8 cores. The gate job was submitted
-  <code>all_debug</code> twice and sat <code>PENDING</code> for 25 minutes
+  failed, 801 passed, <code>EXIT=1</code>. The gate job was submitted
+  <code>all_debug</code> twice and sat <code>PENDING</code> for 18 and 25 minutes
   without starting, so the merge-head gate figure is the in-place run with
   <code>SLURM_JOB_ID</code> unset recorded in
-  <code>verify/merge-head-run.log</code>.</p>
+  <code>verify/merge-head-run.log</code>; a later job (1332127) did run and
+  recorded the same 5 passed in <code>verify/merge-head-slurm-job.log</code>.</p>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-added-ids">Every id the
+  importer arm adds, measured one at a time</h3>
+
+  <p>Comparing the two arms' failing ids — <code>comm -13</code> of
+  <code>verify/imp-base-failed.txt</code> (24 ids) against
+  <code>verify/imp-head-merge-failed.txt</code> (17 ids) — leaves four ids the
+  base arm does not fail. Each was then run alone, three times, in the base
+  tree and in a primary-branch extraction, so that what each arm's failure says
+  about this change can be read rather than assumed. The runs are
+  <code>verify/ids-base-probe.log</code> and
+  <code>verify/ids-primary-probe.log</code>; each names the tree, the host and
+  the command, and <code>SLURM_JOB_ID</code> is unset for the measured process.</p>
+
+  <table id="qwnw-red-file-a-resumed-run-counts-as-working-added-table">
+    <caption>Each id is one pytest selection on its own, run three times in each
+    tree with <code>SLURM_JOB_ID</code> unset. The base tree is at
+    <code>b24fe95a789c</code>; the primary extraction is the revision the merge
+    brought in, <code>ccbce51f79b3</code>.</caption>
+    <thead><tr><th>id</th><th>base tree</th><th>primary extraction</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_a_classification_reads_only_new_stream_lines.py::test_two_configured_ticks_over_an_unchanged_store_decode_no_document</code></td>
+        <td>3 passed</td>
+        <td><strong>3 failed</strong> — <code>a quiet tick decoded a document none
+        of it changed</code></td>
+      </tr>
+      <tr>
+        <td><code>test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count</code></td>
+        <td>3 passed</td>
+        <td>3 passed</td>
+      </tr>
+      <tr>
+        <td><code>test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]</code></td>
+        <td>3 passed</td>
+        <td>3 passed alone; observed failing on the primary extraction alone in
+        a wider run as <code>assert 3.100182317197323 &lt; 3.0</code></td>
+      </tr>
+      <tr>
+        <td><code>test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing</code></td>
+        <td>3 passed</td>
+        <td>3 passed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Read against the two trees, none of the four is this node's:</p>
+
+  <ul>
+    <li>the classification id fails in every run at the primary revision and
+    passes in every run at the base revision, so the difference is one the
+    primary branch carries between those two revisions and not a line this node
+    writes — the merge head's only delta from primary is this fragment.</li>
+    <li>the crash-seat case asserts a wall-clock restart delay,
+    <code>assert 0.3 &lt;= elapsed &lt; 3.0</code> over a subprocess's own
+    timestamps, and the failure quoted above is that bound crossed by 0.1 s on a
+    host at load average 35 on 8 cores. It is a timing assertion, not a
+    statement about the counter this node repaired.</li>
+    <li>the reload-deferral and steady-run cases pass in every isolated run in
+    both trees and failed only inside the 101-file arm, where the whole
+    population runs in one process under that load.</li>
+  </ul>
+
+  <p>The importer arm's measure is therefore met in the sense the done-when
+  states it: no id the head arm fails is caused by the change, and the one id
+  that separates the two revisions deterministically —
+  <code>test_two_configured_ticks_over_an_unchanged_store_decode_no_document</code>
+  — fails at the primary revision this node merged, not at the code it delivers.
+  The record states which of the four is deterministic and which is load- or
+  order-sensitive rather than reporting only the last, as the earlier text did.</p>
 </section>
