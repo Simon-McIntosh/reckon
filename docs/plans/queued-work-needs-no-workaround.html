@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="642">
+<meta name="plan-version" content="643">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -1997,6 +1997,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063640101628-qwnw-red-file-a-promotion-holds-no-profile-build" data-who="reckon-build" data-when="2026-11-18T16:20:23.279Z">
     <div class="r-comment-body"><p>tests/test_a_promotion_holds_no_profile_build.py already passes in full at the base revision ab67be8bb1 (4 passed, EXIT=0, all_debug job 1327395 with SLURM_JOB_ID unset), so the node delivers that passing run with no product or test change and no assertion touched; the green base cannot show the guard fires, so a scratch copy with the removed run-document scan reinstated reads 3 failed / 1 passed / EXIT=1 (job 1327399) on the three decode-counting cases.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044628948212-qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed" data-who="reckon-build" data-when="2026-11-18T23:26:41.361Z">
+    <div class="r-comment-body"><p>tests/test_a_scope_refusal_names_the_paths_it_parsed.py passes 5/5 at head 939e86f494e1 — the tree head 62e2eb2c23 adds only this node&#x27;s evidence fragment — (base 5b0a1f537ef9: 1 failed, 4 passed) with verdict test wrong: the case asserted a comma-separation finding for a space-separated changed_paths that the guarded list reader now splits entry by entry — a rule already pinned by tests/test_a_manifest_is_read_in_the_shapes_workers_write.py — so it now asserts the three parsed entries, no finding and audit ok, with no assertion deleted or weakened; reckon/crew/reports.py only had _write_scope_findings&#x27;s docstring corrected to state the joined-item branch as a guard rather than the live reading; the declared suite reads 58 passed at both arms; the head gate and both suite arms ran at 939e86f494e1, and 62e2eb2c23 changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-scope-refusal-names-the-paths-it-parsed.html.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
