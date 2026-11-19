@@ -1046,9 +1046,7 @@ def _structure_findings(html_text: str) -> list[Finding]:
 _WRITE_PATHS_LABEL = re.compile(r"^write\s+paths?\b", re.IGNORECASE)
 
 
-def _write_paths_sentence_findings(
-    html_text: str, soup: BeautifulSoup
-) -> list[Finding]:
+def _write_paths_sentence_findings(html_text: str) -> list[Finding]:
     """Report a section whose write-paths label sentence no reader can parse.
 
     Both readers of the sentence — the section reader and the batch entry
@@ -1060,7 +1058,10 @@ def _write_paths_sentence_findings(
     write paths in prose is not a finding, and neither is a section whose prose
     already yields paths through the section reader, whatever prose around them
     says. The finding fires only where a paragraph begins with the label and no
-    parseable label sentence sits in that section at all.
+    parseable label sentence sits in that section at all. Sections, their
+    canonical identities and their extents come from the plan parser's one
+    reader of authored headings, so a section's identity is the one the
+    readers resolve rather than a spelling this check derives again.
 
     Severity ``warn``: the plan is authored and a human can repair the
     punctuation, and the failure it causes already surfaces loudly when a
@@ -1076,30 +1077,30 @@ def _write_paths_sentence_findings(
     }
 
     out: list[Finding] = []
-    identity = ""
-    for element in soup.find_all(["h2", "p"]):
-        if element.name == "h2":
-            identity = str(element.get("id") or "")
+    for identity, heading in _plan_html.authored_section_headings(document):
+        if identity in parseable or heading.is_card:
             continue
-        if not identity or identity in parseable:
+        authored = document[heading.heading_span[0] : heading.span[1]]
+        if "write path" not in authored.lower():
             continue
-        if element.find_parent("section", class_=_plan_html.LANDED_SECTION_CLASS):
-            continue
-        text = _visible_text(element)
-        match = _WRITE_PATHS_LABEL.match(text)
-        if match is None or _WRITE_PATHS_SENTENCE.match(text):
-            continue
-        label = " ".join(match.group(0).split())
-        out.append(
-            Finding(
-                "warn",
-                "write-paths-sentence-unparsed",
-                f'<section id="{identity}"> opens a paragraph with {label!r} '
-                "without a colon or a full stop after it — neither the section "
-                "reader nor the batch entry reader parses that sentence, so the "
-                "paths it names are invisible downstream",
+        for element in BeautifulSoup(authored, "html.parser").find_all("p"):
+            if element.find_parent("section", class_=_plan_html.LANDED_SECTION_CLASS):
+                continue
+            text = _visible_text(element)
+            match = _WRITE_PATHS_LABEL.match(text)
+            if match is None or _WRITE_PATHS_SENTENCE.match(text):
+                continue
+            label = " ".join(match.group(0).split())
+            out.append(
+                Finding(
+                    "warn",
+                    "write-paths-sentence-unparsed",
+                    f'<section id="{identity}"> opens a paragraph with {label!r} '
+                    "without a colon or a full stop after it — neither the section "
+                    "reader nor the batch entry reader parses that sentence, so the "
+                    "paths it names are invisible downstream",
+                )
             )
-        )
     return out
 
 
@@ -1701,7 +1702,7 @@ def audit_html(
     # (g) Plan sections name their write paths in one sentence, and both
     # readers parse only a colon or a full stop after the label. A sentence in
     # any other form leaves those paths invisible downstream.
-    out.extend(_write_paths_sentence_findings(html_text, soup))
+    out.extend(_write_paths_sentence_findings(html_text))
 
     # Document type — research/doc are non-actionable; plan requires status.
     rt = soup.find("meta", attrs={"name": "reckon-type"})
