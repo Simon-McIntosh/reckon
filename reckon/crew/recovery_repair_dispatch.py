@@ -1751,12 +1751,15 @@ def dispatch_repair_for_run(
     # run holding a test path; the cited paths are the only place the findings'
     # own files appear, and they are read here. A path inside the run's own fence
     # is repairable whatever its spelling, so an in-fence figure or evidence
-    # finding is not mistaken for the fleet's own record.
-    if not dimension_findings and not _repairable_scope(
+    # finding is not mistaken for the fleet's own record. The read is taken once
+    # here and reused below, so the decline guard and the empty-scope decline
+    # decide from the same population rather than two reads that could drift.
+    cited = _repairable_scope(
         (str(finding.get("file") or "") for finding in blocking),
         fence=run_fence,
         reach=opening_reach,
-    ):
+    )
+    if not dimension_findings and not cited:
         reason = _decline_only_reason(
             review,
             blocking,
@@ -1785,10 +1788,26 @@ def dispatch_repair_for_run(
     # A composed scope that filters to empty while blocking findings exist is a
     # dead end: the round would otherwise resume with the advice line "Write
     # scope for this round: none", which is no scope for work the review's
-    # blocking findings named. Record it declined instead of resuming it.
+    # blocking findings named. Record it declined instead of resuming it. A
+    # round reaching here with no blocking finding citing a repairable path is
+    # the same decline the guard above records, entered because a sub-floor
+    # dimension forced the composition, so it carries that decision's reason and
+    # names the dimension and the follow-on paths the decision left. A blocking
+    # path that passed the guard while the composition granted nothing is a
+    # different outcome and keeps its own wording, because the guard's reason
+    # would claim no blocking finding cited a repairable path when one did.
     if not scope:
         reason = (
             "the composed write scope filtered to empty, so the round is decline-only"
+            if cited
+            else _decline_only_reason(
+                review,
+                blocking,
+                fence=run_fence,
+                project=project,
+                config=config,
+                reach=opening_reach,
+            )
         )
         _record_repair_dispatch(
             run_id,
