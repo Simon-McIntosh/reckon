@@ -69,4 +69,32 @@ assert "record is outside the reviewed run's review-records directory" in ...</p
   gate and the arm runner both read that line. Those arms measure those files,
   not this node's, so the node file's own gate was measured with the command
   naming it. The defect is the brief's, not the tree's.</p>
+
+  <h3 id="qwnw-red-file-crew-families-fold-importers">The files that import the
+  changed module</h3>
+
+  <p>267 test files import <code>reckon.crew.review</code>. Each arm ran the
+  whole population, and the failure ids are compared as sets rather than as
+  counts.</p>
+
+  <table id="qwnw-red-file-crew-families-fold-importer-arms">
+    <caption>Both arms name the same 267 files; the base arm ran in an
+    extraction of the base revision and the head arm in this worktree.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>importers, base</td>
+        <td><code>d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a</code></td>
+        <td>61 failed, 1903 passed, 2 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>importers, head</td>
+        <td><code>4bcdcfd8f3298a856a985cfa6e324948852a9bd5</code></td>
+        <td>59 failed, 1905 passed, 2 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>delta</td><td>head against base</td>
+        <td>0 added failure ids; 2 cleared, both this node's own cases</td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-crew-families-fold-importer-note">Two of the standing
+  failures are errors where a test reached <code>sbatch</code>, a scheduler verb
+  the worker sandbox does not provide; they appear in both arms, so neither is
+  this change's.</p>
 </section>
