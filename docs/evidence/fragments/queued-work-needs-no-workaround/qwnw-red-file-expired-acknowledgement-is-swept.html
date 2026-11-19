@@ -1,0 +1,47 @@
+<section id="qwnw-red-file-expired-acknowledgement-is-swept-causes">
+<h2>Two causes: a fixture tree with nothing unmerged, and a sweep that guessed at an unreadable instant</h2>
+<p>The file failed at base <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> with two red ids and one green. Each cause is one of the two the section asks the node to name.</p>
+<table>
+<tr><th>Cause</th><th>Red id</th><th>At fault</th><th>Repair</th></tr>
+<tr>
+<td>The fixture registered an empty tree at <code>HEAD</code></td>
+<td><code>test_an_expired_acknowledgement_is_swept_and_a_current_one_honoured</code></td>
+<td>test</td>
+<td>the held-worktree derivation raises a duty only for a tree that holds work a landing would take, so an empty tree owes none and the case's two promoted runs raised no duty for a deferral to name. The fixture now leaves the commit a dispatched run leaves behind in its tree.</td>
+</tr>
+<tr>
+<td>The read deleted a deferral it could not judge</td>
+<td><code>test_a_deferral_with_an_unreadable_instant_is_left_in_place</code></td>
+<td>product</td>
+<td><code>_acknowledgements_in_force</code> released a promoted deferral whose <code>until</code> would not parse, removing the file although nothing proved it expired. The file is now left in place while the duty it claimed is still refused.</td>
+</tr>
+</table>
+<p>No assertion was deleted or weakened; assertions were unchanged. Product change: <code>reckon/crew/obligations.py</code>. Test change: the <code>_worktree</code> helper in <code>tests/test_expired_acknowledgement_is_swept.py</code>.</p>
+</section>
+
+<section id="qwnw-red-file-expired-acknowledgement-is-swept-negative-control">
+<h2>Base run: the two ids the repair answers were red before it</h2>
+<pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# tree: tests/test_expired_acknowledgement_is_swept.py arm, extracted base tree
+# cwd: /tmp/reckon-crew-scratch/r-20261118T062440541667-qwnw-red-file-expired-acknowledgement-is-swept/ackbase-AnVZmW
+# module: /tmp/reckon-crew-scratch/r-20261118T062440541667-qwnw-red-file-expired-acknowledgement-is-swept/ackbase-AnVZmW/reckon/crew/obligations.py
+FF.                                                                      [100%]
+FAILED tests/test_expired_acknowledgement_is_swept.py::test_an_expired_acknowledgement_is_swept_and_a_current_one_honoured - AssertionError: assert [] == ['r-20261003T060000000000-current-remainder', 'r-20261003T060000000000-expired-remainder']
+FAILED tests/test_expired_acknowledgement_is_swept.py::test_a_deferral_with_an_unreadable_instant_is_left_in_place - AssertionError: assert False
+ +  where False = is_file()
+ +    where is_file = PosixPath('/tmp/reckon-crew-scratch/r-20261118T062440541667-qwnw-red-file-expired-acknowledgement-is-swept/pytest-of-mcintos/pytest-0/test_a_deferral_with_an_unread0/config/crew/acknowledgements/r-20261003T060000000000-expired-remainder.json').is_file
+2 failed, 1 passed in 1.78s
+EXIT=1</pre>
+<p>The whole log is <code>base-arm.log</code> in the run directory, the path the manifest's <code>negative_control_log</code> names.</p>
+</section>
+
+<section id="qwnw-red-file-expired-acknowledgement-is-swept-head-arm">
+<h2>Head run: the file passes in full on all_debug with the worker's own defensive state</h2>
+<pre># revision: 415417acd9ece83478990a305e10d693738819c9
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-expired-acknowledgement-is-swept
+# command: env -u SLURM_JOB_ID .venv/bin/python -m pytest -q tests/test_expired_acknowledgement_is_swept.py
+...                                                                      [100%]
+3 passed in 0.92s
+EXIT=0</pre>
+<p>Gate receipt at that revision: completed, 0 failures, the job log <code>scoped-gate-1795057837713654678.log</code> in the run directory; <code>head-arm.log</code> beside it is the same command run with the same revision and result.</p>
+</section>
