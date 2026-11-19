@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1025">
+<meta name="plan-version" content="1026">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3138,7 +3138,10 @@
     <div class="r-comment-body"><p>Reviewed the parked-claim landing repair at reviewed head 2647edddb9 against base 28fbf2bc: the test now reads the receipt named by record_path, the file goes from 4 failed/2 passed at base to 6 passed at head, both armed suite arms read 58 passed at EXIT=0, and the parsed record scores goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 20, reuse 20 with two non-blocking findings (fragment cites the previous commit for its head gate; manifest's measurement_module is none for a scratch-tree gate).</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062812981514-qwnw-red-file-reckon-hook-commands" data-who="reckon-build" data-when="2026-11-19T03:48:01.132Z">
-    <div class="r-comment-body"><p>tests/test_reckon_hook_commands.py passes in full: 2 passed EXIT=0 at head fdc2443ec9c7f2e97e809df4b7cfed2623e4bdbe against 1 failed and 1 passed EXIT=1 at base 42fe90d0b0a46060bafde2490dda7d4002cda478, both on all_debug; the one cause is test wrong: the case holding every reckon-importing hook script to the checkout interpreter read only two of three settings writers, and worker_inbox.py is registered by the run-home seeder, so that the writer&#x27;s commands joined the population with no assertion removed or relaxed</p></div>
+    <div class="r-comment-body"><p>tests/test_reckon_hook_commands.py passes in full: 2 passed EXIT=0 at head fdc2443ec9c7f2e97e809df4b7cfed2623e4bdbe against 1 failed and 1 passed EXIT=1 at base 42fe90d0b0a46060bafde2490dda7d4002cda478, both on all_debug; the one cause is test wrong: the case holding every reckon-importing hook script to the checkout interpreter read only two of three settings writers, and worker_inbox.py is registered by the run-home seeder, so that the writer's commands joined the population with no assertion removed or relaxed</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062505782663-qwnw-red-file-append-run-writes-one-run-file" data-who="reckon-build" data-when="2026-11-19T12:27:56.671Z">
+    <div class="r-comment-body"><p>tests/test_append_run_writes_one_run_file.py passes in full at head (17 passed, EXIT=0, all_debug job 1330975 with SLURM_JOB_ID unset) with both base failures repaired as test-wrong: the byte-scan test now stores a row for the project first so it measures an ordinary append instead of the store&#x27;s first-row import, and the failed-insert test now asserts the store refusal that takes the run file back and writes its lagging run file by hand; no assertion deleted or weakened and no product source changed.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
