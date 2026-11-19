@@ -3522,7 +3522,14 @@ def _delivery_reading(
     classification = str(row.get("classification") or "")
     if classification in FLEET_SETTLED_STATES:
         return {"status": "landed"}
-    if classification != "promotable":
+    # ``scoring`` is a delivered run whose independent review has not filed its
+    # classified record yet: the pane draws its row in the delivered family. An
+    # empty reading for it left the fleet counters counting no delivery while
+    # the row's own word said delivered, so one row carried a delivered count
+    # the drawn bucket contradicted. Both delivered classifications are read
+    # here, and a queued promotion under review moves the promotion records
+    # rather than the delivered figure, exactly as for ``promotable``.
+    if classification not in ("promotable", "scoring"):
         return {}
     from .promotion_requests import QUEUED, read_promotion
 
