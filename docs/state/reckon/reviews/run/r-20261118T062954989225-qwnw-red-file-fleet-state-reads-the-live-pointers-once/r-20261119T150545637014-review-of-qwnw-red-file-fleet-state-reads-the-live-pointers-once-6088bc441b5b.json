@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:864 live_pointer_snapshot opens runs.published_pointers",
+    "reckon/crew/obligation_snapshot.py:1909 _derive_fleet_state opens live_pointer_snapshot(project)",
+    "reckon/crew/obligations.py:4824 the obligations view opens live_pointer_snapshot(project)",
+    "reckon/crew/station_subscriber.py:359 live_work_populations opens live_pointer_snapshot(pointers=snapshot)",
+    "reckon/crew/admission/launching.py:503 reads a run's pointer through runs.read_pointer"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:22:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1728,
+      "severity": "non-blocking",
+      "text": "The merge's central resolution, copy.deepcopy(data) in _pointer_as_read, is guarded by no assertion: no test names published_pointers or _pointer_as_read, so reinstating the shallow dict(data) it replaced leaves tests/test_fleet_state_reads_the_live_pointers_once.py green and lets a caller's nested write reach the memo every later listing reads; the manifest's proof is a throwaway probe, not a test."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1697,
+      "severity": "non-blocking",
+      "text": "published_pointers stats the pointer afresh at publish time instead of carrying the identity each record was listed under, so a pointer rewritten between the caller's listing and this stat is paired with the new identity and read_pointer serves the older listed content as current, contradicting the node's own evidence fragment at line 20; raised at f735e417ebea and carried unrepaired into 6088bc441b5b."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1676,
+      "severity": "non-blocking",
+      "text": "At the merged head this pass population duplicates two owners that arrived with primary: file_memo.memoized (reckon/file_memo.py:365) already decodes an unchanged pointer once process-wide, and open_run_index.read_scope (reckon/crew/open_run_index.py:52) already holds the pass's live listing. With the memo warm from the listing, both assertions in tests/test_fleet_state_reads_the_live_pointers_once.py hold with published_pointers removed, so the guard no longer discriminates the change."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over f735e417ebea..6088bc441b5b, one merge commit, in the two files the goal names: reckon/crew/runs.py:1728 turns _pointer_as_read from dict(data) into copy.deepcopy(data), reckon/crew/runs.py:1758 moves read_pointer's direct arm onto _pointer_record and that one helper, and the rest is primary's priority-budget, _pointer_record, unreconciled_for_session and watch-transition work adopted wholesale; reckon/crew/obligations.py gains only primary's changes",
+    "done_when": "the measure asks for the file green as an all_debug job with SLURM_JOB_ID unset, each cause verdicted, an importer arm adding no failure and the base failing ids recorded; at 6088bc441b5b the only run of the file is in the worktree (node-file-at-merged-head.log, 2 passed EXIT=0), merged-head-suite.log records the declared pair at 58 passed EXIT=0, and no all_debug job run and no importer arm exists at the merged head",
+    "goal": "the node's goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full on the primary branch; the merge keeps that green \u2014 node-file-at-merged-head.log records 2 passed EXIT=0 at 6088bc441b5b",
+    "manifest": "read in full; it records commits a6ce199ff387, 088339dcc738, f735e417ebea and 6088bc441b5b, the merged head's 2 passed EXIT=0 and the pair's 58 passed, the base arm's 900-decode failure, both suite arms with 0 failing ids, and six rubric lines, while its landing states the copy rule is proven by a probe",
+    "write_paths": "the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment and figures path; the delta's own resolution sits in reckon/crew/runs.py:1708-1770, inside it, and the other 453 paths are primary's commits the merge carried rather than node writes"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is tests/test_fleet_state_reads_the_live_pointers_once.py green in full on the primary branch; the merge keeps that green \u2014 node-file-at-merged-head.log records 2 passed EXIT=0 at 6088bc441b5b\nVERDICT done_when: the measure asks for the file green as an all_debug job with SLURM_JOB_ID unset, each cause verdicted, an importer arm adding no failure and the base failing ids recorded; at 6088bc441b5b the only run of the file is in the worktree (node-file-at-merged-head.log, 2 passed EXIT=0), merged-head-suite.log records the declared pair at 58 passed EXIT=0, and no all_debug job run and no importer arm exists at the merged head\nVERDICT write_paths: the declared scope is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment and figures path; the delta's own resolution sits in reckon/crew/runs.py:1708-1770, inside it, and the other 453 paths are primary's commits the merge carried rather than node writes\nVERDICT manifest: read in full; it records commits a6ce199ff387, 088339dcc738, f735e417ebea and 6088bc441b5b, the merged head's 2 passed EXIT=0 and the pair's 58 passed, the base arm's 900-decode failure, both suite arms with 0 failing ids, and six rubric lines, while its landing states the copy rule is proven by a probe\nVERDICT diff: read commit by commit over f735e417ebea..6088bc441b5b, one merge commit, in the two files the goal names: reckon/crew/runs.py:1728 turns _pointer_as_read from dict(data) into copy.deepcopy(data), reckon/crew/runs.py:1758 moves read_pointer's direct arm onto _pointer_record and that one helper, and the rest is primary's priority-budget, _pointer_record, unreconciled_for_session and watch-transition work adopted wholesale; reckon/crew/obligations.py gains only primary's changes\nCALL_SITES: reckon/crew/obligations.py:864, reckon/crew/obligation_snapshot.py:1909, reckon/crew/obligations.py:4824, reckon/crew/station_subscriber.py:359, reckon/crew/admission/launching.py:503\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: node-file-at-merged-head.log records tests/test_fleet_state_reads_the_live_pointers_once.py at 2 passed EXIT=0 at 6088bc441b5b, so the goal the delta lands is still met at the merged head\nSCORE evidence: 13\nJUSTIFICATION evidence: the merged head's only node-file run is node-file-at-merged-head.log, run in the worktree, and no run at 6088bc441b5b carries the done_when's all_debug/SLURM_JOB_ID clause or a fresh importer arm\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the node's own resolution is confined to reckon/crew/runs.py:1708-1770, inside the declared reckon path, and the remaining diff paths are primary's commits the merge reconciles\nSCORE durability: 9\nJUSTIFICATION durability: no test names published_pointers or _pointer_as_read, so reinstating dict(data) at reckon/crew/runs.py:1728 reddens nothing, and with file_memo answering by-id reads (reckon/file_memo.py:403) both assertions in tests/test_fleet_state_reads_the_live_pointers_once.py hold with the population removed\nSCORE fit: 19\nJUSTIFICATION fit: the merged helper at reckon/crew/runs.py:1708 keeps one docstring per rule in the module's existing idiom and introduces no name the repository's rules forbid\nSCORE reuse: 10\nJUSTIFICATION reuse: the parse reuses reckon/file_memo.py:365 as its owner, but runs.published_pointers at reckon/crew/runs.py:1676 keeps a second pass population beside reckon/crew/open_run_index.py:52 read_scope and duplicates the decode-once service file_memo already gives\nFINDING reckon/crew/runs.py:1728 non-blocking: The merge's central resolution, copy.deepcopy(data) in _pointer_as_read, is guarded by no assertion: no test names published_pointers or _pointer_as_read, so reinstating the shallow dict(data) it replaced leaves tests/test_fleet_state_reads_the_live_pointers_once.py green and lets a caller's nested write reach the memo every later listing reads; the manifest's proof is a throwaway probe, not a test.\nFINDING reckon/crew/runs.py:1697 non-blocking: published_pointers stats the pointer afresh at publish time instead of carrying the identity each record was listed under, so a pointer rewritten between the caller's listing and this stat is paired with the new identity and read_pointer serves the older listed content as current, contradicting the node's own evidence fragment at line 20; raised at f735e417ebea and carried unrepaired into 6088bc441b5b.\nFINDING reckon/crew/runs.py:1676 non-blocking: At the merged head this pass population duplicates two owners that arrived with primary: file_memo.memoized (reckon/file_memo.py:365) already decodes an unchanged pointer once process-wide, and open_run_index.read_scope (reckon/crew/open_run_index.py:52) already holds the pass's live listing. With the memo warm from the listing, both assertions in tests/test_fleet_state_reads_the_live_pointers_once.py hold with published_pointers removed, so the guard no longer discriminates the change.\n",
+  "review_run_id": "r-20261119T150545637014-review-of-qwnw-red-file-fleet-state-reads-the-live-pointers-once-6088bc441b5b",
+  "reviewed_base_sha": "f735e417ebea1a5dcee4a7095b911a15b3c9145f",
+  "reviewed_head_sha": "6088bc441b5be3e917dc08dc73f071e8cd785a4a",
+  "reviewed_run_id": "r-20261118T062954989225-qwnw-red-file-fleet-state-reads-the-live-pointers-once",
+  "scores": {
+    "durability": 9,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:53:40.870973+00:00",
+  "total": 86
+}
