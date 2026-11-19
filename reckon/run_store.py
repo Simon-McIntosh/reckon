@@ -404,6 +404,13 @@ def store_stamp(path: str | Path | None = None) -> tuple[int, ...] | None:
     )
 
 
+def change_token(path: str | Path | None = None) -> tuple[Any, ...]:
+    """Every store file a read may answer from, stamped as one token."""
+
+    target = store_path() if path is None else Path(path)
+    return (store_stamp(target), store_stamp(_archive_path(target)))
+
+
 def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
     """Prepare an existing store during a separate, one-time maintenance job.
 
@@ -799,7 +806,7 @@ def stored_run_payloads(
     target = store_path() if path is None else Path(path)
     if not target.exists():
         return None
-    token = (store_stamp(target), store_stamp(_archive_path(target)))
+    token = change_token(target)
 
     def read() -> Iterator[tuple[Any, ...]]:
         connection = None

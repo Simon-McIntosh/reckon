@@ -678,9 +678,15 @@ def _readings(
         else:
             # Attribution and account-surface opt-in depend on backend settings.
             # The ledger stamp excludes the index's identity, which a read can move.
+            # A stored read answers from the run store, so the store's own token
+            # belongs in the key beside the document stamps: a store write that
+            # advanced nothing else still changes the answer.
+            from reckon import run_store
+
             key = (
                 generation,
                 json.dumps(ledger.index_state_stamp(project, root), sort_keys=True),
+                run_store.change_token(),
                 repr((config or {}).get("backends")),
             )
             found.extend(file_memo.memoized_key("budget_readings", key, collect))

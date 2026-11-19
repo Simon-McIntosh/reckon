@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from reckon import budget, crew, file_memo, ledger
+from reckon import budget, crew, file_memo, ledger, run_store
 
 PROJECT = "sample"
 
@@ -96,8 +96,7 @@ def test_mutating_a_returned_budget_leaves_the_next_read_unchanged(store):
 def test_generation_change_invalidates_an_in_place_edit(store):
     root, counted = store
     assert _latest(root).budget["utilisation_pct"] == 25
-    path = ledger.run_path(PROJECT, "first", root)
-    path.write_text(ledger.serialize_run(_row(utilisation=45)))
+    ledger.write_run_file(PROJECT, _row(utilisation=45), root)
     ledger._bump_generation(PROJECT)
     assert _latest(root).budget["utilisation_pct"] == 45
     assert counted.call_count == 2
@@ -144,23 +143,18 @@ def test_a_failed_load_does_not_cache_an_empty_answer(store):
 def test_a_run_added_without_a_generation_bump_is_seen(store):
     root, counted = store
     assert _latest(root).record_id == "first"
-    ledger.run_path(PROJECT, "external", root).write_text(
-        ledger.serialize_run(
-            _row("external", utilisation=50, stamp="2030-01-01T11:00:00Z")
-        )
+    run_store.append(
+        PROJECT, _row("external", utilisation=50, stamp="2030-01-01T11:00:00Z")
     )
+
     assert _latest(root).record_id == "external"
     assert counted.call_count == 2
 
 
-def test_an_aggregate_change_without_a_generation_bump_is_seen(store):
+def test_an_amended_row_without_a_generation_bump_is_seen(store):
     root, counted = store
     assert _latest(root).record_id == "first"
-    path = ledger.ledger_path(PROJECT, root)
-    envelope = json.loads(path.read_text())
-    envelope["data"]["runs"].append(
-        _row("aggregate", utilisation=50, stamp="2030-01-01T11:00:00Z")
-    )
-    path.write_text(json.dumps(envelope))
-    assert _latest(root).record_id == "aggregate"
+    run_store.sync(PROJECT, _row(utilisation=50))
+
+    assert _latest(root).budget["utilisation_pct"] == 50
     assert counted.call_count == 2
