@@ -265,7 +265,7 @@ def test_the_held_histories_stay_bounded(
     decoded = _count_decodes(monkeypatch)
     for project in projects:
         assert len(ledger.picker_runs(project, root=root)) == 5
-    assert ledger._history_cell.cache_info().currsize == ledger._MAX_STORED_HISTORIES
+    assert len(ledger._HELD_HISTORIES) == ledger._MAX_STORED_HISTORIES
 
     decoded.clear()
     first = {row["run_id"] for row in ledger.picker_runs(projects[0], root=root)}
@@ -302,6 +302,9 @@ def test_the_stored_history_answers_what_the_full_read_answers(
         "r-promoted-"
     )
     cold, _version = ledger.load(PROJECT, root, True)
+    promoted_stored, _auxiliary = ledger.stored_history(PROJECT, root, picker_only=True)
+    assert _order(promoted_stored) == _order(cold["runs"])
+    assert promoted_stored == cold["runs"]
     assert _order(ledger.picker_runs(PROJECT, root=root)) == _order(cold["runs"])
     assert ledger.picker_runs(PROJECT, root=root) == cold["runs"]
 
@@ -334,15 +337,25 @@ def test_concurrent_reads_keep_their_own_history(crew_home: Path) -> None:
         return [row["run_id"] for row in ledger.picker_runs(project, root=root)]
 
     rounds = 6
+    escaped: list[BaseException] = []
+
+    def guarded(project: str) -> list[str] | None:
+        try:
+            return read(project)
+        except BaseException as error:  # noqa: BLE001 - the point is what escaped,
+            escaped.append(error)  # and a failed MCP read is this exception.
+            return None
+
     with ThreadPoolExecutor(max_workers=8) as pool:
         answers = [
-            (project, pool.submit(read, project)) for project in projects * rounds
+            (project, pool.submit(guarded, project)) for project in projects * rounds
         ]
+    assert not escaped, f"a concurrent read raised through eviction: {escaped[0]!r}"
     for project, future in answers:
         expected = {
             f"r-seed-{projects.index(project):02d}-{row:02d}" for row in range(3)
         }
-        assert set(future.result()) == expected
+        assert set(future.result() or ()) == expected
 
 
 def test_an_answer_a_caller_changes_does_not_change_the_held_history(

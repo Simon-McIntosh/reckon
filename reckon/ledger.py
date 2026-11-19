@@ -35,7 +35,6 @@ rather than averaging it in silently.
 from __future__ import annotations
 
 import contextlib
-import functools
 import hashlib
 import json
 import logging
@@ -46,7 +45,6 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -1753,46 +1751,30 @@ _Entry = tuple[tuple[Any, ...], dict[str, tuple[Any, ...]], dict[str, dict[str, 
 # project's decoded rows, so the bound is what stops a monitor that reads many
 # projects from holding every project's history at once; a read whose entry was
 # evicted decodes its project's rows again, exactly as every read used to.
-# ``functools.lru_cache`` owns the bound, the least-recently-used eviction and
-# the clear, so this module adds no eviction loop of its own beside
-# :mod:`reckon.file_memo`'s bounded memo.
+# The container is :func:`reckon.file_memo.bounded_map`'s: the repository's own
+# bounded map, which holds the lock over a read or a replacement and is emptied
+# by ``file_memo.clear()`` like every other memo in the process, so this module
+# keeps no eviction loop and no lock of its own.
 _MAX_STORED_HISTORIES = 16
 
-# The readers run in threads (:class:`ThreadingHTTPServer` answers one MCP read
-# per handler), and each one reads a history, decodes what was promoted, then
-# replaces the entry. The lock guards that read-then-replace so a reader never
-# answers from a half-replaced entry, and ``lru_cache`` guards its own table, so
-# no reader can evict an entry out from under another.
-_HELD_LOCK = threading.Lock()
-
-
-@functools.lru_cache(maxsize=_MAX_STORED_HISTORIES)
-def _history_cell(key: tuple[str, str, bool]) -> list[Any]:
-    """The one cell a history keeps, created on first touch.
-
-    Caching the cell rather than the entry lets a read replace the entry in one
-    store while the cell itself stays in place; touching the cell is also what
-    marks the history recently used, so the eviction order is the read order.
-    """
-    return [None]
+_HELD_HISTORIES: file_memo.BoundedMap[_Entry] = file_memo.bounded_map(
+    "stored-history", limit=_MAX_STORED_HISTORIES
+)
 
 
 def clear_stored_history() -> None:
     """Forget every history this process decoded from a run store."""
-    with _HELD_LOCK:
-        _history_cell.cache_clear()
+    _HELD_HISTORIES.clear()
 
 
 def _held_history(key: tuple[str, str, bool]) -> _Entry | None:
     """The entry one history holds now, or ``None`` when it holds none."""
-    with _HELD_LOCK:
-        return _history_cell(key)[0]
+    return _HELD_HISTORIES.get(key)
 
 
 def _hold_history(key: tuple[str, str, bool], entry: _Entry) -> None:
     """Replace one history's entry in a single store."""
-    with _HELD_LOCK:
-        _history_cell(key)[0] = entry
+    _HELD_HISTORIES.put(key, entry)
 
 
 def _history_token(project: str, target: Path, *, run_store: Any) -> tuple[Any, ...]:
