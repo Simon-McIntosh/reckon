@@ -1,6 +1,7 @@
 # ruff: noqa: UP035
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import socket
@@ -1669,8 +1670,13 @@ def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
         )
     except OSError:
         return False
-    if isinstance(record, dict):
-        record["launcher_host_observation"] = observation
+    # A caller may hold a listing's read-only view, which refuses the write
+    # rather than letting it reach the stamp whose memo every later listing
+    # reads. The observation is already in the run's own directory, and every
+    # reader that persists the record reads the pointer mutably and carries the
+    # field from there.
+    with contextlib.suppress(TypeError):
+        record["launcher_host_observation"] = observation  # type: ignore[index]
     return observation["process_gone"]
 
 

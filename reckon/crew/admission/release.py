@@ -218,17 +218,27 @@ def resolve_waits(
         for ref in refs
     ]
     if isinstance(pointer, dict):
-        pointer["upstream_obligations"] = list(dict.fromkeys(issues))
+        obligations = list(dict.fromkeys(issues))
         # A request that stays waiting names the run whose work it waits for.
         # The section it waits on can own several runs, and one of them having
         # failed is not the section's end while another is still on its way: a
         # reader that saw only the section's name could not tell the two apart.
-        pointer["upstream_live"] = _live_runs_on(
+        working = _live_runs_on(
             refs,
             live,
             project=owner_project,
             exclude=str(pointer.get("run_id") or ""),
         )
+        try:
+            pointer["upstream_obligations"] = obligations
+            pointer["upstream_live"] = working
+        except TypeError:
+            # The caller handed in a listing's read-only record, which refuses
+            # the stamp rather than letting it reach the memo every later
+            # listing reads. The pass that persists the fields copies the record
+            # it derives first, and the caller of a bare record copy, so
+            # nothing is lost here.
+            pass
     if ABANDONED in states:
         return BLOCKED_UPSTREAM_PHASE
     if all(state == SATISFIED for state in states):
@@ -538,7 +548,7 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     candidates = [
-        pointer
+        dict(pointer)
         for pointer in live
         if str(pointer.get("phase") or "") in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE)
     ]
