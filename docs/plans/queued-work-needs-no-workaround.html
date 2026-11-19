@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="998">
+<meta name="plan-version" content="999">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3063,7 +3063,10 @@
     <div class="r-comment-body"><p>tests/test_stop_hook_reads_the_snapshot.py passes in full at the base revision d9b857e053 — 7 passed, EXIT=0 as an all_debug job with SLURM_JOB_ID and SLURM_JOBID removed — so no product or test line changed; the suite-template arms read 58 passed at both d9b857e053 and 3ba14a09f8.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261119T201014949684-review-of-qwnw-red-file-fleet-state-reads-the-live-pointers-once-52873a29680b" data-who="reckon-build" data-when="2026-11-19T20:13:31.126Z">
-    <div class="r-comment-body"><p>reviewed r-20261118T062954989225-qwnw-red-file-fleet-state-reads-the-live-pointers-once at 442cb3178bb6..52873a29680b: parsed, goal_fidelity 18, evidence 13, scope_discipline 18, durability 16, fit 18, reuse 20 (total 103), added_failure_count 0 with no added ids, four non-blocking findings (manifest never cites the reviewed head; the fragment&#x27;s 300-decode figure is a bound not a measurement; the negative control predates the fixture and assertion changes at 3f576e4b76; the decode counter excludes the node-body reads the merge added)</p></div>
+    <div class="r-comment-body"><p>reviewed r-20261118T062954989225-qwnw-red-file-fleet-state-reads-the-live-pointers-once at 442cb3178bb6..52873a29680b: parsed, goal_fidelity 18, evidence 13, scope_discipline 18, durability 16, fit 18, reuse 20 (total 103), added_failure_count 0 with no added ids, four non-blocking findings (manifest never cites the reviewed head; the fragment's 300-decode figure is a bound not a measurement; the negative control predates the fixture and assertion changes at 3f576e4b76; the decode counter excludes the node-body reads the merge added)</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062428237659-qwnw-red-file-hook-scripts-correct-their-interpreter" data-who="reckon-build" data-when="2026-11-19T02:01:03.340Z">
+    <div class="r-comment-body"><p>tests/test_hook_scripts_correct_their_interpreter.py passes 7 of 7 at head 43f1cde93a (exit 0, all_debug job 1329351) from 2 failed and 4 passed at base 42fe90d0 (job 1329289): cause 1 product wrong — reckon/hooks/worker_inbox.py imported reckon without the shared interpreter bootstrap and now loads interpreter_bootstrap.py and calls it from main, reporting &quot;checkout interpreter is missing&quot; on stderr and exiting 1 rather than exiting silently and dropping a waiting message; cause 2 test wrong — the file pinned its importing-hook population to three literal names and its re-execution map had no entry for the fourth, now extended to four with a seeded message asserted in each arm, with no assertion weakened.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
