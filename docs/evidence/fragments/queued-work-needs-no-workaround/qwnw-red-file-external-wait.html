@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>External wait file passes</title></head>
+<body>
+<article class="landed-report" data-run-id="r-20261118T062438606891-qwnw-red-file-external-wait">
+<h2>Two stale full-dict assertions in the external-wait file</h2>
+<p id="qwnw-red-file-external-wait-base">Base 42fe90d0b0a46060bafde2490dda7d4002cda478: 2 failed, 14 passed, EXIT=1; log logs/base.log.</p>
+<p id="qwnw-red-file-external-wait-cause">Verdict: test wrong. Both cases compared the whole fleet-count mapping to a four-key literal; the product reports the promotion queue beside the buckets, so each literal now names promotion_queued 0 and the two None instants. No assertion deleted or weakened.</p>
+<p id="qwnw-red-file-external-wait-head">Head fee6bfa2f4d0b96ec69b7e25106b0430e4c494de: 16 passed, EXIT=0, as an all_debug job; log scoped-gate-1795055685303505242.log.</p>
+<p id="qwnw-red-file-external-wait-arms">Suite arms (both on all_debug, no failing id): base 42fe90d0b0a46060bafde2490dda7d4002cda478 exit 0; after fee6bfa2f4d0b96ec69b7e25106b0430e4c494de exit 0. Lint: ruff check and ruff format --check clean on the changed path.</p>
+</article>
+</body>
+</html>
