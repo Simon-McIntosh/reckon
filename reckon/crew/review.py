@@ -4045,7 +4045,27 @@ def repair_run_review(
     from reckon.crew import runs
 
     source = Path(record_path).expanduser().resolve()
-    original = source.read_bytes()
+
+    def _stages(run: str) -> bool:
+        return (
+            bool(run)
+            and source.parent
+            == run_review_record_directory(runs.run_dir(run)).resolve()
+        )
+
+    try:
+        original = source.read_bytes()
+    except OSError:
+        # Containment follows from the path and the run the caller named, so a
+        # record outside the named run's directory is refused for that reason
+        # instead of for a read that never had to happen: a mistyped path and a
+        # path that is simply not there otherwise surfaces the OS's error
+        # rather than the rule the repair applies.
+        if not _stages(run_id):
+            raise ValueError(
+                "record is outside the reviewed run's review-records directory"
+            ) from None
+        raise
     body = json.loads(original)
     if not isinstance(body, dict):
         raise TypeError("review record is not an object")
@@ -4054,13 +4074,6 @@ def repair_run_review(
     replacement_review_run_id = (
         change.partition("=")[2].strip() if change.startswith("review_run_id=") else ""
     )
-
-    def _stages(run: str) -> bool:
-        return (
-            bool(run)
-            and source.parent
-            == run_review_record_directory(runs.run_dir(run)).resolve()
-        )
 
     in_staging = any(
         _stages(name) and source.name.startswith(name)
