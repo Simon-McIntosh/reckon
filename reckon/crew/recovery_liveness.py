@@ -1807,7 +1807,7 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
         and record.get("alive_after") == []
         and record.get("pid")
         and not record.get("job_id")
-        and process_alive(record["pid"]) is False
+        and runs.record_process_alive(record, process_alive) is False
     ):
         # A stop predating exit receipts can carry a scheduler placement with
         # no job identifier. On its launch host the stopped tree and dead pid
