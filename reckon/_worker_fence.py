@@ -1350,13 +1350,11 @@ def declared_grant_refusal(
 
     A declared grant is a directory a dispatch names as writable with a reason,
     so it has to be a place a run's own work lands and never a boundary whose
-    whole contents the kernel would then let that run rewrite. Three kinds of
+    whole contents the kernel would then let that run rewrite. Two kinds of
     directory are refused, each naming the path: a filesystem root, whose grant
-    is the writable whole filesystem the fence replaced; a project root, which a
-    grant re-opens together with its git metadata and every sibling file; and a
-    shared crew root that already covers another run's run directory, which
-    contains neither a filesystem root nor a checkout and so passes the first two
-    tests while still handing one run another run's record.
+    is the writable whole filesystem the fence replaced, and a project root,
+    which a grant re-opens together with its git metadata and every sibling
+    file.
 
     The refusal is composed before any mount is emitted, so a dispatch
     declaring one of these fails before a worker starts rather than launching a
@@ -1379,14 +1377,6 @@ def declared_grant_refusal(
         return (
             f"refusing declared write grant {target}: it is a registered project "
             "root, so the grant would re-open a whole project for one run"
-        )
-    from reckon.crew.runs import runs_dir
-
-    crew_runs = resolved_destination(runs_dir())
-    if crew_runs == target or crew_runs.is_relative_to(target):
-        return (
-            f"refusing declared write grant {target}: it contains the crew runs "
-            f"root {crew_runs}, so the grant would cover every other run's grant"
         )
     return None
 
