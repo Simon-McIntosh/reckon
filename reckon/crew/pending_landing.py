@@ -549,7 +549,7 @@ def promoted_pointer_write_refusal(run_id: str, pointer: Mapping[str, Any]) -> s
 
 
 def mark_pending_landing_repair(
-    run_id: str, pointer: Mapping[str, Any]
+    run_id: str, pointer: Mapping[str, Any], *, opening_repair: bool = False
 ) -> dict[str, Any]:
     """Write ``pointer`` as the run's live pointer, marked for the landing pass.
 
@@ -559,8 +559,18 @@ def mark_pending_landing_repair(
     is recorded because the pointer that is live when the mark is written may
     already belong to a newer attempt, and the pass must remove only the attempt
     it finished rather than whichever pointer happens to be there later.
+
+    ``opening_repair`` is the one caller a promoted run may be rebuilt for: a
+    delivery that was promoted and then met a merge conflict still owes that
+    merge, and its retained worker is the only owner of the conflict, so the
+    round it opens needs the pointer back to be resumed. Every other write is
+    the journal replay this refusal exists for, where recreating the pointer of
+    a promoted run would let a landing that already ran be read as live again.
     """
-    refusal = promoted_pointer_write_refusal(run_id, pointer)
+    if opening_repair and _record_path(run_id).is_file():
+        refusal = ""
+    else:
+        refusal = promoted_pointer_write_refusal(run_id, pointer)
     if refusal:
         raise runs.CrewError(refusal)
     marked = {
@@ -765,6 +775,26 @@ def pending_repair_head(pointer: Mapping[str, Any]) -> str:
         return ""
 
 
+def _recorded_review_waiver(pointer: Mapping[str, Any]) -> str:
+    """The reason the delivery's own promotion waived its review, or "".
+
+    A run promoted under a waiver landed without the review its delivery owed,
+    on the waiver's stated reason. The repair round then finishes that landing's
+    merge and owes no review the promotion did not: a repaired head held for a
+    review the operator already waived is the run held by a rule its own
+    promotion record answered.
+    """
+    project = str(pointer.get("project") or "")
+    run_id = str(pointer.get("run_id") or "")
+    if not project or not run_id:
+        return ""
+    row = _promoted_row(project, run_id) or {}
+    waiver = row.get("review_waiver")
+    if not isinstance(waiver, Mapping):
+        return ""
+    return str(waiver.get("reason") or "").strip()
+
+
 def _repair_review_wait(pointer: Mapping[str, Any], head: str) -> dict[str, Any] | None:
     """Read every review owed at the repair head through the lander's readers."""
     from reckon.crew import queue_landing
@@ -772,6 +802,8 @@ def _repair_review_wait(pointer: Mapping[str, Any], head: str) -> dict[str, Any]
 
     run_id, project = str(pointer["run_id"]), str(pointer["project"])
     tree = Path(str(pointer.get("worktree") or pointer["repo"]))
+    if _recorded_review_waiver(pointer):
+        return None
     for tier in queue_landing._owed_review_tiers(pointer):
         try:
             review, stale = queue_landing._review_for_tier(
