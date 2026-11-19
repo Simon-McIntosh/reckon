@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1015">
+<meta name="plan-version" content="1017">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3113,6 +3113,9 @@
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261119T131201693915-review-of-qwnw-red-file-run-scope-measure-nets-churn-414d4e877a70" data-who="reckon-build" data-when="2026-11-19T21:08:33.946Z">
     <div class="r-comment-body"><p>Reviewed r-20261118T054334761554-qwnw-red-file-run-scope-measure-nets-churn at 84832e9c76712dbc3c8af55a1d56b6516668185f..414d4e877a70458ac256e6b7b671cf8ec896ebb0 (the two commits gained since its review): parsed, goal_fidelity 18, evidence 10, scope_discipline 20, durability 17, fit 18, reuse 5 (total 88), added_failure_count 0 with no added ids, one blocking finding (the reviewed manifest still carries no tests, test_logs, baseline_suite or after_suite) and three non-blocking (parent read duplicates promotion_scope._merge_revisions; the red arm names no revision; the head gate has no scheduler receipt).</p></div>
 </div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261119T210834327852-review-of-qwnw-red-file-every-launch-route-runs-the-resolved-command-c701024ae0f6" data-who="reckon-build" data-when="2026-11-19T21:10:13.202Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command at c701024ae0f680768f3279dbaac720a598d626e1 against base 42fe90d0b0a46060bafde2490dda7d4002cda478: six dimensions scored 19/16/20/18/18/20, one non-blocking finding on the evidence fragment&#x27;s arm table, no added failures.</p></div>
+</div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
 </div>
@@ -3127,6 +3130,12 @@
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T220958579320-qwnw-s30-a-review-manifest-naming-run-files-promotes" data-who="reckon-build" data-when="2026-11-16T22:35:41Z">
     <div class="r-comment-body"><p>Recognize existing relative artifacts inside a commitless review run directory while preserving repository-path, missing-file and escaping-symlink refusals; both delivered manifest shapes now promote directly and through review-self. all_debug scoped arms: 58 passed at base, 68 passed at head (zero added failures); restored-base regression control: 4 failed, 6 passed. Focused compatibility has the same 7 failing ids at both revisions.</p></div>
+</div>
+<div class="r-comment" data-section="s34" data-id="c-run-r-20261119T204435795097-review-of-qwnw-a-promoted-run-settles-as-promoted-c82bf60013d1" data-who="reckon-build" data-when="2026-11-19T21:07:11.609Z">
+    <div class="r-comment-body"><p>Independent review of r-20261119T184800234721-qwnw-a-promoted-run-settles-as-promoted at 28fbf2bc..c82bf600 scored goal_fidelity 18, evidence 14, scope_discipline 19, durability 14, fit 16, reuse 5, added_failure_count 0, with four non-blocking findings (missing-file and vanished-pointer arms unexercised; raising-site helper duplicates reckon/crew/admission/attempts.py:36; _mark_pointer widened to every CrewError; _outcome_already_recorded can itself raise inside the except handler).</p></div>
+</div>
+<div class="r-comment" data-section="s34" data-id="c-run-r-20261119T184800234721-qwnw-a-promoted-run-settles-as-promoted" data-who="reckon-build" data-when="2026-11-19T20:10:52.096Z">
+    <div class="r-comment-body"><p>A promoted promotion request now settles as promoted with no error wherever its record is held: the commit list is read from the run store by run identity and a returned location that is a database or an absent run file reads as no commit, a vanished pointer no longer fails the close, a fault after the recorded outcome leaves it in place, and a recorded failure names the raising module, function and line. Four cases pass at the head (gate green 62 passed, EXIT=0); with the commit list read from the returned location as JSON the same file records 3 failed, EXIT=1, UnicodeDecodeError at the store header.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261115T005738501568-review-of-qwnw-a-declared-write-path-fences-nothing-bc0fa81931ba" data-who="reckon-build" data-when="2026-11-15T02:35:19.779Z">
     <div class="r-comment-body"><p>review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing/review-records/r-20261114T200800793250-qwnw-a-declared-write-path-fences-nothing.at-bc0fa81931bac1c9bfc484536c8eff74b279d8e5.json ; no commit, this node writes outside the repository</p></div>
@@ -3181,9 +3190,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261114T201210409568-qwnw-a-reservation-or-lock-holds-only-while-its-holde" data-who="reckon-build" data-when="2026-11-15T06:53:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-reservation-or-lock-holds-only-while-its-holde.html</p></div>
-</div>
-<div class="r-comment" data-section="s34" data-id="c-run-r-20261119T204435795097-review-of-qwnw-a-promoted-run-settles-as-promoted-c82bf60013d1" data-who="reckon-build" data-when="2026-11-19T21:07:11.609Z">
-    <div class="r-comment-body"><p>Independent review of r-20261119T184800234721-qwnw-a-promoted-run-settles-as-promoted at 28fbf2bc..c82bf600 scored goal_fidelity 18, evidence 14, scope_discipline 19, durability 14, fit 16, reuse 5, added_failure_count 0, with four non-blocking findings (missing-file and vanished-pointer arms unexercised; raising-site helper duplicates reckon/crew/admission/attempts.py:36; _mark_pointer widened to every CrewError; _outcome_already_recorded can itself raise inside the except handler).</p></div>
 </div>
 </section>
 </main>
