@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="969">
+<meta name="plan-version" content="970">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2978,7 +2978,10 @@
     <div class="r-comment-body"><p>tests/test_a_live_worker_still_owes_its_review.py no longer commits a delivered run's work on the integration branch — which the citation guard correctly refuses — and commits it inside the run's own worktree instead; the node's file goes from 1 failed at a7ac07a91d to 1 passed at 43151b34be, with every assertion unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063756086037-qwnw-red-file-a-live-worker-in-a-quiet-stretch-is-not-drawn-halted" data-who="reckon-build" data-when="2026-11-19T06:44:23.787Z">
-    <div class="r-comment-body"><p>tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py read the pane&#x27;s retired word for the action bucket; its halted-run case died on `KeyError: &#x27;needs you&#x27;` at b24fe95a (base arm: 2 passed, 1 failed, EXIT=1) and now asserts the same bucket under the word the code carries, PANE_STATES[&quot;help&quot;] (head arm on all_debug at 6ad097fb: 3 passed, EXIT=0); the test was wrong and the product right, and no assertion was removed or narrowed.</p></div>
+    <div class="r-comment-body"><p>tests/test_a_live_worker_in_a_quiet_stretch_is_not_drawn_halted.py read the pane's retired word for the action bucket; its halted-run case died on `KeyError: 'needs you'` at b24fe95a (base arm: 2 passed, 1 failed, EXIT=1) and now asserts the same bucket under the word the code carries, PANE_STATES["help"] (head arm on all_debug at 6ad097fb: 3 passed, EXIT=0); the test was wrong and the product right, and no assertion was removed or narrowed.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T104223356548-qwnw-red-file-held-worktrees-read-run-files-at-current-main" data-who="reckon-build" data-when="2026-11-19T16:31:37.785Z">
+    <div class="r-comment-body"><p>tests/test_held_worktrees_read_run_files.py passes 9 of 9 at 369a75d622766d9eb71fc09ddd8340c253cbb376 as an all_debug job with SLURM_JOB_ID unset and its log on shared storage, against 8 passed and 1 failed at base 05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b; the single cause is test wrong — the file-and-aggregate-row case expected the aggregate&#x27;s pending row to take the tree, a rule retired at 7616b65a03 when the run store became the authoritative history read, so its expectation now follows the whole-ledger read the file names as its authority, the premise that the aggregate really carries that row is asserted so the case cannot degenerate into per-run-only, and completion-reverses-dispatch publishes both rows through their own files so the completion order it names is actually exercised; no assertion was deleted or weakened, and both edits were falsified by mutation.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
