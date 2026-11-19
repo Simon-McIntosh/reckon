@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/resources.py:_resolve_canonical",
+    "reckon/resources.py:_canonical_identity_is_unique",
+    "reckon/resources.py:_directory_identity_index",
+    "reckon/roadmap.py:199",
+    "reckon/serve.py:2436",
+    "reckon/mcp_edit_plan.py:1847"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:17:09Z",
+  "findings": [
+    {
+      "file": "tests/test_plan_resolution_reads_the_directory_once_per_change.py",
+      "line": "149",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate does not assert the done_when's \"at most 200 sibling stats across\" the two passes and asserts 400 instead, so the section's quantitative measure is not met by the node's own gate; the bound is unreachable without holding stamps, which the repair at reckon/resources.py:851 proves unsafe, so the section's done-when needs restating by the plan owner rather than a code repair here."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change/manifest.md",
+      "line": "22",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite carries the literal placeholder {\"command\": \"PYTHONPATH_PLACEHOLDER\"} and after_suite is {} at manifest.md:23, so the two arms promotion reads are unreadable even though baseline_suite-1795046322145647967.log (58 passed, EXIT=0) and after_suite-1795046364332026321.log (60 passed, EXIT=0) are on disk; the fields must be filled from those logs' own header and summary lines before the node can land."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base 4dd916ef308f57b97a58e5406a5ef12f2e7f5508; a3e7504e26 adds the _ENTRY_NAMES memo and extracts _list_entry_names, a0352ad3d9 adds the measure prose, 7e13a8f0a5 repairs the held-stamp divergence by stamping every entry per call, 17cfbc05 and 7929112e are fragment text, and no path outside the three named files moved.",
+    "done_when": "the done_when in brief-for-worker.md:368-369 asks for at most one glob across two passes, at most 200 sibling stats across them, and one further glob after the change, with every resolution equal to the base revision's; tests/test_plan_resolution_reads_the_directory_once_per_change.py:143,171,153,175 assert the first, third and fourth, and line 149 asserts 200 stamps per listing, i.e. 400 across the two passes, the inverse of the second; the manifest's landing line and docs/evidence/fragments/the-monitor-reads-each-fact-once/plan-resolution-reads-the-directory-once-per-change.html:50-58 both declare that bound unmet.",
+    "goal": "the node's goal is \"Make plan resolution take the docs directory listing once per directory change\"; reckon/resources.py:819-857 now takes the entry names once per metadata_index._dir_identity move, so the glob is paid once, but every entry is still stamped on each call, which is the other half of what the section calls its listing (docs/plans/the-monitor-reads-each-fact-once.html:876, \"globs the directory and stats every sibling\").",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change/manifest.md; it states the five commits and the three changed paths and records the head gate as 60 passed, but its baseline_suite field is the unsubstituted {\"command\": \"PYTHONPATH_PLACEHOLDER\"} and its after_suite field is {}, so the arms promotion reads are unreadable even though the logs they name exist (baseline/after logs both EXIT=0, 58 passed and 60 passed).",
+    "write_paths": "read the declared paths and the diff 4dd916ef..7929112e; the diff touches reckon/resources.py, tests/test_plan_resolution_reads_the_directory_once_per_change.py and the fragment, and the fourth declared path (docs/figures/the-monitor-reads-each-fact-once/plan-resolution-reads-the-directory-once-per-change) is unused, which is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "both added tests redden under a reinstated defect, as the run's own logs record \u2014 logs/negative-control-base-globs.log fails \"globbed the directory 400 times\" and logs/negative-control-reverted-repair.log fails \"[0, 200]\" and \"DID NOT RAISE ResourceCollision\" \u2014 and tests/test_plan_resolution_reads_the_directory_once_per_change.py:153 compares the resolve against resources.identify_resource rather than against itself.",
+    "evidence": "tests/test_plan_resolution_reads_the_directory_once_per_change.py:149 asserts every listing stamps 200 siblings, which is 400 across the two passes and so asserts the negation of the done_when's \"at most 200 sibling stats across them\", and the manifest's own suite arms at manifest.md:22-23 are a placeholder and an empty object.",
+    "fit": "reckon/resources.py:804-816 follows the module's own idiom for a held store set out at reckon/resources.py:515 (_INDEX_MEMO), and the helper names _list_entry_names and _ENTRY_NAMES use the surrounding snake_case and module-private convention.",
+    "goal_fidelity": "reckon/resources.py:851-856 still calls file_memo.file_signature for every held name on every resolve, so the entry names follow the directory change but the listing the section defines (glob plus one stat per sibling) is still taken per resolve.",
+    "reuse": "reckon/resources.py:866-875 delegates the enumeration to metadata_index._reuse_covered, the existing owner of \"this directory's file set, validated against its directory identities\", rather than re-implementing it, and the new memo only wraps that answer across reads.",
+    "scope_discipline": "every path in 4dd916ef..7929112e is one of the declared write paths, and the repair at reckon/resources.py:819-876 stays inside the same file the goal names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Make plan resolution take the docs directory listing once per directory change\"; reckon/resources.py:819-857 now takes the entry names once per metadata_index._dir_identity move, so the glob is paid once, but every entry is still stamped on each call, which is the other half of what the section calls its listing (docs/plans/the-monitor-reads-each-fact-once.html:876, \"globs the directory and stats every sibling\").\nVERDICT done_when: the done_when in brief-for-worker.md:368-369 asks for at most one glob across two passes, at most 200 sibling stats across them, and one further glob after the change, with every resolution equal to the base revision's; tests/test_plan_resolution_reads_the_directory_once_per_change.py:143,171,153,175 assert the first, third and fourth, and line 149 asserts 200 stamps per listing, i.e. 400 across the two passes, the inverse of the second; the manifest's landing line and docs/evidence/fragments/the-monitor-reads-each-fact-once/plan-resolution-reads-the-directory-once-per-change.html:50-58 both declare that bound unmet.\nVERDICT write_paths: read the declared paths and the diff 4dd916ef..7929112e; the diff touches reckon/resources.py, tests/test_plan_resolution_reads_the_directory_once_per_change.py and the fragment, and the fourth declared path (docs/figures/the-monitor-reads-each-fact-once/plan-resolution-reads-the-directory-once-per-change) is unused, which is inside the declared scope.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change/manifest.md; it states the five commits and the three changed paths and records the head gate as 60 passed, but its baseline_suite field is the unsubstituted {\"command\": \"PYTHONPATH_PLACEHOLDER\"} and its after_suite field is {}, so the arms promotion reads are unreadable even though the logs they name exist (baseline/after logs both EXIT=0, 58 passed and 60 passed).\nVERDICT diff: read commit by commit against base 4dd916ef308f57b97a58e5406a5ef12f2e7f5508; a3e7504e26 adds the _ENTRY_NAMES memo and extracts _list_entry_names, a0352ad3d9 adds the measure prose, 7e13a8f0a5 repairs the held-stamp divergence by stamping every entry per call, 17cfbc05 and 7929112e are fragment text, and no path outside the three named files moved.\nCALL_SITES: reckon/resources.py:_resolve_canonical, reckon/resources.py:_canonical_identity_is_unique, reckon/resources.py:_directory_identity_index, reckon/roadmap.py:199, reckon/serve.py:2436, reckon/mcp_edit_plan.py:1847\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/resources.py:851-856 still calls file_memo.file_signature for every held name on every resolve, so the entry names follow the directory change but the listing the section defines (glob plus one stat per sibling) is still taken per resolve.\nSCORE evidence: 11\nJUSTIFICATION evidence: tests/test_plan_resolution_reads_the_directory_once_per_change.py:149 asserts every listing stamps 200 siblings, which is 400 across the two passes and so asserts the negation of the done_when's \"at most 200 sibling stats across them\", and the manifest's own suite arms at manifest.md:22-23 are a placeholder and an empty object.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 4dd916ef..7929112e is one of the declared write paths, and the repair at reckon/resources.py:819-876 stays inside the same file the goal names.\nSCORE durability: 19\nJUSTIFICATION durability: both added tests redden under a reinstated defect, as the run's own logs record \u2014 logs/negative-control-base-globs.log fails \"globbed the directory 400 times\" and logs/negative-control-reverted-repair.log fails \"[0, 200]\" and \"DID NOT RAISE ResourceCollision\" \u2014 and tests/test_plan_resolution_reads_the_directory_once_per_change.py:153 compares the resolve against resources.identify_resource rather than against itself.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/resources.py:804-816 follows the module's own idiom for a held store set out at reckon/resources.py:515 (_INDEX_MEMO), and the helper names _list_entry_names and _ENTRY_NAMES use the surrounding snake_case and module-private convention.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/resources.py:866-875 delegates the enumeration to metadata_index._reuse_covered, the existing owner of \"this directory's file set, validated against its directory identities\", rather than re-implementing it, and the new memo only wraps that answer across reads.\nFINDING tests/test_plan_resolution_reads_the_directory_once_per_change.py:149 non-blocking: the gate does not assert the done_when's \"at most 200 sibling stats across\" the two passes and asserts 400 instead, so the section's quantitative measure is not met by the node's own gate; the bound is unreachable without holding stamps, which the repair at reckon/resources.py:851 proves unsafe, so the section's done-when needs restating by the plan owner rather than a code repair here.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change/manifest.md:22 blocking: baseline_suite carries the literal placeholder {\"command\": \"PYTHONPATH_PLACEHOLDER\"} and after_suite is {} at manifest.md:23, so the two arms promotion reads are unreadable even though baseline_suite-1795046322145647967.log (58 passed, EXIT=0) and after_suite-1795046364332026321.log (60 passed, EXIT=0) are on disk; the fields must be filled from those logs' own header and summary lines before the node can land.",
+  "review_checks": [],
+  "review_run_id": "r-20261119T065427405513-review-of-plan-resolution-reads-the-directory-once-per-change-7929112e00c5",
+  "reviewed_base_sha": "4dd916ef308f57b97a58e5406a5ef12f2e7f5508",
+  "reviewed_head_sha": "7929112e00c528ab0a0199e2d500a67b5640936a",
+  "reviewed_run_id": "r-20261118T185358839095-plan-resolution-reads-the-directory-once-per-change",
+  "scores": {
+    "durability": 19,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:27:57.479028+00:00",
+  "total": 97
+}
