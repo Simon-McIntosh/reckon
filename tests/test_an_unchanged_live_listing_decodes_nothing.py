@@ -175,12 +175,10 @@ def test_an_unchanged_listing_decodes_nothing_and_keeps_its_records_apart(
     )
     assert second == _listed_by_the_files(live)
 
-    # The record handed out is the memo's own, so a caller's change to it is
-    # refused where it is attempted rather than landing in the next listing.
-    with pytest.raises(TypeError):
-        second[0]["dispatch_options"]["overrides"].append("--set model=mutated")
-    with pytest.raises(TypeError):
-        second[0]["phase"] = "mutated by a caller"
+    # The record handed out is the caller's own copy of the memo's view, so a
+    # change to it is held apart from the next listing rather than refused; a
+    # caller that rewrites the run's fields reads it through read_pointer.
+    second[0]["phase"] = "mutated by a caller"
     assert runs._list_live_records(project="p") == _listed_by_the_files(live)
 
     decodes.texts.clear()
@@ -313,13 +311,10 @@ def test_a_liveness_read_over_a_listing_leaves_the_next_listing_unchanged(
 
     assert recovery_liveness.launcher_host_is_gone(record=foreign) is True
 
-    assert foreign == next(
-        record
-        for record in _listed_by_the_files(live)
-        if record.get("run_id") == "r-foreign"
-    ), "the liveness read stamped the record the listing handed out"
     assert decodes.texts == [], "the next listing decoded a pointer it had listed"
-    assert runs._list_live_records(project="p") == _listed_by_the_files(live)
+    assert runs._list_live_records(project="p") == _listed_by_the_files(live), (
+        "the liveness read reached the memo through the record the listing handed out"
+    )
 
 
 def test_a_waiting_request_over_a_listing_leaves_the_next_listing_unchanged(
@@ -346,10 +341,8 @@ def test_a_waiting_request_over_a_listing_leaves_the_next_listing_unchanged(
         cache={},
     )
 
-    assert waiter == next(
-        record
-        for record in _listed_by_the_files(live)
-        if record.get("run_id") == "r-waiter"
-    ), "the admission pass stamped the record the listing handed out"
     assert decodes.texts == [], "the next listing decoded a pointer it had listed"
-    assert runs._list_live_records(project="p") == _listed_by_the_files(live)
+    assert runs._list_live_records(project="p") == _listed_by_the_files(live), (
+        "the admission pass reached the memo through the record the listing handed "
+        "out"
+    )

@@ -1490,19 +1490,19 @@ def _pointer_record(path: Path) -> Any:
     this listing shares its store with every other reader rather than keeping a
     second cache beside it.
 
-    The record comes back as that owner's read-only view, not a copy: an
-    unchanged pass costs one stat per pointer and neither a parse nor a copy,
-    which is what makes the second listing cheaper than the first rather than
-    merely decoding less of it. A caller that changes a pointer reads it through
-    :func:`read_pointer`, which takes the one mutable copy that reader's callers
-    need, and any other write through a handed-out record raises rather than
-    poisoning the memo every later listing reads.
+    The record comes back as one shallow copy of that owner's view: an unchanged
+    pass costs one stat per pointer, no parse, and a copy of the pointer's own
+    top-level keys rather than the memo's view, so a reader that stamps a field
+    of the record it was handed cannot reach the memo every later listing reads.
+    A reader that changes a pointer reads it through :func:`read_pointer`, whose
+    copy is deep enough for the nested fields those readers change.
     """
     try:
         with file_memo.read_only_region():
-            return file_memo.memoized(
+            record = file_memo.memoized(
                 _POINTER_RECORD_KIND, path, lambda: json.loads(_pointer_text(path))
             )
+            return dict(record)
     except OSError:
         # A pointer that cannot be stat'ed or read keeps no text, so the next
         # listing that finds it again reads whatever is on disk then.
