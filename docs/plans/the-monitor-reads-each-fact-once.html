@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="507">
+<meta name="plan-version" content="508">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1882,6 +1882,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s97" data-id="c-run-r-20261118T185356027067-budget-and-picker-history-read-what-changed" data-who="reckon-build" data-when="2026-11-18T22:03:28Z">
     <div class="r-comment-body"><p>The budget's ledger readings and the picker's projected history now read only the rows promoted since their last read — an unchanged repeat decodes 0 of 2,000 rows and a read after 5 promotions decodes 5 per reader against the 2,000 the base revision decodes, every verdict and picker answer equals the full read's, a same-size in-place amendment is re-read rather than cached over, what one process holds is bounded to sixteen histories in the memo owner's locked map, and every answer is asserted equal to the full read the path replaced, rows and order alike.</p></div>
+</div>
+<div class="r-comment" data-section="s97" data-id="c-run-r-20261119T111302110019-review-of-budget-and-picker-history-read-what-changed-0e7703803a95" data-who="reckon-build" data-when="2026-11-19T12:17:50.021Z">
+    <div class="r-comment-body"><p>Independent review of r-20261118T185356027067-budget-and-picker-history-read-what-changed over the commit it gained since 37cd777f16 (0e7703803a95b0df314aa2b29632b1c20829c9a4) stored parsed at both declared review-records paths: reviewed_base_sha 37cd777f1695fc810664a0d3cdb8dccf711ddc2d, reviewed_head_sha 0e7703803a95b0df314aa2b29632b1c20829c9a4, scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 15, fit 17, reuse 18 (105 of 120), added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite (58 passed, EXIT=0 at 4dd916ef30) and after_suite (64 passed, EXIT=0 at 0e7703803a95) logs, four non-blocking findings and no blocking finding — the history now lives in the memo owner&#x27;s bounded map (reuse repaired from the prior review&#x27;s 15), while the concurrency guard passes against the run&#x27;s own lock-free arm, the new clear loop is asserted nowhere, _MAPS only grows, and the bound&#x27;s cited control reddens on an AttributeError rather than on unbounded growth.</p></div>
 </div>
 <div class="r-comment" data-section="s98" data-id="c-run-r-20261118T223733645223-review-of-plan-resolution-reads-the-directory-once-per-change-a0352ad3d94d" data-who="reckon-build" data-when="2026-11-18T23:14:41.927Z">
     <div class="r-comment-body"><p>review of a0352ad3d94d4717f9dae336d13c04aecfc692f7 against base 4dd916ef308f57b97a58e5406a5ef12f2e7f5508 scores 77/120 (goal_fidelity 12, evidence 12, scope_discipline 20, durability 11, fit 18, reuse 4), with 1 blocking finding at reckon/resources.py:854 and 3 non-blocking findings; the blocking one shows a sibling rewritten in place resolving at head where base refused.</p></div>
