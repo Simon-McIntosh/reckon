@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1021">
+<meta name="plan-version" content="1022">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3126,7 +3126,10 @@
     <div class="r-comment-body"><p>independent review of 7bc3ba71 scored goal_fidelity 15, evidence 9, scope_discipline 16, durability 7, fit 13, reuse 5 with a blocking finding that deferrals_recorded cannot see a promoted run's deferral, so the new early return in reapply_acknowledgements lets the stop block on an excused duty</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062514463895-qwnw-red-file-a-torn-ledger-row-is-reported-not-raised" data-who="reckon-build" data-when="2026-11-19T17:49:51.950Z">
-    <div class="r-comment-body"><p>A stored history read now decoupled damage reporting from the store&#x27;s coverage: it decodes only run documents whose run the store does not hold and reports the ones that will not parse, so a torn row no longer reads as clean; tests/test_a_torn_ledger_row_is_reported_not_raised.py reads 2 failed 4 passed at base 2437205f9a762420c943f3c0b0312ded03f7395f and 6 passed at head d7f4b66a872792a7f002042b52d1086b516a6fcd as an all_debug job, and the ledger-importing arm reads 6 failed 171 passed at base against 4 failed 173 passed at head with the head&#x27;s failing ids a strict subset of the base&#x27;s.</p></div>
+    <div class="r-comment-body"><p>A stored history read now decoupled damage reporting from the store's coverage: it decodes only run documents whose run the store does not hold and reports the ones that will not parse, so a torn row no longer reads as clean; tests/test_a_torn_ledger_row_is_reported_not_raised.py reads 2 failed 4 passed at base 2437205f9a762420c943f3c0b0312ded03f7395f and 6 passed at head d7f4b66a872792a7f002042b52d1086b516a6fcd as an all_debug job, and the ledger-importing arm reads 6 failed 171 passed at base against 4 failed 173 passed at head with the head's failing ids a strict subset of the base's.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063017599124-qwnw-red-file-every-launch-route-runs-the-resolved-command" data-who="reckon-build" data-when="2026-11-19T03:51:24Z">
+    <div class="r-comment-body"><p>Repaired the launch-route case to read the dispatch document from stdout, the stream the product puts it on, so the named file goes from 1 failed and 1 passed at the base revision to 2 passed at the head revision as one all_debug job whose logs sit in the run directory; the armed census pair reads 58 passed at both arms.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
