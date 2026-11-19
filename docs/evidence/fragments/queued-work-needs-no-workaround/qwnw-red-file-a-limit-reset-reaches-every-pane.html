@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-a-limit-reset-reaches-every-pane-landing">
+  <h2>A limit reset reaches every pane</h2>
+
+  <p><strong>Cause.</strong> One case was red at the base revision
+  <code>d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72</code>:
+  <code>test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane</code>.
+  The pane's counter block gained a promotion figure and a stuck figure after
+  the reset cases fixed their pane at 208 columns, so the block now spends four
+  columns the fixture did not account for and the renderer cut the announcer's
+  reason by exactly that much. The row the base arm drew reads
+  <code>… worker lanes keep their limits — the lead said the limit …</code>
+  where the case requires the whole reason.</p>
+
+  <p><strong>Verdict: test wrong.</strong> The renderer behaves as its own
+  docstring says — the clause is cut to the pane, which is what keeps a long
+  reason from wrapping. The case asserts that the clause survives whole at the
+  pane it declares, and two earlier commits widened that fixture for exactly
+  this reason when the counter block grew. The fixture widens by the one cell
+  the block has since gained, 208 to 212; no assertion is deleted, loosened or
+  changed. The arithmetic: 208 − 8 (clock) − 2 (gutter) − 9 (role) − 2 − 28
+  (job) − 2 − 30 (counters) − 2 leaves 116 columns for a 120-column clause;
+  212 leaves 120.</p>
+
+  <h3 id="qwnw-red-file-a-limit-reset-reaches-every-pane-arms">Measured</h3>
+
+  <p>Each arm ran as a job on <code>all_debug</code> over an extraction of the
+  revision its log header names, with <code>SLURM_JOB_ID</code> unset, and its
+  log's last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-a-limit-reset-reaches-every-pane-table">
+    <caption>The named file, at the base revision and at this node's head.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base (negative control)</td>
+        <td><code>d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72</code>, extraction</td>
+        <td>1 failed, 13 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head</td>
+        <td><code>580304962761b2827651fc49092311e56251eda0</code>, extraction</td>
+        <td>14 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The failing id the base arm records and the head arm does not is
+  <code>tests/test_a_limit_reset_reaches_every_pane.py::test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane</code>.</p>
+</section>
