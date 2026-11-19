@@ -1,0 +1,84 @@
+<section id="qwnw-red-file-a-resume-rearms-its-follower-landing">
+  <h2>A mismatched resume asks the run's own host</h2>
+
+  <p><strong>What changed.</strong> One case in
+  <code>tests/test_a_resume_rearms_its_follower.py</code> and the docstring of
+  <code>_rearm_session_follower</code> in <code>reckon/crew/dispatch_watch.py</code>.
+  No product behaviour changed: the re-arm already sends a mismatched resume's
+  request to the run's own live host, and to the calling session's waiting host,
+  unmarked, only when the case's session has no live host.</p>
+
+  <p><strong>The rule the case pinned, and how it went red.</strong> The case
+  asserted that a resume issued from another session writes no request at all
+  and answers naming the session that owns the follower. That was the rule when
+  the re-arm first checked ownership. Two later repairs superseded it: a
+  mismatched request now hands the run over, the resume path included, and the
+  hand-off goes to the case's own host first. The case was not updated with
+  them, so the primary branch has carried it red since.</p>
+
+  <p>Reproduced at the base revision before touching anything, on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset:</p>
+
+  <pre id="qwnw-red-file-a-resume-rearms-its-follower-reproduction">FAILED tests/test_a_resume_rearms_its_follower.py::test_a_resume_from_another_session_asks_no_host_and_names_the_owner - AssertionError: another session's host is asked nothing
+assert [b'{"project": "proj", "session": "sess-resumed", "owner_checked": false}'] == []
+1 failed, 2 passed in 21.42s</pre>
+
+  <p><strong>Verdict: test wrong.</strong> The case now pins the rule the code
+  keeps: with the run's session live, that session's own host receives one
+  request marked <code>owner_checked</code> — <code>True</code>, because the
+  receiving host is the pair's own — and the calling session's host, whose stub
+  would re-arm on any request, receives none. What the case enforces is
+  unchanged, that only the pair's own host may be asked, and both halves are
+  asserted, so it is neither deleted nor weakened. No assertion was dropped.</p>
+
+  <p>The case still discriminates: with the owning-session lookup removed from
+  the hand-off, the caller's host receives
+  <code>{"project": "proj", "session": "sess-resumed", "owner_checked":
+  false}</code> and the case fails on its first assertion — the same line the
+  base revision fails on.</p>
+
+  <h3 id="qwnw-red-file-a-resume-rearms-its-follower-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-resume-rearms-its-follower-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree, cwd,
+    command and module under test, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base arm</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code>, extracted tree</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head arm</td>
+        <td><code>9f40f65f44c797187277f2e714ced7f857be8ac2</code>, working tree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the population importing <code>dispatch_watch</code>, base arm,
+        30 test files</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code>, extracted tree</td>
+        <td>8 failed, 191 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the population importing <code>dispatch_watch</code>, head arm,
+        30 test files</td>
+        <td><code>9f40f65f44c797187277f2e714ced7f857be8ac2</code></td>
+        <td>7 failed, 192 passed, <code>EXIT=1</code>, the cleared id being this
+        node's case</td></tr>
+      <tr><td>the promotion suite (scoped gate command), base arm</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the promotion suite (scoped gate command), after arm</td>
+        <td><code>9f40f65f44c797187277f2e714ced7f857be8ac2</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The population's seven remaining failures are pre-existing and identical
+  at both revisions - <code>test_a_crashed_producer_is_restarted</code>,
+  <code>test_a_full_queue_is_a_wait_not_a_refusal</code> (two cases),
+  <code>test_a_watcher_carries_no_session_identity</code>,
+  <code>test_follower_bounds_its_lifetime</code> (two cases) and
+  <code>test_the_station_starts_where_workers_run</code> - so this node adds
+  none. Comparing the two sets, the only difference is the base revision's
+  <code>test_a_resume_from_another_session_asks_no_host_and_names_the_owner</code>.</p>
+
+  <p>The base arm ran the base revision's whole tree, extracted with
+  <code>git archive</code> under the node-local scratch root, so the failure is
+  the primary branch's own rather than a head test against base code.</p>
+</section>
