@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="890">
+<meta name="plan-version" content="891">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2739,7 +2739,10 @@
     <div class="r-comment-body"><p>tests/test_a_locked_ledger_store_is_retried.py was red on the primary branch; the cause was the test, not the product — its third case still asserted the pre-2026-11-15 contract that a lock past the retry bound returns {"status": "failed"}, where 7a8fdac445 deliberately replaced that payload with a LedgerError refusal that takes back the run file, so the case now requires the refusal naming the wait bound plus no surviving row and still shows import_ledger supplying the missing row; base arm 1 failed/2 passed at a7ac07a9 with that failing id logged, head arm 3 passed at e3a8c463ab on all_debug (EXIT=0), declared suite 58 passed in both arms.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063905926433-qwnw-red-file-a-claim-hold-reads-the-holder-again" data-who="reckon-build" data-when="2026-11-18T17:43:42.845Z">
-    <div class="r-comment-body"><p>The claim-hold cases now claim docs/state/claimed.json — a generated-state path the sharing rule keeps exclusive — and pin the pass&#x27;s one live reading, so tests/test_a_claim_hold_reads_the_holder_again.py reads 2 passed EXIT=0 at 7180d6d8 against 1 failed / 1 passed EXIT=1 at base bc7b7bec (FAILED test_a_holder_that_still_claims_the_path_still_holds_the_request), and replacing the re-read with the pass&#x27;s cached reading fails the same case.</p></div>
+    <div class="r-comment-body"><p>The claim-hold cases now claim docs/state/claimed.json — a generated-state path the sharing rule keeps exclusive — and pin the pass's one live reading, so tests/test_a_claim_hold_reads_the_holder_again.py reads 2 passed EXIT=0 at 7180d6d8 against 1 failed / 1 passed EXIT=1 at base bc7b7bec (FAILED test_a_holder_that_still_claims_the_path_still_holds_the_request), and replacing the re-read with the pass's cached reading fails the same case.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261119T142651462468-review-of-qwnw-red-file-a-sweep-failure-is-an-obligation-f6739bcb7dae" data-who="reckon-build" data-when="2026-11-19T17:30:11.141Z">
+    <div class="r-comment-body"><p>Reviewed r-20261118T062519086204-qwnw-red-file-a-sweep-failure-is-an-obligation at be17b574..f6739bcb: the landed change replaces the whole-row equality at tests/test_a_sweep_failure_is_an_obligation.py:115 with an ages-removed comparison plus `retained[0][&quot;age_seconds&quot;] == 20`, and the base run the worker recorded reproduces the defect verbatim (2 failed, EXIT=1, both parametrisations differing only in `age_seconds` 20 vs 0); scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 15, with 3 non-blocking findings (an age-derived `next_command` the comparison does not strip, `_without_ages` duplicating the age-stripping rule in reckon/crew/station_obligations.py&#x27;s payload_identity, and the fragment calling the suite arms &quot;crew suite run&quot; where its logs show direct pytest); added_failure_count 0 over an empty id list from both suite arms reading 0 failed EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
