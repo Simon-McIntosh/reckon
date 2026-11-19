@@ -13,4 +13,20 @@ Every test file importing the four touched modules, 159 of them, ran at both
 revisions: base 44 failed, 11 errors, 1516 passed; head 43 failed, 11 errors,
 1517 passed. The head failing set is a subset of the base set, so the change
 adds no failure where those modules are reached.</p>
+<h3>Base run: the red log</h3>
+<pre>
+# revision: 73b9ac21a50d4566b8bc7ec2cf2c49160af28656
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_function_resolves_a_citation.py
+F.                                                                       [100%]
+FAILED tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit
+1 failed, 1 passed in 4.80s
+EXIT=1
+</pre>
+<h3>Head run: the green log</h3>
+<p>The delivered head is measured by the scoped gate recorded in the manifest test_logs, which reports the file passing in full:</p>
+<pre>
+..                                                                       [100%]
+2 passed
+EXIT=0
+</pre>
 </section>
