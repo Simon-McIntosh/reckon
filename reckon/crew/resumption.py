@@ -3053,18 +3053,41 @@ def sweep(
     # is idempotent — a plan whose review is stored or in flight is left alone
     # — and it notes the findings a review it composed marked as not changing
     # the plan, so the coordinator is woken only for the ones that would.
+    # The pass also answers whether it has anything new to read: it composes
+    # from the project's plans, its stored plan reviews and its authoring runs,
+    # and those move on the scale of minutes rather than of one tick, so a pass
+    # whose inputs still carry the footprint it last read is left to the pass
+    # that finds one moved, or to the interval. The gate is out here rather than
+    # inside the pass because it decides whether to call the pass at all.
     plan_reviews: dict[str, Any] = {}
+    moment = _now(now).timestamp()
+    gate: dict[str, Any] = {}
     try:
-        plan_reviews = plan_review.compose_owed_plan_reviews(
-            project,
-            config=config,
-            launcher=launch,
-            now_seconds=_now(now).timestamp(),
-            dry_run=dry_run,
-            pointers=live,
+        # A preview that the gate held back would report nothing to preview, so
+        # a dry run always weighs. It records nothing, so it leaves the next
+        # real pass due.
+        gate = (
+            {"due": True, "reason": "a preview weighs whatever changed"}
+            if dry_run
+            else plan_review.owed_plan_review_pass_due(
+                project, now_seconds=moment, pointers=live
+            )
         )
+        if gate.get("due"):
+            plan_reviews = plan_review.compose_owed_plan_reviews(
+                project,
+                config=config,
+                launcher=launch,
+                now_seconds=moment,
+                dry_run=dry_run,
+                pointers=live,
+            )
     except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
         plan_reviews = {"error": str(exc)}
+    if gate.get("due") and not dry_run:
+        plan_review.record_owed_plan_review_pass(
+            project, now_seconds=moment, pointers=live
+        )
 
     report = {
         "project": project,
