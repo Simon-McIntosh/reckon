@@ -1,0 +1,64 @@
+<section id="qwnw-red-file-a-failed-land-exits-nonzero-landing">
+<h3>The file passes; its two red cases were one cause — they read the per-step entries from a reply that is now bounded</h3>
+<p><code>tests/test_a_failed_land_exits_nonzero.py</code> was red on the primary branch at <code>be17b57484c74a3432a3d7372aa84da6702ad965</code>: 2 failed, 1 passed, both failures <code>KeyError: 'steps'</code>. One cause accounted for both, and it was the test reading a shape the command no longer prints. The product rule the file is about — <em>a land step that raises after promotion reports the exception's declared type and message as a failed land step, exits non-zero, and offers the command that resumes the landing; <code>crew merge</code> maps the same failure to a refusal rather than a traceback</em> — is intact and was verified by reading the record the command writes, not by reading the reply. No product line changed here. No assertion was deleted or weakened: each case gains one assertion on the bounded receipt and keeps every assertion it had, moved onto the record the receipt cites.</p>
+
+<h4 id="qwnw-red-file-a-failed-land-exits-nonzero-cause">Cause and verdict</h4>
+<table>
+<thead><tr><th>Cause</th><th>Cases</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr>
+<td><code>crew complete</code> replies with a bounded receipt (<code>ok</code>, <code>run_id</code>, <code>merged</code>, <code>worktree_released</code>, <code>error</code>, <code>record_path</code>) and writes the whole outcome — including <code>steps.promote</code> and <code>steps.land</code> — to the record at <code>record_path</code>; the cases read <code>report["steps"]</code> from the reply</td>
+<td>2 of 3 — <code>test_a_land_that_raises_after_promotion_exits_nonzero</code> and <code>test_a_merge_error_refusal_reports_as_at_base</code>, both <code>KeyError: 'steps'</code></td>
+<td><strong>test wrong</strong> — the bounded reply is the command's contract (it also names the refused stage in <code>error</code>), so the rule the file asserts is still kept while the shape it read is gone. A <code>_full_outcome(result)</code> helper parses the receipt, reads the record it cites, and the cases assert <code>steps.promote.ok</code>, <code>steps.land.ok</code>, the error text and the resume command on that record. The first case additionally asserts the bounded receipt itself carries <code>UnicodeDecodeError</code>, and the third asserts <code>report["error"] == "land: the merge dropped the change"</code>; the second (the <code>crew merge</code> refusal, never bounded) already passed and is unchanged.</td>
+</tr>
+</tbody>
+</table>
+<p>Reproduction before repair, read from the receipt and the record the same call wrote:</p>
+<pre>
+$ PYTHONPATH="$PWD" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_land_exits_nonzero.py
+2 failed, 1 passed
+FAILED tests/test_a_failed_land_exits_nonzero.py::test_a_land_that_raises_after_promotion_exits_nonzero - KeyError: 'steps'
+FAILED tests/test_a_failed_land_exits_nonzero.py::test_a_merge_error_refusal_reports_as_at_base - KeyError: 'steps'
+
+receipt: {"error": "land: UnicodeDecodeError: 'utf-8' codec can't decode bytes in position 10-10: invalid start byte",
+          "merged": false, "ok": false, "record_path": ".../completion-1795095238413676407.json", "run_id": "...", "worktree_released": false}
+record["steps"] once read from record_path:
+  {"land": {"error": "UnicodeDecodeError: ..." , "ok": false, "resume": "reckon crew merge --project proj --head ... ..."},
+   "promote": {"ok": true}}
+</pre>
+
+<h4 id="qwnw-red-file-a-failed-land-exits-nonzero-negative-control">Negative control: the base revision's own run</h4>
+<p>Verbatim capture at <code>negative-control-base.log</code> in this run's directory, submitted as an <code>all_debug</code> job with <code>SLURM_JOB_ID</code> unset over a <code>git archive</code> extraction of the base revision. Its two ids are exactly the cases the head run passes.</p>
+<pre>
+# revision: be17b57484c74a3432a3d7372aa84da6702ad965
+# tree: /tmp/reckon-crew-scratch/r-20261118T062601971922-qwnw-red-file-a-failed-land-exits-nonzero/qwnw-base-arm-g2CGN8
+# host: 98dci4-clu-3143.iter.org
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_land_exits_nonzero.py
+FAILED tests/test_a_failed_land_exits_nonzero.py::test_a_land_that_raises_after_promotion_exits_nonzero - KeyError: 'steps'
+FAILED tests/test_a_failed_land_exits_nonzero.py::test_a_merge_error_refusal_reports_as_at_base - KeyError: 'steps'
+2 failed, 1 passed in 1.90s
+EXIT=1
+</pre>
+
+<h4 id="qwnw-red-file-a-failed-land-exits-nonzero-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
+<p><code>reckon crew verify-gate --worker --partition all_debug --command 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_land_exits_nonzero.py'</code>, at the commit that carries the test change. The log is <code>scoped-gate-1795095849630538533.log</code> in this run's directory.</p>
+<pre>
+# revision: 082252509546a4375ae3f58a08fd1fb0792e8157
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-8ceea41a392b-CKhkLp/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_land_exits_nonzero.py'
+3 passed in 1.71s
+EXIT=0
+</pre>
+
+<h4 id="qwnw-red-file-a-failed-land-exits-nonzero-arms">Suite arms: the armed command, resolved over each arm's own tree</h4>
+<p>This node's write scope names directories, so the resolved node-test list is the project's declared census files, which both trees hold. Both arms ran as <code>all_debug</code> jobs from <code>reckon crew suite run --run … --partition all_debug</code>.</p>
+<table>
+<thead><tr><th>Arm</th><th>Revision</th><th>Command</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>baseline</td><td><code>be17b57484c74a3432a3d7372aa84da6702ad965</code></td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td><td>58 passed, <code>EXIT=0</code></td></tr>
+<tr><td>after</td><td><code>082252509546a4375ae3f58a08fd1fb0792e8157</code></td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td><td>58 passed, <code>EXIT=0</code></td></tr>
+</tbody>
+</table>
+<p>No failure is added against the base. The file this node changed is not among either arm's files; its own pair is the head gate above and the base run in the negative control, which reads 2 failed and 1 passed at the base and 3 passed at the head for the same command.</p>
+</section>
