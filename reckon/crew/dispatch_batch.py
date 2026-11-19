@@ -308,7 +308,7 @@ class _PlanRead:
         self.prose: dict[str, str] = dict(_plan_html.section_prose(self.document))
         self.state = _plan_html.read_state(self.document)
 
-    def section_prose(self, section: str) -> str:
+    def prose_for(self, section: str) -> str:
         """The named section's prose, or a refusal naming the section."""
         from reckon.crew.node import normalize_section
 
@@ -323,7 +323,7 @@ class _PlanRead:
     def done_when(self, section: str) -> str:
         from reckon.crew.plan_review import _done_when_paragraph
 
-        paragraph = _done_when_paragraph(self.section_prose(section))
+        paragraph = _done_when_paragraph(self.prose_for(section))
         if not paragraph:
             raise BatchEntryRefusedError(
                 f"{self.project}:{self.plan}#{section}: the section states no "
@@ -349,7 +349,7 @@ class _PlanRead:
             _done_when_paragraph,
         )
 
-        prose = self.section_prose(section)
+        prose = self.prose_for(section)
         match = _WRITE_PATHS_SENTENCE.search(prose)
         if match is None:
             return []

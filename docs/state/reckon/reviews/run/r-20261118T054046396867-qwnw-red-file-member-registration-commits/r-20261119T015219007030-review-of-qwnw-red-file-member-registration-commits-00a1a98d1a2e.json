@@ -1,0 +1,108 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:36:36Z",
+  "evidence_limits": [
+    "No suite rerun; the recorded baseline_suite and after_suite logs were opened and read.",
+    "The head scoped-gate log is at revision 17b544d1e6, the test commit; the only later commit 00a1a98d is docs-only, so the gate covers the current test file.",
+    "ruff was re-read on both the base and the head revision of the test module under the base revision's pyproject; both carry the same pre-existing I001 and the change adds none, but the manifest records no ruff result.",
+    "The recorded base-arm command header does not show SLURM_JOB_ID unset."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_member_registration_commits.py",
+      "line": "121",
+      "severity": "non-blocking",
+      "text": "ledger.members(PROJECT, root=other) == ledger.members(PROJECT, root=repository) compares one reader against itself over one project store, so both sides move together and the line holds whatever registration writes; the independent guard for the same rule is :118, so this comparison adds no protection against a regression."
+    },
+    {
+      "file": "tests/test_member_registration_commits.py",
+      "line": "125",
+      "severity": "non-blocking",
+      "text": "_git(repository, 'status', '--porcelain') == before, and the literal list at :143, cannot fail on a new file written under docs/, because the fixture leaves the whole docs/ tree untracked so git reports the state directory identically before and after; the module docstring's claim that a registration leaves the tree exactly as it found it therefore has no assertion that fires on a reintroduced state-file write."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054046396867-qwnw-red-file-member-registration-commits/negative-control-base.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "the recorded base-arm command header carries no env -u SLURM_JOB_ID, although the s29 done-when requires the named file to run with SLURM_JOB_ID unset and the manifest's negative_control_note claims it was; the environment is asserted rather than shown, so a re-run should carry the env prefix into the recorded command."
+    }
+  ],
+  "gate_evidence": {
+    "base": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054046396867-qwnw-red-file-member-registration-commits/negative-control-base.log",
+      "observed_summary": "8 failed, 2 passed, EXIT=1",
+      "revision": "5417b373ff9230f07c1c8f403632835808fffc15"
+    },
+    "head": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_member_registration_commits.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054046396867-qwnw-red-file-member-registration-commits/scoped-gate-1795050114024645347.log",
+      "observed_summary": "9 passed in 2.87s, EXIT=0",
+      "revision": "17b544d1e6c69f0e38add2e5da14b7b7b80c3eef"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "no production call site reaches the change: the two changed paths are a test module and a documentation fragment",
+    "diff": "Read both commits against base 5417b373ff9230f07c1c8f403632835808fffc15: 17b544d1e6 rewrites only the test module (91 insertions, 102 deletions) and 00a1a98d adds only the 71-line fragment; the test rewrite drops test_a_failed_registration_commit_is_surfaced, whose commit the product no longer makes, and adds a version-race refusal case.",
+    "done_when": "The s29 done-when requires the named file green at head, each cause given a verdict, an importer arm adding no failure, and the base run's failing ids in the fragment; the manifest supplies the arms and the ids, but states no ruff result and its negative-control log shows no env -u SLURM_JOB_ID.",
+    "goal": "The source node's goal is to make tests/test_member_registration_commits.py pass in full; tests/test_member_registration_commits.py now states store-only registration and the scoped gate log records 9 passed in 2.87s with EXIT=0 at 17b544d1e6c69f0e38add2e5da14b7b7b80c3eef.",
+    "manifest": "Read; it names both commits, the gate command for the named file, baseline_suite and after_suite at full 40-character revisions with zero failures, a negative control reading 8 failed and 2 passed, one cause with the verdict 'test wrong, product unchanged', and seven rubric lines.",
+    "write_paths": "The manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment file plus the figure directory, and the diff changes exactly tests/test_member_registration_commits.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-member-registration-commits.html."
+  },
+  "justifications": {
+    "durability": "tests/test_member_registration_commits.py:118, :187, :270 and :125-126 redden when persistence, the version pairing or the no-commit rule regresses, but :121-123 compares ledger.members against itself and :125/:143 cannot see a file written inside the already-untracked docs/ tree.",
+    "evidence": "baseline_suite-1795052810633026317.log and after_suite-1795052855098040156.log each end '58 passed' with EXIT=0 at full 40-character revisions 5417b373 and 00a1a98d, but the manifest carries no ruff result for the changed path and negative-control-base.log:4 does not show the env -u SLURM_JOB_ID the done-when requires.",
+    "fit": "The rewritten cases follow the sibling test idiom of tests/test_member_registration_commits.py:129-158 and every element id in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-member-registration-commits.html:1 carries the node-id prefix the fragment rule requires.",
+    "goal_fidelity": "tests/test_member_registration_commits.py:106-158 exercises routing._register_session_member and ledger.register_member, whose base-revision docstring in reckon/ledger.py already says registration 'is a store-only transaction regardless' of its commit argument, so the file passes and the test-wrong verdict matches the product's own rule.",
+    "reuse": "The only helper added, _stored_ids at tests/test_member_registration_commits.py:99, delegates to the existing owner ledger.members; no production definition is added and the search over reckon/ledger.py found register_member, write_members and load_auxiliary as owners nothing forks.",
+    "scope_discipline": "The two changed paths, tests/test_member_registration_commits.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-member-registration-commits.html, are both inside the node's declared write paths and no other path in the diff is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make tests/test_member_registration_commits.py pass in full; the scoped gate log records 9 passed in 2.87s with EXIT=0 at 17b544d1e6c69f0e38add2e5da14b7b7b80c3eef, and the rewritten file states the store-only registration rule the product keeps.\nVERDICT done_when: The s29 done-when asks the named file green at head with each cause given a verdict, an arm over the files that import what changed adding no failure, and the base run's failing ids logged in the fragment; baseline_suite-1795052810633026317.log and after_suite-1795052855098040156.log both record 58 passed with EXIT=0, but the manifest records no ruff result and negative-control-base.log:4 does not show the SLURM_JOB_ID unset its note claims.\nVERDICT write_paths: The declared paths cover reckon, tests, the fragment directory and file and the figure directory, and the two changed paths (tests/test_member_registration_commits.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-member-registration-commits.html) are inside them.\nVERDICT manifest: Read; it names commits 17b544d1e6c69f0e38add2e5da14b7b7b80c3eef and 00a1a98d1a2ee89a79f76dfc0318bbfe555264c2, the file's gate command, zero-failure suite arms at full 40-character revisions, a negative control with eight failing ids, one cause with the verdict 'test wrong, product unchanged', and seven rubric lines.\nVERDICT diff: Read both commits against base 5417b373ff9230f07c1c8f403632835808fffc15; 17b544d1e6 rewrites only tests/test_member_registration_commits.py, restating eight cases as store transactions and dropping test_a_failed_registration_commit_is_surfaced, whose asserted commit the product no longer makes, while 00a1a98d adds only the 71-line fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_member_registration_commits.py:106-158 exercises routing._register_session_member and ledger.register_member, whose base-revision docstring in reckon/ledger.py already calls registration 'a store-only transaction regardless' of its commit argument.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline_suite-1795052810633026317.log and after_suite-1795052855098040156.log each end '58 passed' with EXIT=0 at full 40-character revisions, but the manifest records no ruff result for the changed path and negative-control-base.log:4 omits the env -u SLURM_JOB_ID the done-when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches only tests/test_member_registration_commits.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-member-registration-commits.html, both inside the node's declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_member_registration_commits.py:118, :187, :270 and :125-126 redden on persistence, version-pairing or no-commit regressions, but :121-123 compares ledger.members against itself and :125/:143 cannot see a write inside the untracked docs/ tree.\nSCORE fit: 18\nJUSTIFICATION fit: The rewritten cases follow the sibling idiom of tests/test_member_registration_commits.py:129-158 and every element id in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-member-registration-commits.html:1 carries the node-id prefix the fragment rule requires.\nSCORE reuse: 20\nJUSTIFICATION reuse: The only helper added, _stored_ids at tests/test_member_registration_commits.py:99, delegates to the existing owner ledger.members, and no production definition is added.\nFINDING tests/test_member_registration_commits.py:121 non-blocking: ledger.members(PROJECT, root=other) == ledger.members(PROJECT, root=repository) compares one reader against itself over one project store, so both sides move together and the line holds whatever registration writes; the independent guard for the same rule is :118, so this comparison adds no protection against a regression.\nFINDING tests/test_member_registration_commits.py:125 non-blocking: _git(repository, 'status', '--porcelain') == before, and the literal list at :143, cannot fail on a new file written under docs/, because the fixture leaves the whole docs/ tree untracked so git reports the state directory identically before and after; the module docstring's claim that a registration leaves the tree exactly as it found it therefore has no assertion that fires on a reintroduced state-file write.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054046396867-qwnw-red-file-member-registration-commits/negative-control-base.log:4 non-blocking: the recorded base-arm command header carries no env -u SLURM_JOB_ID, although the s29 done-when requires the named file to run with SLURM_JOB_ID unset and the manifest's negative_control_note claims it was; the environment is asserted rather than shown, so a re-run should carry the env prefix into the recorded command.",
+  "review_method": "Read-only review of the source node's goal, done-when, declared write paths, manifest, its two commits against base 5417b373ff9230f07c1c8f403632835808fffc15, and the recorded gate logs; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T015219007030-review-of-qwnw-red-file-member-registration-commits-00a1a98d1a2e",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "00a1a98d1a2ee89a79f76dfc0318bbfe555264c2",
+  "reviewed_run_id": "r-20261118T054046396867-qwnw-red-file-member-registration-commits",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "17b544d1e6c69f0e38add2e5da14b7b7b80c3eef",
+    "00a1a98d1a2ee89a79f76dfc0318bbfe555264c2"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054046396867-qwnw-red-file-member-registration-commits/after_suite-1795052855098040156.log",
+      "observed_summary": "58 passed in 35.11s",
+      "revision": "00a1a98d1a2ee89a79f76dfc0318bbfe555264c2"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054046396867-qwnw-red-file-member-registration-commits/baseline_suite-1795052810633026317.log",
+      "observed_summary": "58 passed in 36.22s",
+      "revision": "5417b373ff9230f07c1c8f403632835808fffc15"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:10:24.148683+00:00",
+  "total": 105
+}

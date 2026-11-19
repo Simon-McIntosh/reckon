@@ -72,13 +72,34 @@ def corpus(root: Path) -> list[Path]:
     return unique
 
 
+def _uncommented(line: str) -> str:
+    """``line`` up to a shell comment that starts outside a quote.
+
+    A fenced line is a command, so a ``#`` that begins a word comments out the
+    rest of it: what follows is prose about the command, and a ``reckon`` word
+    inside a comment is not a second citation. A ``#`` inside a quoted argument
+    or inside a word is not a comment and is kept.
+    """
+    quote = ""
+    for index, char in enumerate(line):
+        if quote:
+            if char == quote:
+                quote = ""
+            continue
+        if char in "\"'":
+            quote = char
+        elif char == "#" and (index == 0 or line[index - 1].isspace()):
+            return line[:index]
+    return line
+
+
 def _spans(text: str):
     """Yield ``(line_no, span)`` candidates from backticks and fenced lines.
 
     Inline backtick runs are matched across line breaks (a citation may wrap);
-    fenced code lines are read whole. ``reckon`` occurrences inside fenced
-    regions are not re-read as inline spans, because that text is already seen
-    line by line.
+    fenced code lines are read whole, up to any shell comment on them.
+    ``reckon`` occurrences inside fenced regions are not re-read as inline
+    spans, because that text is already seen line by line.
     """
     lines = text.splitlines()
     fenced = [False] * len(lines)
@@ -97,8 +118,9 @@ def _spans(text: str):
             yield masked[: match.start()].count("\n") + 1, span
 
     for i, line in enumerate(lines, 1):
-        if fenced[i - 1] and _WORD.search(line):
-            yield i, line
+        command = _uncommented(line)
+        if fenced[i - 1] and _WORD.search(command):
+            yield i, command
 
 
 def _candidates(text: str):
@@ -361,3 +383,52 @@ def test_a_document_citing_a_retired_verb_fails_the_check(tmp_path: Path):
     assert problems, "a citation of a retired verb passed the check"
     assert "review-plan" in problems[0]
     assert "crew review" in problems[0]
+
+
+def test_a_fenced_lines_comment_is_not_read_as_a_citation(tmp_path: Path):
+    """A ``#`` comment after a fenced command is prose, not a second command.
+
+    The crew surface documents a verb and then explains it on the same line, and
+    that explanation is a sentence: "Lists reckon processes whose recorded owner
+    is dead". Read as a command it names the unknown verb ``processes``, so the
+    command part is what the line is, one citation, with its flags.
+    """
+    doc = tmp_path / "skills" / "example" / "SKILL.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text(
+        "```text\n"
+        "reckon crew census [--apply]    # Lists reckon processes whose "
+        "recorded owner is dead.\n"
+        "```\n",
+        encoding="utf-8",
+    )
+
+    found = citations(tmp_path)
+
+    assert [c.chain for c in found] == [["crew", "census"]]
+    assert found[0].flags == ["--apply"]
+    assert _citation_problems(found) == []
+
+
+def test_a_second_command_on_a_fenced_line_is_still_read(tmp_path: Path):
+    """Only a comment ends a fenced line's commands; two commands are two.
+
+    Two invocations share a line throughout the crew surface, so the truncation
+    at a comment must not swallow the second one: an unknown verb there is
+    reported exactly as it is without a comment.
+    """
+    doc = tmp_path / "skills" / "example" / "SKILL.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text(
+        "```text\nreckon crew gc    reckon processes whose owner is dead\n```\n",
+        encoding="utf-8",
+    )
+
+    problems = _citation_problems(citations(tmp_path))
+
+    assert problems == [
+        (
+            "skills/example/SKILL.md:2: unknown command processes whose owner is "
+            "dead ('processes')"
+        )
+    ]

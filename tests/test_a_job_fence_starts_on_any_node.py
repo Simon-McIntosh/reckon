@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 import shlex
@@ -89,6 +90,18 @@ def rehearsal(tmp_path, monkeypatch):
             writable_directories=[scratch, grant],
             read_only_binds=[(sealed, sealed)],
         )
+
+        def compose(config=None):
+            return fence.fence_argv(
+                ["true"],
+                home=home,
+                worktree=worktree,
+                manifest_path=run / "manifest.md",
+                writable_directories=[scratch, grant],
+                read_only_binds=[(sealed, sealed)],
+                config=config,
+            )
+
         encoded = argv[argv.index(nested_launch.WORKER_FENCE_ENV) + 1]
         yield {
             "root": tmp_path,
@@ -99,8 +112,10 @@ def rehearsal(tmp_path, monkeypatch):
             "decoy": decoy,
             "chain": chain / "python",
             "run": run,
+            "home": home,
             "argv": argv,
             "recipe": json.loads(base64.urlsafe_b64decode(encoded)),
+            "compose": compose,
         }
 
 
@@ -412,3 +427,202 @@ def test_program_is_read_from_its_field_and_never_from_the_recipe_head(rehearsal
     )
     assert result.returncode == 0, result.stderr
     assert marker.exists()
+
+
+def _carried_program(case):
+    """Copy this node's fence program into the run directory as the carried one."""
+    directory = case["run"] / "carried"
+    directory.mkdir()
+    program = directory / "bwrap"
+    found = shutil.which(fence.FENCE_BINARY)
+    assert found, "the fence program is missing from this node"
+    shutil.copy2(found, program)
+    program.chmod(0o755)
+    return program
+
+
+def _carried_recipe(
+    case, program, *, checksum=None, program_value=None, path_value=None
+):
+    config = {
+        "fence_program": {
+            "path": path_value if path_value is not None else str(program),
+            "checksum": checksum or hashlib.sha256(program.read_bytes()).hexdigest(),
+            "source": "rpm:bubblewrap-0.4.1-6.el9",
+            "version": "0.4.1",
+        }
+    }
+    argv = case["compose"](config)
+    recipe = json.loads(
+        base64.urlsafe_b64decode(argv[argv.index(nested_launch.WORKER_FENCE_ENV) + 1])
+    )
+    if program_value is not None:
+        recipe["program"] = program_value
+    return recipe
+
+
+def _mount_index(argv, kind, path):
+    pair = [kind, str(path), str(path)]
+    for index in range(len(argv) - 2):
+        if argv[index : index + 3] == pair:
+            return index
+    raise AssertionError(f"no {kind} of {path} in {argv}")
+
+
+def test_recipe_carries_the_configured_location_checksum_and_provenance(rehearsal):
+    case = rehearsal
+    program = _carried_program(case)
+    digest = hashlib.sha256(program.read_bytes()).hexdigest()
+    recipe = _carried_recipe(case, program)
+    assert recipe["carried_program"] == {
+        "path": str(program),
+        "checksum": digest,
+        "source": "rpm:bubblewrap-0.4.1-6.el9",
+        "version": "0.4.1",
+    }
+    # The carried directory is sealed as the last word on its path: the run
+    # directory's writable grant must come first, or the program is writable.
+    argv = recipe["argv"]
+    assert _mount_index(argv, "--ro-bind", program.parent) > _mount_index(
+        argv, "--bind", case["run"]
+    )
+
+
+def test_a_home_relative_path_and_prefixed_checksum_resolve_by_the_flight_rule(
+    rehearsal, monkeypatch
+):
+    case = rehearsal
+    program = _carried_program(case)
+    monkeypatch.setenv("HOME", str(case["home"]))
+    digest = hashlib.sha256(program.read_bytes()).hexdigest()
+    recipe = _carried_recipe(
+        case,
+        program,
+        path_value="~/run/carried/bwrap",
+        checksum="sha256:" + digest.upper(),
+    )
+    # The expectation comes from the rule, not from the string the test wrote:
+    # a home-relative entry lands under the operator's home, and the recorded
+    # digest is carried in its bare lowercase spelling however it was written.
+    assert recipe["carried_program"]["path"] == str(case["home"] / "run/carried/bwrap")
+    assert recipe["carried_program"]["checksum"] == digest
+
+
+def test_a_tilde_user_path_resolves_as_the_modules_flight_rule_does(rehearsal):
+    case = rehearsal
+    program = _carried_program(case)
+    recipe = _carried_recipe(case, program, path_value="~root/carried/bwrap")
+    # One resolver owns this form: a `~user` entry means that user's home, as
+    # every other flight path in the module reads it, not a literal under ours.
+    assert recipe["carried_program"]["path"] == str(
+        Path("~root/carried/bwrap").expanduser()
+    )
+
+
+def test_carried_program_without_a_checksum_refuses_composition(rehearsal):
+    case = rehearsal
+    program = _carried_program(case)
+    with pytest.raises(fence.BackendError) as refusal:
+        case["compose"]({"fence_program": {"path": str(program)}})
+    assert "checksum" in str(refusal.value)
+
+
+def test_matching_carried_program_starts_the_task_with_an_empty_search_path(rehearsal):
+    case = rehearsal
+    program = _carried_program(case)
+    # The dispatching node's own location does not exist here, so the only
+    # program the task can start is the carried one.
+    recipe = _carried_recipe(
+        case, program, program_value=str(case["run"] / "absent-bwrap")
+    )
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == 0, result.stderr
+    assert marker.exists()
+
+
+def test_a_carried_checksum_mismatch_refuses_before_the_task(rehearsal):
+    case = rehearsal
+    program = _carried_program(case)
+    recorded = "0" * 64
+    recipe = _carried_recipe(
+        case,
+        program,
+        checksum="sha256:" + recorded.upper(),
+        program_value=str(case["run"] / "absent-bwrap"),
+    )
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == NOT_STARTED, result
+    assert recorded in result.stderr
+    assert hashlib.sha256(program.read_bytes()).hexdigest() in result.stderr
+    assert socket.gethostname() in result.stderr
+    assert not marker.exists()
+
+
+def test_an_absent_carried_program_refuses_before_the_task(rehearsal):
+    case = rehearsal
+    absent = case["run"] / "carried" / "bwrap"
+    recipe = _carried_recipe(
+        case, absent, checksum="1" * 64, program_value=str(case["run"] / "absent-bwrap")
+    )
+    marker = case["run"] / "command-ran"
+    result = subprocess.run(
+        nested_launch._task_command(recipe, ["/usr/bin/touch", str(marker)]),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == NOT_STARTED, result
+    assert str(absent) in result.stderr and socket.gethostname() in result.stderr
+    assert not marker.exists()
+
+
+def test_the_carried_program_and_its_directory_are_not_writable(rehearsal):
+    case = rehearsal
+    program = _carried_program(case)
+    original = program.read_bytes()
+    recipe = _carried_recipe(
+        case, program, program_value=str(case["run"] / "absent-bwrap")
+    )
+    result = subprocess.run(
+        nested_launch._task_command(
+            recipe,
+            [
+                "/bin/sh",
+                "-c",
+                (
+                    'printf replacement > "$1" && exit 9; '
+                    'mkdir "$2/new" && exit 8; exit 0'
+                ),
+                "write-carried",
+                str(program),
+                str(program.parent),
+            ],
+        ),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+        env=NO_SEARCH_PATH,
+    )
+    assert result.returncode == 0, result
+    assert "Read-only file system" in result.stderr
+    assert program.read_bytes() == original
+    assert not (program.parent / "new").exists()

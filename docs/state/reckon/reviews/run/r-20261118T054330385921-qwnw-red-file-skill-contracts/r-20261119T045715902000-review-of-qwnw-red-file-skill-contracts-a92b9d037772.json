@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: the node file's after arm skill-contracts-head.log at revision 208a799184e44dd4615529b08afe4f1295904f65 reads 73 passed with no FAILED line and EXIT=0, while its baseline arm sbatch-base-nc.log at 42fe90d0b0a46060bafde2490dda7d4002cda478 reads 1 failed / 72 passed / EXIT=1, so the head arm fails nothing the base arm did not; the related-suite pair suite-head.log and suite-base.log carries the identical two failing ids (tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write, 2 failed / 56 passed / EXIT=1 at both arms), so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/agent_context.py:533 globs */SKILL.md to inventory skill names, reading the path and not the command table",
+    "reckon/project_maintenance_commands.py:1113 installs each skill directory into the personal skills tree, reading the path and not the command table"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:28:33Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/manifest.md",
+      "line": "10",
+      "severity": "blocking",
+      "text": "blocking: the delivered manifest is ten lines and carries no tests, test_logs, baseline_suite or after_suite line, although the done_when required both arms recorded as inline JSON carrying full 40-character revisions; the same audit crew check --manifest runs refuses it with three findings (\"status is complete but no test result is recorded\", and the same for baseline_suite and after_suite, reckon/crew/reports.py:2979 and :2987), and promotion reads both arms out of the parsed manifest at reckon/crew/promotion_records.py:1588, so the 40-character revisions the work does hold (42fe90d0b0a46060bafde2490dda7d4002cda478 and 208a799184e44dd4615529b08afe4f1295904f65) survive only in the two log headers."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: no rubric dimension is declared on any rubric line and no artifacts, evidence_inputs, outside_scope or blockers line is present, so the delivery contract's self-check cannot be read and the two logs the fragment cites (skill-contracts-head.log and sbatch-base-nc.log) are named nowhere in the record itself."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1420",
+      "severity": "non-blocking",
+      "text": "non-blocking: the entry for the decision group supplies an empty flag set, so the --record flag documented at skills/reckon-build/SKILL.md:286 is guarded by no assertion; deleting that flag from the skill line leaves both tests green, because the named set at tests/test_skill_contracts.py:1534 matches the group path rather than the sub-command and the flag loop at tests/test_skill_contracts.py:1543-1544 has no flag to check for it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production code reads the changed text: reckon/agent_context.py:533 and reckon/project_maintenance_commands.py:1113 both reach the file by name only, and the only readers of its command table are tests/test_skill_contracts.py and the agent harness.",
+    "diff": "read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478; 208a7991 adds six lines to the crew surface at skills/reckon-build/SKILL.md:286-302 and seventeen lines of entries to tests/test_skill_contracts.py, and a92b9d03 adds the 35-line evidence fragment, so the change is 57 insertions with no deletions and no other file.",
+    "done_when": "the done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, each cause carrying a product-or-test verdict, both arms as inline JSON with full 40-character revisions, and a red base control; skill-contracts-head.log holds 73 passed / EXIT=0 at 208a7991 with SLURM_JOB_ID unset and sbatch-base-nc.log holds 1 failed / 72 passed / EXIT=1 at 42fe90d0, from jobs 1329187 and 1329198 submitted with --partition all_debug, but the manifest carries neither the arms JSON nor the tests and test_logs lines the measure names.",
+    "goal": "the node goal is 'Make tests/test_skill_contracts.py pass in full on the primary branch'; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:6-19 records 73 passed at head 208a799184e4 against 1 failed / 72 passed at base 42fe90d0b0a4, and skills/reckon-build/SKILL.md:286-302 names each of the six verbs the base text never named.",
+    "manifest": "read at the run directory's manifest.md; it is ten lines - orientation, node, status complete, checkpoint, commits, changed_paths, retry_failures and the landing line - with no tests, test_logs, baseline_suite, after_suite, artifacts, evidence_inputs, outside_scope, blockers or rubric line, and its landing figure of 73 passed against 1 failed / 72 passed matches the two logs I opened.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment, the figures directory and skills/reckon-build/SKILL.md; the three paths in the diff - the new fragment, skills/reckon-build/SKILL.md:286-302 and tests/test_skill_contracts.py:1334,1420-1480 - are all inside them."
+  },
+  "justifications": {
+    "durability": "removing any documented verb from skills/reckon-build/SKILL.md:286-302 reddens the phrase assertion at tests/test_skill_contracts.py:1709, but the --record flag at SKILL.md:286 is pinned by no assertion because tests/test_skill_contracts.py:1420 supplies an empty flag set for that group.",
+    "evidence": "skill-contracts-head.log and sbatch-base-nc.log hold the two runs at their own full revisions with EXIT lines, but the manifest records no tests, test_logs or arm JSON, so the measurement survives only in the run directory.",
+    "fit": "the added lines follow the alphabetically ordered crew surface at skills/reckon-build/SKILL.md:286-302 and the sibling exemption at tests/test_skill_contracts.py:1334 matches the nine entries already beside it.",
+    "goal_fidelity": "the goal is the whole file passing, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:6-19 records 73 passed at 208a799184e4 against 1 failed / 72 passed at 42fe90d0b0a4, with the base failure at tests/test_skill_contracts.py:1692 naming a verb skills/reckon-build/SKILL.md:286 now names.",
+    "reuse": "the additions extend the existing CREW_VERBS_OUTSIDE_ORCHESTRATION table at tests/test_skill_contracts.py:1300 and the expected map at tests/test_skill_contracts.py:1381 rather than forking a second guard.",
+    "scope_discipline": "every path in the diff is inside the declared write paths and the change adds 57 lines while deleting none."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_skill_contracts.py pass in full on the primary branch'; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:6-19 records 73 passed at head 208a799184e4 against 1 failed / 72 passed at base 42fe90d0b0a4, and skills/reckon-build/SKILL.md:286-302 names each of the six verbs the base text never named.\nVERDICT done_when: the done_when asks for the file passing in full as an all_debug job with SLURM_JOB_ID unset, each cause carrying a product-or-test verdict, both arms as inline JSON with full 40-character revisions, and a red base control; skill-contracts-head.log holds 73 passed / EXIT=0 at 208a7991 with SLURM_JOB_ID unset and sbatch-base-nc.log holds 1 failed / 72 passed / EXIT=1 at 42fe90d0, from jobs 1329187 and 1329198 submitted with --partition all_debug, but the manifest carries neither the arms JSON nor the tests and test_logs lines the measure names.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with its fragment, the figures directory and skills/reckon-build/SKILL.md; the three paths in the diff - the new fragment, skills/reckon-build/SKILL.md:286-302 and tests/test_skill_contracts.py:1334,1420-1480 - are all inside them.\nVERDICT manifest: read at the run directory's manifest.md; it is ten lines - orientation, node, status complete, checkpoint, commits, changed_paths, retry_failures and the landing line - with no tests, test_logs, baseline_suite, after_suite, artifacts, evidence_inputs, outside_scope, blockers or rubric line, and its landing figure of 73 passed against 72 passed plus 1 failed matches the two logs I opened.\nVERDICT diff: read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478; 208a7991 adds six lines to the crew surface at skills/reckon-build/SKILL.md:286-302 and seventeen lines of entries to tests/test_skill_contracts.py, and a92b9d03 adds the 35-line evidence fragment, so the change is 57 insertions with no deletions and no other file.\nCALL_SITES: reckon/agent_context.py:533, reckon/project_maintenance_commands.py:1113\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is the whole file passing, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-skill-contracts.html:6-19 records 73 passed at 208a799184e4 against 1 failed / 72 passed at 42fe90d0b0a4.\nSCORE evidence: 13\nJUSTIFICATION evidence: skill-contracts-head.log and sbatch-base-nc.log hold the two runs at their own full revisions with EXIT lines, but the manifest carries no tests, test_logs or arm JSON, so the measurement survives only in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and the change adds 57 lines while deleting none.\nSCORE durability: 16\nJUSTIFICATION durability: removing any documented verb from skills/reckon-build/SKILL.md:286-302 reddens the phrase assertion at tests/test_skill_contracts.py:1709, but the --record flag at SKILL.md:286 is pinned by no assertion because tests/test_skill_contracts.py:1420 supplies an empty flag set for that group.\nSCORE fit: 19\nJUSTIFICATION fit: the added lines follow the alphabetically ordered crew surface at skills/reckon-build/SKILL.md:286-302 and the sibling exemption at tests/test_skill_contracts.py:1334 matches the nine entries already beside it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the additions extend the existing CREW_VERBS_OUTSIDE_ORCHESTRATION table at tests/test_skill_contracts.py:1300 and the expected map at tests/test_skill_contracts.py:1381 rather than forking a second guard.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/manifest.md:10 blocking: the delivered manifest is ten lines and carries no tests, test_logs, baseline_suite or after_suite line, although the done_when required both arms recorded as inline JSON carrying full 40-character revisions; the same audit crew check --manifest runs refuses it with three findings (\"status is complete but no test result is recorded\", and the same for baseline_suite and after_suite, reckon/crew/reports.py:2979 and :2987), and promotion reads both arms out of the parsed manifest at reckon/crew/promotion_records.py:1588, so the 40-character revisions the work does hold (42fe90d0b0a46060bafde2490dda7d4002cda478 and 208a799184e44dd4615529b08afe4f1295904f65) survive only in the two log headers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054330385921-qwnw-red-file-skill-contracts/manifest.md:9 non-blocking: no rubric dimension is declared and no artifacts, evidence_inputs, outside_scope or blockers line is present, so the self-check cannot be read and the logs the fragment cites are named nowhere in the record.\nFINDING tests/test_skill_contracts.py:1420 non-blocking: the entry for the decision group supplies an empty flag set, so the --record flag documented at skills/reckon-build/SKILL.md:286 is guarded by no assertion and deleting it leaves both tests green.\n",
+  "review_node": "review-of-qwnw-red-file-skill-contracts-a92b9d037772",
+  "review_run_id": "r-20261119T045715902000-review-of-qwnw-red-file-skill-contracts-a92b9d037772",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "a92b9d037772a9bdc6000acd077dbabce82dac70",
+  "reviewed_run_id": "r-20261118T054330385921-qwnw-red-file-skill-contracts",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T045715902000-review-of-qwnw-red-file-skill-contracts-a92b9d037772"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:08:25.828695+00:00",
+  "total": 110
+}

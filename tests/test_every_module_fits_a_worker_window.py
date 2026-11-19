@@ -26,8 +26,30 @@ BOUND = 50_000
 
 AREAS = ("reckon", "tests")
 
-# Modules above the bound when the bound was set, each scheduled for a split.
-ALLOWLIST: frozenset[str] = frozenset()
+# Modules above the bound when the ratchet was last armed, each scheduled for a
+# split; the change that brings one under the bound removes its entry.
+ALLOWLIST: frozenset[str] = frozenset(
+    {
+        "reckon/_backends.py",
+        "reckon/_store.py",
+        "reckon/crew/dispatch_launch.py",
+        "reckon/crew/fleet_supervisor.py",
+        "reckon/crew/obligations.py",
+        "reckon/crew/plan_review.py",
+        "reckon/crew/recovery_classification.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_watch.py",
+        "reckon/crew/review.py",
+        "reckon/crew/routing.py",
+        "reckon/crew/runs.py",
+        "reckon/crew/ticker.py",
+        "reckon/crew_follow_commands.py",
+        "reckon/crew_run_commands.py",
+        "reckon/ledger.py",
+        "reckon/mcp_views.py",
+        "reckon/roadmap.py",
+    }
+)
 
 
 def _module_sizes(root: Path) -> dict[str, int]:

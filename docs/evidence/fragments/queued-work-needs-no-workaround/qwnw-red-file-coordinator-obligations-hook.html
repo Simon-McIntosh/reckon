@@ -1,0 +1,91 @@
+<section id="qwnw-red-file-coordinator-obligations-hook-landing">
+  <h2>A test file red on the primary branch passes: the obligations hook</h2>
+
+  <p><strong>What changed.</strong> Two cases in
+  <code>tests/test_coordinator_obligations_hook.py</code> asserted duties the
+  derivation no longer raises for the state their fixtures built. Neither was a
+  product defect: the rules each case asserted had been replaced on the primary
+  branch and the cases were never moved with them. No assertion was deleted or
+  weakened; each case now stages the state its rule is about and keeps its
+  assertions.</p>
+
+  <table id="qwnw-red-file-coordinator-obligations-hook-causes">
+    <caption>Each failure, its cause, and the verdict</caption>
+    <thead>
+      <tr><th>Failing id</th><th>Cause</th><th>Verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>test_each_held_worktree_keeps_its_own_run_scoped_line</code></td>
+        <td>The fixture staged 25 retained trees detached at the repository's
+        own head, so each was clean and reachable from the primary branch. A
+        retained tree is a duty only while it carries work no landing has taken
+        — an uncommitted change or a commit the primary branch does not reach —
+        so the derivation raised no row and the case read
+        <code>[] == [...25 rows...]</code>. The fixture now leaves a commit of
+        its own in each tree.</td>
+        <td>test wrong</td>
+      </tr>
+      <tr>
+        <td><code>test_two_review_ready_items_carry_their_own_run_command</code></td>
+        <td>A review run's delivery is left to the automatic promoter and shown
+        to the coordinator only once it is refused; the fixture left the run
+        with no supervisor exit receipt, so its delivery read as still coming
+        and the hook stayed silent, which the case read as a
+        <code>JSONDecodeError</code> on empty stdout. The remedy the duty
+        composes for a review run is also the classifier's own completion command
+        rather than an observation. The fixture now stages the run's
+        <code>exit.json</code>, which makes it ended and — with no stored record
+        behind it — refused.</td>
+        <td>test wrong</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-coordinator-obligations-hook-measured">Measured</h3>
+
+  <p>The node's measure, run as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset, at revision
+  <code>0f1ce824435584ef8f6b6f6eab0b7bc905d9bdeb</code>:
+  <code>20 passed</code>, <code>EXIT=0</code>
+  (<code>scoped-gate-1795092818472720136.log</code>).</p>
+
+  <table id="qwnw-red-file-coordinator-obligations-hook-arms">
+    <caption>The declared suite, both arms</caption>
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>after</td>
+        <td><code>0f1ce824435584ef8f6b6f6eab0b7bc905d9bdeb</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> report
+  <code>All checks passed!</code> and <code>1 file already formatted</code> on
+  the changed path.</p>
+
+  <h3 id="qwnw-red-file-coordinator-obligations-hook-control">Negative control</h3>
+
+  <p>At the base revision <code>d60ef8b2e7b76d5b122a4626ad7d8d0b75495d2a</code>,
+  in an extraction of that revision under
+  <code>$TMPDIR/base-arm.d4jEOn</code> with the module imported from
+  <code>…/base-arm.d4jEOn/reckon/__init__.py</code>, the named file reads
+  <code>2 failed, 18 passed</code>, <code>EXIT=1</code>:</p>
+
+  <pre><code>FAILED tests/test_coordinator_obligations_hook.py::test_each_held_worktree_keeps_its_own_run_scoped_line - AssertionError: assert [] == ['- [worktree...--apply', ...]
+FAILED tests/test_coordinator_obligations_hook.py::test_two_review_ready_items_carry_their_own_run_command - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+2 failed, 18 passed in 33.85s</code></pre>
+
+  <p>Both ids are the two the head arm no longer fails. This gate measures only
+  this node's own change; verifying the merged result belongs to a separately
+  dispatched test node.</p>
+</section>

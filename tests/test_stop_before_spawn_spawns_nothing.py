@@ -24,6 +24,11 @@ proves the supervisor is inside the pre-spawn snapshot rather than merely slow.
 The blocked-read window is held by a ``sitecustomize`` that pauses the
 supervisor the moment it blocks the stop signals.
 
+The stub backend is exec'd by name from the worker's ``PATH``, and a fenced
+worker's ``/tmp`` is its own scratch directory, so the stub sits in a base
+created outside the node tmp, beside the fence's whole-filesystem bind rather
+than under pytest's temporary root.
+
 The repository is throwaway, the configuration home is throwaway, and the real
 (non-temporary) live-pointer directory is asserted untouched, so a passing run
 leaves the host as it found it.
@@ -49,6 +54,7 @@ import reckon
 from reckon._store import _config_home
 from reckon.crew.dispatch_launch import worker_scratch_dir
 from reckon.shim_lookup import real_executable
+from tests.test_fenced_worker_tmp_is_its_scratch import _base_outside
 
 PACKAGE_ROOT = Path(reckon.__file__).resolve().parents[1]
 
@@ -356,6 +362,20 @@ def _leaked_into_real_live(home: Path, before: set[str]) -> set[str]:
     return appeared & _own_pointer_names(home)
 
 
+def _stub_base() -> Path:
+    """A temporary base outside the node tmp the fenced worker hides.
+
+    A fenced worker's /tmp is its own scratch directory, so every other path
+    beneath the node tmp reads as absent to the worker rather than merely
+    read-only. The stub backend is exec'd by name from the worker's PATH, so
+    its directory may not sit inside the worker's /tmp, and pytest's own
+    temporary root does on a compute node. ``_base_outside`` is the repository's
+    one rule for choosing such a base, so this case asks it rather than
+    restating it.
+    """
+    return _base_outside(Path("/tmp").resolve())  # noqa: S108 - the node's tmp
+
+
 @pytest.fixture
 def host(tmp_path: Path) -> dict[str, Any]:
     repo = tmp_path / "repo"
@@ -369,13 +389,18 @@ def host(tmp_path: Path) -> dict[str, Any]:
     pysite = tmp_path / "pysite"
     pysite.mkdir()
     (pysite / "sitecustomize.py").write_text(SITECUSTOMIZE_SOURCE, encoding="utf-8")
-    return {
-        "base": tmp_path,
-        "repo": repo,
-        "bin_dir": bin_dir,
-        "pysite": pysite,
-        "real_git": _real_git(),
-    }
+    stub_base = _stub_base()
+    try:
+        yield {
+            "base": tmp_path,
+            "repo": repo,
+            "bin_dir": bin_dir,
+            "pysite": pysite,
+            "stub_base": stub_base,
+            "real_git": _real_git(),
+        }
+    finally:
+        shutil.rmtree(stub_base, ignore_errors=True)
 
 
 def test_a_stop_during_the_pre_spawn_snapshot_spawns_no_worker(
@@ -388,7 +413,7 @@ def test_a_stop_during_the_pre_spawn_snapshot_spawns_no_worker(
     )
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
-    stub_dir = host["base"] / "stub-bin"
+    stub_dir = host["stub_base"] / "stub-bin"
     stub_dir.mkdir()
     stub = stub_dir / STUB_COMMAND
     stub.write_text(
@@ -580,7 +605,7 @@ def _launch_stub_dispatch(
     )
     marker_dir = host["base"] / "markers"
     marker_dir.mkdir()
-    stub_dir = host["base"] / "stub-bin"
+    stub_dir = host["stub_base"] / "stub-bin"
     stub_dir.mkdir()
     stub = stub_dir / STUB_COMMAND
     stub.write_text(stub_source.format(marker_dir=marker_dir), encoding="utf-8")
@@ -761,11 +786,13 @@ def test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit(
     real_before = _real_live_entries()
     process, home, _marker_dir = _launch_stub_dispatch(
         host,
-        # The worker runs fenced, and the fence seals the node's own ``/tmp``
-        # read-only, so a marker written beside the case's own temporary tree
+        # The worker runs fenced, and the fence replaces the node's own ``/tmp``
+        # with the run's own scratch, so every other path there reads as absent to
+        # the worker rather than merely
+        # read-only and a marker written beside the case's own temporary tree
         # cannot be created whenever that tree sits under it. A run's scratch
-        # directory is the one temporary root the fence keeps writable, and the
-        # supervisor hands the worker its path as ``TMPDIR``.
+        # directory is the temporary root the fence keeps, and the supervisor
+        # hands the worker its path as ``TMPDIR``.
         stub_source=(
             "#!/bin/sh\n"
             'echo $$ > "$TMPDIR/worker.pid"\n'

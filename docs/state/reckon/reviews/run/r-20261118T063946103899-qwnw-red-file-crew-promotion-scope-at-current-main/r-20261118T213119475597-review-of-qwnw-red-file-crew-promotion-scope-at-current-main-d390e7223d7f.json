@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_scope.py:_require_repository_tree_boundary",
+    "reckon/crew/promotion_scope.py:_repository_tree_boundary_violations",
+    "reckon/crew/promotion_scope.py:_boundary_has_no_referent",
+    "reckon/crew/runs.py:2424 _shared_write_paths",
+    "reckon/crew_run_commands.py:3905 crew_complete"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:27:28Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_promotion_scope.py",
+      "line": "158",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment kept in test_main_checkout_source_write_allows_promotion states \"Only a path a merge cannot reconcile is charged, which is the class the scan below reports\", while reckon/crew/promotion_scope.py:1052-1062 charges any declared path off the shared list; the sibling case's comment at :225 was rewritten and this one was not, so the file still teaches the removed rule."
+    },
+    {
+      "file": "tests/test_crew_promotion_scope.py",
+      "line": "153",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two repaired cases (:153 and :220) declare allowed.txt shared and then assert promotion, which the guard also granted while it read the undeclared sharing default, and no boundary-scan case in this file asserts a refusal for a mergeable declared path off the shared list (both refusal cases use EXCLUSIVE_STRAY, docs/figures/plot.png), so a return of the defect named in reckon/crew/promotion_scope.py:1052-1058 leaves this file green."
+    }
+  ],
+  "head_log_revision": "af10eb87ef05b1774d1d68540269924e8ac85b59",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified against five production sites: reckon/crew/promotion_scope.py:_require_repository_tree_boundary, :_repository_tree_boundary_violations, :_boundary_has_no_referent, reckon/crew/runs.py:2424 _shared_write_paths, and reckon/crew_run_commands.py:3905 crew_complete, which writes the record_path receipt the third repaired case now reads.",
+    "diff": "Read both commits against 65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd: af10eb87ef05b1774d1d68540269924e8ac85b59 changes only tests/test_crew_promotion_scope.py (17 added, 4 removed: a derived dispatch stamp, two shared-path declarations, a receipt read), and d390e7223d7ff677c9210dd5286eea10d284a24e adds only the 90-line evidence fragment.",
+    "done_when": "The done_when names the file green at head on all_debug, each cause with a verdict, no weakened assertion, both arms as inline JSON carrying full 40-character revisions, and the base run with its failing ids logged in the fragment; the manifest records all six, each cited log's summary line and EXIT= line matches, and the only substitution is the arm's two files, which import nothing this change touches.",
+    "goal": "The node's goal is that tests/test_crew_promotion_scope.py passes in full at the current primary branch; the landed change repairs the three failing cases there (tests/test_crew_promotion_scope.py:73, :153, :220, :441) and the head gate log reads \"28 passed in 10.07s\" EXIT=0.",
+    "manifest": "Read; it names the gate command, four log paths, base 65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd \"3 failed, 25 passed\" EXIT=1, head af10eb87ef05b1774d1d68540269924e8ac85b59 \"28 passed\" EXIT=0, both suite arms \"58 passed\" EXIT=0 with full shas, and it omits the done_when's ruff clause, which I ran myself and found clean.",
+    "write_paths": "The node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the reviewed diff touches only tests/test_crew_promotion_scope.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion-scope-at-current-main.html, both inside that fence."
+  },
+  "justifications": {
+    "durability": "Reverting tests/test_crew_promotion_scope.py:153 or :220 to no shared declaration reddens the case with CrewError, and reverting :73 to the frozen stamp reddens both, but no boundary-scan case in this file refuses a mergeable declared path off the shared list, so the rule stated at reckon/crew/promotion_scope.py:1052-1058 stays unguarded here.",
+    "evidence": "baseline_suite-1795036995758487084.log and after_suite-1795037038932909096.log both read \"58 passed\" with EXIT=0 over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, files that import nothing this change touches, so the done_when's arm clause measures nothing while the primary base/head pair and the fragment's negative control are recorded and reconcile with their logs.",
+    "fit": "The added code is ruff-clean (ruff check and ruff format --check both exit 0 on the head file) and uses the file's own fixture idiom, but the retained comment at tests/test_crew_promotion_scope.py:158-160 still states the rule the guard no longer keeps.",
+    "goal_fidelity": "The head gate in scoped-gate-1795036934639487724.log ran revision af10eb87ef05b1774d1d68540269924e8ac85b59, one docs-only commit before the reviewed head d390e7223d7ff677c9210dd5286eea10d284a24e, and reads \"28 passed in 10.07s\" with EXIT=0, so tests/test_crew_promotion_scope.py is green in full.",
+    "reuse": "The change adds no definition and calls the file's existing _declare_shared_write_paths at tests/test_crew_promotion_scope.py:87 plus the repository's datetime.now(UTC) idiom; the only capability it reaches, reckon/crew/runs.py:2424 _shared_write_paths, is consumed rather than forked.",
+    "scope_discipline": "git diff --stat 65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd..d390e7223d7ff677c9210dd5286eea10d284a24e lists only tests/test_crew_promotion_scope.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion-scope-at-current-main.html, both inside the declared paths, with no product source touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_crew_promotion_scope.py passes in full at the current primary branch; the landed change repairs the three failing cases there (tests/test_crew_promotion_scope.py:73, :153, :220, :441) and the head gate log reads \"28 passed in 10.07s\" EXIT=0.\nVERDICT done_when: the done_when names the file green at head on all_debug, each cause with a verdict, no weakened assertion, both arms as inline JSON carrying full 40-character revisions and the base run with its failing ids logged in the fragment; the manifest records all six, each cited log's summary line and EXIT= line matches, and the only substitution is the arm's two files, which import nothing this change touches.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the reviewed diff touches only tests/test_crew_promotion_scope.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-promotion-scope-at-current-main.html, both inside that fence.\nVERDICT manifest: read; it names the gate command, four log paths, base 65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd \"3 failed, 25 passed\" EXIT=1, head af10eb87ef05b1774d1d68540269924e8ac85b59 \"28 passed\" EXIT=0, both suite arms \"58 passed\" EXIT=0 with full shas, and it omits the done_when's ruff clause, which I ran myself and found clean.\nVERDICT diff: read both commits against 65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd: af10eb87ef05b1774d1d68540269924e8ac85b59 changes only tests/test_crew_promotion_scope.py (17 added, 4 removed: a derived dispatch stamp, two shared-path declarations, a receipt read), and d390e7223d7ff677c9210dd5286eea10d284a24e adds only the 90-line evidence fragment.\nCALL_SITES: reckon/crew/promotion_scope.py:_require_repository_tree_boundary, reckon/crew/promotion_scope.py:_repository_tree_boundary_violations, reckon/crew/promotion_scope.py:_boundary_has_no_referent, reckon/crew/runs.py:2424 _shared_write_paths, reckon/crew_run_commands.py:3905 crew_complete\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the head gate in scoped-gate-1795036934639487724.log ran revision af10eb87ef05b1774d1d68540269924e8ac85b59, one docs-only commit before the reviewed head d390e7223d7ff677c9210dd5286eea10d284a24e, and reads \"28 passed in 10.07s\" with EXIT=0.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline_suite-1795036995758487084.log and after_suite-1795037038932909096.log both read \"58 passed\" with EXIT=0 over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, files that import nothing this change touches, so the done_when's arm clause measures nothing.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd..d390e7223d7ff677c9210dd5286eea10d284a24e lists only tests/test_crew_promotion_scope.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, both inside the declared paths.\nSCORE durability: 14\nJUSTIFICATION durability: reverting tests/test_crew_promotion_scope.py:153 or :220 to no shared declaration reddens the case with CrewError, and reverting :73 to the frozen stamp reddens both, but no boundary-scan case in this file refuses a mergeable declared path off the shared list, so the rule stated at reckon/crew/promotion_scope.py:1052-1058 stays unguarded here.\nSCORE fit: 16\nJUSTIFICATION fit: the added code is ruff-clean (ruff check and ruff format --check both exit 0 on the head file) and uses the file's own fixture idiom, but the retained comment at tests/test_crew_promotion_scope.py:158-160 still states the rule the guard no longer keeps.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and calls the file's existing _declare_shared_write_paths at tests/test_crew_promotion_scope.py:87 plus the repository's datetime.now(UTC) idiom; the only capability it reaches, reckon/crew/runs.py:2424 _shared_write_paths, is consumed rather than forked.\nFINDING tests/test_crew_promotion_scope.py:158 non-blocking: the comment kept in test_main_checkout_source_write_allows_promotion states \"Only a path a merge cannot reconcile is charged, which is the class the scan below reports\", while reckon/crew/promotion_scope.py:1052-1062 charges any declared path off the shared list; the sibling case's comment at :225 was rewritten and this one was not.\nFINDING tests/test_crew_promotion_scope.py:153 non-blocking: the two repaired cases (:153 and :220) declare allowed.txt shared and then assert promotion, which the guard also granted while it read the undeclared sharing default, and no boundary-scan case in this file asserts a refusal for a mergeable declared path off the shared list (both refusal cases use EXCLUSIVE_STRAY, docs/figures/plot.png), so a return of the defect named in reckon/crew/promotion_scope.py:1052-1058 leaves this file green.",
+  "review_run_id": "r-20261118T213119475597-review-of-qwnw-red-file-crew-promotion-scope-at-current-main-d390e7223d7f",
+  "reviewed_base_sha": "65ae7f6f1bea5ab4fbdbb75009a1a9a90671ecdd",
+  "reviewed_head_sha": "d390e7223d7ff677c9210dd5286eea10d284a24e",
+  "reviewed_run_id": "r-20261118T063946103899-qwnw-red-file-crew-promotion-scope-at-current-main",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T213119475597-review-of-qwnw-red-file-crew-promotion-scope-at-current-main-d390e7223d7f"
+  },
+  "reviewer_run_id": "r-20261118T213119475597-review-of-qwnw-red-file-crew-promotion-scope-at-current-main-d390e7223d7f",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:06:07.742637+00:00",
+  "total": 103
+}

@@ -1,0 +1,118 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "The regex list reddens if the renderer drops a cell, reorders the letters, or renders a count whose letter differs; at base 42fe90d0 this exact line matched five cells of a seven-cell row.",
+      "independence": "The expected list is a literal in the test; the actual comes from Ticker.render through the producer's _fleet_counts and _watch_transition, so the two sides do not move together.",
+      "limit": "It does not check the promotion position suffix beyond the dim marker, since nothing is queued for promotion in this fixture.",
+      "location": "tests/test_fleet_counter_launch_failure.py:103-111"
+    },
+    {
+      "conditions_for_failure": "BLOCK in launch reddens on any change to the block's cells, spacing or width, which is the defect the base arm recorded; keeping the block's width while changing a letter also reddens it.",
+      "independence": "BLOCK is the test's own literal and launch is production output, so reverting the renderer's cell order reddens the line.",
+      "limit": "The literal is a snapshot: a deliberate block redesign requires editing it, which is the intent of pinning the width. The width clause at :113 compares BLOCK to STATS, the module's own figure, so a matching change to both the literal and STATS is not caught by that clause alone, though :104 still reddens on the rendered text.",
+      "location": "tests/test_fleet_counter_launch_failure.py:104"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:27:28Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062958942162-qwnw-red-file-fleet-counter-launch-failure/scoped-gate-1795062249999738403.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log's header names the revision, host, tree and command but no partition and no SLURM_JOB_ID state, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" is asserted only by the manifest's landing line and cannot be read from the artefact."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-counter-launch-failure.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commit that adds this fragment, e0c63335d9, carries a subject with no body, against the worktree rule that a commit has a conventional subject and a body; the record survives but the evidence commit explains nothing."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read 373d5400ca and e0c63335d9 against 42fe90d0b0: the test commit replaces the stale six-cell literal and six-letter regex class with the seven-cell block (+20/-9) and the evidence commit adds a four-line fragment; no other path changed.",
+    "done_when": "The done_when requires the file to pass in full at head as an all_debug job with the output on shared storage, a base run recorded before the repair, and an arm over the test files that import what changed; the manifest records the head gate as 2 passed EXIT=0 and the base arm as 1 failed 1 passed EXIT=1, plus both suite arms at 0 failures, while the gate log header names no partition.",
+    "goal": "The live node goal is \"Make tests/test_fleet_counter_launch_failure.py pass in full on the primary branch\"; both cases at tests/test_fleet_counter_launch_failure.py:99-121 run together green in the head gate, and no product source changed.",
+    "manifest": "The reviewed run's manifest.md records the two commits, the gate command, the base and head results and both suite arms with full 40-character revisions, and states no deviation.",
+    "write_paths": "The declared scope covers reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-fleet-counter-launch-failure; both paths in the diff lie inside it and the figure path is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_counter_launch_failure.py:104 asserts the literal BLOCK in launch independently of the renderer, so restoring the base state reddens it exactly as base-arm-fleet-counter.log shows at 42fe90d0b0, and an eighth cell or a dropped p cell reddens the regex list at :103, but the width pin at :113 compares the test's literal to reckon/crew/ticker.py:789 STATS rather than to a rendered row.",
+    "evidence": "scoped-gate-1795062249999738403.log:1 names revision 373d5400ca and ends 2 passed EXIT=0, base-arm-fleet-counter.log:1 names 42fe90d0b0 and ends 1 failed 1 passed EXIT=1, and both suite logs read 58 passed EXIT=0, but the gate header carries no partition or SLURM state.",
+    "fit": "The repair follows the existing pin style in tests/test_the_pane_counts_reviews_under_r.py:156 and reuses reckon/crew/ticker.py:789 STATS, and its names follow the surrounding test vocabulary.",
+    "goal_fidelity": "tests/test_fleet_counter_launch_failure.py:100 now pins the seven-cell block the renderer draws, and scoped-gate-1795062249999738403.log records both cases passing at head revision 373d5400ca.",
+    "reuse": "The diff adds no function, class or module; it reads the existing reckon/crew/ticker.py:789 STATS and the producer path in reckon/crew/recovery.py, so no capability is duplicated.",
+    "scope_discipline": "git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..e0c63335d9e32f5aed743575d7e6940081fa4ae2 touches only tests/test_fleet_counter_launch_failure.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-counter-launch-failure.html, both declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The live node goal is \"Make tests/test_fleet_counter_launch_failure.py pass in full on the primary branch\"; both cases at tests/test_fleet_counter_launch_failure.py:99-121 run together green in the head gate, and no product source changed.\nVERDICT done_when: The done_when requires the file to pass in full at head as an all_debug job with the output on shared storage, a base run recorded before the manifest, and an arm over the test files that import what changed; the manifest records the head gate as 2 passed EXIT=0 and the base arm as 1 failed 1 passed EXIT=1, plus both suite arms at 0 failures, while scoped-gate-1795062249999738403.log:1 names no partition.\nVERDICT write_paths: The declared scope covers reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures/queued-work-needs-no-workaround/qwnw-red-file-fleet-counter-launch-failure; both paths in the diff lie inside it and the figure path is unused.\nVERDICT manifest: Read the reviewed run's manifest.md; it names commits 373d5400ca44ef67a792fe4f98cedfde24af7545 and e0c63335d9e32f5aed743575d7e6940081fa4ae2, the gate command, the base and head results and both suite arms with full 40-character revisions.\nVERDICT diff: Read 373d5400ca and e0c63335d9 against base 42fe90d0b0; the test commit replaces the stale six-cell literal and six-letter regex class with the seven-cell block at tests/test_fleet_counter_launch_failure.py:100-115 (+20/-9) and the evidence commit adds the four-line fragment, with no other path changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_fleet_counter_launch_failure.py:100 now pins the seven-cell block the renderer draws, and scoped-gate-1795062249999738403.log records both cases passing at head revision 373d5400ca.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795062249999738403.log:1 names revision 373d5400ca and ends 2 passed EXIT=0, base-arm-fleet-counter.log:1 names 42fe90d0b0 and ends 1 failed 1 passed EXIT=1, and both suite logs read 58 passed EXIT=0, but the gate header carries no partition or SLURM state.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..e0c63335d9e32f5aed743575d7e6940081fa4ae2 touches only tests/test_fleet_counter_launch_failure.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-counter-launch-failure.html, both declared.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fleet_counter_launch_failure.py:104 asserts the literal BLOCK in launch independently of the renderer, so restoring the base state reddens it exactly as base-arm-fleet-counter.log shows at 42fe90d0b0, while the width clause at :113 compares the test literal to reckon/crew/ticker.py:789 STATS rather than to a rendered row.\nSCORE fit: 17\nJUSTIFICATION fit: the repair follows the existing pin style at tests/test_the_pane_counts_reviews_under_r.py:156 and its names follow the surrounding test vocabulary.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and reads the existing reckon/crew/ticker.py:789 STATS and production path, so no capability is duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062958942162-qwnw-red-file-fleet-counter-launch-failure/scoped-gate-1795062249999738403.log:1 non-blocking: the gate log's header names the revision, host, tree and command but no partition or SLURM_JOB_ID state, so the done_when's all_debug condition is asserted only by the manifest's landing line.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-counter-launch-failure.html:1 non-blocking: commit e0c63335d9 carries a subject with no body, against the worktree rule that a commit has a conventional subject and a body.",
+  "review_method": "Read-only artefact review: the source pointer's goal and done_when, its manifest, both worker commits against base 42fe90d0b0, the two suite-arm logs and the file-scoped gate and base-arm logs. No suite was re-run and no mutation was applied.",
+  "review_run_id": "r-20261119T044542883507-review-of-qwnw-red-file-fleet-counter-launch-failure-e0c63335d9e3",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "e0c63335d9e32f5aed743575d7e6940081fa4ae2",
+  "reviewed_run_id": "r-20261118T062958942162-qwnw-red-file-fleet-counter-launch-failure",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "source_commits": [
+    "373d5400ca44ef67a792fe4f98cedfde24af7545",
+    "e0c63335d9e32f5aed743575d7e6940081fa4ae2"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062958942162-qwnw-red-file-fleet-counter-launch-failure/after_suite-1795062376570290704.log",
+      "observed_summary": "58 passed in 35.93s",
+      "revision": "373d5400ca44ef67a792fe4f98cedfde24af7545"
+    },
+    "base_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_counter_launch_failure.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "test_the_counter_block_keeps_five_cells_and_its_width"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062958942162-qwnw-red-file-fleet-counter-launch-failure/base-arm-fleet-counter.log",
+      "observed_summary": "1 failed, 1 passed in 0.50s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062958942162-qwnw-red-file-fleet-counter-launch-failure/baseline_suite-1795062334389258584.log",
+      "observed_summary": "58 passed in 35.21s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    },
+    "scoped_gate": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_counter_launch_failure.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062958942162-qwnw-red-file-fleet-counter-launch-failure/scoped-gate-1795062249999738403.log",
+      "observed_summary": "2 passed in 0.33s",
+      "revision": "373d5400ca44ef67a792fe4f98cedfde24af7545"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:01:09.874834+00:00",
+  "total": 110
+}

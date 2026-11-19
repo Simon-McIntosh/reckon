@@ -1,0 +1,91 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/evidence.py:_fragment_href"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T09:00:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm and the after-suite arm (lines 46-54 and 67-68) name 14edbe0fd4 while the gate and after-suite logs the source manifest cites ran at a55619138c, so the record names the parent of the delivered head and disagrees with the manifest beside it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record asserts the named file's all_debug run as \"8 passed\" with no receipt for the done_when's SLURM_JOB_ID-unset clause, so that half of the done_when rests on prose rather than a log line."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"three consecutive local runs\" is cited as evidence but the run directory holds no log for them and the manifest's test_logs names only the head gate log, so the repeat count is unverifiable."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Both commits 14edbe0fd4b941f0350315f50339813a810444cf and a55619138ce4a2aff7fce5325a1093ab6a400aec were read against base 5417b373ff9230f07c1c8f403632835808fffc15; one HTML evidence file is added with 75 lines and no product or test change.",
+    "done_when": "The done_when names tests/test_concurrent_dispatch_of_one_node.py at head as an all_debug job with SLURM_JOB_ID unset, taking the base-first branch when the file already passes; scoped-gate-1795049771114742734.log:1-6 records revision a55619138c, host 98dci4-clu-3141.iter.org, the pytest command and 8 passed ending EXIT=0, but no line records SLURM_JOB_ID handling.",
+    "goal": "The node.goal is \"Make tests/test_concurrent_dispatch_of_one_node.py pass in full on the primary branch\"; the file passes at base 5417b373ff and at head a55619138c (8 passed with EXIT=0 on both gate logs) and the landed record docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:1-75 states both arms and the green-at-base branch.",
+    "manifest": "The source manifest.md states status complete, records the base and head gate logs at 8 passed with EXIT=0, both suite arms at 58 passed, and negative_control none because the named file already passes at base 5417b373ff.",
+    "write_paths": "The node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its node fragment file and its figure topic; the one delivered path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html is inside them."
+  },
+  "justifications": {
+    "durability": "the fragment adds no assertion and tests/test_concurrent_dispatch_of_one_node.py was already green at base 5417b373ff, so nothing in this change reddens if the record regresses; the existing cases guard the dispatch behaviour, not the record.",
+    "evidence": "the gate and suite logs were read (8 passed at both 5417b373ff and a55619138c, 58 passed on both suite arms, all EXIT=0), but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:46-54 names 14edbe0fd4 as the head and after-suite revision rather than the a55619138c those logs ran at.",
+    "fit": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:1 uses the same section id and heading shape as its sibling qwnw-a-clean-landing-releases-its-worktree.html:1-2.",
+    "goal_fidelity": "the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:5-10 records the named file green at 5417b373ff with no repair needed, which is the branch the done_when takes for a file that already passes.",
+    "reuse": "the change adds no definition; it is one more fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, composed by the existing owner reckon/evidence.py:compose_landed_record and linked by reckon/evidence.py:_fragment_href.",
+    "scope_discipline": "git diff 5417b373ff..a55619138c contains only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html, one of the declared paths, with no reckon/ or tests/ edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node.goal is \"Make tests/test_concurrent_dispatch_of_one_node.py pass in full on the primary branch\"; the file passes at base 5417b373ff and at head a55619138c (8 passed with EXIT=0 in scoped-gate-1795048730009614210.log and scoped-gate-1795049771114742734.log), and the landed record docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:1-75 states both arms and the green-at-base branch.\nVERDICT done_when: the done_when names tests/test_concurrent_dispatch_of_one_node.py at head as an all_debug job with SLURM_JOB_ID unset, taking the base-first branch when the file already passes; scoped-gate-1795049771114742734.log:1-6 records revision a55619138c, host 98dci4-clu-3141.iter.org, the pytest command and \"8 passed\" ending EXIT=0, but no line records SLURM_JOB_ID being unset.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its node fragment file and docs/figures/queued-work-needs-no-workaround/<node>; the one delivered path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html is inside them.\nVERDICT manifest: the source manifest.md was read; it states status complete, records the base and head gate logs at 8 passed with EXIT=0, both suite arms at 58 passed, and negative_control none because the named file already passes at base 5417b373ff.\nVERDICT diff: both commits 14edbe0fd4b941f0350315f50339813a810444cf and a55619138ce4a2aff7fce5325a1093ab6a400aec were read against base 5417b373ff9230f07c1c8f403632835808fffc15; one HTML evidence file is added with 75 lines and no product or test change.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/evidence.py:_fragment_href\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:5-10 records the named file green at 5417b373ff with no repair needed, which is the branch the done_when takes for a file that already passes.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and suite logs were read (8 passed at both 5417b373ff and a55619138c, 58 passed on both suite arms, all EXIT=0), but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:46-54 names 14edbe0fd4 as the head and after-suite revision rather than the a55619138c those logs ran at.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 5417b373ff..a55619138c contains only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html, one of the declared paths, with no reckon/ or tests/ edit.\nSCORE durability: 10\nJUSTIFICATION durability: the fragment adds no assertion and tests/test_concurrent_dispatch_of_one_node.py was already green at base 5417b373ff, so nothing in this change reddens if the record regresses; the existing cases guard the dispatch behaviour, not the record.\nSCORE fit: 16\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:1 uses the same section id and heading shape as its sibling qwnw-a-clean-landing-releases-its-worktree.html:1-2.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it is one more fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, composed by the existing owner reckon/evidence.py:compose_landed_record and linked by reckon/evidence.py:_fragment_href.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:47 non-blocking: the head arm and the after-suite arm (lines 46-54 and 67-68) name 14edbe0fd4 while the gate and after-suite logs the source manifest cites ran at a55619138c, so the record names the parent of the delivered head and disagrees with the manifest beside it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:9 non-blocking: the record asserts the named file's all_debug run as \"8 passed\" with no receipt for the done_when's SLURM_JOB_ID-unset clause, so that half of the done_when rests on prose rather than a log line.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-concurrent-dispatch-of-one-node.html:20 non-blocking: \"three consecutive local runs\" is cited as evidence but the run directory holds no log for them and the manifest's test_logs names only the head gate log, so the repeat count is unverifiable.",
+  "review_method": "Read-only review of the source node's recorded gate and suite logs, its two commits against base 5417b373ff, its manifest and its fragment; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T011128272147-review-of-qwnw-red-file-concurrent-dispatch-of-one-node-a55619138ce4",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "a55619138ce4a2aff7fce5325a1093ab6a400aec",
+  "reviewed_run_id": "r-20261118T054048665897-qwnw-red-file-concurrent-dispatch-of-one-node",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "14edbe0fd4b941f0350315f50339813a810444cf",
+    "a55619138ce4a2aff7fce5325a1093ab6a400aec"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054048665897-qwnw-red-file-concurrent-dispatch-of-one-node/after_suite-1795049877471193794.log",
+      "observed_summary": "58 passed in 35.43s",
+      "revision": "a55619138ce4a2aff7fce5325a1093ab6a400aec"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054048665897-qwnw-red-file-concurrent-dispatch-of-one-node/baseline_suite-1795049834241445308.log",
+      "observed_summary": "58 passed in 36.88s",
+      "revision": "5417b373ff9230f07c1c8f403632835808fffc15"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T09:46:55.021564+00:00",
+  "total": 99
+}

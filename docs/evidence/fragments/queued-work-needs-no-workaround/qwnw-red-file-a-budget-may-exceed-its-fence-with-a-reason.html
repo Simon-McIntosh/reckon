@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason-landing">
+  <h2>A budget above the fence is admitted by a recorded reason</h2>
+
+  <p><strong>What changed.</strong> Nothing in the product and nothing in the
+  test: the file already passes at this node's base revision
+  <code>c9f02c221c82</code>, because an earlier node delivered the guard it
+  asserts. <code>validate_node</code> in <code>reckon/crew/node.py</code>
+  (delivered by <code>25eb92c770</code>, <em>refuse a budget above the time fence
+  without a reason</em>) admits a <code>time_budget</code> above the resolved fence only
+  when the node carries a non-blank <code>over_fence_reason</code>, failing the
+  <code>bounded</code> property by name with
+  <code>pass --over-fence REASON</code> otherwise, and the reason rides the node
+  through <code>as_dict()</code> and through a queued pointer's rebuild. So this
+  node is delivered as &sect;29's clause names: a file that already passes when
+  the node starts is delivered with the passing run.</p>
+
+  <p>The ten cases and what each reads: the reason on
+  <code>TaskNode.as_dict()</code>; an over-fence node with a reason passing the
+  bounded check and the same node without one refused by name; a budget inside
+  the fence left alone; the dispatch CLI carrying <code>--over-fence</code> onto
+  the node and refusing the same budget when there is no reason; a blank reason
+  admitting nothing while a whitespace-padded one admits; and a queued pointer
+  keeping the reason across <code>_node_from_pointer</code>, with the field's
+  absence reading as no reason.</p>
+
+  <h3 id="qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason-arms">Measured</h3>
+
+  <table id="qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base run of the named file, <code>all_debug</code> job</td>
+        <td><code>c9f02c221c821bfe5b9a9ff64185a44cca7cda49</code></td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head run of the named file, <code>all_debug</code> job</td>
+        <td><code>19dc0c4e994d685f8c918437b77e1abf74553cce</code></td>
+        <td>10 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>base and head arms, the run's stored scoped suite resolved over
+        each tree</td>
+        <td><code>c9f02c221c82</code> and <code>19dc0c4e99</code></td>
+        <td>58 passed in each, <code>EXIT=0</code> in each, no added failure</td></tr>
+      <tr><td>the negative control, base revision mutated</td>
+        <td><code>c9f02c221c821bfe5b9a9ff64185a44cca7cda49</code></td>
+        <td>3 failed, 7 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason-control">Negative control</h3>
+
+  <p>The passing run is not vacuous. The test's own statement of its control is
+  applied — the recorded-reason test dropped from the bounded check, so every
+  over-fence budget is refused — and the padding and recorded-reason cases go
+  red with the refusal they forbid:</p>
+
+  <ul>
+    <li><code>test_an_over_fence_budget_with_a_reason_passes_the_bounded_check</code></li>
+    <li><code>test_dispatch_carries_the_reason_onto_the_node</code></li>
+    <li><code>test_a_reason_padded_with_whitespace_still_admits</code></li>
+  </ul>
+
+  <p>The mutation is an extraction of the base revision under the run's scratch
+  directory with that one condition replaced by an unconditional refusal; it is
+  not committed. Each failing case reports
+  <code>[{'property': 'bounded', 'detail': 'budget 240m exceeds the resolved
+  fence 60m; pass --over-fence REASON to state why it must run above the
+  fence'}]</code> — the guard firing where the reason should have admitted the
+  budget. The log is
+  <code>~/.config/reckon/crew/runs/r-20261118T054303346847-qwnw-red-file-a-budget-may-exceed-its-fence-with-a-reason/negative-control-a-budget-fence.log</code>.</p>
+</section>

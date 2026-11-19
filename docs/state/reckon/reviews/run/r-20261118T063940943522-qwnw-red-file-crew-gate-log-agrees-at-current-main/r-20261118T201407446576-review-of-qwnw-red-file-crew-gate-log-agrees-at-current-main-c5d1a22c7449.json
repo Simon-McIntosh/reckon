@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "96e3c4b8a3957e2624866e0dc773042892239333",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:26:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees-at-current-main.html",
+      "line": "104",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-run block claims its log sits on shared storage beside the record, but the only named-file gate log there, gate-head-job.log, was rewritten by a later run (job 1327897 at c5d1a22c74, 17 passed in 4.63s), so the quoted job 1327849 / 4.02s block cannot be checked against any stored file and reads as a contradiction with the manifest's gate row."
+    }
+  ],
+  "head_log_revision": "c5d1a22c74498157d9eed363d6cd203e15fac22e",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against 96e3c4b8a3957e2624866e0dc773042892239333; e399671a54 adds `_cited_payload` and `_refusal_text` at tests/test_crew_gate_log_agrees.py:139,154, moves every landed-record read from `json.loads(result.output)` to `_cited_payload(result)` and every refusal-content assertion from `result.output` to the cited payload, and c5d1a22c74 adds only the 114-line evidence fragment.",
+    "done_when": "the done_when names the file at head as an all_debug job with SLURM_JOB_ID unset, a base run, both suite arms as inline JSON at full revisions and a negative control; the manifest records gate-head-job.log (job 1327897, rev c5d1a22c74498157d9eed363d6cd203e15fac22e, \"17 passed in 4.63s\", EXIT=0) written by head-gate-job.sh:27, which runs pytest under `env -u SLURM_JOB_ID`, the base run 11 failed / 6 passed at 96e3c4b8a3957e2624866e0dc773042892239333 in negative-control-base-run.log, and both suite arms 58 passed EXIT=0 at full 40-character revisions in baseline_suite-1795032120996209560.log and after_suite-1795032196446960102.log.",
+    "goal": "the node's goal is that tests/test_crew_gate_log_agrees.py passes in full; the landed commits repair that file's expectation of the completion reply, the diff changes nothing under reckon/, and gate-head-job.log records 17 passed at the landed head.",
+    "manifest": "read; it states status complete, commits e399671a54a756877b0f9ad905525b7ef3c6f9d3 and c5d1a22c74498157d9eed363d6cd203e15fac22e, changed_paths the test file and the fragment, a `tests` line equal to the gate log's own `# command:` header, the negative-control log path, and both suite arms as inline JSON.",
+    "write_paths": "the node declared tests, reckon and docs/evidence/fragments/queued-work-needs-no-workaround; the two changed paths, tests/test_crew_gate_log_agrees.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees-at-current-main.html, both sit inside that scope and no file under reckon/ is touched."
+  },
+  "justifications": {
+    "durability": "reinstating the reply shape shipped at ba811581d3 reddens all 17 cases (break-at-ba811581d3.log, 17 failed, EXIT=1, against 17 passed at its parent b5dda3fd06), and each moved assertion compares production-written refusal text rather than a value the test itself supplied.",
+    "evidence": "gate-head-job.log names the landed revision and ends `EXIT=0`, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees-at-current-main.html:93-104 quotes a head run at e399671a54 (job 1327849, 17 passed in 4.02s) whose log the later gate run overwrote, so that quoted block has no supporting file on disk.",
+    "fit": "`_cited_payload` at tests/test_crew_gate_log_agrees.py:139 and `_refusal_text` at :154 follow the file's existing underscore-prefixed helper and prose-docstring idiom, and no name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_crew_gate_log_agrees.py passes 17 of 17 at c5d1a22c74498157d9eed363d6cd203e15fac22e in gate-head-job.log with no file under reckon/ in the diff, so the repaired test file is the whole deliverable the goal names.",
+    "reuse": "a search of tests/, tests/conftest.py and reckon/crew for a reader of the record a bounded reply cites found no owner, but the same two-line cited read stays inlined at tests/test_a_conflicting_landing_is_repaired.py:140, so the helper is a third copy rather than an extension of an owner.",
+    "scope_discipline": "`git diff --stat 96e3c4b8a3957e2624866e0dc773042892239333..c5d1a22c74498157d9eed363d6cd203e15fac22e` lists exactly tests/test_crew_gate_log_agrees.py and the declared evidence fragment, and nothing in the fragment goes beyond the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_crew_gate_log_agrees.py passes in full; the landed commits repair that file's expectation of the completion reply, the diff changes nothing under reckon/, and gate-head-job.log records 17 passed at the landed head.\nVERDICT done_when: the done_when names the file at head as an all_debug job with SLURM_JOB_ID unset, a base run, both suite arms as inline JSON at full revisions and a negative control; the manifest records gate-head-job.log (job 1327897, rev c5d1a22c74498157d9eed363d6cd203e15fac22e, \"17 passed in 4.63s\", EXIT=0) written by head-gate-job.sh:27, which runs pytest under `env -u SLURM_JOB_ID`, the base run 11 failed / 6 passed at 96e3c4b8a3957e2624866e0dc773042892239333 in negative-control-base-run.log, and both suite arms 58 passed EXIT=0 at full 40-character revisions in baseline_suite-1795032120996209560.log and after_suite-1795032196446960102.log.\nVERDICT write_paths: the node declared tests, reckon and docs/evidence/fragments/queued-work-needs-no-workaround; the two changed paths, tests/test_crew_gate_log_agrees.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees-at-current-main.html, both sit inside that scope and no file under reckon/ is touched.\nVERDICT manifest: read; it states status complete, commits e399671a54a756877b0f9ad905525b7ef3c6f9d3 and c5d1a22c74498157d9eed363d6cd203e15fac22e, changed_paths the test file and the fragment, a `tests` line equal to the gate log's own `# command:` header, the negative-control log path, and both suite arms as inline JSON.\nVERDICT diff: read both commits against 96e3c4b8a3957e2624866e0dc773042892239333; e399671a54 adds `_cited_payload` and `_refusal_text` at tests/test_crew_gate_log_agrees.py:139,154, moves every landed-record read from `json.loads(result.output)` to `_cited_payload(result)` and every refusal-content assertion from `result.output` to the cited payload, and c5d1a22c74 adds only the 114-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_gate_log_agrees.py passes 17 of 17 at c5d1a22c74498157d9eed363d6cd203e15fac22e in gate-head-job.log with no file under reckon/ in the diff, so the repaired test file is the whole deliverable the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head-job.log names the landed revision and ends `EXIT=0`, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees-at-current-main.html:93-104 quotes a head run at e399671a54 (job 1327849, 17 passed in 4.02s) whose log the later gate run overwrote, so that quoted block has no supporting file on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 96e3c4b8a3957e2624866e0dc773042892239333..c5d1a22c74498157d9eed363d6cd203e15fac22e` lists exactly tests/test_crew_gate_log_agrees.py and the declared evidence fragment, and nothing in the fragment goes beyond the goal.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the reply shape shipped at ba811581d3 reddens all 17 cases (break-at-ba811581d3.log, 17 failed, EXIT=1, against 17 passed at its parent b5dda3fd06), and each moved assertion compares production-written refusal text rather than a value the test itself supplied.\nSCORE fit: 19\nJUSTIFICATION fit: `_cited_payload` at tests/test_crew_gate_log_agrees.py:139 and `_refusal_text` at :154 follow the file's existing underscore-prefixed helper and prose-docstring idiom, and no name carries a plan, sprint or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search of tests/, tests/conftest.py and reckon/crew for a reader of the record a bounded reply cites found no owner, but the same two-line cited read stays inlined at tests/test_a_conflicting_landing_is_repaired.py:140, so the helper is a third copy rather than an extension of an owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-gate-log-agrees-at-current-main.html:104 non-blocking: the head-run block claims its log sits on shared storage beside the record, but the only named-file gate log there, gate-head-job.log, was rewritten by a later run (job 1327897 at c5d1a22c74, 17 passed in 4.63s), so the quoted job 1327849 / 4.02s block cannot be checked against any stored file and reads as a contradiction with the manifest's gate row.\n",
+  "review_run_id": "r-20261118T201407446576-review-of-qwnw-red-file-crew-gate-log-agrees-at-current-main-c5d1a22c7449",
+  "reviewed_base_sha": "96e3c4b8a3957e2624866e0dc773042892239333",
+  "reviewed_head_sha": "c5d1a22c74498157d9eed363d6cd203e15fac22e",
+  "reviewed_run_id": "r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T201407446576-review-of-qwnw-red-file-crew-gate-log-agrees-at-current-main-c5d1a22c7449"
+  },
+  "reviewer_run_id": "r-20261118T201407446576-review-of-qwnw-red-file-crew-gate-log-agrees-at-current-main-c5d1a22c7449",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:05:38.889021+00:00",
+  "total": 112
+}

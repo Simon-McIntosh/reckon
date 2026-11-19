@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:958 complete",
+    "reckon/crew/promotion_scope.py:585 _changed_artifacts_needing_acceptance",
+    "reckon/crew/promotion_scope.py:853 _accepted_scope_exceptions",
+    "reckon/crew/runs.py:2358 exclusive_pattern"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:25:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree/manifest.md",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the commits field cites the evidence commit as the 10-character 6ac3c9b7a3 although the done_when requires plain full commit ids, so the record does not carry the head it claims to have delivered in resolvable form."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-leaves-the-worktree.html",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted head arm names 33a80ab and job 1329674, but the run that produced that output wrote gate-head.log before job 1329807 overwrote it at 6ac3c9b, so the quoted block names no log a reader can open."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's ruff check and ruff format --check results appear nowhere in the manifest or the evidence fragment, so a requirement of the node's measure is answered only in the run stream."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 42fe90d; 33a80ab rewrites the case's fixture, peer claim and accepted path from shared_module.py to artifact.png while leaving all four assertions untouched, and 6ac3c9b adds only the 24-line evidence fragment, so the product code is unchanged and the base failure is answered as a stale test rule, not a product repair.",
+    "done_when": "the done_when requires a clean head run on all_debug, the base run with its failing ids beside it, an arm over the importing test files on both revisions, and a ruff pass; gate-head.log records 1 passed EXIT=0 at 6ac3c9b from an all_debug sbatch (job 1329807), base-gate.log records FAILED ...DID NOT RAISE CrewError at 42fe90d, baseline_suite-local.log and after_suite-local.log record 58 passed EXIT=0 on both 40-character revisions, and the ruff words \"All checks passed\" appear only in the run's stream, not in any delivered record.",
+    "goal": "the source node's goal is that tests/test_refused_promotion_leaves_the_worktree.py passes in full on the primary branch; at head 6ac3c9b the file's single case passes (gate-head.log, 1 passed, EXIT=0) after tests/test_refused_promotion_leaves_the_worktree.py:79-83,145,162 replaced the accepted source path with the binary receipt artifact.png.",
+    "manifest": "the source manifest records status complete, one 40-character commit and one 10-character one, the four gate/suite log paths, baseline_suite and after_suite JSON at 42fe90d and 33a80ab with 0 failing ids, and a landing line naming the cause as test wrong; it carries no ruff result and no full id for 6ac3c9b.",
+    "write_paths": "the node declared reckon, tests and the queued-work-needs-no-workaround evidence fragment; the delivered diff 42fe90d..6ac3c9b touches only tests/test_refused_promotion_leaves_the_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-leaves-the-worktree.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_refused_promotion_leaves_the_worktree.py:168-170 independently redden if complete() releases the worktree, rewrites the pointer or writes a ledger row before raising, and the base arm proves the fixture change is load-bearing, but the diff adds no new assertion and the pointer comparison is a message-substring check at :167.",
+    "evidence": "gate-head.log, base-gate.log and both 58-passed arms are recorded and reconcile with the done_when, but the manifest's commits line at manifest.md:6 carries a 10-character id, the fragment's quoted head run at qwnw-red-file-refused-promotion-leaves-the-worktree.html:12 has no surviving log, and the done_when's ruff result is unrecorded.",
+    "fit": "the test keeps the file's existing fixture and pointer helpers and its docstring states the acceptance rule in the words reckon/crew/promotion_scope.py:585 uses, so the edit reads as the surrounding file rather than a new idiom.",
+    "goal_fidelity": "tests/test_refused_promotion_leaves_the_worktree.py:167-170 passes at head 6ac3c9b and fails at base 42fe90d exactly on the stale shared_module.py acceptance, so the goal's red file is green at the reviewed head.",
+    "reuse": "the diff adds no production definition; the case drives the existing acceptance-class owner reckon/crew/promotion_scope.py:585 through reckon/crew/runs.py:2358 rather than re-implementing it, and the search over reckon/crew found no parallel acceptance classifier.",
+    "scope_discipline": "the diff's two paths, tests/test_refused_promotion_leaves_the_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-leaves-the-worktree.html, are both inside the declared write paths and carry nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_refused_promotion_leaves_the_worktree.py passes in full on the primary branch; at head 6ac3c9b the file's single case passes (gate-head.log, 1 passed, EXIT=0) after tests/test_refused_promotion_leaves_the_worktree.py:79-83,145,162 replaced the accepted source path with the binary receipt artifact.png.\nVERDICT done_when: the done_when requires a clean head run on all_debug, the base run with its failing ids beside it, an arm over the importing test files on both revisions, and a ruff pass; gate-head.log records 1 passed EXIT=0 at 6ac3c9b from an all_debug sbatch (job 1329807), base-gate.log records FAILED ...DID NOT RAISE CrewError at 42fe90d, baseline_suite-local.log and after_suite-local.log record 58 passed EXIT=0 on both 40-character revisions, and the ruff words \"All checks passed\" appear only in the run's stream, not in any delivered record.\nVERDICT write_paths: the node declared reckon, tests and the queued-work-needs-no-workaround evidence fragment; the delivered diff 42fe90d..6ac3c9b touches only tests/test_refused_promotion_leaves_the_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-leaves-the-worktree.html, both inside that scope.\nVERDICT manifest: the source manifest records status complete, one 40-character commit and one 10-character one, the four gate/suite log paths, baseline_suite and after_suite JSON at 42fe90d and 33a80ab with 0 failing ids, and a landing line naming the cause as test wrong; it carries no ruff result and no full id for 6ac3c9b.\nVERDICT diff: read commit by commit against base 42fe90d; 33a80ab rewrites the case's fixture, peer claim and accepted path from shared_module.py to artifact.png while leaving all four assertions untouched, and 6ac3c9b adds only the 24-line evidence fragment, so the product code is unchanged and the base failure is answered as a stale test rule, not a product repair.\nCALL_SITES: reckon/crew/promotion.py:958 complete, reckon/crew/promotion_scope.py:585 _changed_artifacts_needing_acceptance, reckon/crew/promotion_scope.py:853 _accepted_scope_exceptions, reckon/crew/runs.py:2358 exclusive_pattern\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_refused_promotion_leaves_the_worktree.py:167-170 passes at head 6ac3c9b and fails at base 42fe90d exactly on the stale shared_module.py acceptance, so the goal's red file is green at the reviewed head.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head.log, base-gate.log and both 58-passed arms are recorded and reconcile with the done_when, but the manifest's commits line at manifest.md:6 carries a 10-character id, the fragment's quoted head run at qwnw-red-file-refused-promotion-leaves-the-worktree.html:12 has no surviving log, and the done_when's ruff result is unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_refused_promotion_leaves_the_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-leaves-the-worktree.html, are both inside the declared write paths and carry nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_refused_promotion_leaves_the_worktree.py:168-170 independently redden if complete() releases the worktree, rewrites the pointer or writes a ledger row before raising, and the base arm proves the fixture change is load-bearing, but the diff adds no new assertion and the pointer comparison is a message-substring check at :167.\nSCORE fit: 18\nJUSTIFICATION fit: the test keeps the file's existing fixture and pointer helpers and its docstring states the acceptance rule in the words reckon/crew/promotion_scope.py:585 uses, so the edit reads as the surrounding file rather than a new idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition; the case drives the existing acceptance-class owner reckon/crew/promotion_scope.py:585 through reckon/crew/runs.py:2358 rather than re-implementing it, and the search over reckon/crew found no parallel acceptance classifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree/manifest.md:6 non-blocking: the commits field cites the evidence commit as the 10-character 6ac3c9b7a3 although the done_when requires plain full commit ids, so the record does not carry the head it claims to have delivered in resolvable form.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-leaves-the-worktree.html:12 non-blocking: the quoted head arm names 33a80ab and job 1329674, but the run that produced that output wrote gate-head.log before job 1329807 overwrote it at 6ac3c9b, so the quoted block names no log a reader can open.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree/manifest.md:14 non-blocking: the done_when's ruff check and ruff format --check results appear nowhere in the manifest or the evidence fragment, so a requirement of the node's measure is answered only in the run stream.\n",
+  "review_run_id": "r-20261119T053524230042-review-of-qwnw-red-file-refused-promotion-leaves-the-worktree-6ac3c9b7a344",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "6ac3c9b7a344d7d9caca34cbcd9144e848a1cfcf",
+  "reviewed_run_id": "r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree",
+  "reviewed_worker_commits": [
+    "33a80abedb05288b333479918234686a0ef93c86",
+    "6ac3c9b7a344d7d9caca34cbcd9144e848a1cfcf"
+  ],
+  "rubric": "",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree/after_suite-local.log",
+      "revision": "33a80abedb05288b333479918234686a0ef93c86",
+      "sha256": "f1bce13e2d1da06f91f7c34eeb1209a469c896030ec7bfe4b91d5a0af51c0886",
+      "summary": ""
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062809949493-qwnw-red-file-refused-promotion-leaves-the-worktree/baseline_suite-local.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+      "sha256": "6794d97c3687b0fd89791af11529352e1fce4b4372623cb77c05c52a67633604",
+      "summary": ""
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:42:36.070254+00:00",
+  "total": 107
+}
