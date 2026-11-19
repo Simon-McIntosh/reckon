@@ -192,12 +192,16 @@ def test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing(
     assert docs_item["kind"] == "review-ready", docs_item
     assert docs_item["review_tier"] == "none", docs_item
 
-    # The command is the promotion the run is ready for, not the review
-    # dispatch its own row carries: a duty that reads ready to promote while
-    # naming that dispatch offers work the tier rule has decided against.
+    # The command is never the review dispatch its own row carries: a duty that
+    # reads ready to promote while naming that dispatch offers work the tier
+    # rule has decided against. A settlement is offered only from a passing
+    # measurement of the current head, and this run records none, so the duty
+    # offers the observation that shows the refusal instead of a promotion the
+    # acceptance gate would refuse.
     assert docs_item["next_command"].startswith(
-        f"reckon crew complete --run {DOCS_RUN}"
+        f"reckon crew observe --run {DOCS_RUN}"
     ), docs_item
+    assert "crew dispatch" not in docs_item["next_command"], docs_item
 
     # The runtime-source run owes a review still and reads it missing, so the
     # quietening above is keyed on the tier and not on something the read did
@@ -222,6 +226,11 @@ def test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form(
     against its own first parent: a first commit has none, and an unreadable
     diff owes the full review rather than none. The case under test is the
     base citation, so its base has to be readable.
+
+    The run also declares no repository change, because the commitless form
+    belongs only to a run that changed nothing: a run whose manifest names a
+    changed path has work to cite, so its base citation is refused rather than
+    answered with that form.
     """
     root = project
     base = _commit_change(root, "seed.txt", "seed\nbase-only change\n")
@@ -229,7 +238,7 @@ def test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form(
         root,
         BASE_RUN,
         commit=base,
-        changed_paths=("seed.txt",),
+        changed_paths=(),
         base=base,
     )
 
@@ -239,5 +248,5 @@ def test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form(
     base_item = items[BASE_RUN]
     assert base_item["review_tier"] == "none", base_item
     assert base_item["next_command"].startswith(
-        f"reckon crew complete --run {BASE_RUN} --gate not-run --no-commit"
+        f"reckon crew complete --run {BASE_RUN} --gate not-run --wait --no-commit"
     ), base_item
