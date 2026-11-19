@@ -56,7 +56,7 @@ LEGACY_NODE_BYTES = 50_000
 #: A done-when the node contract accepts: it names the file and the result.
 DEMONSTRABLE_DONE_WHEN = (
     "tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py passes; "
-    "pytest reports 5 passed"
+    "pytest reports 0 failed"
 )
 
 
@@ -469,3 +469,64 @@ def test_two_overlapping_runs_are_as_adjacent_as_they_were(
     assert _peer_adjacency(repository, candidate) == adjacent_slim
     assert _promotion_peer_scopes(repository) == promotion_slim
     assert _review_adjacency(PROJECT, shared) == review_slim
+
+
+def test_a_review_judgement_reads_the_done_when_through_the_pointer(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """(f) A sweep's merged record still judges against the node's done-when."""
+    from reckon.crew import recovery_review_dispatch as review_dispatch
+    from reckon.crew import review_need
+    from reckon.crew import runs as runs_module
+
+    done_when = "the sweep's judgement reads the done-when now stored on disk"
+    node = _node(
+        "judged-body", done_when=done_when, manifest_path=str(tmp_path / "manifest.md")
+    )
+    run_id = "r-20261119T000000000000-judged-body"
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "phase": "working",
+            "node": _full_node(node),
+        },
+    )
+    lifecycle = runs.read_pointer(run_id)
+    slim = next(row for row in runs.list_live() if row["run_id"] == run_id)
+    assert "done_when" not in (slim.get("node") or {})
+    # The composition merge: the sweep's slim snapshot wins over the hydrated
+    # record, which is how the judge was reading an empty done-when.
+    merged = {**lifecycle, **slim}
+    assert "done_when" not in (merged.get("node") or {})
+
+    judged: list[dict] = []
+    monkeypatch.setattr(
+        review_need, "judge", lambda changes, **kwargs: judged.append(kwargs) or {}
+    )
+    monkeypatch.setattr(review_dispatch, "_review_accepts_promotion", lambda _r: True)
+    monkeypatch.setattr(review_dispatch, "_diff_between", lambda *_a, **_k: "+line")
+    from reckon import flight
+
+    monkeypatch.setattr(flight, "review_need_threshold", lambda _c: 0.5)
+    monkeypatch.setattr(
+        review_dispatch, "_prior_review", lambda *_a, **_k: {"status": "complete"}
+    )
+    monkeypatch.setattr(
+        review_dispatch, "review_described_head", lambda *_a, **_k: "a" * 40
+    )
+
+    move = {"reviewed_head": "a" * 40, "head": "b" * 40}
+    assert review_dispatch._judge_head_move(merged, move, config=None) is None
+    assert judged[-1]["goals"]["done_when"] == done_when
+
+    prediction = review_dispatch.re_review_prediction(
+        merged, {"project": PROJECT, "run_id": run_id, "head": "b" * 40}
+    )
+    assert prediction is not None
+    assert prediction["inputs"]["done_when"] == done_when
+
+    # The inline record, the shape the base revision judged, reads the same.
+    assert runs_module.node_field(lifecycle, "done_when") == done_when
