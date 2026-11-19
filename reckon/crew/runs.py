@@ -1662,49 +1662,6 @@ def _pointer_identity(info: os.stat_result) -> tuple[int, int, int, int]:
     return (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
-#: The live pointers one pass already read, keyed by run id and carrying the
-#: stat identity each was listed under. A derivation publishes its one listing
-#: here for the length of the pass, so a reader that asks for a pointer by id
-#: answers from the population the pass derives from rather than decoding the
-#: same document again for every duty kind that reaches it.
-_POINTER_POPULATION: ContextVar[
-    Mapping[str, tuple[tuple[int, int, int, int], Mapping[str, Any]]] | None
-] = ContextVar("reckon_runs_pointer_population", default=None)
-
-
-@contextmanager
-def published_pointers(pointers: Iterable[Mapping[str, Any]]) -> Iterator[None]:
-    """Serve by-id pointer reads from one population already read.
-
-    A fleet-state derivation lists the project's live directory once and reads
-    its own rows and every duty kind it reaches from that listing. The readers
-    below it read specific runs by id, and each of those would otherwise decode
-    that run's document again — three times over one sweep of 300 pointers.
-
-    The identity each record was listed under is published beside it, and a
-    read is served only while the file still has that identity: a pointer
-    written during the pass is decoded afresh, so a caller that changes what it
-    read writes over the record it was shown rather than over a stale copy. A
-    run the population does not hold, or one whose file has gone, falls back to
-    the direct read and gets the answer it would have had without this region.
-    """
-    published: dict[str, tuple[tuple[int, int, int, int], Mapping[str, Any]]] = {}
-    for pointer in pointers:
-        run_id = str(pointer.get("run_id") or "")
-        if not run_id:
-            continue
-        try:
-            identity = _pointer_identity(pointer_path(run_id).stat())
-        except OSError:
-            continue
-        published[run_id] = (identity, pointer)
-    token = _POINTER_POPULATION.set(published)
-    try:
-        yield
-    finally:
-        _POINTER_POPULATION.reset(token)
-
-
 def _pointer_as_read(data: Mapping[str, Any]) -> dict[str, Any]:
     """The record a by-id read answers with, holding no station pid.
 
@@ -1736,24 +1693,14 @@ def _pointer_as_read(data: Mapping[str, Any]) -> dict[str, Any]:
 def read_pointer(run_id: str) -> dict[str, Any]:
     """Read one run's live pointer, or say which run is unknown.
 
-    A read inside a pass that published its live pointers
-    (:func:`published_pointers`) answers from that population while the file
-    still holds the identity it was listed under, so one derivation decodes
-    each pointer file once. The record carries no station pid for the reason
-    :func:`_pointer_as_read` states, and the record is left on disk for
-    whatever watchdog wrote it.
+    The document is decoded only when its stat identity has moved: a listing
+    that finds every pointer where its previous pass left it decodes none, and
+    a by-id read of a pointer an earlier listing decoded answers from the same
+    memo without reading the file. The record carries no station pid for the
+    reason :func:`_pointer_as_read` states, and it is left on disk for whatever
+    watchdog wrote it.
     """
     path = pointer_path(run_id)
-    held = _POINTER_POPULATION.get()
-    if held is not None:
-        served = held.get(str(run_id))
-        if served is not None:
-            try:
-                unchanged = _pointer_identity(path.stat()) == served[0]
-            except OSError:
-                unchanged = False
-            if unchanged:
-                return _pointer_as_read(served[1])
     try:
         data = _pointer_record(path)
     except FileNotFoundError:
@@ -1764,8 +1711,6 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
-    # The served route above and this direct read land on one rule: the caller
-    # gets a record of its own, with the station pid read out of it.
     return _pointer_as_read(data)
 
 

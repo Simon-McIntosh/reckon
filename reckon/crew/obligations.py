@@ -857,12 +857,10 @@ def live_pointer_snapshot(
     # holding a pass whose pointers have gone. A reader below fills it in for
     # this listing; it outlives nothing.
     reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
-    # A reader that asks for one run by id answers from this same listing
-    # rather than decoding that run's document again, so a derivation reaches
-    # each pointer file once whether it walked the directory or looked a run up.
+    # A reader that asks for one run by id answers from the memo the listing
+    # filled: a pointer whose stat identity has not moved is decoded once.
     try:
-        with runs.published_pointers(listing):
-            yield listing
+        yield listing
     finally:
         _VIEW_REVIEWS_IN_FLIGHT.reset(reviews_token)
         _VIEW_LIVE_POINTERS.reset(token)

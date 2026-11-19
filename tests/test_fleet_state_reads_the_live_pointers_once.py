@@ -280,3 +280,32 @@ def test_the_snapshot_derives_the_per_reader_obligations(
         assert obligation_snapshot.payload_for(
             shared, session
         ) == obligation_snapshot.payload_for(per_reader, session)
+
+
+def test_a_by_id_read_is_the_callers_own(fleet: dict[str, Path]) -> None:
+    """The record a by-id read answers with belongs to the caller alone.
+
+    The listing hands out one shallow copy of the memoised document, so the
+    nested fields of a record read here are the memo's own unless the reader
+    copies them. A caller that marks the record it was shown — a resume stamps
+    its pointer, an admission pass rewrites one — must reach neither the file
+    nor the memo every later listing reads, so this case writes a nested field
+    of the record it read and then requires the file, a later listing and a
+    second read to all still hold the record as written.
+    """
+    run_id = "run-00005"
+    path = runs.pointer_path(run_id)
+    written = json.loads(path.read_text())
+    original = path.read_bytes()
+
+    read = runs.read_pointer(run_id)
+    read["node"]["write_paths"].append("invented.txt")
+    read["node"]["id"] = "invented"
+    read["phase"] = "complete"
+
+    assert path.read_bytes() == original, "a read wrote the pointer it read"
+    listed = {row["run_id"]: row for row in runs.list_live(project=PROJECT)}
+    assert listed[run_id]["node"] == written["node"]
+    again = runs.read_pointer(run_id)
+    assert again["node"] == written["node"]
+    assert again.get("phase") == written.get("phase")
