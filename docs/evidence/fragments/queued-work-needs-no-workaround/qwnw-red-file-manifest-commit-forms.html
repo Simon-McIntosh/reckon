@@ -38,10 +38,18 @@ resolver's own <code>strict=True</code> through that one reader.</p>
 
 <section id="qwnw-red-file-manifest-commit-forms-arms">
 <h2>Armed suite over this node's declared tests</h2>
-<pre>baseline 42fe90d0: 2 failed, 56 passed (EXIT=1)
-after: 2 files tests/test_staged_write_inventory.py
-tests/test_every_shared_home_lock_holds_across_nodes.py
-after 857b8298: 58 passed (EXIT=0)</pre>
+<p>Both arms run the node's declared files —
+<code>tests/test_staged_write_inventory.py</code> and
+<code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> — each in a
+tree checked out at its own revision, with the command
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code>
+resolved over that tree.</p>
+<pre>baseline 42fe90d0b0a46060bafde2490dda7d4002cda478: 2 failed, 56 passed
+  EXIT=1
+  FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner
+  FAILED tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write
+after (this head): 58 passed
+  EXIT=0</pre>
 </section>
 
 <section id="qwnw-red-file-manifest-commit-forms-instrument">
