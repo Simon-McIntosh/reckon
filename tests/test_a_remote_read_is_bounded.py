@@ -12,7 +12,7 @@ import time
 
 import pytest
 
-from reckon.crew import merge
+from reckon.crew import merge, recovery
 
 
 @pytest.fixture
@@ -167,15 +167,12 @@ def test_failed_port_22_fetch_retries_over_443(git_stub, monkeypatch, error):
     monkeypatch.setenv("FETCH_ERROR", error)
     monkeypatch.setattr(merge, "_rev_parse", lambda repo, head: "b" * 40)
     monkeypatch.setattr(merge, "_is_ancestor", lambda repo, head, remote: True)
-    original = merge._run
-    present = iter([1, 0])
+    present = iter(["", "a" * 40])
 
-    def run(repo, *args, **kwargs):
-        if args[0] == "cat-file":
-            return subprocess.CompletedProcess(args, next(present), "", "")
-        return original(repo, *args, **kwargs)
+    def resolve(tree, candidate, **options):
+        return next(present, "")
 
-    monkeypatch.setattr(merge, "_run", run)
+    monkeypatch.setattr(recovery, "_resolve_commit", resolve)
     answer = merge.head_on_remote_branch(repo, "HEAD", branch="main")
     assert answer["on_branch"] is True, answer
     attempts = [json.loads(line) for line in calls.read_text().splitlines()]
