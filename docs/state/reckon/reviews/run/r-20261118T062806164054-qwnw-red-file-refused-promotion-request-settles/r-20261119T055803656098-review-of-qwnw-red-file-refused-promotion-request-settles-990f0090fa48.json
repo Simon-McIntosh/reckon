@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:1327 _settled_state called from failure_obligations",
+    "reckon/crew/obligations.py:5195 failure_obligations call reaching the settlement word",
+    "reckon/crew/obligation_snapshot.py:2159 failure_obligations call reaching the settlement word",
+    "reckon/crew/merge.py:130 project_repository, the checkout resolver the new _landing_checkout wraps"
+  ],
+  "completed_at": "2026-11-19T15:05:00Z",
+  "dispatched_at": "2026-11-19T14:31:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062806164054-qwnw-red-file-refused-promotion-request-settles/manifest.md",
+      "line": 10,
+      "severity": "blocking",
+      "text": "The manifest's tests line carries the literal template string PYTHONPATH=. .venv/bin/python -m pytest-placeholder, which no shell can re-run, and the record has no test_logs, landing, negative_control_log or baseline_suite and after_suite JSON, although the node's done_when requires each cause listed with a verdict and the importer arm recorded as inline JSON with full 40-character revisions. The measurements exist on disk (node-base.log 1 failed 4 passed EXIT=1, node-head.log 5 passed EXIT=0, baseline_suite logs 58 passed EXIT=0, after_suite logs 58 passed EXIT=0, pop-base.log 7 failed 327 passed EXIT=1, pop-head.log 6 failed 328 passed EXIT=1) but nothing in the record points at them, so a promotion receipt cannot be rebuilt from it."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 1211,
+      "severity": "non-blocking",
+      "text": "The fail-closed half of _landing_checkout is exercised by no assertion: the empty-project return at 1204-1205 and the OSError, ValueError and MergeError branch at 1210-1211 that yields the unverified landing have no test in tests/test_refused_promotion_request_settles.py, whose only landed case mounts a real repository, so the docstring's claim at 1202-1207 that a resolution failure settles as unverified rests on reading rather than on a test that reddens."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "The fragment reports 7 failed of 335 at base but pop-base.log's own summary reads 7 failed, 327 passed, a population of 334 that matches pop-head.log's 6 failed, 328 passed; the base figure in the landed evidence record is wrong."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Two production call sites reach the settlement word through failure_obligations at reckon/crew/obligations.py:5195 and reckon/crew/obligation_snapshot.py:2159, and the new resolver wraps merge.project_repository at reckon/crew/merge.py:130.",
+    "diff": "Read commit by commit against 42fe90d0b0: 072fc0976b changes reckon/crew/promotion_requests.py by +27 -3 and one input line in tests/test_refused_promotion_request_settles.py by +2 -1, and 990f0090fa adds the 31-line evidence fragment; no other file changes.",
+    "done_when": "The done_when names the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a verdict, and importer arms as inline JSON; node-head.log and node-base.log carry the green and red pair and pop-base.log and pop-head.log carry both importer arms, but the manifest records neither arm as inline JSON nor any per-cause verdict, and no log line states a partition or SLURM_JOB_ID.",
+    "goal": "The node goal is to make tests/test_refused_promotion_request_settles.py pass in full on the primary branch; reckon/crew/promotion_requests.py:1194-1211 resolves the landing checkout and 1244-1249 asks ancestry there, and node-head.log records 5 passed EXIT=0 at the delivered head 990f0090.",
+    "manifest": "Read in full: it names both commits and the three changed paths, but its tests line is the literal placeholder command PYTHONPATH=. .venv/bin/python -m pytest-placeholder and it carries no test_logs, landing, negative_control_log or suite arms.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the fragment path itself; the delivered diff's three paths are reckon/crew/promotion_requests.py, tests/test_refused_promotion_request_settles.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html, all inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_refused_promotion_request_settles.py pass in full on the primary branch; reckon/crew/promotion_requests.py:1194-1211 resolves the landing checkout and 1244-1249 asks ancestry there, and node-head.log records 5 passed EXIT=0 at 990f0090 against 1 failed 4 passed EXIT=1 at 42fe90d0.\nVERDICT done_when: the done_when names tests/test_refused_promotion_request_settles.py green at head as an all_debug job with SLURM_JOB_ID unset, each cause named with a verdict, and importer arms as inline JSON; the run directory's logs carry the green and red pair and both importer arms, but the manifest records none of that and no log states a partition or SLURM_JOB_ID.\nVERDICT write_paths: the declared scope is reckon, tests and the queued-work-needs-no-workaround evidence paths; the delivered diff is reckon/crew/promotion_requests.py, tests/test_refused_promotion_request_settles.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html, all inside them.\nVERDICT manifest: read; it names both commits and the three changed paths, but its tests line is the literal placeholder PYTHONPATH=. .venv/bin/python -m pytest-placeholder and it carries no test_logs, landing, negative_control_log or suite arms.\nVERDICT diff: read commit by commit against 42fe90d0b0: 072fc0976b changes reckon/crew/promotion_requests.py by +27 -3 and one input line of the test file by +2 -1, 990f0090fa adds the 31-line evidence fragment, and nothing else changed.\nCALL_SITES: reckon/crew/promotion_requests.py:1327, reckon/crew/obligations.py:5195, reckon/crew/obligation_snapshot.py:2159, reckon/crew/merge.py:130\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:1244-1249 now asks ancestry of the project's landing checkout, which is the product rule the red file asserted.\nSCORE evidence: 11\nJUSTIFICATION evidence: the gate logs exist, baseline suite and after suite both 58 passed EXIT=0 and node-head.log 5 passed EXIT=0, but the manifest's tests line is a placeholder and no arm is carried in the record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three paths in the diff lie inside the declared write paths, reckon/crew/promotion_requests.py and tests/test_refused_promotion_request_settles.py and the evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_refused_promotion_request_settles.py:210 reddens as promoted if the record repo assignment at reckon/crew/promotion_requests.py:1249 is removed, but the fabricated-head case that asserted an unverifiable landing was replaced and the failure branch at 1211 has no assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the helper sits beside _settled_state at reckon/crew/promotion_requests.py:1194 with the module's lazy-import idiom and a docstring in the surrounding style.\nSCORE reuse: 19\nJUSTIFICATION reuse: _landing_checkout calls merge.project_repository at reckon/crew/merge.py:130, the owner pending_landing.py:355 already uses, rather than resolving a mount itself.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062806164054-qwnw-red-file-refused-promotion-request-settles/manifest.md:10 blocking: the tests line is a literal pytest-placeholder and the record carries no suite arms, test_logs, landing or per-cause verdict, so promotion cannot rebuild the node's reported gate.\nFINDING reckon/crew/promotion_requests.py:1211 non-blocking: _landing_checkout's empty-project and resolution-failure branch is covered by no assertion, so the unverified-landing claim rests on reading.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-refused-promotion-request-settles.html:18 non-blocking: the base importer arm is reported as 7 failed of 335 while pop-base.log's summary reads 7 failed, 327 passed, a population of 334.",
+  "review_run_id": "r-20261119T055803656098-review-of-qwnw-red-file-refused-promotion-request-settles-990f0090fa48",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "990f0090fa48b6db5ef9eba638923995c5428bfe",
+  "reviewed_run_id": "r-20261118T062806164054-qwnw-red-file-refused-promotion-request-settles",
+  "scores": {
+    "durability": 16,
+    "evidence": 11,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:55:16.562304+00:00",
+  "total": 104
+}
