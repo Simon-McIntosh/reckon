@@ -337,3 +337,41 @@ def test_the_nineteen_november_call_removes_only_the_granted_cache(
     assert (world.shared / "weights.bin").read_text() == "model weights\n"
     assert (world.shared / "evidence" / "record.html").read_text() == "<html></html>\n"
     assert world.home_secret.read_text() == "operator credential\n"
+
+
+def test_the_command_the_dispatch_composes_is_the_read_only_fence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The launch a dispatch builds wraps the backend in the read-only fence.
+
+    ``launch_plan`` is what a dispatch calls, so this asserts the contract on
+    that composition rather than only on the fence helper it delegates to: the
+    harness command sits behind the separator, and the root mount in front of
+    it is the read-only one.
+    """
+    from reckon import _backends
+
+    world = World(tmp_path)
+    world.point_the_fence(monkeypatch)
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend={"launch": "cli", "command": "claude", "sandbox": "worktree-full"},
+        prompt="p",
+        worktree=str(world.worktree),
+        manifest_path=str(world.run / "manifest.md"),
+        writable_directories=[str(world.grant)],
+        fence=True,
+        fence_home=str(world.home),
+    )
+    assert plan.argv[:7] == [
+        "bwrap",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev",
+        "/dev",
+        "--unshare-pid",
+    ]
+    separator = plan.argv.index("--")
+    assert plan.argv[separator + 1] == "claude"
+    assert _bind_index(plan.argv, "--bind", world.grant) > 0
