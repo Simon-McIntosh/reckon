@@ -17,6 +17,17 @@ pytestmark = pytest.mark.arms_watch_producer
 isolated_project = host_tests.isolated_project
 
 
+def _request_payload() -> dict[str, object]:
+    """The one request line a queued dispatch writes for this foreign pair.
+
+    The dispatch names a session its calling process does not own, so the
+    request reaches the calling session's waiting host with the pair unmarked:
+    a host keeps only a pair it owns across its restarts, and the ownership mark
+    is written for that pair alone.
+    """
+    return {"project": "sample", "session": "hosted-session", "owner_checked": False}
+
+
 @pytest.fixture()
 def queued_with_host(
     isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -81,7 +92,7 @@ def queued_with_host(
 def test_queued_request_attaches_before_dispatch_returns(queued_with_host) -> None:
     request, host, _slots, _config, _monkeypatch = queued_with_host
     assert request["phase"] == "queued"
-    assert host.line == b'{"project": "sample", "session": "hosted-session"}'
+    assert json.loads(host.line) == _request_payload()
     assert crew.watch_state("sample", session="hosted-session")["session_attached"]
 
 

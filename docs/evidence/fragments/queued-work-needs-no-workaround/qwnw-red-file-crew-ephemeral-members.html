@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-crew-ephemeral-members — arms</title>
+</head>
+<body>
+<h1 id="qwnw-red-file-crew-ephemeral-members-title">A test file red on the primary branch passes: crew ephemeral members</h1>
+<p id="qwnw-red-file-crew-ephemeral-members-cause">
+One cause, in the test. <code>ledger.register_member</code> is a store-only
+transaction: the roster lives in the run store and no committed
+<code>docs/state/&lt;project&gt;/crew.json</code> is written for it. The case
+snapshotted those bytes as its "roster unchanged" baseline and raised
+<code>FileNotFoundError</code> before reaching any dispatch assertion.
+<strong>Verdict: test wrong</strong> — it encoded the retired committed
+roster, which the code no longer keeps.
+</p>
+<p id="qwnw-red-file-crew-ephemeral-members-repair">
+The snapshot is now the roster read back from the store plus an assertion that
+the retired committed path stays absent; the two "unchanged" checks read the
+store again. No assertion was deleted or weakened: the case still proves two
+unnamed dispatches register no member and compose no session.
+</p>
+<table id="qwnw-red-file-crew-ephemeral-members-arms">
+<caption>Named file, <code>all_debug</code> job, <code>SLURM_JOB_ID</code> unset inside the job</caption>
+<thead>
+<tr><th>Arm</th><th>Revision</th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr id="qwnw-red-file-crew-ephemeral-members-arm-base">
+<td>base</td><td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+<td><code>EXIT=1</code>; <code>FAILED tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session</code> — <code>FileNotFoundError: .../repo/docs/state/proj/crew.json</code></td>
+</tr>
+<tr id="qwnw-red-file-crew-ephemeral-members-arm-head">
+<td>head</td><td><code>0fe1ea662f2b1f2c735c93181b30ab472ee5aa41</code></td>
+<td><code>EXIT=0</code>; <code>1 passed</code></td>
+</tr>
+</tbody>
+</table>
+<p id="qwnw-red-file-crew-ephemeral-members-logs">
+Base log: <code>baseline-named-file.log</code>;
+head log: <code>head-named-file.log</code>, both in the run directory
+<code>~/.config/reckon/crew/runs/r-20261118T063145125197-qwnw-red-file-crew-ephemeral-members/</code>.
+</p>
+</body>
+</html>

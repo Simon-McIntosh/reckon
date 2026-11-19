@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:1640 _repair_review_wait in finish_pending_landings",
+    "reckon/crew/pending_landing.py:1574 dispatch_merge_repair",
+    "reckon/crew/queue_landing.py:1760 dispatch_merge_repair",
+    "reckon/crew/queue_landing.py:1795 dispatch_merge_repair",
+    "reckon/crew/queue_landing.py:2101 dispatch_merge_repair",
+    "reckon/crew/queue_landing.py:2464 dispatch_merge_repair",
+    "reckon/crew_run_commands.py:4892 dispatch_merge_repair",
+    "reckon/crew/recovery_repair_dispatch.py:130 mark_pending_landing_repair"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:50:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "805",
+      "severity": "non-blocking",
+      "text": "non-blocking: the _recorded_review_waiver short-circuit is a third product rule change rather than one of the two causes the node states, so a repaired head is no longer held for review when the delivery's own promotion recorded a waiver; that permanently loosened repair-head review gate is recorded neither in the evidence fragment's two-cause account nor in the manifest's cause list, so the operator's waiver now reaches a merge no review saw without anything saying so."
+    },
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite cites revision 514a0352da, which is neither the delivered head 5725cd514041 nor an ancestor of it, so the recorded revision is not the one being promoted even though the two tested modules are tree-identical across the two."
+    },
+    {
+      "file": "manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the importer arm recorded as inline JSON with full 40-character revisions and neither baseline_suite nor after_suite covers that arm, so the arm survives only in the fragment and the log headers."
+    },
+    {
+      "file": "manifest.md",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's requirement that ruff check and ruff format --check report nothing new on the changed paths is recorded nowhere in the manifest, though a measurement on both changed files at base and head is clean."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read 521683b87c, 1d848fa09c and 5725cd514041 against 42fe90d0b0a46060bafde2490dda7d4002cda478; the two production commits rebuild the promoted pointer only for a first repair round, keep the landing-group refusal, return an already-resumed round instead of re-issuing it, and 5725cd514041 adds the 75-line evidence fragment.",
+    "done_when": "the done_when names the file at head as a job on all_debug with SLURM_JOB_ID unset, a base negative control, an importer arm and a ruff clause; gate-final-1329773.log records 4 passed EXIT=0 at 5725cd514041 and logs/negative-control-base.log records 2 failed EXIT=1 at 42fe90d0ba, while the importer arm is inline JSON in no suite field and the ruff clause is recorded nowhere.",
+    "goal": "the node's goal is that tests/test_a_conflicting_landing_is_repaired.py passes in full at head; reckon/crew/pending_landing.py:571 rebuilds a promoted run's pointer for a conflicting delivery's first repair round and reckon/crew/recovery_repair_dispatch.py:80 returns a round already resumed, and the file reads 4 passed EXIT=0 in an unmutated extract of 5725cd514041.",
+    "manifest": "read manifest.md; status complete, commits 521683b87c 1d848fa09c 5725cd5140, the one-file gate command at line 8, baseline_suite 0 failures at 42fe90d0ba and after_suite 0 failures at 514a0352da.",
+    "write_paths": "the node's declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..5725cd514041 names docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-conflicting-landing-is-repaired.html, reckon/crew/pending_landing.py and reckon/crew/recovery_repair_dispatch.py, all inside them."
+  },
+  "justifications": {
+    "durability": "reinstating each regression reddens the existing file, dropping the resumed return at reckon/crew/recovery_repair_dispatch.py:79 giving 2 failed with record-obligation and removing the waiver hop at reckon/crew/pending_landing.py:805 giving 2 failed with awaiting-review, both EXIT=1.",
+    "evidence": "gate-final-1329773.log records 4 passed EXIT=0 at 5725cd514041 and logs/negative-control-base.log records 2 failed EXIT=1 at base, but manifest.md:13 cites an after_suite revision that is not the reviewed head and no line records the ruff clause.",
+    "fit": "the keyword-only flag documented beside the writer at reckon/crew/pending_landing.py:570 and the private helper beside its reader at :778 match the module's idiom, and no commit body carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "the red file is green at reckon/crew/pending_landing.py:571 and reckon/crew/recovery_repair_dispatch.py:80, but reckon/crew/pending_landing.py:805 adds a cause the node does not state.",
+    "reuse": "a plain read of reckon/crew/promotion.py:2882 and reckon/crew/promotion_checks.py:1393 finds only a writer and a promotion-time check for review_waiver, so reckon/crew/pending_landing.py:778 adds a first reader and reuses _promoted_row at :630.",
+    "scope_discipline": "every diff path sits inside the declared scope, yet reckon/crew/pending_landing.py:805 changes the repair-head review gate the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_conflicting_landing_is_repaired.py passes in full at head; reckon/crew/pending_landing.py:571 rebuilds a promoted run's pointer for a conflicting delivery's first repair round and reckon/crew/recovery_repair_dispatch.py:80 returns a round already resumed, and the file reads 4 passed EXIT=0 in an unmutated extract of 5725cd514041.\nVERDICT done_when: the done_when names the file at head as a job on all_debug with SLURM_JOB_ID unset, a base negative control, an importer arm and a ruff clause; gate-final-1329773.log records 4 passed EXIT=0 at 5725cd514041 and logs/negative-control-base.log records 2 failed EXIT=1 at 42fe90d0ba, while the importer arm is inline JSON in no suite field and the ruff clause is recorded nowhere.\nVERDICT write_paths: the node's declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment; git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..5725cd514041 names docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-conflicting-landing-is-repaired.html, reckon/crew/pending_landing.py and reckon/crew/recovery_repair_dispatch.py, all inside them.\nVERDICT manifest: read manifest.md; status complete, commits 521683b87c 1d848fa09c 5725cd5140, the one-file gate command at line 8, baseline_suite 0 failures at 42fe90d0ba and after_suite 0 failures at 514a0352da.\nVERDICT diff: read 521683b87c, 1d848fa09c and 5725cd514041 against 42fe90d0b0a46060bafde2490dda7d4002cda478; the two production commits rebuild the promoted pointer only for a first repair round, keep the landing-group refusal, return an already-resumed round instead of re-issuing it, and 5725cd514041 adds the 75-line evidence fragment.\nCALL_SITES: reckon/crew/pending_landing.py:1640 _repair_review_wait in finish_pending_landings, reckon/crew/pending_landing.py:1574 dispatch_merge_repair, reckon/crew/queue_landing.py:1760 dispatch_merge_repair, reckon/crew/queue_landing.py:1795 dispatch_merge_repair, reckon/crew/queue_landing.py:2101 dispatch_merge_repair, reckon/crew/queue_landing.py:2464 dispatch_merge_repair, reckon/crew_run_commands.py:4892 dispatch_merge_repair, reckon/crew/recovery_repair_dispatch.py:130 mark_pending_landing_repair\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the red file is green at reckon/crew/pending_landing.py:571 and reckon/crew/recovery_repair_dispatch.py:80, but reckon/crew/pending_landing.py:805 adds a cause the node does not state.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-final-1329773.log records 4 passed EXIT=0 at 5725cd514041 and logs/negative-control-base.log records 2 failed EXIT=1 at base, but manifest.md:13 cites an after_suite revision that is not the reviewed head and no line records the ruff clause.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every diff path sits inside the declared scope, yet reckon/crew/pending_landing.py:805 changes the repair-head review gate the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating each regression reddens the existing file, dropping the resumed return at reckon/crew/recovery_repair_dispatch.py:79 giving 2 failed with record-obligation and removing the waiver hop at reckon/crew/pending_landing.py:805 giving 2 failed with awaiting-review, both EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the keyword-only flag documented beside the writer at reckon/crew/pending_landing.py:570 and the private helper beside its reader at :778 match the module's idiom, and no commit body carries a plan, sprint or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: a plain read of reckon/crew/promotion.py:2882 and reckon/crew/promotion_checks.py:1393 finds only a writer and a promotion-time check for review_waiver, so reckon/crew/pending_landing.py:778 adds a first reader and reuses _promoted_row at :630.\nFINDING reckon/crew/pending_landing.py:805 non-blocking: the _recorded_review_waiver short-circuit is a third product rule change rather than one of the two causes the node states, so a repaired head is no longer held for review when the delivery's own promotion recorded a waiver; that permanently loosened repair-head review gate is recorded neither in the evidence fragment's two-cause account nor in the manifest's cause list, so the operator's waiver now reaches a merge no review saw without anything saying so.\nFINDING manifest.md:13 non-blocking: after_suite cites revision 514a0352da, which is neither the delivered head 5725cd514041 nor an ancestor of it, so the recorded revision is not the one being promoted even though the two tested modules are tree-identical across the two.\nFINDING manifest.md:12 non-blocking: the done_when asks for the importer arm recorded as inline JSON with full 40-character revisions and neither baseline_suite nor after_suite covers that arm, so the arm survives only in the fragment and the log headers.\nFINDING manifest.md:8 non-blocking: the done_when's requirement that ruff check and ruff format --check report nothing new on the changed paths is recorded nowhere in the manifest, though a measurement on both changed files at base and head is clean.",
+  "review_run_id": "r-20261119T052457656375-review-of-qwnw-red-file-a-conflicting-landing-is-repaired-5725cd514041",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "5725cd514041db4271bc291529482a43b869f52d",
+  "reviewed_run_id": "r-20261118T062610570995-qwnw-red-file-a-conflicting-landing-is-repaired",
+  "reviewer_run_id": "r-20261119T052457656375-review-of-qwnw-red-file-a-conflicting-landing-is-repaired-5725cd514041",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:22:21.806736+00:00",
+  "total": 101
+}

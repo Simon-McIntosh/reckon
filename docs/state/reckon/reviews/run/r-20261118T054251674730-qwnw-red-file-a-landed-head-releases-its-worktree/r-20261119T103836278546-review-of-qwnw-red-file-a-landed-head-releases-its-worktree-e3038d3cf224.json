@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6acdaba6c3c678f7508a8b5485e14309f1f6afbe",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:_complete_many (report[\"record_path\"] at 3483)",
+    "reckon/crew_run_commands.py:crew_complete (--land path at 3905)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:41:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the gate file ran 'on the all_debug partition as a job with SLURM_JOB_ID unset', and the manifest's checkpoint repeats it, but both head logs the fragment cites record the arm command as `env PYTHONPATH=. sh -c '...'` with no unset, and reckon/crew/landing_measure.py:906-910 strips SLURM_* only from the submitting environment, so the batch job re-sets SLURM_JOB_ID for the step; the done_when names that condition and a reader cannot re-check it from the log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: both head rows are labelled 'this worktree', but the logs behind them name `# tree: /tmp/mcintos-landing-.../tree` (scoped-gate-1795083905935976050.log, scoped-gate-1795084119278532323.log), and the log list omits the e3038d3 head run the manifest cites, so the fragment overstates the arms' provenance and hides the later revision."
+    }
+  ],
+  "head_log_revision": "e3038d3cf224a577f37af3c48a09e2e8c8adbcaa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the receipt the helper reads is produced by reckon/crew_run_commands.py:_complete_many, which writes the archived record and sets report[\"record_path\"], reached from reckon/crew_run_commands.py:crew_complete (--land); no other runtime site consumes the helper.",
+    "diff": "read both commits against 6acdaba6: aaf074e3 adds _full_report and switches the three cases to it with no assertion edited, and e3038d3 adds only the 84-line evidence fragment; no production file is touched.",
+    "done_when": "the measure requires the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause carrying a test-wrong or product-wrong verdict, no assertion deleted or weakened, an importer arm adding no failure and a recorded negative control; the manifest and the logs supply all of that except the SLURM_JOB_ID-unset clause, which neither head log evidences.",
+    "goal": "the node's goal is to make tests/test_a_landed_head_releases_its_worktree.py pass in full on the primary branch, and the landed head e3038d3 has that file green at 3 passed EXIT=0 in scoped-gate-1795084232218982163.log after aaf074e3 repointed the three cases at the receipt's record_path (tests/test_a_landed_head_releases_its_worktree.py:35).",
+    "manifest": "read; status complete, commits aaf074e3999d9de3afb2b652b5a9a749a6c1c685 and e3038d3cf224a577f37af3c48a09e2e8c8adbcaa, changed_paths the two landed files, the one-file pytest gate, test_logs naming the head, base and two importing-file arms, baseline_suite and after_suite each 0 failures, and the negative control a bare red log path.",
+    "write_paths": "the node was fenced to reckon, tests, the queued-work-needs-no-workaround evidence fragment directory and its figures directory, and the diff touches exactly the named test file and that fragment, both inside the node's declared write paths."
+  },
+  "justifications": {
+    "durability": "the three cases at tests/test_a_landed_head_releases_its_worktree.py:132-140,154-161,175-177 redden at the recorded base arm with KeyError: 'steps' and compare production output against independent git state (_git rev-parse main, the origin ref, the marker on main:reviewed.txt), so reverting the helper to json.loads(result.output) reinstates that KeyError and restoring the old release comparison reddens :161.",
+    "evidence": "the manifest's head and base arms are recorded and real (scoped-gate-1795084232218982163.log \"3 passed in 2.90s\" EXIT=0 at e3038d3; qwnw-red-file-a-landed-head-releases-its-worktree-base.log 3 failed, three KeyError: 'steps', EXIT=1 at 6acdab; baseline_suite-1795084246937822561.log and after_suite-1795084289623259027.log each \"58 passed\" EXIT=0), but the done_when's \"SLURM_JOB_ID unset\" clause is not evidenced by the head log, whose command is env PYTHONPATH=. sh -c '...' with no unset.",
+    "fit": "the helper at tests/test_a_landed_head_releases_its_worktree.py:35 is an underscore-private function with a docstring beside _landed_run, matching the module's own idiom, and its name states what it returns; only the untyped result parameter departs from the module's annotated style.",
+    "goal_fidelity": "the goal is that tests/test_a_landed_head_releases_its_worktree.py pass in full on the primary branch, and tests/test_a_landed_head_releases_its_worktree.py:35 plus :132,:154,:175 read the archived outcome the receipt links, which scoped-gate-1795084232218982163.log measures at e3038d3 as 3 passed EXIT=0.",
+    "reuse": "no owner of reading a verb's archived receipt exists \u2014 a search over tests/helpers/ and reckon/crew/ found only inline Path(json.loads(...)[\"record_path\"]) copies at tests/test_crew_promotion_scope.py:441 and tests/test_a_conflicting_landing_is_repaired.py:140 \u2014 so the helper adds a local read rather than forking a module, and tests/test_a_run_leaves_nothing_behind.py:20 already imports this fixture module.",
+    "scope_discipline": "git diff 6acdaba6c3c678f7508a8b5485e14309f1f6afbe e3038d3cf224a577f37af3c48a09e2e8c8adbcaa lists only tests/test_a_landed_head_releases_its_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html, both inside the node's declared write paths, with no product source touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_a_landed_head_releases_its_worktree.py pass in full on the primary branch, and the landed head e3038d3 has that file green at 3 passed EXIT=0 in scoped-gate-1795084232218982163.log after aaf074e3 repointed the three cases at the receipt's record_path (tests/test_a_landed_head_releases_its_worktree.py:35).\nVERDICT done_when: the measure requires the file green at head as an all_debug job with SLURM_JOB_ID unset, each cause carrying a test-wrong or product-wrong verdict, no assertion deleted or weakened, an importer arm adding no failure and a recorded negative control; the manifest and the logs supply all of that except the SLURM_JOB_ID-unset clause, which neither head log evidences.\nVERDICT write_paths: the node was fenced to reckon, tests, the queued-work-needs-no-workaround evidence fragment directory and its figures directory, and the diff touches exactly tests/test_a_landed_head_releases_its_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html, both inside the node's declared write paths.\nVERDICT manifest: read; status complete, commits aaf074e3999d9de3afb2b652b5a9a749a6c1c685 and e3038d3cf224a577f37af3c48a09e2e8c8adbcaa, changed_paths the two landed files, the one-file pytest gate, test_logs naming the head, base and two importing-file arms, baseline_suite and after_suite each 0 failures, and the negative control a bare red log path at qwnw-red-file-a-landed-head-releases-its-worktree-base.log.\nVERDICT diff: read both commits against 6acdaba6: aaf074e3 adds _full_report and switches the three cases to it with no assertion edited, and e3038d3 adds only the 84-line evidence fragment; no production file is touched.\nCALL_SITES: reckon/crew_run_commands.py:_complete_many (report[\"record_path\"] at 3483), reckon/crew_run_commands.py:crew_complete (--land path at 3905)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal is that tests/test_a_landed_head_releases_its_worktree.py pass in full on the primary branch, and tests/test_a_landed_head_releases_its_worktree.py:35 plus :132,:154,:175 read the archived outcome the receipt links, which scoped-gate-1795084232218982163.log measures at e3038d3 as 3 passed EXIT=0.\nSCORE evidence: 13\nJUSTIFICATION evidence: the manifest's head and base arms are recorded and real (scoped-gate-1795084232218982163.log '3 passed in 2.90s' EXIT=0 at e3038d3; qwnw-red-file-a-landed-head-releases-its-worktree-base.log 3 failed, three KeyError: 'steps', EXIT=1 at 6acdab; both suite arms '58 passed' EXIT=0), but the done_when's SLURM_JOB_ID-unset clause is not evidenced by the head log, whose command is env PYTHONPATH=. sh -c '...' with no unset.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 6acdaba6c3c678f7508a8b5485e14309f1f6afbe e3038d3cf224a577f37af3c48a09e2e8c8adbcaa lists only tests/test_a_landed_head_releases_its_worktree.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html, both inside the node's declared write paths, with no product source touched.\nSCORE durability: 17\nJUSTIFICATION durability: the three cases at tests/test_a_landed_head_releases_its_worktree.py:132-140,154-161,175-177 redden at the recorded base arm with KeyError: 'steps' and compare production output against independent git state, so reverting the helper to json.loads(result.output) reinstates that KeyError and restoring the old release comparison reddens :161.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at tests/test_a_landed_head_releases_its_worktree.py:35 is an underscore-private function with a docstring stating what it returns beside _landed_run, matching the module's idiom; only the untyped result parameter departs from the module's annotated style.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner of reading a verb's archived receipt exists \u2014 a search over tests/helpers/ and reckon/crew/ found only inline Path(json.loads(...)[\"record_path\"]) copies at tests/test_crew_promotion_scope.py:441 and tests/test_a_conflicting_landing_is_repaired.py:140 \u2014 so the helper is a local read rather than a fork.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html:37 non-blocking: the fragment states the gate file ran on the all_debug partition as a job with SLURM_JOB_ID unset, and the manifest repeats it, but both head logs the fragment cites record the arm command as env PYTHONPATH=. sh -c '...' with no unset, and the gate runner strips SLURM_* only from the submitting environment, so the batch job re-sets SLURM_JOB_ID for the step; the done_when names that condition and a reader cannot re-check it from the log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-landed-head-releases-its-worktree.html:45 non-blocking: both head rows are labelled 'this worktree', but the logs behind them name a /tmp/mcintos-landing-.../tree, and the log list omits the e3038d3 head run the manifest cites, so the fragment overstates the arms' provenance and hides the later revision.\n",
+  "review_run_id": "r-20261119T103836278546-review-of-qwnw-red-file-a-landed-head-releases-its-worktree-e3038d3cf224",
+  "reviewed_base_sha": "6acdaba6c3c678f7508a8b5485e14309f1f6afbe",
+  "reviewed_head_sha": "e3038d3cf224a577f37af3c48a09e2e8c8adbcaa",
+  "reviewed_run_id": "r-20261118T054251674730-qwnw-red-file-a-landed-head-releases-its-worktree",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T103836278546-review-of-qwnw-red-file-a-landed-head-releases-its-worktree-e3038d3cf224"
+  },
+  "reviewer_run_id": "r-20261119T103836278546-review-of-qwnw-red-file-a-landed-head-releases-its-worktree-e3038d3cf224",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:09:00.279071+00:00",
+  "total": 105
+}

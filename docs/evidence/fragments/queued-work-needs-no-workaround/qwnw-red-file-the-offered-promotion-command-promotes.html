@@ -1,0 +1,95 @@
+<section id="qwnw-red-file-the-offered-promotion-command-promotes-landing">
+  <h2>The offered promotion command promotes the run it names</h2>
+
+  <p><strong>What was wrong.</strong> <code>tests/test_the_offered_promotion_command_promotes.py</code>
+  failed both cases at <code>35fb9f3ae769</code>. The recovery classifier read a
+  promotable run and offered <code>reckon crew observe --run &lt;id&gt;</code>
+  in both: for a read-only run whose only recorded commit is its dispatch base,
+  and for a run citing a commit of its own. The module's original repair had
+  offered the commitless declaration for the first and the citation list for the
+  second; two later narrowings had withdrawn the offer instead.
+  <code>_promotion_command</code> read "this run changed nothing" from the
+  manifest's <code>changed_paths</code>, so a read-only run that named the report
+  it delivered outside the repository fell out of the commitless branch and was
+  left with nothing to run. And a run with a commit of its own lost its citation
+  list entirely when its manifest recorded no suite arm at the head, because the
+  same composer declined to offer anything rather than offer it under a verdict
+  its evidence supported.</p>
+
+  <p><strong>What changed</strong> in
+  <code>reckon/crew/recovery_classification.py</code>. The commitless case is now
+  decided by the worktree, which is what promotion itself reads: a worktree still
+  on the run's dispatch base with no changed path inside the repository takes the
+  commitless declaration, and a run whose tree moved past the base keeps no offer
+  rather than one citing the base. The declaration has two readers: the
+  classifier's action, shown to a coordinator, leaves the reason and the outcome
+  as <code>&lt;why the run produced no commit&gt;</code> and
+  <code>&lt;what the run produced&gt;</code> placeholders filled by the caller;
+  an obligation's command is replayed verbatim by the tool surface, which carries
+  no placeholder, so it states the reason the worktree measurement settles
+  (<em>the run changed no repository file; its worktree still sits on its
+  dispatch base</em>) and the outcome the manifest's <code>landing</code> or
+  <code>checkpoint</code> holds. A citation offer states the verdict its evidence
+  supports: <code>passed</code> when the manifest's after-suite arm measured the
+  current head, <code>not-run</code> otherwise, and the citation list is kept in
+  both.</p>
+
+  <h3 id="qwnw-red-file-the-offered-promotion-command-promotes-arms">Measured</h3>
+
+  <table id="qwnw-red-file-the-offered-promotion-command-promotes-table">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm</td>
+        <td><code>35fb9f3ae769</code>, extraction</td>
+        <td>2 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, gate head arm (all_debug job)</td>
+        <td><code>1db4c3d011</code>, extracted head tree</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the importer arm, base</td>
+        <td><code>35fb9f3ae769</code>, extraction</td>
+        <td>910 passed, 29 failed, 10 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>the importer arm, head</td>
+        <td><code>1db4c3d011</code>, working tree</td>
+        <td>911 passed, 28 failed, 10 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>the declared suite, baseline arm (all_debug job)</td>
+        <td><code>35fb9f3ae769</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm (all_debug job)</td>
+        <td><code>1db4c3d011</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The importer arms run every file under <code>tests/</code> that names
+  <code>recovery_classification</code>, the module this node changed — the same
+  file list at both revisions, so the delta is the source change rather than the
+  test set.</p>
+
+  <h3 id="qwnw-red-file-the-offered-promotion-command-promotes-control">Negative control</h3>
+
+  <p>At <code>35fb9f3ae769</code> both cases fail on the offer's shape rather than
+  on the CLI's refusal, which is the defect this node repairs:</p>
+
+  <pre><code>FAILED tests/test_the_offered_promotion_command_promotes.py::test_the_offered_command_for_a_read_only_run_promotes_it - AssertionError: assert '--gate not-run' in 'reckon crew observe --run r-20261004T040000000000-read-only-census'
+FAILED tests/test_the_offered_promotion_command_promotes.py::test_a_run_with_commits_beyond_its_base_still_gets_its_commit_list - AssertionError: assert '--commit &lt;head&gt;' in 'reckon crew observe --run r-20261004T040000000001-committing-census'
+2 failed in 2.00s
+EXIT=1</code></pre>
+
+  <p>The failures report <code>crew observe</code> where the read-only run owed
+  <code>--gate not-run</code> and where the committing run owed
+  <code>--commit &lt;head&gt;</code>, so the base arm proves the offer was
+  withdrawn rather than malformed. The head arm runs the same file at the
+  committed repair and reports <code>2 passed</code>; no assertion in the file was
+  edited, deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-the-offered-promotion-command-promotes-scope">Scope</h3>
+
+  <p>One product file changes. The declared suite at both revisions reports no
+  failure, and the importer arm adds no failure: the 38 failure ids it reports at head are all reported at base too, and one case that fails at base passes at head. A pre-existing red case
+  outside this file, <code>tests/test_crew_tool_carries_the_write_verbs.py::test_a_commitless_promotion_keeps_its_waiver_and_outcome</code>,
+  fails identically at both revisions (it composes the offer from a record with no
+  worktree and no manifest, which no offer can name a commit for) and is reported
+  rather than repaired here.</p>
+</section>

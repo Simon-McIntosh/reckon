@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4d464485b8d773934c39db59a4ba4d43e8648a97",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/routing.py:3465 reap_idle_session_members",
+    "reckon/crew/promotion_records.py:2098 _retire_disposable_identity",
+    "reckon/ledger.py:4848 record_hold_checks",
+    "reckon/ledger.py:4945 holds",
+    "reckon/ledger.py:3465 members",
+    "reckon/ledger.py:2638 write_members"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:42:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: every element id in the added fragment is the truncated stem qwnw-red-file-the-ledger-fold rather than the node id qwnw-red-file-the-ledger-writer-refuses-a-fold the dispatch requires, so a composition check keyed on the node id prefix does not see title, base, head, ids, causes or arms as this node's anchors, and two fragments could collide on that stem unnoticed."
+    }
+  ],
+  "head_log_revision": "e35f665c9d5063fa2bf50b32f5273a7f71b503cb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the changed assertions against reckon/crew/routing.py:3465 reap_idle_session_members, reckon/crew/promotion_records.py:2098 _retire_disposable_identity, reckon/ledger.py:4848 record_hold_checks and reckon/ledger.py:4945 holds, each resolving the store through reckon/ledger.py:2606 load_auxiliary.",
+    "diff": "read commit by commit against the base; 253c17df56 moves the roster seed and the hold read onto ledger.load_auxiliary, write_members, members and holds while keeping every aggregate assertion and adding stored holds empty, and e35f665c9d5063fa2bf50b32f5273a7f71b503cb adds the 24-line evidence fragment with the base measure, three base failing ids and the head measure.",
+    "done_when": "read the evidence fence in the run's prompt.txt; it names a head gate as an all_debug job, the base run and its failing ids logged beside the head run in the node fragment, an arm pair in inline JSON at 40-character revisions, and clean ruff on the changed paths; the manifest records the gate, the base control and both arms, the gained commit supplies the fragment the previous review found missing, and no ruff result is recorded.",
+    "goal": "read the source node goal, a full pass of tests/test_the_ledger_writer_refuses_a_fold.py on the primary branch; scoped-gate-1795049958448411911.log records 10 passed EXIT=0 at 253c17df56, and the gained commit e35f665c9d5063fa2bf50b32f5273a7f71b503cb changes docs only.",
+    "manifest": "read manifest.md in the reviewed run directory; it states status complete, commits 253c17df56 and e35f665c9d, the gate log at 10 passed EXIT=0, logs/base-run.txt at 3 failed, 7 passed EXIT=1, and both suite arms with exit_status 0 and failure_count 0.",
+    "write_paths": "read the declared paths, reckon, tests, the fragment directory and file, and a figures directory; git diff 253c17df56..e35f665c9d touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html, inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_writer_refuses_a_fold.py:199-200 fails if the hold transition folds holds back into the aggregate and :276 and :303 fail if the reap or the retirement stops removing its roster row from the store, each preceded by a seed visible check at :271 and :290 so an unreachable store reddens instead of passing, and the gained docs commit adds no assertion.",
+    "evidence": "the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html:11-13 records the base run 3 failed, 7 passed, EXIT=1 at 4d464485b8 beside the head run 10 passed, EXIT=0 at 253c17df56, and both arm logs end EXIT=0, but no ruff result is recorded and the gate's .scheduler receipt is zero bytes so the all_debug condition rests on the log header host line alone.",
+    "fit": "the fragment follows the sibling h1, p and table idiom of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-brief-points-rather-than-quotes.html:8-34 but its element ids at :9-19 truncate the node id.",
+    "goal_fidelity": "the source node goal is a full pass of tests/test_the_ledger_writer_refuses_a_fold.py, and scoped-gate-1795049958448411911.log records 10 passed EXIT=0 at 253c17df56, which the gained docs commit leaves unchanged.",
+    "reuse": "the gained commit adds no function, class or module, and the fragment format is the one docs/evidence/fragments/queued-work-needs-no-workaround already uses; the search over that directory and reckon/evidence.py found no owner such a document would fork.",
+    "scope_discipline": "git diff 253c17df56..e35f665c9d lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html, inside the node's declared fragment path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node goal, a full pass of tests/test_the_ledger_writer_refuses_a_fold.py on the primary branch; scoped-gate-1795049958448411911.log records 10 passed EXIT=0 at 253c17df56, and the gained commit e35f665c9d5063fa2bf50b32f5273a7f71b503cb changes docs only.\nVERDICT done_when: read the evidence fence in the run's prompt.txt; it names a head gate as an all_debug job, the base run and its failing ids logged beside the head run in the node fragment, an arm pair in inline JSON at 40-character revisions, and clean ruff on the changed paths; the base and head runs are now in the fragment, and no ruff result is recorded.\nVERDICT write_paths: read the declared paths; the gained commit e35f665c9d touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html, inside them.\nVERDICT manifest: read manifest.md in the reviewed run directory; it states status complete, the two commits, the gate log at 10 passed EXIT=0, the base control at 3 failed, 7 passed EXIT=1, and both arms at exit_status 0.\nVERDICT diff: read commit by commit against the base; 253c17df56 moves the roster seed and hold read to the run store, and e35f665c9d adds the 24-line evidence fragment with the base measure, three base failing ids and the head measure.\nCALL_SITES: reckon/crew/routing.py:3465 reap_idle_session_members, reckon/crew/promotion_records.py:2098 _retire_disposable_identity, reckon/ledger.py:4848 record_hold_checks, reckon/ledger.py:4945 holds, reckon/ledger.py:3465 members, reckon/ledger.py:2638 write_members\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scoped-gate-1795049958448411911.log records 10 passed EXIT=0 at 253c17df56, which the gained docs commit leaves unchanged.\nSCORE evidence: 16\nJUSTIFICATION evidence: the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html:11-13 records the base run beside the head run, but no ruff result is recorded and the gate scheduler receipt is empty.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 253c17df56..e35f665c9d lists only the node fragment file, inside the declared path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_ledger_writer_refuses_a_fold.py:199-200, :276 and :303 fail if the hold, reap or retirement transitions leave the run store.\nSCORE fit: 15\nJUSTIFICATION fit: the fragment at :9-19 truncates the node id in its element ids while siblings such as qwnw-red-file-a-brief-points-rather-than-quotes.html:8 use the full node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition and the fragment format is the corpus format; the search over docs/evidence/fragments/queued-work-needs-no-workaround and reckon/evidence.py found no owner to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-ledger-writer-refuses-a-fold.html:9 non-blocking: every element id is the truncated stem qwnw-red-file-the-ledger-fold rather than the node id, so a composition check keyed on the node id prefix does not see these anchors as this node's.",
+  "review_run_id": "r-20261119T112402092412-review-of-qwnw-red-file-the-ledger-writer-refuses-a-fold-e35f665c9d50",
+  "reviewed_base_sha": "253c17df56c062d34f941de6147c9e29c82f47a9",
+  "reviewed_head_sha": "e35f665c9d5063fa2bf50b32f5273a7f71b503cb",
+  "reviewed_run_id": "r-20261118T054115216792-qwnw-red-file-the-ledger-writer-refuses-a-fold",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T112402092412-review-of-qwnw-red-file-the-ledger-writer-refuses-a-fold-e35f665c9d50"
+  },
+  "reviewer_run_id": "r-20261119T112402092412-review-of-qwnw-red-file-the-ledger-writer-refuses-a-fold-e35f665c9d50",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:10:45.392508+00:00",
+  "total": 108
+}

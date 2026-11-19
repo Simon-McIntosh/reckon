@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/ledger.py:4266 read_records",
+    "reckon/ledger.py:3713 _complete_store_from_ledger",
+    "reckon/roadmap.py:1936",
+    "reckon/mcp_views.py:4911",
+    "reckon/mcp_views.py:4942",
+    "reckon/crew/plan_review.py:4305"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:40:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-activity-read-costs-what-was-active.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "the fragment states the head gate ran as an all_debug job with SLURM_JOB_ID unset, but no artefact records that partition or that variable: the gate log header names only revision, host, tree and command and its .scheduler sibling is empty, so that clause of the done_when is claimed rather than evidenced; the recorded run does land on compute host 98dci4-clu-3144 with its log on shared storage."
+    }
+  ],
+  "head_log_revision": "0286810fff4e70ab26dc73860206993cb592f406",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the two direct callers in reckon/ledger.py and the runtime readers reaching them, listed on the CALL_SITES line.",
+    "diff": "read commit by commit against 5417b373; 0286810fff adds reckon/run_store.py:902 stored_run_exists and switches reckon/ledger.py:3713 and :4266 to it, and 3633c3b2 lands the 91-line evidence fragment.",
+    "done_when": "the done_when asks for a base run first, the file passing at head, both suite arms as inline JSON with full 40-character revisions and a negative control; the manifest records base 5417b373 4 failed 1 passed EXIT=1 and head 0286810fff 5 passed EXIT=0, with both suite arms 58 passed EXIT=0.",
+    "goal": "the node's goal is that tests/test_an_activity_read_costs_what_was_active.py passes in full; reckon/run_store.py:902 adds stored_run_exists and reckon/ledger.py:4266 asks it for the membership boolean, and the file reads 5 passed EXIT=0 at the head gate.",
+    "manifest": "read; it names the two causes with their verdicts, the base and head arms with revisions, both suite arms with zero failures, and the product control that makes the row budget at tests/test_an_activity_read_costs_what_was_active.py:199 fire on the base product tree.",
+    "write_paths": "the declared write paths are reckon, tests and the slug's evidence fragment, and the four paths in the diff sit inside them."
+  },
+  "justifications": {
+    "durability": "restoring the base probe at reckon/ledger.py:4266 reddens tests/test_an_activity_read_costs_what_was_active.py:199 with 20,101 rows against a 150-row budget, as logs/product-control.log records.",
+    "evidence": "scoped-gate-1795049811700474600.log records 5 passed EXIT=0 at 0286810fff and logs/base-run-tests-test_an_activity_read_costs_what_was_active.log records 4 failed 1 passed EXIT=1 at 5417b373, leaving the all_debug and SLURM_JOB_ID clause of the done_when as the one part no artefact shows.",
+    "fit": "reckon/run_store.py:902 repeats the open, refuse-and-attach preamble the module already uses at reckon/run_store.py:868 and reckon/run_store.py:945, and the helper name sits beside stored_run_rows with no plan, ticket or attribution text.",
+    "goal_fidelity": "reckon/run_store.py:902 adds stored_run_exists and reckon/ledger.py:4266 asks it for the membership boolean, so the activity read costs the active window and the file passes in full.",
+    "reuse": "reckon/run_store.py:902 reuses _open_readonly, _refuse_owed_migration and _read_attached_tables rather than opening sqlite itself, and no other run_store entry answers a membership boolean.",
+    "scope_discipline": "git diff 5417b373..3633c3b2 touches four paths, every one inside reckon, tests or the slug's declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_an_activity_read_costs_what_was_active.py passes in full; reckon/run_store.py:902 adds stored_run_exists and reckon/ledger.py:4266 asks it for the membership boolean, and the file reads 5 passed EXIT=0 at the head gate.\nVERDICT done_when: the done_when asks for a base run first, the file passing at head, both suite arms as inline JSON with full 40-character revisions and a negative control; the manifest records base 5417b373 4 failed 1 passed EXIT=1 and head 0286810fff 5 passed EXIT=0, with both suite arms 58 passed EXIT=0.\nVERDICT write_paths: the declared write paths are reckon, tests and the slug's evidence fragment, and the four paths in the diff sit inside them.\nVERDICT manifest: read; it names the two causes with their verdicts, the base and head arms with revisions, both suite arms with zero failures, and the product control that makes the row budget at tests/test_an_activity_read_costs_what_was_active.py:199 fire on the base product tree.\nVERDICT diff: read commit by commit against 5417b373; 0286810fff adds reckon/run_store.py:902 stored_run_exists and switches reckon/ledger.py:3713 and :4266 to it, and 3633c3b2 lands the 91-line evidence fragment.\nCALL_SITES: reckon/ledger.py:4266 read_records, reckon/ledger.py:3713 _complete_store_from_ledger, reckon/roadmap.py:1936, reckon/mcp_views.py:4911, reckon/mcp_views.py:4942, reckon/crew/plan_review.py:4305\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:902 adds stored_run_exists and reckon/ledger.py:4266 asks it for the membership boolean, so the activity read costs the active window and the file passes in full.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795049811700474600.log records 5 passed EXIT=0 at 0286810fff and logs/base-run-tests-test_an_activity_read_costs_what_was_active.log records 4 failed 1 passed EXIT=1 at 5417b373, leaving the all_debug and SLURM_JOB_ID clause of the done_when as the one part no artefact shows.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 5417b373..3633c3b2 touches four paths, every one inside reckon, tests or the slug's declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the base probe at reckon/ledger.py:4266 reddens tests/test_an_activity_read_costs_what_was_active.py:199 with 20,101 rows against a 150-row budget, as logs/product-control.log records.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/run_store.py:902 repeats the open, refuse-and-attach preamble the module already uses at reckon/run_store.py:868 and reckon/run_store.py:945, and the helper name sits beside stored_run_rows with no plan, ticket or attribution text.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/run_store.py:902 reuses _open_readonly, _refuse_owed_migration and _read_attached_tables rather than opening sqlite itself, and no other run_store entry answers a membership boolean.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-activity-read-costs-what-was-active.html:34 non-blocking: the fragment states the head gate ran as an all_debug job with SLURM_JOB_ID unset, but no artefact records that partition or that variable: the gate log header names only revision, host, tree and command and its .scheduler sibling is empty, so that clause of the done_when is claimed rather than evidenced; the recorded run does land on compute host 98dci4-clu-3144 with its log on shared storage.",
+  "review_run_id": "r-20261119T021009982772-review-of-qwnw-red-file-an-activity-read-costs-what-was-active-3633c3b23fc7",
+  "reviewed_base_sha": "5417b373ff9230f07c1c8f403632835808fffc15",
+  "reviewed_head_sha": "3633c3b23fc7b21429cd746c76786548f7aee09b",
+  "reviewed_run_id": "r-20261118T054112767900-qwnw-red-file-an-activity-read-costs-what-was-active",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T021009982772-review-of-qwnw-red-file-an-activity-read-costs-what-was-active-3633c3b23fc7"
+  },
+  "reviewer_run_id": "r-20261119T021009982772-review-of-qwnw-red-file-an-activity-read-costs-what-was-active-3633c3b23fc7",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:09:21.778540+00:00",
+  "total": 108
+}

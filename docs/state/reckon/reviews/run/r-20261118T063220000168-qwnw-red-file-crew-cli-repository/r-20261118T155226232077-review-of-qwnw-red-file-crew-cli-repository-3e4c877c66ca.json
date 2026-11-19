@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1581",
+    "reckon/crew_dispatch_commands.py:303"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:02:49Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-crew-cli-repository-3e4c877c66ca",
+      "recorded_at": "2026-11-19T17:47:16.479482+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-cli-repository-head-revision-pass.log",
+      "line": 1,
+      "severity": "non-blocking: the pass log's header revision is 606016915, one commit behind the reviewed head",
+      "text": "The green arm names revision 606016915 while the reviewed head is 3e4c877c; 3e4c877c touches only the two evidence logs, so the measured tree is identical for the test file, but a reader comparing the record's reviewed_head_sha to the gate log's header sees a revision the review did not land at and cannot tell from the log alone that the delta is log-only."
+    }
+  ],
+  "notes": "Scores are independent per dimension. Evidence is short of 20 because the green arm's header names 606016915 rather than 3e4c877c (recorded as the finding) and the done_when's 'on the primary branch' is measured in the worktree, with the post-merge measurement belonging to a separate test node. Durability: the added assertions are independent of test-supplied input \u2014 'created run' is the production string at reckon/crew/dispatching/preparation.py:1581, so moving that notice back to stdout reddens assert \"created run\" in result.stderr and json.loads(result.stdout) alike; neither assertion compares a value against the fixture variable the test itself passed in, and no assertion was deleted or weakened (the exit-code assertion on result.output is unchanged). Reuse: the diff adds no function, class or module \u2014 only a docstring paragraph and two assertion lines \u2014 so there is no capability to fork; the search over tests/ found the same stderr-notice assertion in tests/test_test_watchers_are_reaped.py:172, and the added line follows it with a shorter substring. Scope: 3 paths, 93 changed lines, none outside the declared paths. The base arm ran in a scratch extraction under /tmp/reckon-crew-scratch, whose header records cwd and module.__file__ as the record schema asks, and its tree is named beside the head log in the delivered fragment directory. Status parsed: all five verdicts plus the CALL_SITES line were emitted and all six dimensions scored.",
+  "project": "reckon",
+  "review_run_id": "r-20261118T155226232077-review-of-qwnw-red-file-crew-cli-repository-3e4c877c66ca",
+  "reviewed_base_sha": "0d0e1c9410b13aa07d18ef9884ec2a1aeb5cf385",
+  "reviewed_commits": [
+    "606016915bd140122496bedb9033bebd144c7a21",
+    "3e4c877c66ca7e8357427db593d27b29fa0e88b2"
+  ],
+  "reviewed_head_sha": "3e4c877c66ca7e8357427db593d27b29fa0e88b2",
+  "reviewed_node": "qwnw-red-file-crew-cli-repository",
+  "reviewed_run_id": "r-20261118T063220000168-qwnw-red-file-crew-cli-repository",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:25:45.124655+00:00",
+  "total": 110,
+  "verdicts": {
+    "call_sites": "Verified the change against the two production sites the assertion now binds: reckon/crew/dispatching/preparation.py:1581 prints 'reckon: created run {run_id}' to sys.stderr under the comment at :1580 that stdout stays the command's final JSON document, and reckon/crew_dispatch_commands.py:303-306 emits that one document through click.echo(json.dumps) to the payload stream.",
+    "diff": "Read commit by commit from 0d0e1c94 to 3e4c877c: 606016915b replaces json.loads(result.output) with json.loads(result.stdout) and adds assert \"created run\" in result.stderr in tests/test_crew_cli_repository.py plus a docstring paragraph stating the stdout/stderr split, and 3e4c877c adds only the two evidence logs under the plan's fragment directory.",
+    "done_when": "The done_when is the named file passing in full; the reviewed manifest records the literal gate command, the head log at revision 606016915 with '1 passed in 4.04s', SLURM_JOB_ID 1327025 and EXIT=0, the base log at 0d0e1c94 with '1 failed in 3.70s' and EXIT=1, and the two harness suite arms at '58 passed' each, so the measure the done_when names is measured green at the delivered tree.",
+    "goal": "The node goal is 'Make tests/test_crew_cli_repository.py pass in full on the primary branch'; the delivered diff changes two assertion lines at tests/test_crew_cli_repository.py:162-163, swapping the mixed-stream parse for result.stdout plus a stderr notice assertion, and the head arm of the named file reports '1 passed in 4.04s' EXIT=0 against the base arm's '1 failed in 3.70s' EXIT=1, so the one case in that file now passes.",
+    "manifest": "Read the reviewed run's manifest.md: status complete, commits 606016915bd1 and 3e4c877c66ca, the literal gate command 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_cli_repository.py', three cited logs plus the negative-control log, and baseline_suite/after_suite rows both completed:true with failure_count 0 and empty failure_ids.",
+    "write_paths": "The declared paths are reckon, tests and the plan's evidence fragment directory \u2014 read from the reviewed run's manifest.md; the delivered diff touches exactly tests/test_crew_cli_repository.py and two .log files under docs/evidence/fragments/queued-work-needs-no-workaround/, all inside them, with no path outside."
+  }
+}

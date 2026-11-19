@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-discard-never-reads-promoted-db0350b2af72",
+      "recorded_at": "2026-11-19T15:54:31.411496+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-19T15:09:04Z",
+  "findings": [
+    {
+      "file": "tests/test_a_discard_never_reads_promoted.py",
+      "line": 70,
+      "severity": "non-blocking",
+      "text": "_landed_repository duplicates tests/test_crew_discard_reads_discarded.py:39 line for line, and _record_ledger_row at :100 duplicates that file's :101, so a landed-checkout fixture now has two owners and a change to either git setup must be made twice; tests/helpers/landing_repository.py:1 states the repository's rule that a fixture a second test builds lives in helpers rather than in a copy."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "The paragraph reports both arms as 'a job on all_debug', but each quoted log header names only a host, no job id or partition, and the empty .scheduler sidecars beside them record nothing, so the plan's 'as a job on all_debug' clause rests on prose rather than on a recorded fact."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The diff defines no production code, so no runtime module reaches it; the test drives recovery.fleet_transitions, whose landing word is decided in reckon/crew/recovery_watch.py:2444 _ledger_landing_word through reckon/crew/recovery_classification.py:1185 _promoted_awaiting_merge and :1146 _delivered_head.",
+    "diff": "Read commit by commit against 5b0a1f537ef9bbca90907bd16f663732db844fb0: 0b6e221a93 imports tests.helpers.git, makes _blocked_pointer take a repo, adds _landed_repository and gives _record_ledger_row a repo and head, leaving the assertion unchanged; db0350b2af adds the 20-line evidence fragment quoting both receipts.",
+    "done_when": "Section 29 asks the named file green at head as an all_debug job, each cause stated with its product-or-test verdict, an importer arm adding no failure, and the base run logged beside the head run with its failing ids; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html:3-20 carries both receipts, the manifest names the single cause as test wrong, and adjacent-arm/base.log and adjacent-arm/head.log both read 6 passed EXIT=0 at 5b0a1f53 and db0350b2, but no log or sidecar names the partition or a job id, so the 'as a job on all_debug' clause rests on prose.",
+    "goal": "The node goal is 'Make tests/test_a_discard_never_reads_promoted.py pass in full on the primary branch'; tests/test_a_discard_never_reads_promoted.py:96 builds the landed checkout the one failing case needs and scoped-gate-1795045873148649136.log records 4 passed EXIT=0 at 0b6e221a9362b625be11c3d250af9340263e4889, so the named file is green at the promoted head and reaches the head only at promotion.",
+    "manifest": "Read in full: it names both commits (0b6e221a93, db0350b2af), the head gate's 4 passed EXIT=0, the base arm's 1 failed / 3 passed EXIT=1 with the id test_a_recorded_promotion_reads_promoted, both suite arms at 58 passed EXIT=0 with empty failure ids, the adjacent arms at 6 passed EXIT=0 on each arm, and one cause with the verdict test wrong; its outside_scope names three same-cause failures in two files belonging to other nodes.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-a-discard-never-reads-promoted.html and a docs/figures path; the delivered diff changes only tests/test_a_discard_never_reads_promoted.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html, both inside them, and the reckon and figures paths went unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is 'Make tests/test_a_discard_never_reads_promoted.py pass in full on the primary branch'; tests/test_a_discard_never_reads_promoted.py:96 builds the landed checkout the one failing case needs and scoped-gate-1795045873148649136.log records 4 passed EXIT=0 at 0b6e221a9362b625be11c3d250af9340263e4889, so the named file is green at the promoted head and reaches the head only at promotion.\nVERDICT done_when: Section 29 asks the named file green at head as an all_debug job, each cause stated with its product-or-test verdict, an importer arm adding no failure, and the base run logged beside the head run with its failing ids; docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html:3-20 carries both receipts, the manifest names the single cause as test wrong, and adjacent-arm/base.log and adjacent-arm/head.log both read 6 passed EXIT=0 at 5b0a1f53 and db0350b2, but no log or sidecar names the partition or a job id, so the 'as a job on all_debug' clause rests on prose.\nVERDICT write_paths: The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-a-discard-never-reads-promoted.html and a docs/figures path; the delivered diff changes only tests/test_a_discard_never_reads_promoted.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html, both inside them, and the reckon and figures paths went unused.\nVERDICT manifest: Read in full: it names both commits (0b6e221a93, db0350b2af), the head gate's 4 passed EXIT=0, the base arm's 1 failed / 3 passed EXIT=1 with the id test_a_recorded_promotion_reads_promoted, both suite arms at 58 passed EXIT=0 with empty failure ids, the adjacent arms at 6 passed EXIT=0 on each arm, and one cause with the verdict test wrong; its outside_scope names three same-cause failures in two files belonging to other nodes.\nVERDICT diff: Read commit by commit against 5b0a1f537ef9bbca90907bd16f663732db844fb0: 0b6e221a93 imports tests.helpers.git, makes _blocked_pointer take a repo, adds _landed_repository and gives _record_ledger_row a repo and head, leaving the assertion unchanged; db0350b2af adds the 20-line evidence fragment quoting both receipts.\nCALL_SITES: reckon/crew/recovery_watch.py:_ledger_landing_word, reckon/crew/recovery_classification.py:_promoted_awaiting_merge, reckon/crew/recovery_classification.py:_delivered_head\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_discard_never_reads_promoted.py:146 asserts folded[0][2] == \"promoted\" for a row whose head _landed_repository created on the checkout's main branch.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795045873148649136.log lines 5-6 record 4 passed EXIT=0 at revision 0b6e221a93 with base-arm/base-arm.log's 1 failed / 3 passed EXIT=1 beside it, though no log names the partition or a job id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 5b0a1f53..db0350b2 changes only tests/test_a_discard_never_reads_promoted.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html, both declared.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the pre-repair row {\"run_id\": \"r-promoted\", \"commits\": [\"HEAD\"]} at tests/test_a_discard_never_reads_promoted.py:107 reddens the case exactly as base-arm/base-arm.log shows (assert 'complete' == 'promoted'), while the fail-closed direction lives at tests/test_a_promoted_run_is_not_landed_until_merged.py:131 rather than here.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_discard_never_reads_promoted.py:26 imports tests.helpers.git as _git, the form 20 other test modules use, and the added helpers carry the reason their fixture is shaped that way.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_discard_never_reads_promoted.py:70 _landed_repository is a copy of tests/test_crew_discard_reads_discarded.py:39 rather than a shared helper, although tests/helpers/landing_repository.py:1 is the stated home for a fixture a second test builds.\nFINDING tests/test_a_discard_never_reads_promoted.py:70 non-blocking: _landed_repository duplicates tests/test_crew_discard_reads_discarded.py:39 line for line, and _record_ledger_row at :100 duplicates that file's :101, so a landed-checkout fixture now has two owners and a change to either git setup must be made twice; tests/helpers/landing_repository.py:1 states the repository's rule that a fixture a second test builds lives in helpers rather than in a copy.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-discard-never-reads-promoted.html:3 non-blocking: The paragraph reports both arms as 'a job on all_debug', but each quoted log header names only a host, no job id or partition, and the empty .scheduler sidecars beside them record nothing, so the plan's 'as a job on all_debug' clause rests on prose rather than on a recorded fact.",
+  "review_run_id": "r-20261119T001023748605-review-of-qwnw-red-file-a-discard-never-reads-promoted-db0350b2af72",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "db0350b2af728de36f79bdc3b8d7af50f0ee27b6",
+  "reviewed_run_id": "r-20261118T044631088399-qwnw-red-file-a-discard-never-reads-promoted",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:26:58.802097+00:00",
+  "total": 95
+}

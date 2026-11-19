@@ -1,0 +1,59 @@
+<section id="qwnw-red-file-a-queued-request-is-checked-once">
+<h2>Queued-request file: one fixture missing the contract the queue write judges</h2>
+<p>The file <code>tests/test_a_queued_request_is_checked_once.py</code> failed on one test,
+<code>test_the_request_records_its_digests_at_queue_time</code>. The verdict is <em>test
+wrong</em>, on one cause: the fixture queued a real request through the production path with
+a config that named no roles and a node carrying no done-when, time budget or specification
+level, so the queue writer refused it before it reached the record the test reads. Both
+refusals are deliberate product rules — <code>routing._role_overlay</code> and
+<code>validate_node</code>, called from <code>queue_requests</code> — and both predate the
+test: the role refusal entered at <code>routing</code>'s guard in
+<code>a927c9c1d2</code> (12 August) while the file was added at <code>c0138556fe</code>
+(28 October). The sibling red-file <code>tests/test_a_queued_request_is_stamped_at_queue_time.py</code>
+states the same requirement in its own <code>CONFIG</code> and its comment names why: both
+resolvers refuse a role the config does not configure, so the config declares the role the
+fixtures queue.</p>
+<p>So the product was repaired by nothing and the fixture was repaired: <code>CONFIG</code>
+declares the worker backend and the <code>implement</code> role, and <code>_node</code>
+carries the done-when, write path, time budget and specification level a queue write judges.
+No assertion was deleted or weakened. The base run at <code>b24fe95a</code>, as a job on
+all_debug:</p>
+<pre># revision: b24fe95a789c82cd33f22a912b4dbbf94d5e2193
+# host: 98dci4-clu-3142.iter.org
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063633230315-qwnw-red-file-a-queued-request-is-checked-once/base-tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_request_is_checked_once.py
+....F.........                                                           [100%]
+=================================== FAILURES ===================================
+______________ test_the_request_records_its_digests_at_queue_time ______________
+        config = {"default_backend": "worker", "local_backend": "worker"}
+&gt;       stored = queue_admission.queue_requests(
+            [node], project="sample", session="coordinator", repo_root=repo, config=config
+        )
+reckon/crew/dispatching/requests.py:228: in queue_requests
+    _lane_name, effective_backend = resolve_role_override(
+reckon/crew/routing.py:257: in resolve_role_override
+    overlay, level_overlay = _role_overlay(config, role, spec_level)
+reckon/crew/routing.py:112: CrewError
+E           reckon.crew.CrewError: role 'implement' is not configured (configured roles: none)
+1 failed, 13 passed in 3.73s
+EXIT=1
+</pre>
+<p>Declaring the role exposes the second refusal, which is why the node helper carries its
+contract too: <code>node 'build-s2' is refused at queue time: no done-when measure is stated;
+no time budget is set; no specification level is declared; pass --spec-level exact, guided
+or open so the run remains visible to calibration</code>. At head the same file passes in
+full, as a job on all_debug with <code>SLURM_JOB_ID</code> unset and its output on shared
+storage:</p>
+<pre># revision: c743040e2f95daf5aa875e6053e607c53641c4d6
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-b8de38410f76-VjJrgh/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_request_is_checked_once.py'
+..............                                                           [100%]
+14 passed in 3.39s
+EXIT=0
+</pre>
+<p>The repair commit is <code>c743040e2f95daf5aa875e6053e607c53641c4d6</code>; the fragment
+rides a later commit. The run's declared suite is green on both arms, base
+<code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> and head
+<code>c743040e2f95daf5aa875e6053e607c53641c4d6</code>, each exiting 0 with no failure id.</p>
+</section>

@@ -2044,7 +2044,37 @@ def _payload_slot(
         return None, None, None
     database = connection.execute("PRAGMA database_list").fetchone()[2]
     key = (str(database), bool(headers_only), activity_since, plan)
-    return region, key, region.get(key)
+    held = region.get(key)
+    if held is None and plan is not None and not headers_only:
+        held = _plan_slice(region, (str(database), False, activity_since, None), plan)
+        if held is not None:
+            region[key] = held
+    return region, key, held
+
+
+def _plan_slice(
+    region: dict[
+        tuple[str, bool, float | None, str | None], tuple[dict[str, Any], int]
+    ],
+    unfiltered_key: tuple[str, bool, float | None, str | None],
+    plan: str,
+) -> tuple[dict[str, Any], int] | None:
+    """One plan's rows, sliced from a wider payload the read pass already holds.
+
+    A plan-filtered read is otherwise a decode of its own, so a batch that
+    reads the whole ledger and then each entry's plan pays a decode per read
+    shape. The unfiltered payload carries every row, so the plan's rows are
+    filtered and ordered here instead of read again. The order matches the
+    SQL path's: the unfiltered read preserves completion order, and re-sorting
+    the selected rows is stable over it, so the same ties break the same way.
+    """
+    wider = region.get(unfiltered_key)
+    if wider is None:
+        return None
+    data, version = wider
+    runs = [row for row in data["runs"] if row_plan(row) == plan]
+    runs.sort(key=promotion_order_key)
+    return {**data, "runs": runs}, version
 
 
 def _index_payload(
@@ -3892,7 +3922,7 @@ def _complete_store_from_ledger(project: str, root: str | Path | None) -> None:
 
     if not _ledger_holds_content(project, root):
         return
-    if run_store.stored_run_rows(project, fields=("run_id",)):
+    if run_store.stored_run_exists(project):
         return
     run_store.import_ledger(project, root=root)
 
@@ -4445,7 +4475,7 @@ def read_records(
     # project. A store created for its mutable state alone holds none, and the
     # committed ledger is still the copy every row of that history came from,
     # so its existence cannot be what selects the fleet-wide figure population.
-    stored = bool(run_store.stored_run_rows(project, fields=("run_id",)))
+    stored = run_store.stored_run_exists(project)
     data, version = load(
         project,
         root,

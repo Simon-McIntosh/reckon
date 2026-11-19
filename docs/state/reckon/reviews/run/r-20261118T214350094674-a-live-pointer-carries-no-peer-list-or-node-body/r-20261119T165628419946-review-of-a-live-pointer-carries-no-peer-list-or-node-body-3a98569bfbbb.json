@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:58:53Z",
+  "findings": [
+    {
+      "file": "tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py",
+      "line": 503,
+      "severity": "non-blocking",
+      "text": "assert \"done_when\" not in (merged.get(\"node\") or {}) reads a mapping built on the line above as {**lifecycle, **slim}, whose node is slim's own node object, so it is true whenever the assertion on line 501 is true and cannot redden on a defect the guard on line 523 does not already catch; it documents the composition premise rather than guarding it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T214350094674-a-live-pointer-carries-no-peer-list-or-node-body/repair-negative-control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the red arm's log opens with a bare `command:` line and carries no revision header, so the revision it ran at (b1aa95f7, stated only in the manifest's negative_control_note) cannot be read from the log a promotion or a later reviewer opens, unlike baseline_suite and after_suite which name theirs on line 1."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the source node's goal at prompt.txt:38 is to move peer_channel.peers and the node's peer_scopes, brief, done-when and admission findings off the live pointer into the run directory; the gained commit routes both review judges through runs.node_field, so nothing in reckon/crew/recovery_review_dispatch.py judges an empty done-when (reckon/crew/recovery_review_dispatch.py:1786, :1895).\nVERDICT done_when: prompt.txt:297 names five cases (a)-(e) in tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py; the manifest records the head gate at 3a98569b (scoped-gate-1795107257053947822.log, \"64 passed in 38.89s\", EXIT=0) and a base arm at a7ac07a9 (negative-control-base-tests.log, \"4 failed, 1 passed\", EXIT=1), and the gained commit adds case (f) whose red arm is repair-negative-control.log.\nVERDICT write_paths: the declared paths at prompt.txt:306-322 include both gained-commit files among 13; the gained commit b1aa95f7..3a98569b touches exactly reckon/crew/recovery_review_dispatch.py and tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py and nothing else.\nVERDICT manifest: read at the reviewed run's directory; it recorded commits b1aa95f7 and 3a98569b with a checkpoint naming the repair round (\"gate EXIT=0, both suite arms green\"), baseline_suite 0 failures at a7ac07a9 (58 passed) and after_suite 0 failures at 3a98569b (64 passed), and by my second read it had advanced to a third commit 0e7cb6fa with repair round 2 complete, which lies past this dispatch's reviewed head and is left to its own review.\nVERDICT diff: read commit by commit against b1aa95f7; the gained commit is +4/-3 in reckon/crew/recovery_review_dispatch.py (two reads of node.get(\"done_when\") replaced by runs.node_field) and +63 in the test file (one new test), all inside the declared write paths.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run (carry_review_forward -> _judge_head_move at :3289), reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run (record_re_review_prediction at :4869 over the merged record at :4148) -> record_re_review_prediction :1930 -> re_review_prediction :1945, reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews (dispatch_review_for_run at :1743), reckon/crew/recovery_watch.py:dispatch_review_for_run at :4497, reckon/crew/pending_landing.py:dispatch_review_for_run at :793\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1786 now reads done_when through runs.node_field, which answers the slim merged node by opening the run directory's node.json (reckon/crew/runs.py:368-377), and goal stays inline because runs.py:268 lists only the four body fields.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate log scoped-gate-1795107257053947822.log reads \"64 passed in 38.89s\" at revision 3a98569b with EXIT=0, and repair-negative-control.log records the falsification (\"1 failed, 5 passed\", EXIT=1) with only the failing id and no revision header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit touches only reckon/crew/recovery_review_dispatch.py and tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py, both named in the declared write paths at prompt.txt:306-322.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:523 reddens when the reverted read at recovery_review_dispatch.py:1786 is put back (shown in repair-negative-control.log), but :503 cannot redden on its own and the second site's guard at :529 is demonstrated only by inference.\nSCORE fit: 19\nJUSTIFICATION fit: the two edits use runs.node_field exactly as the sibling readers in reckon/crew/dispatch_sessions.py:1597 do, and the new test keeps the file's lettered-case docstring and local-import style (tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:474-478).\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition; it calls the existing accessor owner at reckon/crew/runs.py:368 rather than re-reading the body file, so nothing is duplicated.\nFINDING tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:503 non-blocking: assert \"done_when\" not in (merged.get(\"node\") or {}) tests slim's own node object through a dict built as {**lifecycle, **slim}, so it cannot fail while line 501 holds and adds no guard; the real guard is line 523.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T214350094674-a-live-pointer-carries-no-peer-list-or-node-body/repair-negative-control.log:1 non-blocking: the red arm's log names no revision on its first line, so the revision it ran at is readable only from the manifest's negative_control_note, not from the log itself.\n",
+  "review_run_id": "r-20261119T165628419946-review-of-a-live-pointer-carries-no-peer-list-or-node-body-3a98569bfbbb",
+  "reviewed_base_sha": "b1aa95f7aef14fe584cb640e7333fdd77dd64329",
+  "reviewed_head_sha": "3a98569bfbbb88764f17aeffdd05c2e5a38fbd56",
+  "reviewed_run_id": "r-20261118T214350094674-a-live-pointer-carries-no-peer-list-or-node-body",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:24:41.000000+00:00",
+  "total": 112
+}

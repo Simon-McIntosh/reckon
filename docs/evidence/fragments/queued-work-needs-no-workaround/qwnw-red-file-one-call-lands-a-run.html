@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-one-call-lands-a-run-landing">
+  <h2>One call lands a run: the reply links the record, and the test reads it there</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_one_call_lands_a_run.py</code>
+  failed two of its five cases on the primary branch, both with
+  <code>KeyError: 'steps'</code>. The cause is a test that encoded a rule the
+  code no longer keeps. A direct <code>reckon crew complete --land</code> reply
+  is bounded by design: since <code>456e465281</code> (17 November, <em>bound tool
+  replies and retain landing refusals</em>) the command answers with
+  <code>ok</code>, <code>run_id</code>, <code>merged</code>,
+  <code>worktree_released</code> where it applies, the refusal's
+  <code>error</code>, and <code>record_path</code> — the full receipt, including
+  <code>promote</code>, <code>land</code> and <code>release</code> steps, is the
+  record that path names. The two cases still asserted
+  <code>report["steps"]</code> on the reply itself.</p>
+
+  <p><strong>Verdict: the test was wrong, the product is right.</strong>
+  Nothing in <code>reckon/</code> changed. Each step assertion is kept and now
+  reads the linked record: the positive case asserts the reply is bounded
+  (<code>"steps" not in report</code>), that the record exists and each of the
+  promote, land and release verdicts — the landed revision, the marker it
+  introduced, the pushed remote and <code>worktree_released</code>. The negative
+  case asserts the reply's <code>merged</code> is <code>false</code> and its
+  <code>error</code> names the dropped change, and that the record carries the
+  land step's own error and the <code>reckon crew merge</code> resume command.
+  No assertion was deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-one-call-lands-a-run-arms">Measured</h3>
+
+  <table id="qwnw-red-file-one-call-lands-a-run-arm-table">
+    <caption>Both runs are batch jobs on <code>all_debug</code> with
+    <code>SLURM_JOB_ID</code> unset in the test process; each log names its
+    revision, host, tree and command and ends in <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>host</th><th>result</th></tr></thead>
+  <tbody>
+      <tr><td>the node file, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>98dci4-clu-3143</td>
+        <td>2 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node file, head</td>
+        <td><code>33d2c239810de159377af33f4f5ff44e1aca8a81</code></td>
+        <td>98dci4-clu-3141</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The failing ids at the base revision are
+  <code>test_one_call_lands_the_change_pushes_it_and_removes_the_worktree</code> and
+  <code>test_a_merge_that_drops_the_change_is_refused_and_nothing_is_pushed</code>
+  — both <code>KeyError: 'steps'</code>. The head arm is the scoped worker
+  gate, run at the node's head commit; <code>SLURM_JOB_ID</code> is unset for
+  pytest. Both logs live under the run's own directory
+  (<code>~/.config/reckon/crew/runs/r-20261118T062421292771-qwnw-red-file-one-call-lands-a-run/</code>)
+  and are shared-storage paths readable from any node.</p>
+
+  <h3 id="qwnw-red-file-one-call-lands-a-run-control">Negative control</h3>
+
+  <p>The base revision's run of this file is itself red and is the control:
+  two of the five cases fail without any mutation, and the head revision passes
+  them. The reproduction is the base log above:
+  <code>FF...</code> with
+  <code>KeyError: 'steps'</code> at
+  <code>tests/test_one_call_lands_a_run.py:122</code> and
+  <code>:162</code>, <code>2 failed, 3 passed</code>, <code>EXIT=1</code>.</p>
+</section>

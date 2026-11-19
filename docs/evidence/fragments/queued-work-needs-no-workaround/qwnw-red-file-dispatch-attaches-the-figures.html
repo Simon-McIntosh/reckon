@@ -1,0 +1,61 @@
+<section id="qwnw-red-file-dispatch-attaches-the-figures-record">
+<h2>The dispatch document is read from stdout</h2>
+<p>Node <code>qwnw-red-file-dispatch-attaches-the-figures</code>. Measured
+<code>tests/test_dispatch_attaches_the_figures.py</code> at base
+<code>42fe90d0b0a46060bafde2490dda7d4002cda478</code> and at head
+<code>ec1783f9a68e4f0848882b109086a8e0444a1036</code>, each as a job on
+<code>all_debug</code>.</p>
+
+<h3 id="qwnw-red-file-dispatch-attaches-the-figures-cause">Cause and verdict</h3>
+<p>One cause, verdict <strong>test wrong</strong>: the test parsed the CLI
+payload from <code>CliRunner().invoke(...).output</code>. Click 8.2 made
+<code>Result.output</code> the mixed terminal stream, and the dispatch's run
+identity notice (<code>reckon: created run &lt;id&gt;</code>) is written to
+stderr on purpose — the product comment at
+<code>reckon/crew/dispatching/preparation.py:1577</code> states that stdout
+remains the command's final JSON document so notices use stderr. The product
+rule the test now asserts is the one this repository already fixed elsewhere
+(<code>e85f4b928e test: read the dispatch document from stdout</code>): the
+document is read from <code>result.stdout</code>. No assertion was deleted or
+loosened; the exit-code assertion still reads <code>result.output</code> so a
+failure prints both streams.</p>
+
+<h3 id="qwnw-red-file-dispatch-attaches-the-figures-negative-control">Negative control: base run</h3>
+<p>The same file at the base revision, on <code>all_debug</code>, job 1329791,
+one failing id:</p>
+<pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# host: 98dci4-clu-3142.iter.org
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_attaches_the_figures.py
+...F......                                                               [100%]
+FAILED tests/test_dispatch_attaches_the_figures.py::test_crew_dispatch_image_reaches_the_argv - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 9 passed in 7.04s
+EXIT=1</pre>
+<p>Log: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063051175974-qwnw-red-file-dispatch-attaches-the-figures/gate-base.log</code>.</p>
+
+<h3 id="qwnw-red-file-document-gate-head">Head run</h3>
+<pre># revision: ec1783f9a68e4f0848882b109086a8e0444a1036
+# host: 98dci4-clu-3142.iter.org
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_attaches_the_figures.py
+..........                                                               [100%]
+10 passed in 7.02s
+EXIT=0</pre>
+<p>Log: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063051175974-qwnw-red-file-dispatch-attaches-the-figures/gate-head.log</code> (job 1329848).</p>
+
+<h3 id="qwnw-red-file-dispatch-attaches-the-figures-arm">Declared suite arms</h3>
+<p>The run's armed suite (the project's declared census pair), each arm
+resolving its own revision on <code>all_debug</code>:</p>
+<pre>baseline 42fe90d0b0a46060bafde2490dda7d4002cda478: 58 passed in 36.15s, EXIT=0 (job 1329810)
+after    ec1783f9a68e4f0848882b109086a8e0444a1036: 58 passed in 35.59s, EXIT=0 (job 1329849)</pre>
+
+<h3 id="qwnw-red-file-dispatch-attaches-the-figures-importer">The module that imports it</h3>
+<p><code>tests/test_dispatch_renders_svg_figures.py</code> imports this test
+module for its fixtures. Its arm also reads the dispatch document from
+<code>result.output</code>, so the same two ids fail on both arms and the arm
+adds no failure at head: baseline job 1329873 and after job 1329874, two failed
+either side. That file is outside this node's changed paths.</p>
+
+<h3 id="qwnw-red-file-dispatch-attaches-the-figures-scope">Scope and lint</h3>
+<p>Changed path: <code>tests/test_dispatch_attaches_the_figures.py</code> only;
+no product source changed. <code>ruff check</code> and
+<code>ruff format --check</code> report nothing on it.</p>
+</section>

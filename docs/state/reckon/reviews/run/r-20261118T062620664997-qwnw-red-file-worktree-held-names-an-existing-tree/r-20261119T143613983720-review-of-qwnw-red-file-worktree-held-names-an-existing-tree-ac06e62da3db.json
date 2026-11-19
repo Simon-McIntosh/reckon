@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:3809 _held_worktrees",
+    "reckon/crew/obligations.py:3762 _held_present_worktrees",
+    "reckon/crew/obligations.py:3570 _tree_holds_unmerged_work"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:17:36Z",
+  "findings": [],
+  "head_log_revision": "ac06e62da3db383be29f59969b10e4c28858fb13",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is test-only, so the production code it reaches is the reader it drives: reckon/crew/obligations.py:3809 _held_worktrees, :3762 _held_present_worktrees and :3570 _tree_holds_unmerged_work.",
+    "diff": "read both commits against be17b574 \u2014 96831ae676 rewrites the module docstring, adds _left_work at :74, seeds each retained tree with uncommitted work and adds assert _git(tree, \"status\", \"--porcelain\") at :163; ac06e62da3d adds only the 93-line evidence fragment.",
+    "done_when": "the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset; scoped-gate-1795096439236299944.log carries revision ac06e62da3db, a compute host, the file command and 3 passed, and base-run-tests.log records 1 failed, 2 passed at be17b574, but neither the log header nor the empty .scheduler sidecar names the partition or the unset variable.",
+    "goal": "the node's goal is that tests/test_worktree_held_names_an_existing_tree.py passes in full; the landed fixtures leave work in every retained tree (tests/test_worktree_held_names_an_existing_tree.py:74 _left_work) so the three cases match reckon/crew/obligations.py:3570 _tree_holds_unmerged_work, and scoped-gate-1795096439236299944.log reads 3 passed EXIT=0 at ac06e62da3db.",
+    "manifest": "read; it states status complete, commits 96831ae676 and ac06e62da3d, changed_paths the two landed files, tests the file gate command, test_logs the scoped gate log, baseline_suite and after_suite JSON at be17b574 and ac06e62 both 58 passed EXIT=0, negative_control_log base-run-tests.log, and outside_scope the two sibling failures.",
+    "write_paths": "the declared paths were reckon, tests, the evidence fragment directory and its own fragment; git diff be17b574..ac06e62 lists only tests/test_worktree_held_names_an_existing_tree.py (+22 -5) and the node's evidence fragment (+93 -0), both inside them."
+  },
+  "justifications": {
+    "durability": "the kept case reddens at base without the seeding (base-run-tests.log reads 1 failed, 2 passed) and tests/test_worktree_held_names_an_existing_tree.py:163 reddens if _left_work stops writing, but no case in this file reddens if _tree_holds_unmerged_work reverts to existence-only, which is why the score is capped short of 20.",
+    "evidence": "the head gate log scoped-gate-1795096439236299944.log reads 3 passed EXIT=0 at ac06e62da3db, matching the done_when's file, but its header names no partition and its .scheduler sidecar is empty, so all_debug and an unset SLURM_JOB_ID are not shown by the log.",
+    "fit": "the added helper at tests/test_worktree_held_names_an_existing_tree.py:74 and the rewritten module docstring at :1-15 follow the file's existing _worktree/_produced/_held idiom, and no name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_worktree_held_names_an_existing_tree.py:136 seeds the kept case's tree with work so the file passes against reckon/crew/obligations.py:3570 _tree_holds_unmerged_work rather than against a clean fixture.",
+    "reuse": "no owner for leaving an uncommitted change in a fixture tree exists \u2014 tests/helpers holds no such helper and tests/test_a_duty_clears_when_its_run_ends.py:354 writes its own uncommitted.txt inline \u2014 so _left_work extends nothing and forks nothing.",
+    "scope_discipline": "git diff be17b574..ac06e62 touches only tests/test_worktree_held_names_an_existing_tree.py (+22 -5) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worktree-held-names-an-existing-tree.html (+93 -0), both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_worktree_held_names_an_existing_tree.py passes in full; the landed fixtures leave work in every retained tree (tests/test_worktree_held_names_an_existing_tree.py:74 _left_work) so the three cases match reckon/crew/obligations.py:3570 _tree_holds_unmerged_work, and scoped-gate-1795096439236299944.log reads 3 passed EXIT=0 at ac06e62da3db.\nVERDICT done_when: the done_when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset; scoped-gate-1795096439236299944.log carries revision ac06e62da3db, a compute host, the file command and 3 passed, and base-run-tests.log records 1 failed, 2 passed at be17b574, but neither the log header nor the empty .scheduler sidecar names the partition or the unset variable.\nVERDICT write_paths: the declared paths were reckon, tests, the evidence fragment directory and its own fragment; git diff be17b574..ac06e62 lists only tests/test_worktree_held_names_an_existing_tree.py (+22 -5) and the node's evidence fragment (+93 -0), both inside them.\nVERDICT manifest: read; it states status complete, commits 96831ae676 and ac06e62da3d, changed_paths the two landed files, tests the file gate command, test_logs the scoped gate log, baseline_suite and after_suite JSON at be17b574 and ac06e62 both 58 passed EXIT=0, negative_control_log base-run-tests.log, and outside_scope the two sibling failures.\nVERDICT diff: read both commits against be17b574 \u2014 96831ae676 rewrites the module docstring, adds _left_work at :74, seeds each retained tree with uncommitted work and adds assert _git(tree, \"status\", \"--porcelain\") at :163; ac06e62da3d adds only the 93-line evidence fragment.\nCALL_SITES: reckon/crew/obligations.py:3809 _held_worktrees, reckon/crew/obligations.py:3762 _held_present_worktrees, reckon/crew/obligations.py:3570 _tree_holds_unmerged_work\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_worktree_held_names_an_existing_tree.py:136 seeds the kept case's tree with work so the file passes against reckon/crew/obligations.py:3570 _tree_holds_unmerged_work rather than against a clean fixture.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head gate log scoped-gate-1795096439236299944.log reads 3 passed EXIT=0 at ac06e62da3db, but its header names no partition and its .scheduler sidecar is empty, so all_debug and an unset SLURM_JOB_ID are not shown by the log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff be17b574..ac06e62 touches only tests/test_worktree_held_names_an_existing_tree.py (+22 -5) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-worktree-held-names-an-existing-tree.html (+93 -0), both inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the kept case reddens at base without the seeding (base-run-tests.log reads 1 failed, 2 passed) and tests/test_worktree_held_names_an_existing_tree.py:163 reddens if _left_work stops writing, but no case in this file reddens if _tree_holds_unmerged_work reverts to existence-only.\nSCORE fit: 19\nJUSTIFICATION fit: the added helper at tests/test_worktree_held_names_an_existing_tree.py:74 and the rewritten module docstring at tests/test_worktree_held_names_an_existing_tree.py:1-15 follow the file's existing _worktree/_produced/_held idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for leaving an uncommitted change in a fixture tree exists \u2014 tests/helpers holds none and tests/test_a_duty_clears_when_its_run_ends.py:354 writes its own uncommitted.txt inline \u2014 so _left_work extends nothing and forks nothing.",
+  "review_run_id": "r-20261119T143613983720-review-of-qwnw-red-file-worktree-held-names-an-existing-tree-ac06e62da3db",
+  "reviewed_base_sha": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "reviewed_head_sha": "ac06e62da3db383be29f59969b10e4c28858fb13",
+  "reviewed_run_id": "r-20261118T062620664997-qwnw-red-file-worktree-held-names-an-existing-tree",
+  "reviewer_run_id": "r-20261119T143613983720-review-of-qwnw-red-file-worktree-held-names-an-existing-tree-ac06e62da3db",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:41:18.859418+00:00",
+  "total": 111
+}

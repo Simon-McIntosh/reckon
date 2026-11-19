@@ -303,17 +303,58 @@ def actual_delivery(tmp_path, monkeypatch):
     return cli_checks.promotable_delivery.__wrapped__(tmp_path, monkeypatch)
 
 
-def test_primary_advance_after_measurement_refuses_the_promotion(actual_delivery):
+def test_primary_advance_after_measurement_is_measured_again_at_the_new_main(
+    actual_delivery,
+):
     delivery = actual_delivery
     result = queue_landing.land_once()
     assert result["promotion_requested"] == [delivery["run_id"]], result
+    before = queue_landing._measurement_record(delivery["run_id"])
+    assert before["population"]["main_sha"] == delivery["base"]
     moved = _commit(delivery["repo"], "concurrent.txt", "concurrent primary edit\n")
 
     receipt = _drain_promotion(delivery["run_id"])
 
+    assert receipt["phase"] == promotion_requests.PROMOTED, receipt
+    record = queue_landing._measurement_record(delivery["run_id"])
+    record_main = record["population"]["main_sha"]
+    candidate = record["population"]["candidate_sha"]
+    assert record_main != before["population"]["main_sha"]
+    assert candidate != before["population"]["candidate_sha"]
+    # The refreshed measurement is taken at the advanced principal: the primary
+    # it names carries the commit made after the first measurement, and the
+    # published candidate is the merge of that primary with the reviewed head.
+    _git(delivery["repo"], "merge-base", "--is-ancestor", moved, record_main)
+    assert _git(delivery["repo"], "rev-parse", candidate + "^1") == record_main
+    assert _git(delivery["repo"], "rev-parse", candidate + "^2") == delivery["head"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == candidate
+    assert _git(delivery["origin"], "rev-parse", "main") == candidate
+    assert not runs.pointer_path(delivery["run_id"]).exists()
+
+
+def test_a_primary_moving_again_during_the_refresh_refuses_the_promotion(
+    actual_delivery, monkeypatch
+):
+    delivery = actual_delivery
+    result = queue_landing.land_once()
+    assert result["promotion_requested"] == [delivery["run_id"]], result
+    _commit(delivery["repo"], "concurrent.txt", "concurrent primary edit\n")
+    real = queue_landing._measure_delivery
+    moved_again = []
+
+    def measure(pointer, run_id, head, tree, *args, **kwargs):
+        measured = real(pointer, run_id, head, tree, *args, **kwargs)
+        if not moved_again:
+            moved_again.append(_commit(delivery["repo"], "again.txt", "second edit\n"))
+        return measured
+
+    monkeypatch.setattr(queue_landing, "_measure_delivery", measure)
+
+    receipt = _drain_promotion(delivery["run_id"])
+
     assert receipt["phase"] == promotion_requests.REFUSED, receipt
-    assert "primary" in receipt["error"]
-    assert _git(delivery["repo"], "rev-parse", "HEAD") == moved
+    assert "primary moved again" in receipt["error"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == moved_again[0]
     assert _git(delivery["origin"], "rev-parse", "main") == delivery["base"]
     assert runs.pointer_path(delivery["run_id"]).exists()
 

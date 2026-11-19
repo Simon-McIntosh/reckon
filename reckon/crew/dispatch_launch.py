@@ -3828,6 +3828,18 @@ def supervised_launch(
     disk.
     """
     _require_fleet_gate_open()
+    from reckon.crew.promotion import discard_recorded
+
+    if discard_recorded(run_directory.name):
+        # A discard that landed while this launch composed removed the pointer
+        # and recorded the departure, so the run is not the operator's any more.
+        # This is the last step every resume and review launch takes before a
+        # worker exists, and the worker's own first act is to publish a pointer,
+        # which would undo the discard: the launch refuses here instead.
+        raise CrewError(
+            f"run {run_directory.name!r} was discarded while its launch composed; "
+            "the launch is refused"
+        )
     record = read_pointer(run_directory.name)
     stream_name = Path(log_path).name
     attempt_kind = "lane-change" if stream_name.startswith("lane-change-") else "resume"

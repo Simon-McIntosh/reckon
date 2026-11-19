@@ -1,0 +1,148 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own logs: baseline_suite at 8c7ea625091640c12d6aa56bc8997803ae470037 reads 58 passed in 34.88s with EXIT=0, after_suite at 10bf54ad reads 58 passed in 38.45s with EXIT=0, and neither log carries a FAILED line, so both id sets are empty and their difference is empty. The instrument is shown able to see a failure present: arm-base.log, same runner and same test file, records three FAILED ids with EXIT=1.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "row[\"classification\"] == \"failed\"",
+      "fails_if": "restoring the pre-premature-end reading at reckon/crew/recovery_classification.py:3006 makes the one-turn api_error stream read abandoned and this literal comparison fails.",
+      "file": "tests/test_admission_refusal_is_named.py",
+      "independent": true,
+      "line": 186
+    },
+    {
+      "assertion": "row[\"classification\"] == \"failed\"",
+      "fails_if": "the same reverted reading at :3010 leaves the blocking_limit turn read as the result record names it and the abandoned reading reddens this line.",
+      "file": "tests/test_admission_refusal_is_named.py",
+      "independent": true,
+      "line": 213
+    },
+    {
+      "assertion": "row[\"classification\"] == \"failed\"",
+      "fails_if": "dropping the log_path read for a launch-less run leaves the in-harness stream unread and the classification falls to abandoned, reddening this line.",
+      "file": "tests/test_admission_refusal_is_named.py",
+      "independent": true,
+      "line": 253
+    },
+    {
+      "assertion": "classify_pointer(crash)[\"classification\"] == \"failed\"",
+      "fails_if": "removing the error arm at reckon/crew/recovery_classification.py:3005 makes the recorded bad-model fixture read abandoned and this line reddens.",
+      "file": "tests/test_admission_refusal_is_named.py",
+      "independent": true,
+      "line": 303
+    },
+    {
+      "assertion": "row[\"classification\"] != \"refused-at-admission\"",
+      "fails_if": "nothing of its own: the == failed line above it already excludes every other value, so it cannot fail unless that line has failed.",
+      "file": "tests/test_admission_refusal_is_named.py",
+      "independent": false,
+      "line": 187
+    }
+  ],
+  "assertion_independence": "Every changed expectation compares classify_pointer's answer against a literal, so none is independent of the defect it guards except :187, :214 and :254, whose != refused-at-admission form is implied by the == failed line above it.",
+  "call_sites": {
+    "reckon/crew/directory.py:342": "classify_pointer for the run row",
+    "reckon/crew/obligations.py:1754": "classify_pointer over the fleet snapshot",
+    "reckon/crew/promotion.py:1146": "classify_pointer in the review gate",
+    "reckon/crew/query.py:458": "classify_pointer on every live row",
+    "reckon/crew/recovery_watch.py:1834": "classify_pointer in the sweep",
+    "reckon/crew/resumption.py:2777": "classify_pointer for the cut-off reading"
+  },
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:39:56Z",
+  "evidence_limits": [
+    "No suite re-run; the reviewed run's recorded arms and their EXIT lines were read.",
+    "No job re-run; the logs name host 98dci4-clu-3143 and the env -u SLURM_JOB_ID command.",
+    "The gate receipt in the manifest names the inner pytest command; the log header shows the env wrapper around it."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_admission_refusal_is_named.py",
+      "line": "187",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added assert that the classification is not refused-at-admission is implied by the assert of failed on the line above it against the same value (:187, :214, :254), so it cannot redden alone and adds no coverage."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html",
+      "line": "80",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file, so the importer-arm clause is unmeasured; the fragment discloses this and the named-file arms stand in."
+    },
+    {
+      "file": "tests/test_admission_refusal_is_named.py",
+      "line": "257",
+      "severity": "non-blocking",
+      "text": "non-blocking: renaming test_every_other_classification_is_unchanged leaves the base failing id with no head counterpart, so a suite delta computed over ids reports a removal rather than a pass; the fragment records the old name at :67."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "commit 10bf54ad3a44 changes only tests/test_admission_refusal_is_named.py (+27/-16) and commit 2038262536 adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html (+86).",
+    "done_when": "the named measure is a head run with SLURM_JOB_ID unset plus a base negative control; arm-head.log runs under env -u SLURM_JOB_ID and reads 8 passed, arm-base.log reads 3 failed and 5 passed with EXIT=1, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html:67 names the three failing ids.",
+    "goal": "s29 at docs/plans/queued-work-needs-no-workaround.html:331 asks that the file pass in full on the primary branch, and the delivered head makes tests/test_admission_refusal_is_named.py pass eight of eight at 8c7ea625..2038262536, recorded in arm-head.log as 8 passed with EXIT=0.",
+    "manifest": "read; it records status complete, commits 10bf54ad3a44 and 2038262536, the gate command against tests/test_admission_refusal_is_named.py, three logs, both suites completed with zero failures, and a negative control log.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the section figure directory, and both changed paths in the diff sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_admission_refusal_is_named.py:186, :213 and :253 assert a literal failed, so restoring the abandoned reading at reckon/crew/recovery_classification.py:3006 reddens all three; the != refused-at-admission lines beside them add nothing.",
+    "evidence": "arm-base.log and arm-head.log carry full revisions, EXIT lines and the three ids, but scoped-gate-1795029032992731814.log shows no SLURM_JOB_ID unset and the suite arms touch files the diff does not, as docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html:80 states.",
+    "fit": "the comments at tests/test_admission_refusal_is_named.py:168 and :236 and the rename at :257 follow the file's sentence-shaped test names and add no symbol.",
+    "goal_fidelity": "tests/test_admission_refusal_is_named.py:168-300 holds the eight cases and arm-head.log records 8 passed at 10bf54ad.",
+    "reuse": "the diff adds no function, class or module and tests/test_admission_refusal_is_named.py:168 reuses the _pointer and _write_stream helpers already in the file.",
+    "scope_discipline": "the diff touches only tests/test_admission_refusal_is_named.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html, both inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: s29 at docs/plans/queued-work-needs-no-workaround.html:331 asks that the file pass in full on the primary branch, and the delivered head makes tests/test_admission_refusal_is_named.py pass eight of eight at 8c7ea625..2038262536, recorded in arm-head.log as 8 passed with EXIT=0.\nVERDICT done_when: the named measure is a head run with SLURM_JOB_ID unset plus a base negative control; arm-head.log runs under env -u SLURM_JOB_ID and reads 8 passed, arm-base.log reads 3 failed and 5 passed with EXIT=1, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html:67 names the three failing ids.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the section figure directory, and both changed paths in the diff sit inside them.\nVERDICT manifest: read; it records status complete, commits 10bf54ad3a44 and 2038262536, the gate command against tests/test_admission_refusal_is_named.py, three logs, both suites completed with zero failures, and a negative control log.\nVERDICT diff: commit 10bf54ad3a44 changes only tests/test_admission_refusal_is_named.py (+27/-16) and commit 2038262536 adds only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html (+86).\nCALL_SITES: reckon/crew/query.py:458, reckon/crew/obligations.py:1754, reckon/crew/promotion.py:1146, reckon/crew/recovery_watch.py:1834, reckon/crew/resumption.py:2777, reckon/crew/directory.py:342\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_admission_refusal_is_named.py:168-300 holds the eight cases and arm-head.log records 8 passed at 10bf54ad.\nSCORE evidence: 16\nJUSTIFICATION evidence: arm-base.log and arm-head.log carry full revisions, EXIT lines and the three ids, but scoped-gate-1795029032992731814.log shows no SLURM_JOB_ID unset and the suite arms touch files the diff does not, as docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html:80 states.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_admission_refusal_is_named.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html, both inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_admission_refusal_is_named.py:186, :213 and :253 assert a literal failed, so restoring the abandoned reading at reckon/crew/recovery_classification.py:3006 reddens all three; the != refused-at-admission lines beside them add nothing.\nSCORE fit: 19\nJUSTIFICATION fit: the comments at tests/test_admission_refusal_is_named.py:168 and :236 and the rename at :257 follow the file's sentence-shaped test names and add no symbol.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and tests/test_admission_refusal_is_named.py:168 reuses the _pointer and _write_stream helpers already in the file.\nFINDING tests/test_admission_refusal_is_named.py:187 non-blocking: the added assert that the classification is not refused-at-admission is implied by the assert of failed on the line above it against the same value (:187, :214, :254), so it cannot redden alone and adds no coverage.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-admission-refusal-is-named-at-current-main.html:80 non-blocking: baseline_suite and after_suite run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports the changed file, so the importer-arm clause is unmeasured; the fragment discloses this and the named-file arms stand in.\nFINDING tests/test_admission_refusal_is_named.py:257 non-blocking: renaming test_every_other_classification_is_unchanged leaves the base failing id with no head counterpart, so a suite delta computed over ids reports a removal rather than a pass; the fragment records the old name at :67.\n",
+  "reuse_search": {
+    "capabilities": [
+      "classifying a dead run's stream",
+      "naming a premature end"
+    ],
+    "judgement": "The diff adds no definition, so nothing is forked; the expectations it changes are pinned by the classifier's own test file already.",
+    "owners_opened": [
+      "reckon/crew/recovery_classification.py:1383 (classify_pointer, the single classifier)",
+      "tests/test_a_worker_that_ends_its_first_turn_without_acting_is_named_as_such.py:174 (the premature-end rule owned test)"
+    ]
+  },
+  "review_run_id": "r-20261118T192946519323-review-of-qwnw-red-file-admission-refusal-is-named-at-current-main-203826253658",
+  "reviewed_base_sha": "8c7ea625091640c12d6aa56bc8997803ae470037",
+  "reviewed_head_sha": "203826253658df0b04a53ae2cdb7df7b0df87047",
+  "reviewed_run_id": "r-20261118T063926658751-qwnw-red-file-admission-refusal-is-named-at-current-main",
+  "reviewed_worker_commits": [
+    "10bf54ad3a4480f7c40d94457b2ecf182ffcac9e",
+    "203826253658df0b04a53ae2cdb7df7b0df87047"
+  ],
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063926658751-qwnw-red-file-admission-refusal-is-named-at-current-main/after_suite-1795029123474654084.log",
+      "revision": "10bf54ad3a4480f7c40d94457b2ecf182ffcac9e",
+      "summary": "58 passed in 38.45s"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063926658751-qwnw-red-file-admission-refusal-is-named-at-current-main/baseline_suite-1795029080068202563.log",
+      "revision": "8c7ea625091640c12d6aa56bc8997803ae470037",
+      "summary": "58 passed in 34.88s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:02:37.171799+00:00",
+  "total": 112
+}

@@ -872,6 +872,8 @@ def _waiting_plan_state(docs: Path, slug: str, project: str) -> dict | None:
 
 def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict]:
     """Join mounted live pointers with roster and navigation state."""
+    from reckon.crew import runs
+
     selected = {project} if project else set(mounts)
     pointers = [
         pointer
@@ -933,7 +935,7 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
                 "elapsed_seconds": _elapsed_since(pointer.get("created_at")),
                 "phase": phase,
                 "last_activity": last_activity,
-                "gate": str(node.get("done_when") or ""),
+                "gate": str(runs.node_field(pointer, "done_when") or ""),
                 "plan_href": f"/{name}/#plan/{plan}" if plan else None,
                 "sprint_href": f"/{name}/#sprint/{sprint}" if sprint else None,
             }

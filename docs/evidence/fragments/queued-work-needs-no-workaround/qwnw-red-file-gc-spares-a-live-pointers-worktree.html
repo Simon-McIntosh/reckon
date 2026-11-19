@@ -1,0 +1,92 @@
+<section id="qwnw-red-file-gc-spares-a-live-pointers-worktree-landing">
+  <h2>A held-tree remedy case names a tree that still holds work</h2>
+
+  <p><strong>What changed.</strong> No product source changed. One case in
+  <code>tests/test_gc_spares_a_live_pointers_worktree.py</code> was red on the
+  primary branch, and the product rule it read had moved rather than broken.
+  The case built its <code>retained-for-resume</code> ledger row over a worktree
+  sitting clean at head, then asserted the derivation raise the
+  <code>worktree-held</code> duty for it. A later change settled that a retained
+  tree is held only while deleting it would lose work — an uncommitted change,
+  or a commit no primary ref (<code>main</code>, <code>develop</code>,
+  <code>master</code> in that order) reaches — so a tree at head holding neither
+  rightly raised no row, and the case read <code>[]</code> where it expected the
+  run.</p>
+
+  <p><strong>Verdict: the test was wrong.</strong> The rule the code now keeps is
+  the one the neighbouring suite pins:
+  <code>test_the_derivation_holds_a_tree_only_while_it_holds_unmerged_work</code>
+  in <code>tests/test_a_duty_clears_when_its_run_ends.py</code> asserts both arms,
+  and <code>_tree_holds_unmerged_work</code> is the single predicate behind them.
+  The fixture now gives the retained tree its run's own unlanded commit through a
+  new <code>_unlanded_commit</code> helper, which is the state a
+  retained-for-resume tree is actually in. Every assertion stands as it was: the
+  duty names a run-scoped sweep with the full
+  <code>reckon crew gc --repo … --project … --run … --apply</code> command, and
+  a registration whose directory is gone still holds nothing. Nothing is deleted
+  or weakened.</p>
+
+  <h3 id="qwnw-red-file-gc-spares-a-live-pointers-worktree-arms">Measured</h3>
+
+  <p>Both arms ran the file as an <code>all_debug</code> batch job with
+  <code>SLURM_JOB_ID</code> unset inside it, and each log's first lines name
+  the revision, the tree, the command, the module it imported and the working
+  directory it resolved from; its last line reads <code>EXIT=&lt;code&gt;</code>.
+  The base arm is an extraction of <code>23b901694b</code>, so it runs the
+  file's own base content.</p>
+
+  <table id="qwnw-red-file-gc-spares-a-live-pointers-worktree-arm-table">
+    <caption>One test file, two arms. The negative control is the base arm.</caption>
+    <thead><tr><th>arm</th><th>summary</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base arm — <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code>, extraction</td>
+        <td>1 failed, 2 passed</td>
+        <td><code>EXIT=1</code>, failing id
+        <code>test_the_held_tree_remedy_names_a_run_scoped_sweep</code></td></tr>
+      <tr><td>head arm — <code>890fd711e1cc0c633c26d3246bf89f7c5979aa1d</code>, worktree</td>
+        <td>3 passed</td>
+        <td><code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The logs sit in this run&#x27;s directory: <code>base-arm-gc-spares.log</code>
+  and <code>head-arm-gc-spares.log</code>. The base run's own words, quoted:</p>
+
+  <pre id="qwnw-red-file-gc-spares-a-live-pointers-worktree-base-quote"># revision: 23b901694b4bfec73d95be3a082d4c336d9a4101
+# module.__file__: /tmp/gc-spares-arms-UkNxG6BA/reckon/__init__.py
+# cwd: /tmp/gc-spares-arms-UkNxG6BA
+..F                                                                      [100%]
+&gt;       assert [item["run_id"] for item in held] == [RUN_HELD]
+E       AssertionError: assert [] == ['r-20261003T...51-held-node']
+FAILED tests/test_gc_spares_a_live_pointers_worktree.py::test_the_held_tree_remedy_names_a_run_scoped_sweep
+1 failed, 2 passed in 1.01s
+EXIT=1</pre>
+
+  <p>The head run of the same file names its arms in the same shape:</p>
+
+  <pre id="qwnw-red-file-gc-spares-a-live-pointers-worktree-head-quote"># revision: 890fd711e1cc0c633c26d3246bf89f7c5979aa1d
+# module.__file__: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-gc-spares-a-live-pointers-worktree/reckon/__init__.py
+3 passed in 1.34s
+EXIT=0</pre>
+
+  <p><strong>Neighbour arm.</strong> The five suites that read the same held-tree
+  derivation — <code>test_gc_reaches_every_tree_its_obligation_names.py</code>,
+  <code>test_worktree_held_names_an_existing_tree.py</code>,
+  <code>test_a_worktree_held_row_is_rechecked_at_read.py</code>,
+  <code>test_held_worktrees_read_run_files.py</code>,
+  <code>test_a_duty_clears_when_its_run_ends.py</code> — read 4 failed, 30 passed
+  at each arm with an identical failure-id set, so this change adds no failure
+  against the base. Those four failures are already red on the primary branch and
+  are outside this node's declared file.</p>
+
+  <p><strong>The gate.</strong> The project's suite arms ran over
+  <code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code>
+  at <code>23b901694b</code> (<code>baseline-suite-arm.log</code>) and at
+  <code>9f8adfd603</code> (<code>after-suite-arm.log</code>), each collecting 58
+  tests with <code>EXIT=0</code>. The base arm runs a <code>git archive</code>
+  extraction that is committed, because one of those two suites reads the tree's
+  own <code>HEAD</code> and an uncommitted extraction errors at setup. The scoped gate on this
+  file's own command read 3 passed with <code>EXIT=0</code> at
+  <code>890fd711e1</code>. <code>ruff check</code> and
+  <code>ruff format --check</code> report nothing new on the changed path.</p>
+</section>
