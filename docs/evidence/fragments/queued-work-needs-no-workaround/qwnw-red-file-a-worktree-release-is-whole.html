@@ -62,7 +62,7 @@
         <td>declared suite, head</td>
         <td><code>c257d07f8600f3d2838c4c719941926f3b15202a</code></td>
         <td>58 passed, <code>EXIT=0</code></td>
-        <td>runs/.../scoped-gate-1795069244516004022.log</td>
+        <td>runs/.../after_suite-1795069520698155147.log</td>
       </tr>
     </tbody>
   </table>
@@ -90,4 +90,38 @@
   longer calls the original helper), the rule against the git deletion, and the
   new case, which sees no copy offered (<code>AssertionError: []</code>) —
   <code>EXIT=1</code>, logged at <code>arms/mutant-new-case.log</code> in the run directory.</p>
+
+  <h3 id="qwnw-red-file-a-worktree-release-is-whole-importers">Importers</h3>
+
+  <p>The 133 test files that import <code>reckon.crew.routing</code> or
+  <code>reckon.crew.landing_measure</code> were run over each revision's own
+  tree in one batch job on <code>all_debug</code>, each arm resolving the module
+  paths it names on its own header lines:</p>
+
+  <table id="qwnw-red-file-a-worktree-release-is-whole-importer-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>importers, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>43 failed, 1238 passed, <code>EXIT=1</code></td>
+        <td>runs/.../arms/base-importers.log</td>
+      </tr>
+      <tr>
+        <td>importers, head</td>
+        <td><code>c257d07f8600f3d2838c4c719941926f3b15202a</code></td>
+        <td>41 failed, 1241 passed, <code>EXIT=1</code></td>
+        <td>runs/.../arms/head-importers.log</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No id fails at the head and passes at the base: the head's failure set is a
+  strict subset of the base's. Two ids fail only at the base — the named file's
+  <code>test_no_removal_site_still_deletes_with_git_worktree_remove</code>, and
+  <code>tests/test_crew_routes.py::test_fitting_and_unbounded_backends_dispatch_without_context_refusal</code>,
+  which this change does not touch. The 41 ids common to both arms are the same
+  set on each side, so nothing here introduced them.</p>
 </section>
