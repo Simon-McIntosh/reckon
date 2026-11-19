@@ -16,7 +16,7 @@
 
 <h1 id="qwnw-red-file-a-reflex-review-appears-as-working-title">A reflex review launch reaches its session, already green at base</h1>
 
-<p id="qwnw-red-file-a-reflex-review-appears-as-working-summary"><code>tests/test_a_reflex_review_appears_as_working.py</code> passes in full at the node's base revision <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>: 2 passed, EXIT=0, run as an <em>all_debug</em> batch job with <code>SLURM_JOB_ID</code> removed from the measured command's environment. No assertion was changed, and no product code was touched. The file stopped being red on 8 November 2026, when its own reproduction commit was followed by the repair that made it pass; both are ancestors of this node's base.</p>
+<p id="qwnw-red-file-a-reflex-review-appears-as-working-summary"><code>tests/test_a_reflex_review_appears_as_working.py</code> passes in full at the node's base revision <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>: 2 passed, EXIT=0, run as an <em>all_debug</em> batch job with <code>SLURM_JOB_ID</code> removed from the measured command's environment. No assertion was changed, and no product code was touched. The same file at the run's head <code>aea8a7db3b09cf22cb69064f764cb9c2d04be7e4</code> reads 2 passed, EXIT=0. The file stopped being red on 8 November 2026, when its own reproduction commit was followed by the repair that made it pass; both are ancestors of this node's base.</p>
 
 <h2 id="qwnw-red-file-a-reflex-review-appears-as-working-history">Why the file is already green</h2>
 
@@ -41,18 +41,28 @@ EXIT=1
 </thead>
 <tbody>
 <tr><td>control, the file before its repair</td><td>57f325ecfba62333c1d3cbc1e22e47828f1e5c47</td><td>1 failed, 1 passed; EXIT=1</td></tr>
-<tr><td>head gate, <em>all_debug</em> job, host 98dci4-clu-3141</td><td>5b0a1f537ef9bbca90907bd16f663732db844fb0</td><td>2 passed; EXIT=0</td></tr>
+<tr><td>base gate, <em>all_debug</em> job, host 98dci4-clu-3141</td><td>5b0a1f537ef9bbca90907bd16f663732db844fb0</td><td>2 passed; EXIT=0</td></tr>
+<tr><td>head gate, <em>all_debug</em> job, host 98dci4-clu-3141</td><td>aea8a7db3b09cf22cb69064f764cb9c2d04be7e4</td><td>2 passed; EXIT=0</td></tr>
 </tbody>
 </table>
 
 <h3 id="qwnw-red-file-a-reflex-review-appears-as-working-head-log">Head run</h3>
 <pre id="qwnw-red-file-a-reflex-review-appears-as-working-head-ids">
+# revision: aea8a7db3b09cf22cb69064f764cb9c2d04be7e4
+..                                                                       [100%]
+2 passed in 1.87s
+EXIT=0
+</pre>
+
+<h3 id="qwnw-red-file-a-reflex-review-appears-as-working-base-log">Base run</h3>
+<pre id="qwnw-red-file-a-reflex-review-appears-as-working-base-ids">
+# revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
 ..                                                                       [100%]
 2 passed in 2.14s
 EXIT=0
 </pre>
 
-<p id="qwnw-red-file-a-reflex-review-appears-as-working-logs">Logs sit under the run directory: <code>logs/control-57f325ecfb.log</code> holds the control run, whose header names the extracted tree and the command; <code>scoped-gate-1795045375309005199.log</code> holds the head gate run, whose header names the revision, the job's tree and the measured command.</p>
+<p id="qwnw-red-file-a-reflex-review-appears-as-working-logs">Logs sit under the run directory: <code>logs/control-57f325ecfb.log</code> holds the control run, whose header names the extracted tree and the command; <code>scoped-gate-1795045375309005199.log</code> holds the base gate run and <code>scoped-gate-1795045790407984643.log</code> the head gate run, each header naming the revision measured, the job's tree and the measured command.</p>
 
 </body>
 </html>
