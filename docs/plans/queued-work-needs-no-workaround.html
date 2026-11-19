@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="949">
+<meta name="plan-version" content="950">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2919,6 +2919,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063451778934-qwnw-red-file-an-admission-pass-fills-free-slots" data-who="reckon-build" data-when="2026-11-19T05:57:46.109Z">
     <div class="r-comment-body"><p>tests/test_an_admission_pass_fills_free_slots.py already passed in full at base b24fe95 (7 passed in 26.21 s) and again as its own batch job through the scoped gate on all_debug (EXIT=0, 7 passed in 23.86 s, zero failure ids); the node therefore lands that passing run unchanged, and its fragment records the arms and the two wall-clock failures seen only while another pytest process shared the host</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063636736006-qwnw-red-file-a-promotion-never-reads-unpromoted" data-who="reckon-build" data-when="2026-11-19T06:35:11.618Z">
+    <div class="r-comment-body"><p>A departure&#x27;s ledger row carries no checkout, so the landing question was asked with a record naming no repository and a promoted run&#x27;s word fell back to `complete` against a head sitting on the project&#x27;s primary branch; `_ledger_landing_word` now resolves the project&#x27;s mount and hands the row it already read to `_delivered_head`, and tests/test_a_promotion_never_reads_unpromoted.py goes from 1 failed, 5 passed at b24fe95 to 6 passed, EXIT=0, as an all_debug job at e5cd989.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
