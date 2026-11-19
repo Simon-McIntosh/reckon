@@ -425,6 +425,17 @@ def _require_commits_beyond_base(
     from reckon.crew.queue_landing import _delivered_revision
 
     canonical_head = _commit_canonical_id(tree, "HEAD")
+    # A run whose reviewed head the lead merged onto the primary branch by hand
+    # cites that merge, and a merge commit cannot be on the run's own worktree
+    # recording what preceded it: accepting only the run's history would refuse
+    # the one commit that is actually the branch. The recording that writes
+    # ``recorded_merge`` refused unless the merge carried the run's reviewed
+    # head and sat on the local primary branch, so the field names a landing
+    # rather than a candidate, and its citation is judged by that recording.
+    recorded_merge = str(record.get("recorded_merge") or "").strip()
+    canonical_recorded_merge = (
+        _commit_canonical_id(tree, recorded_merge) if recorded_merge else None
+    )
     # A history-derived presentation must not hide a foreign manifest citation.
     # Reachable merge imports are valid citations but not owned commit records.
     citations = dict.fromkeys(
@@ -446,6 +457,11 @@ def _require_commits_beyond_base(
                 "run. Cite the commit the run committed on top of the base, or "
                 "pass --no-commit '<why>' when it produced none"
             )
+        if canonical == canonical_recorded_merge:
+            # The merge the recording named, which it verified carries this
+            # run's head and is on the primary branch; no run history can hold
+            # the merge between the run and that branch.
+            continue
         predates_base = _revision_is_ancestor(tree, canonical, canonical_base)
         outside_history = canonical_head is not None and not _revision_is_ancestor(
             tree, canonical, canonical_head
