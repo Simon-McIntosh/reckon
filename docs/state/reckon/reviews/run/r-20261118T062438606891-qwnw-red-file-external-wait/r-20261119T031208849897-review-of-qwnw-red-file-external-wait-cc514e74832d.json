@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:21:35Z",
+  "findings": [
+    {
+      "file": "tests/test_external_wait.py",
+      "line": "191",
+      "severity": "non-blocking",
+      "text": "non-blocking: the replacement literals at :191 and :224 assert promotion_queued only where it is 0 and both oldest_promotion values only where they are None, so a regression that zeroed a non-empty queue or dropped the oldest-request instant would leave both cases green; the only non-zero pin is tests/test_delivered_rows_say_what_is_owed.py:229, so fold a non-empty delivery row into a case in this file."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests field carries the command followed by a prose result summary, where the manifest contract requires the literal command alone; promotion records the whole value as the gate command, so the description travels into the recorded gate and the run re-runs only because the extra words land as positional arguments to sh."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commits fee6bfa2 and cc514e7 against base 42fe90d0b0a46060bafde2490dda7d4002cda478; fee6bfa2 widens the two expected fleet-count dicts with promotion_queued, oldest_promotion_position and oldest_promotion_requested_at, cc514e7 adds the evidence fragment, no product source changes and no assertion is removed.",
+    "done_when": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/prompt.txt:354; manifest.md:10 records the all_debug gate log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/logs/base.log records the base arm at 42fe90d0b0a46060bafde2490dda7d4002cda478 as 2 failed, 14 passed, EXIT=1, and manifest.md:34 states the cause as test wrong with no assertion deleted or weakened.",
+    "goal": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/prompt.txt:38, whose goal is tests/test_external_wait.py passing in full on the primary branch; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/scoped-gate-1795055685303505242.log records 16 passed and EXIT=0 for that file at fee6bfa2f4d0b96ec69b7e25106b0430e4c494de, so the goal is met.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md; it names commits fee6bfa2f4d0b96ec69b7e25106b0430e4c494de and cc514e74832d8eba130df7f2b0d4060c4ea310bc, the 16-passed gate with its log, the 2-failed base arm, and both suite arms as inline JSON with full 40-character revisions, while its tests line at manifest.md:10 appends a prose result summary after the command.",
+    "write_paths": "read the source run's declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node fragment and figure path; both changed files, tests/test_external_wait.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, lie inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_external_wait.py:187 and :220 compare the mapping returned by recovery._fleet_counts against independently written literals, so removing the delivery fold at reckon/crew/recovery_watch.py:2350 reddens both, but both literals pin the promotion queue only at zero and None.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/logs/base.log shows 2 failed, 14 passed, EXIT=1 at 42fe90d0b0a46060bafde2490dda7d4002cda478 and the gate log shows 16 passed and EXIT=0, but the gate ran at fee6bfa2 rather than the delivered head cc514e7483 and both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the changed file.",
+    "fit": "the widened dict at tests/test_external_wait.py:187 follows the surrounding black-formatted assertion style and introduces no name.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/scoped-gate-1795055685303505242.log records \"16 passed in 5.60s\" and EXIT=0 at fee6bfa2 for tests/test_external_wait.py, the file the goal names.",
+    "reuse": "the diff adds no definition; it asserts against the existing owners reckon/crew/recovery_watch.py:2288 _fleet_counts and reckon/crew/recovery_classification.py delivery_summary, and a search over reckon/ for promotion_queued found no other owner to extend.",
+    "scope_discipline": "the diff touches only tests/test_external_wait.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/prompt.txt:38, whose goal is tests/test_external_wait.py passing in full on the primary branch; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/scoped-gate-1795055685303505242.log records 16 passed and EXIT=0 for that file at fee6bfa2f4d0b96ec69b7e25106b0430e4c494de, so the goal is met.\nVERDICT done_when: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/prompt.txt:354; manifest.md:10 records the all_debug gate log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/logs/base.log records the base arm at 42fe90d0b0a46060bafde2490dda7d4002cda478 as 2 failed, 14 passed, EXIT=1, and manifest.md:34 states the cause as test wrong with no assertion deleted or weakened.\nVERDICT write_paths: read the source run's declared paths reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround plus the node fragment and figure path; both changed files, tests/test_external_wait.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, lie inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md; it names commits fee6bfa2f4d0b96ec69b7e25106b0430e4c494de and cc514e74832d8eba130df7f2b0d4060c4ea310bc, the 16-passed gate with its log, the 2-failed base arm, and both suite arms as inline JSON with full 40-character revisions, while its tests line at manifest.md:10 appends a prose result summary after the command.\nVERDICT diff: read commits fee6bfa2 and cc514e7 against base 42fe90d0b0a46060bafde2490dda7d4002cda478; fee6bfa2 widens the two expected fleet-count dicts with promotion_queued, oldest_promotion_position and oldest_promotion_requested_at, cc514e7 adds the evidence fragment, no product source changes and no assertion is removed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/scoped-gate-1795055685303505242.log records \"16 passed in 5.60s\" and EXIT=0 at fee6bfa2 for tests/test_external_wait.py, the file the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/logs/base.log shows 2 failed, 14 passed, EXIT=1 at 42fe90d0b0a46060bafde2490dda7d4002cda478 and the gate log shows 16 passed and EXIT=0, but the gate ran at fee6bfa2 rather than the delivered head cc514e7483 and both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the changed file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_external_wait.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-external-wait.html, both inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_external_wait.py:187 and :220 compare the mapping returned by recovery._fleet_counts against independently written literals, so removing the delivery fold at reckon/crew/recovery_watch.py:2350 reddens both, but both literals pin the promotion queue only at zero and None.\nSCORE fit: 20\nJUSTIFICATION fit: the widened dict at tests/test_external_wait.py:187 follows the surrounding black-formatted assertion style and introduces no name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it asserts against the existing owners reckon/crew/recovery_watch.py:2288 _fleet_counts and reckon/crew/recovery_classification.py delivery_summary, and a search over reckon/ for promotion_queued found no other owner to extend.\nFINDING tests/test_external_wait.py:191 non-blocking: the replacement literals at :191 and :224 assert promotion_queued only where it is 0 and both oldest_promotion values only where they are None, so a regression that zeroed a non-empty queue or dropped the oldest-request instant would leave both cases green; the only non-zero pin is tests/test_delivered_rows_say_what_is_owed.py:229, so fold a non-empty delivery row into a case in this file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/manifest.md:10 non-blocking: the tests field carries the command followed by a prose result summary, where the manifest contract requires the literal command alone; promotion records the whole value as the gate command, so the description travels into the recorded gate and the run re-runs only because the extra words land as positional arguments to sh.",
+  "review_run_id": "r-20261119T031208849897-review-of-qwnw-red-file-external-wait-cc514e74832d",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "cc514e74832d8eba130df7f2b0d4060c4ea310bc",
+  "reviewed_run_id": "r-20261118T062438606891-qwnw-red-file-external-wait",
+  "reviewed_worker_commits": [
+    "fee6bfa2f4d0b96ec69b7e25106b0430e4c494de",
+    "cc514e74832d8eba130df7f2b0d4060c4ea310bc"
+  ],
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/after_suite-1795056916671390342.log",
+      "revision": "cc514e74832d8eba130df7f2b0d4060c4ea310bc"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062438606891-qwnw-red-file-external-wait/baseline_suite-1795056871620068315.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    },
+    "derivation": "added_failure_ids = after_suite.failure_ids minus baseline_suite.failure_ids; both logs record completed true, exit_status 0 and no failure ids, so the derived count is 0"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:58:18.004533+00:00",
+  "total": 109
+}
