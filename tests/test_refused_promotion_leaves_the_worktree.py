@@ -9,8 +9,11 @@ uncommitted — and, with the tree gone, a later review reads the shared
 checkout's HEAD instead of the run's own.
 
 One refusal is driven here: a promotion refused because a live peer claims a path
-the run accepted. The order at the base revision also reaches one other refusal
-after a pointer write — the suite-delta refusal records itself on the live
+the run accepted. The path is a binary receipt, because only the class a merge
+cannot reconcile is ever accepted at all — a companion source file beside a
+declared source path needs no acceptance, since the worktree isolates the edit
+and the merge reconciles it. The order at the base revision also reaches one
+other refusal after a pointer write — the suite-delta refusal records itself on the live
 pointer before it raises, pinned by its own tests — and that write is not the
 defect class this guard covers.
 """
@@ -73,11 +76,11 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     _git(root, "add", "seed.txt", "docs")
     _git(root, "commit", "-q", "-m", "test: seed repository")
     _git(root, "checkout", "-q", "-b", "work")
-    (root / "shared_module.py").write_text("before\n", encoding="utf-8")
-    _git(root, "add", "shared_module.py")
+    (root / "artifact.png").write_bytes(b"before\n")
+    _git(root, "add", "artifact.png")
     _git(root, "commit", "-q", "-m", "test: base of the run")
-    (root / "shared_module.py").write_text("changed by the run\n", encoding="utf-8")
-    _git(root, "add", "shared_module.py")
+    (root / "artifact.png").write_bytes(b"changed by the run\n")
+    _git(root, "add", "artifact.png")
     _git(root, "commit", "-q", "-m", "test: the run's own change")
     _git(root, "checkout", "-q", "main")
     # The run's commit is merged, so its worktree classifies as integrated and a
@@ -139,7 +142,7 @@ def test_a_refused_promotion_leaves_the_worktree_pointer_and_ledger(
         repository,
         peer_id,
         worktree=str(tmp_path / "peer-worktree"),
-        write_paths=["shared_module.py"],
+        write_paths=["artifact.png"],
         base_sha=base_sha,
     )
     _pointer(
@@ -156,7 +159,7 @@ def test_a_refused_promotion_leaves_the_worktree_pointer_and_ledger(
             run_id,
             gate="passed",
             commits=(changed,),
-            accepted_paths={"shared_module.py": "companion path this run owns"},
+            accepted_paths={"artifact.png": "rendered companion this run owns"},
             no_impl_change="the plan moved in a peer node",
             root=repository,
         )
