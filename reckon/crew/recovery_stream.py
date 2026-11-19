@@ -179,13 +179,31 @@ def _lane_rate_contributions(
     the caller drops a row when the window's start passes it. None means the
     read failed, which the caller treats as a reason to widen the read once. If
     the failure was a genuine defect, the fallback returns None too.
+
+    Inside a derivation the rows come from the history the derivation's own pass
+    already read, bounded to the same instant by the rule the index applies.
+    Both readers then name one ledger file through one decode rather than
+    decoding one index twice for one derivation's answer. Outside a derivation
+    there is no history to share, and this bounded read is what keeps a
+    long-lived monitor from decoding a whole history it will not use.
     """
     from reckon import ledger as ledger_module
+    from reckon.crew import obligations as obligations_module
 
-    try:
-        rows = ledger_module.load(project, activity_since=activity_since)[0]["runs"]
-    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
-        return None
+    shared = obligations_module.derivation_run_rows(project)
+    if shared is None:
+        try:
+            rows = ledger_module.load(project, activity_since=activity_since)[0]["runs"]
+        except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
+            return None
+    else:
+        rows = [
+            row
+            for row in shared
+            if isinstance(row, Mapping)
+            and (moment := ledger_module.run_activity_seconds(row)) is not None
+            and moment >= activity_since
+        ]
     contributions: _LaneRateContributions = {}
     for row in rows:
         if not isinstance(row, Mapping):

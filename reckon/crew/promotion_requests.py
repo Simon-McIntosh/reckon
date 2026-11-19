@@ -1191,6 +1191,26 @@ class PromotionService:
             thread.join(max(0.0, deadline - time.monotonic()))
 
 
+def _landing_checkout(project: str) -> str:
+    """The checkout a project's promoted heads land in, or "" when unknown.
+
+    A refusal's request records the project and never a checkout, so a reader
+    asking whether the run's delivered head is on the primary branch has no
+    repository to ask about unless it resolves one. The project's registered
+    mount is the authority for "the branch its landed heads move", so its
+    resolution failure is an unknown checkout rather than an error: the caller
+    fails closed and reads the landing as unverified.
+    """
+    if not project:
+        return ""
+    from reckon.crew import merge
+
+    try:
+        return str(merge.project_repository(project))
+    except (OSError, ValueError, merge.MergeError):
+        return ""
+
+
 def _settled_state(request: Mapping[str, Any]) -> str:
     """Why a request's run no longer needs the duty, or "" while it does.
 
@@ -1222,11 +1242,15 @@ def _settled_state(request: Mapping[str, Any]) -> str:
     if landed:
         from reckon.crew.recovery_classification import _promoted_awaiting_merge
 
+        record = {**request, "project": landed}
+        if not (record.get("worktree") or record.get("repo")):
+            # A request names its project but never a checkout, so the ancestry
+            # question would be asked of nothing and every landed run would read
+            # as promoted. The checkout a promoted head lands in answers it.
+            record["repo"] = _landing_checkout(landed)
         return (
             "promoted"
-            if _promoted_awaiting_merge(
-                {**request, "project": landed}, moment=time.time()
-            )
+            if _promoted_awaiting_merge(record, moment=time.time())
             else "landed"
         )
     if not runs.pointer_path(run_id).exists():

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roster registration base red head green</title>
+</head>
+<body>
+<h1>Roster registration base red head green</h1>
+<section id="qwnw-red-file-roster-write-commits-cause">
+<h2>Cause and verdict</h2>
+<p>Three cases, one cause, verdict <strong>test wrong</strong>: registration is a store-only transaction since <em>0c0f42d351</em>.</p>
+</section>
+<section id="qwnw-red-file-roster-write-commits-base">
+<h2>Base arm: the file red before the repair</h2>
+<pre>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_roster_write_commits.py</pre>
+<p>At base 6fa2b177c511a297d3440956aa64eaa759d4554a: 3 failed, EXIT=1.</p>
+<ul>
+<li>test_member_add_commits_only_the_roster_write: 0 == 1</li>
+<li>test_commit_refuses_roster_with_uncommitted_registration: DID NOT RAISE</li>
+<li>test_register_member_does_not_commit_by_default: empty status vs untracked docs/</li>
+</ul>
+</section>
+
+<section id="qwnw-red-file-roster-write-commits-head">
+<h2>Head arm: the file green</h2>
+<p>At head fcaba5b12b58bcfbc89336206b50ae9cfe44d2cb: 3 passed, EXIT=0, as all_debug job 1328948 with SLURM_JOB_ID unset</p>
+</section>
+
+<section id="qwnw-red-file-roster-write-commits-suite">
+<h2>Suite arms</h2>
+<p>Base 6fa2b177c511a297d3440956aa64eaa759d4554a: 58 passed, EXIT=0. Head fcaba5b12b58bcfbc89336206b50ae9cfe44d2cb: 58 passed, EXIT=0.</p>
+</section>
+
+</body>
+</html>

@@ -106,8 +106,11 @@ def _manifest(tmp_path: Path, run_id: str, commits: list[str]) -> Path:
     manifest = tmp_path / "manifests" / f"{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     log_name = f"{run_id}-focus.log"
+    # The log the manifest cites must be the log its declared command produces:
+    # a pytest gate's evidence ends in a pytest summary, and a capture of a
+    # passing pytest run carries no failure ids.
     (manifest.parent / log_name).write_text(
-        "focused check passed\nEXIT=0\n", encoding="utf-8"
+        ".......\n7 passed in 0.31s\nEXIT=0\n", encoding="utf-8"
     )
     manifest.write_text(
         f"node: {PROJECT}-node\n"

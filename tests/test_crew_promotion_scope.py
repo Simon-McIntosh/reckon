@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -65,7 +66,11 @@ def _pointer(
         "launch": "in-harness",
         "role": "implement",
         "backend": "native",
-        "created_at": "2026-08-26T12:00:00Z",
+        # Derived, never written down: the boundary check refuses a record whose
+        # dispatch is older than the span it can attribute changes across, so a
+        # frozen stamp would go stale and turn a per-path refusal into a
+        # no-referent one on a date nobody edited.
+        "created_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "node": {
             "id": "scope-check",
             "plan": "fixture",
@@ -145,6 +150,7 @@ def test_main_checkout_source_write_allows_promotion(
     base = _git(repository, "rev-parse", "HEAD")
     run_tree = _detached_tree(repository, tmp_path / "run-tree")
     run_id = "r-main-tree-write"
+    _declare_shared_write_paths(repository, "allowed.txt")
     _guarded_pointer(repository, run_tree, run_id, base)
     commit = _commit_allowed(run_tree)
     (repository / "allowed.txt").write_text("stray\n", encoding="utf-8")
@@ -211,12 +217,14 @@ def test_peer_worktree_source_write_allows_promotion(
     run_tree = _detached_tree(repository, tmp_path / "run-tree")
     peer_tree = _detached_tree(repository, tmp_path / "peer-tree")
     run_id = "r-peer-tree-write"
+    _declare_shared_write_paths(repository, "allowed.txt")
     _guarded_pointer(repository, run_tree, run_id, base)
     commit = _commit_allowed(run_tree)
     (peer_tree / "allowed.txt").write_text("stray\n", encoding="utf-8")
 
-    # The peer's own declaration covers the path and a merge reconciles it, so the
-    # edit is the peer's in-flight work rather than this run's boundary.
+    # The project publishes the path as shareable, so a merge reconciles it on
+    # every worktree that edits it: the edit is a concurrent editor's in-flight
+    # work rather than this run's boundary.
     stored = crew.complete(run_id, gate="passed", commits=[commit], root=repository)[
         "record"
     ]
@@ -427,7 +435,12 @@ def test_complete_command_accepts_reasoned_companion_path(
     )
 
     assert accepted.exit_code == 0, accepted.output
-    stored = json.loads(accepted.output)["record"]
+    # The command's own reply is a bounded summary; the receipt it names holds
+    # the full promotion result, which is what this test judges.
+    receipt = json.loads(
+        Path(json.loads(accepted.output)["record_path"]).read_text(encoding="utf-8")
+    )
+    stored = receipt["record"]
     assert stored["scope_acceptances"] == [
         {
             "path": "artifact.png",

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:26:21Z",
+  "findings": [
+    {
+      "file": "tests/test_a_damaged_run_record_stops_only_its_run.py",
+      "line": "144",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert refused.exit_code != 0` reddens if promotion stops refusing at all, but any refusal satisfies it, so the node's rule \u2014 a damaged run record stops only its own run \u2014 is guarded only as far as a refusal of some kind; the node records the same gap under outside_scope (promotion's damaged-record guard at reckon/crew/promotion.py:2374 is skipped on a warm index and append_run's existing-path guard answers instead)."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-damaged-run-record-stops-only-its-run.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the file ends with no trailing newline (git diff reports '\\ No newline at end of file'), unlike every sibling fragment in docs/evidence/fragments/queued-work-needs-no-workaround/, so an append or in-place edit to this fragment joins lines."
+    }
+  ],
+  "head_log_revision": "3048dfb6464e6a12d5d2ea2881660ad98e7f1a05",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site exists: the landed change is a test helper and an evidence fragment, and the only reachable code it invokes is the existing crew complete --wait option at reckon/crew_run_commands.py:3901.",
+    "diff": "read commit by commit against d8baf52: b630eda0 adds the --wait flag and its four-line comment to _complete, 3048dfb6 adds the 44-line evidence fragment; no product file, no deleted assertion, no rewritten assertion.",
+    "done_when": "the done_when names the file in full at head as a job with the cause stated and both suite arms recorded; scoped-gate-1795102360519966965.log records 3 passed EXIT=0 at 3048dfb on host 98dci4-clu-3144, base-arm-named-test.log records the red case at d8baf52, and baseline_suite/after_suite both read 58 passed EXIT=0.",
+    "goal": "the node's goal is that tests/test_a_damaged_run_record_stops_only_its_run.py passes in full at head as a job; tests/test_a_damaged_run_record_stops_only_its_run.py:132 passes --wait so the damaged-run promotion runs, and the head gate reads 3 passed EXIT=0.",
+    "manifest": "read; status complete, commits b630eda0 and 3048dfb6, changed_paths the two changed files, tests the named pytest command, test_logs the scoped gate, baseline_suite (d8baf52, 0 failures) and after_suite (3048dfb, 0 failures) with both logs showing 58 passed.",
+    "write_paths": "the declared fence is reckon, tests, the fragment directory and file, and the figures directory; the delivered diff touches only tests/test_a_damaged_run_record_stops_only_its_run.py and the named fragment, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_damaged_run_record_stops_only_its_run.py:144 would redden if promotion stopped refusing the damaged run (it read 'assert 0 != 0' at base-arm-named-test.log:29), but the same line cannot tell a damaged-record refusal from append_run's existing-path refusal, so the named rule is guarded only as far as a refusal of any kind.",
+    "evidence": "scoped-gate-1795102360519966965.log reads '3 passed in 1.04s' with EXIT=0 at revision 3048dfb and base-arm-named-test.log reads '1 failed, 2 passed' EXIT=1 at d8baf52 with the failing id test_promotion_refuses_only_the_damaged_run, while both suite arms read '58 passed' EXIT=0, though the all_debug partition the done_when names is recorded only in the manifest and not in any log header.",
+    "fit": "the added lines at tests/test_a_damaged:129-133 comment the reason for the flag in the file's own style and the commits carry conventional subjects with bodies, though the new fragment ends without the trailing newline every sibling in docs/evidence/fragments/queued-work-needs-no-workaround/ carries.",
+    "goal_fidelity": "tests/test_a_damaged_run_record_stops_only_its_run.py:132 adds --wait to _complete, so the head run executes the promotion the file names and passes in full (3 passed in 1.04s at 3048dfb), exactly the deliverable of plan section 29 for this file.",
+    "reuse": "the diff adds no function, class or module and calls the existing crew complete --wait option declared at reckon/crew_run_commands.py:3901, so no capability is forked.",
+    "scope_discipline": "git diff d8baf52..3048dfb touches only tests/test_a_damaged_run_record_stops_only_its_run.py:132 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-damaged-run-record-stops-only-its-run.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_damaged-run file passes in full at head as a job, with each cause stated as product wrong or test wrong and no assertion deleted or weakened; tests/test_a_damaged_run_record_stops_only_its_run.py:132 passes --wait so the promotion the third case names actually runs, and the head gate reads 3 passed.\nVERDICT done_when: the done_when asks for the named file in full at head as a job on all_debug, the base run compared against it, both suite arms as inline JSON with 40-character revisions and a negative control; scoped-gate-1795102360519966965.log records '3 passed in 1.04s' EXIT=0 at 3048dfb6464e6a12d5d2ea2881660ad98e7f1a05, base-arm-named-test.log records '1 failed, 2 passed' EXIT=1 at d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72, and baseline_suite/after_suite both read '58 passed' EXIT=0.\nVERDICT write_paths: read the declared fence in the reviewed manifest's orientation_write_paths and the dispatch's scope list; the diff d8baf52..3048dfb touches only tests/test_a_damaged_run_record_stops_only_its_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-damaged-run-record-stops-only-its-run.html, both inside them.\nVERDICT manifest: read; status complete, commits b630eda026b6f8cd3b4f9328e6540bc76c367a53 and 3048dfb6464e6a12d5d2ea2881660ad98e7f1a05, changed_paths the two files, tests the named pytest command, test_logs scoped-gate-1795102360519966965.log and base-arm-named-test.log, both suite arms 0 failures with 58 passed each.\nVERDICT diff: read both commits against d8baf52; b630eda0 adds the --wait flag and a four-line reason in a comment inside _complete, 3048dfb6 adds the 44-line evidence fragment citing both arms; no product file changed and no assertion was deleted, rewritten or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_damaged_run_record_stops_only_its_run.py:132 hands --wait to crew complete, which turns the request-only call into the promotion the file's name promises, and the base arm shows that without it the third case read 'assert 0 != 0'.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795102360519966965.log's summary '3 passed in 1.04s' and its EXIT=0 line are at revision 3048dfb, but the all_debug partition the done_when names appears only in the manifest and no log header or .scheduler file records it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is tests/test_a_damaged_run_record_stops_only_its_run.py:129-133 and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-damaged-run-record-stops-only-its-run.html, both inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_damaged_run_record_stops_only_its_run.py:144 fails if promotion ceases to refuse the damaged run, yet it holds for append_run's existing-path refusal as well, so it cannot distinguish the damaged-record rule it names.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_a_damaged_run_record_stops_only_its_run.py:129-133 follows the file's own style and the commits carry conventional subjects with bodies, but the fragment file ends without the trailing newline every sibling in docs/evidence/fragments/queued-work-needs-no-workaround/ carries.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and reuses the existing option at reckon/crew_run_commands.py:3901, so nothing is forked; a search over reckon/crew for a second way to carry a promotion out found only this option.\nFINDING tests/test_a_damaged_run_record_stops_only_its_run.py:144 non-blocking: `assert refused.exit_code != 0` reddens if promotion stops refusing at all, but any refusal satisfies it, so the node's rule is guarded only as far as a refusal of some kind; the node records the same gap under outside_scope.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-damaged-run-record-stops-only-its-run.html:44 non-blocking: the file ends with no trailing newline, unlike every sibling fragment in the directory, so an append or in-place edit to it joins lines.\n",
+  "review_run_id": "r-20261119T154053620543-review-of-qwnw-red-file-a-damaged-run-record-stops-only-its-run-3048dfb6464e",
+  "reviewed_base_sha": "d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72",
+  "reviewed_head_sha": "3048dfb6464e6a12d5d2ea2881660ad98e7f1a05",
+  "reviewed_run_id": "r-20261118T063849328265-qwnw-red-file-a-damaged-run-record-stops-only-its-run",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T154053620543-review-of-qwnw-red-file-a-damaged-run-record-stops-only-its-run-3048dfb6464e"
+  },
+  "reviewer_run_id": "r-20261119T154053620543-review-of-qwnw-red-file-a-damaged-run-record-stops-only-its-run-3048dfb6464e",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:48:51.120082+00:00",
+  "total": 106
+}

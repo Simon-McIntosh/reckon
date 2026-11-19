@@ -555,7 +555,10 @@ def test_shadow_cli_accepts_and_persists_session_and_wave(
             "candidate",
         ],
     )
-    payload = json.loads(result.output)
+    # A dispatch advisory is also written to stderr, and CliRunner's `output`
+    # mixes the two streams; stdout is the surface that carries exactly one
+    # JSON line.
+    payload = json.loads(result.stdout)
     pointer = crew.read_pointer(payload["run_id"])
 
     assert result.exit_code == 0

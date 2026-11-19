@@ -75,10 +75,19 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _worktree(root: Path, node: str) -> Path:
-    """Register a tree the way a dispatched run leaves one behind."""
+    """Register a tree the way a dispatched run leaves one behind.
+
+    A run's retained tree carries the commit its landing would take, and a tree
+    with nothing unmerged owes no duty: the held-worktree derivation drops a
+    tree a landing has already emptied. The commit is what makes the promoted
+    run a duty the acknowledgement reader can defer in the first place.
+    """
     path = root.parent / "managed-worktrees" / SESSION / node
     path.parent.mkdir(parents=True, exist_ok=True)
     _git(root, "worktree", "add", "-q", "--detach", str(path), "HEAD")
+    (path / f"{node}.txt").write_text(f"{node}\n", encoding="utf-8")
+    _git(path, "add", f"{node}.txt")
+    _git(path, "commit", "-q", "-m", f"test: leave {node} unmerged")
     return path
 
 

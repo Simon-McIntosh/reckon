@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3662 _render_event -> Ticker().render(event)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:17:30Z",
+  "findings": [
+    {
+      "file": "tests/test_ticker_shows_the_lane_mean.py",
+      "line": "278",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scoped marker assertion is entailed by line 273 assert _rate_cell(line).strip() == \"\" because DIM_MARKER is the non-whitespace EN DASH (reckon/crew/ticker.py:103), so the moved line cannot name a condition under which it fails and the rule it states is guarded only by line 273; recorded because a later edit that drops line 273 would leave the marker claim looking guarded when it is not."
+    }
+  ],
+  "head_log_revision": "d9ac641eac55f20ae2aab9b0370e4ee00efefb67",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the one production path that renders the row the assertion reads, reckon/crew/recovery_watch.py:3662 '(ticker or Ticker()).render(event, with_session=with_session)', which reaches the lane cell at reckon/crew/ticker.py:3479 and the promotion cell at reckon/crew/ticker.py:3943.",
+    "diff": "Read both commits against be17b57484: c996f10ea8 changes one assertion in tests/test_ticker_shows_the_lane_mean.py:275 from 'DIM_MARKER not in line' to 'DIM_MARKER not in _rate_cell(line)' with a four-line rationale comment, and d9ac641eac adds the 67-line evidence fragment recording the base row, the 130499dbb3 promotion-marker cause, the two arms and the green head log.",
+    "done_when": "The done_when asks for the named file green at head as an all_debug job, a first run at base, a named cause with a test-wrong-or-product-wrong verdict, and an arm over the test files that import what changed with both arms as inline JSON; the manifest records the base red run (1 failed, EXIT=1), the head green run (11 passed, EXIT=0), the test-wrong verdict in the evidence fragment, and both suite arms at full 40-character revisions (58 passed each, 0 failures), though those two suite files do not import reckon/crew/ticker.py so their coverage of the changed file is nil.",
+    "goal": "The node's goal is 'Make tests/test_ticker_shows_the_lane_mean.py pass in full on the primary branch'; the landed diff repairs the single base failure and scoped-gate-1795096187976336315.log records '11 passed' EXIT=0 at d9ac641eac.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062623373602-qwnw-red-file-ticker-shows-the-lane-mean/manifest.md; status complete, commits c996f10ea8 and d9ac641eac, changed_paths the two landed files, tests the literal pytest command, and test_logs naming scoped-gate-1795096187976336315.log, baseline_suite and after_suite both completed with 0 failures, plus negative_control_log negative-control-base-run.log.",
+    "write_paths": "The node's fence was reckon, tests, the queued-work-needs-no-workaround fragment directory and its named fragment, and the figures directory for this slug; git diff be17b57484..d9ac641eac touches only tests/test_ticker_shows_the_lane_mean.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ticker-shows-the-lane-mean.html, both declared."
+  },
+  "justifications": {
+    "durability": "The base arm reddens on the exact assertion the diff moves (negative-control-base-run.log quotes the row and 'assert ... DIM_MARKER not in line' at line 275), and reinstating the row-wide form reddens the head test again, but the landed assertion at tests/test_ticker_shows_the_lane_mean.py:278 is entailed by line 273 'assert _rate_cell(line).strip() == \"\"' because DIM_MARKER is the non-whitespace EN DASH at reckon/crew/ticker.py:103, so the moved line itself can no longer fail and the rule's guard is line 273.",
+    "evidence": "The named check is measured properly at both arms (negative-control-base-run.log: '1 failed, 10 passed' EXIT=1 at be17b57484 with the id and line 275 quoted; scoped-gate-1795096187976336315.log: '11 passed' EXIT=0 at d9ac641eac), but both suite arms run only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import reckon/crew/ticker.py, so the done_when's clause about an arm over the test files that import what changed is recorded rather than measured, as the manifest's outside_scope admits.",
+    "fit": "The change follows the test's own geometry helper _rate_cell at tests/test_ticker_shows_the_lane_mean.py:78 and the sibling cases at :291 and :304 which already assert against that slice, adds no helper or fixture, and names no plan, sprint or ticket identifier.",
+    "goal_fidelity": "The node's goal is that tests/test_ticker_shows_the_lane_mean.py passes in full; the head gate log scoped-gate-1795096187976336315.log runs at revision d9ac641eac and records '11 passed' EXIT=0, and the only base failure at negative-control-base-run.log is the one assertion the diff repairs.",
+    "reuse": "The diff adds no function, class or module; the marker assertion reuses _rate_cell, whose column is derived from the renderer constants in reckon/crew/ticker.py:3479, and a search of reckon/crew for a second row-slicing mechanism found none to fork.",
+    "scope_discipline": "git diff be17b57484..d9ac641eac lists exactly docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ticker-shows-the-lane-mean.html (new, +67) and tests/test_ticker_shows_the_lane_mean.py (+4 -1), both inside the node's declared paths, and the product file reckon/crew/ticker.py is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_ticker_shows_the_lane_mean.py pass in full on the primary branch'; the landed diff repairs the single base failure and scoped-gate-1795096187976336315.log records '11 passed' EXIT=0 at d9ac641eac.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job, a first run at base, a named cause with a test-wrong-or-product-wrong verdict, and an arm over the test files that import what changed with both arms as inline JSON; the manifest records the base red run (1 failed, EXIT=1), the head green run (11 passed, EXIT=0), the test-wrong verdict in the evidence fragment, and both suite arms at full 40-character revisions (58 passed each, 0 failures), though those two suite files do not import reckon/crew/ticker.py so their coverage of the changed file is nil.\nVERDICT write_paths: the node's fence was reckon, tests, the queued-work-needs-no-workaround fragment directory and its named fragment, and the figures directory for this slug; git diff be17b57484..d9ac641eac touches only tests/test_ticker_shows_the_lane_mean.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-ticker-shows-the-lane-mean.html, both declared.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062623373602-qwnw-red-file-ticker-shows-the-lane-mean/manifest.md; status complete, commits c996f10ea8 and d9ac641eac, changed_paths the two landed files, tests the literal pytest command, and test_logs naming scoped-gate-1795096187976336315.log, baseline_suite and after_suite both completed with 0 failures, plus negative_control_log negative-control-base-run.log.\nVERDICT diff: read both commits against be17b57484: c996f10ea8 changes one assertion in tests/test_ticker_shows_the_lane_mean.py:275 from 'DIM_MARKER not in line' to 'DIM_MARKER not in _rate_cell(line)' with a four-line rationale comment, and d9ac641eac adds the 67-line evidence fragment recording the base row, the 130499dbb3 promotion-marker cause, the two arms and the green head log.\nCALL_SITES: reckon/crew/recovery_watch.py:3662 _render_event -> Ticker().render(event)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the head gate log scoped-gate-1795096187976336315.log runs at d9ac641eac and records '11 passed' EXIT=0 for tests/test_ticker_shows_the_lane_mean.py.\nSCORE evidence: 15\nJUSTIFICATION evidence: negative-control-base-run.log quotes the failing assertion at line 275 EXIT=1 and scoped-gate-1795096187976336315.log records '11 passed' EXIT=0, yet baseline_suite and after_suite both run only tests that do not import reckon/crew/ticker.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff be17b57484..d9ac641eac lists only tests/test_ticker_shows_the_lane_mean.py and the declared evidence fragment, with reckon/crew/ticker.py untouched.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating the row-wide form reddens the test as negative-control-base-run.log shows, but the landed line at tests/test_ticker_shows_the_lane_mean.py:278 is entailed by line 273 because DIM_MARKER is the non-whitespace EN DASH at reckon/crew/ticker.py:103.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the test's own _rate_cell helper at tests/test_ticker_shows_the_lane_mean.py:78 exactly as the sibling cases at :291 and :304 do, adding no helper and no identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and a search of reckon/crew for a second row-slicing mechanism found none outside _rate_cell's derivation from reckon/crew/ticker.py:3479.\nFINDING tests/test_ticker_shows_the_lane_mean.py:278 non-blocking: the scoped marker assertion is already entailed by line 273, which asserts the same cell is empty and DIM_MARKER is the non-whitespace EN DASH, so the moved line cannot name a condition under which it fails and the rule it states is guarded only by line 273.\n",
+  "review_run_id": "r-20261119T143202965251-review-of-qwnw-red-file-ticker-shows-the-lane-mean-d9ac641eac55",
+  "reviewed_base_sha": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "reviewed_head_sha": "d9ac641eac55f20ae2aab9b0370e4ee00efefb67",
+  "reviewed_run_id": "r-20261118T062623373602-qwnw-red-file-ticker-shows-the-lane-mean",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T143202965251-review-of-qwnw-red-file-ticker-shows-the-lane-mean-d9ac641eac55"
+  },
+  "reviewer_run_id": "r-20261119T143202965251-review-of-qwnw-red-file-ticker-shows-the-lane-mean-d9ac641eac55",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:33:38.934654+00:00",
+  "total": 108
+}

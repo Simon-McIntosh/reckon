@@ -1,0 +1,24 @@
+<section id="qwnw-red-file-a-tick-walks-the-process-table-once-record">
+<h3>One live-work pass walks the process table once</h3>
+<p>The named file failed at its base revision on one assertion: the regionless
+arm expected 40 walks and counted 79. The product already holds one table for
+the whole pass, so the defect was the test's expectation and not the code. A
+terminal pointer reads liveness twice inside one pass, once where the row is
+classified and once where the completion offer asks again. The head assertion
+stays exact at one walk, and the base arm now states the fault's shape, at least
+one walk per pointer, instead of a read count the pass owns.</p>
+<h4 id="qwnw-red-file-a-tick-walks-the-process-table-once-head">Head gate</h4>
+<pre># logs: scoped-gate-*.log in the run dir, on all_debug, SLURM_JOB_ID unset
+# one live-work pass over 40 terminal pointers: 1 passed, EXIT=0
+# the armed suite command over the head tree: 58 passed, EXIT=0</pre>
+<h4 id="qwnw-red-file-a-tick-walks-the-process-table-once-control">Negative control</h4>
+<pre># log: negative-control-1455.log  (all_debug)
+# revision: b24fe95a789c82cd33f22a912b4dbbf94d5e2193
+FAILED tests/test_a_tick_walks_the_process_table_once.py::test_one_pass_walks_the_table_once
+1 failed in 1.77s
+EXIT=1</pre>
+<p>With the region neutralised at head the same pass counts 79 walks, and the
+exact head assertion fails with 79 == 1, so the single walk is the region's
+doing rather than the fixture's. The armed suite command, which for this node
+resolves to the census pair, passes 58 of 58 on both arms.</p>
+</section>

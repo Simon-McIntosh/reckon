@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite-1795093545494347425.log is 0 failed with a bare EXIT=0 at eee07f8a5e18 and after_suite-1795093588317872101.log is 0 failed with EXIT=0 at b930698b5e10, and the 45-file duty-surface arm reads 13 failed at base against 11 failed at head with the head's 11 ids all present in the base's 13, so the set difference is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:5265 (_with_action_form projects the duties owed)",
+    "reckon/crew/obligations.py:5266 (_with_action_form projects the acknowledged list)",
+    "reckon/crew/obligation_snapshot.py:2200 (the slice a sweep publishes calls _with_action_form)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T18:51:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "670",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fix adds 'review_tier' as a literal to the second hand-maintained field list at lines 663-675, duplicating the entry already declared in DUTY_ROW_FIELDS at obligations.py:166 instead of extending the owner of the row vocabulary, so the same drift that dropped this field can drop the next one a kind is decided by."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing line and checkpoint state the head arm ran with SLURM_JOB_ID unset, but scoped-gate-1795093609506227374.log:4 records the command as 'env PYTHONPATH=. sh -c ...' with no 'env -u SLURM_JOB_ID', so the done_when's head condition is not what the recorded gate ran under."
+    },
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 45-file duty-surface arm is the arm over the test files that exercise the changed change, and both of its arms are recorded as prose in the artifacts line rather than as inline JSON with revisions, exit statuses and failure ids as the done_when requires; the baseline_suite/after_suite JSON in the same record is over two files unrelated to obligations."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against eee07f8a5e18: b930698b5e adds one 'review_tier' entry to the bounded-row tuple in reckon/crew/obligations.py and updates two expectations in the test file, 5949c60654 adds the evidence fragment with both arms, and e2eb2240b8 appends the duty-surface arm rows to that fragment; nothing else changed.",
+    "done_when": "the done_when demands a full pass at head as an all_debug job with SLURM_JOB_ID unset, per-cause verdicts, an import arm, ruff clean, three commits and one bounded manifest write; the manifest records all of those, but the head gate log's '# command:' header (scoped-gate-1795093609506227374.log:4) omits 'env -u SLURM_JOB_ID' that the base arm carries.",
+    "goal": "the source node's goal is 'Make tests/test_a_tier_none_run_owes_no_review.py pass in full on the primary branch'; reckon/crew/obligations.py:670 adds review_tier to the bounded delivery row and both test expectations at tests/test_a_tier_none_run_owes_no_review.py:201 and :250 now name the command the code emits, so the file passes 2 passed at e2eb2240 in the reviewed worktree.",
+    "manifest": "read; it states status complete, three commits, the head arm 2 passed EXIT=0 at b930698b5e10 and the base arm 2 failed EXIT=1 at eee07f8a5e18 on KeyError 'review_tier', the two declared suite arms 0 failed at both revisions, and a 45-file duty-surface arm of 13 failed at base against 11 at head; I re-derived those ids from duties-base.log and duties-head.log and found 13 and 11 with 11 common and none head-only.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with this node's fragment, and an unused figures directory; the diff eee07f8a5e18..e2eb2240b8 touches only reckon/crew/obligations.py, tests/test_a_tier_none_run_owes_no_review.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-tier-none-run-owes-no-review.html."
+  },
+  "justifications": {
+    "durability": "the assertion assert docs_item['review_tier'] == 'none' at tests/test_a_tier_none_run_owes_no_review.py:193 reddens with KeyError 'review_tier' when the tuple at reckon/crew/obligations.py:663-675 lacks the field, as base-node-test-1795093651181687472.log and my own run at d80bb68 both show, and the added line tests/test_a_tier_none_run_owes_no_review.py:204 fails if the row names a crew dispatch command.",
+    "evidence": "the scoped-gate log at b930698b5e105a2d831ea977a0bdf6ed9d434f4c records 2 passed and a bare EXIT=0 and base-node-test-1795093651181687472.log records 2 failed EXIT=1, but the head log's own '# command:' header runs 'env PYTHONPATH sh -c ...' with no 'env -u SLURM_JOB_ID' although the done_when requires SLURM_JOB_ID unset.",
+    "fit": "the change is one tuple entry plus a comment in the same shape as the surrounding bounded-row projection at reckon/crew/obligations.py:663-700, and the two updated expectations follow the file's existing startswith idiom.",
+    "goal_fidelity": "reckon/crew/obligations.py:670 now carries review_tier on the bounded delivery row, and tests/test_a_tier_none_run_owes_no_review.py passes 2 passed at e2eb2240 in the reviewed worktree while both ids redden with KeyError 'review_tier' at a tree without that line.",
+    "reuse": "the bounded row's field tuple at reckon/crew/obligations.py:663 repeats names from the declared vocabulary DUTY_ROW_FIELDS at reckon/crew/obligations.py:166 rather than deriving from it, so the addition extends the only bounded-row owner by hand rather than through the owner of the vocabulary.",
+    "scope_discipline": "the three paths in eee07f8a5e18..e2eb2240b8 (reckon/crew/obligations.py, tests/test_a_tier_none_run_owes_no_review.py, the evidence fragment) are all inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Make tests/test_a_tier_none_run_owes_no_review.py pass in full on the primary branch'; reckon/crew/obligations.py:670 adds review_tier to the bounded delivery row and both updated expectations at tests/test_a_tier_none_run_owes_no_review.py:201 and :250 name the command the code emits, so the file reads 2 passed at e2eb2240 in the reviewed worktree.\nVERDICT done_when: the done_when demands a full pass at head as an all_debug job with SLURM_JOB_ID unset, per-cause verdicts, an import arm, ruff clean, three commits and one bounded manifest write; the manifest records all of these, but the head gate log's own '# command:' header at scoped-gate-1795093609506227374.log:4 omits the 'env -u SLURM_JOB_ID' the base arm carries.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround with this node's fragment, and an unused figures directory; the diff eee07f8a5e18..e2eb2240b8 touches only reckon/crew/obligations.py, tests/test_a_tier_none_run_owes_no_review.py and this node's evidence fragment.\nVERDICT manifest: read; it states status complete, three commits, the head arm 2 passed EXIT=0 at b930698b5e105a2d831ea977a0bdf6ed9d434f4c and the base arm 2 failed EXIT=1 at eee07f8a5e18a6d5d98b26951db09a1504806918 on KeyError 'review_tier', the two declared suite arms 0 failed at both revisions, and a 45-file duty-surface arm of 13 failed at base against 11 at head; I re-derived those ids from duties-base.log and duties-head.log and found 13 and 11 with 11 common and none head-only.\nVERDICT diff: read commit by commit against eee07f8a5e18: b930698b5e adds one 'review_tier' entry to the bounded-row tuple in reckon/crew/obligations.py and updates two expectations in the test file, 5949c60654 adds the evidence fragment carrying both arms, and e2eb2240b8 appends the duty-surface arm rows to that fragment; nothing else changed.\nCALL_SITES: reckon/crew/obligations.py:5265 (_with_action_form projects the duties owed), reckon/crew/obligations.py:5266 (the acknowledged list), reckon/crew/obligation_snapshot.py:2200 (the slice a sweep publishes).\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:670 now carries review_tier on the bounded delivery row and tests/test_a_tier_none_run_owes_no_review.py passes 2 passed at e2eb2240 in the reviewed worktree while both ids redden with KeyError 'review_tier' at a tree without that line.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head gate log scoped-gate-1795093609506227374.log records 2 passed and a bare EXIT=0 at b930698b5e105a2d831ea977a0bdf6ed9d434f4c and the base log records 2 failed EXIT=1, but the head log's '# command:' header omits the 'env -u SLURM_JOB_ID' the done_when requires.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff eee07f8a5e18..e2eb2240b8 is inside the four declared write paths named in the reviewed manifest's orientation_write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_tier_none_run_owes_no_review.py:193 reddens with KeyError 'review_tier' when reckon/crew/obligations.py:663-675 lacks the field (shown by base-node-test-1795093651181687472.log and my own run at d80bb68 with the fix absent), and the added assertion at tests/test_a_tier_none_run_owes_no_review.py:204 fails if the row names a crew dispatch command.\nSCORE fit: 18\nJUSTIFICATION fit: the change is one tuple entry plus a comment inside the bounded-row projection at reckon/crew/obligations.py:663-700, and the updated expectations follow the file's existing startswith idiom at tests/test_a_tier_none_run_owes_no_review.py:250.\nSCORE reuse: 16\nJUSTIFICATION reuse: the entry at reckon/crew/obligations.py:670 repeats a name already declared in DUTY_ROW_FIELDS at reckon/crew/obligations.py:166 rather than deriving from that owner, so the bounded row extends the only bounded-row owner by hand.\nFINDING reckon/crew/obligations.py:670 non-blocking: the fix adds 'review_tier' as a literal to the second hand-maintained field list at lines 663-675, duplicating the entry already declared in DUTY_ROW_FIELDS at obligations.py:166 instead of extending the owner of the row vocabulary, so the same drift that dropped this field can drop the next one a kind is decided by.\nFINDING manifest.md:17 non-blocking: the landing line and checkpoint state the head arm ran with SLURM_JOB_ID unset, but scoped-gate-1795093609506227374.log:4 records 'env PYTHONPATH=. sh -c ...' with no 'env -u SLURM_JOB_ID', so the done_when's head condition is not what the recorded gate ran under.\nFINDING manifest.md:18 non-blocking: the 45-file duty-surface arm is the arm over the tests that exercise the change, and both of its arms are recorded as prose in the artifacts line rather than as inline JSON carrying revisions, exit statuses and failure ids as the done_when requires, while the baseline_suite/after_suite JSON is over two files unrelated to obligations.\n",
+  "review_node": "review-of-qwnw-red-file-a-tier-none-run-owes-no-review-e2eb2240b813",
+  "review_run_id": "r-20261119T142418449229-review-of-qwnw-red-file-a-tier-none-run-owes-no-review-e2eb2240b813",
+  "reviewed_base_sha": "eee07f8a5e18a6d5d98b26951db09a1504806918",
+  "reviewed_head_sha": "e2eb2240b813b28700352bf0d774139b3ec793fb",
+  "reviewed_run_id": "r-20261118T062516954084-qwnw-red-file-a-tier-none-run-owes-no-review",
+  "reviewer": {
+    "backend": "omp-local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T142418449229-review-of-qwnw-red-file-a-tier-none-run-owes-no-review-e2eb2240b813"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:34:02.495688+00:00",
+  "total": 106
+}

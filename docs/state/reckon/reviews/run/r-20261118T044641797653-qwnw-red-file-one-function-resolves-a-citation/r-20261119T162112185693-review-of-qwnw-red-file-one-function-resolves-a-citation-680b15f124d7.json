@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/merge.py:446 _copy_objects",
+    "reckon/crew/merge.py:1290 head_on_remote_branch",
+    "reckon/crew/merge.py:1297 head_on_remote_branch",
+    "reckon/crew/reports.py:1900 _revision_is_committed",
+    "reckon/crew/recovery_classification.py:1085 _primary_branch_revision",
+    "reckon/crew/recovery_review_acceptance.py:241 _names_a_commit"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:41:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-one-function-resolves-a-citation-680b15f124d7",
+      "recorded_at": "2026-11-19T18:09:47.462337+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html",
+      "line": "37",
+      "severity": "blocking",
+      "text": "blocking: the head importer arm is attributed to revision 2ac68d544b115c94b0631ee19706740c4a70b074 with the figures \"43 failed, 11 errors, 1517 passed\", but the run at 2ac68d54 is arm-head-importers.log and reads \"46 failed, 1514 passed, 11 errors\", with three failing ids absent from base (test_failed_port_22_fetch_retries_over_443 on all three parameters); the cited figures belong to arm-head-importers-2.log, whose header names ed49ec95b67179b7df65433119f69f736920525f, so the \"strict subset\" claim at line 40 is false at the revision written down and the record's advertised purpose of recording the arm revisions records the wrong one; manifest.md:24 repeats the same pair."
+    }
+  ],
+  "head_log_revision": "680b15f124d7a904dcfc0dee1f88adb68773e4e3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "six production call sites examined at 680b15f124d7a904dcfc0dee1f88adb68773e4e3: merge._copy_objects at reckon/crew/merge.py:446, merge.head_on_remote_branch at reckon/crew/merge.py:1290 and :1297, reports._revision_is_committed at reckon/crew/reports.py:1900, recovery_classification._primary_branch_revision at reckon/crew/recovery_classification.py:1085 and recovery_review_acceptance._names_a_commit at reckon/crew/recovery_review_acceptance.py:241; the fragment the gained commit edits is prose with no runtime caller.",
+    "diff": "read commit by commit against 73b9ac21a50d: the prior review landed at dcf706d67d98b3f70f2e647e789f0e4c9aa34c30, so the only gained commit is 680b15f124d7a904dcfc0dee1f88adb68773e4e3, nine added lines in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html forming an \"Arms over the importing test files\" block that cites the two importer runs.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with its output on shared storage, both importer arms as inline JSON at full 40-character revisions, and the base run red as a negative control; manifest.md:12-26 records tests:, test_logs:, artifacts: and both suite arms, and negative-control-base.log shows 1 failed at base, but the head importer arm's recorded revision is contradicted by the log it cites (manifest.md:24).",
+    "goal": "the source node's goal is to make tests/test_one_function_resolves_a_citation.py pass in full; scoped-gate-1795104846246271307.log at 680b15f124d7a904dcfc0dee1f88adb68773e4e3 reads \"2 passed in 3.45s\" EXIT=0 for that file, and the code that makes it pass routes every peel through reckon/crew/recovery_review_subject.py:259 _resolve_commit from reckon/crew/merge.py:446 and :1290, reckon/crew/reports.py:1900, reckon/crew/recovery_classification.py:1085 and reckon/crew/recovery_review_acceptance.py:241.",
+    "manifest": "read manifest.md (26 lines, 4247 bytes): it carries status complete, five full commit ids, six changed_paths and every evidence line the prior review found missing, but its artifacts: arm-head entry at manifest.md:24 pairs revision 2ac68d54 with figures taken from arm-head-importers-*2.log, whose header reads revision ed49ec95b67179b7df65433119f69f736920525f.",
+    "write_paths": "the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment and a figure directory; all six paths in 73b9ac21a50d..680b15f124d7a904dcfc0dee1f88adb68773e4e3 lie inside that fence and the gained commit 680b15f1 touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html."
+  },
+  "justifications": {
+    "durability": "tests/test_one_function_resolves_a_citation.py:44 reddens when a peel site is restored (negative-control-base.log, 1 failed at base) but keys on the \"^{commit}\" literal, so a relapse written as rev-parse --verify <sha> without that suffix stays green, and the nine lines 680b15f1 adds at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:32-40 are guarded by no assertion at all.",
+    "evidence": "the gate measures the done_when and its result is in manifest.md:12-13, but the head-arm evidence the gained commit adds at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:37 cites revision 2ac68d54 with the figures of the run at ed49ec95, so the recorded evidence does not support the claim it makes.",
+    "fit": "the added block at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:32-40 uses the same <h3> plus <pre> shape as the existing sections at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:16-31 and introduces no symbol or name outside the repository's conventions.",
+    "goal_fidelity": "scoped-gate-1795104846246271307.log at 680b15f124d7a904dcfc0dee1f88adb68773e4e3 reports \"2 passed in 3.45s\" EXIT=0 for tests/test_one_function_resolves_a_citation.py, which is the goal's whole deliverable.",
+    "reuse": "the gained commit adds no definition; the code it documents extends the existing owner reckon/crew/recovery_review_subject.py:259 _resolve_commit, and a capability search of reckon/ for another commit-citation resolver found only reckon/interface_counts.py:687 count_revision_cached and reckon/crew/recovery_watch.py _stored_commit_answer, which the owner itself calls.",
+    "scope_discipline": "the gained commit 680b15f1 changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html (+9 -0), inside the declared docs/evidence/fragments/queued-work-needs-no-workaround scope, and the whole range carries no path outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to make tests/test_one_function_resolves_a_citation.py pass in full; scoped-gate-1795104846246271307.log at 680b15f124d7a904dcfc0dee1f88adb68773e4e3 reads \"2 passed in 3.45s\" EXIT=0 for that file, and the code that makes it pass routes every peel through reckon/crew/recovery_review_subject.py:259 _resolve_commit from reckon/crew/merge.py:446 and :1290, reckon/crew/reports.py:1900, reckon/crew/recovery_classification.py:1085 and reckon/crew/recovery_review_acceptance.py:241.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with its output on shared storage, both importer arms as inline JSON at full 40-character revisions, and the base run red as a negative control; manifest.md:12-26 records tests:, test_logs:, artifacts: and both suite arms, and negative-control-base.log shows 1 failed at base, but the head importer arm's recorded revision is contradicted by the log it cites (manifest.md:24).\nVERDICT write_paths: the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment and a figure directory; all six paths in 73b9ac21a50d..680b15f124d7a904dcfc0dee1f88adb68773e4e3 lie inside that fence and the gained commit 680b15f1 touches only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html.\nVERDICT manifest: read manifest.md (26 lines, 4247 bytes): it carries status complete, five full commit ids, six changed_paths and every evidence line the prior review found missing, but its artifacts: arm-head entry at manifest.md:24 pairs revision 2ac68d54 with figures taken from arm-head-importers-*2.log, whose header reads revision ed49ec95b67179b7df65433119f69f736920525f.\nVERDICT diff: read commit by commit against 73b9ac21a50d: the prior review landed at dcf706d67d98b3f70f2e647e789f0e4c9aa34c30, so the only gained commit is 680b15f124d7a904dcfc0dee1f88adb68773e4e3, nine added lines in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html forming an \"Arms over the importing test files\" block that cites the two importer runs.\nCALL_SITES: reckon/crew/merge.py:446 _copy_objects, reckon/crew/merge.py:1290 and :1297 head_on_remote_branch, reckon/crew/reports.py:1900 _revision_is_committed, reckon/crew/recovery_classification.py:1085 _primary_branch_revision, reckon/crew/recovery_review_acceptance.py:241 _names_a_commit\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: scoped-gate-1795104846246271307.log at 680b15f124d7a904dcfc0dee1f88adb68773e4e3 reports \"2 passed in 3.45s\" EXIT=0 for tests/test_one_function_resolves_a_citation.py, which is the goal's whole deliverable.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate measures the done_when and its result is in manifest.md:12-13, but the head-arm evidence the gained commit adds at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:37 cites revision 2ac68d54 with the figures of the run at ed49ec95, so the recorded evidence does not support the claim it makes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit 680b15f1 changes only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html (+9 -0), inside the declared docs/evidence/fragments/queued-work-needs-no-workaround scope, and the whole range carries no path outside the fence.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_one_function_resolves_a_citation.py:44 reddens when a peel site is restored (negative-control-base.log, 1 failed at base) but keys on the \"^{commit}\" literal, so a relapse written as rev-parse --verify <sha> without that suffix stays green, and the nine lines 680b15f1 adds at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:32-40 are guarded by no assertion at all.\nSCORE fit: 18\nJUSTIFICATION fit: the added block at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:32-40 uses the same <h3> plus <pre> shape as the existing sections at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:16-31 and introduces no symbol or name outside the repository's conventions.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition; the code it documents extends the existing owner reckon/crew/recovery_review_subject.py:259 _resolve_commit, and a capability search of reckon/ for another commit-citation resolver found only reckon/interface_counts.py:687 count_revision_cached and reckon/crew/recovery_watch.py _stored_commit_answer, which the owner itself calls.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:37 blocking: the head importer arm is attributed to revision 2ac68d544b115c94b0631ee19706740c4a70b074 with the figures \"43 failed, 11 errors, 1517 passed\", but the run at 2ac68d54 is arm-head-importers.log and reads \"46 failed, 1514 passed, 11 errors\", with three failing ids absent from base (test_failed_port_22_fetch_retries_over_443 on all three parameters); the cited figures belong to arm-head-importers-2.log, whose header names ed49ec95b67179b7df65433119f69f736920525f, so the \"strict subset\" claim at line 40 is false at the revision written down and the record's advertised purpose of recording the arm revisions records the wrong one; manifest.md:24 repeats the same pair.",
+  "review_run_id": "r-20261119T162112185693-review-of-qwnw-red-file-one-function-resolves-a-citation-680b15f124d7",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "680b15f124d7a904dcfc0dee1f88adb68773e4e3",
+  "reviewed_run_id": "r-20261118T044641797653-qwnw-red-file-one-function-resolves-a-citation",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T162112185693-review-of-qwnw-red-file-one-function-resolves-a-citation-680b15f124d7"
+  },
+  "reviewer_run_id": "r-20261119T162112185693-review-of-qwnw-red-file-one-function-resolves-a-citation-680b15f124d7",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:59:20.763306+00:00",
+  "total": 106
+}

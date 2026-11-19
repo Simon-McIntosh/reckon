@@ -1,0 +1,88 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own baseline_suite and after_suite entries in its manifest and from the logs they name: lane-suite-baseline.log (revision 94359be6ce0d3f31fd31f0ac4d4b7437f2835832) reads '58 passed' with EXIT=0 and lane-suite-baseline.log's header names the clone at that revision, while lane-suite-after.log (revision cd668504d011803634bfa2a311a9c2c7e82adfd1) reads '58 passed' with EXIT=0; both manifest failure_id lists are empty, so the difference is empty. The instrument is shown able to see a failure present on the same runner and the same partition: lane-disagreement-base.log records '1 failed, 6 passed' with EXIT=1 and the id tests/test_dispatch_lane_disagreement.py::test_flight_override_routes_when_member_declares_no_harness, so the zero is a measured zero rather than an unread column, and I reproduced that failure myself at the worktree head (d9b857e053a77af65ab77aad9d78f3ef3d3bb28a, which does not carry the reviewed commits): '1 failed, 6 passed in 1.85s', EXIT=1, same id, same assertion.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "helper _register_member_without_harness writes a roster row with harness '' through ledger.write_members",
+      "fails_if": "Reverting the helper to ledger.load plus ledger.write leaves the roster empty, and the dispatch refuses before the routing: I reproduced exactly that at the current main worktree, which still carries the old helper, reading '1 failed, 6 passed' with the id and 'assert 1 == 0'.",
+      "file": "tests/test_dispatch_lane_disagreement.py",
+      "independent": true,
+      "line": 116
+    },
+    {
+      "assertion": "assert result.exit_code == 0",
+      "fails_if": "Any refusal on the roster or on lane disagreement leaves exit_code 1 or 2, so a product change that treats an empty member harness as a disagreement reddens it.",
+      "file": "tests/test_dispatch_lane_disagreement.py",
+      "independent": true,
+      "line": 126
+    },
+    {
+      "assertion": "assert payload['backend'] == 'gamma'",
+      "fails_if": "The assertion compares against 'gamma', the backend the invocation names on the command line, while the payload's value is written by the dispatch's lane resolution at reckon/crew/dispatch_plan.py:742; the lane's own declared backend for this fixture is not gamma, so a resolution that fell back to the member or to the lane default reddens it. The two sides come from two sources even though the printed input and the expected output read the same.",
+      "file": "tests/test_dispatch_lane_disagreement.py",
+      "independent": true,
+      "line": 128
+    }
+  ],
+  "assertion_independence": "The run added no assertion: the diff changes the helper only, and the case's three assertions in tests/test_dispatch_lane_disagreement.py:126-129 are the ones it already carried. Each compares a value the dispatch resolved (result.exit_code, payload['requested_backend'], payload['backend'], payload['agent']['backend']) against a literal the fixture's lane does not supply - the lane declares alpha, and the test asks for gamma - so none is a value the test passed to the code and read back unchanged; the guard they form holds whatever the code does only if the code returns the refused or defaulted lane, which reddens the assertion at :126 first.",
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:30:19Z",
+  "evidence_limits": "The suite pair the manifest records is the harness-armed selection for this node, tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which scan the whole of reckon/ by AST and neither import nor exercise the changed test helper; the done_when's clause 'a test files that import what you changed' is therefore measured for a selection that cannot import a test module, and its 0-failure result is consistent but weak as an arm over this change. The production call-site list is empty because the diff adds no production definition: the helper is reached only from tests/test_dispatch_lane_disagreement.py:118.",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_dispatch_lane_disagreement.py",
+      "id": "f-review-dld-1",
+      "line": "51",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case now passes only for a roster row whose harness is empty, and the helper reaches that state by writing the roster store directly with ledger.write_members, a state no production registration path can create, so the rule the case guards at reckon/crew/dispatch_plan.py:742 is exercised for a row no writer creates. The fragment says as much at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-lane-disagreement.html:26-29, so this is a recorded limit of the coverage rather than a defect in the repair; worth folding only if a reader needs the row to be reachable through the CLI."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-lane-disagreement.html",
+      "id": "f-review-dld-2",
+      "line": "88",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base and head logs the fragment names live only in the run directory, which the retention sweep retires, while the plan's own done-when asks the negative control to be logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/; the failing id and counts are recorded in the fragment, so the record outlives the logs it cites and a later reader cannot reopen the red arm it names; committing the two logs beside the fragment would close it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 94359be6ce: ef17c381be replaces ledger.load plus ledger.write with ledger.load_auxiliary plus ledger.write_members in the test helper, 41f815ef55 and cd668504d0 add and correct the 91-line evidence fragment, and cac4396df0 rewrites only the fragment's after-arm revision; no product file changes.",
+    "done_when": "The done_when asks for the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, a base run with its failing ids, a no-added-failure arm, and no new ruff finding; the manifest records 7 passed head EXIT=0 and 1 failed/6 passed base EXIT=1 with id test_flight_override_routes_when_member_declares_no_harness, 58 passed on each suite arm, and the all_debug job 1326821 submission ('RECKON_ALLOW_NESTED_LAUNCH=1 sbatch --wait --partition all_debug') appears in the run's stream.",
+    "goal": "The node's goal is that tests/test_dispatch_lane_disagreement.py passes in full; the head arm log lane-disagreement-head.log records 7 passed with EXIT=0 at ef17c381be, and the landed diff changes only that file's _register_member_without_harness helper (tests/test_dispatch_lane_disagreement.py:51-70) plus the evidence fragment.",
+    "manifest": "Read; it states status complete, 7 passed head EXIT=0 at ef17c381be with lane-disagreement-head.log, 1 failed/6 passed base EXIT=1 at 94359be6ce with lane-disagreement-base.log, 58 passed on both suite arms at full 40-character revisions, ruff check clean, and the one pre-existing ruff format finding at line 39 verified identical in the base blob.",
+    "write_paths": "The declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and two narrower entries; the diff touches exactly tests/test_dispatch_lane_disagreement.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-lane-disagreement.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_dispatch_lane_disagreement.py passes in full, and lane-disagreement-head.log records 7 passed with EXIT=0 at ef17c381be while the landed diff changes only that file's helper at tests/test_dispatch_lane_disagreement.py:51-70 and adds the fragment.\nVERDICT done_when: the done_when names the file passing in full as an all_debug job with SLURM_JOB_ID unset, the base run with its failing ids, and an arm that adds no failure; the manifest records 7 passed head EXIT=0, 1 failed/6 passed base EXIT=1 with id test_flight_override_routes_when_member_declares_no_harness, and 58 passed on each suite arm, and the job 1326821 submission to all_debug is in the run stream.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround with two narrower entries, and the diff's only two paths (tests/test_dispatch_lane_disagreement.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-lane-disagreement.html) are inside them.\nVERDICT manifest: read; it states status complete with lane-disagreement-head.log at 7 passed EXIT=0, lane-disagreement-base.log at 1 failed/6 passed EXIT=1 with its id, 58 passed on both suite arms at full 40-character revisions, and the one ruff format finding verified identical in the base blob.\nVERDICT diff: read commit by commit against 94359be6ce; ef17c381be repoints the test helper from ledger.load/ledger.write to ledger.load_auxiliary/ledger.write_members at tests/test_dispatch_lane_disagreement.py:58 and :70, and 41f815ef55, cd668504d0 and cac4396df0 add and correct the 91-line fragment, with no product file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_dispatch_lane_disagreement.py:58 reads the roster with ledger.load_auxiliary and :70 writes it with ledger.write_members, so the case reaches the routing rule at reckon/crew/dispatch_plan.py:742 it asserts, and the head arm reads 7 passed EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: lane-disagreement-base.log and lane-disagreement-head.log carry '1 failed, 6 passed' EXIT=1 with the failing id and '7 passed' EXIT=0 under env -u SLURM_JOB_ID, and the manifest's suite arms name full 40-character revisions at both ends.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_dispatch_lane_disagreement.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-lane-disagreement.html, are both inside the declared write paths and no product module is touched.\nSCORE durability: 19\nJUSTIFICATION durability: putting the old helper back (ledger.load plus ledger.write at tests/test_dispatch_lane_disagreement.py:58) reddens the case, which I reproduced at the worktree head that still carries it reading '1 failed, 6 passed' EXIT=1 with the same id.\nSCORE fit: 18\nJUSTIFICATION fit: the helper uses the load_auxiliary/write_members pair the module's own tests already use at tests/test_ledger.py:1628 and tests/test_members_and_holds_live_in_the_store.py:173, with a comment stating why the aggregate writer cannot serve.\nSCORE reuse: 20\nJUSTIFICATION reuse: write_members at reckon/ledger.py:2456 is the roster's owner and register_member at :3636 refuses an empty harness at :3658, so the helper extends that owner; a search of tests/ and reckon/ found no other roster-writing helper.\nFINDING tests/test_dispatch_lane_disagreement.py:51 non-blocking: the case passes only for a roster row whose harness is empty, a state the helper manufactures by writing the store directly because register_member refuses it, so the routing rule at reckon/crew/dispatch_plan.py:742 is proved for a row no production writer creates.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-lane-disagreement.html:88 non-blocking: the base and head logs it names live only in the run directory, which the retention sweep retires, while the plan asks the negative control to be logged beside the original run under the fragment directory, so the ids survive in the fragment but the red arm it cites cannot be reopened.\n",
+  "reuse_search": "Searched tests/ and reckon/ for an existing roster-writing helper by capability, not name: ledger.write_members (reckon/ledger.py:2456) is the roster's owner and the only writer that admits a member with an empty harness, since register_member (reckon/ledger.py:3636) refuses one at :3658. No conftest fixture or test helper writes a roster row directly - the nearest uses are tests/test_ledger.py:1628 and tests/test_members_and_holds_live_in_the_store.py:173, both calling write_members with load_auxiliary's version. The landed helper therefore extends the owner rather than forking it.",
+  "review_run_id": "r-20261118T152043421406-review-of-qwnw-red-file-dispatch-lane-disagreement-cac4396df02d",
+  "reviewed_base_sha": "94359be6ce0d3f31fd31f0ac4d4b7437f2835832",
+  "reviewed_head_sha": "cac4396df02d846994a177682a42f7a565d1bc71",
+  "reviewed_run_id": "r-20261118T063037107612-qwnw-red-file-dispatch-lane-disagreement",
+  "reviewed_worker_commits": [
+    "ef17c381be982aa4674c880b278de3cb76bdf150",
+    "41f815ef558b962dc5ec170ced957f02787812c0",
+    "cd668504d011803634bfa2a311a9c2c7e82adfd1",
+    "cac4396df02d846994a177682a42f7a565d1bc71"
+  ],
+  "rubric": "independent-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after": "cd668504d011803634bfa2a311a9c2c7e82adfd1, 'PYTHONPATH=. ... pytest ... tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py', EXIT=0, 58 passed, no failure ids",
+    "baseline": "94359be6ce0d3f31fd31f0ac4d4b7437f2835832, 'PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T063037107612-qwnw-red-file-dispatch-lane-disagreement/lane-suite-clone-2 ... pytest ... tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py', EXIT=0, 58 passed, no failure ids",
+    "file_arms": "lane-disagreement-head.log: ef17c381be, will probe, 7 passed EXIT=0; lane-disagreement-base.log: 94359be6ce, extraction, 1 failed/6 passed EXIT=1 with test_flight_override_routes_when_member_declares_no_harness"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:47:00Z",
+  "total": 113
+}

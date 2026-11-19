@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "assertion": "tests/test_crew_members.py:163 roster-after equals roster-before through ledger.load_auxiliary",
+      "independent_of_input": true,
+      "note": "Both sides come from the same store reader, but they are taken either side of a call to the code under test, so the pair moves with the write it guards. It no longer observes the committed docs/state/<project>/crew.json path the replaced byte comparison read.",
+      "would_fail_when": "the dispatch writes the roster through the run store, which moves the auxiliary version; load_auxiliary returns (payload, version) and write_members returns the bumped version, so a write between the two reads makes the pair differ."
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:dispatch",
+    "reckon/ledger.py:load_auxiliary",
+    "reckon/ledger.py:register_member",
+    "reckon/ledger.py:write_members"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:09:06Z",
+  "finding_dispositions": {},
+  "findings": [
+    "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-members.html:35 non-blocking: the table caption asserts every arm is a job on all_debug, but no arm log records the partition or that SLURM_JOB_ID was unset (the gate headers carry only revision, host, tree and command), so the done_when's scheduler condition is claimed by the fragment rather than shown by a log a reader can open.",
+    "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-members.html:26 non-blocking: the instrument-sanity paragraph reports a probe that moved the snapshot from version 1 to version 2 but names no script or log recording it, so the claim that a roster write is visible to the assertion rests on prose alone.",
+    "tests/test_crew_members.py:163 non-blocking: the replacement assertion compares only the store's auxiliary payload and version, so a regression that resumes writing docs/state/<project>/crew.json would pass this test whereas the byte comparison it replaced would have caught it; the guard is narrower than the assertion it replaced even though both state the same rule."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node goal is to make tests/test_crew_members.py pass in full on the primary branch; at head b3167f25 the file runs 3 passed with EXIT=0 (scoped-gate-1795068529776743279.log) where the base revision fails one of three (negative-control-base-red.log), and no product file changed.\nVERDICT done_when: The done_when asks for a head run as an all_debug job with SLURM_JOB_ID unset, a base-first run, a per-cause verdict, unchanged assertions and base/after suite arms with full 40-character revisions; manifest.md records base 1 failed/2 passed, head 3 passed, and 58-passed arms at b24fe95a and b3167f25 with those revisions, but no log carries the all_debug partition or a SLURM_JOB_ID-unset record, so the scheduler half of the measure is asserted, not shown.\nVERDICT write_paths: The declared set is reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its qwnw-red-file-crew-members.html, and a docs/figures directory; git diff b24fe95a..b3167f25 touches exactly tests/test_crew_members.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-members.html, both inside that set.\nVERDICT manifest: Read manifest.md at the run directory; it states status complete, commits 23e7d3fb and b3167f25, the gate and red log paths, both suite arms as inline JSON with full revisions, and zero added failures, and each log it cites reads as it says.\nVERDICT diff: Read both commits against b24fe95a: 23e7d3fb replaces the two docs/state/proj/crew.json byte reads with ledger.load_auxiliary snapshots at tests/test_crew_members.py:147 and :163, and b3167f25 adds the 72-line evidence fragment; no production file is touched.\nCALL_SITES: reckon/crew/dispatching/preparation.py:dispatch, reckon/ledger.py:load_auxiliary, reckon/ledger.py:register_member, reckon/ledger.py:write_members\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_members.py passes in full at b3167f25 (3 passed, EXIT=0 in scoped-gate-1795068529776743279.log) and the single base cause is reproduced and named at b24fe95a.\nSCORE evidence: 14\nJUSTIFICATION evidence: manifest.md and the cited logs give a completed base arm, a green head gate and two 58-passed suite arms with full 40-character revisions, but scoped-gate-1795068529776743279.log records no all_debug partition or SLURM_JOB_ID-unset line the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two paths in git diff b24fe95a..b3167f25 are both inside the declared write paths and neither is production code.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_members.py:163 fails if the dispatch writes the roster, because load_auxiliary returns the store version write_members bumps, but it no longer observes the committed crew.json path the replaced byte comparison read.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_crew_members.py:147 and :163 use the same before/after load_auxiliary idiom as tests/test_ledger.py:1764, and the fragment follows the shape of its sibling evidence fragments.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change adds no definition; it calls reckon/ledger.py:2606 load_auxiliary, the owner of store auxiliary reads, rather than opening the store itself.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-members.html:35 non-blocking: the table caption asserts every arm is a job on all_debug, but no arm log records the partition or that SLURM_JOB_ID was unset, so the done_when's scheduler condition is claimed by the fragment rather than shown by a log a reader can open.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-members.html:26 non-blocking: the instrument-sanity paragraph reports a probe that moved the snapshot from version 1 to version 2 but names no script or log recording it, so the claim that a roster write is visible to the assertion rests on prose alone.\nFINDING tests/test_crew_members.py:163 non-blocking: the replacement assertion compares only the store's auxiliary payload and version, so a regression that resumes writing docs/state/<project>/crew.json would pass this test whereas the byte comparison it replaced would have caught it.",
+  "review_method": "Read-only review of the source node's goal, done_when, declared write paths, manifest, the two-commit diff and the gate logs it cites; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261119T062425939347-review-of-qwnw-red-file-crew-members-b3167f2526d8",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "b3167f2526d8dd903301f9da3b302796107ae85c",
+  "reviewed_run_id": "r-20261118T063135844055-qwnw-red-file-crew-members",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "23e7d3fb1b423934cda8598c2efa8cb235f278e8",
+    "b3167f2526d8dd903301f9da3b302796107ae85c"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after": {
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063135844055-qwnw-red-file-crew-members/after_suite-1795068636933835530.log",
+      "revision": "b3167f2526d8dd903301f9da3b302796107ae85c"
+    },
+    "baseline": {
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063135844055-qwnw-red-file-crew-members/baseline_suite-1795068593847139406.log",
+      "revision": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:29:31.629761+00:00",
+  "total": 107
+}

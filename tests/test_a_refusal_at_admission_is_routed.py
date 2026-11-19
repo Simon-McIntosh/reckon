@@ -332,6 +332,9 @@ def test_an_edit_onto_a_path_a_live_claim_holds_is_refused_naming_the_holder(
 ) -> None:
     _queue(repository)
     _edit_config(monkeypatch, window=10_000_000)
+    # The path has to be one a merge cannot reconcile: a live claim on a
+    # mergeable source file is shared with a peer rather than held against it.
+    claimed = f"docs/state/{PROJECT}/index.json"
     runs._write_json(
         runs.pointer_path("r-live"),
         {
@@ -344,14 +347,14 @@ def test_an_edit_onto_a_path_a_live_claim_holds_is_refused_naming_the_holder(
                 "id": "live-node",
                 "plan": "plan-a",
                 "section": "dispatch",
-                "write_paths": ["shared/file.txt"],
+                "write_paths": [claimed],
             },
         },
     )
 
     before = runs.read_pointer("r-request")
     with pytest.raises(ScopeConflict) as refused:
-        queue_edit.edit("r-request", write_paths=["shared/file.txt"])
+        queue_edit.edit("r-request", write_paths=[claimed])
 
     assert refused.value.run_id == "r-live"
     assert "r-live" in str(refused.value)

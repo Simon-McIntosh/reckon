@@ -93,8 +93,7 @@ def _checksum_text(value: object) -> str:
     dropped here and the job's bootstrap does the same, which is what lets the
     recorded value reach a comparison rather than a string test.
     """
-    text = str(value or "").strip().lower()
-    return text[len("sha256:") :] if text.startswith("sha256:") else text
+    return str(value or "").strip().lower().removeprefix("sha256:")
 
 
 def carried_fence_program(
@@ -120,14 +119,9 @@ def carried_fence_program(
             f"flight key {FENCE_PROGRAM_KEY} must be a mapping of path, "
             "checksum, source and version"
         )
-    text = str(declared.get("path") or "").strip()
-    if text in ("~",) or text.startswith("~/"):
-        text = text[1:].lstrip("/") or "."
-    path = Path(text)
-    if text and not path.is_absolute():
-        path = (Path(home) if home is not None else Path.home()) / path
+    path = _resolve_declared_path(declared.get("path"), home)
     checksum = _checksum_text(declared.get("checksum"))
-    if not text:
+    if path is None:
         raise BackendError(
             f"flight key {FENCE_PROGRAM_KEY}.path names no location for the "
             "carried fence program"

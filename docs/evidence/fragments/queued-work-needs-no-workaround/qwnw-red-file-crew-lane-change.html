@@ -1,0 +1,83 @@
+<section id="qwnw-red-file-crew-lane-change-landing">
+  <h2>A lane change's resumed command is read from the run's stored detail</h2>
+
+  <p><strong>What changed.</strong> Two cases in
+  <code>tests/test_crew_lane_change.py</code> failed on the primary branch with
+  <code>KeyError: 'argv'</code>. Both indexed the live pointer directly:
+  <code>after["argv"]</code>. The live pointer no longer carries dispatch-time
+  detail — <code>DISPATCH_DETAIL_FIELDS</code> in
+  <code>reckon/crew/runs.py</code> names <code>argv</code> among the fields a
+  pointer write moves into the run's own <code>dispatch-detail.json</code>, and
+  the pointer keeps only that file's path. The single reader for the move is
+  <code>dispatch_field(record, field)</code>, which returns the value inline when
+  an older pointer carries it and otherwise reads the stored detail. The
+  assertions were reading a rule the product has retired, not a product defect:
+  the resumed argv exists, it is simply not on the pointer.</p>
+
+  <p><strong>Verdict: test wrong, product correct.</strong> The product rule kept
+  unchanged is <code>runs.dispatch_field</code>: a run's <code>argv</code> is a
+  dispatch-time detail read through that one accessor, with the pointer carrying no
+  copy. The test now asserts the same fact against the same subject — a continued
+  session's id is the word the resumed command passes to the harness after
+  <code>resume</code>, and the alpha session id appears in the resumed command —
+  but reads it through <code>dispatch_field</code>, which is what the launch path
+  itself calls (at <code>reckon/crew/dispatch_sessions.py:1030</code>) and what a queued
+  launch and a protected-set read already use in their own tests. No assertion was
+  deleted or weakened; both now resolve their subject through the product's reader.</p>
+
+  <p>Reproduction at the base revision, quoted from the base arm's log:</p>
+
+  <pre id="qwnw-red-file-crew-lane-change-reproduction">tests/test_crew_lane_change.py:194: KeyError
+&gt;       assert "session-from-alpha" in after["argv"]
+E       KeyError: 'argv'
+tests/test_crew_lane_change.py:244: KeyError
+&gt;       assert after["argv"][after["argv"].index("resume") + 1] == change["session_id"]
+E       KeyError: 'argv'
+FAILED tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree - KeyError: 'argv'
+FAILED tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source - KeyError: 'argv'</pre>
+
+  <h3 id="qwnw-red-file-crew-lane-change-measured">Measured</h3>
+
+  <p>Both arms ran in one batch job on <code>all_debug</code>, with
+  <code>SLURM_JOB_ID</code> removed from the pytest environment
+  (<code>env -u SLURM_JOB_ID</code>), each log naming its revision, host, tree and
+  command, and ending in a bare
+  <code>EXIT=&lt;code&gt;</code>. The base tree is an extraction of the base
+  revision; the head tree is the worktree.</p>
+
+  <table id="qwnw-red-file-crew-lane-change-arms">
+    <caption>Both arms of the named file, and the suite arms the project's
+    template resolves over this node's write scope.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base (negative control)</td>
+        <td><code>d9b857e053</code>, extraction</td>
+        <td>2 failed, 5 passed, <code>EXIT=1</code> — both ids above</td></tr>
+      <tr><td>the named file, head</td>
+        <td>the delivered head, worktree</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the named file, head, through the composed gate</td>
+        <td>the delivered head, archived tree</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>d9b857e053</code>, clone</td>
+        <td>see the manifest's <code>baseline_suite</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td>the delivered head, worktree</td>
+        <td>see the manifest's <code>after_suite</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative control is the base revision's own run of the named file with
+  its two failing ids, logged beside the head run in the run directory. The head
+  arm passes in full, so the file this node is named for is green at the
+  revision it delivers.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> reports the two
+  <code>F841</code> findings this file already carried at the base revision
+  (<code>dispatch_module</code> assigned and never used, at both cases) and adds
+  none; <code>ruff format --check</code> reports the same three pre-existing
+  hunks in both blobs, none of them touching a line this node changed. A
+  pre-existing finding in a file a node edits is the repository's backlog, not
+  this node's.</p>
+</section>

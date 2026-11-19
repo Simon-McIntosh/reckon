@@ -77,6 +77,10 @@ def _repository(root: Path, projects: tuple[str, ...]) -> Path:
             '<h2 id="dispatch">Dispatch</h2>',
             encoding="utf-8",
         )
+    (root / "docs" / "figures" / "topic").mkdir(parents=True)
+    (root / "docs" / "figures" / "topic" / "panel.svg").write_text(
+        "<svg></svg>\n", encoding="utf-8"
+    )
     (root / "package" / "target.py").write_text("value = 1\n", encoding="utf-8")
     (root / "package" / "schema.yaml").write_text("value: 1\n", encoding="utf-8")
     (root / "package" / "generated.py").write_text("value = 1\n", encoding="utf-8")
@@ -256,9 +260,18 @@ def _two_repositories_with_one_overlapping_claim(tmp_path, home):
     its own linked worktree, not the repository root its neighbours write from,
     so nothing about one claim's checkout is shared with another's.
 
-    The twenty-first declares the ``package`` directory that contains the
-    dispatch's ``package/target.py`` and holds it uncommitted, so its
-    disposition binds.
+    The twenty-first declares the ``docs/figures/topic`` directory that contains
+    the dispatch's ``docs/figures/topic/panel.svg`` and holds it uncommitted, so
+    its disposition binds.
+
+    The overlap is placed in a figure topic rather than in a source directory
+    because the arbitration shares what a merge reconciles: the claim read and
+    the refusal both ask the repository's claim policy, and under the default it
+    excuses an overlap whose narrower region git can merge, so two writers of one
+    source file are admitted and only an unmergeable region refuses. A figure
+    topic is one of the built-in unmergeable classes, so this fixture keeps a
+    refusal to observe — the collision a narrowing that dropped this claim would
+    hide.
     """
     first = _repository(tmp_path / "first", ("project-a",))
     second = _repository(tmp_path / "second", ("project-b",))
@@ -279,11 +292,13 @@ def _two_repositories_with_one_overlapping_claim(tmp_path, home):
             run_id=f"r-disjoint-b{index}",
             worktree=_own_checkout(checkouts / f"b{index}"),
         )
-    (first / "package" / "target.py").write_text("value = 2\n", encoding="utf-8")
+    (first / "docs" / "figures" / "topic" / "panel.svg").write_text(
+        "<svg><rect /></svg>\n", encoding="utf-8"
+    )
     overlapping = _stopped_claim(
         first,
         project="project-a",
-        path="package",
+        path="docs/figures/topic",
         run_id="r-overlapping",
         worktree=first,
     )
@@ -296,7 +311,7 @@ def test_the_read_probes_git_only_for_a_claim_that_can_meet_its_own(
     first, second, overlapping = _two_repositories_with_one_overlapping_claim(
         tmp_path, home
     )
-    candidate = (first / "package" / "target.py").resolve()
+    candidate = (first / "docs" / "figures" / "topic" / "panel.svg").resolve()
     probe = _GitProbe(node_module.subprocess)
     monkeypatch.setattr(node_module, "subprocess", probe)
 
@@ -332,7 +347,7 @@ def test_a_claim_that_cannot_meet_the_dispatch_is_returned_unread(home, tmp_path
     first, _second, overlapping = _two_repositories_with_one_overlapping_claim(
         tmp_path, home
     )
-    candidate = (first / "package" / "target.py").resolve()
+    candidate = (first / "docs" / "figures" / "topic" / "panel.svg").resolve()
 
     claims = _repository_scope_claims(candidate_paths=[candidate])
 
@@ -348,7 +363,7 @@ def test_the_overlapping_claim_refuses_the_dispatch_and_names_the_owner(home, tm
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("project-a", "package/target.py"),
+            node=_node("project-a", "docs/figures/topic/panel.svg"),
             project="project-a",
             repo=first,
             config=CONFIG,
@@ -380,7 +395,7 @@ def test_the_dispatch_itself_probes_git_only_for_a_claim_that_can_meet_its_own(
 
     with pytest.raises(crew.ScopeConflict) as excinfo:
         crew.dispatch(
-            node=_node("project-a", "package/target.py"),
+            node=_node("project-a", "docs/figures/topic/panel.svg"),
             project="project-a",
             repo=first,
             config=CONFIG,
@@ -401,10 +416,10 @@ def test_the_overlapping_claim_releases_once_its_work_is_integrated(home, tmp_pa
         tmp_path, home
     )
     worktree = Path(overlapping["worktree"]).resolve()
-    _git(worktree, "restore", "package/target.py")
+    _git(worktree, "restore", "docs/figures/topic/panel.svg")
 
     record = crew.dispatch(
-        node=_node("project-a", "package/target.py"),
+        node=_node("project-a", "docs/figures/topic/panel.svg"),
         project="project-a",
         repo=first,
         config=CONFIG,

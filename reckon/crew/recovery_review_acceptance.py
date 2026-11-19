@@ -236,21 +236,9 @@ def _checked_out_branch(repository: Path) -> tuple[str, str]:
 
 def _names_a_commit(repository: Path, revision: str) -> bool:
     """Whether ``revision`` resolves to a commit in the checkout's object store."""
-    probe = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(repository),
-            "rev-parse",
-            "--verify",
-            "--quiet",
-            f"{revision}^{{commit}}",
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return probe.returncode == 0
+    from reckon.crew.recovery import _resolve_commit
+
+    return bool(_resolve_commit(repository, revision))
 
 
 def _commits_missing_from(

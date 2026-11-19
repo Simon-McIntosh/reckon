@@ -1745,7 +1745,11 @@ def crew_dispatch(
         raise click.UsageError(
             "--project is required unless --batch names the work to queue"
         )
-    if plan_slug and not section and not brief_path:
+    # A plan without a section on a request that names no node queues every
+    # section of it. A request that names a node is that one node, so it keeps
+    # its own path: reading it as the whole plan would discard the node it
+    # names, and a dry run of it would be refused as if the node were absent.
+    if plan_slug and not section and not brief_path and not node_id:
         if dry_run:
             raise click.UsageError(
                 "--dry-run cannot queue a whole plan; name --section to preview one node"

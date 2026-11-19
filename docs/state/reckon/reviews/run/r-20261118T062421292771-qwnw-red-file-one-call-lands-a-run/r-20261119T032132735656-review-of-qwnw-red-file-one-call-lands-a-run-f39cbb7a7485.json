@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3464 crew complete --land bounded report key set",
+    "reckon/crew_run_commands.py:3483 crew complete --land report record_path",
+    "reckon/crew_run_commands.py:3532 oversized batch reply rewritten to a record link"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:21:48Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered manifest of run r-20261118T062421292771-qwnw-red-file-one-call-lands-a-run carries no tests:, test_logs:, baseline_suite: or after_suite: line although the node's fence armed a suite pair over its write scope, so promotion's gate receipt cannot be filled from the record and the arms survive only as fragment prose and run-directory logs."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-call-lands-a-run.html",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites tests/test_one_call_lands_a_run.py:122 for the first KeyError: steps while base-file-arm-1329321.log:27 names :123, so the reproduction it points a reader at is one line off the log it quotes."
+    }
+  ],
+  "head_log_revision": "33d2c239810de159377af33f4f5ff44e1aca8a81",
+  "item_verdicts": {
+    "diff": "read both commits against 42fe90d0b0a46060bafde2490dda7d4002cda478: 33d2c239 rewrites eight assertions in tests/test_one_call_lands_a_run.py (+23 -8) so the step detail is read through the reply's record_path, and f39cbb7a adds the 65-line evidence fragment; no product file changes.",
+    "done_when": "the done_when asks for a full pass at head as a job on all_debug with SLURM_JOB_ID unset, a base run first, no assertion deleted or weakened, both arms with full revisions, a negative-control log beside the fragment, and ruff clean; the verify-gate receipt in the run stream names partition all_debug, revision 33d2c239, exit_status 0 and that log, base-file-arm-1329321.log is the base arm, the fragment carries both arms and the two KeyError ids, and the manifest records neither arm as a field.",
+    "goal": "the node goal is Make tests/test_one_call_lands_a_run.py pass in full on the primary branch; at the reviewed head scoped-gate-1795056360311880680.log records 5 passed with EXIT=0 at 33d2c239810de159377af33f4f5ff44e1aca8a81, and base-file-arm-1329321.log records 2 failed with EXIT=1 at the base.",
+    "manifest": "the delivered manifest.md records status complete, both full commit ids, changed_paths, checkpoint and a landing line naming 5/5 at head and 2 failed KeyError: steps at base, and states no tests:, test_logs:, baseline_suite: or after_suite: field.",
+    "write_paths": "the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment and its figure directory; the two landed files are tests/test_one_call_lands_a_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-call-lands-a-run.html, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_one_call_lands_a_run.py:126 reddens if the reply inlines steps again and :128 reddens if record_path names no file, so reinstating the pre-456e465281 reply fails the gate on an assertion the test did not supply.",
+    "evidence": "baseline_suite-1795056466615452005.log (rev 42fe90d0b0a46060bafde2490dda7d4002cda478, 58 passed, EXIT=0) and after_suite-1795056543013143975.log (rev 33d2c239810de159377af33f4f5ff44e1aca8a81, 58 passed, EXIT=0) are readable in the run directory, but manifest.md carries no tests:, test_logs:, baseline_suite: or after_suite: line.",
+    "fit": "the changed test keeps the file's pytest idiom and its tests/helpers/landing_repository.py helpers, and the recorded ruff check and ruff format --check over tests/test_one_call_lands_a_run.py reported All checks passed and 1 file already formatted.",
+    "goal_fidelity": "tests/test_one_call_lands_a_run.py:123-131 reads merged and record_path from the bounded reply, and scoped-gate-1795056360311880680.log records 5 passed with EXIT=0 at 33d2c239810de159377af33f4f5ff44e1aca8a81, so the file passes in full at the node head.",
+    "reuse": "the diff adds no function, class or module, only assertion rewrites inside an existing test, so there is no capability it could fork.",
+    "scope_discipline": "git diff 42fe90d0b0a46060bafde2490dda7d4002cda478..f39cbb7a748507e001adef0e5079b7d424454253 touches only tests/test_one_call_lands_a_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-call-lands-a-run.html, both inside the declared write paths, and changes no product code."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_one_call_lands_a_run.py pass in full on the primary branch; at the reviewed head scoped-gate-1795056360311880680.log records 5 passed with EXIT=0 at revision 33d2c239810de159377af33f4f5ff44e1aca8a81, and base-file-arm-1329321.log records 2 failed with EXIT=1 at the base.\nVERDICT done_when: the done_when asks for a full pass at head as a job on all_debug with SLURM_JOB_ID unset and its output on shared storage, a base run first, no assertion deleted or weakened, both arms with full 40-character revisions, a negative-control log beside the fragment, and ruff clean; the verify-gate receipt in the run's stream names partition all_debug, revision 33d2c239, exit_status 0 and that log, base-file-arm-1329321.log is the base arm, the fragment carries both arms and the two KeyError ids, and the manifest records neither arm as a field.\nVERDICT write_paths: the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment and its figure directory; the diff's two files, tests/test_one_call_lands_a_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-call-lands-a-run.html, both fall inside them.\nVERDICT manifest: read in full: status complete, both full commit ids, changed_paths, checkpoint, landing and failure_attribution are present, and no tests:, test_logs:, baseline_suite: or after_suite: line is.\nVERDICT diff: read commit by commit from 42fe90d0b0a46060bafde2490dda7d4002cda478 to f39cbb7a748507e001adef0e5079b7d424454253: 33d2c239 rewrites eight assertions in tests/test_one_call_lands_a_run.py (+23 -8) so the step detail is read through the reply's record_path, and f39cbb7a adds the evidence fragment (+65); no product file touched.\nCALL_SITES: reckon/crew_run_commands.py:3464, reckon/crew_run_commands.py:3483, reckon/crew_run_commands.py:3532\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_one_call_lands_a_run.py:123-131 reads merged and record_path from the bounded reply, and scoped-gate-1795056360311880680.log shows the file passing 5/5 at 33d2c239810de159377af33f4f5ff44e1aca8a81; landing on the primary branch is the coordinator's step, not this diff's.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline_suite-1795056466615452005.log (58 passed, EXIT=0) and after_suite-1795056543013143975.log (58 passed, EXIT=0) are readable in the run directory, but manifest.md carries none of tests:, test_logs:, baseline_suite: or after_suite:, so promotion's gate receipt cannot be filled from the record even though the node file's base and head arms are recorded in the fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's only paths are tests/test_one_call_lands_a_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-call-lands-a-run.html, both inside the declared write paths, at 88 changed lines and no product change.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_one_call_lands_a_run.py:126 reddens if the reply inlines steps again and :128 reddens if record_path names no file, so reinstating the pre-456e465281 reply fails the gate, and :136 compares remote_head against a git rev-parse the test did not supply.\nSCORE fit: 19\nJUSTIFICATION fit: the changed test keeps the file's pytest idiom and its tests/helpers/landing_repository.py helpers, and the recorded ruff check and ruff format --check over tests/test_one_call_lands_a_run.py reported All checks passed! and 1 file already formatted.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, only assertion rewrites inside an existing test, so nothing forks a capability reckon already owns.\nFINDING manifest.md:1 non-blocking: the delivered manifest carries no tests:, test_logs:, baseline_suite: or after_suite: line although the node's fence armed a suite pair over its write scope, so promotion's gate receipt cannot be filled from the record.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-call-lands-a-run.html:63 non-blocking: the fragment cites tests/test_one_call_lands_a_run.py:122 for the first KeyError while base-file-arm-1329321.log:27 names :123.\n",
+  "review_run_id": "r-20261119T032132735656-review-of-qwnw-red-file-one-call-lands-a-run-f39cbb7a7485",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "f39cbb7a748507e001adef0e5079b7d424454253",
+  "reviewed_run_id": "r-20261118T062421292771-qwnw-red-file-one-call-lands-a-run",
+  "reviewer_run_id": "r-20261119T032132735656-review-of-qwnw-red-file-one-call-lands-a-run-f39cbb7a7485",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:58:54.238395+00:00",
+  "total": 111
+}

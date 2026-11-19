@@ -313,6 +313,22 @@ def _complete_arguments(
     return arguments
 
 
+def _recorded_outcome(result) -> dict:
+    """The full outcome a completion recorded, read from its receipt.
+
+    The command answers a caller with a bounded reply — the row the caller acts
+    on beside the path of the run's recorded outcome — so the gate check, the
+    suite delta and the fields a refusal names are read from that path rather
+    than from the shortened reply. A reply that names no record is read whole,
+    so a refusal raised before the outcome is filed still reports itself.
+    """
+    reply = json.loads(result.output)
+    path = reply.get("record_path")
+    if path is None:
+        return reply
+    return json.loads(Path(path).read_text())
+
+
 # ── The promotion path refuses an unfalsifiable passing gate ────────────────
 
 
@@ -371,7 +387,7 @@ def test_promoting_a_passing_gate_with_a_full_check_is_accepted_and_stored(
     )
 
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output)
+    payload = _recorded_outcome(result)
     stored = payload["record"]["gate_check"]
     assert stored["command"] == "uv run pytest tests/test_gate_evidence.py"
     assert stored["exit_status"] == 0
@@ -407,7 +423,7 @@ def test_a_log_digest_satisfies_the_check_in_place_of_a_log_path(
     )
 
     assert result.exit_code == 0, result.output
-    stored = json.loads(result.output)["record"]["gate_check"]
+    stored = _recorded_outcome(result)["record"]["gate_check"]
     assert stored["log_path"] is None
     assert stored["log_digest"] == "sha256:abc123"
 
@@ -436,7 +452,7 @@ def test_a_failing_or_not_run_gate_needs_no_check_evidence(repository: Path) -> 
     )
 
     assert result.exit_code == 0, result.output
-    assert json.loads(result.output)["record"]["gate_check"] is None
+    assert _recorded_outcome(result)["record"]["gate_check"] is None
 
 
 def test_armed_promotion_refuses_missing_observation_and_keeps_pointer(
@@ -466,7 +482,7 @@ def test_armed_promotion_refuses_missing_observation_and_keeps_pointer(
     result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
 
     assert result.exit_code == 1
-    payload = json.loads(result.output)
+    payload = _recorded_outcome(result)
     assert payload["error"] == "suite-delta-refused"
     assert "after_suite" in payload["missing_fields"]
     assert pointer_path(run_id).is_file()
@@ -499,7 +515,7 @@ def test_armed_promotion_refuses_added_failures_with_ids(
     result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
 
     assert result.exit_code == 1
-    payload = json.loads(result.output)
+    payload = _recorded_outcome(result)
     assert payload["added_failure_ids"] == ["tests/test_new.py::test_regression"]
     pointer = json.loads(pointer_path(run_id).read_text())
     assert pointer["suite_delta_refusal"]["status"] == "refused"
@@ -538,7 +554,7 @@ def test_reasoned_waiver_promotes_and_stores_observations(
     )
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _recorded_outcome(result)["record"]["suite_delta"]
     assert suite_delta["status"] == "waived"
     assert suite_delta["waiver_reason"] == "known flaky host probe"
     assert suite_delta["baseline_suite"]["revision"] == baseline["revision"]
@@ -573,7 +589,7 @@ def test_repair_run_with_only_baseline_failures_is_clean(
     result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _recorded_outcome(result)["record"]["suite_delta"]
     assert suite_delta["status"] == "clean"
     assert suite_delta["added_failure_ids"] == []
 
@@ -635,7 +651,7 @@ def test_real_cited_commit_and_clean_suite_delta_promote_together(
     )
 
     assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
+    record = _recorded_outcome(result)["record"]
     assert record["base_sha"] == base_sha
     assert record["commits"] == [landed_sha]
     assert record["suite_delta"]["status"] == "clean"
@@ -668,7 +684,7 @@ def test_known_bad_promotion_with_twenty_added_failures_is_refused(
     result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
 
     assert result.exit_code == 1
-    payload = json.loads(result.output)
+    payload = _recorded_outcome(result)
     assert payload["error"] == "suite-delta-refused"
     assert payload["added_failure_ids"] == sorted(_STANDARD_NAME_EDIT_FAILURE_IDS)
     pointer = json.loads(pointer_path(run_id).read_text())
@@ -714,7 +730,7 @@ def test_fifteen_repair_promotions_with_no_added_failures_are_accepted(
         result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
 
         assert result.exit_code == 0, result.output
-        suite_delta = json.loads(result.output)["record"]["suite_delta"]
+        suite_delta = _recorded_outcome(result)["record"]["suite_delta"]
         assert suite_delta["status"] == "clean"
         assert suite_delta["added_failure_ids"] == []
         accepted += 1
@@ -1108,7 +1124,7 @@ def test_added_failure_ids_matches_promotions_suite_delta_arithmetic(
     )
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _recorded_outcome(result)["record"]["suite_delta"]
 
     fields = parse_manifest(manifest.read_text())
     reused = ledger.added_failure_ids(fields["baseline_suite"], fields["after_suite"])
@@ -1162,7 +1178,7 @@ def test_promoted_run_stores_failure_attribution_beside_added_ids(
     )
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _recorded_outcome(result)["record"]["suite_delta"]
     assert suite_delta["added_failure_ids"] == ["tests/test_new.py::test_regression"]
     assert suite_delta["failure_attribution"] == {
         "tests/test_new.py::test_regression": "deadbeef1234"
@@ -1203,7 +1219,7 @@ def test_added_failure_with_no_attribution_entry_still_refuses(
     result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
 
     assert result.exit_code == 1
-    payload = json.loads(result.output)
+    payload = _recorded_outcome(result)
     assert payload["error"] == "suite-delta-refused"
     assert payload["added_failure_ids"] == ["tests/test_new.py::test_regression"]
 
@@ -1249,7 +1265,7 @@ def test_attribution_naming_a_pre_existing_failure_is_dropped(
     )
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _recorded_outcome(result)["record"]["suite_delta"]
     # The pre-existing failure's entry is dropped rather than stored; only
     # the newly added failure's candidate commit survives onto the record.
     assert suite_delta["failure_attribution"] == {

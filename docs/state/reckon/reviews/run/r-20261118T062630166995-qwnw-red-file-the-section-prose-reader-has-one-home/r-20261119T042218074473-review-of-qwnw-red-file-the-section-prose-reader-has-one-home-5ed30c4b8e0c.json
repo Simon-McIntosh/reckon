@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms on disk: baseline_suite-1795058791558594631.log at 42fe90d0b0 records '58 passed' with no FAILED line and EXIT=0, after_suite-1795058835019888766.log at ec8ee8db8b also records '58 passed' with no FAILED line and EXIT=0, so the set difference between the after arm's failure ids and the base arm's is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:326 (_PlanRead.done_when)",
+    "reckon/crew/dispatch_batch.py:352 (_PlanRead.write_paths)",
+    "reckon/crew/dispatch_batch.py:493 (section_derivation)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:19:26Z",
+  "findings": [
+    {
+      "file": "importers-head.log",
+      "line": "225",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm is not measured against the base \u2014 importers-base.log:20 ran 4 files (22 tests, 1 failed) while importers-head.log:225 ran the full importer selection (111 tests, 3 failed: test_a_batch_decodes_the_index_at_most_once, test_the_base_revision_writes_the_same_per_entry_results, test_an_execution_override_dispatches_and_records_the_label), so the done_when clause 'the node's own arm over the files that import what it changed adds no failure against the base' is proven only for the named file; the other two head failures are the scratch tree's git archive 128 and an empty launch reply."
+    },
+    {
+      "file": "node-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head measurement log names revision, host, tree and command but no job id or partition, and carries no .scheduler sidecar beside it, so the done_when's 'as a job on all_debug' rests on the manifest's prose rather than on the log that records the run."
+    },
+    {
+      "file": "node-head.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: both measurement trees are bare /tmp paths (/tmp/basetree.RKb9Le, /tmp/basetree.Iz2hO3), which the dispatch's temp-tree rule places under $TMPDIR and which a sibling section-29 node moved to /var/tmp because a fenced worker's own scratch is mounted over /tmp."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites, all inside the changed module: _PlanRead.done_when, _PlanRead.write_paths and section_derivation, which reach prose_for through the class the batch builds at reckon/crew/dispatch_batch.py:478 and :550.",
+    "diff": "read both commits against base 42fe90d0b0: ec8ee8db8b renames _PlanRead.section_prose to prose_for and follows the only two callers (reckon/crew/dispatch_batch.py:311,326,352) with no behaviour change, and 5ed30c4b8e adds the evidence fragment carrying the base and head arms; no test file and no plan file is in the diff.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job, each cause with its verdict, an importer arm adding no failure against the base, and a logged base run; node-head.log records '7 passed' EXIT=0 against node-base.log's '1 failed, 6 passed' EXIT=1 and the fragment records both, but the importer arm's base (importers-base.log:20, 4 files seeded with the named file) and head (importers-head.log:225, 109 files, 3 failed) runs are different selections.",
+    "goal": "the node goal under \u00a729 is that the test file red on the primary branch passes in full with each cause judged; the reviewed change renames _PlanRead.section_prose to prose_for in reckon/crew/dispatch_batch.py:311, which is the one cause the fragment names, and the verdict recorded is product wrong.",
+    "manifest": "read; it records status complete, head 7 passed against base 1 failed of 7, suite arms 58 passed both ways, and cites scoped-gate-1795058608387377009.log, node-base.log and node-head.log, each of which I opened and found reading as claimed.",
+    "write_paths": "the declared paths are reckon, tests, the queued-work-needs-no-workaround fragment directory and its named file, and an unused figures directory; the diff's two paths \u2014 reckon/crew/dispatch_batch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-section-prose-reader-has-one-home.html \u2014 are both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_section_prose_reader_has_one_home.py:252 asserts len over a source grep of reckon for a second 'def section_prose' and node-base.log reddens it at 42fe90d0 with dispatch_batch.py:311 named, so reinstating the rename reddens the guard; the assertion compares the repository's own text against a literal 1 and no value the test supplied, and the change adds no assertion of its own.",
+    "evidence": "node-head.log records 7 passed EXIT=0 for the named file, but the importer arm is not an A/B comparison \u2014 importers-base.log ran 22 tests over 4 files and importers-head.log ran 111 over the full importer selection with 3 failures \u2014 so one clause of the done_when is unmeasured.",
+    "fit": "the renamed method keeps its docstring and BatchEntryRefusedError refusal shape at reckon/crew/dispatch_batch.py:311-320 and the class docstring at :289 still names the module-level reader it actually calls at :308.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:311 defines prose_for with the unchanged body over the already-parsed self.prose map, and its only callers at :326 and :352 follow the new name, so the duplicate definition the \u00a729 guard counts is gone.",
+    "reuse": "the diff adds no definition; the slicing capability stays with reckon/_plan_html.py:517, still called at reckon/crew/dispatch_batch.py:308, and the one same-capability builder a search turned up (reckon/_store.py:5175, identity-keyed prose) is pre-existing and untouched here.",
+    "scope_discipline": "the two paths in the diff are reckon/crew/dispatch_batch.py's rename and the declared evidence fragment; no test assertion was edited, no plan or index file was touched, and nothing the goal does not imply was carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a729's deliverable is that the test file red on the primary branch passes in full with each cause judged; the reviewed change renames _PlanRead.section_prose to prose_for at reckon/crew/dispatch_batch.py:311, the one cause the evidence fragment names.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job, each importer-arm clause and a logged base run; node-head.log records '7 passed' EXIT=0 against node-base.log:20 '1 failed, 6 passed' EXIT=1, but the importer arm's base run (importers-base.log:20, 22 tests over 4 files) and head run (importers-head.log:225, 111 tests, 3 failed) are different selections.\nVERDICT write_paths: the reviewed manifest declares reckon, tests, the fragment directory and its named file, and an unused figures directory; the diff's two paths, reckon/crew/dispatch_batch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-section-prose-reader-has-one-home.html, are both inside them.\nVERDICT manifest: read; it records status complete, head 7 passed against base 1 failed of 7, suite arms 58 passed both ways, and cites scoped-gate-1795058608387377009.log, node-base.log and node-head.log, each opened and reading as claimed.\nVERDICT diff: read both commits against base 42fe90d0b0 \u2014 ec8ee8db8b8 renames the method and follows its two callers at reckon/crew/dispatch_batch.py:326,352 and 5ed30c4b8e adds the 43-line evidence fragment; no test or plan file is touched.\nCALL_SITES: reckon/crew/dispatch_batch.py:326 (_PlanRead.done_when), reckon/crew/dispatch_batch.py:352 (_PlanRead.write_paths), reckon/crew/dispatch_batch.py:493 (section_derivation)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:311 defines prose_for with the unchanged body over the already-parsed self.prose map and its only callers at :326 and :352 follow the new name, so the duplicate definition the guard counts is gone.\nSCORE evidence: 13\nJUSTIFICATION evidence: node-head.log records 7 passed EXIT=0, but importers-base.log:20 ran 22 tests over 4 files while importers-head.log:225 ran 111 with 3 failures, so the done_when's importer clause is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's only paths are reckon/crew/dispatch_batch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-section-prose-reader-has-one-home.html, both inside the declared fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_section_prose_reader_has_one_home.py:252 counts a source grep of reckon against the literal 1 and node-base.log reddens it at 42fe90d0 naming dispatch_batch.py:311, so reinstating the duplicate reddens the guard.\nSCORE fit: 18\nJUSTIFICATION fit: the renamed method keeps its docstring and BatchEntryRefusedError refusal at reckon/crew/dispatch_batch.py:311-320 and the module carries no plan or node identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff adds no definition, the slicing capability stays with reckon/_plan_html.py:517 called at reckon/crew/dispatch_batch.py:308, and the identity-keyed prose builder at reckon/_store.py:5175 is pre-existing and untouched.\nFINDING importers-head.log:225 non-blocking: the importer arm is not measured against the base \u2014 importers-base.log:20 ran 22 tests over 4 files while importers-head.log:225 ran 111 with 3 failures, so the done_when's 'adds no failure against the base' clause is unproven for the population.\nFINDING node-head.log:1 non-blocking: the head measurement log names no job id or partition and has no .scheduler sidecar, so the done_when's 'as a job on all_debug' rests on the manifest's prose.\nFINDING node-head.log:3 non-blocking: both measurement trees are bare /tmp paths, which the dispatch's temp-tree rule places under $TMPDIR and a sibling section-29 node moved to /var/tmp.\n",
+  "review_node": "review-of-qwnw-red-file-the-section-prose-reader-has-one-home-5ed30c4b8e0c",
+  "review_run_id": "r-20261119T042218074473-review-of-qwnw-red-file-the-section-prose-reader-has-one-home-5ed30c4b8e0c",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "5ed30c4b8e0c2e8f6a98b3e72418c71197e831e3",
+  "reviewed_run_id": "r-20261118T062630166995-qwnw-red-file-the-section-prose-reader-has-one-home",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T042218074473-review-of-qwnw-red-file-the-section-prose-reader-has-one-home-5ed30c4b8e0c"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:44:31.698333+00:00",
+  "total": 106
+}

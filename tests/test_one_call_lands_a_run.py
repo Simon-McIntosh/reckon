@@ -120,17 +120,25 @@ def test_one_call_lands_the_change_pushes_it_and_removes_the_worktree(
     assert result.exit_code == 0, result.output
     report = json.loads(result.output)
     assert report["ok"] is True, report
-    assert report["steps"]["promote"]["ok"] is True
-    assert report["steps"]["land"]["ok"] is True
-    assert report["steps"]["land"]["pushed"] is True
+    assert report["merged"] is True, report
+    # The reply is bounded: it names the merge verdict and links the steps
+    # rather than reproducing them.
+    assert "steps" not in report, report
+    record_path = Path(report["record_path"])
+    assert record_path.is_file(), report
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    steps = record["steps"]
+    assert steps["promote"]["ok"] is True
+    assert steps["land"]["ok"] is True
+    assert steps["land"]["pushed"] is True
     landed = _git(run["repository"], "rev-parse", "main")
     # The marker the change introduced is on the primary branch.
     assert MARKER.strip() in _git(run["repository"], "show", "main:reviewed.txt")
     # The remote ref equals the local one, and the worktree has been released.
     assert _git(run["origin"], "rev-parse", "main") == landed
-    assert report["steps"]["land"]["remote_head"] == landed
+    assert steps["land"]["remote_head"] == landed
     assert not run["worktree"].exists()
-    assert report["steps"]["release"]["worktree_released"] is True
+    assert steps["release"]["worktree_released"] is True
 
 
 def test_a_merge_that_drops_the_change_is_refused_and_nothing_is_pushed(
@@ -159,9 +167,16 @@ def test_a_merge_that_drops_the_change_is_refused_and_nothing_is_pushed(
     assert result.exit_code != 0, result.output
     report = json.loads(result.output)
     assert report["ok"] is False, report
-    assert report["steps"]["land"]["ok"] is False
-    assert "dropped the reviewed change" in report["steps"]["land"]["error"]
-    assert report["steps"]["land"]["resume"].startswith("reckon crew merge")
+    assert report["merged"] is False, report
+    # The bounded reply names the refusal's condition; the record it links
+    # carries the step's own error and the command that resumes there.
+    assert "dropped the reviewed change" in report["error"]
+    record_path = Path(report["record_path"])
+    assert record_path.is_file(), report
+    land = json.loads(record_path.read_text(encoding="utf-8"))["steps"]["land"]
+    assert land["ok"] is False
+    assert "dropped the reviewed change" in land["error"]
+    assert land["resume"].startswith("reckon crew merge")
     assert _git(run["origin"], "rev-parse", "main") == origin_before
     assert run["worktree"].is_dir()
 

@@ -110,17 +110,17 @@ def _dispatch_delivered_run(repo: Path) -> dict:
     return record
 
 
-def _commit_work(repo: Path) -> str:
+def _commit_work(tree: Path) -> str:
     """Commit the run's declared work and return the revision it cites."""
-    (repo / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
-    _git(repo, "add", "reckon/target.py")
-    _git(repo, "commit", "-q", "-m", "feat: the run's declared work")
-    return _git(repo, "rev-parse", "HEAD")
+    (tree / "reckon" / "target.py").write_text("value = 2\n", encoding="utf-8")
+    _git(tree, "add", "reckon/target.py")
+    _git(tree, "commit", "-q", "-m", "feat: the run's declared work")
+    return _git(tree, "rev-parse", "HEAD")
 
 
 def test_a_delivered_run_whose_worker_is_alive_owes_its_review(home, repo) -> None:
     record = _dispatch_delivered_run(repo)
-    work = _commit_work(repo)
+    work = _commit_work(Path(record["worktree"]))
     run_id = record["run_id"]
 
     # The precondition the gate reads: the delivery is complete and the worker

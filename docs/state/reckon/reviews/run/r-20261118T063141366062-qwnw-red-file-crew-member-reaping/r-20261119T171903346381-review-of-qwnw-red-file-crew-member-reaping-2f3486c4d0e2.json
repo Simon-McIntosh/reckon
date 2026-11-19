@@ -1,0 +1,147 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert len(findings) == 1",
+      "fails_when": "the checker stops reporting a 40-character commit id written under a `failed` heading (0) or reports the fixture twice (2); independent of its input because the expected count is the literal 1.",
+      "file": "tests/test_evidence_fragment_tables.py",
+      "line": "72"
+    },
+    {
+      "assertion": "assert \"'failed'\" in findings[0]",
+      "fails_when": "the checker's message stops naming the heading; it cannot fail on a mis-matched cell, because `failed` is the heading the test itself wrote, so this is the non-independent line recorded as a finding.",
+      "file": "tests/test_evidence_fragment_tables.py",
+      "line": "73"
+    },
+    {
+      "assertion": "assert FRAGMENT_ROOT.is_dir()",
+      "fails_when": "the corpus directory moves or the module is collected from a tree that carries no docs/evidence/fragments; it guards the empty scan that would otherwise pass silently.",
+      "file": "tests/test_evidence_fragment_tables.py",
+      "line": "77"
+    },
+    {
+      "assertion": "assert _count_column_findings(FRAGMENT_ROOT) == []",
+      "fails_when": "any committed fragment carries a commit id under a count heading; proven by logs/negative-control-pytest.log, which runs this id against the pre-repair fragment from 7de9f7b6e9 and records `1 failed` with `FAILED tests/test_evidence_fragment_tables.py::test_no_committed_fragment_reads_a_commit_id_as_a_count` and EXIT=1.",
+      "file": "tests/test_evidence_fragment_tables.py",
+      "line": "78"
+    }
+  ],
+  "assertion_independence": "The corpus assertion at tests/test_evidence_fragment_tables.py:78 derives its expectation from the committed tree, not from anything the test hands the checker, and the negative control confirms it reddens on the pre-repair fragment. The fixture assertion at :73 does compare against the heading literal the test wrote, and is recorded as a non-blocking finding; the `len(findings) == 1` line above it is the guard that can fail.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:1658 compose_landed_record",
+    "reckon/doccheck.py:1953 _composed_record_text"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T20:36:03Z",
+  "evidence_limits": [
+    "This is a reading of the landed artefacts; no suite was re-run and no mutation applied to the node, per the review bound.",
+    "The all_debug venue of both named-file runs was corroborated with `sacct -j 1331236,1331718`, which shows both COMPLETED on partition all_debug with ExitCode 0:0; the logs themselves carry no partition header.",
+    "The corpus arm of the check was reproduced read-only over the review tree's docs/evidence/fragments with the head's own `_count_column_findings`: 2,564 fragments, 1,348 tables and 34,090 cells scanned, 0 findings, so the zero was shown to come from a reader that sees tables."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_evidence_fragment_tables.py",
+      "line": "73",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert \"'failed'\" in findings[0]` compares the checker's message against the same heading literal the test wrote into its own fixture, so it stays true whatever cell the rule matched and only the `len(findings) == 1` line at :72 carries a guard that can redden."
+    },
+    {
+      "file": "tests/test_evidence_fragment_tables.py",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_text` and its `_TAG` pattern add a second HTML text reader, duplicating the one the repository owns at reckon/doccheck.py:381 `_visible_text` and the BeautifulSoup `get_text` idiom 87 test files already use, so one read now has two spellings that can drift apart."
+    },
+    {
+      "file": "manifest.md",
+      "line": "after_suite",
+      "severity": "non-blocking",
+      "text": "non-blocking: both armed arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which neither import the changed fragment nor execute the new check, so the pair measures nothing about this change and cannot show it adds no failure as the done_when requires."
+    },
+    {
+      "file": "manifest.md",
+      "line": "artifacts",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-green run of tests/test_evidence_fragment_tables.py and the quoted `0 findings over 1,272 committed fragment tables` figure have no log in test_logs, which names only the named-file arms and the red control, so the pass and the table count are claims rather than receipts a reader can open."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The landed fragment is read at runtime by the evidence composition, so reckon/evidence.py:1658 compose_landed_record appends its body to the plan's record and reckon/doccheck.py:1953 _composed_record_text audits the composed form; the new test file is collected only by pytest and is no production call site.",
+    "diff": "Read the delivered range 7c481b65f22d..2f3486c4d0 commit by commit and the gained delta 7de9f7b6e9..2f3486c4d0 in full: the gained commit rewrites the fragment's arm table to carry a `revision` column with full shas and integer `failed` counts, and adds tests/test_evidence_fragment_tables.py with a regex table scan plus one synthetic and one corpus test.",
+    "done_when": "The done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset and shared-storage output, arms as inline JSON with 40-character revisions, a negative control, ruff clean and a comma-separated commits field; logs/base-run.sh:15 unsets SLURM_JOB_ID before pytest, sacct shows jobs 1331236 and 1331718 COMPLETED on all_debug with ExitCode 0:0, both arms carry full shas and completed true, and the commits field lists four ids, but the arms name two unrelated test files and no log records the ruff clause.",
+    "goal": "The node's goal is `Make tests/test_crew_member_reaping.py pass in full on the primary branch`; logs/base-run.log records `1 passed in 1.01s` with EXIT=0 at 7c481b65f22d and logs/head-run.log records `1 passed in 0.95s` with EXIT=0 at 2f3486c4d0, both for that file, and the delivered delta records the passing run plus the gained durability check rather than repairing anything.",
+    "manifest": "manifest.md records status complete, the four commits, both arms with revision/exit_status/completed/failure_count/failure_ids, the negative-control log, per-dimension rubric lines and no blockers; its `tests:` line now names tests/test_crew_member_reaping.py, answering the prior review's finding, and its artifacts line quotes a table count no log supports.",
+    "write_paths": "The source pointer declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment file, plus the matching figures path; the two paths in 7c481b65f22d..2f3486c4d0, tests/test_evidence_fragment_tables.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html, sit inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_evidence_fragment_tables.py:78 reddens when the sha is put back under the count heading, which logs/negative-control-pytest.log shows as EXIT=1, so the repaired drift is guarded; the echo assertion at :73 adds no such guard.",
+    "evidence": "manifest.md:after_suite records 58 passed EXIT=0 at 2f3486c4d0 with full shas, but both arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, and no log records the new check's green run.",
+    "fit": "tests/test_evidence_fragment_tables.py:19 parses HTML with module-level regexes, where the surrounding tests import BeautifulSoup (tests/test_doccheck.py:9) and reckon/doccheck.py:381 reads element text through `get_text`, so the new file introduces a second spelling of a settled idiom.",
+    "goal_fidelity": "logs/base-run.log and logs/head-run.log record 1 passed EXIT=0 for tests/test_crew_member_reaping.py at 7c481b65f22d and 2f3486c4d0, which is the deliverable plan section 29 permits, and the gained commit adds the missing guard rather than a repair.",
+    "reuse": "No owner exists for the table-cell-versus-heading rule the check adds; `reckon/doccheck.py` audits documents but reads no tables, and the only reuse defect is the text reader at tests/test_evidence_fragment_tables.py:35 duplicating reckon/doccheck.py:381.",
+    "scope_discipline": "Every path in 7c481b65f22d..2f3486c4d0 is inside the declared `tests` and `docs/evidence/fragments/queued-work-needs-no-workaround` scopes, and nothing in the diff reaches beyond the node's evidence fragment and the check that reads it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is `Make tests/test_crew_member_reaping.py pass in full on the primary branch`; logs/base-run.log records 1 passed EXIT=0 at 7c481b65f22d and logs/head-run.log records the same at 2f3486c4d0 for that file.\nVERDICT done_when: logs/base-run.sh:15 unsets SLURM_JOB_ID before pytest, sacct shows jobs 1331236 and 1331718 COMPLETED on all_debug with ExitCode 0:0, and both arms are inline JSON with full 40-character shas, but the arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and the ruff clause is unrecorded.\nVERDICT write_paths: the two paths in 7c481b65f22d..2f3486c4d0, tests/test_evidence_fragment_tables.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html, are inside the declared `tests` and `docs/evidence/fragments/queued-work-needs-no-workaround` scopes.\nVERDICT manifest: manifest.md records status complete, four commits, both arms at 0 failures, the red control at logs/negative-control-pytest.log, and its `tests:` line now names the done_when's file, answering the prior review.\nVERDICT diff: the gained delta 7de9f7b6e9..2f3486c4d0 rewrites the fragment's arm table to carry a `revision` column with full shas and integer `failed` counts, and adds tests/test_evidence_fragment_tables.py:40 with one synthetic and one corpus test.\nCALL_SITES: reckon/evidence.py:1658 compose_landed_record, reckon/doccheck.py:1953 _composed_record_text\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: logs/head-run.log records 1 passed EXIT=0 for tests/test_crew_member_reaping.py at 2f3486c4d0 and the gained commit adds tests/test_evidence_fragment_tables.py:40 rather than a repair.\nSCORE evidence: 15\nJUSTIFICATION evidence: manifest.md:after_suite carries 58 passed EXIT=0, but both arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py and no log records the new check's green run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths are inside the declared scopes and the diff touches nothing else.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_evidence_fragment_tables.py:78 reddens on the pre-repair fragment, as logs/negative-control-pytest.log records with EXIT=1, while the echo assertion at :73 adds nothing.\nSCORE fit: 15\nJUSTIFICATION fit: tests/test_evidence_fragment_tables.py:19 parses HTML with regexes where tests/test_doccheck.py:9 and the rest of the corpus use BeautifulSoup.\nSCORE reuse: 16\nJUSTIFICATION reuse: no owner reads a fragment table, so the rule is new; the `_text` reader at tests/test_evidence_fragment_tables.py:35 duplicates reckon/doccheck.py:381 `_visible_text`.\nFINDING tests/test_evidence_fragment_tables.py:73 non-blocking: `assert \"'failed'\" in findings[0]` echoes the heading literal the test itself wrote, so it holds whatever cell the rule matched and only :72 carries the guard.\nFINDING tests/test_evidence_fragment_tables.py:35 non-blocking: `_text` and `_TAG` add a second HTML text reader beside reckon/doccheck.py:381 `_visible_text` and the BeautifulSoup idiom the corpus uses.\nFINDING manifest.md:after_suite non-blocking: both armed arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which neither import the fragment nor execute the new check, so the done_when's arm measures nothing about this change.\nFINDING manifest.md:artifacts non-blocking: the head-green run of tests/test_evidence_fragment_tables.py and the `0 findings over 1,272 committed fragment tables` figure appear in no log, so the pass and the count are claims rather than receipts.",
+  "reuse_search": {
+    "capabilities": [
+      "evidence fragment composition and serving",
+      "document audit of a composed record",
+      "HTML text extraction over fragment HTML",
+      "evidence fragment arm-table shape"
+    ],
+    "judgement": "Fragment composition and document auditing already have owners, and neither reaches a table cell: the added rule is new capability and is not a fork. The added `_text` helper is a second HTML text reader beside reckon/doccheck.py:381, which is recorded as a non-blocking finding rather than a duplicate mechanism.",
+    "owners_opened": [
+      "reckon/evidence.py:1658 compose_landed_record",
+      "reckon/doccheck.py:381 _visible_text",
+      "reckon/doccheck.py:1953 _composed_record_text",
+      "tests/test_doccheck.py:9",
+      "tests/test_a_closing_sprint_gets_one_page.py:276"
+    ]
+  },
+  "review_run_id": "r-20261119T171903346381-review-of-qwnw-red-file-crew-member-reaping-2f3486c4d0e2",
+  "reviewed_base_sha": "7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061",
+  "reviewed_head_sha": "2f3486c4d0e2d376d827a37018d14aac6328d54c",
+  "reviewed_run_id": "r-20261118T063141366062-qwnw-red-file-crew-member-reaping",
+  "reviewed_worker_commits": [
+    "9fa06aa227132252fc791e5899627517b2f6fa38",
+    "0b4644e4645bd5ad1b0feb8397d60e522d3c272f",
+    "7de9f7b6e983aa324600780926acad181375b61e",
+    "2f3486c4d0e2d376d827a37018d14aac6328d54c"
+  ],
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063141366062-qwnw-red-file-crew-member-reaping/after_suite-1795108450705243594.log",
+      "revision": "2f3486c4d0e2d376d827a37018d14aac6328d54c",
+      "summary": "58 passed in 36.56s"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063141366062-qwnw-red-file-crew-member-reaping/baseline_suite-1795108407237205954.log",
+      "revision": "7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061",
+      "summary": "58 passed in 35.42s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:03:09.896921+00:00",
+  "total": 101
+}

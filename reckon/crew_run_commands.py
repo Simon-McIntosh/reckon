@@ -2221,6 +2221,7 @@ def crew_suite_run(project, run_id, partition, timeout_seconds, checkout_path, p
     from reckon.crew import standing_suite
 
     if run_id:
+        _accept_a_matching_project(run_id, project)
         root = _suite_project_root(project, checkout_path)
         try:
             pointer = standing_suite.worker_context(run_id, project, root)
@@ -3471,6 +3472,7 @@ def _complete_many(run_ids, parameters):
                 "ok",
                 "run_id",
                 "phase",
+                "driven",
                 "pointer_removed",
                 "ledger_path",
                 "merged",
@@ -4449,7 +4451,7 @@ def crew_record_merge(
         raise click.ClickException(str(exc)) from exc
     pending_landing.clear_pending(run_id)
     _emit_crew_result(
-        {"ok": True, "run_id": run_id, "recorded_merge": merge_revision, **result},
+        {"run_id": run_id, "recorded_merge": merge_revision, **result},
         pretty,
     )
 

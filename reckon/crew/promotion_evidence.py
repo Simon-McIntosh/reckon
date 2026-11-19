@@ -407,22 +407,25 @@ def _require_commits_beyond_base(
     The comparison is made in the run's own tree, so a citation that resolves
     to an abbreviated revision still equals the base it names, and a citation
     that resolves nowhere is left to the guard whose refusal names the
-    repository it consulted rather than answered here with this one. The tree
-    is the one the record names, read the way every other reader reads it: a
-    record that names no readable directory is not measured here rather than
-    measured against whatever repository the promotion happens to run in. A
-    tree git cannot read, or a base that does not resolve in it, leaves the
-    guard silent: an unmeasured citation is not a defect in the citation.
+    repository it consulted rather than answered here with this one. A tree git
+    cannot read, or a base that does not resolve in it, leaves the guard
+    silent: an unmeasured citation is not a defect in the citation.
 
-    The history a citation is joined to is the head of the tree the run worked
-    in, never the repository's. The repository fallback exists so a released
-    worktree stays readable through the object store it shares; its HEAD
-    follows the integration branch, so read as the run's history it refuses
-    every citation of a run whose worktree was released before its promotion —
-    the run's work is by definition not on that branch yet, and a released
-    tree leaves no duty behind to refuse over. With no worktree there is no
-    head to join to, so the base alone decides: a citation behind the base, or
-    off its line, is still refused.
+    Reachability is asked about the run's *worktree* head, never the
+    repository's. A released worktree is read through the repository that
+    shares its object store, and that repository's head follows the integration
+    branch: a run whose tree is already gone therefore reads as an unmerged
+    branch when measured against it, and the commit the run made was refused
+    after the tree it belonged to no longer existed. With no worktree to read,
+    the observable question is the one the base answers — the citation is the
+    run's work if it descends from the base the run was dispatched against.
+
+    Uncommitted declared work is only a defect for a run whose deliverable
+    belongs in a commit. A shadow run asserts no code and is refused a
+    citation by its own guard, so uncommitted work in its tree is the evidence
+    itself: the landing writes it into the run's shadow patch, which is what a
+    later reader measures. Refusing its row would leave the comparison arm with
+    its evidence in no artifact at all rather than in no commit.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
@@ -434,9 +437,14 @@ def _require_commits_beyond_base(
     from reckon.crew.promotion_scope import _declared_manifest_commits
     from reckon.crew.queue_landing import _delivered_revision
 
-    run_tree = _record_worktree(record)
+    # Only the run's own worktree answers whether a citation is on the run's
+    # line. A record whose worktree is gone is read through the repository
+    # that shares its object store, whose head follows the integration branch,
+    # so a head read there refuses the run's own commit as an unmerged branch.
     canonical_head = (
-        _commit_canonical_id(run_tree, "HEAD") if run_tree is not None else None
+        _commit_canonical_id(tree, "HEAD")
+        if _record_worktree(record) is not None
+        else None
     )
     # A history-derived presentation must not hide a foreign manifest citation.
     # Reachable merge imports are valid citations but not owned commit records.
@@ -479,6 +487,13 @@ def _require_commits_beyond_base(
                 "or pass --no-commit '<why>' when it produced none"
             )
     if commits:
+        return
+    if _is_shadow(record):
+        # A shadow's deliverable is its retained patch, not a commit, so its
+        # tree holding uncommitted work is the shadow's normal state rather
+        # than work the release step would take with the worktree: the
+        # landing writes the patch before the tree is released, which is where
+        # a shadow's work is kept.
         return
     roots = _declared_repository_roots(record, tree=tree)
     if not roots:
@@ -2419,6 +2434,7 @@ from reckon.crew.promotion_release import (
 from reckon.crew.promotion_scope import (
     _changed_paths_declare_no_paths,
     _changed_paths_inside_repository,
+    _is_shadow,
     _merge_revisions,
     _repository_scope_paths,
     _revision_is_ancestor,

@@ -445,7 +445,7 @@ def _review_reads_a_report(record: Mapping[str, Any]) -> bool:
     # A brief-carried node names no plan section; a plan node is reviewed as a
     # diff whatever it also carried, so its brief does not make it read-only.
     node = record.get("node") or {}
-    brief = str(node.get("brief_path") or node.get("brief") or "").strip()
+    brief = str(node.get("brief_path") or runs.node_field(record, "brief") or "").strip()
     if not brief or str(node.get("plan") or "").strip():
         return False
     return _run_made_no_commit(record)
@@ -922,7 +922,7 @@ def _review_brief_text(
         rubric_text = review_module.load_review_prompt()
     run_id = str(record.get("run_id") or "")
     node = record.get("node") or {}
-    brief_path = str(node.get("brief_path") or node.get("brief") or "").strip()
+    brief_path = str(node.get("brief_path") or runs.node_field(record, "brief") or "").strip()
     lines = [
         f"Reviewed run: {run_id}",
         f"Reviewed head: {head or '<unresolved>'}",

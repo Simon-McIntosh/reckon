@@ -766,6 +766,7 @@ def test_complete_accept_path_updates_the_run_claim(
             "--accept-path",
             "reckon/crew/claims.py",
             "companion change",
+            "--wait",
         ],
     )
     assert result.exit_code == 0, result.output

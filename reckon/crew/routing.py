@@ -1540,6 +1540,7 @@ def _release_worktree_whole(
     path: str | Path,
     *,
     run_id: str = "",
+    trash_root: Path | None = None,
 ) -> dict[str, Any]:
     """Vacate a worktree's registered path in one rename, then delete the copy.
 
@@ -1553,6 +1554,11 @@ def _release_worktree_whole(
     trash — which ``crew gc`` sweeps — rather than a half-removed registered
     tree.
 
+    The rename must stay on one filesystem, so a tree the releasable roots do
+    not sit on passes the trash directory its own caller owns through
+    ``trash_root``; a node-local scratch tree's trash belongs in its scratch
+    directory, not beside the checkout on shared storage.
+
     A path that is not a disposable linked worktree is refused before anything
     moves, and the refusal comes back as a withheld release rather than an
     exception, so a caller holding a bad pointer leaves everything where it is.
@@ -1564,7 +1570,7 @@ def _release_worktree_whole(
     if _worktree_is_locked(repo, tree):
         raise CrewError(f"refusing to release locked worktree {tree}")
     admin = _worktree_admin_dir(repo, tree)
-    trash_root = _worktree_trash_root(repo, tree)
+    trash_root = trash_root or _worktree_trash_root(repo, tree)
     trash_root.mkdir(parents=True, exist_ok=True)
     label = run_id or tree.name
     stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S%fZ")

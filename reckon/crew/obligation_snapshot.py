@@ -1226,6 +1226,7 @@ def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
             {
                 "kind": _UNREADABLE_RECORD_KIND,
                 "run_id": path,
+                "run_ids": [path],
                 "node": Path(path).name,
                 "age_seconds": 0,
                 "next_command": _unreadable_record_remedy(finding),
@@ -1923,29 +1924,38 @@ def _build_fleet_state(project: str, *, now: datetime | None = None) -> FleetSta
         # read outside the region has nobody to name its skips to, so another
         # reader in this process never reaches this sweep's findings.
         with module.review_module.collect_read_failures() as skipped_records:
-            state = FleetState(
-                project=project,
-                now=instant,
-                config=config,
-                grace=grace,
-                floors=floors,
-                rows=module._classified_rows(project),
-                pointers=pointers,
-                acknowledged=module._acknowledgements_in_force(project, now=instant),
-                reviews_in_flight=reviews_in_flight,
-                sub_floor=module._sub_floor_items_by_session(
-                    project, floors, now=instant
-                ),
-                held_worktrees=module._held_worktrees_by_session(project, now=instant),
-                unreconciled=module.runs.drain_unreconciled_by_session(
-                    project, pointers=listing
-                ),
-                findings=[],
-                merged_sections=merged_section_items_by_session(
-                    project, list(pointers.values()), now=instant
-                ),
-                unlanded_source=module._unlanded_source_items(project),
-            )
+            # The held-worktree pass reads the ledger's run history, and the
+            # utilisation reader the classification below reaches needs a
+            # window of that same history. Reading it first is what lets one
+            # derivation keep to one index decode; the two reads share no
+            # input, so neither answer depends on which ran first.
+            held_worktrees = module._held_worktrees_by_session(project, now=instant)
+            with module.derivation_history(project):
+                state = FleetState(
+                    project=project,
+                    now=instant,
+                    config=config,
+                    grace=grace,
+                    floors=floors,
+                    rows=module._classified_rows(project),
+                    pointers=pointers,
+                    acknowledged=module._acknowledgements_in_force(
+                        project, now=instant
+                    ),
+                    reviews_in_flight=reviews_in_flight,
+                    sub_floor=module._sub_floor_items_by_session(
+                        project, floors, now=instant
+                    ),
+                    held_worktrees=held_worktrees,
+                    unreconciled=module.runs.drain_unreconciled_by_session(
+                        project, pointers=listing
+                    ),
+                    findings=[],
+                    merged_sections=merged_section_items_by_session(
+                        project, list(pointers.values()), now=instant
+                    ),
+                    unlanded_source=module._unlanded_source_items(project),
+                )
     state.findings = list(skipped_records)
     return state
 
@@ -2195,12 +2205,16 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
         "oldest_age_seconds": max(
             (int(item["age_seconds"]) for item in items), default=0
         ),
-        "unreconciled_runs": int(
-            state.unreconciled.get(session, state.unreconciled.get("", 0))
+        "unreconciled_runs": module.runs.unreconciled_for_session(
+            state.unreconciled, session
         ),
     }
-    delivery = module.recovery_classification.delivery_summary(state.rows, session=session)
-    summary.update({key: value for key, value in delivery.items() if key != "remove_pointers"})
+    delivery = module.recovery_classification.delivery_summary(
+        state.rows, session=session
+    )
+    summary.update(
+        {key: value for key, value in delivery.items() if key != "remove_pointers"}
+    )
     return {
         "project": state.project,
         "session": session,

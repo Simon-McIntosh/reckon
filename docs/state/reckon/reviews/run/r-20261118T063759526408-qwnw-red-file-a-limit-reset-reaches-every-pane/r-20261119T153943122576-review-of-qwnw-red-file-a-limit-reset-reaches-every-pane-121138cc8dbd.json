@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [],
+  "assertion_independence": "The diff adds no assertion to compare, so none is a same-input self-comparison; the guard the change must keep is the existing literal-substring check at tests/test_a_limit_reset_reaches_every_pane.py:214, whose expectation is an authored clause and whose input is the fixture width, so reverting the width reddens it as the base arm shows.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:26:39Z",
+  "evidence_limits": [
+    "No suite was re-run; the reviewed run's own arm logs, the scoped gate and the negative-control log were read.",
+    "The gate and base arms ran over extractions of the revisions their log headers name; no object identity beyond the header revision was measured.",
+    "The suite arms recorded in the manifest cover no code the node changed, so added_failure_count 0 rests on that unrelated pair plus the named file's own base and head runs."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-limit-reset-reaches-every-pane.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: The arithmetic at lines 20-22 does not reproduce its own result \u2014 208 minus the eight listed deductions (8, 2, 9, 2, 28, 2, 30, 2 = 83) leaves 125, not the stated 116 \u2014 so a reader cannot check the claim that a 120-column clause needs the wider pane; the manifest's own accounting adds the two omitted terms (2 and 7, total 92) and is the form that yields both 116 and 120."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063759526408-qwnw-red-file-a-limit-reset-reaches-every-pane/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite record green arms over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, a population that imports nothing this node changed, so the 'an arm over the test files that import what you changed adds no failure against the base' clause is satisfied by a measurement of an unrelated suite rather than of the change; the worker discloses this in outside_scope, and the named file's own base and head pair supplies the missing arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified no production call site: the diff changes one test fixture constant and one evidence fragment, and no module under reckon/ imports either.",
+    "diff": "Read commit by commit against d8baf52ad2b4: 580304962761 widens the fixture, 6e7229e29a54 adds the 45-line landing fragment and 121138cc8dbd names the measured commit in it, touching no other path.",
+    "done_when": "The done_when names tests/test_a_limit_reset_reaches_every_pane.py passing in full at head as an all_debug job with SLURM_JOB_ID unset, lists each cause with a verdict and forbids deleting or weakening an assertion; the gate asserts all 14 cases pass at head, the landing line records 'Verdict test wrong' with the cause, the diff touches no assertion, and reckon/crew/landing_measure.py:915 strips every SLURM_* variable before submitting the job, though the suite arms the manifest records cover none of the change.",
+    "goal": "The node goal is 'Make tests/test_a_limit_reset_reaches_every_pane.py pass in full on the primary branch'; at 121138cc8dbd tests/test_a_limit_reset_reaches_every_pane.py:53 widens WIDE to 212 and scoped-gate-1795102400379398397.log records 14 passed with EXIT=0 for that file.",
+    "manifest": "The source manifest records status complete, 14 passed at 121138cc8dbd against 1 failed, 13 passed at d8baf52ad2b4, both arm logs by path and the negative control log, while its baseline_suite and after_suite lines name a suite that imports nothing the node changed.",
+    "write_paths": "The declared paths are reckon, tests, the queued-work-needs-no-workaround fragments directory and its named fragment plus a figures path; both changed paths, tests/test_a_limit_reset_reaches_every_pane.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-limit-reset-reaches-every-pane.html, sit inside them."
+  },
+  "justifications": {
+    "durability": "The diff adds no assertion, so the guard is the reinstated defect: restoring WIDE = 208 at tests/test_a_limit_reset_reaches_every_pane.py:53 reddens tests/test_a_limit_reset_reaches_every_pane.py:214, which is what negative-control-1795102295118018182.log records as 1 failed, 13 passed with EXIT=1.",
+    "evidence": "The gate log records revision, tree, command, the 14-passed summary and EXIT=0 and the negative-control log records 1 failed with the failing id quoted in the fragment, while the recorded baseline_suite and after_suite arms (manifest lines 20 and 21) measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cover none of the change, and the fragment's arithmetic does not reproduce its own figure.",
+    "fit": "tests/test_a_limit_reset_reaches_every_pane.py:53 keeps the file's own module-level WIDE constant passed to ticker.Ticker(width=...) and the added comment states why the width follows the counter block, matching the same idiom in tests/test_the_orchestrator_reset_row_says_what_it_is.py:43.",
+    "goal_fidelity": "tests/test_a_limit_reset_reaches_every_pane.py:53 carries WIDE = 212 at 121138cc8dbd and scoped-gate-1795102400379398397.log records 14 passed for that file at that revision, while the base arm reads 1 failed; only the branch landing remains, which promotion performs.",
+    "reuse": "The diff adds no definition; the pane width is a per-file literal, already declared separately in tests/test_the_orchestrator_reset_row_says_what_it_is.py:43, tests/test_follower_names_a_lift.py:140 and tests/test_a_lift_row_reads_as_a_lift.py:36, so no shared owner for a test pane width exists to extend.",
+    "scope_discipline": "git diff d8baf52ad2b4..121138cc8dbd changes only tests/test_a_limit_reset_reaches_every_pane.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-limit-reset-reaches-every-pane.html, both inside the declared write paths, and no assertion or product line moves."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is 'Make tests/test_a_limit_reset_reaches_every_pane.py pass in full on the primary branch'; tests/test_a_limit_reset_reaches_every_pane.py:53 carries WIDE = 212 at 121138cc8dbd and scoped-gate-1795102400379398397.log records 14 passed with EXIT=0.\nVERDICT done_when: The done_when names tests/test_a_limit_reset_reaches_every_pane.py passing in full at head as an all_debug job with SLURM_JOB_ID unset and forbids deleting or weakening an assertion; the gate asserts all 14 cases pass, the diff touches no assertion, and reckon/crew/landing_measure.py:915 strips every SLURM_* variable before submitting, though the manifest's suite arms cover none of the change.\nVERDICT write_paths: Declared paths are reckon, tests and the queued-work-needs-no-workaround fragments directory; both changed paths, tests/test_a_limit_reset_reaches_every_pane.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-limit-reset-reaches-every-pane.html, sit inside them.\nVERDICT manifest: The source manifest records status complete, 14 passed at 121138cc8dbd against 1 failed, 13 passed at d8baf52ad2b4, and both arm logs by path, while its baseline_suite and after_suite lines name a suite that imports nothing the node changed.\nVERDICT diff: Read commit by commit against d8baf52ad2b4: 580304962761 widens the fixture, 6e7229e29a54 adds the landing fragment and 121138cc8dbd names the measured commit in it, touching no other path.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_limit_reset_reaches_every_pane.py:53 carries WIDE = 212 at head and scoped-gate-1795102400379398397.log records 14 passed with EXIT=0.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795102400379398397.log records revision, command, 14 passed and EXIT=0 and negative-control-1795102295118018182.log records 1 failed, EXIT=1, but the manifest's baseline_suite and after_suite arms measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cover none of the change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff d8baf52ad2b4..121138cc8dbd touches only tests/test_a_limit_reset_reaches_every_pane.py and its landing fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: restoring WIDE = 208 at tests/test_a_limit_reset_reaches_every_pane.py:53 reddens the check at tests/test_a_limit_reset_reaches_every_pane.py:214, as negative-control-1795102295118018182.log records with 1 failed, 13 passed and EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_limit_reset_reaches_every_pane.py:53 keeps the file's own module-level WIDE constant passed to ticker.Ticker(width=...) as tests/test_the_orchestrator_reset_row_says_what_it_is.py:43 does.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and the pane width is a per-file literal already declared in tests/test_the_orchestrator_reset_row_says_what_it_is.py:43, tests/test_follower_names_a_lift.py:140 and tests/test_a_lift_row_reads_as_a_lift.py:36.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-limit-reset-reaches-every-pane.html:20 non-blocking: the arithmetic does not reproduce its own result, 208 minus the eight listed deductions (83) leaving 125 rather than the stated 116.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063759526408-qwnw-red-file-a-limit-reset-reaches-every-pane/manifest.md:20 non-blocking: baseline_suite and after_suite measure two test files that import nothing the node changed, so the no-added-failure clause rests on an unrelated suite.",
+  "review_run_id": "r-20261119T153943122576-review-of-qwnw-red-file-a-limit-reset-reaches-every-pane-121138cc8dbd",
+  "reviewed_base_sha": "d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72",
+  "reviewed_head_sha": "121138cc8dbd3823bdfb5f6acf48a65790daa468",
+  "reviewed_run_id": "r-20261118T063759526408-qwnw-red-file-a-limit-reset-reaches-every-pane",
+  "reviewed_worker_commits": [
+    "580304962761b2827651fc49092311e56251eda0",
+    "6e7229e29a540a271f7535c9340687345e7c31d9",
+    "121138cc8dbd3823bdfb5f6acf48a65790daa468"
+  ],
+  "scope_provenance": "The three worker commits are the whole diff against base d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72: two paths, tests/test_a_limit_reset_reaches_every_pane.py and the landing fragment.",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063759526408-qwnw-red-file-a-limit-reset-reaches-every-pane/after_suite-1795102458748584034.log",
+      "revision": "121138cc8dbd3823bdfb5f6acf48a65790daa468",
+      "summary": "58 passed"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063759526408-qwnw-red-file-a-limit-reset-reaches-every-pane/baseline_suite-1795102415597732531.log",
+      "revision": "d8baf52ad2b4e15f35ea3d23b63f6f85d20a8f72",
+      "summary": "58 passed"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T20:02:20.341023+00:00",
+  "total": 111
+}

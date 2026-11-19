@@ -471,7 +471,7 @@ def test_plan_review_waits_for_the_fleet_gate_and_then_launches(
 def test_completion_and_promotion_continue_during_a_pause(home, repo) -> None:
     record = ledger_tests._dispatch(repo, fixture="codex-turn.jsonl")
     ledger_tests._deliver(record)
-    work = ledger_tests._commit_work(repo)
+    work = ledger_tests._commit_work(record)
     ledger_tests._init_ledger(repo)
     _pause()
     result = crew.complete(

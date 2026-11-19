@@ -1895,13 +1895,9 @@ def _revision_is_committed(store: Path, revision: str) -> bool:
     a store that simply cannot answer. Asking first keeps that refusal to a
     readable store.
     """
-    probe = subprocess.run(
-        ["git", "-C", str(store), "cat-file", "-e", f"{revision}^{{commit}}"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return probe.returncode == 0
+    from reckon.crew.recovery import _resolve_commit
+
+    return bool(_resolve_commit(store, revision))
 
 
 def _committed_head_paths(store: Path) -> set[str]:

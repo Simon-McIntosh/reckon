@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062428237659-qwnw-red-file-hook-scripts-correct-their-interpreter/suite-base.log",
+  "base_log_revision": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1413 (imports reckon.hooks.worker_inbox and calls manifest_message_finding)",
+    "reckon/crew_run_commands.py:3032 (calls worker_inbox.write_message to place a coordinator message in a run)",
+    "reckon/hooks/install.py:167 (worker_inbox_script_path, used by _worker_fence.py:544 to seed the hook into a worker home)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:28:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-hook-scripts-correct-their-interpreter.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "the recorded arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.hooks.worker_inbox (the importer is tests/test_worker_inbox.py:33); the done_when's arm over the test files that import what you changed is therefore not measured, and the 58-to-58 delta in suite-base.log and suite-head.log cannot show the change added no failure in the population that exercises it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-hook-scripts-correct-their-interpreter.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "the fragment names head gate job 1329334 at revision 16c1b885 for the 7-passed arm, while manifest.md's landing line and test_logs name gate-head.log at revision 43f1cde (job 1329351); the log header at gate-head.log:1 names 43f1cde and carries no job id, so a reader reconciling fragment, manifest and log sees two job ids and two revisions for one arm with no note saying which is the delivered run."
+    }
+  ],
+  "gate_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062428237659-qwnw-red-file-hook-scripts-correct-their-interpreter/gate-head.log",
+  "head_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062428237659-qwnw-red-file-hook-scripts-correct-their-interpreter/suite-head.log",
+  "head_log_revision": "43f1cde93ab2e48c61297aa927127bd9e490a66c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the four commits 601b13a105d228ed07c1954450cda91cf4cbd561, 16c1b88503, 43f1cde93a and 600514c6f2 against 42fe90d0: the first is the product fix and test change (28 and 31 added lines), the last three are evidence-fragment rewrites only, and no other file changes.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each base cause named with a verdict, and an arm over the test files that import the changed code; arm-runner.sh:18 runs the command under env -u SLURM_JOB_ID, gate-head.log:10 records '7 passed in 2.34s' and gate-baseline.log:29 records '2 failed, 4 passed' with both ids, and manifest.md names both causes with verdicts, but the recorded suite arm names no test that imports the changed module.",
+    "goal": "the node's goal is that tests/test_hook_scripts_correct_their_interpreter.py passes in full at head; the diff makes reckon/hooks/worker_inbox.py:42-58 load interpreter_bootstrap.py and so brings the fourth importing hook under it, and gate-head.log records '7 passed' with EXIT=0 at 43f1cde.",
+    "goal_fidelity": "the node's goal is that the hook scripts run under the checkout's interpreter; the diff adds the shared bootstrap to reckon/hooks/worker_inbox.py:42-58 and calls it from main at reckon/hooks/worker_inbox.py:416, and gate-head.log:10 records 7 passed EXIT=0 at 43f1cde.",
+    "manifest": "read the reviewed run's manifest.md; status is complete, it names gate-head.log, gate-baseline.log, suite-base.log and suite-head.log, records 58 passed at both arms in baseline_suite and after_suite with full revisions, and names both causes with a product/test verdict.",
+    "write_paths": "the declared paths are reckon, tests and the two queued-work-needs-no-workaround evidence paths; git diff 42fe90d0b0a46060bafde2490dda7d4002cda478 600514c6f20d84a52b659a818556bd6f27d75ae0 touches only reckon/hooks/worker_inbox.py, tests/test_hook_scripts_correct_their_interpreter.py and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_hook_scripts_correct_their_interpreter.py:126-135 seeds a waiting message for both interpreters and :163-168 asserts its body appears in the old-python run's additionalContext, so removing the bootstrap call at reckon/hooks/worker_inbox.py:416 leaves the old interpreter unable to reach the lazy import at :74 and reddens the comparison at :150.",
+    "evidence": "gate-head.log:1-10 and gate-baseline.log:29 record 7 passed at head 43f1cde and 2 failed/4 passed at base 42fe90d0 under arm-runner.sh:18's env -u SLURM_JOB_ID, but suite-base.log:13 and suite-head.log:13 count 58 passed over two files that import nothing the change touched, so the arm the done_when asks for is unmeasured.",
+    "fit": "reckon/hooks/worker_inbox.py:42-45 copies the spec-load block every sibling carries (reckon/hooks/worker_stop.py:59-63) and names the deferred call in a docstring, diverging only by a one-line _interpreter_error wrapper the siblings inline at their main.",
+    "goal_fidelity": "reckon/hooks/worker_inbox.py:416 calls _interpreter_error() before reading stdin, and gate-head.log:10 records 7 passed EXIT=0 at 43f1cde, so the fourth importing hook now takes the checkout interpreter.",
+    "reuse": "the added code extends reckon/hooks/interpreter_bootstrap.py's ensure_interpreter rather than re-implementing it; the search over reckon/hooks for another interpreter-selection owner found only that module, whose checkout_interpreter is the single place the .venv path is named.",
+    "scope_discipline": "git diff 42fe90d0..600514c6 touches three paths, all inside the declared reckon, tests and evidence fences, and the two docs commits only restate measurements the code commit produced."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_hook_scripts_correct_their_interpreter.py passes in full at head; the diff makes reckon/hooks/worker_inbox.py:42-58 load interpreter_bootstrap.py and so brings the fourth importing hook under it, and gate-head.log records '7 passed' with EXIT=0 at 43f1cde.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, each base cause named with a verdict, and an arm over the test files that import the changed code; arm-runner.sh:18 runs the command under env -u SLURM_JOB_ID, gate-head.log:10 records '7 passed in 2.34s' and gate-baseline.log:29 records '2 failed, 4 passed' with both ids, and manifest.md names both causes with verdicts, but the recorded suite arm names no test that imports the changed module.\nVERDICT write_paths: the declared paths are reckon, tests and the two queued-work-needs-no-workaround evidence paths; git diff 42fe90d0b0a46060bafde2490dda7d4002cda478 600514c6f20d84a52b659a818556bd6f27d75ae0 touches only reckon/hooks/worker_inbox.py, tests/test_hook_scripts_correct_their_interpreter.py and the fragment, all inside them.\nVERDICT manifest: read the reviewed run's manifest.md; status is complete, it names gate-head.log, gate-baseline.log, suite-base.log and suite-head.log, records 58 passed at both arms in baseline_suite and after_suite with full revisions, and names both causes with a product/test verdict.\nVERDICT diff: read the four commits 601b13a105d228ed07c1954450cda91cf4cbd561, 16c1b88503, 43f1cde93a and 600514c6f2 against 42fe90d0: the first is the product fix and test change (28 and 31 added lines), the last three are evidence-fragment rewrites only, and no other file changes.\nCALL_SITES: reckon/crew_run_commands.py:1413 (imports reckon.hooks.worker_inbox and calls manifest_message_finding), reckon/crew_run_commands.py:3032 (calls worker_inbox.write_message to place a coordinator message in a run), reckon/hooks/install.py:167 (worker_inbox_script_path, used by _worker_fence.py:544 to seed the hook into a worker home)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/worker_inbox.py:416 calls _interpreter_error() before reading stdin, and gate-head.log:10 records 7 passed EXIT=0 at 43f1cde, so the fourth importing hook now takes the checkout interpreter.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-head.log:1-10 and gate-baseline.log:29 record 7 passed at head 43f1cde and 2 failed/4 passed at base 42fe90d0 under arm-runner.sh:18's env -u SLURM_JOB_ID, but suite-base.log:13 and suite-head.log:13 count 58 passed over two files that import nothing the change touched, so the arm the done_when asks for is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 42fe90d0..600514c6 touches three paths, all inside the declared reckon, tests and evidence fences, and the two docs commits only restate measurements the code commit produced.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_hook_scripts_correct_their_interpreter.py:126-135 seeds a waiting message for both interpreters and :163-168 asserts its body appears in the old-python run's additionalContext, so removing the bootstrap call at reckon/hooks/worker_inbox.py:416 leaves the old interpreter unable to reach the lazy import at :74 and reddens the comparison at :150.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/hooks/worker_inbox.py:42-45 copies the spec-load block every sibling carries (reckon/hooks/worker_stop.py:59-63) and names the deferred call in a docstring, diverging only by a one-line _interpreter_error wrapper the siblings inline at their main.\nSCORE reuse: 18\nJUSTIFICATION reuse: the added code extends reckon/hooks/interpreter_bootstrap.py's ensure_interpreter rather than re-implementing it; the search over reckon/hooks for another interpreter-selection owner found only that module, whose checkout_interpreter is the single place the .venv path is named.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-hook-scripts-correct-their-interpreter.html:41 non-blocking: the recorded arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports reckon.hooks.worker_inbox (the importer is tests/test_worker_inbox.py:33); the done_when's arm over the test files that import what you changed is therefore not measured, and the 58-to-58 delta in suite-base.log and suite-head.log cannot show the change added no failure in the population that exercises it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-hook-scripts-correct-their-interpreter.html:7 non-blocking: the fragment names head gate job 1329334 at revision 16c1b885 for the 7-passed arm, while manifest.md's landing line and test_logs name gate-head.log at revision 43f1cde (job 1329351); the log header at gate-head.log:1 names 43f1cde and carries no job id, so a reader reconciling fragment, manifest and log sees two job ids and two revisions for one arm with no note saying which is the delivered run.",
+  "review_run_id": "r-20261119T034325970201-review-of-qwnw-red-file-hook-scripts-correct-their-interpreter-600514c6f20d",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "600514c6f20d84a52b659a818556bd6f27d75ae0",
+  "reviewed_run_id": "r-20261118T062428237659-qwnw-red-file-hook-scripts-correct-their-interpreter",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T034325970201-review-of-qwnw-red-file-hook-scripts-correct-their-interpreter-600514c6f20d"
+  },
+  "reviewer_run_id": "r-20261119T034325970201-review-of-qwnw-red-file-hook-scripts-correct-their-interpreter-600514c6f20d",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T19:52:10.128643+00:00",
+  "total": 105
+}

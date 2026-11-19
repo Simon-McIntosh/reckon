@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/ledger.py:4433 read_records (plan selection via stored_plan_ids)",
+    "reckon/mcp_views.py:1934 stored_run_rows(plan=...)",
+    "reckon/roadmap.py:1936 read_records(plan plus run_ids)",
+    "reckon/crew/plan_review.py:4305 read_records",
+    "reckon/crew/recovery_watch.py:2519 read_records"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T20:34:58Z",
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": "548",
+      "severity": "non-blocking",
+      "text": "non-blocking: reverting `({_plan_owner_sql()}) = ?` to `r.plan = ?` keeps every test green, because the write-time column equals row_plan's answer except after a rotation and no plan-selected read is tested over a rotated row, so the clause the named-run path depends on (reckon/roadmap.py:1936 passes plan plus run_ids) has no failing-when-reverted guard."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": "905",
+      "severity": "non-blocking",
+      "text": "non-blocking: _plan_owner_sql restates in SQL the plan precedence owned by reckon/ledger.py:1983 row_plan (plan, then impl_move.plan, then node_definition.plan, trimmed); the node set out to remove a second source of truth for a row's plan and this clause introduces another, with nothing (no test, no generated column) keeping the two statements in step."
+    },
+    {
+      "file": "manifest.md",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the two importer arms to be recorded as inline JSON carrying full 40-character revisions, but baseline_suite/after_suite name tests/test_staged_write_inventory.py plus tests/test_every_shared_home_lock_holds_across_nodes.py at 42fe90d0b0 and ffaf0cdda1; the 169-file importer arm (68 failed at 42fe90d0b0 versus 64 at 0393852b, no added id) exists only as log headers and fragment prose."
+    },
+    {
+      "file": "manifest.md",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line cites gate job 1329373 at ffaf0cdda1 while test_logs points at a log whose header names 0393852b and the fragment cites job 1329658; logs/head-every-ledger-question.log.scheduler is empty, so neither the all_debug partition nor a job id is openable evidence for the head gate the done_when specifies."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths and the manifest records no ruff receipt; reading the reviewed blobs, ruff checks passed and 2 files already formatted, so the condition holds unrecorded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit over 42fe90d0b0a46060bafde2490dda7d4002cda478..bc1beffc1fe5f541b9d90e0a885e5c2382866976: two fix commits (ffaf0cd, 0393852b) touching reckon/ledger.py and reckon/run_store.py plus three docs commits (7f8d538, ee0783d, bc1beffc) building the fragment, one of which (0393852b) is the code commit the recorded gate ran at.",
+    "done_when": "the measure names a full head run on all_debug with SLURM_JOB_ID unset, a base arm first, a per-cause verdict, an importer arm with no added failure recorded as inline JSON, a fragment-hosted negative control and clean ruff; the run records the 28-passed head arm, the 2-failed/26-passed base arm, the product-not-test verdict and the fragment-hosted control, but its baseline_suite/after_suite JSON name a two-test command rather than the importer arm, the all_debug job id rests on prose (manifest.md:23, fragment line 22) with empty .scheduler receipts, and no ruff receipt is recorded.",
+    "goal": "the node goal is tests/test_every_ledger_question_reads_the_store.py passing in full; logs/head-every-ledger-question.log records 28 passed / EXIT=0 at 0393852b, the code tree of the reviewed head bc1beffc, and the landed fix (reckon/ledger.py:1833 stored_plan_ids, reckon/run_store.py:905 _plan_owner_sql) is the product change that turns the base's two failures green.",
+    "manifest": "read in full; it records commits ffaf0cd, 7f8d538, 0393852b, ee0783d and the head bc1beffc, the three changed paths, the head gate and the base negative control with their log paths, the product-not-test verdict, and both suite arms at 0 failures, but its artifacts line (manifest.md:23) cites job 1329373 at ffaf0cd while its test_logs log header names 0393852b and the fragment claims job 1329658.",
+    "write_paths": "the reviewed node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment; git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..bc1beffc1fe5f541b9d90e0a885e5c2382866976 changes exactly those three paths, all inside the grant, and test_every_ledger_question_reads_the_store.py is untouched."
+  },
+  "justifications": {
+    "durability": "the base negative control (logs/base-every-ledger-question.log) proves tests/test_every_ledger_question_reads_the_store.py:540 reddens when the read returns to the write-time column, but nothing reddens if only the reckon/run_store.py:548 owner clause reverts to r.plan.",
+    "evidence": "manifest.md:26-27 record the suite pair as a two-test command rather than the importer arm the done_when requires as inline JSON with 40-character revisions, and manifest.md:23's job id and all_debug partition have no schedulable receipt.",
+    "fit": "the additions follow the module idiom of reckon/run_store.py:842 (keyword-only path/run_ids, None for an absent store, _unreadable on sqlite3.Error) and are ruff-clean at bc1beffc, with only the run_store-side restatement of row_plan's precedence reading as a second statement of one rule.",
+    "goal_fidelity": "logs/head-every-ledger-question.log closes 28 passed / EXIT=0 for tests/test_every_ledger_question_reads_the_store.py at 0393852b, whose code tree the reviewed head bc1beffc differs from only in the evidence fragment.",
+    "reuse": "reckon/run_store.py:905 _plan_owner_sql re-implements the precedence that reckon/ledger.py:1983 row_plan already owns, rather than extending that owner, and no assertion ties the two statements together.",
+    "scope_discipline": "every path in 42fe90d0b0a46060bafde2490dda7d4002cda478..bc1beffc1fe5f541b9d90e0a885e5c2382866976 lies inside the declared write paths, and no file outside the two product files and the named fragment changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is tests/test_every_ledger_question_reads_the_store.py passing in full; logs/head-every-ledger-question.log records 28 passed / EXIT=0 at 0393852b, the code tree of the reviewed head bc1beffc, and the landed fix (reckon/ledger.py:1833 stored_plan_ids, reckon/run_store.py:905 _plan_owner_sql) is the product change that turns the base's two failures green.\nVERDICT done_when: the measure names a full head run on all_debug with SLURM_JOB_ID unset, a base arm first, a per-cause verdict, an importer arm with no added failure recorded as inline JSON, a fragment-hosted negative control and clean ruff; the run records the 28-passed head arm, the 2-failed/26-passed base arm, the product-not-test verdict and the fragment-hosted control, but its baseline_suite/after_suite JSON name a two-test command rather than the importer arm, the all_debug job id rests on prose (manifest.md:23, fragment line 22) with empty .scheduler receipts, and no ruff receipt is recorded.\nVERDICT write_paths: the reviewed node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the named fragment; git diff --stat 42fe90d0b0a46060bafde2490dda7d4002cda478..bc1beffc1fe5f541b9d90e0a885e5c2382866976 changes exactly those three paths, all inside the grant, and test_every_ledger_question_reads_the_store.py is untouched.\nVERDICT manifest: read in full; it records commits ffaf0cd, 7f8d538, 0393852b, ee0783d and the head bc1beffc, the three changed paths, the head gate and the base negative control with their log paths, the product-not-test verdict, and both suite arms at 0 failures, but its artifacts line (manifest.md:23) cites job 1329373 at ffaf0cd while its test_logs log header names 0393852b and the fragment claims job 1329658.\nVERDICT diff: read commit by commit over 42fe90d0b0a46060bafde2490dda7d4002cda478..bc1beffc1fe5f541b9d90e0a885e5c2382866976: two fix commits (ffaf0cd, 0393852b) touching reckon/ledger.py and reckon/run_store.py plus three docs commits (7f8d538, ee0783d, bc1beffc) building the fragment, one of which (0393852b) is the code commit the recorded gate ran at.\nCALL_SITES: reckon/ledger.py:4433 read_records (plan selection via stored_plan_ids), reckon/mcp_views.py:1934 stored_run_rows(plan=...), reckon/roadmap.py:1936 read_records(plan plus run_ids), reckon/crew/plan_review.py:4305 read_records, reckon/crew/recovery_watch.py:2519 read_records\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: logs/head-every-ledger-question.log closes 28 passed / EXIT=0 for tests/test_every_ledger_question_reads_the_store.py at 0393852b, whose code tree the reviewed head bc1beffc differs from only in the evidence fragment.\nSCORE evidence: 12\nJUSTIFICATION evidence: manifest.md:26-27 record the suite pair as a two-test command rather than the importer arm the done_when requires as inline JSON with 40-character revisions, and manifest.md:23's job id and all_debug partition have no schedulable receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 42fe90d0b0a46060bafde2490dda7d4002cda478..bc1beffc1fe5f541b9d90e0a885e5c2382866976 lies inside the declared write paths, and no file outside the two product files and the named fragment changed.\nSCORE durability: 15\nJUSTIFICATION durability: the base negative control (logs/base-every-ledger-question.log) proves tests/test_every_ledger_question_reads_the_store.py:540 reddens when the read returns to the write-time column, but nothing reddens if only the reckon/run_store.py:548 owner clause reverts to r.plan.\nSCORE fit: 19\nJUSTIFICATION fit: the additions follow the module idiom of reckon/run_store.py:842 (keyword-only path/run_ids, None for an absent store, _unreadable on sqlite3.Error) and are ruff-clean at bc1beffc, with only the run_store-side restatement of row_plan's precedence reading as a second statement of one rule.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/run_store.py:905 _plan_owner_sql re-implements the precedence that reckon/ledger.py:1983 row_plan already owns, rather than extending that owner, and no assertion ties the two statements together.\nFINDING reckon/run_store.py:548 non-blocking: reverting `({_plan_owner_sql()}) = ?` to `r.plan = ?` keeps every test green, because the write-time column equals row_plan's answer except after a rotation and no plan-selected read is tested over a rotated row, so the clause the named-run path depends on (reckon/roadmap.py:1936 passes plan plus run_ids) has no failing-when-reverted guard.\nFINDING reckon/run_store.py:905 non-blocking: _plan_owner_sql restates in SQL the plan precedence owned by reckon/ledger.py:1983 row_plan (plan, then impl_move.plan, then node_definition.plan, trimmed); the node set out to remove a second source of truth for a row's plan and this clause introduces another, with nothing (no test, no generated column) keeping the two statements in step.\nFINDING manifest.md:26 non-blocking: the done_when asks for the two importer arms to be recorded as inline JSON carrying full 40-character revisions, but baseline_suite/after_suite name tests/test_staged_write_inventory.py plus tests/test_every_shared_home_lock_holds_across_nodes.py at 42fe90d0b0 and ffaf0cdda1; the 169-file importer arm (68 failed at 42fe90d0b0 versus 64 at 0393852b, no added id) exists only as log headers and fragment prose.\nFINDING manifest.md:23 non-blocking: the artifacts line cites gate job 1329373 at ffaf0cdda1 while test_logs points at a log whose header names 0393852b and the fragment cites job 1329658; logs/head-every-ledger-question.log.scheduler is empty, so neither the all_debug partition nor a job id is openable evidence for the head gate the done_when specifies.\nFINDING manifest.md:17 non-blocking: the done_when requires ruff check and ruff format --check to report nothing new on the changed paths and the manifest records no ruff receipt; reading the reviewed blobs, ruff checks passed and 2 files already formatted, so the condition holds unrecorded.",
+  "review_run": "r-20261119T051443917757-review-of-qwnw-red-file-every-ledger-question-reads-the-store-bc1beffc1fe5",
+  "review_run_id": "r-20261119T051443917757-review-of-qwnw-red-file-every-ledger-question-reads-the-store-bc1beffc1fe5",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "bc1beffc1fe5f541b9d90e0a885e5c2382866976",
+  "reviewed_run_id": "r-20261118T062445238812-qwnw-red-file-every-ledger-question-reads-the-store",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T20:57:59.925683+00:00",
+  "total": 90
+}

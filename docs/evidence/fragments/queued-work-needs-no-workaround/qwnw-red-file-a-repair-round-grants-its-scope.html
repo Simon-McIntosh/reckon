@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<title>A repair round grants its scope: red file repaired</title>
+</head>
+<body>
+<main>
+<h1 id="qwnw-red-file-a-repair-round-grants-its-scope-title">A repair round's grant is judged by the path's class</h1>
+
+<section id="qwnw-red-file-a-repair-round-grants-its-scope-reproduction">
+<h2>Reproduction at the base revision</h2>
+<p><code>tests/test_a_repair_round_grants_its_scope.py</code> was run from an archive of
+<code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code> with <code>SLURM_JOB_ID</code> unset. One of its
+four tests failed:</p>
+<pre>FAILED tests/test_a_repair_round_grants_its_scope.py::test_a_peer_held_path_is_not_granted_and_the_advice_names_the_peer
+1 failed, 3 passed
+EXIT=1</pre>
+<p>The red log is <code>~/.config/reckon/crew/runs/r-20261118T063609964162-qwnw-red-file-a-repair-round-grants-its-scope/base-run-test_a_repair_round_grants_its_scope-base.log</code>.</p>
+</section>
+
+<section id="qwnw-red-file-a-repair-round-grants-its-scope-cause">
+<h2>The cause, and which side was wrong</h2>
+<p>The failing case held a live peer's claim over <code>reckon/crew/ticker.py</code>, a source file.
+Since <code>471bf98366</code> the repository sharing policy shares source files by default and keeps
+only the classes a merge cannot reconcile exclusive, listed in
+<code>reckon.crew.runs.DEFAULT_EXCLUSIVE_PATHS</code>. <code>widen_claim</code> judges a widened path
+through the same claim rule as dispatch, so a shared source claim admits the grant and the pointer
+carries the path. The guard was checked to fire on an exclusive path: the probe reached the refusal
+naming the peer run and left the path out of the scope line.</p>
+<p><strong>Verdict: the test was wrong.</strong> It encoded the pre-<code>471bf98366</code> answer
+for a source path, while <code>tests/test_only_unmergeable_paths_are_claimed.py</code>'s
+widen-onto-a-live-source-claim case asserts the current answer and passes at base. The refusal case
+was moved to <code>docs/state/generated.json</code>, a generated-state path the class list keeps
+exclusive, so every refusal assertion it carried is still made. No assertion was deleted or
+weakened, and no product file was changed.</p>
+</section>
+<p>The head run is <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063609964162-qwnw-red-file-a-repair-round-grants-its-scope/scoped-gate-1795069678214993433.log</code>.</p>
+</main>
+</body>
+</html>

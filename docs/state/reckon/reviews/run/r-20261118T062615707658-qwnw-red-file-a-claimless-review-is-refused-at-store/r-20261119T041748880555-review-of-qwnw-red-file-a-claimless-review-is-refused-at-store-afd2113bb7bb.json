@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-claimless-review-is-refused-at-store-afd2113bb7bb",
+      "recorded_at": "2026-11-19T14:55:59.774664+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-19T13:10:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-claimless-review-is-refused-at-store-afd2113bb7bb",
+      "recorded_at": "2026-11-19T14:55:54.061224+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062615707658-qwnw-red-file-a-claimless-review-is-refused-at-store/manifest.md",
+      "line": 5,
+      "severity": "blocking",
+      "text": "The manifest reads status: complete but carries no tests line, no test_logs, and neither suite arm: crew check --manifest --run r-20261118T062615707658-qwnw-red-file-a-claimless-review-is-refused-at-store exits 1 with 'status is complete but no test result is recorded', 'status is complete but baseline_suite is missing', 'status is complete but after_suite is missing' and 'messages_received: no delivery receipt was recorded, so the manifest must say `messages_received: none`'. The done_when's requirements that the manifest list each cause with a verdict and carry both arms as inline JSON with full 40-character revisions are therefore unmet in the record promotion reads; the arms exist only as tripwire JSON inside the worker's own session bash logs (omp-home/agent/sessions/.../93.bash.log and 124.bash.log), and the file is the 11-line orientation write with checkpoint 'manifest being finalized', so the record was never closed."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claimless-review-is-refused-at-store.html",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "The closing paragraph says 'the head gate re-run and the base attempt are named by the manifest's test_logs and negative_control_log', but both fields are absent from the manifest (test_logs parses to [] and there is no negative_control_log line), so the committed evidence's only pointer to its own logs dangles and a reader cannot reach scoped-gate-1795061275094737226.log or logs/negctl-base.log from the fragment. The same repair that fills the manifest answers this finding."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claimless-review-is-refused-at-store.html",
+      "line": 29,
+      "severity": "non-blocking",
+      "text": "The table lists 'negative control, base test file' (line 26) and 'node tests, base' (line 29) as two arms at 42fe90d0 with identical 2 failed / 2 passed / EXIT=1 results, but only one log at that revision exists on disk (logs/negctl-base.log), so one measurement is presented as two; and neither row carries the failing test ids the done_when asks to be logged beside the head run, which is where a reader would look for them rather than in the uncommitted run directory."
+    }
+  ],
+  "notes": "Scores are per dimension and independent. Durability: the diff adds no assertion, so the guard is the pre-existing pair at tests/test_a_claimless_review_is_refused_at_store.py:114 (assert len(findings) == 1) and :128 (assert exit_code == 0); reinstating the regression -- removing the fixture's messages_received line -- reddens exactly those two ids and nothing else, which logs/negctl-base.log records at 42fe90d0 with EXIT=1, and which I reproduced independently in this review worktree as '2 failed, 2 passed in 1.09s'. No assertion in the diff compares a value against a variable the test itself passed in, because the diff adds none. added_failure_count 0 is derived from the reviewed run's own arms: baseline_suite-1795060525175189575.log at 42fe90d0 and after_suite-1795060600274873296.log at afd2113b both record '58 passed' with EXIT=0 over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so failure_ids are empty on both sides and the delta is zero (the earlier pair, baseline_suite-1795060023008913837.log and after_suite-1795060068180595785.log, reads the same 58 passed / EXIT=0). Reuse: the diff adds no function, class or module, so no capability is forked; the one rule it leans on, that a run with no delivery receipt must state messages_received: none, is owned by reckon/hooks/worker_inbox.py:57 and the fixture states it rather than restating the check. Fit: the fixture line continues the same f-string the test already writes, but the fragment departs from the sibling idiom in docs/evidence/fragments/queued-work-needs-no-workaround/, for example qwnw-a-commit-keyed-list-item-is-read-codex-negative-control.html, which embeds the raw log in a pre block with its failing ids.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T041748880555-review-of-qwnw-red-file-a-claimless-review-is-refused-at-store-afd2113bb7bb",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_commits": [
+    "1cfbeeb7ed39b6eddda53bf7b6b10c179005e134",
+    "afd2113bb7bbd71b99c123dd37e9a0146794ce1c"
+  ],
+  "reviewed_head_sha": "afd2113bb7bbd71b99c123dd37e9a0146794ce1c",
+  "reviewed_node": "qwnw-red-file-a-claimless-review-is-refused-at-store",
+  "reviewed_run_id": "r-20261118T062615707658-qwnw-red-file-a-claimless-review-is-refused-at-store",
+  "scores": {
+    "durability": 19,
+    "evidence": 8,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T13:42:38.340447+00:00",
+  "total": 104,
+  "verdicts": {
+    "call_sites": "The change adds no production code, so no runtime path executes a new line; the behaviour the fixture exercises is reached through reckon/hooks/worker_inbox.py:57 (MANIFEST_MESSAGES_KEY, the messages_received audit) on the crew check --manifest path, and reckon/crew/review.py:240 (FINDING_CLAIM_FIELDS) for the claimless-record refusal the fixture's other tests assert.",
+    "diff": "Read both commits against base 42fe90d0: 1cfbeeb7ed adds one f-string line 'messages_received: none' to the fixture manifest in tests/test_a_claimless_review_is_refused_at_store.py:51 and changes no assertion, and afd2113bb7 adds the 47-line evidence fragment; nothing else in the tree moved.",
+    "done_when": "Read the four-clause done_when against the artefacts: the head clause is measured by the 4-passed gate log on compute host 98dci4-clu-3141, the cause clause is answered in the fragment prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claimless-review-is-refused-at-store.html:10-16 but not in the manifest, the arms clause is met only inside omp-home/agent/sessions/.../93.bash.log and 124.bash.log and is absent from the manifest ('baseline_suite': null, 'after_suite': null per classification.json), and the negative control exists at logs/negctl-base.log with 2 failed / EXIT=1 but the failing ids are not quoted in the fragment.",
+    "goal": "Read the node goal 'Make tests/test_a_claimless_review_is_refused_at_store.py pass in full on the primary branch' against the head gate log scoped-gate-1795061275094737226.log, which records '4 passed in 0.43s' with EXIT=0 at revision afd2113bb7bbd71b99c123dd37e9a0146794ce1c, and against my own run of the same file at a pre-landing worktree whose copy is byte-identical to base 42fe90d0 (git diff 42fe90d0..HEAD -- tests/test_a_claimless_review_is_refused_at_store.py is empty), which reproduced '2 failed, 2 passed' with the ids test_check_manifest_refuses_a_handwritten_claimless_record and test_a_stated_claim_passes_both_paths.",
+    "manifest": "Read the reviewed run's manifest.md (11 lines, 896 bytes): status complete, commits 1cfbeeb7ed39b6eddda53bf7b6b10c179005e134 and afd2113bb7bbd71b99c123dd37e9a0146794ce1c, checkpoint 'manifest being finalized', but no tests, test_logs, baseline_suite, after_suite, changed_paths, artifacts, evidence_inputs or outside_scope line, and its own crew check --manifest exits 1 naming three missing evidence fields plus the messages_received statement.",
+    "write_paths": "Read the declared write paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its html file, its figures directory) against git diff --stat 42fe90d0..afd2113b: the two changed paths are docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-claimless-review-is-refused-at-store.html and tests/test_a_claimless_review_is_refused_at_store.py, both inside the declared scope, with no reckon/ change at all."
+  }
+}

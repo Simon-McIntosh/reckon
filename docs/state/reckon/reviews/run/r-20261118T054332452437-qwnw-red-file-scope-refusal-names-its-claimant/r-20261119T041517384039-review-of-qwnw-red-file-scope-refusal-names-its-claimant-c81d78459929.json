@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2461 crew_module.dispatch(",
+    "reckon/crew/plan_review.py:6721 dispatch_module.dispatch(",
+    "reckon/crew/plan_review.py:7475 dispatch_module.dispatch(",
+    "reckon/crew/recovery_review_dispatch.py:4636 dispatch"
+  ],
+  "completed_at": "2026-11-19T19:47:28Z",
+  "dispatched_at": "2026-11-19T19:29:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054332452437-qwnw-red-file-scope-refusal-names-its-claimant/manifest.md",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "outside_scope reads 'none; the 12 base failures that pass at head are this defect, not other work', but 10 of those 12 are TmpHeadroomError raised at reckon/crew/dispatch_launch.py:925 (arm-base.log carries 26 tmp-headroom refusals, arm-head.log none; 5.17 GB free against a temp floor of 5.37 GB) in tests/test_dispatch_returns_without_worker.py and tests/test_stop_before_spawn_spawns_nothing.py, so the arm pair is not an equivalent environment and the attribution is unsupported; separately tests/test_crew_peers.py::test_peer_channel_does_not_relax_live_scope_refusal fails 'DID NOT RAISE ScopeConflict' in both arms and is reported nowhere."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scope-refusal-names-its-claimant.html",
+      "line": 6,
+      "severity": "non-blocking",
+      "text": "'A launched dispatch still carries the notice; a held, queued or refused one prints none' is false for refusals raised after the notice's new position - the shadow-lineage D20 refusal at reckon/crew/dispatching/preparation.py:1721 and the watcher-delivery refusal at preparation.py:1782 - where the notice still precedes the JSON document, so the first-line defect survives those paths."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Four production call sites reach dispatch: reckon/crew_dispatch_commands.py:2461, reckon/crew/plan_review.py:6721 and 7475, reckon/crew/recovery_review_dispatch.py:4636, all through the reckon.crew.dispatch facade onto reckon/crew/dispatching/preparation.py:385.",
+    "diff": "Two commits against 42fe90d0: dd537f44de relocates the 'reckon: created run' print from preparation.py:1581 to preparation.py:1675, c81d7845 adds the 14-line evidence fragment; the test file is untouched.",
+    "done_when": "The done_when asks for that file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named product-or-test, and an importer arm adding no failure with both arms as inline JSON at 40-character revisions; the manifest records head-node-test.log 3 passed, base-node-test.log 2 failed on the leading notice, node arm base 90 failed / head 78 failed with 0 head-only.",
+    "goal": "The node goal is 'Make tests/test_scope_refusal_names_its_claimant.py pass in full on the primary branch'; head-node-test.log records 3 passed EXIT=0 at dd537f44 and reckon/crew/dispatching/preparation.py:1675 prints the notice only after the scope claim.",
+    "manifest": "Read in full; it names commits dd537f44de and c81d7845, the head and base node-test logs with EXIT lines, both suite arms 58 passed EXIT=0 at their own revisions, and its outside_scope line at manifest.md:22 misattributes 10 base-only failures that are tmp-headroom refusals.",
+    "write_paths": "Declared as reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment plus the figure directory; the diff touches only reckon/crew/dispatching/preparation.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scope-refusal-names-its-claimant.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make tests/test_scope_refusal_names_its_claimant.py pass in full on the primary branch'; head-node-test.log records 3 passed EXIT=0 at dd537f44, and reckon/crew/dispatching/preparation.py:1675 is where the moved notice now sits after the scope claim.\nVERDICT done_when: the done_when asks for that file green at head as an all_debug job with SLURM_JOB_ID unset, each cause named product-or-test, and an importer arm adding no failure with both arms as inline JSON carrying 40-character revisions; the manifest records head-node-test.log 3 passed, base-node-test.log 2 failed on the leading notice, and both arm JSONs at full revisions.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment plus the figure directory; the delivered diff touches only reckon/crew/dispatching/preparation.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scope-refusal-names-its-claimant.html, both inside them.\nVERDICT manifest: read in full at the run directory; it names commits dd537f44de and c81d7845, the three node-test runs, both suite arms 58 passed EXIT=0 at their own revisions, and an outside_scope line that misattributes 10 base-only failures which are tmp-headroom refusals.\nVERDICT diff: read both commits against 42fe90d0; dd537f44de moves the 'reckon: created run' print from preparation.py:1581 to preparation.py:1675 past _raise_repository_scope_conflict and _adjacent_live_peers, and c81d7845 adds the 14-line evidence fragment, with nothing else changed.\nCALL_SITES: reckon/crew_dispatch_commands.py:2461, reckon/crew/plan_review.py:1070-1071 and 1237-1238 (dispatch_module.dispatch calls), reckon/crew/recovery_review_dispatch.py:4636\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: head-node-test.log records 3 passed EXIT=0 at dd537f44 for tests/test_scope_refusal_names_its_claimant.py, the node's stated deliverable, with the notice now printed at preparation.py:1675.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate measures the done_when (base-node-test.log 2 failed with the notice as json.loads's first line at tests/test_scope_refusal_names_its_claimant.py:233; head 3 passed), but the base arm's 90-failure population is not like-for-like: arm-base.log carries 26 tmp-headroom refusals and arm-head.log none.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both diff paths, reckon/crew/dispatching/preparation.py and the node's evidence fragment, are inside the declared write paths and nothing else changed.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the removed print at preparation.py:1581 restores the base output quoted in base-node-test.log (s = 'reckon: created run r-20261119T021126486584-review-out-of-repo\\n{...') and reddens json.loads(result.output) at tests/test_scope_refusal_names_its_claimant.py:233, which is independent of any value the fix computes.\nSCORE fit: 19\nJUSTIFICATION fit: the edit keeps the surrounding comment idiom and adds no symbol; the rewritten comment at preparation.py:1669-1674 is scoped to the reads above it, matching reckon/crew/dispatching/preparation.py:1560-1568.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so it forks no capability; a search over reckon/crew for an existing notice-ordering mechanism found only this print statement, which the change relocates rather than duplicates.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054332452437-qwnw-red-file-scope-refusal-names-its-claimant/manifest.md:22 non-blocking: outside_scope reads 'none; the 12 base failures that pass at head are this defect, not other work', but 10 of those 12 are TmpHeadroomError raised at reckon/crew/dispatch_launch.py:925 (arm-base.log carries 26 tmp-headroom refusals, arm-head.log none; 5.17 GB free against a 5.37 GB floor) in tests/test_dispatch_returns_without_worker.py and tests/test_stop_before_spawn_spawns_nothing.py, so the arm pair is not an equivalent environment and the attribution is unsupported; separately tests/test_crew_peers.py::test_peer_channel_does_not_relax_live_scope_refusal fails 'DID NOT RAISE ScopeConflict' in both arms and is reported nowhere.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-scope-refusal-names-its-claimant.html:6 non-blocking: 'A launched dispatch still carries the notice; a held, queued or refused one prints none' is false for the refusals raised after the notice's new position - the shadow-lineage D20 refusal at reckon/crew/dispatching/preparation.py:1721 and the watcher-delivery refusal at reckon/crew/dispatching/preparation.py:1782 - where the notice still precedes the JSON document, so the first-line defect survives those paths.",
+  "review_run_id": "r-20261119T041517384039-review-of-qwnw-red-file-scope-refusal-names-its-claimant-c81d78459929",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "c81d784599298e8c2fbe704b3ffbb1fe4d9cfb8a",
+  "reviewed_run_id": "r-20261118T054332452437-qwnw-red-file-scope-refusal-names-its-claimant",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T20:00:36.261670+00:00",
+  "total": 112
+}

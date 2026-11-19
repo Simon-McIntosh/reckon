@@ -38,6 +38,34 @@ def _register(repo: Path, *member_ids: str) -> None:
         ledger.register_member(PROJECT, member_id, harness="alpha", root=repo)
 
 
+def _seed_roster(repo: Path, *member_ids: str) -> None:
+    """Write the aggregate's own roster through the ledger's writer.
+
+    A registration lands in the run store, which owns the live roster; the
+    roster the writer judges is the aggregate's own, read through
+    :func:`ledger.load_aggregate`, so a test about the writer's guard seeds
+    that collection rather than the store's.
+    """
+    ledger.write(
+        PROJECT,
+        {
+            "members": [
+                {
+                    "id": member_id,
+                    "harness": "alpha",
+                    "role": "implement",
+                    "created": "2026-01-01",
+                }
+                for member_id in member_ids
+            ],
+            "runs": [],
+            "holds": [],
+        },
+        0,
+        repo,
+    )
+
+
 def _ids(repo: Path) -> list[str]:
     return sorted(str(entry.get("id")) for entry in ledger.members(PROJECT, repo))
 
@@ -55,8 +83,8 @@ def _roster_entry(repo: Path, member_id: str) -> dict:
 
 def test_a_write_that_drops_every_member_is_refused(repo) -> None:
     """The falsifier: the roster empties itself only through a refusal."""
-    _register(repo, "clive-1", "clive-2", "clive-3")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2", "clive-3")
+    data, version = ledger.load_aggregate(PROJECT, repo)
 
     with pytest.raises(ledger.LedgerError) as excinfo:
         ledger.write(PROJECT, {**data, "members": []}, version, repo)
@@ -68,8 +96,8 @@ def test_a_write_that_drops_every_member_is_refused(repo) -> None:
 
 
 def test_a_write_that_drops_one_member_is_refused(repo) -> None:
-    _register(repo, "clive-1", "clive-2", "clive-3")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2", "clive-3")
+    data, version = ledger.load_aggregate(PROJECT, repo)
     kept = [entry for entry in data["members"] if str(entry.get("id")) != "clive-2"]
 
     with pytest.raises(ledger.LedgerError) as excinfo:
@@ -80,8 +108,8 @@ def test_a_write_that_drops_one_member_is_refused(repo) -> None:
 
 
 def test_the_refusal_names_only_the_members_actually_dropped(repo) -> None:
-    _register(repo, "clive-1", "clive-2", "clive-3")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2", "clive-3")
+    data, version = ledger.load_aggregate(PROJECT, repo)
     kept = [entry for entry in data["members"] if str(entry.get("id")) != "clive-3"]
 
     with pytest.raises(ledger.LedgerError) as excinfo:
@@ -95,8 +123,8 @@ def test_the_refusal_names_only_the_members_actually_dropped(repo) -> None:
 
 def test_a_write_that_drops_two_and_adds_one_is_refused(repo) -> None:
     """A net-negative write is a loss however many members it adds back."""
-    _register(repo, "clive-1", "clive-2", "clive-3")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2", "clive-3")
+    data, version = ledger.load_aggregate(PROJECT, repo)
     reshaped = [
         entry
         for entry in data["members"]
@@ -117,8 +145,8 @@ def test_a_same_count_write_that_swaps_a_member_is_refused(repo) -> None:
     the guard reports everything present. Naming the id set instead makes the
     swap a loss, which is what it is.
     """
-    _register(repo, "clive-1", "clive-2")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2")
+    data, version = ledger.load_aggregate(PROJECT, repo)
     swapped = [
         entry for entry in data["members"] if str(entry.get("id")) != "clive-2"
     ] + [{"id": "clive-9", "harness": "alpha", "role": "implement"}]
@@ -132,8 +160,8 @@ def test_a_same_count_write_that_swaps_a_member_is_refused(repo) -> None:
 
 def test_a_write_omitting_the_members_key_entirely_is_refused(repo) -> None:
     """A caller that forgets ``members`` loses the roster rather than the key."""
-    _register(repo, "clive-1", "clive-2")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2")
+    data, version = ledger.load_aggregate(PROJECT, repo)
 
     with pytest.raises(ledger.LedgerError):
         ledger.write(
@@ -191,8 +219,8 @@ def test_a_write_to_a_project_with_no_ledger_creates_it_from_empty(repo) -> None
 
 def test_an_intended_removal_succeeds_with_the_flag(repo) -> None:
     """A genuine removal stays possible and is stated where it is performed."""
-    _register(repo, "clive-1", "clive-2", "clive-3")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2", "clive-3")
+    data, version = ledger.load_aggregate(PROJECT, repo)
     kept = [entry for entry in data["members"] if str(entry.get("id")) != "clive-2"]
 
     ledger.write(
@@ -207,8 +235,8 @@ def test_an_intended_removal_succeeds_with_the_flag(repo) -> None:
 
 
 def test_an_intended_removal_of_every_member_succeeds_with_the_flag(repo) -> None:
-    _register(repo, "clive-1", "clive-2")
-    data, version = ledger.load(PROJECT, repo)
+    _seed_roster(repo, "clive-1", "clive-2")
+    data, version = ledger.load_aggregate(PROJECT, repo)
 
     ledger.write(
         PROJECT,
@@ -249,13 +277,13 @@ def test_the_idle_reaper_still_retires_a_session_member(repo) -> None:
 def test_the_refused_write_leaves_the_temp_ledger_byte_identical(repo) -> None:
     """Nothing outside the temp tree is read or written, and a refusal changes
     nothing inside it either."""
-    _register(repo, "clive-1", "clive-2")
+    _seed_roster(repo, "clive-1", "clive-2")
     path = ledger.ledger_path(PROJECT, repo)
     before = path.read_bytes()
     before_tree = sorted(
         entry.relative_to(repo) for entry in repo.rglob("*") if entry.is_file()
     )
-    data, version = ledger.load(PROJECT, repo)
+    data, version = ledger.load_aggregate(PROJECT, repo)
 
     with pytest.raises(ledger.LedgerError):
         ledger.write(PROJECT, {**data, "members": []}, version, repo)

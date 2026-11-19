@@ -1,0 +1,34 @@
+<section id="qwnw-red-file-queue-ordering-reads-history-once">
+<h3>The named file is already green at the node's base</h3>
+<p>Base revision <code>6fa2b177c511a297d3440956aa64eaa759d4554a</code>. The commit that made the file
+green, <code>272a3bc0e7</code> (<code>perf(queue): read the store's section history once per change</code>),
+is an ancestor of it, so nothing in the product or the test changed under this run: base and head are
+one revision and one tree, and the diff is this fragment alone.</p>
+
+<h4>Base run and head run of tests/test_queue_ordering_reads_history_once.py</h4>
+<pre># revision: 6fa2b177c511a297d3440956aa64eaa759d4554a
+# tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-queue-ordering-reads-history-once
+# host: 98dci4-clu-3141.iter.org
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_ordering_reads_history_once.py
+# slurm_job_id_in_task: []
+...                                                                      [100%]
+3 passed in 9.72s
+EXIT=0</pre>
+<p>Log: <code>~/.config/reckon/crew/runs/r-20261118T054233608999-qwnw-red-file-queue-ordering-reads-history-once/head-arm-all-debug.log</code>
+(SLURM job 1328972). The negative control is that no failing ids exist to clear: the base run of the
+named file reaches its summary line and passes, so the file carries no red at this revision.</p>
+
+<h4>Suite arms</h4>
+<p>Command for both arms: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></p>
+<p>Baseline and after are the same revision, so both arms run the template resolved over the same tree.</p>
+<pre>baseline-and-after: 58 passed, EXIT=0 in both jobs 1328977 and 1328978</pre>
+
+<h4>The composed partition gate failed before the command ran</h4>
+<p><code>crew verify-gate --worker --partition all_debug</code> returned exit 3 with
+<code>carries no exit receipt</code>; the job's output was
+<code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on /newroot/tmp/auto2I1S9T: No such file or directory</code>.
+The worker's fence recipe cannot be re-entered on the compute node, so the runs above were measured by
+the same commands in plain <code>/usr/bin/sbatch</code> jobs on the same partition, with
+<code>SLURM_JOB_ID</code> unset in the task.</p>
+</section>

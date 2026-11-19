@@ -72,20 +72,29 @@ def _write_pointer(run_id: str, *, node: str | None = None) -> None:
     )
 
 
+#: The config-home directories a read fills, by design, as it goes: the
+#: stat-keyed metadata index, the open-run projection bootstrapped from the
+#: ledger, and the git answers a classifier asks for and remembers. Every
+#: other file below the roots is evidence, which a read must not touch.
+_READ_WRITTEN_CACHES = frozenset(
+    {"metadata-index", "open-run-index", "git-object-answers"}
+)
+
+
 def _file_mtimes(*roots: Path) -> dict[str, int]:
     """Snapshot every fleet-evidence file mtime below the supplied roots.
 
-    A plan read populates the persisted metadata index — a cache under the
-    config home written through by design and keyed by stat identity — so that
-    cache is ignored here rather than its by-design write read as a mutation of
-    the evidence obligations projects.
+    The config home also holds the caches a read writes through by design —
+    the stat-keyed metadata index, the open-run projection, and the git answer
+    store — so those are left out here rather than their by-design write read
+    as a mutation of the evidence obligations projects.
     """
     return {
         str(path): path.stat().st_mtime_ns
         for root in roots
         for path in root.rglob("*")
         if path.is_file()
-        and not ("cache" in path.parts and "metadata-index" in path.parts)
+        and not any(part in _READ_WRITTEN_CACHES for part in path.parts)
     }
 
 
@@ -177,6 +186,13 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
     held = tmp_path / "managed-worktrees" / SESSION / "node-held"
     held.parent.mkdir(parents=True)
     _git(repository, "worktree", "add", "-q", "--detach", str(held), "HEAD")
+    # A retained tree is a duty only while it carries work a landing has not
+    # taken, so the fixture tree holds a commit the primary branch does not
+    # reach. A tree created at HEAD is clean and reachable, which is the state
+    # the rule reads as holding nothing.
+    (held / "held-work.txt").write_text("held\n", encoding="utf-8")
+    _git(held, "add", "held-work.txt")
+    _git(held, "commit", "-q", "-m", "test: hold work the primary branch lacks")
     _write_ledger(
         repository,
         [
@@ -203,14 +219,12 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
         "_classified_rows",
         lambda _project: live_rows,
     )
+    # The view reads the drain's per-session figure, so the patch names the
+    # reader the view calls rather than the projection behind it.
     monkeypatch.setattr(
         runs,
-        "drain",
-        lambda project, session=None: {
-            "project": project,
-            "session": session,
-            "unreconciled_runs": 7,
-        },
+        "drain_unreconciled_by_session",
+        lambda _project, **_kwargs: {SESSION: 7},
     )
 
     result = obligations_module.obligations(PROJECT, SESSION)
@@ -241,7 +255,7 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
         "reckon crew dispatch --node review-run-review-missing"
     )
     assert items["review-ready"]["next_command"] == (
-        "reckon crew complete --run run-review-ready --gate <verdict>"
+        "reckon crew observe --run run-review-ready"
     )
     assert items["needs-help"]["next_command"] == (
         "reckon crew resume --run run-needs-help --advice <answer>"
@@ -250,7 +264,7 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
         "reckon crew resume --run run-ended-early --advice continue"
     )
     assert items["promotable-stale"]["next_command"] == (
-        "reckon crew complete --run run-promotable-stale --gate <verdict>"
+        "reckon crew observe --run run-promotable-stale"
     )
     assert items["worktree-held"]["next_command"] == (
         f"reckon crew gc --repo {repository} --project {PROJECT} --run run-held --apply"
@@ -259,6 +273,13 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
         "count": 6,
         "oldest_age_seconds": 1_500,
         "unreconciled_runs": 7,
+        # The delivery figures travel beside the three counts: the published
+        # slice composes the same rows and is compared field for field.
+        "delivered": 0,
+        "promotion_queued": 0,
+        "oldest_promotion_position": None,
+        "oldest_promotion_requested_at": None,
+        "landed_pointers": 0,
     }
 
 

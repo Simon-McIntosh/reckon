@@ -14,15 +14,15 @@ supplied, the run's own project carried on its snapshot.
 
 from __future__ import annotations
 
-import json
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from reckon import crew, ledger
+from reckon import crew
 from reckon.crew import recovery
+from tests.helpers.landing_repository import landed_checkout, record_promoted_row
 
 
 @pytest.fixture()
@@ -34,7 +34,7 @@ def home(tmp_path, monkeypatch):
     return config_home
 
 
-def _blocked_pointer(home: Path, run_id: str) -> dict:
+def _blocked_pointer(home: Path, run_id: str, *, repo: Path | None = None) -> dict:
     """A stopped run whose manifest reads blocked, as a deref'd pointer."""
     stream = home / "streams" / f"{run_id}.jsonl"
     stream.parent.mkdir(parents=True, exist_ok=True)
@@ -45,31 +45,25 @@ def _blocked_pointer(home: Path, run_id: str) -> dict:
         "node: ticker-node\nstatus: blocked\n"
         "blockers: the fence excludes the file the repair needs\n"
     )
-    crew._write_json(
-        crew.pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": "proj",
-            "node": {"id": "ticker-node", "plan": "plan-a", "time_budget": "20m"},
-            "phase": "blocked",
-            "created_at": datetime.now(tz=UTC).isoformat(),
-            "manifest_path": str(manifest),
-            "log_path": str(stream),
-            "process_alive": False,
-        },
-    )
+    pointer = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": "ticker-node", "plan": "plan-a", "time_budget": "20m"},
+        "phase": "blocked",
+        "created_at": datetime.now(tz=UTC).isoformat(),
+        "manifest_path": str(manifest),
+        "log_path": str(stream),
+        "process_alive": False,
+    }
+    if repo is not None:
+        pointer["repo"] = str(repo)
+        pointer["worktree"] = str(repo)
+    crew._write_json(crew.pointer_path(run_id), pointer)
     return crew.read_pointer(run_id)
 
 
 def _snapshot(pointer: dict) -> dict:
     return recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
-
-
-def _record_ledger_row(run_id: str) -> None:
-    """Write the per-run ledger file a promotion leaves behind."""
-    path = ledger.run_path("proj", run_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"run_id": run_id, "commits": ["HEAD"]}))
 
 
 def test_a_discarded_block_never_reads_promoted(home) -> None:
@@ -95,11 +89,18 @@ def test_a_discarded_block_never_reads_promoted(home) -> None:
     assert state == "discarded"
 
 
-def test_a_recorded_promotion_reads_promoted(home) -> None:
-    """A departure the ledger records as a promotion still reads promoted."""
-    pointer = _blocked_pointer(home, "r-promoted")
+def test_a_recorded_promotion_reads_promoted(home, tmp_path) -> None:
+    """A departure the ledger records as a landed promotion reads promoted.
+
+    The row is what makes the word ``promoted`` honest, and the row only earns
+    it once the head it delivered is on the checkout's primary branch: a row
+    whose head no branch carries is a landing still owed and reads delivered.
+    So the fixture promotes into a real checkout whose head is the branch's.
+    """
+    repo, head = landed_checkout(home, tmp_path)
+    pointer = _blocked_pointer(home, "r-promoted", repo=repo)
     snapshot = _snapshot(pointer)
-    _record_ledger_row("r-promoted")
+    record_promoted_row("r-promoted", repo, head)
     crew.pointer_path("r-promoted").unlink()
 
     folded, _ = recovery.fleet_transitions({"r-promoted": snapshot}, {})

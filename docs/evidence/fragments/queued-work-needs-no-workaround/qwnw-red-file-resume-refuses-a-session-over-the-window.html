@@ -1,0 +1,101 @@
+<section id="qwnw-red-file-resume-refuses-a-session-over-the-window-landing">
+  <h2>A resume refuses a session the lane's window cannot hold</h2>
+
+  <p><strong>Repaired: two cases compared the pointer's storage shape, not the
+  refusal.</strong> <code>tests/test_resume_refuses_a_session_over_the_window.py</code>
+  builds a stopped run's pointer with <code>_write_json</code>, keeps the
+  mapping it handed in, and then required <code>runs.read_pointer()</code> to
+  equal that mapping after the refusal. <code>b8217ec486</code> (2026-11-08,
+  "move dispatch detail into run records") made a live-pointer write move
+  <code>argv</code> and the other dispatch-time fields into the run's own
+  <code>dispatch-detail.json</code> and leave a <code>dispatch_detail</code>
+  path in its place, so the file on disk can no longer equal the mapping of the
+  call that wrote it, whatever the resume door does with it.</p>
+
+  <p><strong>Cause and verdict.</strong> The assertion diff is exactly that
+  split: the read record gains <code>dispatch_detail</code> and loses
+  <code>argv</code>. The rule those cases state — a refused resume writes
+  nothing to the guard's run — held throughout. The test encoded a storage
+  shape the product no longer holds, so the test was wrong and no product rule
+  was.</p>
+
+  <p><strong>The repair is stricter than the claim, not weaker.</strong> Both
+  cases now read the pointer file's text before the refusal and require that
+  exact text afterwards; a rewrite that round-trips through JSON would pass
+  parsing but fails this. No assertion was deleted or weakened: the remaining
+  checks on the refusal message (the run's last charged input
+  <code>250000</code>, the lane's <code>200000</code> window, the lane name and
+  the "repair node" remedy), the empty attempt directory, the untouched
+  manifest and the un-called launcher are all still asserted.</p>
+
+  <p><strong>The guard fires.</strong> The over-window cases are the guard: the
+  hand-typed <code>crew resume</code> door builds the launcher's plan and
+  <code>resumption._resume</code> reuses it, and both raise
+  <code>CrewError</code> before an attempt file exists. The positive controls in
+  the same file resume a session inside the window, so the refusals cannot hold
+  as a door that refuses everything.</p>
+
+  <h3 id="qwnw-red-file-resume-refuses-a-session-over-the-window-measured">Measured</h3>
+
+  <p>Head run, committed at
+  <code>0ee512d79e6c09edc7ee6f2e683be3873d0a8c3b</code>, submitted as a job on
+  <code>all_debug</code> (node <code>98dci4-clu-3141</code>) with
+  <code>SLURM_JOB_ID</code> unset inside the job: <code>6 passed</code>,
+  <code>EXIT=0</code>. The log is
+  <code>scoped-gate-1795054894023592494.log</code> in this run's directory.</p>
+
+  <table id="qwnw-red-file-resume-refuses-a-session-over-the-window-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>What ran</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>node test, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>the file, <code>SLURM_JOB_ID</code> unset</td>
+        <td><code>2 failed, 4 passed</code>, EXIT=1</td>
+      </tr>
+      <tr>
+        <td>node test, head</td>
+        <td><code>0ee512d79e6c09edc7ee6f2e683be3873d0a8c3b</code></td>
+        <td>the same command</td>
+        <td><code>6 passed</code>, EXIT=0</td>
+      </tr>
+      <tr>
+        <td>armed suite, base</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td><code>tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py</code></td>
+        <td><code>58 passed</code>, EXIT=0</td>
+      </tr>
+      <tr>
+        <td>armed suite, head</td>
+        <td><code>0ee512d79e6c09edc7ee6f2e683be3873d0a8c3b</code></td>
+        <td>the same command</td>
+        <td><code>58 passed</code>, EXIT=0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The armed suite resolves to the project's census files on this node, so
+  both arms run the same files and both pass: this change touches no product
+  source, and the suite's delta is zero by construction.</p>
+
+  <h3 id="qwnw-red-file-resume-refuses-a-session-over-the-window-control">Negative control</h3>
+
+  <p>At the base revision the same file fails on exactly the two cases this
+  change repairs. The failing ids, from the recorded base log:</p>
+
+  <ul>
+    <li><code>test_a_session_over_the_window_is_refused_naming_the_count_and_the_window</code></li>
+    <li><code>test_the_reflex_refuses_the_session_before_it_opens_an_attempt</code></li>
+  </ul>
+
+  <p>Both fail on <code>assert runs.read_pointer(OVER_RUN) == before</code>,
+  with the <code>dispatch_detail</code> split quoted above, and both pass at the
+  head. The base log is <code>negative-control-base-42fe90d0.log</code> in this
+  run's directory, carrying its revision, tree and command on the header lines
+  and <code>EXIT=1</code> at the end.</p>
+
+  <p>Nothing outside this node's declared write paths was triaged or fixed; the
+  gate and arms above measure only this node's own change.</p>
+</section>

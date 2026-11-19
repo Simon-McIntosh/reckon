@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>qwnw-red-file-routing-explicit-lane-implies-deterministic — evidence</title>
+</head>
+<body>
+<h1 id="qwnw-red-file-routing-explicit-lane-implies-deterministic-title">Routing test file: one stale output surface, fixed</h1>
+
+<section id="qwnw-red-file-routing-explicit-lane-implies-deterministic-cause">
+<h2 id="qwnw-red-file-routing-explicit-lane-implies-deterministic-cause-h">Cause, with its verdict</h2>
+<p id="qwnw-red-file-routing-explicit-lane-implies-deterministic-cause-p">Verdict: <strong>test wrong</strong> — one assertion basis, not one rule. The dispatch CLI deliberately keeps its final JSON document on stdout and writes the <code>reckon: created run &lt;id&gt;</code> notice on stderr (<code>reckon/crew/dispatching/preparation.py</code>: "Stdout remains the command's final JSON document, so notices use stderr"). Since click 8.2, <code>CliRunner</code>'s <code>Result.output</code> is a mix of both streams and is no longer a proxy for stdout.</p>
+<p id="qwnw-red-file-routing-explicit-lane-implies-deterministic-cause-p2">The real-dispatch case read <code>result.output.splitlines()[0]</code>, so under the installed click 8.4.2 it received the stderr notice and failed decoding it as JSON. Every other dispatch test in this repository already parses <code>result.stdout</code> (<code>tests/test_dispatch_names_...</code>): this file was the outlier.</p>
+<p id="qwnw-red-file-routing-explicit-lane-implies-deterministic-cause-p3">Fix: <code>json.loads(result.stdout.splitlines()[0])</code> at all five parse sites — precisely <code>stdout</code> rather than <code>output</code>. No assertion deleted, none weakened; the same backend, route and picker-selection facts are asserted. The file was also run through <code>ruff format</code>, which is what left the changed path clean.</p>
+</section>
+
+<section id="qwnw-red-file-routing-explicit-lane-implies-deterministic-runs">
+<h2 id="qwnw-red-file-routing-explicit-lane-implies-deterministic-runs-h">Negative control beside the head run</h2>
+<p id="qwnw-red-file-routing-explicit-lane-implies-deterministic-runs-p">Both arms run the same command: extract the revision's own tree into node-local scratch under <code>$TMPDIR</code>, then run the file with <code>SLURM_JOB_ID</code> unset, as a job on <code>all_debug</code> submitted with <code>sbatch -p all_debug</code>, logging to shared storage.</p>
+<table id="qwnw-red-file-routing-explicit-lane-implies-deterministic-runs-table">
+<thead><tr><th>arm</th><th>revision</th><th>slurm job</th><th>result</th><th>exit</th></tr></thead>
+<tbody>
+<tr><td>base (red)</td><td>42fe90d0b0a46060bafde2490dda7d4002cda478</td><td>1329532</td><td>1 failed, 6 passed</td><td>1</td></tr>
+<tr><td>head (green)</td><td>07023eb3fae4970960de72c5306039786ec577f1</td><td>1329534</td><td>7 passed</td><td>0</td></tr>
+<tr><td>final head, gate scheduler path</td><td>95ef548861247af4c618919bd18450add00744ff</td><td>worker gate, all_debug</td><td>7 passed</td><td>0</td></tr>
+</tbody>
+</table>
+<p id="qwnw-red-file-routing-explicit-lane-implies-deterministic-runs-p2">The base red run's failing id and summary, quoted from <code>logs/base-42fe90d0-routing-node-test.log</code>:</p>
+<pre id="qwnw-red-file-routing-explicit-lane-implies-deterministic-runs-pre">FAILED tests/test_routing_explicit_lane_implies_deterministic.py::test_explicit_lane_real_dispatch_records_deterministic - json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+1 failed, 6 passed in 1.37s
+EXIT=1</pre>
+<p id="qwnw-red-file-routing-explicit-lane-implies-deterministic-runs-p3">The reproduced symptom is the decoded first line itself: <code>s = 'reckon: created run r-20261119T034057586894-explicit-lane-test'</code> — the stderr notice arriving through the mixed stream at position one.</p>
+</section>
+
+<section id="qwnw-red-file-routing-explicit-lane-implies-deterministic-environment">
+<h2 id="qwnw-red-file-routing-explicit-lane-implies-deterministic-environment-h">Environment note (outside this node's scope)</h2>
+<p id="qwnw-red-file-routing-explicit-lane-implies-deterministic-env-p">From 05:14 UTC every <code>sbatch</code> submission — a one-line <code>echo hi</code> included — dies in the worker fence's task re-entry with <code>bwrap: Can't bind mount /oldroot/tmp/auto2I1S9T on /newroot/tmp/auto2I1S9T: No such file or directory</code>, before the task runs, so no fresh job could be produced after the final commit. It is not caused by this change: the trivial job fails the same way.</p>
+</section>
+</body>
+</html>

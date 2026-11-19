@@ -859,12 +859,12 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
 
     A resume launches a worker the session's pane has to show, and a resume
     sends no dispatch request, so a pair whose host child has settled stays idle
-    until some later dispatch happens to ask again. The request travels to the
-    host of the Claude process issuing the resume, so only that session's own
-    pair can be re-armed: a resume issued from another session would ask its own
-    host for a pair it does not own, and the answer would describe a follower
-    that is not the run's. The pair's session owns its follower, so another
-    session's resume reports that and asks no host.
+    until some later dispatch happens to ask again. The pair's session owns its
+    follower, so the request goes to the host that runs that session: a resume
+    issued from another session hands the run to the run's own live host, and
+    falls back to the calling session's waiting host, unmarked, only when the
+    run's session has no live host -- a session with nothing of its own running
+    is shown by the pane that restarted the work.
 
     The answer, when the re-arm is the session's own, is this host's live child
     for the pair -- a session attached through another host's follower, or
@@ -875,9 +875,10 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
         return False, "the run records no session, so no host owns its follower"
     calling = _calling_session()
     if calling != session:
-        # The resume's own host can still take the run: the request names the
-        # run's pair and travels to this process's FIFO, which is the pane the
-        # caller watches. Report the refusal only when no waiting host took it.
+        # The run goes to its own session's live host, and to this process's
+        # waiting host -- the pane the caller watches, unmarked -- only when
+        # that session has none. Report the refusal only when no waiting host
+        # took it.
         handoff = hand_off_mismatched_session(project, session)
         # A resume composes no launch record, so the hand-off it recorded is
         # dropped here rather than left for a later dispatch to claim.

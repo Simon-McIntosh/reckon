@@ -558,6 +558,16 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, commit: str) -> Result:
     )
 
 
+def _completion_report(invoked: Result) -> dict:
+    """Read the full outcome a command reply names.
+
+    A command's reply is a compact receipt carrying the conditions that need a
+    decision; the whole promotion outcome it links is the report it wrote.
+    """
+    reply = json.loads(invoked.output)
+    return json.loads(Path(reply["record_path"]).read_text())
+
+
 def test_a_successful_store_write_is_reported_written_on_the_command_payload(
     repository: Path, tmp_path: Path
 ) -> None:
@@ -570,7 +580,7 @@ def test_a_successful_store_write_is_reported_written_on_the_command_payload(
     invoked = _invoke_complete_cli(run_id, gate_log, commit)
 
     assert invoked.exit_code == 0
-    payload = json.loads(invoked.output)
+    payload = _completion_report(invoked)
     assert payload["ok"] is True
     # Index health is reported on the payload without changing the run record.
     assert payload["store"] == {"status": "written"}
@@ -988,7 +998,7 @@ def test_complete_command_accepts_a_reasoned_resume_path_waiver(
     )
 
     assert accepted.exit_code == 0, accepted.output
-    waiver = json.loads(accepted.output)["record"]["resume_waiver"]
+    waiver = _completion_report(accepted)["record"]["resume_waiver"]
     assert waiver == {
         "session_id": _stream_session_id(),
         "source": "stream",
@@ -1066,7 +1076,7 @@ def test_complete_command_promotes_a_blocked_run_without_a_recoverable_session(
     assert result.exit_code == 0, result.output
     # The record always declares the waiver key for schema stability; a run
     # that waived nothing carries None rather than an absent key.
-    assert json.loads(result.output)["record"]["resume_waiver"] is None
+    assert _completion_report(result)["record"]["resume_waiver"] is None
     assert not pointer_path(run_id).exists()
 
 
@@ -1370,7 +1380,7 @@ def test_a_resume_waiver_retains_the_worktree_by_default(
             "the result must be recorded before recovery continues",
         ],
     )
-    promoted = json.loads(result.output)
+    promoted = _completion_report(result)
 
     assert result.exit_code == 0, result.output
     assert worktree.is_dir()

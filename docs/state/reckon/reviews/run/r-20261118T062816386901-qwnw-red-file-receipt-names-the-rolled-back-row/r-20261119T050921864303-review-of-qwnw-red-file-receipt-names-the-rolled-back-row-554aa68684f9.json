@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite-1795062234526075322.log records '# revision: 42fe90d0b0a46060bafde2490dda7d4002cda478', command over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, 58 passed in 37.35s, EXIT=0, no FAILED line; after-arm-head.log records '# revision: 554aa68684f9cf76372732ca6d7a14f9d10525ef', the same command, 58 passed in 53.38s, EXIT=0, no FAILED line. Neither the base arm nor the after arm names a failing id, so the set difference is empty. The reviewed run's manifest.md carries no readable after_suite line (it is truncated), so the after arm is read from that log as recorded by the run.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/evidence.py:1657 compose_landed_record",
+    "reckon/serve.py:2753",
+    "reckon/mcp.py:1344",
+    "reckon/doccheck.py:1972",
+    "reckon/crew/reports.py:2854 _fragment_plan_of"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T19:53:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row/manifest.md",
+      "line": "14",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite is truncated mid-JSON and no after_suite line follows it, so `crew check --manifest` refuses the record with six findings and the done_when's \"both arms recorded as inline JSON carrying full 40-character revisions\" is unmet, even though baseline_suite-1795062234526075322.log (58 passed, EXIT=0 at 42fe90d) and after-arm-head.log (58 passed, EXIT=0 at 554aa68) both exist on disk."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_logs and negative_control_log both read \"/home/ITER/mcintos/.config/receipts 2>/dev/null\", a leaked shell redirect that names no file, so neither the gate log nor the red log can be opened from the record although head-run.log and negative-control.log are intact in the run directory; disposition folded into the manifest repair the blocking finding asks for."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the file \"also passed as its own all_debug job (Slurm 1329533, COMPLETED 0:0)\", but the job's --output file head-cell-1329533.out is 0 bytes and head-run.sbatch:13 sends the job's output to gate-head.log, which does not exist in the run directory, so the job-form receipt is missing (disposition: folded into a fragment repair for this section; the head pass itself is corroborated by head-run.log at the same revision)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s) that compose or resolve the plan's evidence fragments",
+    "diff": "read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478 \u2014 0b91ba0d6c adds the 45-line fragment and 554aa68684f9 adds one line to it and records both arms \u2014 so the change is the fragment alone, with no product or test source touched.",
+    "done_when": "the done_when names tests/test_receipt_names_the_rolled_back_row.py passing at head as an all_debug job with both arms recorded as inline JSON; base-run.log (3 passed, EXIT=0 at 42fe90d) and head-run.log (3 passed, EXIT=0 at 554aa68) assert the pass and negative-control.log shows the guard reddening, but the inline-JSON arms and the job's own output are not in the record.",
+    "goal": "the node's deliverable under \u00a729 is the named red file passing in full, and the run's done_when makes a base pass the deliverable itself; the landed change is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html, which records that tests/test_receipt_names_the_rolled_back_row.py already passed at base 42fe90d and therefore changes no product or test source.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row/manifest.md; it reports status complete with 3 passed at base and at head and a mutation red at EXIT=1, but its baseline_suite line is truncated mid-object, it carries no after_suite line, and its test_logs and negative_control_log lines cite \"/home/ITER/mcintos/.config/receipts 2>/dev/null\", so `crew check --manifest` refuses it with six findings.",
+    "write_paths": "the declared scope is reckon, tests, the plan's fragment directory and this node's fragment and figure; the delivered diff is one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html (+46 -0), inside it."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_rolled_back_row_receipt_names_re_promotion_as_the_recovery failing at EXIT=1 when _ledger_row_was_rolled_back at reckon/crew/promotion_scope.py:2612 returns False, so the rule the fragment records is guarded, though the fragment text adds no assertion of its own.",
+    "evidence": "base-run.log and head-run.log carry revision headers and EXIT=0 at 42fe90d and 554aa68, yet the run's manifest.md:14 cannot be parsed as JSON and no after_suite line exists, so the record promotion reads asserts neither arm.",
+    "fit": "the fragment reproduces the sibling shape at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-16 (-landing id suffix, h2, strong lead, Measured h3 with a ul) and introduces no name the repository rules forbid.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html:5-7 records the base pass that \u00a729 accepts as the deliverable, and I re-ran tests/test_receipt_names_the_rolled_back_row.py at my head with 3 passed, but the all_debug clause of the done_when has no readable output.",
+    "reuse": "the diff adds no definition \u2014 fragments are composed by reckon/evidence.py:1657, reached through reckon/serve.py:2753, reckon/mcp.py:1344 and reckon/doccheck.py:1972 \u2014 so no capability is forked.",
+    "scope_discipline": "the whole diff is the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, with no product or test change, which is exactly what \u00a729's \"already passes\" arm permits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's deliverable under \u00a729 is the named red file passing in full, and the run's done_when makes a base pass the deliverable itself; the landed change is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html, which records that tests/test_receipt_names_the_rolled_back_row.py already passed at base 42fe90d and therefore changes no product or test source.\nVERDICT done_when: the done_when names tests/test_receipt_names_the_rolled_back_row.py passing at head as an all_debug job with both arms recorded as inline JSON; base-run.log (3 passed, EXIT=0 at 42fe90d) and head-run.log (3 passed, EXIT=0 at 554aa68) assert the pass and negative-control.log shows the guard reddening, but the inline-JSON arms and the job's own output are not in the record.\nVERDICT write_paths: the declared scope is reckon, tests, the plan's fragment directory and this node's fragment and figure; the delivered diff is one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html (+46 -0), inside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row/manifest.md; it reports status complete with 3 passed at base and at head and a mutation red at EXIT=1, but its baseline_suite line is truncated mid-object, it carries no after_suite line, and its test_logs and negative_control_log lines cite \"/home/ITER/mcintos/.config/receipts 2>/dev/null\", so `crew check --manifest` refuses it with six findings.\nVERDICT diff: read both commits against base 42fe90d0b0a46060bafde2490dda7d4002cda478 \u2014 0b91ba0d6c adds the 45-line fragment and 554aa68684f9 adds one line to it and records both arms \u2014 so the change is the fragment alone, with no product or test source touched.\nCALL_SITES: reckon/evidence.py:1657 compose_landed_record, reckon/serve.py:2753, reckon/mcp.py:1344, reckon/doccheck.py:1972, reckon/crew/reports.py:2854 _fragment_plan_of\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html:5-7 records the base pass that \u00a729 accepts as the deliverable, and I re-ran tests/test_receipt_names_the_rolled_back_row.py at my head with 3 passed, but the all_debug clause of the done_when has no readable output.\nSCORE evidence: 10\nJUSTIFICATION evidence: base-run.log and head-run.log carry revision headers and EXIT=0 at 42fe90d and 554aa68, yet the run's manifest.md:14 cannot be parsed as JSON and no after_suite line exists, so the record promotion reads asserts neither arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is the node's own fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, with no product or test change, which is exactly what \u00a729's \"already passes\" arm permits.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log shows test_rolled_back_row_receipt_names_re_promotion_as_the_recovery failing at EXIT=1 when _ledger_row_was_rolled_back at reckon/crew/promotion_scope.py:2612 returns False, so the rule the fragment records is guarded, though the fragment text adds no assertion of its own.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment reproduces the sibling shape at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-16 (-landing id suffix, h2, strong lead, Measured h3 with a ul) and introduces no name the repository rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition \u2014 fragments are composed by reckon/evidence.py:1657, reached through reckon/serve.py:2753, reckon/mcp.py:1344 and reckon/doccheck.py:1972 \u2014 so no capability is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row/manifest.md:14 blocking: baseline_suite is truncated mid-JSON and no after_suite line follows it, so `crew check --manifest` refuses the record with six findings and the done_when's \"both arms recorded as inline JSON carrying full 40-character revisions\" is unmet, even though baseline_suite-1795062234526075322.log (58 passed, EXIT=0 at 42fe90d) and after-arm-head.log (58 passed, EXIT=0 at 554aa68) both exist on disk.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row/manifest.md:12 non-blocking: test_logs and negative_control_log both read \"/home/ITER/mcintos/.config/receipts 2>/dev/null\", a leaked shell redirect that names no file, so neither the gate log nor the red log can be opened from the record although head-run.log and negative-control.log are intact in the run directory; disposition folded into the manifest repair the blocking finding asks for.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-receipt-names-the-rolled-back-row.html:9 non-blocking: the fragment states the file \"also passed as its own all_debug job (Slurm 1329533, COMPLETED 0:0)\", but the job's --output file head-cell-1329533.out is 0 bytes and head-run.sbatch:13 sends the job's output to gate-head.log, which does not exist in the run directory, so the job-form receipt is missing (disposition: folded into a fragment repair for this section; the head pass itself is corroborated by head-run.log at the same revision).",
+  "review_node": "review-of-qwnw-red-file-receipt-names-the-rolled-back-row-554aa68684f9",
+  "review_run_id": "r-20261119T050921864303-review-of-qwnw-red-file-receipt-names-the-rolled-back-row-554aa68684f9",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "554aa68684f9cf76372732ca6d7a14f9d10525ef",
+  "reviewed_run_id": "r-20261118T062816386901-qwnw-red-file-receipt-names-the-rolled-back-row",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T050921864303-review-of-qwnw-red-file-receipt-names-the-rolled-back-row-554aa68684f9"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T20:15:08.267050+00:00",
+  "total": 100
+}

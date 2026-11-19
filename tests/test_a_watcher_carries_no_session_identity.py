@@ -246,15 +246,17 @@ def test_the_supervisor_sheds_identity_before_it_starts_the_producer(
         "    json.dump(dict(os.environ), handle)\n",
         encoding="utf-8",
     )
+    # The supervisor reads its own settings from the argv the product builds
+    # through the module root, then starts everything after them. Taking that
+    # prefix from the builder rather than writing it out keeps this case
+    # following the layout the script declares, and the producer is replaced by
+    # the stub so the environment it is handed can be read back.
+    monkeypatch.setattr(dispatch_watch, "_watch_executable", lambda: "reckon")
+    module_root = str(Path(dispatch_watch.__file__).resolve().parents[2])
+    planned = dispatch_watch._watch_producer_argv("sample")
+    settings = planned[: planned.index(module_root) + 1]
     supervisor_argv = [
-        sys.executable,
-        "-c",
-        dispatch_watch._WATCH_PRODUCER_SUPERVISOR,
-        "RECKON_WATCH_LOG",
-        str(tmp_path / "watch.log"),
-        "0.0",
-        "0.0",
-        "1000.0",
+        *settings,
         sys.executable,
         str(producer),
         str(environment_file),
