@@ -36,7 +36,10 @@ REFUSED_ID = "r-refused"
 HOLDER_ID = "r-holder"
 
 ADMITTED_PATH = "admitted-node.txt"
-REFUSED_PATH = "refused-node.txt"
+# The contested path is generated state, the class a claim still fences: source
+# files share across isolated worktrees and the merge reconciles them, so only a
+# path a merge cannot reconcile holds the second request.
+REFUSED_PATH = "docs/state/proj/sprint.json"
 
 
 def _queue(
