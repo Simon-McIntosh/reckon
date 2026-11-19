@@ -230,6 +230,45 @@ def test_a_merge_borne_source_path_needs_no_acceptance(
     assert not stored.get("scope_acceptances")
 
 
+def test_a_later_commit_on_the_runs_branch_is_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A descendant that is not the merge carrying the run is another writer's work.
+
+    The citation descends from the run's head but is not a merge naming it as a
+    parent, so its first-parent diff carries content the run never touched. The
+    guard refuses it rather than charging that content to the run, and the run's
+    pointer and the ledger stay untouched.
+    """
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = tmp_path / "citing-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
+    run_id = "r-later-descendant"
+    _pointer(repository, run_tree, run_id, base, write_paths=("in_scope.txt",))
+    _assert_real_home_carries_no_pointer(run_id)
+
+    (run_tree / "in_scope.txt").write_text("seed\nrun\n", encoding="utf-8")
+    _git(run_tree, "add", "in_scope.txt")
+    _git(run_tree, "commit", "-q", "-m", "feat: the run's own change")
+    own = _git(run_tree, "rev-parse", "HEAD")
+
+    later_tree = tmp_path / "later-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(later_tree), own)
+    (later_tree / "later.txt").write_text("another writer\n", encoding="utf-8")
+    _git(later_tree, "add", "later.txt")
+    _git(later_tree, "commit", "-q", "-m", "feat: a later commit")
+    later = _git(later_tree, "rev-parse", "HEAD")
+    assert later != own
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[later], root=repository)
+
+    assert "not a commit this run made" in str(refusal.value)
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+    _assert_real_home_carries_no_pointer(run_id)
+
+
 def test_a_line_added_and_later_removed_counts_nothing(
     repository: Path, tmp_path: Path
 ) -> None:

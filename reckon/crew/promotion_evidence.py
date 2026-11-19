@@ -390,20 +390,36 @@ def _declared_repository_roots(
 def _integration_brings_the_run(
     tree: Path, revision: str, run_head: str | None
 ) -> bool:
-    """Report whether ``revision`` descends from the run's own head.
+    """Report whether ``revision`` is a merge that carries the run's own head.
 
     A run's work can reach the record inside an integration merge: a
-    coordinator merges the run's head, and the merge is a later commit whose
-    parent is the run's head rather than a commit inside it. The run's head is
-    therefore behind such a citation, and the scope measurement charges that
-    merge the content it brought relative to its first parent — the run's work.
-    Accepting it here keeps that measurement reachable instead of refusing the
-    citation as an unmerged branch, which is what a commit sharing no ancestry
-    with the run remains.
+    coordinator merges the run's head, so the merge names the run's head as one
+    of its parents. The scope measurement charges that merge the content it
+    brought relative to its first parent — the run's work — so the content it
+    charges is bounded by what the citation itself carries.
+
+    Being merely descended from the run's head is not enough. A later commit on
+    the same branch, or a merge someone else made on top of it, also descends
+    from the run's head while bringing content this run never touched, and
+    charging its first-parent diff to this run would record another writer's
+    work as the run's own. Only the merge that names the run's head as a parent
+    is admitted; every other commit outside the run's history stays foreign.
     """
     if not run_head:
         return False
-    return _revision_is_ancestor(tree, run_head, revision)
+    parents = subprocess.run(
+        ["git", "rev-list", "--parents", "-n", "1", revision],
+        cwd=tree,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if parents.returncode:
+        return False
+    fields = parents.stdout.split()
+    if len(fields) < 3:
+        return False
+    return run_head in fields[1:]
 
 
 def _require_commits_beyond_base(
@@ -433,10 +449,11 @@ def _require_commits_beyond_base(
     cannot read, or a base that does not resolve in it, leaves the guard silent:
     an unmeasured citation is not a defect in the citation.
 
-    A citation the run's own head descends into is the run's work too: an
-    integration merge carries the run's head as a parent, so the merge is a
-    later commit rather than a foreign one, and the scope measurement charges
-    it the content it brought relative to its first parent.
+    An integration merge that names the run's own head as one of its parents is
+    the run's work too: the merge is the commit that carried it, and the scope
+    measurement charges it the content it brought relative to its first parent.
+    A commit merely descended from the run's head is not admitted, because what
+    it brought is not bounded by what the run did.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
