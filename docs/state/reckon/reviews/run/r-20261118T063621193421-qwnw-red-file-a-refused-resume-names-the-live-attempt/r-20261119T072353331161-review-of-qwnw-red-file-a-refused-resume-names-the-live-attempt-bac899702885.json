@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline-suite.log:1-6 records 58 passed EXIT=0 with no FAILED line at b24fe95 and after-suite.log:1-6 records 58 passed EXIT=0 with no FAILED line at 6f99d4c5, so the set difference is empty (0).",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:1657 compose_landed_record",
+    "reckon/evidence.py:854 _fragment_href"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:46:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the named-file row attributes a 7-passed result to base revision b24fe95a789c, but head-run.log:1 is the only run log for that file and names 6f99d4c5ef while scoped-gate-1795070410405814717.log is 0 bytes, so the base-revision run s29's Done-when calls the negative control cannot be opened or verified from the record."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states its logs sit under the run directory, but s29's Done-when places the base-run log under docs/evidence/fragments/queued-work-needs-no-workaround/, and no log is committed there, so a reader of the plan's evidence record cannot open either arm the fragment cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against the base, 6f99d4c5 adds the 61-line fragment and bac8997 edits two revision cells of the same table, with no source or test file touched anywhere in b24fe95..bac8997.",
+    "done_when": "s29's Done-when asks for the named file green at head as an all_debug job, each cause stated, and the base revision's failing ids logged under the fragments directory; head-run.log:1-6 is the green head arm and sacct shows jobs 1330089/1330120/1330148/1330167 all_debug COMPLETED 0:0, but no log at the base revision exists, scoped-gate-1795070410405814717.log being 0 bytes, so the head measure is met and the negative-control artefact is not.",
+    "goal": "the source node's goal is to make tests/test_a_refused_resume_names_the_live_attempt.py pass in full on the primary branch, and that file is unchanged at the reviewed head while head-run.log:1-6 records 7 passed EXIT=0 at 6f99d4c5ef, so the goal is delivered through the plan's \"a file that already passes is delivered as such\" clause rather than by a repair.",
+    "manifest": "read; it reports status complete, the named file 7 passed, baseline_suite 0 failures at b24fe95 and after_suite 0 failures at 6f99d4c5, and negative-control.log 3 failed/4 passed EXIT=1, and each of those logs' header and EXIT lines on disk matches the claim.",
+    "write_paths": "the source manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment path and a figure directory, and git diff --stat b24fe95..bac8997 reports one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html, so the diff is inside the fence."
+  },
+  "justifications": {
+    "durability": "negative-control.log:6 and :100-108 show the three naming cases red with ids the head arm passes under the one-door mutation, so tests/test_a_refused_resume_names_the_live_attempt.py fails if live_process_refusal stops naming the attempt, although that test predates this node and the diff adds no assertion.",
+    "evidence": "head-run.log:1-6, baseline-suite.log:1-6 and after-suite.log:1-6 each record a green arm with a bare EXIT=0 line, but the plan's base-revision run of the named file has no openable log, because scoped-gate-1795070410405814717.log is 0 bytes.",
+    "fit": "the fragment follows the surviving sibling idiom at docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html:1-3 with a section id prefixed by the node id, and only the absent trailing newline at qwnw-red-file-a-refused-resume-names-the-live-attempt.html:61 departs from it.",
+    "goal_fidelity": "tests/test_a_refused_resume_names_the_live_attempt.py is identical at b24fe95 and bac8997 and head-run.log:1-6 records 7 passed EXIT=0 at 6f99d4c5ef.",
+    "reuse": "the diff adds no definition, and a search of reckon/ for the capability resolved to reckon/evidence.py:1657 compose_landed_record (owner) and reckon/crew/dispatch_claims.py:1408 documenting the fragment path, which the node feeds rather than duplicates.",
+    "scope_discipline": "git diff --name-only b24fe95..bac8997 names only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to make tests/test_a_refused_resume_names_the_live_attempt.py pass in full on the primary branch, and that file is unchanged at the reviewed head while head-run.log:1-6 records 7 passed EXIT=0 at 6f99d4c5ef, so the goal is delivered through the plan's \"a file that already passes is delivered as such\" clause rather than by a repair.\nVERDICT done_when: s29's Done-when asks for the named file green at head as an all_debug job, each cause stated, and the base revision's failing ids logged under the fragments directory; head-run.log:1-6 is the green head arm and sacct shows jobs 1330089/1330120/1330148/1330167 all_debug COMPLETED 0:0, but no log at the base revision exists, scoped-gate-1795070410405814717.log being 0 bytes, so the head measure is met and the negative-control artefact is not.\nVERDICT write_paths: the source manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's fragment path and a figure directory, and git diff --stat b24fe95..bac8997 reports one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html, so the diff is inside the fence.\nVERDICT manifest: read; it reports status complete, the named file 7 passed, baseline_suite 0 failures at b24fe95 and after_suite 0 failures at 6f99d4c5, and negative-control.log 3 failed/4 passed EXIT=1, and each of those logs' header and EXIT lines on disk matches the claim.\nVERDICT diff: read both commits against the base, 6f99d4c5 adds the 61-line fragment and bac8997 edits two revision cells of the same table, with no source or test file touched anywhere in b24fe95..bac8997.\nCALL_SITES: reckon/evidence.py:1657 compose_landed_record, reckon/evidence.py:854 _fragment_href\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_refused_resume_names_the_live_attempt.py is identical at b24fe95 and bac8997 and head-run.log:1-6 records 7 passed EXIT=0 at 6f99d4c5ef.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-run.log:1-6, baseline-suite.log:1-6 and after-suite.log:1-6 each record a green arm with a bare EXIT=0 line, but the plan's base-revision run of the named file has no openable log, because scoped-gate-1795070410405814717.log is 0 bytes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only b24fe95..bac8997 names only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log:6 and :100-108 show the three naming cases red with ids the head arm passes under the one-door mutation, so tests/test_a_refused_resume_names_the_live_attempt.py fails if live_process_refusal stops naming the attempt, although that test predates this node and the diff adds no assertion.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the surviving sibling idiom at docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html:1-3 with a section id prefixed by the node id, and only the absent trailing newline at qwnw-red-file-a-refused-resume-names-the-live-attempt.html:61 departs from it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and a search of reckon/ for the capability resolved to reckon/evidence.py:1657 compose_landed_record (owner) and reckon/crew/dispatch_claims.py:1408 documenting the fragment path, which the node feeds rather than duplicates.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html:34 non-blocking: the named-file row attributes a 7-passed result to base revision b24fe95a789c, but head-run.log:1 is the only run log for that file and names 6f99d4c5ef while scoped-gate-1795070410405814717.log is 0 bytes, so the base-revision run s29's Done-when calls the negative control cannot be opened or verified from the record.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-refused-resume-names-the-live-attempt.html:58 non-blocking: the fragment states its logs sit under the run directory, but s29's Done-when places the base-run log under docs/evidence/fragments/queued-work-needs-no-workaround/, and no log is committed there, so a reader of the plan's evidence record cannot open either arm the fragment cites.\n\nAssertions the run added: none. The node's diff is documentation only, so no assertion was added or changed, and the three assertions that carry this change's guard are pre-existing in tests/test_a_refused_resume_names_the_live_attempt.py. The negative control is what shows they are load-bearing: negative-control.log:6 records FF.F and :100-108 names test_a_repair_round_attempt_is_named, test_a_coordinator_resume_is_named_without_the_repair_wording and test_both_launch_doors_give_the_same_message as failing when the launcher door composes a fixed sentence instead of calling live_process_refusal. The two naming assertions compare the refusal text against the literal \"attempt 2\", an independent source rather than a value handed to the code, so reinstating that regression reddens them; no added assertion compares the value under test against itself.",
+  "review_node": "review-of-qwnw-red-file-a-refused-resume-names-the-live-attempt-bac899702885",
+  "review_run_id": "r-20261119T072353331161-review-of-qwnw-red-file-a-refused-resume-names-the-live-attempt-bac899702885",
+  "reviewed_base_sha": "b24fe95a789c82cd33f22a912b4dbbf94d5e2193",
+  "reviewed_head_sha": "bac899702885d19d9a0a6cd362ec787f25c12bbe",
+  "reviewed_run_id": "r-20261118T063621193421-qwnw-red-file-a-refused-resume-names-the-live-attempt",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:07:19.636094+00:00",
+  "total": 108
+}
