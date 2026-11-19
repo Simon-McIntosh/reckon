@@ -1830,7 +1830,9 @@ def row_plan(record: Any) -> str:
     return ""
 
 
-def stored_plan_ids(project: str, plan: str) -> list[str]:
+def stored_plan_ids(
+    project: str, plan: str, *, run_ids: Iterable[str] | None = None
+) -> list[str]:
     """The stored rows this plan owns, in the order the store answers them.
 
     Every reader of a row's plan asks :func:`row_plan`, so a read that selects
@@ -1846,7 +1848,7 @@ def stored_plan_ids(project: str, plan: str) -> list[str]:
     """
     from reckon import run_store
 
-    projections = run_store.plan_owner_rows(project)
+    projections = run_store.plan_owner_rows(project, run_ids=run_ids)
     if projections is None:
         return []
     return [
@@ -4288,18 +4290,16 @@ def read_records(
     # committed ledger is still the copy every row of that history came from,
     # so its existence cannot be what selects the fleet-wide figure population.
     stored = bool(run_store.stored_run_rows(project, fields=("run_id",)))
-    # The store's plan column is row_plan's answer at write time, and a rotation
-    # can wash the node definition — the field a brief-carried row's plan is read
-    # from — out of the row's detail half afterwards. So the selection is made
-    # from the fields row_plan reads on every stored row, not from that column:
-    # the plan owns the ids row_plan selects.
+    # The store's plan column is row_plan's answer at write time, and a
+    # rotation can wash the node definition — the field a brief-carried row's
+    # plan is read from — out of the row's detail half afterwards. A plan read
+    # therefore asks the owner: the store applies that precedence in SQL for
+    # the rows a caller already named, and an unnamed read selects the ids here
+    # from the three fields row_plan reads, so the selection is never the
+    # column's answer alone.
     index_plan = selected_plan
-    if selected_plan and stored:
-        matched = stored_plan_ids(project, selected_plan)
-        if selected_ids is not None:
-            matched = [run_id for run_id in matched if run_id in selected_ids]
-        selected_ids = set(matched)
-        index_plan = ""
+    if selected_plan and stored and selected_ids is None:
+        selected_ids = set(stored_plan_ids(project, selected_plan))
     data, version = load(
         project,
         root,

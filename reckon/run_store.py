@@ -519,9 +519,7 @@ def _record_rows(
             query = (
                 f'SELECT r.run_id, {columns[0]}, {columns[1]} FROM "{schema}".runs r '  # noqa: S608 - fixed schema and column names
             )
-            if plan and batch is None and not node:
-                query += "INDEXED BY idx_runs_plan "
-            elif indexed_activity and batch is None and not node:
+            if indexed_activity and batch is None and not node:
                 # Force the range index rather than a project-only scan when
                 # the planner has no statistics for the recent population.
                 query += (
@@ -547,7 +545,7 @@ def _record_rows(
                 clauses.append("r.node = ?")
                 params.append(node)
             if plan:
-                clauses.append("r.plan = ?")
+                clauses.append(f"({_plan_owner_sql()}) = ?")
                 params.append(plan)
             if indexed_activity:
                 clauses.append("r.activity_seconds >= ?")
@@ -904,8 +902,21 @@ def stored_run_rows(
 PLAN_OWNER_FIELDS = ("plan", "impl_move", "node_definition")
 
 
+def _plan_owner_sql() -> str:
+    """A row's plan, in the precedence :func:`reckon.ledger.row_plan` states."""
+    merged = "json_patch(r.payload, COALESCE(d.detail, '{}'))"
+    fields = ("plan", "impl_move.plan", "node_definition.plan")
+    terms = [
+        f"NULLIF(trim(json_extract({merged}, '$.{field}')), '')" for field in fields
+    ]
+    return "COALESCE(" + ", ".join(terms) + ", '')"
+
+
 def plan_owner_rows(
-    project: str, *, path: str | Path | None = None
+    project: str,
+    *,
+    path: str | Path | None = None,
+    run_ids: Iterable[str] | None = None,
 ) -> list[tuple[str, dict[str, Any]]] | None:
     """Each stored row's run id beside the fields that decide its plan.
 
@@ -934,6 +945,7 @@ def plan_owner_rows(
             connection,
             schemas=_read_attached_tables(connection, target),
             project=project,
+            run_ids=run_ids,
             fields=PLAN_OWNER_FIELDS,
         ):
             projections.append(
