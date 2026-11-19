@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="707">
+<meta name="plan-version" content="708">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2190,7 +2190,10 @@
     <div class="r-comment-body"><p>Reviewed run r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes at base 42fe90d0b0a46060bafde2490dda7d4002cda478 and head 10cc142b46a0e2c7b29fd0982785e23f4117ff7f is parsed and stored at that run's review-records directory: goal_fidelity 17, evidence 10, scope_discipline 20, durability 18, fit 19, reuse 20 (total 104), added failures 0, with two blocking findings — its manifest is refused by crew check --manifest for no test result, no baseline_suite, no after_suite and no messages_received, and the negative-control fragment under docs/evidence/fragments/queued-work-needs-no-workaround/ was never written — and two non-blocking.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063940943522-qwnw-red-file-crew-gate-log-agrees-at-current-main" data-who="reckon-build" data-when="2026-11-18T19:22:01.344Z">
-    <div class="r-comment-body"><p>§29 qwnw-red-file-crew-gate-log-agrees-at-current-main — the gate-log agreement cases read the promotion record and the refusal text from the completion receipt&#x27;s cited record_path instead of from the bounded reply itself (ba811581d3 made every completion reply bounded, so 7 cases raised KeyError &#x27;record&#x27; and 3 long refusals lost their text from stdout; all 11 causes were test-wrong and no gate-log rule changed), and the file goes from 11 failed, 6 passed at 96e3c4b8 to 17 passed in 4.63s as an all_debug job at c5d1a22c74, with no assertion deleted or weakened</p></div>
+    <div class="r-comment-body"><p>§29 qwnw-red-file-crew-gate-log-agrees-at-current-main — the gate-log agreement cases read the promotion record and the refusal text from the completion receipt's cited record_path instead of from the bounded reply itself (ba811581d3 made every completion reply bounded, so 7 cases raised KeyError 'record' and 3 long refusals lost their text from stdout; all 11 causes were test-wrong and no gate-log rule changed), and the file goes from 11 failed, 6 passed at 96e3c4b8 to 17 passed in 4.63s as an all_debug job at c5d1a22c74, with no assertion deleted or weakened</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063946103899-qwnw-red-file-crew-promotion-scope-at-current-main" data-who="reckon-build" data-when="2026-11-18T20:55:06.579Z">
+    <div class="r-comment-body"><p>tests/test_crew_promotion_scope.py is green in full at head — base 3 failed/25 passed, head 28 passed, EXIT=0 on all_debug — after repairing three test-side causes: a frozen dispatch stamp (2026-08-26) that tripped the boundary check&#x27;s 7-day attribution bound, two source-write cases asserting the undeclared sharing default the guard no longer reads (now publishing allowed.txt as shareable, which their own comments claimed), and a companion-path case reading the pre-summary reply shape instead of the receipt at record_path it names.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
