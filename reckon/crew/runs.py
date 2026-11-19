@@ -5,6 +5,7 @@ import fnmatch as fnmatch
 import hashlib as hashlib
 import inspect as inspect
 import json as json
+import copy as copy
 import math as math
 import os as os
 import re as re
@@ -34,6 +35,7 @@ from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
 from pathlib import Path as Path
 from typing import Any as Any, NoReturn as NoReturn, Self as Self
 from reckon import __version__ as __version__
+from reckon import file_memo as file_memo
 from reckon._store import (
     _config_home as _config_home,
     _docs_dir_for_project as _docs_dir_for_project,
@@ -492,8 +494,17 @@ def _stamp_pointer_launch_host(
     return {**payload, "launcher_host": host}
 
 
-def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
-    """Write JSON atomically, so a reader never sees a half-written record."""
+def _write_json(
+    path: Path, payload: Mapping[str, Any], *, create_parents: bool = True
+) -> None:
+    """Write JSON atomically, so a reader never sees a half-written record.
+
+    ``create_parents`` defaults on, which is what a pointer write needs: the
+    live directory is where a dispatch publishes, and ``create_parents=False``
+    is for a caller writing into a run's own directory, which a discard may
+    remove. Materialising that directory would bring a discarded run's home
+    back into being.
+    """
     payload = _stamp_pointer_launch_host(path, payload)
     if path.parent == live_dir() and path.suffix == ".json":
         payload = _without_pointer_omitted_fields(payload)
@@ -505,6 +516,7 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
         sort_keys=True,
         mode=0o600,
         ensure_ascii=True,
+        create_parents=create_parents,
     )
 
 
@@ -591,6 +603,23 @@ class QueueFull(CrewError):  # noqa: N818 - named as the refusal states it, besi
 # launched, dropped or discarded request has returned them.
 PRIORITY_HOLDING_PHASES: tuple[str, ...] = ("queued", "awaiting-upstream", "held")
 
+# The phases a run's pointer carries once its worker delivered and nothing but
+# a promotion remains. ``complete`` is the run that has just delivered; the
+# promotion phases are the same run once a request for it is queued, because
+# requesting rewrites the pointer's phase, and a coordinator reprioritising a
+# delivered run usually does it while that request waits. A run's points return
+# at launch, so a delivered run holds them again only when a coordinator spent
+# the points there: the marker below is what ``crew queue reprioritise`` writes
+# when it raises a delivered run, and the mark, never the phase alone, is what
+# charges the session. Landing retires the pointer, which returns the points the
+# same way every other departure does.
+DELIVERED_POINTER_PHASES: tuple[str, ...] = (
+    "complete",
+    "promotion-requested",
+    "promotion-waiting",
+)
+PRIORITY_DELIVERED_MARK = "priority_held_while_delivered"
+
 
 class PriorityBudgetExceeded(CrewError):  # noqa: N818 - named as the refusal states it, beside QueueFull
     """A session's unlaunched priority points would pass its declared budget.
@@ -648,30 +677,59 @@ def _stored_priority(pointer: Mapping[str, Any]) -> int:
     return _override(pointer) or 0
 
 
+def _holds_priority(pointer: Mapping[str, Any]) -> bool:
+    """Whether this pointer's points are still charged to its session.
+
+    A registered holder is a request that has not launched. A delivered run is
+    the one non-launched case the marker above opens, because its points came
+    back at launch and were spent there again by a reprioritise.
+    """
+    phase = str(pointer.get("phase") or "")
+    if phase in PRIORITY_HOLDING_PHASES:
+        return True
+    return phase in DELIVERED_POINTER_PHASES and bool(
+        pointer.get(PRIORITY_DELIVERED_MARK)
+    )
+
+
 def session_priority_in_use(
     session: str,
     *,
     live: Sequence[Mapping[str, Any]] | None = None,
     exclude_run_id: str = "",
+    exclude_run_ids: Iterable[str] = (),
 ) -> tuple[int, list[dict[str, Any]]]:
     """The priority points a session holds on its unlaunched requests.
 
     Returns the total and the requests holding those points.
 
     The figures are read from the live pointers rather than a running tally, so
-    a request removed by any route — launch, drop, discard — returns its points
-    with no second bookkeeping step to get wrong. A request the caller is about
-    to rewrite is excluded by run id so its own points are not counted twice.
+    a request removed by any route — launch, drop, discard, landing — returns
+    its points with no second bookkeeping step to get wrong. A request the
+    caller is about to rewrite is excluded by run id so its own points are not
+    counted twice. A delivered run is charged only where a reprioritise placed
+    points on it, which is what the marker records: its launch returned the
+    points it was dispatched with, so a delivered run still holds them only
+    because a coordinator spent them there.
+
+    More than one request may be excluded, because one raise can be written
+    under two names. A delivered run and the review composed for it are one
+    charge: the raise is stored on the run so a reader sees what the
+    coordinator asked for, and on the review because the review is the record
+    admission ranks. The caller excludes both, so the session is charged once
+    however many records carry the same points.
     """
     pointers = list_live() if live is None else live
+    excluded = {str(exclude_run_id)} if exclude_run_id else set()
+    excluded.update(str(run_id) for run_id in exclude_run_ids)
     holders: list[dict[str, Any]] = []
     total = 0
     for pointer in pointers:
         if str(pointer.get("session") or "") != str(session or ""):
             continue
-        if str(pointer.get("phase") or "") not in PRIORITY_HOLDING_PHASES:
+        if not _holds_priority(pointer):
             continue
-        if exclude_run_id and str(pointer.get("run_id") or "") == exclude_run_id:
+        if excluded and str(pointer.get("run_id") or "") in excluded:
             continue
         points = _stored_priority(pointer)
         if points <= 0:
@@ -690,6 +748,7 @@ def require_priority_budget(
     *,
     live: Sequence[Mapping[str, Any]] | None = None,
     exclude_run_id: str = "",
+    exclude_run_ids: Iterable[str] = (),
 ) -> None:
     """Refuse a priority that would take a session past its declared budget.
 
@@ -701,7 +760,10 @@ def require_priority_budget(
     if budget is None or asked <= 0:
         return
     in_use, holders = session_priority_in_use(
-        session, live=live, exclude_run_id=exclude_run_id
+        session,
+        live=live,
+        exclude_run_id=exclude_run_id,
+        exclude_run_ids=exclude_run_ids,
     )
     if in_use + asked > budget:
         raise PriorityBudgetExceeded(
@@ -1266,10 +1328,17 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
 # by every follower on the node. A pointer whose inode, size and timestamps are
 # unchanged holds the bytes last read, so its text is kept per process keyed by
 # that identity and the file is opened again only when the identity moves. The
-# text, not the parsed object, is kept, so every caller still receives a dict
-# of its own to change.
+# text, not the parsed object, is kept here, so every caller still receives a
+# dict of its own to change. The record decoded from that text is memoised by
+# the repository's one memoising owner, ``file_memo``, keyed by the same stat
+# identity, so a listing that finds the identity unchanged decodes nothing and
+# pays no copy: the record is handed out as that owner's read-only view, and the
+# single-pointer reader copies it once for the callers that change what they read.
 _POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
 _POINTER_TEXT_LOCK = threading.Lock()
+
+#: The memo kind under which ``file_memo`` keeps a live pointer's decoded record.
+_POINTER_RECORD_KIND = "live_pointer_record"
 
 
 _JSON_WHITESPACE = " \t\r\n"
@@ -1422,6 +1491,42 @@ def _pointer_text(path: Path) -> str:
     return reduced
 
 
+def _pointer_record(path: Path) -> Any:
+    """A pointer's decoded record, decoded only when its identity has moved.
+
+    A listing is a pass, and a pass that finds every pointer's stat identity
+    where the previous pass left it decodes none of them. The parse is memoised
+    by ``file_memo``, the repository's one owner of parse-per-stat-identity, so
+    this listing shares its store with every other reader rather than keeping a
+    second cache beside it.
+
+    The text is fetched here before the parse is looked up, and the fetch stats
+    the file even when the text itself is kept: a pointer unlinked between the
+    directory scan and this call raises from that stat, so the listing drops it
+    as a listing that read every text dropped it, and an unchanged pass reads no
+    text and decodes nothing.
+
+    The record comes back as one shallow copy of that owner's view, so a reader
+    that stamps a field of the record it was handed cannot reach the memo every
+    later listing reads. A reader that changes a pointer reads it through
+    :func:`read_pointer`, whose copy is deep enough for the nested fields those
+    readers change.
+    """
+    try:
+        text = _pointer_text(path)
+        with file_memo.read_only_region():
+            record = file_memo.memoized(
+                _POINTER_RECORD_KIND, path, lambda: json.loads(text)
+            )
+            return dict(record)
+    except OSError:
+        # A pointer that cannot be stat'ed or read keeps no text, so the next
+        # listing that finds it again reads whatever is on disk then.
+        with _POINTER_TEXT_LOCK:
+            _POINTER_TEXT.pop(str(path), None)
+        raise
+
+
 #: The lease this node's station keeps under the node-local runtime root. Its
 #: record is the repository's own lease record, read through the mechanism that
 #: writes it, so there is one reader of that format rather than two.
@@ -1561,29 +1666,32 @@ def read_pointer(run_id: str) -> dict[str, Any]:
     """
     path = pointer_path(run_id)
     try:
-        text = _pointer_text(path)
+        data = _pointer_record(path)
     except FileNotFoundError:
         raise CrewError(f"no live run {run_id!r} (looked in {path})") from None
-    try:
-        data = json.loads(text)
     except ValueError as exc:
         raise CrewError(
             f"live pointer for {run_id!r} is not valid JSON — {exc}"
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
-    if pid_belongs_to_the_station(data.get("pid")):
+    # This reader's callers change what they read — a resume marks its own
+    # pointer, an admission pass rewrites one — so the copy is taken here, once
+    # for the one run asked about, rather than being charged to every pointer of
+    # every pass that only reads the listing.
+    record = copy.deepcopy(data)
+    if pid_belongs_to_the_station(record.get("pid")):
         # Read as naming no process of the run: the station is not one, and a
         # reader that treats it as one signals or refuses on the node's own
         # station. An attempt record read as naming no process, pointing at
         # nothing the reading host issued, so the process table probe has no
         # pid of this host's to answer for.
-        data = {
+        record = {
             name: value
-            for name, value in data.items()
+            for name, value in record.items()
             if name not in ("pid", "pid_start_time")
         }
-    return data
+    return record
 
 
 def recorded_dispatch_overrides(record: Mapping[str, Any]) -> tuple[str, ...]:
@@ -1618,7 +1726,7 @@ def _list_live_records(
             del _POINTER_TEXT[key]
     for path in paths:
         try:
-            data = json.loads(_pointer_text(path))
+            data = _pointer_record(path)
         except FileNotFoundError:
             continue
         except ValueError:
@@ -1708,6 +1816,11 @@ def list_live(
     whatever pid the record carries and performs no host check of its own, so it
     may be used only where the pid's presence on this host is already
     established — ``dispatch`` probing the process it has just spawned, say.
+
+    Each record is that pass's read-only view of the memo the listing shares
+    with every other reader, so a pass costs no copy per pointer; a caller that
+    must change a record reads it through ``read_pointer``, which hands back the
+    caller's own copy.
     """
     records = _list_live_records(project=project, phase=phase)
     if project is not None and phase is None:
@@ -3292,7 +3405,13 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
 
 
 def _drain_plan_states(project: str) -> list[tuple[str, dict[str, Any]]] | None:
-    """Read live plans without publishing the plan index or any other file."""
+    """Read live plans without publishing the plan index or any other file.
+
+    A plan whose bytes cannot be read leaves the whole inventory unknown rather
+    than shortening it: the remainder is a count, and a file the drain could not
+    read would otherwise be counted as a plan declaring nothing, which reads as
+    a drained project.
+    """
     from reckon import _plan_html, resources
 
     docs_dir = _docs_dir_for_project(project)
@@ -3304,7 +3423,7 @@ def _drain_plan_states(project: str) -> list[tuple[str, dict[str, Any]]] | None:
             resource = resources.identify_resource(docs_dir, path, project)
             if resource is None or resource.type != "plan" or resource.archived:
                 continue
-            plans.append((resource.slug, _plan_html.read_state_file(path)))
+            plans.append((resource.slug, _plan_html.read_readable_state_file(path)))
     except (OSError, ValueError):
         return None
     return plans
@@ -3841,8 +3960,13 @@ def row_scope(pointers: Iterable[Mapping[str, Any]]) -> Iterator[list[dict[str, 
     reading rather than once per pointer. The two context variables carry the
     snapshot and the excuse set to :func:`_drain_row`, which keeps its
     per-pointer signature for the callers that reach it directly.
+
+    The snapshot is copied row by row: a listing hands out the memo's read-only
+    view, and the derivation stamps the observation a liveness read makes into
+    the row it derived, so a copy per row keeps the stamp off the memo every
+    later listing reads.
     """
-    points = list(pointers)
+    points = [dict(pointer) for pointer in pointers]
     snapshot_token = _ROW_SNAPSHOT.set(points)
     excused_token = _ROW_EXCUSED.set(_in_flight_round_ids(points))
     try:
@@ -4022,6 +4146,22 @@ def drain_unreconciled_by_session(
         counted, _peers = _partition_session_rows(rows, session)
         counts[session] = sum(1 for row in counted if row["unreconciled"])
     return counts
+
+
+def unreconciled_for_session(counts: Mapping[str, int], session: str) -> int:
+    """One session's unreconciled count, read from the map one pass derived.
+
+    An ownerless row counts toward every session, but a map can only name the
+    owners it saw, so :func:`drain_unreconciled_by_session` cannot hold a key
+    for a session that owns no row of its own: its population is ownerless
+    runs alone. Reading the requested session's absence as zero therefore
+    reported no unreconciled run to a session the closure counted one for,
+    while another of its sessions was told the same population numbered one.
+    The ownerless partition is the answer for any session the map does not
+    name, because the owners it does name are the only rows that partition
+    leaves out.
+    """
+    return int(counts.get(session, counts.get("", 0)))
 
 
 # The producer's lease registration. It is separate from the seat record because
@@ -4407,8 +4547,14 @@ def _stream_transition(
     previous: str | None,
     current: str,
     counts: Mapping[str, Any],
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Build the transition object consumed by the established formatter."""
+    """Build the transition object consumed by the established formatter.
+
+    ``pointers`` is the fleet reading the caller already holds, so a row that
+    names a review's reviewed run resolves it against that reading instead of
+    listing the fleet a second time.
+    """
     from reckon.crew.recovery import _watch_transition
 
     return _watch_transition(
@@ -4418,6 +4564,7 @@ def _stream_transition(
         previous=previous,
         current=current,
         counts=counts,
+        pointers=pointers,
     )
 
 
@@ -4582,8 +4729,8 @@ def _publish_watch_transitions(
             # exactly the transitions this seed was taken to carry.
             producer.seeded_states = published
             baseline = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
-            counts = _transition_counts(current)
-            lines = []
+            counts = _transition_counts(current, pointers=records)
+            lines: list[dict[str, Any]] = []
             for run_id, snapshot in current.items():
                 state = str(snapshot["state"])
                 seeded = published.get(run_id)
@@ -4601,6 +4748,7 @@ def _publish_watch_transitions(
                         previous=seeded,
                         current=state,
                         counts=counts,
+                        pointers=records,
                     )
                 )
             _append_watch_lines(producer.path, lines)
@@ -4622,6 +4770,7 @@ def _publish_watch_transitions(
                 previous=previous,
                 current=state,
                 counts=event_counts,
+                pointers=records,
             )
             for snapshot, previous, state, event_counts in folded
         ]
@@ -4908,9 +5057,8 @@ def watch_stream_cursor(
 
     producer = _WATCH_STREAM_PRODUCERS.get(project)
     effective_window = producer.stall_window if producer is not None else stall_window
-    snapshots = _watch_stream_snapshots(
-        _list_live_records(project=project), stall_window=effective_window
-    )
+    records = _list_live_records(project=project)
+    snapshots = _watch_stream_snapshots(records, stall_window=effective_window)
     counts = _fleet_counts(snapshots)
     baseline = [
         _stream_transition(
@@ -4919,6 +5067,7 @@ def watch_stream_cursor(
             previous=None,
             current=str(snapshot["state"]),
             counts=counts,
+            pointers=records,
         )
         for snapshot in snapshots.values()
     ]

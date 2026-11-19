@@ -1,0 +1,70 @@
+<section id="qwnw-red-file-crew-runs-view-landing">
+  <h2>A drain reports an unreadable plan inventory as unknown</h2>
+
+  <p><strong>What was wrong.</strong> A drain counted a plan it could not read
+  as a plan declaring no sections. The closure remainder is derived from
+  <code>_plan_html.read_state_file</code>, whose shared text read turns an
+  <code>OSError</code> into <code>""</code>, so a plan refused by the filesystem
+  parsed as an empty document and the inventory answered a number it had never
+  read. The product already stated the rule one reader over: the metadata
+  index's <code>_plan_record</code> takes a readability read of the file's bytes
+  first for exactly this reason, and reports <code>unreadable</code> rather than
+  a figure. The drain's own plan inventory had no such guard.</p>
+
+  <p><strong>What changed.</strong> <code>_plan_html.read_readable_state_file</code>
+  takes a readability read of the file's bytes, memoised against the file's stat
+  identity, and parses those bytes when the shared parse holds a masked empty
+  document; an unreadable file raises instead of answering with an empty plan.
+  <code>_drain_plan_states</code> uses it, so one unreadable plan leaves the
+  whole inventory <code>None</code>/<code>None</code> rather than shortening it,
+  and <code>_plan_record</code> now shares the same read instead of carrying a
+  second copy of the guard. No assertion was deleted or weakened: the test that
+  failed encodes the rule the index already kept, so the cause verdict is
+  <strong>product wrong</strong>.</p>
+
+  <h3 id="qwnw-red-file-crew-runs-view-measured">Measured</h3>
+
+  <table id="qwnw-red-file-crew-runs-view-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td><code>tests/test_crew_runs_view.py</code>, head gate on all_debug</td>
+        <td><code>679a789104c7c0521aa7ffe54be7271912fa809b</code></td>
+        <td>20 passed, <code>EXIT=0</code></td></tr>
+      <tr><td><code>tests/test_crew_runs_view.py</code>, base arm</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>1 failed, 19 passed, <code>EXIT=1</code></tr>
+      <tr><td>declared suite, after arm on all_debug</td>
+        <td><code>679a789104c7c0521aa7ffe54be7271912fa809b</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, baseline arm on all_debug</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>related files, head arm</td>
+        <td><code>679a789104c7c0521aa7ffe54be7271912fa809b</code></td>
+        <td>8 failed, 226 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>related files, base arm</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>9 failed, 225 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The related-files arm covers the drain, plan-read, metadata-index and crew
+  suites that import the changed modules; both arms run the same nine files, so
+  the delta is the source change rather than the test set. The nine failures in
+  both arms are the same pre-existing ids apart from the runs-view case, which is
+  the one this node repaired.</p>
+
+  <h3 id="qwnw-red-file-crew-runs-view-control">Negative control</h3>
+
+  <p>At the base revision the named file fails one case and passes nineteen:
+  <code>tests/test_crew_runs_view.py::test_drain_reports_an_unreadable_inventory_as_unknown</code>
+  raises <code>assert 1 is None</code> at the case's first assertion, because the
+  unreadable plan was counted with one implementable section declared. The head
+  run of the same file passes all twenty. The base run's log is
+  <code>negative-control-base-runs-view.log</code> in this run's directory, and
+  the head run is <code>scoped-gate-1795046002862325906.log</code> beside it,
+  both in this run's directory under
+  <code>~/.config/reckon/crew/runs/r-20261118T044634501998-qwnw-red-file-crew-runs-view/</code>.</p>
+</section>

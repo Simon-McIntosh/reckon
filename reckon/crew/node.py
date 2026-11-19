@@ -1553,6 +1553,16 @@ def validate_node(
                         f"budget {node.time_budget} exceeds the resolved fence "
                         f"{budget_ceiling}"
                     )
+                    # The fence is binding rather than advisory: a budget above
+                    # it is admitted only when the caller says why, and the
+                    # reason rides the node so the run record carries it. A note
+                    # alone let an over-fence node dispatch as if it were sized.
+                    if not node.over_fence_reason.strip():
+                        fail(
+                            "bounded",
+                            f"{node.over_fence_note}; pass --over-fence REASON to "
+                            "state why it must run above the fence",
+                        )
 
     if not node.manifest_path:
         fail(

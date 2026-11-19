@@ -1,0 +1,34 @@
+<section id="qwnw-red-file-check-manifest-resolves-named-commits-head-run">
+<h2>Base failure and head pass for the citation file</h2>
+<p>The file is red at base <code>60ecc274f1bf7008b09057c6a5252423deb4cfe5</code> on one case only, <code>test_the_command_reports_the_unresolvable_citation</code>, and green at head <code>945f66f8ec0476583a6d29961d96ebbfff4e8a42</code>. Both runs are all_debug jobs whose command the arm ran against a tree extracted from the revision it names, with SLURM_JOB_ID absent from the arm's own environment.</p>
+<p>The cause is the test, not the product: the fixture manifest cited its evidence log at a node-local path and declared no message receipt, so two unrelated gates answered before the citation and the case saw three findings where it asserted one. The fixture now cites a log beside the manifest, writes that log with its command head and <code>EXIT=0</code> tail, and states <code>messages_received: none</code>. The count assertion and the two membership assertions are unchanged.</p>
+<pre># base arm, job 1327114, log logs/base-arm.log
+# revision: 60ecc274f1bf7008b09057c6a5252423deb4cfe5
+# tree: /tmp/reckon-crew-scratch/r-20261118T063253797188-qwnw-red-file-check-manifest-resolves-named-commits/base-arm-OM94HA/tree
+# command: env PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_check_manifest_resolves_named_commits.py
+.....F                                                                   [100%]
+FAILED tests/test_check_manifest_resolves_named_commits.py::test_the_command_reports_the_unresolvable_citation - AssertionError: ["test_logs log '/tmp/citation-check.log' resolves outside the run directory: every cited log must exist under the run...epository)", 'messages_received: no delivery receipt was recorded, so the manifest must say `messages_received: none`']
+1 failed, 5 passed in 0.98s
+EXIT=1</pre>
+<pre># head arm, scoped gate log scoped-gate-1795016712949955946.log
+# revision: 945f66f8ec0476583a6d29961d96ebbfff4e8a42
+# tree: /tmp/mcintos-landing-cc7ea0ae6999-O1V7KN/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python3 -m pytest -p no:cacheprovider -q tests/test_check_manifest_resolves_named_commits.py'
+......                                                                   [100%]
+6 passed in 0.65s
+EXIT=0</pre>
+<p>The citation guard itself is shown to fire rather than assumed: with the store list disarmed the same fabricated id is reported by value while the resolving id is not, and with the resolver armed it is not reported.</p>
+<pre># guard-fires.log, run at head
+armed findings: ["commits entry 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' cites 'bbbbbbbb...', which does not resolve to a commit object in the run repository (.../mrepo-2wg7ub1w)"]
+disarmed findings: []
+EXIT=0</pre>
+<p>Both suite arms ran as all_debug jobs over a tree extracted from the revision each names, and neither adds a failure: the node's declared arm template resolves to the two files the run records below. No test file imports the file this node changed, so the importing-file arm has no members to add.</p>
+<pre># baseline_suite-1795016804192566987.log
+# revision: 60ecc274f1bf7008b09057c6a5252423deb4cfe5
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'
+EXIT=0
+# after_suite-1795016846362817895.log
+# revision: 945f66f8ec0476583a6d29961d96ebbfff4e8a42
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'
+EXIT=0</pre>
+</section>

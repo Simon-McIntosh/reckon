@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: baseline_suite-1795010852683557246.log (revision 23b901694b4bfec73d95be3a082d4c336d9a4101, 58 passed, EXIT=0) and after_suite-1795010927649090721.log (revision 27a001dcead3df4e23fc6b26e4f6bdc2bbef7f62, 58 passed, EXIT=0) both ran to their summary line with no failing test id, so the head's failing set is empty and adds no id.",
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:10:52Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter.html",
+      "line": 66,
+      "severity": "non-blocking",
+      "text": "the fragment says the base file was run \"at the head revision's product code\", but logs/base-arm-node-test-at-23b901694b4bfec73d95be3a082d4c336d9a4101.log:2 runs it in a git-archive tree of the base revision, so the arm is base product code; the result is unaffected because no product file changed, but the fragment describes an arm the log does not show."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062916788520-qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter/logs/negative-control-narrowed-detector-fires.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the log's header names revision 23b90169 while the run used the uncommitted repaired file - the failure names only the probe and velocity, with no crew_dispatch, and cites the repaired file's line 202 - so the one control that proves the narrowing still fires is filed under the revision of the file it replaced."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter.html",
+      "line": 74,
+      "severity": "non-blocking",
+      "text": "the fragment states the probe module was removed and the file re-run at \"3 passed\" without naming a log for that re-run, so the return-to-green half of the second control cannot be checked by a reader."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261118T142032592458-review-of-qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter-e41357e131a1",
+  "review_text": "reviewed_base_sha: 23b901694b4bfec73d95be3a082d4c336d9a4101\nreviewed_head_sha: e41357e131a15f0b1885484672b188619de2c88a\nVERDICT goal: the node goal is \"Make tests/test_one_blob_reader_serves_velocity_and_the_counter.py pass in full on the counter's own file\"; the landed change is one predicate at tests/test_one_blob_reader_serves_velocity_and_the_counter.py:173-186 that narrows the AST detector to functions naming both \"cat-file\" and \"--batch\", and the head arm log records 3 passed EXIT=0 at 27a001d, so the file passes in full.\nVERDICT done_when: the done_when asks for the file green at head, the base run first with each cause given a product-or-test verdict, no assertion deleted or weakened, and an arm over the importing test files; the manifest records base 1 failed EXIT=1 (cause: test wrong) and head 3 passed EXIT=0, and no assertion text is removed, but the gate log names no all_debug job id and the armed arms run an unrelated census population.\nVERDICT write_paths: the declared write paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (plus the fragment and figures paths); the diff's two files, tests/test_one_blob_reader_serves_velocity_and_the_counter.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter.html, both lie inside them.\nVERDICT manifest: read the reviewed run's manifest.md; it states status complete, the two commits 27a001dcea and e41357e131, base arm 1 failed / head arm 3 passed with log paths, and it names in evidence_inputs that the declared armed suite measures a census population rather than this node's file.\nVERDICT diff: read the two commits against 23b90169: 27a001dcea replaces the inline literal comparison in _functions_invoking_batch with _invokes_a_batched_object_read, and e41357e131 adds the 77-line evidence fragment; no product source changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_one_blob_reader_serves_velocity_and_the_counter.py:186 now requires both literals, and the scoped gate log records 3 passed EXIT=0 at 27a001d over the same file.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795010694882153265.log records 3 passed EXIT=0 at revision 27a001d, but its header names no all_debug job id and the manifest's baseline_suite/after_suite arms at tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py do not include the file under test.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is the test file and its declared evidence fragment only.\nSCORE durability: 18\nJUSTIFICATION durability: the assertion at tests/test_one_blob_reader_serves_velocity_and_the_counter.py:202 compares the scan against a hardcoded expected set, reddens when the bare-literal detector is restored (base arm, extra item reckon/crew_dispatch_commands.py:crew_dispatch) and reddens on a second cat-file --batch reader (logs/negative-control-narrowed-detector-fires.log), though that log mislabels the revision it ran at.\nSCORE fit: 19\nJUSTIFICATION fit: the private predicate at tests/test_one_blob_reader_serves_velocity_and_the_counter.py:173 follows the file's own helper style and its docstring states why the narrower grammar is the one asserted.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for finding a function that holds a git verb's literals; a search over reckon/clones.py:80, reckon/served_code.py:1190, reckon/crew/reports.py:1740, reckon/crew/landing_measure.py:516 and the tests/ AST scans found only per-caller walks, and the addition extends this file's existing _functions_invoking_batch rather than adding a second scan.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter.html:66 non-blocking: the fragment says the base file was run \"at the head revision's product code\", but logs/base-arm-node-test-at-23b901694b4bfec73d95be3a082d4c336d9a4101.log:2 runs it in a git-archive tree of the base revision, so the arm is base product code; the result is unaffected because no product file changed, but the fragment describes an arm the log does not show.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062916788520-qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter/logs/negative-control-narrowed-detector-fires.log:1 non-blocking: the log's header names revision 23b90169 while the run used the uncommitted repaired file \u2014 the failure names only the probe and velocity, with no crew_dispatch, and cites the repaired file's line 202 \u2014 so the one control that proves the narrowing still fires is filed under the revision of the file it replaced.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter.html:74 non-blocking: the fragment states the probe module was removed and the file re-run at \"3 passed\" without naming a log for that re-run, so the return-to-green half of the second control cannot be checked by a reader.",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "e41357e131a15f0b1885484672b188619de2c88a",
+  "reviewed_run_id": "r-20261118T062916788520-qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:43:05.374210+00:00",
+  "total": 111,
+  "verdicts": {
+    "diff": "read commit by commit against 23b90169: 27a001dcea narrows the detector, e41357e131 adds the evidence fragment; two paths, no product source.",
+    "done_when": "the done_when's primary measure is recorded (base 1 failed EXIT=1, head 3 passed EXIT=0, cause named as test-wrong, no assertion text removed), but the gate log names no all_debug job id and the armed arms run a census population rather than the importing test files.",
+    "goal": "the node goal is to make tests/test_one_blob_reader_serves_velocity_and_the_counter.py pass in full; the landed change narrows the file's AST detector at tests/test_one_blob_reader_serves_velocity_and_the_counter.py:173-186 to functions naming both \"cat-file\" and \"--batch\", and the head arm records 3 passed EXIT=0 at 27a001d.",
+    "manifest": "read; it records status complete, commits 27a001dcea and e41357e131, and both arms with log paths, and it states in evidence_inputs that the declared armed suite is vacuous for this node.",
+    "write_paths": "both diff paths, tests/test_one_blob_reader_serves_velocity_and_the_counter.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-blob-reader-serves-velocity-and-the-counter.html, are inside the declared paths reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  }
+}

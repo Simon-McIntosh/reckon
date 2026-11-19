@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import mcp
+from reckon import mcp, run_store
 from reckon.crew import queue_admission, runs
 from tests import test_a_queued_request_waits_on_its_dependencies as upstream_fixtures
 
@@ -24,6 +24,20 @@ def queue_home(tmp_path, monkeypatch):
     monkeypatch.setattr(runs, "_drain_plan_states", lambda _project: [])
     monkeypatch.setattr(runs, "_unloaded_sections", lambda *_args: {})
     return home
+
+
+def _settle(landings: list[dict]) -> None:
+    """Record each completion in the run store, as a promotion writes it.
+
+    The week view counts a completion as landed only where its promotion is on
+    record; a row whose evidence cannot be read reads as promoted and awaits a
+    merge, so a landing must reach the store the promoting pass writes.
+    """
+    for record in landings:
+        run_store.append(
+            "week-project",
+            {"run_id": record["run_id"], "plan": record["plan"]},
+        )
 
 
 def _request(number: int, phase: str, plan: str, now: datetime) -> dict:
@@ -86,6 +100,7 @@ def test_week_view_counts_each_request_and_uses_the_last_admission_verdict(
         {"run_id": "landed-old", "plan": "north", "completed_at": old},
         {"run_id": "landed-south", "plan": "south", "completed_at": recent},
     ]
+    _settle(landings)
     monkeypatch.setattr(
         "reckon.ledger.load", lambda *_args, **_kwargs: ({"runs": landings}, 1)
     )
@@ -221,22 +236,16 @@ def test_recent_launch_of_a_landed_request_uses_the_worker_stamp(
     queued = (now - timedelta(days=2)).isoformat()
     launched = (now - timedelta(hours=2)).isoformat()
     completed = (now - timedelta(hours=1)).isoformat()
+    landed = {
+        "run_id": "r-landed",
+        "plan": "north",
+        "dispatched_at": queued,
+        "completed_at": completed,
+        "worker_exit": {"launched_at": launched},
+    }
+    _settle([landed])
     monkeypatch.setattr(
-        "reckon.ledger.load",
-        lambda *_args, **_kwargs: (
-            {
-                "runs": [
-                    {
-                        "run_id": "r-landed",
-                        "plan": "north",
-                        "dispatched_at": queued,
-                        "completed_at": completed,
-                        "worker_exit": {"launched_at": launched},
-                    }
-                ]
-            },
-            1,
-        ),
+        "reckon.ledger.load", lambda *_args, **_kwargs: ({"runs": [landed]}, 1)
     )
 
     week = runs.drain("week-project")["week"]

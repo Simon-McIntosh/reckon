@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c0fb13cc00320b3c4ff9c098209a126fa2afc56c",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T08:47:19Z",
+  "findings": [
+    {
+      "file": "tests/test_cached_account_age.py",
+      "id": "f3c81a5d02b",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: _live_credential is a third copy of the same fixture already defined at tests/test_claude_account_surface.py:31 and tests/test_backend_observation.py:510, with a narrower field set than either, so the three can drift and a fourth copy is the likely next edit."
+    },
+    {
+      "file": "tests/test_cached_account_age.py",
+      "id": "f6b2d409d7e",
+      "line": "151",
+      "severity": "non-blocking",
+      "text": "non-blocking: this stub is not load-bearing \u2014 the base run passes test_the_probe_entry_point_serves_the_cached_age_and_not_only_the_figure without it (logs/node-base.1.log: 8 passed includes it), so removing this half of the change reddens no assertion and the precondition its docstring names stays unverified."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/node-base.1.log",
+      "id": "f9a4e02c116",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log headers name revision, host, tree, command and module but never the all_debug partition or SLURM_JOB_ID unset, so the job condition in the done_when rests on the manifest's landing line rather than on an artefact a reader can open."
+    }
+  ],
+  "head_log_revision": "db44decb7d072586d67eb2c4dc7af5b4469877c8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none",
+    "diff": "read commit by commit from c0fb13cc; db44decb7d adds the _live_credential helper at tests/test_cached_account_age.py:50 and stubs _backends._load_claude_credential at :151 and :225 with 23 insertions and 0 deletions, and 2e696678 adds the 107-line evidence fragment; no assertion was removed or re-pinned.",
+    "done_when": "the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a named cause and verdict, an importing-files arm adding no failure with both arms as inline JSON at 40-character revisions, and a base negative control; the manifest records every one of those (tests, test_logs, baseline_suite/after_suite at 0 failures over c0fb13cc and db44decb, the cause 'test wrong'), but its declared suite is two modules the change cannot reach, so the importing-files arm carries no information about it.",
+    "goal": "the node's goal is to make tests/test_cached_account_age.py pass in full on the primary branch; at the reviewed head 2e696678 the file reads 9 passed, EXIT=0 (logs/head-run.log), and the same file at the current primary head 57235c8b still reads 1 failed, 8 passed, so the repair is real and unlanded.",
+    "manifest": "read in full; it names the cause 'test wrong', commits db44decb7d and 2e696678, the literal pytest command, logs/head-run.log and logs/node-base.1.log for the negative control, and both suite arms as inline JSON with full 40-character revisions and 0 failures (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/suite-head.2.log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/suite-base.retry1.log).",
+    "write_paths": "declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment file and the figure directory; the diff c0fb13cc..2e696678 changes only tests/test_cached_account_age.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-cached-account-age.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_cached_account_age.py pass in full on the primary branch; at the reviewed head 2e696678 the file reads 9 passed, EXIT=0 (logs/head-run.log), and the same file at the current primary head 57235c8b still reads 1 failed, 8 passed, so the repair is real and unlanded.\nVERDICT done_when: the done_when asks for the file green as an all_debug job with SLURM_JOB_ID unset, a named cause and verdict, an importing-files arm adding no failure with both arms as inline JSON at 40-character revisions, and a base negative control; the manifest records every one of those (tests, test_logs, baseline_suite/after_suite at 0 failures over c0fb13cc and db44decb, the cause 'test wrong'), but its declared suite is two modules the change cannot reach, so the importing-files arm carries no information about it.\nVERDICT write_paths: declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment file and the figure directory; the diff c0fb13cc..2e696678 changes only tests/test_cached_account_age.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-cached-account-age.html, both inside them.\nVERDICT manifest: read in full; it names the cause 'test wrong', commits db44decb7d and 2e696678, the literal pytest command, logs/head-run.log and logs/node-base.1.log for the negative control, and both suite arms as inline JSON with full 40-character revisions and 0 failures (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/suite-head.2.log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/suite-base.retry1.log).\nVERDICT diff: read commit by commit from c0fb13cc; db44decb7d adds the _live_credential helper at tests/test_cached_account_age.py:50 and stubs _backends._load_claude_credential at :151 and :225 with 23 insertions and 0 deletions, and 2e696678 adds the 107-line evidence fragment; no assertion was removed or re-pinned.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_cached_account_age.py:237 asserts the live 89.0 and passes at head while the same file at c0fb13cc fails on that line with assert 53.0 == 89.0.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate logs name revision, host, tree, command, measurement_module and a final EXIT= line (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/head-run.log, /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/node-base.1.log), but neither records the all_debug partition or SLURM_JOB_ID unset, and the suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which the change cannot affect.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths, tests/test_cached_account_age.py and the qwnw-red-file-cached-account-age.html fragment, lie inside the declared write paths listed in dispatch-detail.json.\nSCORE durability: 15\nJUSTIFICATION durability: reinstating the regression by dropping the stub reddens tests/test_cached_account_age.py:237 (logs/node-base.1.log: 1 failed, 8 passed at c0fb13cc), but the stub at :151 reddens nothing, because the base run without it passes that case.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at tests/test_cached_account_age.py:50 carries the module's docstring idiom and the underscore-prefixed local-fixture naming of tests/test_backend_observation.py:510, and introduces no tracked concept.\nSCORE reuse: 15\nJUSTIFICATION reuse: no shared credential fixture exists \u2014 a search over tests/conftest.py for 'credential' and over tests/ for _load_claude_credential found none \u2014 but the added helper is a third copy of the fixture at tests/test_claude_account_surface.py:31.\nFINDING tests/test_cached_account_age.py:50 non-blocking: _live_credential is a third copy of the same fixture already defined at tests/test_claude_account_surface.py:31 and tests/test_backend_observation.py:510, with a narrower field set than either, so the three can drift and a fourth copy is the likely next edit.\nFINDING tests/test_cached_account_age.py:151 non-blocking: this stub is not load-bearing \u2014 the base run passes test_the_probe_entry_point_serves_the_cached_age_and_not_only_the_figure without it (logs/node-base.1.log: 8 passed includes it), so removing this half of the change reddens no assertion and the precondition its docstring names stays unverified.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044632177552-qwnw-red-file-cached-account-age/logs/node-base.1.log:1 non-blocking: the log headers name revision, host, tree, command and module but never the all_debug partition or SLURM_JOB_ID unset, so the job condition in the done_when rests on the manifest's landing line rather than on an artefact a reader can open.",
+  "review_method": "Read-only: the reviewed dispatch node, its manifest, the two landed commits against c0fb13cc, the fragment, the four arm logs, and the credential gate the stub replaces; the gate's named file was re-run once at the current primary head 57235c8b to confirm the defect is still live; no mutation experiment and no full-suite rerun.",
+  "review_run_id": "r-20261119T004442546038-review-of-qwnw-red-file-cached-account-age-2e696678d92c",
+  "reviewed_base_sha": "c0fb13cc00320b3c4ff9c098209a126fa2afc56c",
+  "reviewed_head_sha": "2e696678d92c7a654ca3c8e40fe869570ee854d3",
+  "reviewed_run_id": "r-20261118T044632177552-qwnw-red-file-cached-account-age",
+  "reviewer_run_id": "r-20261119T004442546038-review-of-qwnw-red-file-cached-account-age-2e696678d92c",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T09:58:00Z",
+  "total": 103
+}

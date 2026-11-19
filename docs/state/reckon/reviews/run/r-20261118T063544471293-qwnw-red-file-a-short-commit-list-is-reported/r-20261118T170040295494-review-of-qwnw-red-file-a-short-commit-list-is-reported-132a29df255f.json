@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own suite arms: baseline_suite-1795019485973285468.log reports 58 passed / EXIT=0 at 9e1dc0dc and after_suite-1795019529696719604.log reports 58 passed / EXIT=0 at 28da01615f, so neither arm records a failing id.",
+  "after_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063544471293-qwnw-red-file-a-short-commit-list-is-reported/after_suite-1795019529696719604.log",
+    "revision": "28da01615f85dee3e1ee8058b590679076b7a0fb"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063544471293-qwnw-red-file-a-short-commit-list-is-reported/baseline_suite-1795019485973285468.log",
+    "revision": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3474 receipt run_id",
+    "reckon/crew_run_commands.py:3483 receipt record_path",
+    "reckon/crew/promotion.py:1467 commit_list_shortfall",
+    "reckon/crew/promotion.py:1477 record commit_list_shortfall"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T00:03:55Z",
+  "findings": [
+    {
+      "file": "tests/test_a_short_commit_list_is_reported.py",
+      "line": "333",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert receipt[\"run_id\"] == run_id compares the receipt against the literal run id the test itself passed on the command line, so the two sides move together and the assertion holds for any code that echoes its argument; it reddens only if the receipt drops the key entirely, and the independence that matters (the shortfall document written at record_path) rests on the following line, not this one."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-short-commit-list-is-reported.html",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted head-arm excerpt reads '10 passed in 2.98s' while the log it cites at job 1327392, logs/head-run.log:10, records 2.94s, so the excerpt in the fragment is not a verbatim copy of the run it names and a reader comparing the two cannot tell which arm produced the duration."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "VERDICT diff: read commit by commit against the base; 28da01615f updates the one test case, 0f9a1ff691 adds the 22-line fragment and 132a29df25 renames the head job and revision inside it (2 lines), and only tests/test_a_short_commit_list_is_reported.py and the named fragment change: +30 -1 over two paths.",
+    "done_when": "VERDICT done_when: the done_when names the named file green as an all_debug job with SLURM_JOB_ID unset, each cause with a verdict, an imports arm against the base, and the base run's failing ids beside the head run; logs/head-run.log (job 1327392, unset, 10 passed, EXIT=0), both suite logs (58 passed each) and the fragment carry these, though the fragment's head excerpt misquotes its own log's duration.",
+    "goal": "VERDICT goal: the node's goal is that tests/test_a_short_commit_list_is_reported.py passes in full, and logs/head-run.log records 10 passed in 2.94s with EXIT=0 at the tree whose code equals head 132a29df25.",
+    "manifest": "VERDICT manifest: read; it reports status complete, three commits, both suite arms as inline JSON at full revisions with 58 passed each, logs/base-run.log as the negative control with its failing id, and a rubric line per dimension.",
+    "write_paths": "VERDICT write_paths: read the declaration (reckon, tests, the plan's fragment directory, the node's fragment, its figure directory); every path in the diff is inside them, the two that changed being tests/test_a_short_commit_list_is_reported.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-short-commit-list-is-reported.html."
+  },
+  "justifications": {
+    "durability": "JUSTIFICATION durability: deleting the commit_list_shortfall assignment at reckon/crew/promotion.py:1477 leaves the record at receipt['record_path'] without that key, so tests/test_a_short_commit_list_is_reported.py:335 raises KeyError, though the echo assertion added at line 333 proves nothing on its own.",
+    "evidence": "JUSTIFICATION evidence: logs/base-run.log records 1 failed with id test_a_shortfall_promotion_completes_and_reports_on_the_record and EXIT=1 while logs/head-run.log records 10 passed and EXIT=0, yet the fragment's head excerpt at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-short-commit-list-is-reported.html:18 misquotes that log's 2.94s as 2.98s.",
+    "fit": "JUSTIFICATION fit: the repaired case keeps the file's CliRunner pattern and its stored-record assertions, and tests/test_a_short_commit_list_is_reported.py:327-331 explains the receipt contract in the surrounding comment idiom.",
+    "goal_fidelity": "JUSTIFICATION goal_fidelity: the named file runs green in full, 10 passed at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063544471293-qwnw-red-file-a-short-commit-list-is-reported/logs/head-run.log.",
+    "reuse": "JUSTIFICATION reuse: the diff adds no production definition and instead reads the existing completion receipt written by reckon/crew_run_commands.py:3483, so no capability is forked.",
+    "scope_discipline": "JUSTIFICATION scope_discipline: the diff changes only tests/test_a_short_commit_list_is_reported.py and the declared fragment, and carries no product, plan or state write."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T170040295494-review-of-qwnw-red-file-a-short-commit-list-is-reported-132a29df255f",
+  "reviewed_base_sha": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246",
+  "reviewed_head_sha": "132a29df255fa5ae463d415c2e0f47669920fc5d",
+  "reviewed_node": "qwnw-red-file-a-short-commit-list-is-reported",
+  "reviewed_run_id": "r-20261118T063544471293-qwnw-red-file-a-short-commit-list-is-reported",
+  "reviewer": "independent review worker",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T00:37:54.807550+00:00",
+  "total": 110
+}

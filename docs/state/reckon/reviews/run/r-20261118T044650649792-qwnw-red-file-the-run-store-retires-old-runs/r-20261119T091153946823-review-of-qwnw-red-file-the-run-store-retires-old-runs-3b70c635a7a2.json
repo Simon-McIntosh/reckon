@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "call_site_count": 4,
+  "call_sites": [
+    "scripts/census/carryover_census.py:456",
+    "scripts/census/death_census.py:178",
+    "scripts/lane_window_census.py:110",
+    "reckon/run_store.py:2353"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:02:34Z",
+  "evidence_checks": {
+    "node_test_head": "git archive 3b70c635a7 -> PYTHONPATH=<scratch> /home/ITER/mcintos/Code/reckon/.venv/bin/python -c 'import reckon.run_store' printed <scratch>/reckon/run_store.py; pytest -q tests/test_the_run_store_retires_old_runs.py tests/test_ledger_files_and_index_agree.py -> 124 passed, EXIT=0",
+    "suite_arms": "baseline_suite-1795077678055964044.log at 97dec20b: 58 passed, EXIT=0; after_suite-1795077723140698360.log at 3b70c635: 58 passed, EXIT=0; added_failure_count 0"
+  },
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "line": "1721",
+      "severity": "non-blocking",
+      "text": "non-blocking: the unchanged-stamp skip has no test that reads, changes the ledger, and reads again on the same RunStore instance, so a stamp recorded for a state it does not describe would leave stale rows while tests/test_the_run_store_retires_old_runs.py:171-190 (which opens the store after its change) stays green."
+    },
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the contract tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when measures, so promotion's gate receipt re-runs code the change cannot reach while the node's 0-argument job sits under node_test_log."
+    }
+  ],
+  "head_log_revision": "3b70c635a7a2a99c19ea43da95ea36ae1c5d94c8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 11f45932e5..3b70c635a7 commit by commit: 4bcc5c7042 unifies the guard and the committed membership read and defers the per-project stamp to the write's else branch, declaring project onto rebuilt rows; 3b70c635a7 adds the merge section to the fragment.",
+    "done_when": "the done_when names that file passing in full as an all_debug job with SLURM_JOB_ID unset plus a base arm and negative control; the manifest records node_test_log scoped-gate-1795077418874580237.log at 4bcc5c7042 (19 passed, EXIT=0) and 58-passed suite arms at 97dec20b and 3b70c635, though its tests line names two other files.",
+    "goal": "the node goal is that tests/test_the_run_store_retires_old_runs.py pass in full on the primary branch; at 3b70c635a7 the file's 19 tests pass (re-run by this review at 3b70c635a7 with tests/test_ledger_files_and_index_agree.py: 124 passed, EXIT=0)",
+    "manifest": "read; status complete, nine commits, baseline_suite and after_suite completed with 0 failures at full revisions, negative_control_log named, every rubric dimension answered.",
+    "write_paths": "the commits gained since the prior review (4bcc5c7042, 3b70c635a7) touch only reckon/run_store.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-run-store-retires-old-runs.html, both inside the declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_files_and_index_agree.py:328 reddens if the stamp is recorded before the refused write or if {\"project\": name} is dropped at reckon/run_store.py:1763, but the unchanged-stamp skip at reckon/run_store.py:1721 is never driven after a first read in one instance",
+    "evidence": "the measure is logged under node_test_log at manifest.md:13 and the 0 added failures derive from baseline_suite-1795077678055964044.log and after_suite-1795077723140698360.log, but manifest.md:11's tests line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py.",
+    "fit": "the merge keeps the surrounding comment style and existing helpers at reckon/run_store.py:1724-1740 and names no plan or ticket.",
+    "goal_fidelity": "the merge head 4bcc5c7042 passes tests/test_the_run_store_retires_old_runs.py in full (19 passed, scoped-gate-1795077418874580237.log) and my archive run at 3b70c635a7 gave 124 passed across that file and tests/test_ledger_files_and_index_agree.py.",
+    "reuse": "the merge keeps document membership on reckon/ledger.py's run_ids(..., use_index=False) at reckon/run_store.py:1740, so there is one owner and the addition extends it.",
+    "scope_discipline": "the two commits gained since the prior review touch only reckon/run_store.py and the node's evidence fragment, both inside the declared paths; the other 390 paths arrived with main at 4bcc5c7042."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_the_run_store_retires_old_runs.py pass in full on the primary branch; at 3b70c635a7 the file's 19 tests pass (re-run by this review at 3b70c635a7 with tests/test_ledger_files_and_index_agree.py: 124 passed, EXIT=0), and the merge commit 4bcc5c7042 kept reckon/run_store.py:_refresh's committed-document comparison (reckon/run_store.py:1740).\nVERDICT done_when: the done_when names that file passing in full as an all_debug job with SLURM_JOB_ID unset and a base arm and negative control beside it; the manifest records node_test_log scoped-gate-1795077418874580237.log at 4bcc5c7042 (19 passed, EXIT=0, scheduler host banner) plus baseline_suite-1795077678055964044.log at 97dec20b and after_suite-1795077723140698360.log at 3b70c635 (58 passed, EXIT=0 each), but its contract `tests:` line names two unrelated test files.\nVERDICT write_paths: the declared paths are reckon, tests, the queued-work-needs-no-workaround fragment directory, its fragment and figure paths, and reckon/run_store.py; the commits gained since the prior review (4bcc5c7042, 3b70c635a7) touch only reckon/run_store.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-run-store-retires-old-runs.html, both inside them \u2014 the other 390 paths in the 97dec20b..3b70c635 range arrived with main through 4bcc5c7042 and are not this node's writing.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, nine commits listed (c54a59d4b6 through 3b70c635a7), the merge checkpoint states the stamp now moves after the write, baseline_suite and after_suite both completed with exit 0 and 0 failures at full 40-character revisions, negative_manifest fields answered, and every rubric dimension answered.\nVERDICT diff: read 11f45932e5..3b70c635a7 commit by commit \u2014 4bcc5c7042 is the merge that keeps one `_ledger_holds_content` skip and one committed `run_ids(..., use_index=False)` read while moving the per-project stamp into a `rebuilt` dict applied only in the write's `else` branch and declaring `{\"project\": name}` onto rebuilt rows; 3b70c635a7 adds only the 18-line merge section and its log to the evidence fragment.\nCALL_SITES: scripts/census/carryover_census.py:456, scripts/census/death_census.py:178, scripts/lane_window_census.py:110, reckon/run_store.py:2353\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the merge head 4bcc5c7042 passes tests/test_the_run_store_retires_old_runs.py in full (19 passed in scoped-gate 1795077418874580237.log) and my tree-archive run at 3b70c635a7 gave 124 passed across that file and tests/test_ledger_files_and_index_agree.py.\nSCORE evidence: 13\nJUSTIFICATION evidence: the node's measure is logged in node_test_log at reckon manifest.md:13 and the 0-added-failure figure derives from baseline_suite-1795077678055964044.log and after_suite-1795077723140698360.log, but manifest.md:11's `tests:` line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, files the change cannot reach.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the two commits gained since the prior review touch only reckon/run_store.py and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-run-store-retires-old-runs.html, both inside the declared paths, while the rest of the range is main arriving at 4bcc5c7042.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_ledger_files_and_index_agree.py:328 reddens if the stamp is recorded before the refused write (its second read would skip the rebuild and answer nothing) and if `{\"project\": name}` is dropped at reckon/run_store.py:1763 (durable_rows would answer {}), but reckon/run_store.py:1721's unchanged-stamp skip is never driven after a first read in one instance.\nSCORE fit: 19\nJUSTIFICATION fit: the merge keeps the surrounding comment style and the existing `_ledger_holds_content` and `index_state_stamp` calls at reckon/run_store.py:1724-1740, and names no plan or ticket.\nSCORE reuse: 20\nJUSTIFICATION reuse: the merge deletes this node's separate document read in favour of main's ledger.run_ids(..., use_index=False) at reckon/run_store.py:1740, so document membership keeps one owner (reckon/ledger.py) and the addition extends it rather than forking it.\nFINDING reckon/run_store.py:1721 non-blocking: the unchanged-stamp skip has no test that reads, changes the ledger, and reads again on the same RunStore instance, so a stamp recorded for a state it does not describe would leave stale rows while tests/test_the_run_store_retires_old_runs.py:171-190 (which opens the store after its change) stays green.\nFINDING manifest.md:11 non-blocking: the contract `tests:` line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the file the done_when measures, so promotion's gate receipt re-runs code the change cannot reach while the node's 19-passed all_debug job sits under node_test_log at manifest.md:13.\nReviewed run: r-20261118T044650649792-qwnw-red-file-the-run-store-retires-old-runs\nReviewed base: 11f45932e57708f9282c5db9438dd911fc99fe5f\nReviewed head: 3b70c635a7a2a99c19ea43da95ea36ae1c5d94c8\n",
+  "review_run_id": "r-20261119T091153946823-review-of-qwnw-red-file-the-run-store-retires-old-runs-3b70c635a7a2",
+  "reviewed_base_sha": "11f45932e57708f9282c5db9438dd911fc99fe5f",
+  "reviewed_head_sha": "3b70c635a7a2a99c19ea43da95ea36ae1c5d94c8",
+  "reviewed_run_id": "r-20261118T044650649792-qwnw-red-file-the-run-store-retires-old-runs",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T091153946823-review-of-qwnw-red-file-the-run-store-retires-old-runs-3b70c635a7a2"
+  },
+  "reviewer_run_id": "r-20261119T091153946823-review-of-qwnw-red-file-the-run-store-retires-old-runs-3b70c635a7a2",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:29:04.667866+00:00",
+  "total": 104
+}

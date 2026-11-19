@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7191ae15e776ab99300334a96cc53c71754c3acf",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3929 crew_complete calls _complete_many",
+    "reckon/crew_run_commands.py:3483 _complete_many single-run refusal excerpt"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:44:35Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-requires-impl-move.html",
+      "id": "f8c3b1ed81c",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log column cites each arm's log by bare basename with no directory, so a reader of the fragment cannot open any cited run, and the plan's done-when asks for the base run logged beside the head run under this directory while the logs live only under the run directory."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "id": "f11bd20f153",
+      "line": "3483",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new excerpt branch leaves the batch arm keeping 240 unasserted by any test, so a regression that widened a batch reply or truncated only the steps branch would redden nothing the node added."
+    },
+    {
+      "file": "tests/test_promotion_requires_impl_move.py",
+      "id": "f07709f804d",
+      "line": "687",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded base control reddens at its first assertion because the base test omitted --wait, not on the product defect, so the logged red does not evidence the truncation guard, which rests on a reading rather than an observed red."
+    }
+  ],
+  "head_log_revision": "96bade96e310f0254e30c71b26052d4acf362273",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified two production call sites: crew_complete's reply path calls _complete_many, and _complete_many is the function the diff edits; no other module reaches it.",
+    "diff": "read all three commits against base 7191ae15e7: 96bade96e3 sets excerpt to None for a single run and adds --wait and a terminal EXIT=0 fixture line, 5ded9e23e9 adds the fragment, and 50a83fbb10 adds the importer-population pair to it.",
+    "done_when": "the done_when asks for the named file passing in full as an all_debug job with each cause given a verdict, an importer arm adding no failure, and the base run's failing id logged beside the head run under the evidence directory; the head gate reads 24 passed EXIT=0 at 96bade96e3, the base control reads 1 failed 23 passed EXIT=1 at 7191ae15 with its failing id, and the importer arms read 20 failed 402 passed with identical ids at both revisions, but those logs live under the run directory rather than under docs/evidence/fragments/queued-work-needs-no-workaround/.",
+    "goal": "the node's goal is that tests/test_promotion_requires_impl_move.py passes in full at head; reckon/crew_run_commands.py:3483 repairs the completion reply and the test file's helper and fixture are corrected, and the head gate reads 24 passed EXIT=0 at 96bade96e310f0254e30c71b26052d4acf362273.",
+    "manifest": "read; status complete, commits 96bade96e3/5ded9e23e9/50a83fbb10, changed_paths the three landed files, tests the two-part gate command, test_logs naming the gate, control, suite and importer logs, baseline_suite and after_suite both 0 failures at full 40-character revisions, and negative_control_log naming the base control.",
+    "write_paths": "the declared paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment file, and the node's figure directory; the three-path diff is wholly inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_requires_impl_move.py:688 reddens if the 240-character cut returns, because the --no-impl-change remedy sits past index 267 of the message built at reckon/crew/promotion_checks.py:2371-2385, but the batch branch at reckon/crew_run_commands.py:3483 has no test at all.",
+    "evidence": "the manifest records 24 passed EXIT=0 in scoped-gate-1795007443538534498.log and 1 failed 23 passed EXIT=1 in negative-control-base-1795007505351486565.log, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-requires-impl-move.html:8 cites each log by basename with no directory and neither log records SLURM_JOB_ID being unset.",
+    "fit": "the comment at reckon/crew_run_commands.py:3479-3482 states the mechanism with no plan or run identifier, the excerpt name reads like the surrounding reply code, and the helper docstring at tests/test_promotion_requires_impl_move.py:633 names why the wait is required.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3483 carries a single run's refusal whole while a batch still compacts, and tests/test_promotion_requires_impl_move.py runs 24 passed EXIT=0 at 96bade96e3, so the named file passes in full.",
+    "reuse": "the change extends the existing owner _complete_many in place; a search over reckon for an excerpt or truncation helper found only reckon/_store.py:3753 _shorten and reckon/crew/recovery_memo.py:813, neither of which owns a completion-reply detail width.",
+    "scope_discipline": "git diff 7191ae15e776ab99300334a96cc53c71754c3acf..50a83fbb10d7b31ce65845c2a15900e93037c8bb touches exactly reckon/crew_run_commands.py, tests/test_promotion_requires_impl_move.py and the node's own evidence fragment, all inside the declared write paths, with no figure and no plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_promotion_requires_impl_move.py passes in full at head; reckon/crew_run_commands.py:3483 carries a single run's refusal whole while a batch still compacts, and the head gate reads 24 passed EXIT=0 at 96bade96e310f0254e30c71b26052d4acf362273.\nVERDICT done_when: the done_when asks for the named file passing in full as an all_debug job, each cause given a verdict, an importer arm adding no failure, and the base run's failing id logged beside the head run under docs/evidence/fragments/queued-work-needs-no-workaround/; scoped-gate-1795007443538534498.log reads 24 passed EXIT=0 at 96bade96e3, negative-control-base-1795007505351486565.log reads 1 failed 23 passed EXIT=1 at 7191ae15 with its failing id, and the importer arms read 20 failed 402 passed with identical ids, but the logs live under the run directory rather than the fragment directory.\nVERDICT write_paths: declared reckon, tests, the fragment directory and file, and the figure directory; git diff 7191ae15e776ab99300334a96cc53c71754c3acf..50a83fbb10d7b31ce65845c2a15900e93037c8bb touches only the fragment, reckon/crew_run_commands.py and tests/test_promotion_requires_impl_move.py, all inside them.\nVERDICT manifest: read; status complete, commits 96bade96e3/5ded9e23e9/50a83fbb10, the head gate and base control above, both suite arms 58 passed EXIT=0 at 7191ae15e7 and 96bade96e3, and negative_control_log naming the base control.\nVERDICT diff: read all three commits against base 7191ae15e7; 96bade96e3 sets excerpt to None for a single run and adds --wait and a terminal EXIT=0 fixture line, and the next two add only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:3929 crew_complete calls _complete_many, reckon/crew_run_commands.py:3483 _complete_many single-run refusal excerpt\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3483 carries a single run's refusal whole and tests/test_promotion_requires_impl_move.py reads 24 passed EXIT=0 at 96bade96e3.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795007443538534498.log reads 24 passed EXIT=0 and negative-control-base-1795007505351486565.log reads 1 failed 23 passed EXIT=1, while docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-requires-impl-move.html:8 cites the logs by basename only.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 7191ae15e7..50a83fbb10 is inside the declared write paths, and no figure or plan was touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_promotion_requires_impl_move.py:688 fails if the 240-character cut returns, since the remedy sits past index 267 of the message at reckon/crew/promotion_checks.py:2371-2385, but the batch branch at reckon/crew_run_commands.py:3483 has no test.\nSCORE fit: 19\nJUSTIFICATION fit: the comment at reckon/crew_run_commands.py:3479-3482 names the mechanism with no plan or run identifier, matching the surrounding reply code.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for a completion-reply excerpt exists; the search over reckon found reckon/_store.py:3753 _shorten and reckon/crew/recovery_memo.py:813, neither of which owns that width, and the batch and single-run arms share one helper.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-requires-impl-move.html:8 non-blocking: the log column cites each arm's log by bare basename with no directory, so a reader of the fragment cannot open any cited run, and the plan's done-when asks for the base run logged beside the head run under this directory while the logs live only under the run directory.\nFINDING reckon/crew_run_commands.py:3483 non-blocking: the new excerpt branch leaves the batch arm keeping 240 unasserted by any test, so a regression that widened a batch reply or truncated only the steps branch would redden nothing the node added.\nFINDING tests/test_promotion_requires_impl_move.py:687 non-blocking: the recorded base control reddens at its first assertion because the base test omitted --wait, not on the product defect, so the logged red does not evidence the truncation guard, which rests on a reading rather than an observed red.\n",
+  "review_run_id": "r-20261118T134155748271-review-of-qwnw-red-file-promotion-requires-impl-move-50a83fbb10d7",
+  "reviewed_base_sha": "7191ae15e776ab99300334a96cc53c71754c3acf",
+  "reviewed_head_sha": "50a83fbb10d7b31ce65845c2a15900e93037c8bb",
+  "reviewed_run_id": "r-20261118T062829437224-qwnw-red-file-promotion-requires-impl-move",
+  "reviewer_run_id": "r-20261118T134155748271-review-of-qwnw-red-file-promotion-requires-impl-move-50a83fbb10d7",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:10:16.458130+00:00",
+  "total": 112
+}

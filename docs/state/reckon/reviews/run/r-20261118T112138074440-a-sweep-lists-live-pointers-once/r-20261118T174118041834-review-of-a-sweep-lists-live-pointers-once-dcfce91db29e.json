@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T17:42:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the decode bound the section measures is asserted independently by the read count against 3 x 200; the caller census is a diagnostic aid whose self-consistency check adds no guard and removes none",
+      "recorded_at": "2026-11-18T18:21:51.542241+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "latent by the review's own account: the only reader of that branch takes the phase and launch stamps, never the pid; s96 rewrites the listing path and owns pointer reads from here",
+      "recorded_at": "2026-11-18T18:21:54.406332+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "s96 rewrites how a listing is read and is the place to own the sharing policy once; consolidating nine readers in this landing would widen a measured change beyond its section",
+      "recorded_at": "2026-11-18T18:21:57.193913+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_sweep_lists_live_pointers_once.py",
+      "line": 352,
+      "severity": "non-blocking",
+      "text": "the assertion sum(callers.values()) == reads.total() cannot fail, because the counted stand-in increments reads at line 117 and callers at line 125 in one body, so the accounted total is a property of the instrument and the census cannot report a mis-attributed read."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 916,
+      "severity": "non-blocking",
+      "text": "the snapshot branch returns the raw live row and so skips the station-pid strip in runs.read_pointer at reckon/crew/runs.py:1575-1589, so a scoped read of a station-launched review carries a pid the standalone reader drops; it is latent today because recovery_classification.py:876-881 reads only the phase and launch stamps."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 888,
+      "severity": "non-blocking",
+      "text": "the held-snapshot-else-list policy is copied into nine readers rather than owned by reckon/crew/open_run_index.py:36-64, so a future reader that omits the fallback silently loses the sharing while still passing its own tests."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a sweep's per-run checks answer from the live listing the sweep already holds; reckon/crew/resumption.py:2703 opens one held listing per sweep and :2761 consumes it, which is the deliverable as stated.\nVERDICT done_when: The done_when names tests/test_a_sweep_lists_live_pointers_once.py with 200 live pointers, a stand-in on the pointer read, a 3x200 ceiling and a 200x200 base control; the landed file asserts those at lines 214, 182, 239, 240 and 242, and negative-control.log records the base control as 85040 decodes for 200 pointers with EXIT=1.\nVERDICT write_paths: manifest.md:3 declares nine paths; the diff carries ten, and reckon/crew/resumption.py, reckon/crew/review.py and tests/test_fleet_state_reads_the_live_pointers_once.py lie outside that set, each required by the goal but none pre-declared.\nVERDICT manifest: manifest.md:5 reports complete at dcfce91db29e9b776ed16dd9d48091b4ec6a3ac2, :22 records after_suite 65 passed with exit_status 0, and the log it cites, after-suite-literal.log, ends with \"65 passed in 74.74s\" and a bare EXIT=0 line.\nVERDICT diff: Read all seven commits and their bodies, then the whole diff 250d9cf3..dcfce91db2: reckon/crew/open_run_index.py:36-110 gains a project-narrowed snapshot and a caller-supplied listing, eight per-run readers adopt it, and no writer or unrelated path changes.\nCALL_SITES: reckon/crew/resumption.py:sweep, reckon/crew/resumption.py:_claimed_write_paths, reckon/crew/obligations.py:_live_pointers, reckon/crew/routing.py:_live_pointer_worktrees, reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run, reckon/crew/recovery_review_dispatch.py:_review_in_flight, reckon/crew/recovery_review_dispatch.py:_standing_plan_review, reckon/crew/recovery_classification.py:_review_pointer, reckon/crew/review.py:recorded_suite_delta_waiver, reckon/crew/recovery_review_delivery.py:_resolved_reviewed_run_id\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:2761 hands the sweep its held listing and the eight per-run readers in CALL_SITES answer from it, which is the goal verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: The figure is recorded, not claimed: negative-control.log line 1 names revision 250d9cf3 and its summary line reads \"1 failed in 16.75s\" with EXIT=1, and after-suite-literal.log records \"65 passed\" with EXIT=0 at dcfce91db2.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: Three of ten changed files lie outside manifest.md:3 \u2014 reckon/crew/resumption.py:2703, reckon/crew/review.py:724 and tests/test_fleet_state_reads_the_live_pointers_once.py:265 \u2014 and each is required by the goal rather than incidental.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_sweep_lists_live_pointers_once.py:214 is a guard that fires \u2014 the same test red at 250d9cf3 with 85040 decodes for 200 pointers \u2014 and :291 fails if any reader lists again under a held snapshot.\nSCORE fit: 17\nJUSTIFICATION fit: The additions follow the module idiom: a ContextVar beside _READERS at reckon/crew/open_run_index.py:27-30, a partial-returning decorator at :92, and the local imports the module already documents for cycle avoidance.\nSCORE reuse: 16\nJUSTIFICATION reuse: Every added definition extends the owner in reckon/crew/open_run_index.py:36-110 and falls back to runs.list_live rather than re-reading the directory, but the fallback policy is copied into nine readers instead of being owned where the snapshot is (reckon/crew/obligations.py:888).\nFINDING tests/test_a_sweep_lists_live_pointers_once.py:352 non-blocking: the assertion sum(callers.values()) == reads.total() cannot fail, because the counted stand-in increments reads at line 117 and callers at line 125 in one body, so the accounted total is a property of the instrument and the census cannot report a mis-attributed read.\nFINDING reckon/crew/recovery_classification.py:916 non-blocking: the snapshot branch returns the raw live row and so skips the station-pid strip in runs.read_pointer at reckon/crew/runs.py:1575-1589, so a scoped read of a station-launched review carries a pid the standalone reader drops; it is latent today because recovery_classification.py:876-881 reads only the phase and launch stamps.\nFINDING reckon/crew/obligations.py:888 non-blocking: the held-snapshot-else-list policy is copied into nine readers rather than owned by reckon/crew/open_run_index.py:36-64, so a future reader that omits the fallback silently loses the sharing while still passing its own tests.\n",
+  "review_run_id": "r-20261118T174118041834-review-of-a-sweep-lists-live-pointers-once-dcfce91db29e",
+  "reviewed_base_sha": "250d9cf3e68ee9d9119f29956780bde9fe480a10",
+  "reviewed_head_sha": "dcfce91db29e9b776ed16dd9d48091b4ec6a3ac2",
+  "reviewed_run_id": "r-20261118T112138074440-a-sweep-lists-live-pointers-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:18:40.388619+00:00",
+  "total": 104
+}

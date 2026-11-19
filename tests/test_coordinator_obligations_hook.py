@@ -200,12 +200,18 @@ def _review_ready_run(
     run_id: str,
     node_id: str,
 ) -> Path:
-    """Record one completed review run, whose duty promotes that run's record.
+    """Record one ended review run that filed no record, so its duty stands.
 
     A review run's deliverable is the review it wrote, so a complete manifest
-    under the review role is promotable rather than scoring.
+    under the review role is promotable rather than scoring. The duty is shown
+    for the run's own delivery refusal, not for the run's completion: a review
+    whose supervisor has recorded no exit is still producing its record, and a
+    delivery still coming is left to the automatic promoter and listed nowhere.
+    The supervisor's exit receipt is therefore staged with the run, which makes
+    it ended -- and, with no stored record behind it, refused -- so the duty the
+    coordinator reads is the one this case is about.
     """
-    return _live_run(
+    manifest = _live_run(
         repository,
         tmp_path,
         run_id=run_id,
@@ -213,6 +219,12 @@ def _review_ready_run(
         status="complete",
         role="review",
     )
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "exit.json").write_text(
+        json.dumps({"run_id": run_id, "exit_code": 0}), encoding="utf-8"
+    )
+    return manifest
 
 
 def _scoring_run(
@@ -301,8 +313,11 @@ def _retained_worktrees(repository: Path, tmp_path: Path, count: int) -> None:
     """Promote runs whose retained worktrees are still registered.
 
     Every row names its own tree and its own retention instant, so the derived
-    items are distinct runs while the remedy they are answered by is one shared
-    command.
+    items are distinct runs while the remedy each row carries is a sweep
+    confined to that row's own run. Each tree is left holding a commit its
+    primary branch does not reach, because that is the question the duty view
+    asks of a retained tree: a clean tree whose head main already reaches holds
+    nothing a collection would lose, so it is not a duty at all.
     """
     now = datetime.now(tz=UTC)
     trees = tmp_path / "managed-worktrees" / SESSION
@@ -312,6 +327,9 @@ def _retained_worktrees(repository: Path, tmp_path: Path, count: int) -> None:
         node_id = f"held-node-{index:02d}"
         tree = trees / node_id
         _git(repository, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+        (tree / f"held-node-{index:02d}.txt").write_text("work\n", encoding="utf-8")
+        _git(tree, "add", f"held-node-{index:02d}.txt")
+        _git(tree, "commit", "-q", "-m", f"test: leave work in {node_id}")
         retained_at = (
             now - timedelta(seconds=HELD_OLDEST_AGE - index * HELD_AGE_STEP)
         ).isoformat()
@@ -805,12 +823,14 @@ def test_each_held_worktree_keeps_its_own_run_scoped_line(
 def test_two_review_ready_items_carry_their_own_run_command(
     repository: Path, tmp_path: Path
 ) -> None:
-    """Each completed review run's duty names its own run and keeps its line.
+    """Each ended review run's duty names its own run and keeps its line.
 
-    A review run's remedy is the promotion of that run's own record, so the
+    A review run's remedy is the completion of that run's own record, so the
     command names the run. Two reviews therefore carry two different commands
     and there is nothing for a shared-command collapse to fold, so each keeps
-    its own line carrying its own run id and its own command.
+    its own line carrying its own run id and its own command. Both runs have
+    ended without filing the record they owed, which is the state a coordinator
+    is shown: a delivery still coming is left to the automatic promoter.
     """
     _review_ready_run(repository, tmp_path, run_id=FIRST_RUN_ID, node_id=FIRST_NODE_ID)
     _review_ready_run(
@@ -833,7 +853,9 @@ def test_two_review_ready_items_carry_their_own_run_command(
     )
     for run_id in (FIRST_RUN_ID, SECOND_RUN_ID):
         line = next(item for item in review if item.split()[2] == run_id)
-        assert line.endswith(f"reckon crew observe --run {run_id}"), line
+        assert line.endswith(
+            f"reckon crew complete --run {run_id} --gate not-run --wait"
+        ), line
     assert lines[0].startswith(
         f"reckon obligations for session {SESSION} (project {PROJECT}): "
         "2 outstanding, oldest "

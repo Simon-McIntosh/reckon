@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-concurrent-dispatch-of-one-node-landing">
+  <h2>A test file red on the primary branch that is already green</h2>
+
+  <p><strong>What was measured.</strong>
+  <code>tests/test_concurrent_dispatch_of_one_node.py</code> was run at the base
+  revision <code>5417b373ff9230f07c1c8f403632835808fffc15</code> before any change
+  to this tree, as the named check requires: the file's eight cases execute as a
+  job on <code>all_debug</code>, in a fresh extraction of that revision, with its
+  output on shared storage. The run is <strong>8 passed</strong> and
+  <code>EXIT=0</code>, so there are no failing ids and no cause to repair.</p>
+
+  <p><strong>Why it is green.</strong> The interleaving the file covers — two dispatches
+  of one node resolving to one worktree path — was already repaired on the
+  primary branch before this node started, by the claim file taken before the
+  worktree is cut and the reclamation of a claim whose holder is gone or whose
+  pid now names another process
+  (<code>949ffbfd15</code>, <code>414233c8ee</code>, <code>d204648779</code>,
+  <code>db035df36d</code>, then the real-home guard migration
+  <code>410d7b48d7</code>). Later work on <code>reckon/crew/dispatch.py</code> has
+  kept the file green: the same eight cases pass on the node's own checkout in
+  three consecutive local runs, and the all_debug run carries no failure.</p>
+
+  <p><strong>Environment note.</strong> A measurement job submitted through the
+  gate re-enters the worker fence on the batch node, and the gate's own
+  submission sets <code>TMPDIR=/tmp</code>; the carried fence recipe binds
+  <code>/tmp</code> over <code>/tmp</code> in the task, and <code>bwrap</code>
+  then fails before the command starts with
+  <code>Can't bind mount /oldroot/tmp/auto…: No such file or directory</code>.
+  The measurement log is left empty and the gate reports
+  <code>exit_status 3</code> with <em>carries no exit receipt</em>. The same
+  submission with <code>RECKON_WORKER_FENCE</code> gone from the submitting
+  shell starts the task normally, and every arm below was measured that way. The
+  task writes only its log under this run's directory, so nothing outside the
+  grant was touched.</p>
+
+  <table id="qwnw-red-file-concurrent-dispatch-of-one-node-arms">
+    <caption>Each arm is a log whose header names its revision.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the file at the base revision, local</td>
+        <td><code>5417b373ff</code></td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the file at the base revision, as a job on all_debug</td>
+        <td><code>5417b373ff</code></td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the file at head, as a job on all_debug</td>
+        <td><code>14edbe0fd4</code></td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite arm, base</td>
+        <td><code>5417b373ff</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite arm, after</td>
+        <td><code>14edbe0fd4</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>No repair.</strong> Nothing in <code>reckon/</code> or
+  <code>tests/</code> changed: no product rule broke, and no test encodes a rule
+  the code keeps no failing. The node therefore delivers the passing runs and
+  this record. No assertion was deleted or weakened, and no product or test file
+  is part of its diff.</p>
+
+  <p><strong>The neighbourhood arm.</strong> An arm over the test files that import what
+  the node changed has nothing to resolve, because the node changes no module: both
+  arms of the declared suite were measured in a fresh extraction at
+  <code>5417b373ff</code> and at <code>14edbe0fd4</code>, each 58 passed with
+  <code>EXIT=0</code>. Those are the recorded arms, carrying both full revisions.</p>
+
+  <p><strong>Negative control.</strong> The base run of the named file, which is
+  the positive-run record this node needs on both arms, carries no failing ids
+  because the file is green there. A red arm cannot exist for a file that does
+  not fail, so the negative control for this node is
+  <code>none: the file passes at base 5417b373ff with 8 passed, so no failing ids exist to show</code>.</p>
+</section>

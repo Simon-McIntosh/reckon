@@ -1,0 +1,162 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert \"bounded\" in verdict.failed_properties",
+      "fails_if": "The refusal block at reckon/crew/node.py:1560 is removed and validate_node returns to the note-only rule, leaving failed_properties empty for a 90m budget against a 25m ceiling.",
+      "file": "tests/test_crew.py",
+      "line": 403,
+      "test": "tests/test_crew.py::test_a_budget_over_the_fence_needs_a_reason_and_records_it"
+    },
+    {
+      "assertion": "assert \"bounded\" not in verdict.failed_properties",
+      "fails_if": "The refusal fires even when over_fence_reason is set, so a stated reason no longer admits the node.",
+      "file": "tests/test_crew.py",
+      "line": 408,
+      "test": "tests/test_crew.py::test_a_budget_over_the_fence_needs_a_reason_and_records_it"
+    },
+    {
+      "assertion": "assert node.over_fence_note == \"budget 90m exceeds the resolved fence 25m\"",
+      "fails_if": "validate_node stops computing the over-fence note while still refusing, so the run record loses the fact the refusal is about.",
+      "file": "tests/test_crew.py",
+      "line": 404,
+      "test": "tests/test_crew.py::test_a_budget_over_the_fence_needs_a_reason_and_records_it"
+    },
+    {
+      "assertion": "assert result.exit_code != 0, result.output",
+      "fails_if": "The fence refusal is removed from validate_node, so a 240m budget against the fixture's 2h ceiling dispatches with exit code 0.",
+      "file": "tests/test_over_fence_budget_recorded_not_refused.py",
+      "line": 102,
+      "test": "tests/test_over_fence_budget_recorded_not_refused.py::test_dispatch_refuses_a_budget_past_the_fence_with_no_reason"
+    },
+    {
+      "assertion": "assert \"--over-fence\" in payload[\"detail\"], payload",
+      "fails_if": "The refusal stops naming the option that clears it, leaving a coordinator with no stated remedy.",
+      "file": "tests/test_over_fence_budget_recorded_not_refused.py",
+      "line": 106,
+      "test": "tests/test_over_fence_budget_recorded_not_refused.py::test_dispatch_refuses_a_budget_past_the_fence_with_no_reason"
+    },
+    {
+      "assertion": "assert result[\"queued\"] == 0, result",
+      "fails_if": "The batch path stops reading validate_node's findings, so an over-fence entry with no reason is queued instead of refused.",
+      "file": "tests/test_over_fence_budget_recorded_not_refused.py",
+      "line": 135,
+      "test": "tests/test_over_fence_budget_recorded_not_refused.py::test_batch_refuses_a_budget_past_the_fence_with_no_reason"
+    },
+    {
+      "assertion": "assert \"--over-fence\" in detail, detail",
+      "fails_if": "The batch refusal detail stops naming the option a coordinator must state.",
+      "file": "tests/test_over_fence_budget_recorded_not_refused.py",
+      "line": 139,
+      "test": "tests/test_over_fence_budget_recorded_not_refused.py::test_batch_refuses_a_budget_past_the_fence_with_no_reason"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value against a fixture the test itself passed in: both refused arms assert on validate_node's findings and the CLI exit code, and the admitted arm asserts a literal note. The pre-existing _assert_record roundtrip at tests/test_over_fence_budget_recorded_not_refused.py:38-40 echoes the reason the test supplied, but it still fails when the dispatch path drops it, and this diff does not add it.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:840 -> validate_node(budget_ceiling=budget_ceiling)",
+    "reckon/crew/dispatching/requests.py:253 -> validate_node(budget_ceiling=ceiling)",
+    "reckon/crew/queue_edit.py:292 -> validate_node(budget_ceiling=resolved_time_ceiling(config))"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T16:10:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "292",
+      "severity": "non-blocking",
+      "text": "non-blocking: this call site now refuses a queued request whose budget is raised above the fence with the advice 'pass --over-fence REASON' from reckon/crew/node.py:1563, but 'crew queue edit' declares no such option (reckon/crew_run_commands.py:3113), so a node queued under the fence can no longer be raised above it except by re-queuing."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1560",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added refusal restates the over-fence rule that reckon/crew_run_commands.py:2501 already implements for resume, with its own comparison and its own wording, so the fence policy now has two implementations that can drift."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-goal-contract-lint.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm records a '# partition: all_debug' line and the command 'PYTHONPATH=. .venv/bin/python -m pytest ...', while the log it is drawn from (scoped-gate-1795012003560528920.log) carries no partition line and its '# command:' header is the 'env PYTHONPATH=. sh -c ...' wrapper, so the record and its log do not reconcile without the reader inferring the difference."
+    },
+    {
+      "file": "tests/test_over_fence_budget_recorded_not_refused.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module name still says 'recorded_not_refused' after the file was rewritten to pin the refusal, so a reader searching by filename for the refusing arm finds a name that contradicts the tests it now holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit against 23b9016: 25eb92c adds the refusal at reckon/crew/node.py:1560, f8e1b5d splits the over-fence test arms and adds the evidence fragment, and 540da6a corrects the fragment's cited head revision; five files, all inside the declared scope.",
+    "done_when": "The done_when requires the full file green at head on all_debug, the base failing ids logged in the evidence fragment beside the head run, suite arms with full 40-character revisions, and nothing new from ruff; the manifest records the 10-passed head arm, the 1-failed base arm and both suite arms at zero failures.",
+    "goal": "The source node's goal is that tests/test_goal_contract_lint.py pass in full; the head arm scoped-gate-1795012228472373411.log reports 10 passed at 540da6aaf94cacb92ecabbe18d1e631c81bf1230, so the delivered change meets it.",
+    "manifest": "The source run's manifest.md cites scoped-gate-1795012228472373411.log as 10 passed with EXIT=0, negative-control-base.log as 1 failed with EXIT=1, both suite arms at zero failures with full revisions, and three commit ids.",
+    "write_paths": "The source pointer declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every path in the base-to-head diff lies inside that scope and nothing outside it changed."
+  },
+  "justifications": {
+    "durability": "Removing reckon/crew/node.py:1560 reddens tests/test_crew.py:403 and tests/test_over_fence_budget_recorded_not_refused.py:102, and the pre-existing tests/test_a_budget_may_exceed_its_fence_with_a_reason.py arms are red at base and green at head.",
+    "evidence": "negative-control-base.log and scoped-gate-1795012228472373411.log record EXIT=1 and EXIT=0 against full revisions, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-goal-contract-lint.html:13 asserts a partition header its cited log lacks.",
+    "fit": "The added block follows the fail('bounded', ...) idiom at reckon/crew/node.py:1552, but tests/test_over_fence_budget_recorded_not_refused.py:1 keeps a filename whose claim the new tests invert.",
+    "goal_fidelity": "scoped-gate-1795012228472373411.log ends '10 passed in 0.33s' at the reviewed head, so reckon/crew/node.py:1560 supplies the refusal the goal's failing pace row asserts.",
+    "reuse": "reckon/crew/node.py:1560 restates the over-fence refusal implemented at reckon/crew_run_commands.py:2501 instead of extending it, leaving one policy in two places.",
+    "scope_discipline": "Every path in 23b9016..540da6a is inside the declared write paths, and the only production edit is reckon/crew/node.py:1556-1565."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is that tests/test_goal_contract_lint.py pass in full; scoped-gate-1795012228472373411.log reports 10 passed at 540da6aaf94cacb92ecabbe18d1e631c81bf1230, so the delivered change meets it.\nVERDICT done_when: The done_when requires the full file green at head on all_debug, the base failing ids logged in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-goal-contract-lint.html beside the head run, suite arms with full 40-character revisions and nothing new from ruff; the manifest records the 10-passed head arm, the 1-failed base arm and both suite arms at zero failures.\nVERDICT write_paths: The source pointer declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; every path in the base-to-head diff lies inside that scope and nothing outside it changed.\nVERDICT manifest: Read; the source run's manifest.md cites scoped-gate-1795012228472373411.log as 10 passed with EXIT=0, negative-control-base.log as 1 failed with EXIT=1, both suite arms at zero failures with full revisions, and three commit ids.\nVERDICT diff: Read commit by commit against 23b9016: 25eb92c adds the refusal at reckon/crew/node.py:1560, f8e1b5d splits the over-fence test arms and adds the evidence fragment, and 540da6a corrects the fragment's cited head revision; five files, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_plan.py:840, reckon/crew/dispatching/requests.py:253, reckon/crew/queue_edit.py:292\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: scoped-gate-1795012228472373411.log ends \"10 passed in 0.33s\" at the reviewed head, so reckon/crew/node.py:1560 supplies the refusal the goal's failing pace row asserts.\nSCORE evidence: 17\nJUSTIFICATION evidence: negative-control-base.log and scoped-gate-1795012228472373411.log record EXIT=1 and EXIT=0 against full revisions, but docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-goal-contract-lint.html:13 asserts a partition header its cited log lacks.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 23b901694b4bfec73d95be3a082d4c336d9a4101..540da6aaf94cacb92ecabbe18d1e631c81bf1230 lies inside the declared write paths, and the only production edit is reckon/crew/node.py:1556-1565.\nSCORE durability: 18\nJUSTIFICATION durability: removing reckon/crew/node.py:1560 reddens tests/test_crew.py:403 and tests/test_over_fence_budget_recorded_not_refused.py:102, and the pre-existing tests/test_a_budget_may_exceed_its_fence_with_a_reason.py arms are red at base and green at head.\nSCORE fit: 16\nJUSTIFICATION fit: the added block follows the fail(\"bounded\", ...) idiom at reckon/crew/node.py:1552, but tests/test_over_fence_budget_recorded_not_refused.py:1 keeps a filename whose claim the new tests invert.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/node.py:1560 restates the over-fence refusal implemented at reckon/crew_run_commands.py:2501 instead of extending it, leaving one policy in two implementations.\nFINDING reckon/crew/queue_edit.py:292 non-blocking: this call site now refuses a queued request whose budget is raised above the fence with the advice \"pass --over-fence REASON\" from reckon/crew/node.py:1563, but crew queue edit declares no such option (reckon/crew_run_commands.py:3113), so a node queued under the fence can no longer be raised above it except by re-queuing.\nFINDING reckon/crew/node.py:1560 non-blocking: the added refusal restates the over-fence rule that reckon/crew_run_commands.py:2501 already implements for resume, with its own comparison and its own wording, so the fence policy now has two implementations that can drift.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-goal-contract-lint.html:13 non-blocking: the head arm records a \"# partition: all_debug\" line and the command \"PYTHONPATH=. .venv/bin/python -m pytest ...\", while the log it is drawn from (scoped-gate-1795012003560528920.log) carries no partition line and its \"# command:\" header is the \"env PYTHONPATH=. sh -c ...\" wrapper, so the record and its log do not reconcile without the reader inferring the difference.\nFINDING tests/test_over_fence_budget_recorded_not_refused.py:1 non-blocking: the module name still says recorded_not_refused after the file was rewritten to pin the refusal, so a reader searching by filename for the refusing arm finds a name that contradicts the tests it now holds.\n",
+  "reuse_search": {
+    "capabilities": [
+      "refuse a time budget above the resolved fence unless a reason is stated",
+      "resolve the time ceiling from project configuration",
+      "record an over-fence note on a node"
+    ],
+    "judgement": "validate_node already owned the ceiling comparison and the note, so the refusal belongs there; the same predicate is nevertheless implemented a second time for resume at reckon/crew_run_commands.py:2501 and this change did not extend that owner.",
+    "owners_opened": [
+      "reckon/crew_run_commands.py:2501",
+      "reckon/crew/node.py:1540"
+    ]
+  },
+  "review_run_id": "r-20261118T144730801883-review-of-qwnw-red-file-goal-contract-lint-540da6aaf94c",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "540da6aaf94cacb92ecabbe18d1e631c81bf1230",
+  "reviewed_run_id": "r-20261118T062937896622-qwnw-red-file-goal-contract-lint",
+  "reviewed_worker_commits": [
+    "25eb92c7709383e2baf74e8a907abcc6b6b1208c",
+    "f8e1b5d011fa26787179346610688c2d79de5100",
+    "540da6aaf94cacb92ecabbe18d1e631c81bf1230"
+  ],
+  "scope_provenance": "The reviewed range 23b9016..540da6a contains exactly the three worker commits listed, whose first parent is the base revision.",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062937896622-qwnw-red-file-goal-contract-lint/after_suite-540da6a.log",
+      "revision": "540da6aaf94cacb92ecabbe18d1e631c81bf1230"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062937896622-qwnw-red-file-goal-contract-lint/baseline_suite-23b9016b.log",
+      "revision": "23b901694b4bfec73d95be3a082d4c336d9a4101"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T16:53:18.094583+00:00",
+  "total": 104
+}

@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: baseline_suite records 58 passed with no FAILED line at 96e3c4b8a3957e2624866e0dc773042892239333 and after_suite records 59 passed with no FAILED line at 19e85cef66b1599f2d175f34bd62b4f1639651a8, so the set difference is empty (0).",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/runs.py:1801 (list_live calls _list_live_records through the cache)",
+    "reckon/crew/runs.py:3921",
+    "reckon/crew/recovery_watch.py:3214",
+    "reckon/crew/recovery_review_dispatch.py:4032",
+    "reckon/crew/admission/holds.py:513",
+    "reckon/crew/watch_unit.py:342",
+    "reckon/crew/claims.py:288 (read_pointer)",
+    "reckon/crew/dispatch_launch.py:193 (read_pointer)",
+    "reckon/crew/admission/launching.py:496 (read_pointer)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T20:08:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1482",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_pointer_record` re-implements the parse-once-per-stat-identity memo that reckon/file_memo.py:362 `memoized` owns and that crew callers already use (reckon/crew/review.py:653, reckon/crew/recovery_wait.py:310, reckon/crew/recovery_review_acceptance.py:1049), including its deep-copied hand-out, so the repository now holds two caches for one capability with no test keeping the two in step."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1506",
+      "severity": "non-blocking",
+      "text": "non-blocking: the unchanged path walks every record with `copy.deepcopy` on each listing, which on my own measurement of record-shaped documents (1.8 KB, 13 KB, 30 KB) costs 1.7-2.0 times the `json.loads` it replaces (0.023/0.133/0.328 ms against 0.014/0.071/0.164 ms), so the decode count falls to zero as the done_when requires while the section's stated purpose \u2014 `list_live` at 18.6% of station samples, decode at 24% self time \u2014 is left unmeasured and, at these sizes, traded for a costlier Python-level copy."
+    },
+    {
+      "file": "tests/test_an_unchanged_live_listing_decodes_nothing.py",
+      "line": "96",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert second == first` compares two listings both produced by the code under test, so it holds for any deterministic listing and carries no force of its own; what the second listing is actually held to is line 89's independent comparison of `first` with the files' own decode, which makes this line redundant rather than a guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read both commits against 96e3c4b \u2014 24d2e7a426 adds the record cache, `_pointer_record`, and the test (runs.py +53/-6, test +118), and 19e85cef66 rewrites only the cache comment (runs.py +6/-8); nothing outside the two declared code paths changed and no behavioural change came with the second commit.",
+    "done_when": "the done_when asks for 300 live pointers, zero decodes on an unchanged second listing, at most two after one rewrite plus one addition plus one removal, every listing equal to the base revision's, and a caller-mutated record returned unmutated next time; tests/test_an_unchanged_live_listing_decodes_nothing.py:93,110,89,114,117-118 assert exactly those five, and negative-control-base.txt shows the same test reddening at 96e3c4b with \"an unchanged listing decoded 300 pointers\", so the gate asserts the stated measure.",
+    "goal": "the node's goal is that a listing whose pointers have not moved decodes none of them; reckon/crew/runs.py:1482 `_pointer_record` keeps the record decoded from a pointer's reduced text in `_POINTER_TEXT` under the pointer's stat identity and returns it without a second `json.loads`, and both readers of the cache call it \u2014 `read_pointer` at runs.py:1655 and `_list_live_records` at runs.py:1710 \u2014 so the goal is implemented as stated.",
+    "manifest": "read; it records status complete, head gate 1 passed EXIT=0 at 19e85cef (gate-head.txt), arms 58 passed at base and 59 at head (baseline_suite-1795031850290123439.log, after_suite-1795031925563504636.log), and a red control at base with one FAILED id; every log it names exists and its tail carries the recorded EXIT.",
+    "write_paths": "read the declared scope (reckon/crew/runs.py, tests/test_an_unchanged_live_listing_decodes_nothing.py, the evidence fragment and figures directory for this section) against the delivered diff; both changed files are declared paths, and the fragment and figures paths are declared but unused."
+  },
+  "justifications": {
+    "durability": "restoring the base's unconditional `data = json.loads(_pointer_text(path))` in place of the fast path at reckon/crew/runs.py:1504-1506 reddens tests/test_an_unchanged_live_listing_decodes_nothing.py:93, and returning the kept record instead of `copy.deepcopy` reddens lines 117-118.",
+    "evidence": "gate-head.txt records 1 passed EXIT=0 at 19e85cef for tests/test_an_unchanged_live_listing_decodes_nothing.py and negative-control-base.txt records the same test EXIT=1 at 96e3c4b, but the two arm files (tests/test_staged_write_inventory.py:11, tests/test_every_shared_home_lock_holds_across_nodes.py:30) import only reckon.interface_counts and so do not import the changed module the done_when names as the matched-arm population.",
+    "fit": "`import copy as copy` follows the alias idiom above reckon/crew/runs.py:3 and `_pointer_record` mirrors `_pointer_text`, but runs.py:1482 types its return as `Any` where the neighbouring readers type theirs precisely.",
+    "goal_fidelity": "reckon/crew/runs.py:1504-1506 returns the kept record when the pre-stat identity matches and runs.py:1710 decodes only on a miss, which is the goal's \"decodes none of them\".",
+    "reuse": "the memoise-a-parse-per-stat-identity-with-a-copied-hand-out capability is owned by reckon/file_memo.py:362 and already used from reckon/crew/review.py:653, so reckon/crew/runs.py:1482-1512 re-implements it inside another cache rather than extending that owner.",
+    "scope_discipline": "the diff touches only reckon/crew/runs.py and tests/test_an_unchanged_live_listing_decodes_nothing.py, both declared, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a listing whose pointers have not moved decodes none of them; reckon/crew/runs.py:1482 `_pointer_record` keeps the record decoded from a pointer's reduced text in `_POINTER_TEXT` under the pointer's stat identity and returns it without a second `json.loads`, and both readers of the cache call it \u2014 `read_pointer` at runs.py:1655 and `_list_live_records` at runs.py:1710 \u2014 so the goal is implemented as stated.\nVERDICT done_when: the done_when asks for 300 live pointers, zero decodes on an unchanged second listing, at most two after one rewrite plus one addition plus one removal, every listing equal to the base revision's, and a caller-mutated record returned unmutated next time; tests/test_an_unchanged_live_listing_decodes_nothing.py:93,110,89,114,117-118 assert exactly those five, and negative-control-base.txt shows the same test reddening at 96e3c4b with \"an unchanged listing decoded 300 pointers\", so the gate asserts the stated measure.\nVERDICT write_paths: read the declared scope (reckon/crew/runs.py, tests/test_an_unchanged_live_listing_decodes_nothing.py, the evidence fragment and figures directory for this section) against the delivered diff; both changed files are declared paths, and the fragment and figures paths are declared but unused.\nVERDICT manifest: read; it records status complete, head gate 1 passed EXIT=0 at 19e85cef (gate-head.txt), arms 58 passed at base and 59 at head (baseline_suite-1795031850290123439.log, after_suite-1795031925563504636.log), and a red control at base with one FAILED id; every log it names exists and its tail carries the recorded EXIT.\nVERDICT diff: read both commits against 96e3c4b \u2014 24d2e7a426 adds the record cache, `_pointer_record`, and the test (runs.py +53/-6, test +118), and 19e85cef66 rewrites only the cache comment (runs.py +6/-8); nothing outside the two declared code paths changed and no behavioural change came with the second commit.\nCALL_SITES: reckon/crew/runs.py:1801 (list_live calls _list_live_records through the cache), reckon/crew/runs.py:3921, reckon/crew/recovery_watch.py:3214, reckon/crew/recovery_review_dispatch.py:4032, reckon/crew/admission/holds.py:513, reckon/crew/watch_unit.py:342, reckon/crew/claims.py:288 (read_pointer), reckon/crew/dispatch_launch.py:193 (read_pointer), reckon/crew/admission/launching.py:496 (read_pointer)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1504-1506 returns the kept record when the pre-stat identity matches and runs.py:1710 decodes only on a miss, which is the goal's \"decodes none of them\".\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.txt records 1 passed EXIT=0 at 19e85cef for tests/test_an_unchanged_live_listing_decodes_nothing.py and negative-control-base.txt records the same test EXIT=1 at 96e3c4b, but the two arm files (tests/test_staged_write_inventory.py:11, tests/test_every_shared_home_lock_holds_across_nodes.py:30) import only reckon.interface_counts and so do not import the changed module the done_when names as the matched-arm population.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/runs.py and tests/test_an_unchanged_live_listing_decodes_nothing.py, both declared, and adds nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the base's unconditional `data = json.loads(_pointer_text(path))` in place of the fast path at reckon/crew/runs.py:1504-1506 reddens tests/test_an_unchanged_live_listing_decodes_nothing.py:93, and returning the kept record instead of `copy.deepcopy` reddens lines 117-118.\nSCORE fit: 16\nJUSTIFICATION fit: `import copy as copy` follows the alias idiom above reckon/crew/runs.py:3 and `_pointer_record` mirrors `_pointer_text`, but runs.py:1482 types its return as `Any` where the neighbouring readers type theirs precisely.\nSCORE reuse: 5\nJUSTIFICATION reuse: the memoise-a-parse-per-stat-identity-with-a-copied-hand-out capability is owned by reckon/file_memo.py:362 and already used from reckon/crew/review.py:653, so reckon/crew/runs.py:1482-1512 re-implements it inside another cache rather than extending that owner.\nFINDING reckon/crew/runs.py:1482 non-blocking: `_pointer_record` re-implements the parse-once-per-stat-identity memo that reckon/file_memo.py:362 `memoized` owns and that crew callers already use (reckon/crew/review.py:653, reckon/crew/recovery_wait.py:310, reckon/crew/recovery_review_acceptance.py:1049), including its deep-copied hand-out, so the repository now holds two caches for one capability with no test keeping the two in step.\nFINDING reckon/crew/runs.py:1506 non-blocking: the unchanged path walks every record with `copy.deepcopy` on each listing, which on my own measurement of record-shaped documents (1.8 KB, 13 KB, 30 KB) costs 1.7-2.0 times the `json.loads` it replaces (0.023/0.133/0.328 ms against 0.014/0.071/0.164 ms), so the decode count falls to zero as the done_when requires while the section's stated purpose \u2014 `list_live` at 18.6% of station samples, decode at 24% self time \u2014 is left unmeasured and, at these sizes, traded for a costlier Python-level copy.\nFINDING tests/test_an_unchanged_live_listing_decodes_nothing.py:96 non-blocking: `assert second == first` compares two listings both produced by the code under test, so it holds for any deterministic listing and carries no force of its own; what the second listing is actually held to is line 89's independent comparison of `first` with the files' own decode, which makes this line redundant rather than a guard.",
+  "review_node": "review-of-an-unchanged-live-listing-decodes-nothing-19e85cef66b1",
+  "review_run_id": "r-20261118T200331029792-review-of-an-unchanged-live-listing-decodes-nothing-19e85cef66b1",
+  "reviewed_base_sha": "96e3c4b8a3957e2624866e0dc773042892239333",
+  "reviewed_head_sha": "19e85cef66b1599f2d175f34bd62b4f1639651a8",
+  "reviewed_run_id": "r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T200331029792-review-of-an-unchanged-live-listing-decodes-nothing-19e85cef66b1"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T20:39:53.359523+00:00",
+  "total": 95
+}

@@ -1,0 +1,65 @@
+<section id="qwnw-red-file-one-reader-of-remaining-work-landing">
+  <h2>One reader of remaining work passes in full</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_one_reader_of_remaining_work.py</code>
+  read 1 failed and 26 passed at the base revision. The failing case,
+  <code>test_run_comment_prefix_has_one_owner</code>, scans every
+  <code>*.py</code> file of the package for the run-comment prefix literal and
+  requires exactly one owner: <code>reckon/crew/plan_review.py</code>, which
+  defines <code>RUN_COMMENT_PREFIX</code>. A docstring added to the evidence
+  reader on 15 November spelled that literal itself, beside the import of the
+  constant it already uses, so the package held a second spelling of the value
+  that would drift if the prefix moved.</p>
+
+  <p><strong>Verdict: product wrong.</strong> The rule the test asserts is the
+  one the codebase keeps — the prefix is written once, at its owner, and every
+  other module imports it. <code>reckon/evidence.py</code> broke it by quoting
+  the value in prose. The repair states the rule without the value: "the bare
+  prefix names every review of a run as well as its landing, so matching the
+  prefix alone would quote a review as the landing." No assertion was deleted
+  or weakened, and the test file is unchanged.</p>
+
+  <h3 id="qwnw-red-file-one-reader-of-remaining-work-arms">Measured</h3>
+
+  <p>Each arm is a log whose first lines name the revision, tree and command
+  and whose last line reads <code>EXIT=&lt;code&gt;</code>. The head gate ran as
+  a batch job on <code>all_debug</code> from an environment with every
+  <code>SLURM_*</code> variable removed at submission
+  (<code>landing_measure.partition_submission</code>), and its log is on shared
+  storage under the run directory.</p>
+
+  <table id="qwnw-red-file-one-reader-of-remaining-work-runs">
+    <caption>The named file at the base revision, beside its head run.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control — the named file, base extraction</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>1 failed, 26 passed, <code>EXIT=1</code>;
+          <code>tests/test_one_reader_of_remaining_work.py::test_run_comment_prefix_has_one_owner</code></td></tr>
+      <tr><td>head — the named file, <code>all_debug</code> job</td>
+        <td><code>0fccaf7580b658fac453916ac8124f6c87f76611</code></td>
+        <td>27 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importer arm, base extraction</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>3 failed, 143 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>importer arm, head</td>
+        <td><code>0fccaf7580b658fac453916ac8124f6c87f76611</code></td>
+        <td>3 failed, 143 passed, <code>EXIT=1</code> — the same three ids, 0 added</td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>23b901694b4bfec73d95be3a082d4c336d9a4101</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, after arm</td>
+        <td><code>0fccaf7580b658fac453916ac8124f6c87f76611</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="qwnw-red-file-one-reader-of-remaining-work-importer-ids">The importer
+  arm covers the sixteen test files that import <code>reckon.evidence</code>.
+  Its three failures are identical in both arms, so the change adds none:
+  <code>tests/test_section_spelling_grammars_share_one_core.py::test_number_grammar_census_has_six_composed_frames</code>,
+  <code>tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat</code>,
+  <code>tests/test_a_closing_plan_gets_one_sourced_overview.py::test_control_one_row_per_run_fails_the_attempt_case</code>.
+  They are outside this node's declared scope and are reported as such rather
+  than triaged here.</p>
+</section>

@@ -899,6 +899,61 @@ def stored_run_rows(
         connection.close()
 
 
+def stored_run_signature(
+    project: str,
+    *,
+    path: str | Path | None = None,
+) -> tuple[tuple[Any, ...], ...] | None:
+    """Each stored row's identity, indexed columns and encoded size.
+
+    A reader that already holds a project's decoded history answers its next
+    read from what it holds, decoding only the rows this signature differs
+    from. One metadata row per stored run carries what a write moves: the
+    rowid an insert takes, every column the store indexes, the revision a
+    backfill stamps, and the encoded size of both halves of the record. No
+    payload is decoded, so comparing the whole of a project's history costs the
+    store's own page reads rather than one parse per run.
+
+    The comparison is a token, not an answer: a rewrite in place that moves no
+    indexed column and encodes to the same number of bytes does not appear
+    here. That is why :func:`reckon.ledger.stored_history` also watches the
+    project's write generation and refreshes a signature that moves without
+    showing a change.
+
+    None distinguishes an absent store from one holding no runs for this
+    project, matching :func:`stored_run_rows`.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.exists():
+        return None
+    connection = _open_readonly(target)
+    try:
+        if not _refuse_owed_migration(connection, target):
+            return ()
+        selected = ", ".join(f'r."{name}"' for name in (*QUERY_KEYS, ROW_REVISION))
+        signature: list[tuple[Any, ...]] = []
+        for schema in _read_attached_tables(connection, target):
+            if not _table_columns(connection, schema):
+                continue
+            query = (
+                f'SELECT r."run_id", r.rowid, LENGTH(r."payload"), '  # noqa: S608 - fixed schema and column names
+                "LENGTH(COALESCE(d.\"detail\", '')), "
+                f'{selected}, r."activity_seconds" '
+                f'FROM "{schema}"."runs" r '
+                f'LEFT JOIN "{schema}"."run_details" d ON d."run_id" = r."run_id" '
+                f'WHERE r."project" = ? ORDER BY r.rowid'
+            )
+            signature.extend(
+                (str(row[0]), schema, *row[1:])
+                for row in connection.execute(query, (project,))
+            )
+        return tuple(signature)
+    except sqlite3.Error as error:
+        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
+    finally:
+        connection.close()
+
+
 def project_snapshot(project: str) -> dict[str, Any]:
     """Read complete history, mutable state and revisions in one snapshot.
 

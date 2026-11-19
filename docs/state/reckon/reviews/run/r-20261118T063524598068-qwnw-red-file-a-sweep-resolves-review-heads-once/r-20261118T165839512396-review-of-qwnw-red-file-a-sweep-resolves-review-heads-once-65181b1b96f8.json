@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite-1795020515528356231.log reports 58 passed at base and after_suite-1795020590907788507.log reports 58 passed at head, so neither arm records a failing id.",
+  "after_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once/after_suite-1795020590907788507.log",
+    "revision": "65181b1b96f8048de716ec8c26637766e987d68d"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once/baseline_suite-1795020515528356231.log",
+    "revision": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246"
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:2300 sweep",
+    "reckon/crew/station_obligations.py:341 fleet_state",
+    "reckon/crew_follow_commands.py:303 sweep",
+    "reckon/crew_follow_commands.py:2061 sweep",
+    "reckon/crew_run_commands.py:2660 sweep"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:21:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm table states the head run is a job on all_debug, but scoped-gate-1795020485836041283.log records env PYTHONPATH=. with no -u SLURM_JOB_ID, and a batch job carries its own SLURM_JOB_ID, so the done_when's unset condition is unshown at head while the base arm ran with env -u SLURM_JOB_ID; the arms then differ in revision and environment at once."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: retry_failures reads none while scoped-gate-1795018368637440863.log records a first head gate that exited 1 with No module named pytest before the passing run, so a failed and repeated gate attempt is unrecorded."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-sweep-resolves-review-heads-once.html",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Lint section asserts ruff check is clean and ruff format --check reports one pre-existing hunk, but no command or log for either run is recorded; this review reproduced both (check clean at head, one hunk at base line 2202 and head line 2204), so the claim is true and its evidence is prose."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "VERDICT diff: read both commits; 74dd0d04 renames the shadowed definition and 65181b1b adds only the fragment, so the delta carries no test edit and no plan or state write.",
+    "done_when": "VERDICT done_when: the done_when names a head job, a base run, an imports arm, a negative control and clean lint; the manifest records the base failure, the head pass and both imports arms with logs, but the head arm shows no unset SLURM_JOB_ID and the lint runs are prose only.",
+    "goal": "VERDICT goal: the goal is that tests/test_a_sweep_resolves_review_heads_once.py passes in full; reckon/crew/obligation_snapshot.py:1892 is the line that ends the shadowing and the head gate logs 4 passed.",
+    "manifest": "VERDICT manifest: read; it reports status complete, both commit ids, the gate command, six log paths, inline suite arms at full revisions with 58 passed each and a rubric line per dimension.",
+    "write_paths": "VERDICT write_paths: the declaration covers reckon, tests and the fragment path; the diff touches only reckon/crew/obligation_snapshot.py (+4 -2) and the fragment (+73 -0)."
+  },
+  "justifications": {
+    "durability": "JUSTIFICATION durability: negative-control-base.log reddens test_one_derivation_resolves_each_reviewed_head_once with 48 resolutions over 6 runs, so restoring the duplicate def reddens it again.",
+    "evidence": "JUSTIFICATION evidence: the logs sit at 4 passed/EXIT=0 head beside 1 failed/EXIT=1 base and 22-vs-34 imports failures with 0 head-only ids, yet the head arm omits the unset-SLURM_JOB_ID condition and the ruff clause records no run.",
+    "fit": "JUSTIFICATION fit: reckon/crew/obligation_snapshot.py:1895 keeps the opener and body split its docstrings describe and adds no new naming.",
+    "goal_fidelity": "JUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1892 ends the shadowing of the two base defs and the node's own file reports 4 passed at head.",
+    "reuse": "JUSTIFICATION reuse: the change adds no mechanism and calls the existing process_table_walk_once, index_reuse and review_heads_resolve_once regions.",
+    "scope_discipline": "JUSTIFICATION scope_discipline: the diff changes only reckon/crew/obligation_snapshot.py and the named fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T165839512396-review-of-qwnw-red-file-a-sweep-resolves-review-heads-once-65181b1b96f8",
+  "reviewed_base_sha": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246",
+  "reviewed_head_sha": "65181b1b96f8048de716ec8c26637766e987d68d",
+  "reviewed_node": "qwnw-red-file-a-sweep-resolves-review-heads-once",
+  "reviewed_run_id": "r-20261118T063524598068-qwnw-red-file-a-sweep-resolves-review-heads-once",
+  "reviewer": "independent review worker",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:56:44.701418+00:00",
+  "total": 111
+}

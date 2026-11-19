@@ -10,21 +10,25 @@ worker. These three operations own that window:
   checks a dispatch applies before any worker exists;
 * :func:`reprioritise` records an explicit priority override on the request, so
   the ranking that consumes it reads the request rather than a coordinator's
-  memory;
+  memory — and on a run that has delivered, so its review and its promotion
+  move with the points the coordinator spent on it;
 * :func:`drop` removes a waiting request through the same removal a discard
   performs, and refuses every phase that is not still waiting.
 
 The launched side is deliberately not here: once a request has launched, the
 worker holds the brief it read and the run's own verbs act on it. Every
 operation therefore refuses a pointer whose phase is no longer waiting rather
-than editing a run underneath a worker.
+than editing a run underneath a worker. The one exception is a delivered run's
+points: its worker has ended and nothing reads its brief, while its review and
+its promotion are still queued, so a raise there orders records rather than
+steering a run.
 """
 
 from __future__ import annotations
 
 import hashlib
 import os
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -58,22 +62,41 @@ def _phase_of(record: Mapping[str, Any]) -> str:
     return str(record.get("phase") or "")
 
 
-def _refuse_unless_waiting(record: Mapping[str, Any], verb: str) -> None:
+def _refuse_unless_waiting(
+    record: Mapping[str, Any], verb: str, *, delivered_too: bool = False
+) -> None:
     """Refuse a request that is no longer waiting, naming the phase it holds.
 
     A pointer past these phases may have a worker reading its brief right now,
     so an edit would change a document the run has already recorded a digest of
     and a drop would remove a live run's record. Both are refused here rather
     than at a later gate that would have to repeat the distinction.
+
+    ``delivered_too`` admits a run whose worker has delivered: a coordinator
+    reprioritises one to move its review and its promotion, which are queued
+    rather than running, so the verb acts on records no worker is reading. A
+    running run is still refused, because the points it launched with already
+    returned and a change there orders nothing.
     """
+    from reckon.crew import runs as runs_module
+
     phase = _phase_of(record)
-    if phase in WAITING_PHASES:
+    allowed = WAITING_PHASES
+    if delivered_too:
+        allowed = (*WAITING_PHASES, *runs_module.DELIVERED_POINTER_PHASES)
+    if phase in allowed:
         return
     run_id = str(record.get("run_id") or "")
+    tail = (
+        "only a request that has not launched, or a run that has delivered, "
+        "can be changed or dropped"
+        if delivered_too
+        else "only a request that has not launched can be changed or dropped"
+    )
     raise CrewError(
-        f"cannot {verb} request {run_id!r}: it is {phase or 'in an unrecorded phase'}, "
-        f"not one of {', '.join(WAITING_PHASES)}; only a request that has not "
-        "launched can be changed or dropped"
+        f"cannot {verb} request {run_id!r}: it is "
+        f"{phase or 'in an unrecorded phase'}, not one of "
+        f"{', '.join(allowed)}; {tail}"
     )
 
 
@@ -570,7 +593,7 @@ def edit(
 def reprioritise(
     run_id: str, priority: int, *, reason: str = "", project: str | None = None
 ) -> dict[str, Any]:
-    """Record an explicit priority override on a waiting request.
+    """Record an explicit priority override on a request or a delivered run.
 
     The override is stored on the request itself, not applied as a one-off
     reorder, so the ranking that reads the queue sees the coordinator's intent
@@ -582,37 +605,42 @@ def reprioritise(
     exactly as a submission is, so a change cannot buy a place the session could
     not have asked for at dispatch. This request's own points are excluded from
     the total, because they are the field being changed rather than a rival.
+
+    A delivered run may be raised too, because what a coordinator wants when it
+    says "promote this run" is its review and its promotion ahead of the queue.
+    Its points were returned at launch, so the raise charges them here and the
+    marker records that they are held: landing retires the pointer, which is
+    what returns them. The review and the promotion request carry the points
+    their run held when they were composed, so a raise is written onto both —
+    a pointer raised with nothing in either queue reading it would move nothing.
+
+    Two records naming one charge is charged once. Where the review for the run
+    is still queued it is the record admission ranks, so the raise is charged
+    there and the run's marker is cleared rather than added to it; a run whose
+    review has already started, or was never composed, has no queued record to
+    hold its raise, so the marker charges the run until that pointer retires.
     """
-    from reckon import flight as flight_module
     from reckon.crew import runs as runs_module
-    from reckon.crew.queue_admission import _resolve_lane_config
+
+    record = _read_request(run_id, project)
+    _refuse_unless_waiting(record, "reprioritise", delivered_too=True)
 
     points = int(priority)
     if points < 0:
         raise CrewError(
             f"a request's priority is a whole number of points, not {points}"
         )
-    record = _read_request(run_id, project)
-    _refuse_unless_waiting(record, "reprioritise")
-
     with runs_module._pointer_lock(run_id):
         current = runs_module.read_pointer(run_id)
-        _refuse_unless_waiting(current, "reprioritise")
-        # The change spends the same budget a submission does, judged against
-        # the session's other waiting requests; this request's own points are
-        # excluded so a raise is charged for the difference.
-        runs_module.require_priority_budget(
-            str(current.get("session") or ""),
-            points,
-            flight_module.queue_priority_budget(_resolve_lane_config(current)),
-            exclude_run_id=run_id,
+        _refuse_unless_waiting(current, "reprioritise", delivered_too=True)
+        delivered = _phase_of(current) in runs_module.DELIVERED_POINTER_PHASES
+        carried = _carried_review_id(current) if delivered else ""
+        _charge_points(
+            current, points, run_id, reason=reason, carried_review_id=carried
         )
-        current["priority"] = points
-        current["priority_override"] = points
-        current["priority_set_at"] = _now()
-        current["priority_override_set_at"] = _now()
-        current["priority_override_reason"] = reason
         runs_module._write_json(runs_module.pointer_path(run_id), current)
+    if delivered:
+        _carry_points_to_queued_work(current, points, carried_review_id=carried)
 
     return {
         "run_id": run_id,
@@ -621,6 +649,125 @@ def reprioritise(
         "priority_override": points,
         "reason": reason,
     }
+
+
+def _charge_points(
+    current: MutableMapping[str, Any],
+    points: int,
+    run_id: str,
+    *,
+    reason: str,
+    carried_review_id: str = "",
+) -> None:
+    """Write the points onto a pointer, charging the session's budget.
+
+    The charge is the submission's, judged against the session's other held
+    requests, so a change cannot buy a place the session could not have asked
+    for at dispatch. This request's own points are excluded from the total,
+    because they are the field being changed rather than a rival — and so is the
+    review that is about to carry the same points, because the raise is one
+    charge and counting both records would charge the session twice for it.
+
+    A delivered run's points came back at launch, because the review holding them
+    is the record admission ranks and one charge needs one holder. So the raise
+    records that it holds them only where nothing else does: with a queued review
+    carrying them the marker is cleared, and the run's own points stay as the
+    record of what the coordinator asked for.
+    """
+    from reckon import flight as flight_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.queue_admission import _resolve_lane_config
+
+    runs_module.require_priority_budget(
+        str(current.get("session") or ""),
+        points,
+        flight_module.queue_priority_budget(_resolve_lane_config(current)),
+        exclude_run_id=run_id,
+        exclude_run_ids=(carried_review_id,) if carried_review_id else (),
+    )
+    current["priority"] = points
+    current["priority_override"] = points
+    current["priority_set_at"] = _now()
+    current["priority_override_set_at"] = _now()
+    current["priority_override_reason"] = reason
+    if _phase_of(current) in runs_module.DELIVERED_POINTER_PHASES:
+        if points > 0 and not carried_review_id:
+            current[runs_module.PRIORITY_DELIVERED_MARK] = True
+        else:
+            current.pop(runs_module.PRIORITY_DELIVERED_MARK, None)
+
+
+def _carried_review_id(delivered: Mapping[str, Any]) -> str:
+    """The queued review composed for a delivered run, or empty.
+
+    A review inherits the points its run held when it was composed, so a raise
+    written only onto the run reaches neither admission's order nor the
+    session's charge. Resolving the review once, before the charge is charged,
+    is what lets the raise be charged to one record rather than to two: the
+    caller excludes this id from the budget check and marks the run only where
+    this id is empty.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.crew.recovery_review_delivery import (
+        _is_review_run,
+        _resolved_reviewed_run_id,
+    )
+
+    run_id = str(delivered.get("run_id") or "")
+    project = str(delivered.get("project") or "")
+    for pointer in runs_module._list_live_records(project=project or None):
+        if _phase_of(pointer) not in WAITING_PHASES or not _is_review_run(pointer):
+            continue
+        review_id = str(pointer.get("run_id") or "")
+        if not review_id:
+            continue
+        if _resolved_reviewed_run_id(pointer, project) != run_id:
+            continue
+        return review_id
+    return ""
+
+
+def _carry_points_to_queued_work(
+    delivered: Mapping[str, Any], points: int, *, carried_review_id: str = ""
+) -> None:
+    """Write a delivered run's new points onto the review and promotion queued for it.
+
+    Both records snapshot the points their run held when they were composed, and
+    both queues rank by the snapshot rather than by the run. A raise written only
+    onto the run would therefore move nothing: the coordinator's intent has to
+    reach the records the two queues actually read.
+
+    The review's own id comes from ``_carried_review_id``, so the record this
+    writes is the record the charge was judged against. Only records that have
+    not started are rewritten: a review already running is a review the raise
+    can no longer order, and a promotion already started is a promotion no order
+    can move.
+    """
+    from reckon.crew import promotion_requests as requests_module
+    from reckon.crew import runs as runs_module
+
+    run_id = str(delivered.get("run_id") or "")
+    if carried_review_id:
+        with runs_module._pointer_lock(carried_review_id):
+            review = runs_module.read_pointer(carried_review_id)
+            if _phase_of(review) in WAITING_PHASES:
+                review["priority"] = points
+                review["priority_override"] = points
+                review["priority_override_set_at"] = _now()
+                review["priority_override_reason"] = f"follows run {run_id}"
+                runs_module._write_json(
+                    runs_module.pointer_path(carried_review_id), review
+                )
+
+    request = requests_module.read_promotion(run_id)
+    if request.get("phase") not in requests_module.QUEUED:
+        return
+    carried = dict(request)
+    if points:
+        carried["priority_override"] = points
+    else:
+        carried.pop("priority_override", None)
+    runs_module._write_json(requests_module._request_path(run_id), carried)
 
 
 def drop(

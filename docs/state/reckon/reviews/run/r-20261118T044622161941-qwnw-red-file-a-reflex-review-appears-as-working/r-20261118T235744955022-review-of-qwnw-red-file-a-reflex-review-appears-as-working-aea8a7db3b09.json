@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:1657 compose_landed_record",
+    "reckon/evidence.py:1610 _fragment_body_bytes",
+    "reckon/evidence.py:854 _fragment_href"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T14:31:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-reflex-review-appears-as-working-aea8a7db3b09",
+      "recorded_at": "2026-11-19T15:04:17.478608+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html",
+      "line": "44",
+      "severity": "blocking",
+      "text": "blocking: the arms table labels the head gate as revision 5b0a1f537ef9 (the base) and :51 quotes the base gate's own output (\"2 passed in 2.14s\") under the heading \"Head run\", while :55 cites scoped-gate-1795045375309005199.log, the base-revision log, as the head gate; the head gate that exists is scoped-gate-1795045790407984643.log at aea8a7db (\"2 passed in 1.87s\"), so the one artefact the done_when requires to carry the head run records none, and a reader of the landed record cannot tell which revision passed."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the summary asserts the gate ran \"as an all_debug batch job\", but the gate logs' headers carry no partition line and scoped-gate-1795045375309005199.log.scheduler is empty, so the partition rests on the manifest's prose; the done_when's \"as a job on all_debug\" is therefore not verifiable from the artefact."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044622161941-qwnw-red-file-a-reflex-review-appears-as-working/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded baseline_suite and after_suite both ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which do not import what the node touched, so the measured added_failure_count 0 is a property of two unrelated files rather than evidence about this change; the manifest records the fact under outside_scope but the arms still stand as the node's suite pair."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044622161941-qwnw-red-file-a-reflex-review-appears-as-working/scoped-gate-1795045790407984643.log",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate log records an uncaught FileNotFoundError through reckon/crew/station_obligations.py:591 publish, prefixed \"station-obligations-failure: sample: export could not complete\", which the base gate log does not emit; the run still reads 2 passed EXIT=0 and the fragment and manifest both describe it as a clean pass without it, so a swallowed failure inside the measured run is invisible in the record."
+    }
+  ],
+  "head_log_revision": "aea8a7db3b09cf22cb69064f764cb9c2d04be7e4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change is a static evidence fragment; the only production code that can reach it is the evidence composer, reckon/evidence.py:1610 _fragment_body_bytes and :1657 compose_landed_record, which enumerate docs/evidence/fragments/<plan>/ and append each fragment's body to the plan's landed record.",
+    "diff": "read the single commit aea8a7db3b against 5b0a1f5: one new file, the 58-line evidence fragment, with a summary paragraph, a history paragraph, a quoted control, an arms table, a quoted head-run block and a logs paragraph; no source or test change.",
+    "done_when": "the done_when requires the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset, its output on shared storage, and the base run with its failing ids logged beside the head run in the plan's fragment; the logs satisfy the head/control arms (head EXIT=0 at aea8a7db, control 1 failed at 57f325ecfb EXIT=1) but the fragment records the base revision as the head gate at qwnw-red-file-a-reflex-review-appears-as-working.html:44.",
+    "goal": "the goal line in /home/... behind the node: the goal line names \"Make tests/test_a_reflex_review_appears_as_working.py pass in full on the primary branch\"; the file passes 2/2 at the base revision (scoped-gate-1795045375309005199.log, EXIT=0) and again at the head (scoped-gate-1795045790407984643.log, EXIT=0), so the deliverable condition holds without a product edit.",
+    "manifest": "read; it reports status complete, one commit aea8a7db3b, tests: from a bespoke env-prefixed pytest command, test_logs naming both scoped gates and the control log, and baseline_suite/after_suite at 58 passed EXIT=0 each with failure_count 0.",
+    "write_paths": "the declared write paths were reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named fragment, and docs/figures/...; git diff 5b0a1f537ef9..aea8a7db3b lists only the named fragment file, inside that set."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion and no product code, so nothing of its own can regress; the guard is the pre-existing tests/test_a_reflex_review_appears_as_working.py:98, which fires on the defect it names in the control log logs/control-57f325ecfb.log (1 failed, 1 passed, EXIT=1), but the node added no guard for its own record and the fragment's mislabelled revision (:44) is exactly what no assertion caught.",
+    "evidence": "the head gate log scoped-gate-1795045790407984643.log reads \"2 passed in 1.87s\" EXIT=0 at aea8a7db with SLURM_JOB_ID unset, but the delivered fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html:44 names 5b0a1f5 as the head gate revision and :51 quotes the base gate's timing, so the artefact carries no head run.",
+    "fit": "the fragment is a document-wrapped page whose element ids all begin with the node id (:19-55) and which reckon/evidence.py:1610 _fragment_body_bytes strips to its body, so it composes the same way a bare-section sibling does.",
+    "goal_fidelity": "the node goal is that tests/test_a_reflex_review_appears_as_working.py passes in full on the primary branch; the file already read 2 passed EXIT=0 at the base revision 5b0a1f537ef9 and the node made no product change, which is the done_when's already-passing branch.",
+    "reuse": "the diff adds no definition of any kind; it reuses the plan's existing fragment directory and the existing scoped gate, and the capability of composing evidence fragments is owned by reckon/evidence.py:1657 compose_landed_record, which the search over reckon/ found as the owner of this path and which reads everything under the plan's fragment directory.",
+    "scope_discipline": "the single commit aea8a7db3b touches exactly one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reflex-review-appears-as-working.html:1-58, which is inside the node's declared fragment write path and nothing else."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261118T235744955022-review-of-qwnw-red-file-a-reflex-review-appears-as-working-aea8a7db3b09",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "aea8a7db3b09cf22cb69064f764cb9c2d04be7e4",
+  "reviewed_run_id": "r-20261118T044622161941-qwnw-red-file-a-reflex-review-appears-as-working",
+  "reviewer_run_id": "r-20261118T235744955022-review-of-qwnw-red-file-a-reflex-review-appears-as-working-aea8a7db3b09",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:48:49.440884+00:00",
+  "total": 99
+}

@@ -61,8 +61,24 @@ from reckon.shim_lookup import (
 # scheduler tools so a caller can tell a refusal from a launch failure.
 REFUSAL_STATUS = 97
 
+# The line a fenced launch writes to stderr before the task's own first output,
+# so a job log it captures opens with this notice rather than with the header
+# the measure writes. Named here because the manifest audit has to recognise it
+# as the launch's prologue and not as the log's first recorded line.
+SCHEDULER_FENCE_NOTICE = (
+    "{tool}: task re-enters the worker fence; absolute scheduler paths bypass "
+    "this guard."
+)
+
 # The status returned when no real binary can be found outside the shim.
 MISSING_BINARY_STATUS = 127
+
+# The status a job's task exits with when the fence program its carried recipe
+# resolves to cannot run on the node the task landed on. The task itself never
+# starts, so this is the launch's refusal rather than the command's outcome,
+# and it is deliberately not zero: a fence that cannot start must not read as
+# an unfenced success.
+FENCE_PROGRAM_STATUS = 127
 
 # The one discharge from the refusal. Set to a truthy value and the launch is
 # forwarded unchanged.
@@ -486,14 +502,82 @@ def job_fence(environ: Mapping[str, str]) -> JobFence | None:
 # The task bootstrap uses only the standard library, and carries its recipe in
 # argv so sbatch --export=NONE cannot discard the fence. The child gets the
 # caller's stdin unchanged, including srun's redirected input.
-_TASK_REENTRY = """import base64, json, os, pathlib, subprocess, sys, tempfile
+_TASK_REENTRY_TEMPLATE = """import base64, hashlib, json, os, pathlib, socket, subprocess, sys, tempfile
 spec = json.loads(base64.urlsafe_b64decode(sys.argv[-1]))
 recipe = spec["fence"]
+# The recipe's own list, not a copy: a seal this node repairs to the ``-try``
+# form below and the program substituted into the head must reach the recipe
+# the prepare step re-carries, or the inherited fence re-runs with the mount
+# that cannot be made.
+prefix = recipe["argv"]
+# The fence program is the location the dispatching node resolved, never a name
+# looked up here: a job node may hold no fence program on its search path, and
+# a search that found a different one would run a program nobody chose. A
+# recipe that names none, or names one this node cannot run, refuses before the
+# task starts and never falls back to running the task unfenced.
+program = str(recipe.get("program") or "")
+carried = recipe.get("carried_program")
+if not isinstance(carried, dict):
+    carried = {}
+name = os.path.basename(prefix[0]) if prefix else "the fence program"
+
+def _not_started(detail):
+    sys.stderr.write(
+        "fence program %s cannot run on %s: %s; the job's task was "
+        "not started and the fence was not dropped\\n"
+        % (name, socket.gethostname(), detail))
+    raise SystemExit(_FENCE_PROGRAM_STATUS)
+
+def _checksum(value):
+    text = str(value or "").strip().lower()
+    return text[7:] if text.startswith("sha256:") else text
+
+def _digest(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for block in iter(lambda: stream.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+if not (os.path.isabs(program) and os.access(program, os.X_OK)):
+    if program and os.path.isabs(program):
+        where = "%s (%s)" % (program, "absent" if not os.path.exists(program)
+                             else "not executable")
+    elif program:
+        where = "%s (not an absolute path)" % program
+    else:
+        where = "no carried location; PATH=%s was not searched" % os.environ.get("PATH", "")
+    carried_path = str(carried.get("path") or "")
+    if not carried_path:
+        _not_started("looked at %s" % where)
+    # A carried program on shared storage is used only when this node cannot
+    # run the one its dispatcher resolved, and only after its bytes match the
+    # checksum the flight settings recorded. An absent file or a different
+    # digest refuses before the task starts; neither ever falls back to a
+    # search of this node's path.
+    if not os.path.isfile(carried_path):
+        _not_started("looked at %s and the carried location %s (absent)"
+                     % (where, carried_path))
+    held = _checksum(carried.get("checksum"))
+    if not held:
+        _not_started("the carried location %s records no checksum to verify"
+                     % carried_path)
+    found = _digest(carried_path)
+    if found != held:
+        _not_started("the carried location %s does not match its recorded "
+                     "checksum: recorded %s, found %s"
+                     % (carried_path, held, found))
+    program = carried_path
+if not (os.path.isabs(program) and os.access(program, os.X_OK)):
+    _not_started("looked at %s (not executable)" % program)
+# Every later step runs the carried location: the prepare step and the task's
+# own fence both read prefix[0], so one substitution here is what stops either
+# from searching the job node's path.
+prefix[0] = program
 if not spec.get("sources_prepared"):
     # Only sources known to be directory grants may be supplied empty. A
     # missing credential or executable must still refuse the task.
     directory_sources = set(recipe.get("directory_sources", ()))
-    prefix = recipe["argv"]
     seals = ("--ro-bind", "--ro-bind-try")
     grants = ("--bind", "--bind-try", "--dev-bind", "--dev-bind-try")
     index = 1
@@ -536,7 +620,7 @@ if not spec.get("sources_prepared"):
             prepare += ["--remount-ro", str(parent)]
         spec["sources_prepared"] = True
         encoded = base64.urlsafe_b64encode(json.dumps(spec).encode()).decode()
-        os.execvp(prepare[0], [*prepare, "--", sys.executable, "-I", "-c",
+        os.execv(prepare[0], [*prepare, "--", sys.executable, "-I", "-c",
                               sys.argv[1], sys.argv[1], encoded])
 command = spec["command"]
 script = None
@@ -547,7 +631,6 @@ try:
             stream.write(base64.b64decode(spec["script"]))
         os.chmod(script, 0o700)
         command = [script, *command]
-    prefix = recipe["argv"]
     encoded = base64.urlsafe_b64encode(json.dumps(recipe).encode()).decode()
     prefix += ["--setenv", spec["env"], encoded]
     result = subprocess.run([*prefix, "--", *command], check=False)
@@ -556,6 +639,13 @@ finally:
         os.unlink(script)
 raise SystemExit(result.returncode if result.returncode >= 0 else 128-result.returncode)
 """
+# The number is substituted rather than written twice: the child is a string
+# the parent cannot import from, and a constant a reader edits in one place is
+# how the status the parent documents and the status the child exits with stay
+# the same figure.
+_TASK_REENTRY = _TASK_REENTRY_TEMPLATE.replace(
+    "_FENCE_PROGRAM_STATUS", str(FENCE_PROGRAM_STATUS)
+)
 
 
 def _task_command(
@@ -730,7 +820,7 @@ def fenced_scheduler_task(
     wraps = [value for name, value, _tokens in parsed if name == "wrap"]
     wrap = wraps[-1] if wraps else None
     print(
-        f"{tool}: task re-enters the worker fence; absolute scheduler paths bypass this guard.",
+        SCHEDULER_FENCE_NOTICE.format(tool=tool),
         file=sys.stderr,
     )
     if tool == "srun":

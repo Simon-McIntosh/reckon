@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:643 launches.submit",
+    "reckon/crew/admission/selection.py:363 launches.collect_ready before each submit",
+    "reckon/crew/admission/attempts.py:169 _launching._launch_queued",
+    "reckon/crew/admission/launching.py:405 preparation.dispatch",
+    "reckon/crew/dispatching/preparation.py:1531 _refuse_over_concurrency_ceiling",
+    "reckon/crew/admission/launching.py:561 the single-launch caller that passes no figure"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:34:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": "320",
+      "severity": "non-blocking",
+      "text": "non-blocking: the occupancy is len(seat_ids) from the published pointers plus seats_in_flight, but an in-flight launch publishes its pointer before it settles (reckon/crew/admission/attempts.py:196-208 describes a rebind publishing the pointer before it checks claims), so such a run is counted once in seat_ids and again in seats_in_flight and the pass is refused a seat it already holds; the error is conservative, costing one held request until the next pass, but the two sources are not reconciled against one snapshot."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the importing-file arm's two runs as inline JSON, but baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import none of the four changed modules, while the 57-file importing arm lives only in the two fragment .txt files and the prose artifacts line at :20; the substance (no added failure) is recorded, but the pair the record exposes measures a different population."
+    },
+    {
+      "file": "tests/test_a_named_lane_request_queues_and_takes_the_reserve.py",
+      "line": "464",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion reddens only while the pass really submits its candidates concurrently, and the probe at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-probe-pool-width-1.txt records all ten passing at the same base tree with the pool narrowed to one, so a later change that serialises the pass keeps this green with the defect in place."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read both commits against ab67be8bb1ec commit by commit; adb6f4755dd threads a seats_in_flight count from LaunchBatch.submit (reckon/crew/admission/attempts.py:123) through _attempt_launch, _launch_queued and preparation.dispatch into the roster refusal and the reservation occupancy (reckon/crew/dispatch_admission.py:220, :320), and b29812ba adds only the four arm logs, the width-one probe and the evidence fragment.",
+    "done_when": "the done_when names that file at head on all_debug with SLURM_JOB_ID unset, a per-cause verdict, an importing-file arm with both arms in inline JSON and a negative control; the manifest records the base arm at ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5 (2 failed, 8 passed, EXIT=1), the file at b29812ba23544f099121a17fa8874267938f1698 (10 passed, EXIT=0), the importing arms at 17 failed/479 passed against 13 failed/483 passed with the head ids a strict subset, and baseline_suite/after_suite at 58 passed with failure_count 0 each.",
+    "goal": "the node's goal is that tests/test_a_named_lane_request_queues_and_takes_the_reserve.py passes in full on the primary branch, and reckon/crew/admission/attempts.py:123 hands each attempt len(self.pending) which reckon/crew/dispatch_admission.py:320 counts as seats taken, so the two cases that failed at base (one freed seat admitting every candidate) now admit one.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/manifest.md; it states status complete, commits adb6f4755dd6897f8f317c3ca03f77fcf221f75d and b29812ba23, the tests line as the literal pytest command with a log path per arm, one cause carrying the verdict product wrong, and the two suite records at full 40-character revisions with failure_count 0.",
+    "write_paths": "the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every one of the ten paths in ab67be8..b29812ba is inside that scope \u2014 four modules under reckon/crew, five arm logs and the fragment HTML under the declared fragment directory \u2014 with nothing under tests/ touched."
+  },
+  "justifications": {
+    "durability": "reinstating the defect reddens tests/test_a_named_lane_request_queues_and_takes_the_reserve.py:464 and :520 at base (2 failed, EXIT=1, base-arm.txt) against literals like [\"r-codex\"] that are independent of the pointer set the test handed in.",
+    "evidence": "the all_debug arm at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-head-arm.txt names revision adb6f4755dd rather than the reviewed head, and the b29812ba gate (scoped-gate-1795021636840891688.log) ran in a landing scratch tree whose header names no partition, so the done_when's head-on-all_debug measure is evidenced one commit early.",
+    "fit": "reckon/crew/admission/attempts.py:120-123 and reckon/crew/dispatch_admission.py:179-187 follow the surrounding keyword-only default and prose-comment idiom of the module, and seats_in_flight carries no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_admission.py:320 adds the pass's in-flight launches to the reservation occupancy, so a pass holding one freed seat now launches exactly the request that seat admits, which is the rule the named file asserts.",
+    "reuse": "the figure is len(LaunchBatch.pending) taken from the owner of that set at reckon/crew/admission/attempts.py:123 and consumed by the two existing bound owners at reckon/crew/dispatch_admission.py:220 and :320, and a search of reckon for in_flight, pending_seats and seats_in_flight found only reckon/crew/lane_document.py:113, which reads the router's published admission block, a different source.",
+    "scope_discipline": "git diff --stat ab67be8bb1ec..b29812ba235 lists only the four changed modules and six evidence files, all inside the declared fence, and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_named_lane_request_queues_and_takes_the_reserve.py passes in full on the primary branch, and reckon/crew/admission/attempts.py:123 hands each attempt len(self.pending) which reckon/crew/dispatch_admission.py:320 counts as seats taken, so the two cases that failed at base (one freed seat admitting every candidate) now admit one.\nVERDICT done_when: the done_when names that file at head on all_debug with SLURM_JOB_ID unset, a per-cause verdict, an importing-file arm with both arms in inline JSON and a negative control; the manifest records the base arm at ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5 (2 failed, 8 passed, EXIT=1), the file at b29812ba23544f099121a17fa8874267938f1698 (10 passed, EXIT=0), the importing arms at 17 failed/479 passed against 13 failed/483 passed with the head ids a strict subset, and baseline_suite/after_suite at 58 passed with failure_count 0 each.\nVERDICT write_paths: the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and every one of the ten paths in ab67be8..b29812ba is inside that scope \u2014 four modules under reckon/crew, five arm logs and the fragment HTML under the declared fragment directory \u2014 with nothing under tests/ touched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/manifest.md; it states status complete, commits adb6f4755dd6897f8f317c3ca03f77fcf221f75d and b29812ba23, the tests line as the literal pytest command with a log path per arm, one cause carrying the verdict product wrong, and the two suite records at full 40-character revisions with failure_count 0.\nVERDICT diff: read both commits against ab67be8bb1ec commit by commit; adb6f4755dd threads a seats_in_flight count from LaunchBatch.submit (reckon/crew/admission/attempts.py:123) through _attempt_launch, _launch_queued and preparation.dispatch into the roster refusal and the reservation occupancy (reckon/crew/dispatch_admission.py:220, :320), and b29812ba adds only the four arm logs, the width-one probe and the evidence fragment.\nCALL_SITES: reckon/crew/admission/selection.py:643 launches.submit, reckon/crew/admission/selection.py:363 launches.collect_ready before each submit, reckon/crew/admission/attempts.py:169 _launching._launch_queued, reckon/crew/admission/launching.py:405 preparation.dispatch, reckon/crew/dispatching/preparation.py:1531 _refuse_over_concurrency_ceiling, reckon/crew/admission/launching.py:561 the single-launch caller that passes no figure\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:320 adds the pass's in-flight launches to the reservation occupancy, so a pass holding one freed seat now launches exactly the request that seat admits, which is the rule the named file asserts.\nSCORE evidence: 14\nJUSTIFICATION evidence: the all_debug arm at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-head-arm.txt names revision adb6f4755dd rather than the reviewed head, and the b29812ba gate (scoped-gate-1795021636840891688.log) ran in a landing scratch tree whose header names no partition, so the done_when's head-on-all_debug measure is evidenced one commit early.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ab67be8bb1ec..b29812ba235 lists only the four changed modules and six evidence files, all inside the declared fence, and the change carries nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the defect reddens tests/test_a_named_lane_request_queues_and_takes_the_reserve.py:464 and :520 at base (2 failed, EXIT=1, base-arm.txt) against literals like [\"r-codex\"] that are independent of the pointer set the test handed in.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/admission/attempts.py:120-123 and reckon/crew/dispatch_admission.py:179-187 follow the surrounding keyword-only default and prose-comment idiom of the module, and seats_in_flight carries no plan, sprint or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the figure is len(LaunchBatch.pending) taken from the owner of that set at reckon/crew/admission/attempts.py:123 and consumed by the two existing bound owners at reckon/crew/dispatch_admission.py:220 and :320, and a search of reckon for in_flight, pending_seats and seats_in_flight found only reckon/crew/lane_document.py:113, which reads the router's published admission block, a different source.\nFINDING reckon/crew/dispatch_admission.py:320 non-blocking: the occupancy is len(seat_ids) from the published pointers plus seats_in_flight, but an in-flight launch publishes its pointer before it settles (reckon/crew/admission/attempts.py:196-208 describes a rebind publishing the pointer before it checks claims), so such a run is counted once in seat_ids and again in seats_in_flight and the pass is refused a seat it already holds; the error is conservative, costing one held request until the next pass, but the two sources are not reconciled against one snapshot.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve/manifest.md:17 non-blocking: the done_when asks for the importing-file arm's two runs as inline JSON, but baseline_suite and after_suite name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import none of the four changed modules, while the 57-file importing arm lives only in the two fragment .txt files and the prose artifacts line at :20; the substance (no added failure) is recorded, but the pair the record exposes measures a different population.\nFINDING tests/test_a_named_lane_request_queues_and_takes_the_reserve.py:464 non-blocking: the assertion reddens only while the pass really submits its candidates concurrently, and the probe at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-probe-pool-width-1.txt records all ten passing at the same base tree with the pool narrowed to one, so a later change that serialises the pass keeps this green with the defect in place.",
+  "review_run_id": "r-20261118T171601867227-review-of-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-b29812ba2354",
+  "reviewed_base_sha": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "reviewed_head_sha": "b29812ba23544f099121a17fa8874267938f1698",
+  "reviewed_run_id": "r-20261118T063655386012-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T171601867227-review-of-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-b29812ba2354"
+  },
+  "reviewer_run_id": "r-20261118T171601867227-review-of-qwnw-red-file-a-named-lane-request-queues-and-takes-the-reserve-b29812ba2354",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T11:09:01.502365+00:00",
+  "total": 108
+}

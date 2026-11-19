@@ -1,7 +1,7 @@
 """Every production pick records where its time went, in one JSON line.
 
 A timed-out pick records only ``fallback_reason timeout``, so the stage that
-spent the five-second dispatch budget cannot be attributed. ``pick`` therefore
+spent the dispatch bound cannot be attributed. ``pick`` therefore
 appends its per-stage times under the crew home, best-effort, when it completes
 -- including a pick that finishes after dispatch has already given up, whose
 daemon thread goes on running. These tests pin the line's shape, the late-pick
@@ -22,7 +22,7 @@ import pytest
 from reckon.crew.node import TaskNode
 
 picker = importlib.import_module("reckon.crew.picker")
-dispatch = importlib.import_module("reckon.crew.dispatch")
+dispatch_picker = importlib.import_module("reckon.crew.dispatch_picker")
 
 STAGE_KEYS = (
     "snapshot_ms",
@@ -166,7 +166,9 @@ def test_a_pick_past_the_bound_records_when_it_completes(tmp_path, monkeypatch):
     pick records its line only once that stage returns.
     """
     home = tmp_path / "home"
-    monkeypatch.setattr(dispatch, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
+    # The bound the flag is measured against is the dispatcher's resolved
+    # timeout, so the module that owns the figure is the one moved here.
+    monkeypatch.setattr(dispatch_picker, "PICKER_DISPATCH_TIMEOUT_SECONDS", 0.05)
 
     def slow_caller(*args, **kwargs):
         time.sleep(0.25)

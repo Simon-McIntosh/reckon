@@ -1,0 +1,115 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T174349714001-review-of-promotion-evidence-is-read-from-the-run-store-98ddc7151923/assertion-audit.md",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1935 land_once",
+    "reckon/crew/station.py:458 SweepBeat._run",
+    "reckon/crew/recovery_repair_dispatch.py:75 dispatch_merge_repair",
+    "reckon/crew/recovery_classification.py:1203 delivered-head classification",
+    "reckon/crew/recovery_watch.py:1284 promotion verdict"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T17:45:53Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_evidence_is_read_from_the_run_store.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T105211462356-promotion-evidence-is-read-from-the-run-store/after-suite-audited.log",
+      "revision": "98ddc7151923a680c765505ef89e80483b628f2e",
+      "summary": "71 passed in 38.64s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T105211462356-promotion-evidence-is-read-from-the-run-store/baseline-suite-audited.log",
+      "revision": "6b27043e131b1840dd6905559f3ea8a29ec0b478",
+      "summary": "58 passed in 34.74s"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "promotion-evidence-is-read-from-the-run-store",
+      "recorded_at": "2026-11-18T18:34:18.600938+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "promotion-evidence-is-read-from-the-run-store",
+      "recorded_at": "2026-11-18T18:34:21.104160+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_promoted_runs_marked_pointer_is_retired.py",
+      "line": "161",
+      "severity": "blocking",
+      "text": "blocking: The corrected importer head arm fails the retained unreadable-pointer byte-identity assertion while the same test passes at base; recovery_watch.py:1057 now rejects damaged legacy evidence and the station rewrites that retained pointer, so the no-added-importer-failure measure remains unmet and requires a repair or explicit contract reconciliation."
+    },
+    {
+      "file": "tests/test_concurrent_edits_land_unattended.py",
+      "line": "555",
+      "severity": "blocking",
+      "text": "blocking: The corrected importer head arm returns no landing result and fails with IndexError where the base returns awaiting-review; pending_landing.py:625 rejects this fixture's legacy row without run_id, so the fixture must be brought into agreement with the validated-row contract and the importer delta remeasured before this revision satisfies its gate."
+    }
+  ],
+  "importer_delta": {
+    "added_failure_ids": [
+      "tests/test_a_promoted_runs_marked_pointer_is_retired.py::test_promoted_pointers_retire_and_never_return",
+      "tests/test_concurrent_edits_land_unattended.py::test_conflict_repair_names_the_peer_commit_and_reuses_the_repair_gate"
+    ],
+    "note": "Separate broader importer gate; primary added_failure_count is derived from the source baseline_suite and after_suite gate logs named in the manifest when first read.",
+    "receipt": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T105211462356-promotion-evidence-is-read-from-the-run-store/importer-corrected-arms.json"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read b387f2348f903caafa6eaeca4470e67f70e8fb4e, 45433723f3d5ffc181edeb6a64aedda05223fee0 and 98ddc7151923a680c765505ef89e80483b628f2e against 6b27043e131b1840dd6905559f3ea8a29ec0b478; the five-path diff adds store-backed promotion decisions, durable release updates and thirteen focused cases, with two compatibility failures in its importer logs.",
+    "done_when": "Read source live pointer node.done_when and docs/plans/delivered-work-lands-without-a-coordinator.html:215; after-suite-audited.log records 71 passing cases and negative-control-final.log records both expected base failures, but importer-corrected-arms.json records two added failures against the required no-added-failure measure.",
+    "goal": "Read the source live pointer node.goal (Read promotion evidence for landing decisions from the store that promotions are written to) and docs/plans/delivered-work-lands-without-a-coordinator.html:214; pending_landing.py:609 now reads the promotion store first and the focused release/refusal cases pass, but two importer regressions remain at this reviewed revision.",
+    "manifest": "Read the reviewed run's manifest.md and the actual cited logs; the scoped baseline/head are complete with no failures, the importer delta is disclosed, and the live manifest was reopened during review and now names repair commits beyond the fixed revision reviewed here.",
+    "write_paths": "Read the dispatched expanded scope and manifest.md changed_paths; all five delivered paths are declared, including promotion_release.py, recovery_classification.py and recovery_watch.py."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_evidence_is_read_from_the_run_store.py:95,112,153,175,183,195,206 fail respectively on missing release, allowed writeback, mutation under unreadability, lost dirty-path duty, false absence, legacy-first lookup and orphan-journal deletion; the corrupt-store test at line 138 does not exercise the full station classification that the importer at tests/test_a_promoted_runs_marked_pointer_is_retired.py:161 exposes.",
+    "evidence": "The reviewed run's after-suite-audited.log records 71 passed and negative-control-final.log records two expected base failures, but importer-corrected-arms.json and importers-corrected-after.log record two added importer failures, so docs/plans/delivered-work-lands-without-a-coordinator.html:215 is not fully met.",
+    "fit": "reckon/crew/pending_landing.py:609 extends its existing promotion-reader owner and promotion_release.py:815 uses ledger._sync_amended_run, but the stricter legacy identity check at pending_landing.py:625 has an unreconciled importer fixture at tests/test_concurrent_edits_land_unattended.py:555.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:609 and reckon/crew/promotion_release.py:812 implement store-first evidence and store-only release receipts, while tests/test_promotion_evidence_is_read_from_the_run_store.py:90 covers both landing and station retirement.",
+    "reuse": "Capability searches for promotion-row reads, release persistence and temporary landing repositories found reckon/run_store.py:844, reckon/ledger.py:1023, existing pending_landing.py promotion/release owners and tests/helpers/landing_repository.py:24; the new _promotion_evidence wrapper composes those owners and the new fixture uses their existing repository helper rather than duplicating them.",
+    "scope_discipline": "The five paths in git diff 6b27043e131b1840dd6905559f3ea8a29ec0b478..98ddc7151923a680c765505ef89e80483b628f2e are all in the expanded declared write paths and implement the promotion-evidence and release contract."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source live pointer node.goal (Read promotion evidence for landing decisions from the store that promotions are written to) and docs/plans/delivered-work-lands-without-a-coordinator.html:214; pending_landing.py:609 now reads the promotion store first and the focused release/refusal cases pass, but two importer regressions remain at this reviewed revision.\nVERDICT done_when: Read source live pointer node.done_when and docs/plans/delivered-work-lands-without-a-coordinator.html:215; after-suite-audited.log records 71 passing cases and negative-control-final.log records both expected base failures, but importer-corrected-arms.json records two added failures against the required no-added-failure measure.\nVERDICT write_paths: Read the dispatched expanded scope and manifest.md changed_paths; all five delivered paths are declared, including promotion_release.py, recovery_classification.py and recovery_watch.py.\nVERDICT manifest: Read the reviewed run's manifest.md and the actual cited logs; the scoped baseline/head are complete with no failures, the importer delta is disclosed, and the live manifest was reopened during review and now names repair commits beyond the fixed revision reviewed here.\nVERDICT diff: Read b387f2348f903caafa6eaeca4470e67f70e8fb4e, 45433723f3d5ffc181edeb6a64aedda05223fee0 and 98ddc7151923a680c765505ef89e80483b628f2e against 6b27043e131b1840dd6905559f3ea8a29ec0b478; the five-path diff adds store-backed promotion decisions, durable release updates and thirteen focused cases, with two compatibility failures in its importer logs.\nCALL_SITES: reckon/crew/queue_landing.py:1935 land_once, reckon/crew/station.py:458 SweepBeat._run, reckon/crew/recovery_repair_dispatch.py:75 dispatch_merge_repair, reckon/crew/recovery_classification.py:1203 delivered-head classification, reckon/crew/recovery_watch.py:1284 promotion verdict\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:609 and reckon/crew/promotion_release.py:812 implement store-first evidence and store-only release receipts, while tests/test_promotion_evidence_is_read_from_the_run_store.py:90 covers both landing and station retirement.\nSCORE evidence: 12\nJUSTIFICATION evidence: The reviewed run's after-suite-audited.log records 71 passed and negative-control-final.log records two expected base failures, but importer-corrected-arms.json and importers-corrected-after.log record two added importer failures, so docs/plans/delivered-work-lands-without-a-coordinator.html:215 is not fully met.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in git diff 6b27043e131b1840dd6905559f3ea8a29ec0b478..98ddc7151923a680c765505ef89e80483b628f2e are all in the expanded declared write paths and implement the promotion-evidence and release contract.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_promotion_evidence_is_read_from_the_run_store.py:95,112,153,175,183,195,206 fail respectively on missing release, allowed writeback, mutation under unreadability, lost dirty-path duty, false absence, legacy-first lookup and orphan-journal deletion; the corrupt-store test at line 138 does not exercise the full station classification that the importer at tests/test_a_promoted_runs_marked_pointer_is_retired.py:161 exposes.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/pending_landing.py:609 extends its existing promotion-reader owner and promotion_release.py:815 uses ledger._sync_amended_run, but the stricter legacy identity check at pending_landing.py:625 has an unreconciled importer fixture at tests/test_concurrent_edits_land_unattended.py:555.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for promotion-row reads, release persistence and temporary landing repositories found reckon/run_store.py:844, reckon/ledger.py:1023, existing pending_landing.py promotion/release owners and tests/helpers/landing_repository.py:24; the new _promotion_evidence wrapper composes those owners and the new fixture uses their existing repository helper rather than duplicating them.\nFINDING tests/test_a_promoted_runs_marked_pointer_is_retired.py:161 blocking: The corrected importer head arm fails the retained unreadable-pointer byte-identity assertion while the same test passes at base; recovery_watch.py:1057 now rejects damaged legacy evidence and the station rewrites that retained pointer, so the no-added-importer-failure measure remains unmet and requires a repair or explicit contract reconciliation.\nFINDING tests/test_concurrent_edits_land_unattended.py:555 blocking: The corrected importer head arm returns no landing result and fails with IndexError where the base returns awaiting-review; pending_landing.py:625 rejects this fixture's legacy row without run_id, so the fixture must be brought into agreement with the validated-row contract and the importer delta remeasured before this revision satisfies its gate.\n",
+  "review_run_id": "r-20261118T174349714001-review-of-promotion-evidence-is-read-from-the-run-store-98ddc7151923",
+  "reviewed_base_sha": "6b27043e131b1840dd6905559f3ea8a29ec0b478",
+  "reviewed_commits": [
+    "b387f2348f903caafa6eaeca4470e67f70e8fb4e",
+    "45433723f3d5ffc181edeb6a64aedda05223fee0",
+    "98ddc7151923a680c765505ef89e80483b628f2e"
+  ],
+  "reviewed_head_sha": "98ddc7151923a680c765505ef89e80483b628f2e",
+  "reviewed_run_id": "r-20261118T105211462356-promotion-evidence-is-read-from-the-run-store",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest_caveat": "The source manifest was concurrently replaced during its repair round; its current suite fields are not-run and current commits extend beyond this review. The initial baseline_suite/after_suite log paths and immutable log revision headers bind this review to the requested pair.",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T17:54:49.442101+00:00",
+  "total": 106,
+  "verdict": "repair-required"
+}

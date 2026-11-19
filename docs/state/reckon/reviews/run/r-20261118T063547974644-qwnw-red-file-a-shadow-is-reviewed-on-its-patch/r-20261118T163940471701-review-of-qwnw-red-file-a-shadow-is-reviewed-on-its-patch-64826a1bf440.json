@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:882 _review_brief_text (called at 1245 and 1476)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:06:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-shadow-is-reviewed-on-its-patch.html",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-arm row says the named file ran as a job on all_debug via 'crew verify-gate --worker', but the head log the run records for it (logs/head-named-file.log, header revision 018823953e plus an uncommitted change) carries no job id and no host line and was produced by a plain shell invocation in the worktree, while both suite arms and the landing scoped gate name host 98dci4-clu-3141 instead; the done_when's 'as a job on all_debug with SLURM_JOB_ID unset' clause is therefore claimed by the fragment rather than evidenced by a cited log header."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063547974644-qwnw-red-file-a-shadow-is-reviewed-on-its-patch/manifest.md",
+      "line": "baseline_suite",
+      "severity": "non-blocking",
+      "text": "non-blocking: both suite arms run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts and neither the changed file nor reckon.crew.recovery_review_subject, so the done_when's 'an arm over the test files that import what you changed' clause is measured by two 58-passed arms that never reach the module the repaired expectation describes; the files that do import it (e.g. tests/test_a_paired_arm_is_reviewed_as_itself.py, tests/test_review_record_contract.py) were not run at either revision."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against base 018823953e18f9b55c468663ab0c2c421428bc2c: 5ef80e9b2dab adds NON_SHADOW_SCOPE_BLOCK beside the identity and record-contract constants and inserts it into the whole-text expectation, deleting no assertion, and 64826a1bf440 adds the 84-line evidence fragment naming the cause and both arms; nothing outside tests/ and the declared fragment directory is touched.",
+    "done_when": "The done_when names the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, each cause with a product-or-test verdict, both suite arms as inline JSON with full 40-character revisions, and a negative control; the manifest carries the inline JSON (58 passed each side, empty failure sets) and logs/head-named-file.log reads '4 passed' EXIT=0 while logs/base-named-file-all_debug.log reads '1 failed, 3 passed' EXIT=1 at 018823953e18f9b55c468663ab0c2c421428bc2c, but no log header names all_debug or a job id for the head arm.",
+    "goal": "The goal is that tests/test_a_shadow_is_reviewed_on_its_patch.py pass in full on the primary branch; the repaired expectation at tests/test_a_shadow_is_reviewed_on_its_patch.py:135-145 now includes NON_SHADOW_SCOPE_BLOCK, and the gate log scoped-gate-1795019039016267112.log reads '4 passed' EXIT=0 at 64826a1bf440d60c6a248d1a7758244e95243282.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063547974644-qwnw-red-file-a-shadow-is-reviewed-on-its-patch/manifest.md; it records status complete, the two commits, the gate command, baseline_suite and after_suite as inline JSON with 40-character revisions and zero failures, and negative_control_log naming logs/base-named-file-all_debug.log with EXIT=1.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 018823953e18f9b55c468663ab0c2c421428bc2c..64826a1bf440d60c6a248d1a7758244e95243282 lists exactly tests/test_a_shadow_is_reviewed_on_its_patch.py and that directory's qwnw-red-file-a-shadow-is-reviewed-on-its-patch.html."
+  },
+  "justifications": {
+    "durability": "tests/test_a_shadow_is_reviewed_on_its_patch.py:135-145 compares the composed brief against literal constants spelled in the file, and the base arm proves it fires: logs/base-named-file-all_debug.log fails test_a_run_that_is_not_a_shadow_keeps_todays_brief with the scope block the expectation lacked, so removing _reviewed_scope_block or changing its wording reddens it.",
+    "evidence": "logs/base-named-file-all_debug.log records '1 failed, 3 passed' EXIT=1 at 018823953e18f9b55c468663ab0c2c421428bc2c and scoped-gate-1795019039016267112.log records '4 passed' EXIT=0 at 64826a1bf440d60c6a248d1a7758244e95243282, but the done_when's all_debug-job and SLURM_JOB_ID-unset clause is nowhere in a log header and the suite arms in the manifest never import the module the change describes.",
+    "fit": "tests/test_a_shadow_is_reviewed_on_its_patch.py:49-62 declares NON_SHADOW_SCOPE_BLOCK with the same commented literal-constant idiom as NON_SHADOW_IDENTITY and NON_SHADOW_RECORD_CONTRACT above it, and the fragment follows the surrounding evidence-fragment markup.",
+    "goal_fidelity": "tests/test_a_shadow_is_reviewed_on_its_patch.py:142 places the scope block exactly where reckon/crew/recovery_review_subject.py:773 emits it, and the head gate log reads 4 passed EXIT=0 at 64826a1bf440d60c6a248d1a7758244e95243282.",
+    "reuse": "A grep for 'Declared write paths' over tests/ and reckon/ returns only the composer's own strings at reckon/crew/recovery_review_subject.py:775-788 and no shared test helper, so the new constant duplicates no owner and nothing outside the test composes the expectation.",
+    "scope_discipline": "git diff 018823953e18f9b55c468663ab0c2c421428bc2c..64826a1bf440d60c6a248d1a7758244e95243282 lists only tests/test_a_shadow_is_reviewed_on_its_patch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-shadow-is-reviewed-on-its-patch.html, both inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that tests/test_a_shadow_is_reviewed_on_its_patch.py pass in full on the primary branch; the repaired expectation at tests/test_a_shadow_is_reviewed_on_its_patch.py:135-145 now carries NON_SHADOW_SCOPE_BLOCK and the head gate log reads 4 passed EXIT=0.\nVERDICT done_when: the measure names the file passing at head as an all_debug job with SLURM_JOB_ID unset, both suite arms as inline JSON and a negative control; the manifest carries the arms and the 4-passed head log, but no log header names all_debug or a job id for the head arm.\nVERDICT write_paths: declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff 018823953e18..64826a1bf440 lists only the named test file and the fragment in that directory.\nVERDICT manifest: read at the run's manifest.md; complete, two commits, the gate command, baseline_suite and after_suite inline JSON at 58 passed each, negative_control_log ending EXIT=1.\nVERDICT diff: read commit by commit against 018823953e18; 5ef80e9b2dab adds the scope-block constant and the whole-text expectation around it, 64826a1bf440 adds the 84-line evidence fragment, and nothing outside tests/ and the declared fragment directory changed.\nCALL_SITES: reckon/crew/recovery_review_subject.py:882 _review_brief_text (called at 1245 and 1476)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_shadow_is_reviewed_on_its_patch.py:142 places the block where reckon/crew/recovery_review_subject.py:773 emits it and the head gate reads 4 passed EXIT=0 at 64826a1bf440d60c6a248d1a7758244e95243282.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-named-file-all_debug.log reads 1 failed 3 passed EXIT=1 at base and scoped-gate-1795019039016267112.log reads 4 passed EXIT=0 at head, but the all_debug-job and SLURM_JOB_ID-unset clause appears in no log header and the suite arms in the manifest import only reckon.interface_counts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 018823953e18f9b55c468663ab0c2c421428bc2c..64826a1bf440d60c6a248d1a7758244e95243282 lists only tests/test_a_shadow_is_reviewed_on_its_patch.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-shadow-is-reviewed-on-its-patch.html, both inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_shadow_is_reviewed_on_its_patch.py:135-145 asserts the composed brief against literals spelled in the file, and logs/base-named-file-all_debug.log shows the assertion failing at base on the very block it guards.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_shadow_is_reviewed_on_its_patch.py:49-62 follows the commented literal-constant idiom of NON_SHADOW_IDENTITY and NON_SHADOW_RECORD_CONTRACT directly above it.\nSCORE reuse: 20\nJUSTIFICATION reuse: a grep for 'Declared write paths' over tests/ and reckon/ finds only the composer's strings at reckon/crew/recovery_review_subject.py:775-788, so no existing expectation helper is forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-shadow-is-reviewed-on-its-patch.html:53 non-blocking: the head-arm row claims an all_debug job while the corresponding logs/head-named-file.log header carries no job id or host and shows a plain worktree run, so the done_when's job clause is asserted rather than evidenced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063547974644-qwnw-red-file-a-shadow-is-reviewed-on-its-patch/manifest.md:baseline_suite non-blocking: the suite arms run test_staged_write_inventory.py and test_every_shared_home_lock_holds_across_nodes.py, which import only reckon.interface_counts, so the 'arm over the test files that import what you changed' clause is not measured.\n",
+  "review_run_id": "r-20261118T163940471701-review-of-qwnw-red-file-a-shadow-is-reviewed-on-its-patch-64826a1bf440",
+  "reviewed_base_sha": "018823953e18f9b55c468663ab0c2c421428bc2c",
+  "reviewed_head_sha": "64826a1bf440d60c6a248d1a7758244e95243282",
+  "reviewed_run_id": "r-20261118T063547974644-qwnw-red-file-a-shadow-is-reviewed-on-its-patch",
+  "reviewed_worker_commits": [
+    "5ef80e9b2dab31cfebbad64ab51b702a42380727",
+    "64826a1bf440d60c6a248d1a7758244e95243282"
+  ],
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:17:13.279719+00:00",
+  "total": 108
+}

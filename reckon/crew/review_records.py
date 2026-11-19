@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import file_memo
+from reckon._timestamps import parse_utc
 from reckon.crew import open_run_index
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
@@ -579,16 +580,6 @@ def collect_read_failures() -> Iterator[list[dict[str, str]]]:
         _READ_FAILURES.reset(token)
 
 
-def _remember_failure(target: list[dict[str, str]], path: str, error: str) -> None:
-    """Add one unreadable path, keeping the list one entry per path."""
-    entry = {"path": path, "error": error}
-    for index, existing in enumerate(target):
-        if existing["path"] == entry["path"]:
-            target[index] = entry
-            return
-    target.append(entry)
-
-
 def _note_skipped_record(
     path: Path, error: Exception, *, into: list[dict[str, str]] | None = None
 ) -> None:
@@ -601,31 +592,18 @@ def _note_skipped_record(
     target = _READ_FAILURES.get() if into is None else into
     if target is None:
         return
-    _remember_failure(target, str(path), f"{type(error).__name__}: {error}")
+    _append_read_failure(
+        target, {"path": str(path), "error": f"{type(error).__name__}: {error}"}
+    )
 
 
-def report_read_failures(entries: Iterable[tuple[str, str]]) -> None:
-    """Report skips an earlier read made, to the region reading now.
-
-    A derived reading is what publishes a record it could not use, but a memo
-    that answers a later reading without touching the file would drop that
-    finding on every reading after the first: the second derivation would then
-    publish fewer duties than the snapshot beside it, and the file itself
-    cannot be re-read to recover it.
-
-    The replay is conditional on the file the read named still being there. A
-    store index that has not revalidated can answer for a record that has been
-    removed, and a duty naming a path nobody can open is worse than no duty:
-    the reader would be sent to a file that does not exist. A skip whose file
-    has gone is dropped, the same way a read of it would now find nothing.
-    """
-    target = _READ_FAILURES.get()
-    if target is None:
-        return
-    for path, error in entries:
-        if not path or not Path(path).is_file():
-            continue
-        _remember_failure(target, path, str(error))
+def _append_read_failure(target: list[dict[str, str]], entry: dict[str, str]) -> None:
+    """Add one finding to a collector, one entry per path, newest error wins."""
+    for index, existing in enumerate(target):
+        if existing["path"] == entry["path"]:
+            target[index] = entry
+            return
+    target.append(entry)
 
 
 def memoised_read[T](kind: str, key: Hashable, compute: Callable[[], T]) -> T:
@@ -634,19 +612,51 @@ def memoised_read[T](kind: str, key: Hashable, compute: Callable[[], T]) -> T:
     ``compute`` performs a read of the review store, and every record it could
     not use is reported to the region that read ran inside. Caching the answer
     alone would keep the record and lose the finding, so the skips travel with
-    the cached answer and are replayed to the caller's region: a reading that
-    answers from the memo says what the helper's own reading said about the
-    same bytes.
+    the cached answer and are noted again wherever that answer is served: a
+    reading answered from the memo names what the read that filled it said about
+    the same bytes.
+
+    The caller's key decides whether that is still true. A key that names the
+    store's current entries retires the answer when a record is added, rewritten
+    or removed, so the replay describes bytes the store still holds; a key that
+    cannot see the store move must not be served through this helper.
     """
 
-    def read() -> tuple[T, tuple[tuple[str, str], ...]]:
+    def read() -> tuple[T, tuple[dict[str, str], ...]]:
         with collect_read_failures() as skipped:
             value = compute()
-        return value, tuple((entry["path"], entry["error"]) for entry in skipped)
+        return value, tuple(dict(entry) for entry in skipped)
 
-    value, skipped = file_memo.memoized_key(kind, key, read)
-    report_read_failures(skipped)
+    value, findings = file_memo.memoized_key(kind, key, read)
+    for finding in findings:
+        note_read_failure(finding)
     return value
+
+
+def note_read_failure(entry: Mapping[str, str]) -> None:
+    """Note a finding a memoised answer carries into the region open now.
+
+    A skip belongs to the call that made it, but a call answered from a memo
+    made no read: the file that answer was read past is still unreadable, so
+    every reader served that answer is met by the same fault and names it.
+
+    A finding names a file the reader can still open. A store index that has
+    not revalidated can answer for a record that has been removed, and a duty
+    naming a path nobody can open is worse than no duty: the reader would be
+    sent to a file that does not exist, while a read of it now would find
+    nothing. Such a finding is dropped rather than noted.
+
+    A serve with no region open names nowhere, which is the rule the read
+    itself follows, so a worker's read outside a sweep still reaches no later
+    sweep's findings.
+    """
+    target = _READ_FAILURES.get()
+    if target is None:
+        return
+    path = str(entry.get("path") or "")
+    if not path or not Path(path).is_file():
+        return
+    _append_read_failure(target, {"path": path, "error": str(entry.get("error") or "")})
 
 
 def _note_malformed_record(
@@ -1152,18 +1162,13 @@ def _delivery_order(
         stamp = _review.run_id_dispatch_time(str(record.get("review_run_id") or ""))
     moment: datetime | None = None
     if stamp:
-        try:
-            moment = datetime.fromisoformat(stamp)
-        except ValueError:
-            moment = None
+        moment = parse_utc(stamp)
     try:
         modified = Path(path).stat().st_mtime_ns
     except OSError:
         modified = 0
     if moment is None:
         return datetime.min.replace(tzinfo=UTC), modified
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
     return moment, modified
 
 

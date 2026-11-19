@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062748753561-qwnw-red-file-section-spelling-grammars-share-one-core/baseline_suite-1795007797604552612.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062748753561-qwnw-red-file-section-spelling-grammars-share-one-core/after_suite-1795007840557302448.log"
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:3380 (enters plan_review.reviewing_sections)",
+    "reckon/crew/recovery_review_subject.py:1361 (plan_review.review_scope)",
+    "reckon/crew/recovery_review_dispatch.py:2975 (plan_review._normalise_sections)",
+    "reckon/crew/plan_review.py:5409 write_review_sidecar",
+    "reckon/crew/plan_review.py:3336 _section_references"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:13:34Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-spelling-grammars-share-one-core.html",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment calls 0409b3be \"head\" and quotes that run as its green evidence, while the delivered head 14444f7a adds a further commit that deletes the token gate's refusal, so a reader is told a green run that does not cover the tree being landed."
+    },
+    {
+      "file": "tests/test_section_spelling_grammars_share_one_core.py",
+      "line": "206",
+      "severity": "non-blocking",
+      "text": "non-blocking: the census admits a call only when its unparsed first argument contains SECTION_NUMBER or a digit marker, so a section-number grammar bound to a name is invisible to it \u2014 plan_review.py:3277's composed constant is never counted as a frame, and a reinstated duplicate expressed the same way would pass the guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 39c536f2: 0409b3be deletes the _SECTION_TOKEN gate and rebuilds _SECTION_REFERENCE from SECTION_NUMBER_PATTERN (pattern text byte-identical to the literal it replaced, verified by comparing the composed string to the old one), 1bf18819 adds the evidence fragment, and 14444f7a deletes the now-unreachable empty-unit ValueError in _normalise_sections and restates its docstring.",
+    "done_when": "the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, after a base run, with each cause given a product-wrong/test-wrong verdict and both related arms carrying full 40-character revisions; the manifest records base 39c536f2 1 failed/44 passed EXIT=1 and head 14444f7a 45 passed EXIT=0 in scoped-gate-1795007742086719453.log, whose header names host 98dci4-clu-3141 and tree /tmp/mcintos-landing-5d8ec480c44d-pA6frL/tree but records no SLURM_JOB_ID value, so the job/unset clause rests on the compute host line alone.",
+    "goal": "the node's goal is that tests/test_section_spelling_grammars_share_one_core.py pass in full on the primary branch, and at head reckon/crew/plan_review.py:2031 resolves every section spelling through _plan_html.section_record_id while plan_review.py:3277 composes its reference scanner from _plan_html.SECTION_NUMBER_PATTERN, so the six-frame census the file asserts holds.",
+    "manifest": "read; it names commits 0409b3be, 1bf18819 and 14444f7a, records the base red and head green runs with their log paths, and its baseline_suite/after_suite inline JSON carry full 40-character revisions at 58 passed and EXIT=0 each in baseline_suite-1795007797604552612.log and after_suite-1795007840557302448.log; its related_base_arm and related_head_arm command fields are prose rather than literal commands, though the two logs carry their own literal `# command:` headers.",
+    "write_paths": "the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two node-named paths under it; git diff 39c536f2..14444f7a touches exactly reckon/crew/plan_review.py (+10 -12) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-spelling-grammars-share-one-core.html (+21), both inside the declaration, and tests/ is untouched so no assertion was deleted or weakened."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion; the guard is the pre-existing census at tests/test_section_spelling_grammars_share_one_core.py:206-222, which reddens on the reinstated _SECTION_TOKEN (logs/base-node-tests.log) but skips any grammar bound to a name, so it would not fault a duplicate hidden behind a constant.",
+    "evidence": "scoped-gate-1795007742086719453.log records revision 14444f7a, 45 passed and EXIT=0, and logs/base-node-tests.log records the base id failing, but the gate header carries no SLURM_JOB_ID value to show SLURM_JOB_ID was unset.",
+    "fit": "plan_review.py:3277-3281 mirrors the module-level grammar composition in reckon/crew/reports.py:1702-1703 and keeps the file's underscore-private constant style, though the new name _SECTION_REFERENCE_GRAMMAR now names two different things in two modules.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2031 and :3277 at head remove both duplicate section-number grammars and the recorded head log reads 45 passed, EXIT=0.",
+    "reuse": "the change composes the existing owner reckon/_plan_html.py:85 SECTION_NUMBER_PATTERN and reuses section_record_id at plan_review.py:2046 rather than re-deriving either, and the capability search over reckon/ found no other section-number derivation.",
+    "scope_discipline": "the diff changes only reckon/crew/plan_review.py and the declared fragment, though plan_review.py:2028-2043's refusal removal is not strictly required to make the named file pass."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_section_spelling_grammars_share_one_core.py pass in full on the primary branch, and at head reckon/crew/plan_review.py:2031 resolves every section spelling through _plan_html.section_record_id while plan_review.py:3277 composes its reference scanner from _plan_html.SECTION_NUMBER_PATTERN, so the six-frame census the file asserts holds.\nVERDICT done_when: the done_when asks for the file passing in full at head as an all_debug job with SLURM_JOB_ID unset, after a base run, with each cause given a product-wrong/test-wrong verdict and both related arms carrying full 40-character revisions; the manifest records base 39c536f2 1 failed/44 passed EXIT=1 and head 14444f7a 45 passed EXIT=0 in scoped-gate-1795007742086719453.log, whose header names host 98dci4-clu-3141 and tree /tmp/mcintos-landing-5d8ec480c44d-pA6frL/tree but records no SLURM_JOB_ID value, so the job/unset clause rests on the compute host line alone.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and the two node-named paths under it; git diff 39c536f2..14444f7a touches exactly reckon/crew/plan_review.py (+10 -12) and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-spelling-grammars-share-one-core.html (+21), both inside the declaration, and tests/ is untouched so no assertion was deleted or weakened.\nVERDICT manifest: read; it names commits 0409b3be, 1bf18819 and 14444f7a, records the base red and head green runs with their log paths, and its baseline_suite/after_suite inline JSON carry full 40-character revisions at 58 passed and EXIT=0 each in baseline_suite-1795007797604552612.log and after_suite-1795007840557302448.log; its related_base_arm and related_head_arm command fields are prose rather than literal commands, though the two logs carry their own literal `# command:` headers.\nVERDICT diff: read commit by commit against 39c536f2: 0409b3be deletes the _SECTION_TOKEN gate and rebuilds _SECTION_REFERENCE from SECTION_NUMBER_PATTERN (pattern text byte-identical to the literal it replaced, verified by comparing the composed string to the old one), 1bf18819 adds the evidence fragment, and 14444f7a deletes the now-unreachable empty-unit ValueError in _normalise_sections and restates its docstring.\nCALL_SITES: reckon/crew_dispatch_commands.py:3380 (enters plan_review.reviewing_sections), reckon/crew/recovery_review_subject.py:1361 (plan_review.review_scope), reckon/crew/recovery_review_dispatch.py:2975 (plan_review._normalise_sections), reckon/crew/plan_review.py:5409 write_review_sidecar, reckon/crew/plan_review.py:3336 _section_references\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2031 and :3277 at head remove both duplicate section-number grammars and the recorded head log reads 45 passed, EXIT=0.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795007742086719453.log records revision 14444f7a, 45 passed and EXIT=0, and logs/base-node-tests.log records the base id failing, but the gate header carries no SLURM_JOB_ID value to show SLURM_JOB_ID was unset.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/plan_review.py and the declared fragment, though plan_review.py:2028-2043's refusal removal is not strictly required to make the named file pass.\nSCORE durability: 16\nJUSTIFICATION durability: the diff adds no assertion; the guard is the pre-existing census at tests/test_section_spelling_grammars_share_one_core.py:206-222, which reddens on the reinstated _SECTION_TOKEN (logs/base-node-tests.log) but skips any grammar bound to a name, so it would not fault a duplicate hidden behind a constant.\nSCORE fit: 16\nJUSTIFICATION fit: plan_review.py:3277-3281 mirrors the module-level grammar composition in reckon/crew/reports.py:1702-1703 and keeps the file's underscore-private constant style, though the new name _SECTION_REFERENCE_GRAMMAR now names two different things in two modules.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change composes the existing owner reckon/_plan_html.py:85 SECTION_NUMBER_PATTERN and reuses section_record_id at plan_review.py:2046 rather than re-deriving either, and the capability search over reckon/ found no other section-number derivation.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-section-spelling-grammars-share-one-core.html:3 non-blocking: the fragment calls 0409b3be \"head\" and quotes that run as its green evidence, while the delivered head 14444f7a adds a further commit that deletes the token gate's refusal, so a reader is told a green run that does not cover the tree being landed.\nFINDING tests/test_section_spelling_grammars_share_one_core.py:206 non-blocking: the census admits a call only when its unparsed first argument contains SECTION_NUMBER or a digit marker, so a section-number grammar bound to a name is invisible to it \u2014 plan_review.py:3277's composed constant is never counted as a frame, and a reinstated duplicate expressed the same way would pass the guard.",
+  "review_method": "Read-only review of the delivered manifest, the two logs it cites, and the commit diff; no suite was re-run and no mutation was applied.",
+  "review_run_id": "r-20261118T133823534040-review-of-qwnw-red-file-section-spelling-grammars-share-one-core-14444f7ab669",
+  "reviewed_base_sha": "39c536f25e471db929ddf93c09240e236f22a637",
+  "reviewed_head_sha": "14444f7ab66959880fa40e606d7a367df1f88c04",
+  "reviewed_run_id": "r-20261118T062748753561-qwnw-red-file-section-spelling-grammars-share-one-core",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:45:03.930319+00:00",
+  "total": 108
+}

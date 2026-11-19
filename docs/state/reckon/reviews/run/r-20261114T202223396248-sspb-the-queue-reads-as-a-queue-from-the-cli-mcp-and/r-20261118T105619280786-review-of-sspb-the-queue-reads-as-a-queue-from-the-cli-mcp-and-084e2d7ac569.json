@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "baseline_suite-1794999559546937159.header.log: 58 passed, no failing id; after_suite-1794999602585257039.header.log: 58 passed, no failing id; neither arm lists a failure, so no failure id is added.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:46:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html",
+      "id": "fad3258f21b",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the arms paragraph names the head arm at 1441625a6e1d while the run's manifest records after_suite at 084e2d7ac5 (after_suite-1794999602585257039.header.log line 1, 58 passed EXIT=0), so the page and the record disagree about which revision was measured."
+    },
+    {
+      "file": "docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html",
+      "id": "f3c8775b2f3",
+      "line": 10,
+      "severity": "non-blocking",
+      "text": "the paragraph says the control ran crew check --manifest on the retained copy manifest-f39f08fa48b-truncated.md, but the log's own line 2 names manifest.md at 1,122 bytes and the verb takes --run rather than a path, so the retained copy cannot be re-checked with the logged command."
+    },
+    {
+      "file": "reckon/crew/queue_view.py",
+      "id": "ffc629b0cbc",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "_wait_reason re-composes the upstream-blocked wording owned at reckon/crew/obligation_snapshot.py:1998-2003 with different punctuation and no remedy clause, so one fact has two compositions that can drift; this repeats the finding recorded against a0bf002e72, and the gained commit leaves it unchanged."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the queue reads as a queue from the CLI, the MCP tool and Python, which stands at reckon/crew/queue_view.py:194 and is served by reckon/mcp_views.py:4894; the only commit gained since the prior reviewed head 1441625a6e1d is 084e2d7ac5, which edits two lines of the evidence fragment and changes no read.\nVERDICT done_when: the done_when asks for both tests, an all_debug gate logged to s4.html and a failing base control; the record carries scoped-gate-1794983462299208144.log (2 passed, EXIT=0 at a0bf002e72) and scoped-gate-1794993336927296990.log (7 passed, EXIT=0 at 1441625a6e1d), and the gained commit adds no gate.\nVERDICT write_paths: the source node declares reckon, tests, skills, docs/evidence/fragments/a-session-spends-a-priority-budget, that fragment's own file and docs/figures/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and; all 12 paths of 8d870f62598f..084e2d7ac5 lie inside them, the gained commit's single path among them.\nVERDICT manifest: read the reviewed run's manifest.md (8,190 bytes, 30 lines) carrying tests, test_logs, negative_control_log, both suite arms and the six rubric lines, and crew check --manifest on it answers ok true with no findings; the 1,122-byte truncated delivery the prior review recorded is replaced and kept as manifest-f39f08fa48b-truncated.md.\nVERDICT diff: read the seven commits of 8d870f62598f..084e2d7ac5 commit by commit; the six reviewed at a0bf002e72 and 1441625a6e1d are unchanged, and the one gained, 084e2d7ac5, adds the manifest-repair paragraph at line 10 and rewrites the arms paragraph's head from ae3237b0e545 to 1441625a6e1d at line 11 of the fragment.\nCALL_SITES: reckon/crew_run_commands.py:725, reckon/mcp_views.py:4894, reckon/mcp_views.py:4018, reckon/mcp.py:2986, reckon/crew/obligations.py:739, reckon/crew/admission/verdicts.py:95\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_view.py:194 derives one document and reckon/mcp_views.py:4894 serves it on both transports, and the gained commit alters no read.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1794983462299208144.log reads 2 passed EXIT=0 at a0bf002e72, but no retained log runs the section test at head and line 11 names the head arm at 1441625a6e1d while manifest.md names 084e2d7ac5.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all 12 paths of 8d870f62598f..084e2d7ac5 sit inside the declared reckon, tests, skills and docs/evidence/fragments paths, and the gained commit touches only the one fragment.\nSCORE durability: 14\nJUSTIFICATION durability: nothing under tests/ reads the evidence fragment, so its byte count and arm revisions go stale unseen, while tests/test_the_queue_reads_as_a_queue.py:109-155 does redden on an order regression.\nSCORE fit: 17\nJUSTIFICATION fit: the added paragraph at line 10 follows the fragment's shape, but the arms paragraph at line 11 starts at column 0 where every sibling is indented, and holds come from reckon/crew/admission/verdicts.py:95.\nSCORE reuse: 5\nJUSTIFICATION reuse: order, holds, promotions and points extend their owners (queue_admission.queued_placements, verdicts.py:95, promotion_queue_report, session_priority_in_use), yet reckon/crew/queue_view.py:44 re-implements the wording owned at obligation_snapshot.py:1998-2003.\nFINDING docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html:11 non-blocking: the arms paragraph names the head arm at 1441625a6e1d while the run's manifest records after_suite at 084e2d7ac5 (after_suite-1794999602585257039.header.log line 1, 58 passed EXIT=0), so the page and the record disagree about which revision was measured.\nFINDING docs/evidence/fragments/a-session-spends-a-priority-budget/sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and.html:10 non-blocking: the paragraph says the control ran crew check --manifest on the retained copy manifest-f39f08fa48b-truncated.md, but the log's own line 2 names manifest.md at 1,122 bytes and the verb takes --run rather than a path, so the retained copy cannot be re-checked with the logged command.\nFINDING reckon/crew/queue_view.py:44 non-blocking: _wait_reason re-composes the upstream-blocked wording owned at reckon/crew/obligation_snapshot.py:1998-2003 with different punctuation and no remedy clause, so one fact has two compositions that can drift; this repeats the finding recorded against a0bf002e72, and the gained commit leaves it unchanged.",
+  "review_run_id": "r-20261118T105619280786-review-of-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and-084e2d7ac569",
+  "reviewed_base_sha": "8d870f62598f1d922ceed7015b570a65c61d8283",
+  "reviewed_head_sha": "084e2d7ac569d9098bec868a3a6b24ed7f1e1343",
+  "reviewed_run_id": "r-20261114T202223396248-sspb-the-queue-reads-as-a-queue-from-the-cli-mcp-and",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:22:13+00:00",
+  "total": 89
+}

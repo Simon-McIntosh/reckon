@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: baseline_suite log suite-base-arm.log at 23b901694b records 58 passed EXIT=0 with no FAILED line, and after_suite log suite-head-arm.log at 1b78a9a4 records 58 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2481 (crew gc calls garbage_collect)",
+    "reckon/crew/gc.py:1285 (garbage_collect calls _run_report_trees)",
+    "reckon/crew/routing.py:1989 (_run_report_trees calls report_retention.build_context)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T19:19:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/report_retention.py",
+      "line": "252",
+      "severity": "non-blocking",
+      "text": "non-blocking: build_context calls list_live() and re-applies the project selection that _list_live_records(project=...) owns at reckon/crew/runs.py:1740, rather than extending that owner with the unattributed-pointer case it needs, so the membership rule lives in two places."
+    },
+    {
+      "file": "reckon/crew/report_retention.py",
+      "line": "254",
+      "severity": "non-blocking",
+      "text": "non-blocking: the confined-run exemption is re-implemented inline while routing.py:1919 _run_has_live_pointer already states exactly this rule, and that helper is what the plan-review raw-report path reads at routing.py:2404 and routing.py:2430, so the two copies can drift."
+    },
+    {
+      "file": "tests/test_gc_reaches_every_crew_store.py",
+      "line": "377",
+      "severity": "non-blocking",
+      "text": "non-blocking: the unconfined absence assertion passed at the base revision because the report rule produced no rows at all, so it could not fail for the reason it names; at head it does guard the withholding, but the file's own base log shows it was vacuous when written."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): reckon/crew_run_commands.py:2481, reckon/crew/gc.py:1285, reckon/crew/routing.py:1989",
+    "diff": "read the three commits 759a5fcd5b, 1b78a9a4bd and a345b4e252 against base 23b901694b; four paths, a product fix in routing.py, report_retention.py and gc.py plus a new evidence fragment, with no test change.",
+    "done_when": "the measure is tests/test_gc_reaches_every_crew_store.py passing in full; scoped-gate-1795011869799253977.log records nine dots of nine and EXIT=0 at 759a5fcd5b, and base-run.log records 1 failed, 8 passed with EXIT=1 at 23b901694b, so the gate asserts the measure.",
+    "goal": "the node goal is to make tests/test_gc_reaches_every_crew_store.py pass in full; the diff repairs four product rules in reckon/crew/routing.py:1977-2043 and reckon/crew/report_retention.py:243-255 with no test change, and the named file reads nine passed at head.",
+    "manifest": "read; it reports status complete, nine of nine at 759a5fcd5b, both suite arms 58 passed EXIT=0, base run 1 failed 8 passed, and names its logs on disk, all of which I confirmed.",
+    "write_paths": "the declared paths are reckon, tests, the queued-work-needs-no-workaround fragment directory and its node fragment; the diff touches three reckon modules and the named fragment, all inside the fence, and nothing under tests."
+  },
+  "justifications": {
+    "durability": "tests/test_gc_reaches_every_crew_store.py:377-386 reddens on the reinstated regression, which base-run.log demonstrates at 23b901694b (1 failed, 8 passed, EXIT=1), though all four causes rest on that one case.",
+    "evidence": "scoped-gate-1795011869799253977.log records nine passed EXIT=0 at 759a5fcd5b and base-run.log records the 1 failed, 8 passed reproduction at 23b901694b, both cited by the manifest.",
+    "fit": "the added keyword and inline filter at reckon/crew/report_retention.py:243-255 follow the surrounding docstring-and-keyword style of the module and introduce no forbidden name.",
+    "goal_fidelity": "reckon/crew/report_retention.py:254 exempts the confined run's pointer and reckon/crew/routing.py:1977-1986 falls back to repo_root/docs, so the one red case at base now passes.",
+    "reuse": "the confined-run rule duplicates routing.py:1919 _run_has_live_pointer and the project selection duplicates runs.py _list_live_records, so the added logic forks two owners instead of extending them.",
+    "scope_discipline": "every path in 23b901694b..a345b4e252 is inside the declared write paths, and the print removal at routing.py:2030-2043 is implied by the JSON report the fixed rule now has to emit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_gc_reaches_every_crew_store.py pass in full; the diff repairs four product rules in reckon/crew/routing.py:1977-2043 and reckon/crew/report_retention.py:243-255 with no test change, and the named file reads nine passed at head.\nVERDICT done_when: the measure is the named test file passing in full; scoped-gate-1795011869799253977.log records nine dots and EXIT=0 at 759a5fcd5b and base-run.log records 1 failed, 8 passed, EXIT=1 at 23b901694b, so the gate asserts the measure.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment; the detached diff touches reckon/crew/gc.py, reckon/crew/report_retention.py, reckon/crew/routing.py and the node fragment, every one inside the fence, all inside the declared paths, and nothing under tests.\nVERDICT manifest: read; it states nine of nine at 759a5fcd5b, both suite arms 58 passed, base run 1 failed 8 passed, and names the logs, which match the files on disk.\nVERDICT diff: read 759a5fcd5b, 1b78a9a4bd and a345b4e252 against base 23b901694b; four paths changed, +175/-11, the product hunks add the confined_to keyword, the repo_root docs fallback and the project-or-unattributed live filter, and drop the per-item print narration.\nCALL_SITES: reckon/crew_run_commands.py:2481, reckon/crew/gc.py:1285, reckon/crew/routing.py:1989\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/report_retention.py:254 leaves the confined run's pointer out of the confined pass while reckon/crew/routing.py:1977-1986 supplies the docs tree, which is what turns the base's one red case green.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795011869799253977.log records nine passed EXIT=0 at 759a5fcd5b and base-run.log records 1 failed, 8 passed, EXIT=1 at 23b901694b, so the done_when's measure is measured and recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 23b901694b..a345b4e252 lies inside the declared write paths, and reckon/crew/routing.py:2027-2043 loses only the narration the repaired JSON report cannot tolerate.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_gc_reaches_every_crew_store.py:377-386 reddens on the reinstated regression as base-run.log shows, but all four product causes rest on that single case.\nSCORE fit: 18\nJUSTIFICATION fit: the keyword addition and inline filter at reckon/crew/report_retention.py:243-255 match the module's existing docstring style and introduce no forbidden name.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/report_retention.py:252-254 duplicates the confined-run exemption owned by reckon/crew/routing.py:1919 and the project selection owned by reckon/crew/runs.py _list_live_records.\nFINDING reckon/crew/report_retention.py:252 non-blocking: build_context calls list_live() and re-filters project membership, duplicating the selection _list_live_records owns rather than extending it with the unattributed case.\nFINDING reckon/crew/report_retention.py:254 non-blocking: the confined-run exemption is re-implemented inline though reckon/crew/routing.py:1919 _run_has_live_pointer already holds the rule the plan-review raw-report path reads.\nFINDING tests/test_gc_reaches_every_crew_store.py:377 non-blocking: the unconfined absence assertion passed at base because no rows were produced, so it was vacuous when written.",
+  "review_node": "review-of-qwnw-red-file-gc-reaches-every-crew-store-a345b4e25248",
+  "review_run_id": "r-20261118T150216432577-review-of-qwnw-red-file-gc-reaches-every-crew-store-a345b4e25248",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "a345b4e2524862fed285a9e932eac213ef3873b4",
+  "reviewed_run_id": "r-20261118T062951419370-qwnw-red-file-gc-reaches-every-crew-store",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T150216432577-review-of-qwnw-red-file-gc-reaches-every-crew-store-a345b4e25248"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T19:52:47.739226+00:00",
+  "total": 101
+}

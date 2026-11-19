@@ -1,0 +1,57 @@
+<section id="qwnw-red-file-every-module-is-reached-landing">
+  <h2>Every module is reached: the dispatch facade imports its concerns by name</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/dispatch.py</code> is a
+  facade over eight concern modules under <code>reckon/crew/dispatching/</code>,
+  and it resolved them from their names with
+  <code>import_module(f"{__package__}.dispatching.{name}")</code>. That import
+  is invisible to every static reader, so it is invisible to the reach ratchet
+  in <code>reckon/served_code.py</code>, which walks the package with
+  <code>ast</code> and holds each module to a production entry point.</p>
+
+  <p>Four concerns — <code>comparisons</code>, <code>fences</code>,
+  <code>launch</code> and <code>suite</code> — have no other importer, so their
+  only path to an entry point was the dynamic one, and the target file named
+  them as unreached.</p>
+
+  <p>The four were not dead: the facade loaded them, bound every exported name
+  and reassigned runtime overrides into each of them on every import. The
+  defect was in how the facade <em>named</em> its concerns, so the repair is
+  there and nowhere else. The eight modules are imported by name at the top of
+  the facade, and <code>_CONCERN_MODULES</code> is the tuple of those imports in
+  the order the export map names them, which the existing
+  <code>zip(..., strict=True)</code> already bound.</p>
+
+  <p>Import order, every bound name, the <code>__module__</code> rewrite and the
+  facade's reassignment of overrides are unchanged. No test changed and no
+  module was allowlisted: a module that runs and is imported is reached, and the
+  facade now satisfies the ratchet's own definition of reached instead of asking
+  the ratchet to see a dynamic import.</p>
+
+  <h3 id="qwnw-red-file-every-module-is-reached-reproduction">The defect at base
+  revision <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code></h3>
+
+  <p>One failing id, naming all four modules (indentation trimmed):</p>
+
+  <pre id="qwnw-red-file-every-module-is-reached-failure">FAILED tests/test_every_module_is_reached.py::test_every_module_is_reached
+E  reckon.crew.dispatching.comparisons: unreached and not in the allowlist
+E  reckon.crew.dispatching.fences: unreached and not in the allowlist
+E  reckon.crew.dispatching.launch: unreached and not in the allowlist
+E  reckon.crew.dispatching.suite: unreached and not in the allowlist</pre>
+
+  <h3 id="qwnw-red-file-every-module-is-reached-arms">Arms</h3>
+
+  <p>Each arm is a job on <code>all_debug</code> against an archive of the named
+  revision with the scheduler variables dropped; its log's last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-every-module-is-reached-table">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base</td><td><code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code></td><td>1 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>head</td><td><code>4f40d56e262f8e76979ac52bcc51f057eb1ae7cf</code></td><td>1 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+</section>

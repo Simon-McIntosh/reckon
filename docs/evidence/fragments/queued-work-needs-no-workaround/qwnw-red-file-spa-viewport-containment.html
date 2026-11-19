@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-spa-viewport-containment-landing">
+  <h2>The viewport containment file passes in full at head</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_spa_viewport_containment.py</code>
+  holds two cases over the SPA snapshot walk. At the base revision the first
+  passes and the second fails:
+  <code>test_stale_readiness_selector_is_reported_loudly</code>.</p>
+
+  <p><strong>Cause and verdict.</strong> The case re-declared the plans
+  readiness selector as <code>.r-list .r-row</code> on the premise that a
+  component rename had retired those classes, then required the walk to raise
+  <code>BrowserProbeError</code> naming a stale selector. That premise stopped
+  being true: <code>docs/ui/shell-plans.jsx</code> renders
+  <code>&lt;div className="r-list"&gt;</code> with
+  <code>&lt;div className="r-row"&gt;</code> rows, and the artifact index
+  renders beside it, so both the live selector
+  (<code>.r-artifact-index .r-artifact-row</code>, set from a same-day commit)
+  and the "retired" one match. Nothing was stale, so nothing raised, and the
+  case asserted nothing at all. <strong>Verdict: the test was wrong.</strong>
+  The product rule is intact and was shown to fire (below); only the selector
+  the case names has moved.</p>
+
+  <p><strong>The repair.</strong>
+  <code>STALE_PLANS_READY_SELECTOR = f"{PLANS_READY_SELECTOR}-retired"</code>
+  derives the absent class from the live constant instead of hand-writing a
+  selector that looked retired when it was written. Every assertion in the case
+  is kept: the raised type and its <code>stale readiness selector</code> match,
+  the selector in the message, <code>matched nothing in the rendered surface</code>,
+  and the absence of <code>timed out waiting for</code>. Only the literal the
+  message is compared against moved, from the retired spelling to the derived
+  one, so the case cannot silently rot the next time a class is renamed.</p>
+
+  <h3 id="qwnw-red-file-spa-viewport-containment-reproduced">Reproduced at the base revision</h3>
+
+  <p>The base run of the file, extracted from
+  <code>00e5bd109e44209141475c852cd5490b8bef9be3</code> and entered with the
+  project's own interpreter, reads:</p>
+
+  <pre><code>FAILED tests/test_spa_viewport_containment.py::test_stale_readiness_selector_is_reported_loudly - Failed: DID NOT RAISE BrowserProbeError
+1 failed, 1 passed in 46.53s
+EXIT=1</code></pre>
+
+  <p>A control arm at the same revision passed the selector
+  <code>.r-list .r-row</code> through an unchanged probe and walked all eleven
+  surfaces, so the missing refusal is the selector matching, not the walk
+  failing earlier. A genuinely absent selector
+  (<code>.r-no-such-component .r-row</code>) raised
+  <code>BrowserProbeError</code> whose message carries
+  <code>Error: stale readiness selector: plans surface (.r-no-such-component .r-row)
+  at #plans; … matched nothing in the rendered surface after 2000ms</code> —
+  the guard fires, and the repaired case now names an absent class of its own.</p>
+
+  <h3 id="qwnw-red-file-spa-viewport-containment-measured">Measured</h3>
+
+  <table id="qwnw-red-file-spa-viewport-containment-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the file, base arm</td>
+        <td><code>00e5bd109e44209141475c852cd5490b8bef9be3</code>, extraction</td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the file, head arm</td>
+        <td><code>2171011a1ca433c13e4c42958112b0fa7e933587</code>, worktree</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the file, head arm on <code>all_debug</code></td>
+        <td><code>2171011a1ca433c13e4c42958112b0fa7e933587</code>, copied tree</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The browser is the Playwright headless shell the harness discovers through
+  <code>$RECKON_BROWSER</code>; without it the file skips, and a skip is not the
+  measure.</p>
+</section>

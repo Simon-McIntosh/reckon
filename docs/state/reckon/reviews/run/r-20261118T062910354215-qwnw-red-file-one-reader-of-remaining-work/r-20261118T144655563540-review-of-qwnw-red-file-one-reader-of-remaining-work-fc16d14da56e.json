@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "importer_arm": {
+      "added_failure_count": 0,
+      "added_failure_ids": [],
+      "after_failure_count": 3,
+      "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/importer-arm-head.log",
+      "baseline_failure_count": 3,
+      "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/importer-arm-base.log"
+    },
+    "suite_pair": {
+      "after_failure_count": 0,
+      "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/after_suite-1795011192375042232.log",
+      "baseline_failure_count": 0,
+      "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/baseline_suite-1795011149482845095.log",
+      "revisions": [
+        "23b901694b4bfec73d95be3a082d4c336d9a4101",
+        "fc16d14da56ebe42007fd7abecf32f15bf6ae97c"
+      ]
+    }
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/evidence.py:361 (_landing_comment calls _run_comment_id)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T16:02:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-reader-of-remaining-work.html",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head row attributes the named file's 27-passed run to 0fccaf7580b658fac453916ac8124f6c87f76611 while the captured gate log scoped-gate-1795011125999029999.log line 2 names revision fc16d14da56ebe42007fd7abecf32f15bf6ae97c, so the table states a revision the run never ran at."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the two importer arms recorded as inline JSON with full 40-character revisions, and the manifest carries neither that JSON nor baseline_suite/after_suite, leaving the \"3 failed, 143 passed in both arms, 0 added\" claim readable only by diffing two 185-line logs."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/manifest.md",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest states its promotion read 27 passed at revision fc16d14d while the table's head row names 0fccaf75, so the two artefacts disagree about the revision the evidence belongs to."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against 23b90169 \u2014 0fccaf7580 rewrites three docstring lines in reckon/evidence.py:327-335 so the prefix is named by import rather than quoted, and fc16d14da5 adds the 65-line landing fragment; 68 insertions, 3 deletions, nothing else.",
+    "done_when": "the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID-unset env and shared-storage output, a per-cause verdict, no assertion deleted or weakened, and both importer arms recorded as inline JSON with full 40-character revisions; the first three are met and recorded, the fourth is not \u2014 the reviewed manifest carries no baseline_suite/after_suite keys and no inline JSON arms.",
+    "goal": "the node's goal is that tests/test_one_reader_of_remaining_work.py pass in full; the landed docstring change in reckon/evidence.py:327-335 removes the package's second spelling of the run-comment prefix, which is the one case that file failed, and the gate log scoped-gate-1795011125999029999.log reads 27 passed, EXIT=0 at fc16d14d.",
+    "manifest": "read manifest.md of r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work; status complete, both commits named, the cause listed with verdict \"product wrong\", the head log cited, and negative_control_log pointing at negative-control-base-named-file.log \u2014 but no rubric lines and no inline arm JSON.",
+    "write_paths": "the source node declared reckon, tests, and docs/evidence/fragments/queued-work-needs-no-workaround; the delivered diff touches only reckon/evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-reader-of-remaining-work.html, both inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_one_reader_of_remaining_work.py::test_run_comment_prefix_has_one_owner is left untouched and the base extraction negative-control-base-named-file.log line 40 reddens on exactly that id when the literal is present, so reinstating \"c-run-\" into the docstring fails the guard; the run itself added no assertion, so the guard is pre-existing rather than introduced.",
+    "evidence": "the head run's result is recorded from the log rather than claimed (scoped-gate-1795011125999029999.log line 7), but the done_when's requirement that both arms be recorded as inline JSON with full revisions in the reviewed manifest is unmet \u2014 its test_logs line 13 points at importer-arm-base.log and importer-arm-head.log and nothing carries their counts.",
+    "fit": "the rewritten sentences at reckon/evidence.py:329-332 keep the module's docstring idiom and the local-import style of its neighbours.",
+    "goal_fidelity": "the gate log scoped-gate-1795011125999029999.log reports \"27 passed\", last line EXIT=0 at revision fc16d14da56ebe42007fd7abecf32f15bf6ae97c, and the literal still stands at reckon/evidence.py:330 on the current base, so the repair is neither moot nor superseded.",
+    "reuse": "the diff adds no definition and instead defers to the owner reckon/crew/plan_review.py:253 (RUN_COMMENT_PREFIX), removing a duplicate spelling of the fragment that owner already mints.",
+    "scope_discipline": "the diff names only reckon/evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-reader-of-remaining-work.html, both under the declared write paths and neither carrying work the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_one_reader_of_remaining_work.py pass in full; the landed docstring change in reckon/evidence.py:327-335 removes the package's second spelling of the run-comment prefix, which is the one case that file failed, and the gate log scoped-gate-1795011125999029999.log reads 27 passed, EXIT=0 at fc16d14d.\nVERDICT done_when: the done_when asks for the named file green at head as an all_debug job with SLURM_JOB_ID-unset env and shared-storage output, a per-cause verdict, no assertion deleted or weakened, and both importer arms recorded as inline JSON with full 40-character revisions; the first three are met and recorded, the fourth is not \u2014 the reviewed manifest carries no baseline_suite/after_suite keys and no inline JSON arms.\nVERDICT write_paths: the source node declared reckon, tests, and docs/evidence/fragments/queued-work-needs-no-workaround; the delivered diff touches only reckon/evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-reader-of-remaining-work.html, both inside that set.\nVERDICT manifest: read manifest.md of r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work; status complete, both commits named, the cause listed with verdict \"product wrong\", the head log cited, and negative_control_log pointing at negative-control-base-named-file.log \u2014 but no rubric lines and no inline arm JSON.\nVERDICT diff: read both commits against 23b90169 \u2014 0fccaf7580 rewrites three docstring lines in reckon/evidence.py:327-335 so the prefix is named by import rather than quoted, and fc16d14da5 adds the 65-line landing fragment; 68 insertions, 3 deletions, nothing else.\nCALL_SITES: reckon/evidence.py:361 (_landing_comment calls _run_comment_id)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gate log scoped-gate-1795011125999029999.log reports \"27 passed\", last line EXIT=0 at revision fc16d14da56ebe42007fd7abecf32f15bf6ae97c, and the literal still stands at reckon/evidence.py:330 on the current base, so the repair is neither moot nor superseded.\nSCORE evidence: 12\nJUSTIFICATION evidence: the head run's result is recorded from the log rather than claimed (scoped-gate-1795011125999029999.log line 7), but the done_when's requirement that both arms be recorded as inline JSON with full revisions in the reviewed manifest is unmet \u2014 its test_logs line 13 points at importer-arm-base.log and importer-arm-head.log and nothing carries their counts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff names only reckon/evidence.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-reader-of-remaining-work.html, both under the declared write paths and neither carrying work the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_reader_of_remaining_work.py::test_run_comment_prefix_has_one_owner is left untouched and the base extraction negative-control-base-named-file.log line 40 reddens on exactly that id when the literal is present, so reinstating \"c-run-\" into the docstring fails the guard; the run itself added no assertion, so the guard is pre-existing rather than introduced.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten sentences at reckon/evidence.py:329-332 keep the module's docstring idiom and the local-import style of its neighbours.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and instead defers to the owner reckon/crew/plan_review.py:253 (RUN_COMMENT_PREFIX), removing a duplicate spelling of the fragment that owner already mints.\n\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-reader-of-remaining-work.html:40 non-blocking: the head row attributes the named file's 27-passed run to 0fccaf7580b658fac453916ac8124f6c87f76611 while the captured gate log scoped-gate-1795011125999029999.log line 2 names revision fc16d14da56ebe42007fd7abecf32f15bf6ae97c, so the table states a revision the run never ran at.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/manifest.md:13 non-blocking: the done_when requires the two importer arms recorded as inline JSON with full 40-character revisions, and the manifest carries neither that JSON nor baseline_suite/after_suite, leaving the \"3 failed, 143 passed in both arms, 0 added\" claim readable only by diffing two 185-line logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work/manifest.md:5 non-blocking: the manifest states its promotion read 27 passed at revision fc16d14d while the table's head row names 0fccaf75, so the two artefacts disagree about the revision the evidence belongs to.",
+  "review_run_id": "r-20261118T144655563540-review-of-qwnw-red-file-one-reader-of-remaining-work-fc16d14da56e",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "fc16d14da56ebe42007fd7abecf32f15bf6ae97c",
+  "reviewed_run_id": "r-20261118T062910354215-qwnw-red-file-one-reader-of-remaining-work",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T16:24:15.646263+00:00",
+  "total": 106
+}

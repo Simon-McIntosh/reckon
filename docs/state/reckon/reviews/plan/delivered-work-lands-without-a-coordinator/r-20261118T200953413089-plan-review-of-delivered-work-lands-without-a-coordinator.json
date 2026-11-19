@@ -1,0 +1,146 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T20:37:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:226",
+      "id": "reasoning-1",
+      "reason": "the endpoint as written deletes a possibly live worker's tree on an unreadable liveness probe, so the plan needs \"unknown or unqueryable liveness keeps the run\" stated and an arm that shows the release withholding it.",
+      "text": "s29's Deliverable states \"A turn is read as in progress only while its process is alive\", but the release's busy check already answers not-busy once a recorded process is proved dead (`reckon/crew/recovery_repair_dispatch.py:400-402`) and answers \"in progress\" only when liveness is unknown, because a record naming no process and an unqueryable scheduler both deliberately answer unknown (`reckon/crew/process_liveness.py:463-465,478-483`); read as written the rule converts that unknown into \"not in progress\", so a promoted run whose worker sits on a scheduler the fleet cannot query has its worktree released while the worker may still be alive, and none of s29's kept cases covers that state",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:226",
+      "id": "reasoning-2",
+      "reason": "a rule keyed on an unrecorded kind is neither implementable nor checkable, and a guessed classification silently decides which population is released.",
+      "text": "\"A promoted run of a kind that is never merged is released on its promotion alone\", and the third fixture's \"promoted measurement run\", rest on a run kind the system does not record: the run roles are implement, cleanup, review, investigate, test and documentation (`reckon/crew/ticker.py:669`; `reckon/evidence.py:712`), and no pointer or promotion row field marks a run as never merged, so the worker must invent which recorded fact names that population and the fixture has no measured field value to build it from",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/delivered-work-lands-without-a-coordinator.html:227",
+      "id": "done_when-1",
+      "reason": "the arm reports the fleet's churn rather than the delivered decision, so the author may leave it and a worker can record the population it finds instead.",
+      "text": "the arm \"The node's manifest records a read-only evaluation of the new release decision against three named live runs of this fleet, each reading as releasable\" cannot be produced once those three runs leave the fleet, and s29's own Why records that nothing retires them \"until someone discards it by hand\"",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "f5ac1da0ad1a602d41988d5d8acaf7dccc557d26",
+  "plan_fingerprint": "5f1c98d70482bd3a5a16b951a7ac7f40e981d191977bb27352c6e58d8a7108fe",
+  "plan_slug": "delivered-work-lands-without-a-coordinator",
+  "plan_version": 72,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0946c54fb733bd5b64fb47b5b765e53912709f40",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the deliverable now releases only on a process proved dead and keeps a run whose liveness is unknown, with a kept case for it in the done-when",
+      "reason": "",
+      "when": "2026-11-18T20:56:46.743877+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0946c54fb733bd5b64fb47b5b765e53912709f40",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "the population is now the one the crew's review pass already classifies as a measurement run; no new kind is introduced",
+      "reason": "",
+      "when": "2026-11-18T20:56:57.455035+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0946c54fb733bd5b64fb47b5b765e53912709f40",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the live evaluation is now over every promoted run still holding a pointer at that time, and says so if none remains",
+      "reason": "",
+      "when": "2026-11-18T20:57:08.372283+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "0946c54fb733bd5b64fb47b5b765e53912709f40",
+      "commit_basis": "edit",
+      "note": "the live evaluation is now over every promoted run still holding a pointer at that time, and says so if none remains",
+      "reason": "",
+      "when": "2026-11-18T20:57:08.372283+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "0946c54fb733bd5b64fb47b5b765e53912709f40",
+      "commit_basis": "edit",
+      "note": "the deliverable now releases only on a process proved dead and keeps a run whose liveness is unknown, with a kept case for it in the done-when",
+      "reason": "",
+      "when": "2026-11-18T20:56:46.743877+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "0946c54fb733bd5b64fb47b5b765e53912709f40",
+      "commit_basis": "edit",
+      "note": "the population is now the one the crew's review pass already classifies as a measurement run; no new kind is introduced",
+      "reason": "",
+      "when": "2026-11-18T20:56:57.455035+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/delivered-work-lands-without-a-coordinator/r-20261118T200953413089-plan-review-of-delivered-work-lands-without-a-coordinator.json",
+  "review_run_id": "r-20261118T200953413089-plan-review-of-delivered-work-lands-without-a-coordinator",
+  "reviewed_blob_sha": "ca16f2127c670863adaad7bf646d9549be509bb4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 both modules s29 names exist at the reviewed base (`reckon/crew/pending_landing.py`, `reckon/crew/recovery_repair_dispatch.py`), the test file it names is the node's own deliverable, and \u00a727 resolves as a section id (`id=\"s27\"`) and in the dependency map.",
+    "done_when": "a finding \u2014 s29's done-when records no kept arm for a run whose process liveness cannot be read, although the release's decision turns on that reading (plan.html:227).",
+    "evidence_paths": "pass \u2014 s29 sends no evidence to a scratch path; its records are the run's own manifest and release receipt, kept under the crew runs directory.",
+    "naming": "pass \u2014 s29's prose and its declared write paths carry no plan label, stage name, ticket number or version tag into a symbol or comment.",
+    "reasoning": "two findings \u2014 the in-progress-turn rule as written would release a run whose liveness is unknown, and the never-merged kind the Deliverable names has no recorded fact to be read from.",
+    "single_goal": "pass \u2014 every rule in s29's Deliverable is a kept-or-released condition of one decision, \"a promoted run with no live worker gives up its pointer\".",
+    "wiring": "pass \u2014 s29 carries `plan-section-depends-on` against `delivered-work-lands-without-a-coordinator#s27`, the release decision s29's Why takes as given."
+  },
+  "section_digests": {
+    "_document": "fc24c7e5785c532ec8ec3cecb9229499c7cc61b1d3587580e2afc0922dd16246",
+    "s1": "daca91cb0f9305061dfad149cbb2aa15ab415088f0392d60d2051e0ab5d934b8",
+    "s10": "6aae974dd61c328c9cbcf5ea3d67d675b0ea15787d15c2fd1cd3d2da05e4d3f3",
+    "s11": "bd1c865f0b9313090958a8d94f4c1441a01c4a70aaff341185f4bcbf27ef02f9",
+    "s12": "3a6d4470998d93c84374a7db22abed7b1d777a4aecafd3012ac38cb67cfd8c32",
+    "s13": "4358adc642601277f340b7705d1e70f262f3b5eb7c7d47ffa9e371929c11af78",
+    "s14": "99464c06da0a45ede187b3a4e9cfab402db71d1063e7a97f71c0ea512234ae13",
+    "s15": "a77206eaccee8eded2411facba5b1bfc66a96db96525e858a4232e67006b7eff",
+    "s16": "9e7b52cfcc733c19e5358d0b94e70f59a97bb91b7b784173ef4ecdeaae9e5920",
+    "s17": "cb1ef4dbfc14a57b11eebd87830ae76eec1006f9ae3e9a96da304d6f41870d92",
+    "s18": "952c184917351117b3f92f50b109c64b6edc963dc57f74f8d0e96e260b672454",
+    "s19": "fd99cdb85821b8f1cc753d60d3461ddda1e36227553a34ad710f3c4edbcb65dd",
+    "s2": "73fc6aa2a15187d147a01fbde87b1769c00e59eb0d5d6018b4f052da2b90f72a",
+    "s20": "73a59983728fec7eb3a28f9305c1846bab53db81049cdf361b7332b51458b9ab",
+    "s21": "c95db350871319247d9fa4cc2afa9694a54554ea9e31d2e9da533f29a2f8331f",
+    "s22": "af8c57fe3c0c211e820c487af5729bf215453da9640ec5c8b23d71e3f7418e41",
+    "s23": "3739019144c6377f7bee7906410475d1c3b4b1cb8c6cc230ed6a6ba1fb090517",
+    "s24": "2d55de204feeb4689a853af6b9a87571dcb196723395a8172af8276eb87eb3b3",
+    "s25": "5a7d62a0abe80ca6575854a16a19342fe76fea7420d61e441c7c934523ebb7fd",
+    "s26": "a83b6d3223dde663f8b81971ca35c3f4f0d2f46d2f19f7761f9802cb61788701",
+    "s27": "6d263751c392fc5e86bdf0e86106d2e36860af9f0b37a3bfe889db5542c3f8e6",
+    "s28": "17e9b9db682ba8c582f60c11d7f752a497c3ef3401c66cc48a72764617d78e9e",
+    "s29": "25a28acb500b9bf4c582117b1b62e16fd0884b08678cda6901096a20889a3825",
+    "s3": "39f518f94544e14da2723c109d5347c3e321e79fd378987dc84506f550b8df04",
+    "s4": "82225453987df5c187c6859b433cb3035bbfe2baa60dc9583015b62a3bb4e2fa",
+    "s5": "38a561b738798306be4693fe79d645bf2736fa62cd052752a8dd43e572f5e5a6",
+    "s6": "b81ab3b2c459d091fd625ecdff51bf0c3c19777120dd4cb28ecb3cf5c1cbb944",
+    "s7": "aad55d4f9b54f8eb5771cab69848ff200c20f490fc3b681db1a4972125eb59d2",
+    "s8": "691e915ecf6805f8840bbda36ce83e2e8e5dcb78f8c24b30de99c290226f6434",
+    "s9": "ce5866195b9466068219eee0bfccd5a241de412f6a4c8cc18b90106fbc857a57"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T20:50:12.803821+00:00",
+  "total": null
+}

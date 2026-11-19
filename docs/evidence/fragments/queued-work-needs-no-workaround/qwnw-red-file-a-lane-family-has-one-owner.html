@@ -1,0 +1,112 @@
+<section id="qwnw-red-file-a-lane-family-has-one-owner-landing">
+  <h2>A lane family has one owner</h2>
+
+  <p><strong>What changed.</strong> The rule that maps a configured backend to
+  its lane family had one owner in <code>reckon/crew/dispatch_picker.py</code>,
+  but the read underneath it — resolve the backend's command to a dialect, and
+  treat a command that names none as no dialect — was still stated three times:
+  in <code>lane_family</code>, in <code>reservation_family</code>, and in the
+  picker snapshot's local-wrapper check. A 15 November change gave that check a
+  <code>dialect_for</code> call of its own, so the node's test file went red on
+  the primary branch:
+  <code>test_the_owner_is_the_only_lane_family_derivation_among_the_consolidated_modules</code>
+  refuses a <code>dialect_for(</code> in either former duplicator.</p>
+
+  <p><strong>Verdict — product wrong.</strong> The rule the test states is the
+  one this section is about: the derivation has one owner. The snapshot's later
+  call was not a lane-family derivation, but it was a second statement of the
+  dialect read, which is the thing the owner replaced. Rather than narrow the
+  assertion, the consolidation it asks for is completed:
+  <code>backend_dialect(backend)</code> in <code>dispatch_picker</code> now
+  states once what it means for a backend's command to name no dialect, and
+  <code>lane_family</code>, <code>reservation_family</code> and the snapshot's
+  local-wrapper check all read it from there. The snapshot's unused
+  <code>reckon._backends</code> import goes with the call it served. No assertion
+  was deleted or weakened; this node does not touch the test file.</p>
+
+  <h3 id="qwnw-red-file-a-lane-family-has-one-owner-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-lane-family-has-one-owner-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Scope</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>target file, base</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>the node's test file</td>
+        <td>1 failed, 5 passed (<code>EXIT=1</code>)</td>
+      </tr>
+      <tr>
+        <td>target file, head</td>
+        <td><code>1644b2158b319824b4d97fa97767566657038fc1</code></td>
+        <td>the node's test file</td>
+        <td>6 passed (<code>EXIT=0</code>)</td>
+      </tr>
+      <tr>
+        <td>scoped gate, all_debug</td>
+        <td><code>1644b2158b319824b4d97fa97767566657038fc1</code></td>
+        <td>the node's file plus the two declared census tests</td>
+        <td>64 passed (<code>EXIT=0</code>)</td>
+      </tr>
+      <tr>
+        <td>declared suite, base</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>the two declared census tests</td>
+        <td>58 passed (<code>EXIT=0</code>)</td>
+      </tr>
+      <tr>
+        <td>declared suite, head</td>
+        <td><code>1644b2158b319824b4d97fa97767566657038fc1</code></td>
+        <td>the two declared census tests</td>
+        <td>58 passed (<code>EXIT=0</code>)</td>
+      </tr>
+      <tr>
+        <td>importer arm, base</td>
+        <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
+        <td>33 test files importing <code>dispatch_picker</code></td>
+        <td>4 failed, 290 passed</td>
+      </tr>
+      <tr>
+        <td>importer arm, head</td>
+        <td><code>1644b2158b319824b4d97fa97767566657038fc1</code></td>
+        <td>33 test files importing <code>dispatch_picker</code></td>
+        <td>3 failed, 291 passed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The importer arm's delta is the node's own case: the four failures at base
+  are the three below plus the target test, and the head arm carries the same
+  three and no other. The derivation was also compared across the two trees over
+  46 readings — five configurations (a local backend naming a wrapper, one
+  naming a dialect, no local backend, a command naming no dialect, a local
+  wrapper) times each configured name plus an absent name and an empty one, with
+  the backend mapping passed explicitly and left to the configuration — and
+  every <code>lane_family</code> and <code>reservation_family</code> value is
+  identical between base and head.</p>
+
+  <h3 id="qwnw-red-file-a-lane-family-has-one-owner-control">Negative control</h3>
+
+  <p>The base run of the node's file, at
+  <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, in a scratch extraction
+  of that revision:</p>
+
+  <pre><code>....F.                                                                   [100%]
+FAILED tests/test_a_lane_family_has_one_owner.py::test_the_owner_is_the_only_lane_family_derivation_among_the_consolidated_modules - AssertionError: .../base-5b0a1f5/reckon/crew/picker/snapshot.py derives a lane family instead of calling the owner
+1 failed, 5 passed in 0.39s
+EXIT=1</code></pre>
+
+  <p>The same run at head reads six passed and no failure, so the failing id is
+  the one this change answers.</p>
+
+  <h3 id="qwnw-red-file-a-lane-family-has-one-owner-outside">Outside scope</h3>
+
+  <p>Three tests fail identically in both arms of the importer run —
+  <code>test_a_dry_run_evaluates_every_gate.py::test_a_dry_run_routes_a_held_node_where_the_launch_routes_it</code>,
+  <code>test_a_named_lane_lets_jev_choose_its_model.py::test_the_named_lane_choice_is_recorded_on_the_run</code>
+  and <code>test_the_fleet_gate_holds_dispatch.py::test_completion_and_promotion_continue_during_a_pause</code> —
+  so none of them is caused by this change. This gate measures only this node's
+  own change; verifying the merged result belongs to a separately dispatched
+  test node.</p>
+</section>

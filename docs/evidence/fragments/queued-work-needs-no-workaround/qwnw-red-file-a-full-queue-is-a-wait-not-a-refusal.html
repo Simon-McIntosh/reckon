@@ -1,0 +1,95 @@
+<section id="qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal-landing">
+  <h2>A full queue is a wait, not a refusal — the file red on the primary branch</h2>
+
+  <p><strong>What was red, and how it reproduced.</strong> At the primary
+  branch revision <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code the named
+  file read <em>2 failed, 6 passed</em> as an <code>all_debug</code> job (job
+  1329382) with the measured command's <code>SLURM_JOB_ID</code> unset. Both
+  failing ids were the <code>r-scope-conflict</code> arm of the two
+  parametrised tests:
+  <code>test_a_wait_refusal_keeps_the_queued_reading[r-scope-conflict-_scope_conflict]</code>
+  and
+  <code>test_a_wait_refusal_lists_as_a_queued_run[r-scope-conflict-_scope_conflict]</code>.
+  The first failed on <code>row.get("session_refusal") is None</code>, the
+  second on <code>'scope-held' == 'run-queued'</code>.</p>
+
+  <p><strong>Two causes, each with its verdict.</strong> The file was written
+  on 24 October, when every scope-claim refusal read as an anonymous queued
+  row. On 14 November the product rule changed deliberately
+  (<code>213b8fd3fa</code>, <em>a queued row names the hold it waits on</em>): a
+  refusal naming a live run's write claim is published under its own duty kind,
+  <code>scope-held</code>, carrying the holder run and the path it fences and
+  publishing no command, because a command there sends a coordinator to act on a
+  peer's claim, and the stop hook then refuses the rest of that turn. That rule
+  is pinned by <code>tests/test_a_queued_row_names_its_own_hold.py</code>. So
+  cause one is <strong>test wrong</strong>: the two arms encoded a rule the code
+  no longer keeps, and they are updated to the rule it now asserts — the queue
+  cap keeps the plain waiting text, and a claim reads as a wait on its holder.</p>
+
+  <p>Cause two is <strong>product wrong</strong>, and it is why the
+  <code>r-directory-claim</code> arms were the only passing claim arms. The
+  class walk recognises a claim kind by walking the <code>ScopeConflict</code>
+  family, and its docstring states that the reading names the holder and the
+  path every such claim names; but the holder was read from one phrase only,
+  <code>conflicts with live claim …</code>, so the directory claim's
+  <code>… overlapping the live claim …</code> matched nothing and the row fell
+  back to the anonymous waiting reading. The pattern in
+  <code>reckon/crew/recovery_classification.py</code> reads both phrasings now,
+  so the coarser kind publishes its holder like the exact one. The test arms
+  assert that: each claim arm names <code>r-20261023T220036362628-a-peer-holds-the-path</code>
+  and the path it fences, carries <code>next_command == ""</code>, and is
+  followed by <code>SCOPE_HELD_DUTY_KIND</code>, which the test also holds to
+  <code>NON_BLOCKING_DUTY_KINDS</code>. No assertion was deleted or weakened;
+  the arms that asserted the anonymous reading now assert the named one, which
+  is the stricter reading of the same refusal. The follower-condition case keeps
+  its own arm, still read as the session's own duty.</p>
+
+  <h3 id="qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-full-queue-is-a-wait-not-a-refusal-arms">
+    <caption>Each arm is an <code>all_debug</code> job whose log's first lines
+    name the revision, tree, imported module and command, and whose last line
+    reads <code>EXIT=&lt;code&gt;</code>. Node-local temporary paths were used
+    for pytest's own scratch; the trees are extracts of committed revisions.</caption>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>the named file, base — negative control</td>
+        <td><code>42fe90d0b0</code>, working tree, job 1329382</td>
+        <td>2 failed, 2 failing ids, 6 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head</td>
+        <td><code>ee14480a1d</code>, working tree, job 1329437</td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's armed suite, base</td>
+        <td><code>42fe90d0b0</code>, extraction with a git object alternate</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's armed suite, head</td>
+        <td><code>ee14480a1d</code>, working tree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    <tr><td>the tests that import the changed module, base</td>
+        <td><code>42fe90d0b0</code>, extraction with a git object alternate</td>
+        <td>28 failed, 911 passed, 10 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>the tests that import the changed module, head</td>
+        <td><code>ee14480a1d</code>, working tree</td>
+        <td>28 failed, 911 passed, 10 errors, <code>EXIT=1</code> — the same 28 ids, so this arm adds none</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The arm over the importing tests.</strong> Every test file that
+  imports the module the change touches — the one the finding names — plus those
+  naming the helper it changed, is one arm: 118 files, measured at
+  <code>42fe90d0b0</code> and at <code>ee14480a1d</code>. Both arms read the same
+  28 failing ids, at the same 911 passed and 10 errors, so the file list is
+  diffed to nothing; the log's own <code>FAILED</code> lines carry the ids.</p>
+
+  <p>The first base arm over the armed suite was a bare <code>git archive</code> of
+  the base revision, and it read 2 failed and 56 passed, both failing ids on
+  <code>('reckon/_store.py', 'write_atomically') in set()</code> in the census
+  files. That tree is not a repository, so the staged-write census had nothing
+  to scan — a claim about the instrument, not the code. The tree was made a
+  repository at the base revision (a <code>git init</code> with the shared
+  object store as an alternate, <code>update-ref HEAD</code> and
+  <code>read-tree</code> at <code>42fe90d0b0</code>), and the arm then read 58
+  passed, matching the head arm.</p>
+</section>

@@ -1,0 +1,99 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "added_by_run": false,
+      "assertion": "tests/test_a_brief_points_rather_than_quotes.py:151 json.loads(result.stdout)",
+      "fails_when": "the dispatch command writes any line ahead of its JSON document on stdout, or the helper reverts to the merged result.output stream click interleaves",
+      "independent": true,
+      "negative_control": "The base revision bc7b7be carries the pre-change form and negative-control-base-red.log records test_a_copied_span_is_named_quoted_and_recorded_on_the_run failing there with a JSONDecodeError on the run-identity notice.",
+      "note": "The line is a channel selector, not an expectation echoed from an input the test supplied; the assertions it feeds compare the payload against the test's own fixture values."
+    }
+  ],
+  "assertion_independence": "The diff adds no assertion; the changed line is a payload-channel selector whose expectation comes from the product's documented stdout/stderr split, and the guard it restores is shown red at the base revision rather than merely observed green.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "owner_found": "per-file test-local helpers only; no shared payload parser exists",
+      "searched": "tests/ and reckon/ for dispatch-payload parsers and result-channel readers",
+      "verdict": "the change copies no mechanism and adds no definition"
+    }
+  },
+  "dispatched_at": "2026-11-18T18:18:53Z",
+  "evidence_limits": [
+    "The partition the scoped gate was submitted to is not recorded in any artefact: the gate log headers name the host alone and the .scheduler sidecar is empty.",
+    "The reviewed run's declared suite arms name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which exercise neither the changed file nor a module it imports; the head-green evidence for the node's own measure is the scoped gate log rather than those arms."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-brief-points-rather-than-quotes.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: The base arm's log cell cites scoped-gate-1795024614253356313.log, which ran at head e85f4b92 and recorded 13 passed with EXIT=0, so a reader following the base row lands on green head evidence rather than the base refusal; fold a base-arm log citation into the fragment."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-brief-points-rather-than-quotes.html",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "non-blocking: The fragment states the scoped gate ran on all_debug with SLURM_JOB_ID unset, but no artefact under the run directory records either \u2014 the gate log headers name the host 98dci4-clu-3141 alone and its .scheduler sidecar is empty \u2014 so that clause of the done_when rests on the worker's account only; fold the submission record or the withdrawn claim into a follow-up node."
+    }
+  ],
+  "justifications": {
+    "durability": "Reinstating the result.output.splitlines()[0] form at tests/test_a_brief_points_rather_than_quotes.py:151 reddens test_a_copied_span_is_named_quoted_and_recorded_on_the_run as negative-control-base-red.log shows.",
+    "evidence": "scoped-gate-1795025269714187687.log records 13 passed at 9e6914dd with EXIT=0 and negative-control-base-red.log records 1 failed / 12 passed with EXIT=1 at bc7b7be.",
+    "fit": "tests/test_a_brief_points_rather_than_quotes.py:149-150 states the channel split in the code's own vocabulary and tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py:176 already reads result.stdout, but the fragment opens a full HTML document while most siblings start with a section element.",
+    "goal_fidelity": "tests/test_a_brief_points_rather_than_quotes.py:151 now parses result.stdout and the head arm at 9e6914dd is 13 passed with EXIT=0.",
+    "reuse": "The diff adds no definition; the search over tests/ found per-file payload helpers at tests/test_gc_applies_past_a_vanished_worktree.py:74 and tests/test_routing_picker_key.py:64, none duplicated here.",
+    "scope_discipline": "Both files in the diff sit inside the declared paths at brief-for-worker.md:96-101."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal at brief-for-worker.md:38 is to make tests/test_a_brief_points_rather_than_quotes.py pass in full on the primary branch; at 9e6914dd that file reads the dispatch document from result.stdout and its recorded head arm is 13 passed, EXIT=0.\nVERDICT done_when: Read at brief-for-worker.md:374; it requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a per-cause product/test verdict, no assertion deleted or weakened, base and head arms as inline JSON carrying 40-character revisions, and the base-red run logged beside the head run in the fragment; the manifest and the run's logs record every clause but the partition.\nVERDICT write_paths: Read at brief-for-worker.md:95-103 (tests, docs/evidence/fragments/queued-work-needs-no-workaround, that section's fragment file, docs/figures/...); both changed paths \u2014 tests/test_a_brief_points_rather_than_quotes.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-brief-points-rather-than-quotes.html \u2014 are inside them.\nVERDICT manifest: Read at the reviewed run's manifest.md; it reports status complete, both commit ids, the base-red arm at 1 failed / 12 passed with EXIT=1, the head arm at 13 passed with EXIT=0, and both declared suite arms at 58 passed with EXIT=0 carrying the full shas bc7b7be and 9e6914d.\nVERDICT diff: Read bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68..9e6914dd76e0bd4b074fd6d7e795899843bfe54c commit by commit \u2014 e85f4b92 changes only tests/test_a_brief_points_rather_than_quotes.py:148-151 and 9e6914dd adds the evidence fragment; no assertion is added, removed or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_brief_points_rather_than_quotes.py:151 now parses result.stdout, and the head arm at 9e6914dd is 13 passed with EXIT=0, so the file the goal names passes in full.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1795025269714187687.log records 13 passed at 9e6914dd with EXIT=0 and negative-control-base-red.log records 1 failed / 12 passed with EXIT=1 at bc7b7be, though no artefact records the all_debug partition the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both files in the diff, tests/test_a_brief_points_rather_than_quotes.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, are inside the declared paths at brief-for-worker.md:96-101.\nSCORE durability: 19\nJUSTIFICATION durability: Reinstating the result.output.splitlines()[0] form at tests/test_a_brief_points_rather_than_quotes.py:151 reddens test_a_copied_span_is_named_quoted_and_recorded_on_the_run, which is exactly the failure negative-control-base-red.log records at bc7b7be.\nSCORE fit: 16\nJUSTIFICATION fit: tests/test_a_brief_points_rather_than_quotes.py:149-150 states the channel split in the code's own vocabulary and tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py:176 already reads result.stdout, but the fragment opens a full HTML document while most siblings in its directory start with a section element.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no definition beyond the body of a test-local helper, and the search over tests/ found per-file payload helpers at tests/test_gc_applies_past_a_vanished_worktree.py:74 and tests/test_routing_picker_key.py:64, none duplicated here.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-brief-points-rather-than-quotes.html:44 non-blocking: The base arm's log cell cites scoped-gate-1795024614253356313.log, which ran at head e85f4b92 and recorded 13 passed with EXIT=0, so a reader following the base row lands on green head evidence rather than the base refusal; fold a base-arm log citation into the fragment.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-brief-points-rather-than-quotes.html:57 non-blocking: The fragment states the scoped gate ran on all_debug with SLURM_JOB_ID unset, but no artefact under the run directory records either \u2014 the gate log headers name the host 98dci4-clu-3141 alone and its .scheduler sidecar is empty \u2014 so that clause of the done_when rests on the worker's account only; fold the submission record or the withdrawn claim into a follow-up node.\n",
+  "review_run_id": "r-20261118T181451425814-review-of-qwnw-red-file-a-brief-points-rather-than-quotes-9e6914dd76e0",
+  "reviewed_base_sha": "bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68",
+  "reviewed_head_sha": "9e6914dd76e0bd4b074fd6d7e795899843bfe54c",
+  "reviewed_run_id": "r-20261118T063910922816-qwnw-red-file-a-brief-points-rather-than-quotes",
+  "reviewed_worker_commits": [
+    "e85f4b928ed633b6507936fe25d968a42eff910d",
+    "9e6914dd76e0bd4b074fd6d7e795899843bfe54c"
+  ],
+  "scope_provenance": "The diff was taken from bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68, the reviewed run's own orientation base, to 9e6914dd76e0bd4b074fd6d7e795899843bfe54c; both commits between them are the worker's and both touch only declared paths.",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "after": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063910922816-qwnw-red-file-a-brief-points-rather-than-quotes/after_suite-1795025369513507685.log",
+      "revision": "9e6914dd76e0bd4b074fd6d7e795899843bfe54c",
+      "summary_line": "58 passed in 35.11s"
+    },
+    "baseline": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063910922816-qwnw-red-file-a-brief-points-rather-than-quotes/baseline_suite-1795025326575396322.log",
+      "revision": "bc7b7bec5c55cf6b56540b8d3bc5c779c25c5f68",
+      "summary_line": "58 passed in 34.83s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:36:43.784325+00:00",
+  "total": 111
+}

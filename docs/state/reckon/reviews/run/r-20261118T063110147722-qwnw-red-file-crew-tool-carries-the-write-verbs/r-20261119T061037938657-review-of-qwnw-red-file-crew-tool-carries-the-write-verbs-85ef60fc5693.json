@@ -1,0 +1,151 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert \"--no-commit\" in command and \"--outcome\" in command",
+      "fails_if": "the unchanged-run proof is absent or the composer takes the observe branch; gate-base.log shows exactly this failure with 'reckon crew observe --run run-x'.",
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 444,
+      "test": "test_a_commitless_promotion_keeps_its_waiver_and_outcome"
+    },
+    {
+      "assertion": "assert [keyword.arg for keyword in parsed.keyword] == [action, run_id, gate, no_commit, outcome]",
+      "fails_if": "action_form reorders, drops or adds a parameter for this command, or returns a non-call form; removing the outcome mapping at reckon/crew/obligations.py:557 reddens it.",
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 450,
+      "test": "test_a_commitless_promotion_keeps_its_waiver_and_outcome"
+    },
+    {
+      "assertion": "assert arguments[\"action\"] == \"complete\"",
+      "fails_if": "the form renders a different verb from the command's; this is the one independently sourced value in the block.",
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 461,
+      "test": "test_a_commitless_promotion_keeps_its_waiver_and_outcome"
+    },
+    {
+      "assertion": "assert arguments[\"run_id\"] == tokens[tokens.index(\"--run\") + 1]",
+      "fails_if": "action_form drops or renames the run parameter; the value itself is the run id supplied to the composer, so it moves with the input.",
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 462,
+      "test": "test_a_commitless_promotion_keeps_its_waiver_and_outcome"
+    },
+    {
+      "assertion": "assert arguments[\"gate\"] == tokens[tokens.index(\"--gate\") + 1]",
+      "fails_if": "action_form stops carrying the gate parameter; a composer printing the wrong gate value ('passed' instead of the commitless 'not-run') passes, because both sides come from the same command.",
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 463,
+      "test": "test_a_commitless_promotion_keeps_its_waiver_and_outcome"
+    },
+    {
+      "assertion": "assert arguments[\"no_commit\"] == tokens[tokens.index(\"--no-commit\") + 1]",
+      "fails_if": "action_form drops the no_commit parameter; the waiver sentence is compared only against the composer's own output, so no independent source pins its text.",
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 464,
+      "test": "test_a_commitless_promotion_keeps_its_waiver_and_outcome"
+    },
+    {
+      "assertion": "assert arguments[\"outcome\"] == tokens[tokens.index(\"--outcome\") + 1]",
+      "fails_if": "action_form drops the outcome parameter; the value is derived from the same command, so a wrong outcome in the composer is not caught here.",
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 465,
+      "test": "test_a_commitless_promotion_keeps_its_waiver_and_outcome"
+    }
+  ],
+  "assertion_independence": "One assertion (line 461) is independently sourced; lines 462-465 compare the rendered form against tokens of the same command the test handed action_form, so they hold whatever the composer emits and only detect form-mapping regressions. The independent guard on the composed gate stays at tests/test_the_offered_promotion_command_promotes.py:276, which is not part of this node.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:05:22Z",
+  "evidence_limits": [
+    "Bounded read-only review: no suite or gate was re-run; results are read from the source run's own logs.",
+    "The head gate ran at 926c9c91; 85ef60fc adds only the evidence fragment, so no gate measures the final revision itself.",
+    "The base and after suite arms exercise test files that touch nothing this node changed, so their zero delta is invariant but does not exercise the change."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": "463",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate assertion compares the rendered form against the same composed command the test handed action_form, so a composer printing '--gate passed' in the commitless branch (reckon/crew/recovery_classification.py:3663) would leave this case green; the base test's literal gate of 'not-run' was the independent check, and that rule survives only at tests/test_the_offered_promotion_command_promotes.py:276."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-tool-carries-the-write-verbs.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states that no assertion was deleted or weakened, but the case's independent gate expectation was replaced by the derived comparison at tests/test_crew_tool_carries_the_write_verbs.py:463, so the record overstates what the case holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against 42fe90d0: 926c9c91 (30 added, 6 deleted) stubs the unchanged-run proof at tests/test_crew_tool_carries_the_write_verbs.py:439 and replaces the placeholder form expectation at :448-465; 85ef60fc adds the 49-line evidence fragment; no product file changes.",
+    "done_when": "the done-when (source prompt.txt:353-354) requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a red base arm at 42fe90d0 and no added failures; gate-head.log ends with '21 passed in 2.65s' and 'EXIT=0' at 926c9c91, gate-base.log ends with '1 failed, 20 passed in 6.12s' and 'EXIT=1' at 42fe90d0, and the worker session log carries the sbatch --partition=all_debug submission whose script unsets SLURM_JOB_ID.",
+    "goal": "the source node's goal is to make tests/test_crew_tool_carries_the_write_verbs.py pass in full on the primary branch (source prompt.txt:41); the head stubs promotion_evidence._run_changed_nothing and states the form's values at tests/test_crew_tool_carries_the_write_verbs.py:439-465 without touching product source, and the whole file passes at 926c9c91, with the primary-branch claim arriving only at promotion.",
+    "manifest": "the source manifest.md records status complete, commits 926c9c91 and 85ef60fc, gate-head.log 21 passed EXIT=0, gate-base.log 1 failed and 20 passed at EXIT=1, and baseline/after suite arms both exit 0 with no failures.",
+    "write_paths": "the source node declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its own fragment there, plus docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew-tool-carries-the-write-verbs; both changed paths are inside them and no path outside is touched."
+  },
+  "justifications": {
+    "durability": "restoring the base test's missing _run_changed_nothing stub reddens :444 as gate-base.log shows, but :462-465 compare the form against the command the test itself composed and so cannot catch a composer that prints the wrong gate or waiver.",
+    "evidence": "gate-head.log ('21 passed', 'EXIT=0' at 926c9c91) and gate-base.log ('1 failed, 20 passed', 'EXIT=1' at 42fe90d0) are the named gate's two arms, and the worker session log carries the all_debug submission command for the script that unsets SLURM_JOB_ID.",
+    "fit": "the added parsing follows the ast/shlex form-reading idiom already used at tests/test_crew_tool_carries_the_write_verbs.py:544 and :567, and every element id in the fragment begins with the node id.",
+    "goal_fidelity": "tests/test_crew_tool_carries_the_write_verbs.py:439 supplies the unchanged-run proof and :448-465 state the form's values, and gate-head.log records 21 passed for the whole file at 926c9c91 with no product source changed.",
+    "reuse": "no production definition is added; the inline ast/shlex form read at :448-465 follows the file's existing inline pattern at :544 and :567, and the search over reckon/crew found no parser owner because action_form (reckon/crew/obligations.py:557) emits a form rather than reading one.",
+    "scope_discipline": "both changed paths sit inside the declared tests and docs/evidence/fragments/queued-work-needs-no-workaround scopes, and no product file appears in 42fe90d0..85ef60fc."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to make tests/test_crew_tool_carries_the_write_verbs.py pass in full on the primary branch (source prompt.txt:41); the head stubs promotion_evidence._run_changed_nothing and states the form's values at tests/test_crew_tool_carries_the_write_verbs.py:439-465 without touching product source, and the whole file passes at 926c9c91, with the primary-branch claim arriving only at promotion.\nVERDICT done_when: the done-when (source prompt.txt:353-354) requires the file green at head as an all_debug job with SLURM_JOB_ID unset, a red base arm at 42fe90d0 and no added failures; gate-head.log ends with '21 passed in 2.65s' and 'EXIT=0' at 926c9c91, gate-base.log ends with '1 failed, 20 passed in 6.12s' and 'EXIT=1' at 42fe90d0, and the worker session log carries the sbatch --partition=all_debug submission whose script unsets SLURM_JOB_ID.\nVERDICT write_paths: the source node declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its own fragment there, plus docs/figures/queued-work-needs-no-workaround/qwnw-red-file-crew-tool-carries-the-write-verbs; both changed paths are inside them and no path outside is touched.\nVERDICT manifest: the source manifest.md records status complete, commits 926c9c91 and 85ef60fc, gate-head.log 21 passed EXIT=0, gate-base.log 1 failed and 20 passed at EXIT=1, and baseline/after suite arms both exit 0 with no failures.\nVERDICT diff: read against 42fe90d0: 926c9c91 (30 added, 6 deleted) stubs the unchanged-run proof at tests/test_crew_tool_carries_the_write_verbs.py:439 and replaces the placeholder form expectation at :448-465; 85ef60fc adds the 49-line evidence fragment; no product file changes.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_tool_carries_the_write_verbs.py:439 supplies the unchanged-run proof and :448-465 state the form's values, and gate-head.log records 21 passed for the whole file at 926c9c91 with no product source changed.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log ('21 passed', 'EXIT=0' at 926c9c91) and gate-base.log ('1 failed, 20 passed', 'EXIT=1' at 42fe90d0) are the named gate's two arms, and the worker session log carries the all_debug submission command for the script that unsets SLURM_JOB_ID.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both changed paths sit inside the declared tests and docs/evidence/fragments/queued-work-needs-no-workaround scopes, and no product file appears in 42fe90d0..85ef60fc.\nSCORE durability: 16\nJUSTIFICATION durability: restoring the base test's missing _run_changed_nothing stub reddens :444 as gate-base.log shows, but :462-465 compare the form against the command the test itself composed and so cannot catch a composer that prints the wrong gate or waiver.\nSCORE fit: 18\nJUSTIFICATION fit: the added parsing follows the ast/shlex form-reading idiom already used at tests/test_crew_tool_carries_the_write_verbs.py:544 and :567, and every element id in the fragment begins with the node id.\nSCORE reuse: 18\nJUSTIFICATION reuse: no production definition is added; the inline ast/shlex form read at :448-465 follows the file's existing inline pattern at :544 and :567, and the search over reckon/crew found no parser owner because action_form (reckon/crew/obligations.py:557) emits a form rather than reading one.\nFINDING tests/test_crew_tool_carries_the_write_verbs.py:463 non-blocking: the gate assertion compares the rendered form against the same composed command the test handed action_form, so a composer printing '--gate passed' in the commitless branch (reckon/crew/recovery_classification.py:3663) would leave this case green; the base test's literal gate of 'not-run' was the independent check, and that rule survives only at tests/test_the_offered_promotion_command_promotes.py:276.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-tool-carries-the-write-verbs.html:20 non-blocking: the fragment states that no assertion was deleted or weakened, but the case's independent gate expectation was replaced by the derived comparison at tests/test_crew_tool_carries_the_write_verbs.py:463, so the record overstates what the case holds.",
+  "reuse_search": {
+    "capabilities": [
+      "rendering a crew command as an MCP action form",
+      "reading an action form's keyword arguments back into a mapping"
+    ],
+    "judgement": "No added function, class or module; the diff edits one test case body. The repository owner of form rendering is action_form, and nothing reads a form back, so no owner was duplicated; the inline ast/literal_eval pattern already appears twice in the same test file at :544 and :567.",
+    "owners_opened": [
+      "reckon/crew/obligations.py:557-640"
+    ]
+  },
+  "review_run_id": "r-20261119T061037938657-review-of-qwnw-red-file-crew-tool-carries-the-write-verbs-85ef60fc5693",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "85ef60fc5693249b85b736280b6e9d45e165df27",
+  "reviewed_run_id": "r-20261118T063110147722-qwnw-red-file-crew-tool-carries-the-write-verbs",
+  "reviewed_worker_commits": [
+    "926c9c91780a542729f572bc6643f5865b9cead1",
+    "85ef60fc5693249b85b736280b6e9d45e165df27"
+  ],
+  "scope_provenance": "The source manifest's orientation_base_sha is 42fe90d0b0a46060bafde2490dda7d4002cda478, and 926c9c91780a542729f572bc6643f5865b9cead1's parent is that revision, so 42fe90d0..85ef60fc is exactly the node's two commits.",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063110147722-qwnw-red-file-crew-tool-carries-the-write-verbs/after_suite-1795066423512581943.log",
+      "revision": "85ef60fc5693249b85b736280b6e9d45e165df27"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063110147722-qwnw-red-file-crew-tool-carries-the-write-verbs/baseline_suite-1795066348359575880.log",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T15:31:11.289611+00:00",
+  "total": 109
+}

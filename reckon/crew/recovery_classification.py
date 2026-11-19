@@ -164,9 +164,13 @@ QUEUED_REFUSAL_SCOPE_PREFIX = (
 )
 
 # A scope refusal names both facts the row publishes: the path the live claim
-# covers and the run that holds it, as node.ScopeConflict renders them.
+# covers and the run that holds it, as the claim family renders them. An exact
+# claim says its run conflicts with a live claim; a directory claim says its
+# path overlaps one. Both phrasings are read here, because a claim kind the
+# class walk recognises must also have its holder read, or the row falls back to
+# the anonymous waiting reading and loses the subject of the wait.
 _SCOPE_CLAIM = re.compile(
-    r"conflicts with live claim (?P<path>'[^']*') held by run (?P<run>'[^']*')"
+    r"(?:with|overlapping the) live claim (?P<path>'[^']*') held by run (?P<run>'[^']*')"
 )
 
 
@@ -910,7 +914,14 @@ def _review_pointer(review_run_id: str) -> Mapping[str, Any] | None:
     dispatch that composed the review, and the stranded-launch reading is taken
     from the same mapping: one read answers both questions about the pointer.
     """
+    from reckon.crew.open_run_index import pointers
     from reckon.crew.runs import read_pointer
+
+    snapshot = pointers()
+    if snapshot is not None:
+        return next(
+            (row for row in snapshot if row.get("run_id") == review_run_id), None
+        )
 
     try:
         pointer = read_pointer(review_run_id)
@@ -1153,10 +1164,11 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
 
     checkout = claim_repository(record)
     try:
+        from reckon.crew.pending_landing import _promotion_evidence
+
         root = ledger._run_ledger_root(project, str(record.get("repo") or ""))
-        path = ledger.run_path(project, run_id, root)
-        row = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger.LedgerError):
+        row = _promotion_evidence(project, run_id, root=root)
+    except (OSError, ValueError, RuntimeError, ledger.LedgerError, CrewError):
         return checkout, "", False
     if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
         return checkout, "", False
@@ -1917,9 +1929,24 @@ def classify_pointer(
             stored_review = served_review.get("record")
             review = dict(stored_review) if isinstance(stored_review, Mapping) else None
             review_error = str(served_review.get("error") or "")
+            # The files that answer was read past travel with it: a served
+            # classification made no read, and without these a later derivation
+            # of the same fleet reports no finding while the sweep that wrote
+            # the memo named the path.
+            for finding in served_review.get("findings") or ():
+                note_read_failure(finding)
         else:
-            review, review_error = _stored_review(record)
-            memo["review"] = {"record": review, "error": review_error}
+            # The read's own findings are captured here so the memo can carry
+            # them, then noted to the region the caller opened around this call.
+            with collect_read_failures() as read_failures:
+                review, review_error = _stored_review(record)
+            memo["review"] = {
+                "record": review,
+                "error": review_error,
+                "findings": [dict(entry) for entry in read_failures],
+            }
+            for finding in read_failures:
+                note_read_failure(finding)
     review_complete = _review_is_complete(review)
     # The branch that decides whether the run still owes a review is the only
     # one that pays for recognising a dispatched review, so the pair starts
@@ -1967,7 +1994,9 @@ def classify_pointer(
             # Optional echoes can be absent from a later attempt's manifest.
             # Recheck a retained refusal against the issued tree and commits.
             reported_orientation = {**manifest_data, **issued_orientation}
-        _apply_orientation_check(orientation_record, None, reported=reported_orientation)
+        _apply_orientation_check(
+            orientation_record, None, reported=reported_orientation
+        )
         if recheck_without_echoes:
             orientation_record["orientation_check"]["echoes_absent"] = True
         memo["orientation_check"] = orientation_record.get("orientation_check")
@@ -2295,7 +2324,9 @@ def classify_pointer(
                 "the worker manifest reports completion; this is a measurement "
                 "run, so no review is owed and it is ready for promotion"
             )
-            action = _promotion_command(run_id, record, manifest_commits)
+            action = _promotion_command(
+                run_id, record, manifest_commits, placeholders=True
+            )
         elif _pointer_role(record) == REVIEW_ROLE:
             # A review run's deliverable is the review it wrote for another
             # run, so it is not itself awaiting review. The exemption is the
@@ -2322,7 +2353,9 @@ def classify_pointer(
                 "the worker manifest reports completion and an independent "
                 "parsed review is attached; the run is ready for promotion"
             )
-            action = _promotion_command(run_id, record, manifest_commits)
+            action = _promotion_command(
+                run_id, record, manifest_commits, placeholders=True
+            )
         else:
             classification = "scoring"
             # A review already dispatched stands as this run's review in
@@ -3512,7 +3545,14 @@ def _delivery_reading(
     classification = str(row.get("classification") or "")
     if classification in FLEET_SETTLED_STATES:
         return {"status": "landed"}
-    if classification != "promotable":
+    # ``scoring`` is a delivered run whose independent review has not filed its
+    # classified record yet: the pane draws its row in the delivered family. An
+    # empty reading for it left the fleet counters counting no delivery while
+    # the row's own word said delivered, so one row carried a delivered count
+    # the drawn bucket contradicted. Both delivered classifications are read
+    # here, and a queued promotion under review moves the promotion records
+    # rather than the delivered figure, exactly as for ``promotable``.
+    if classification not in ("promotable", "scoring"):
         return {}
     from .promotion_requests import QUEUED, read_promotion
 
@@ -3527,9 +3567,16 @@ def _delivery_reading(
 
 
 def delivery_summary(
-    rows: Sequence[Mapping[str, Any]], *, session: str | None = None
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Count one classified population and locate its oldest promotion request."""
+    """Count one classified population and locate its oldest promotion request.
+
+    ``pointers`` — the fleet reading the caller already holds — is passed to the
+    queue report, so counting a population inside a fleet read lists no fleet.
+    """
     selected = [
         row
         for row in rows
@@ -3564,7 +3611,7 @@ def delivery_summary(
         )
         places = {
             row["run_id"]: row["position"]
-            for row in promotion_queue_report()["requests"]
+            for row in promotion_queue_report(pointers=pointers)["requests"]
         }
         position = places.get(oldest["run_id"])
         requested_at = (oldest.get("delivery") or {}).get("requested_at")
@@ -3579,7 +3626,11 @@ def delivery_summary(
 
 
 def _promotion_command(
-    run_id: str, record: Mapping[str, Any], manifest_commits: Sequence[Any]
+    run_id: str,
+    record: Mapping[str, Any],
+    manifest_commits: Sequence[Any],
+    *,
+    placeholders: bool = False,
 ) -> str:
     """The completion command a promotable run is promoted by.
 
@@ -3602,10 +3653,33 @@ def _promotion_command(
     refuses a citation of the base — the base predates the run — so the offer
     names the declaration a commitless run promotes under instead of the
     citation that reproduces the refusal.
+
+    Whether the run changed anything is read from its worktree, not from the
+    prose of its manifest: a delivered report lives outside every repository
+    (under the run's own directory, or beside a store), and naming it in
+    ``changed_paths`` is what a read-only run declares, not evidence against
+    the declaration instead. So the offer states the commitless form when the
+    worktree still sits on its base with no changed path inside the
+    repository, which is the same reading promotion applies.
+
+    A citation offer states the gate verdict its own evidence supports: the
+    run's recorded suite arm when that arm measured the current head, and
+    ``not-run`` otherwise, because asserting ``passed`` from an unmeasured
+    revision would offer a command promotion refuses. Withdrawing the offer
+    entirely would leave the run's commits unoffered, so the citation is kept
+    and the verdict is what narrows.
+
+    ``placeholders`` selects the reader of the commitless declaration. The
+    classifier shows its offer to a coordinator who fills in what the run
+    produced and why it produced no commit, so its reason and outcome are left
+    as placeholders. An obligation's command is replayed verbatim by the tool
+    surface, which carries no placeholder at all, so that surface reads the
+    run's own manifest for the outcome and states the measured reason.
     """
     from .promotion import _promotion_commits
     from .promotion_checks import _fresh_manifest
-    from .promotion_evidence import _run_changed_nothing
+    from .promotion_evidence import _worktree_unchanged_since_base
+    from .promotion_scope import _changed_paths_inside_repository
     from .recovery_review_delivery import _is_review_run
 
     if not completion_offer(record, repair=True):
@@ -3619,24 +3693,47 @@ def _promotion_command(
         _review_tree(record), _promotion_commits(record, manifest_commits)
     )
     base = str(record.get("base_sha") or "").strip()
-    if (
-        not commits or (len(commits) == 1 and base and same_revision(commits[0], base))
-    ) and _run_changed_nothing(record):
-        outcome = str(
-            manifest.get("landing")
-            or manifest.get("checkpoint")
-            or "Completed the run without repository changes."
-        )
+    cites_only_the_base = bool(commits) and (
+        len(commits) == 1 and base and same_revision(commits[0], base)
+    )
+    if cites_only_the_base:
+        # A citation of the base is refused; the commitless declaration is the
+        # only form left, and it is true only of a worktree that still sits on
+        # the base with nothing of the run inside the repository. A run whose
+        # tree moved keeps no offer: a citation of the base would reproduce the
+        # refusal and no commit of its own was recorded to offer instead.
+        if not (
+            _worktree_unchanged_since_base(record)
+            and not _changed_paths_inside_repository(manifest, record)
+        ):
+            return f"reckon crew observe --run {shlex.quote(run_id)}"
+        if placeholders:
+            reason = "'<why the run produced no commit>'"
+            outcome = "'<what the run produced>'"
+        else:
+            reason = shlex.quote(
+                "The run changed no repository file; its worktree still sits "
+                "on its dispatch base."
+            )
+            outcome = shlex.quote(
+                str(
+                    manifest.get("landing")
+                    or manifest.get("checkpoint")
+                    or "Completed the run without repository changes."
+                )
+            )
         return (
-            f"reckon crew complete --run {shlex.quote(run_id)} --gate not-run --wait "
-            f"--no-commit {shlex.quote('The run produced no repository commit.')} "
-            f"--outcome {shlex.quote(outcome)}"
+            f"reckon crew complete --run {shlex.quote(run_id)} --gate not-run "
+            f"--wait --no-commit {reason} --outcome {outcome}"
         )
-    if not completion_offer(record):
-        return f"reckon crew observe --run {shlex.quote(run_id)}"
-    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate passed --wait"
+    if not commits:
+        if not completion_offer(record):
+            return f"reckon crew observe --run {shlex.quote(run_id)}"
+        return f"reckon crew complete --run {shlex.quote(run_id)} --gate passed --wait"
+    verdict = "passed" if completion_offer(record) else "not-run"
+    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate {verdict} --wait"
     for commit in commits:
-        action += f" --commit {commit}"
+        action += f" --commit {shlex.quote(commit)}"
     return action
 
 
@@ -3776,4 +3873,8 @@ from .recovery_watch import (  # noqa: E402
     _pointer_role,
     _utc_seconds,
     _watch_verdict,
+)
+from .review_records import (  # noqa: E402
+    collect_read_failures,
+    note_read_failure,
 )

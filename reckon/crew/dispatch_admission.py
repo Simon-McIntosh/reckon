@@ -172,8 +172,16 @@ def _refuse_over_reservation_roster(
     project: str | None = None,
     *,
     reserve: int = 0,
+    seats_in_flight: int = 0,
 ) -> None:
     """Refuse a dispatch past the placement reservation's roster cap.
+
+    ``seats_in_flight`` is the number of launches the caller has already
+    started and whose seats the live pointers do not yet all carry. One
+    admission pass submits its candidates concurrently, so a launch's bound
+    read sees the world before its siblings' pointers are published and every
+    candidate would otherwise take the same freed seat. A caller that launches
+    one request at a time passes nothing.
 
     The cap is the roster's alone: under ``--overlap`` the scheduler enforces
     nothing inside the allocation, so the only thing standing between the
@@ -209,9 +217,17 @@ def _refuse_over_reservation_roster(
         placement_module.placed_in_reservation(occupying, reservation)
     )
     limit = max(1, placement_module.RESERVATION_ROSTER_LIMIT - max(0, reserve))
-    refusal = placement_module.reservation_roster_refusal(len(occupants), limit=limit)
+    seated = len(occupants) + max(0, seats_in_flight)
+    refusal = placement_module.reservation_roster_refusal(seated, limit=limit)
     if refusal is None:
         return
+    if seats_in_flight:
+        refusal = (
+            f"{refusal} {seats_in_flight} more "
+            f"{'seat is' if seats_in_flight == 1 else 'seats are'} already "
+            "committed to launches this pass has started, whose workers hold "
+            "their seats without a published pointer yet."
+        )
     if reserve:
         refusal = (
             f"{refusal} The local lane stops {reserve} seats short of the "
@@ -239,6 +255,7 @@ def _refuse_over_concurrency_ceiling(
     *,
     exclude_run_ids: Iterable[str] = (),
     reserve: int = 0,
+    seats_in_flight: int = 0,
 ) -> None:
     """Refuse a dispatch that would exceed whichever resource bound is binding.
 
@@ -246,6 +263,14 @@ def _refuse_over_concurrency_ceiling(
     dispatch must leave free: the local lane passes
     :data:`reckon.crew.placement.LOCAL_LANE_RESERVE`, so a dispatch naming
     another lane is never starved by the local queue.
+
+    ``seats_in_flight`` counts the launches the calling admission pass has
+    already started, which the live pointers do not yet all carry: they are
+    seats this dispatch must treat as taken. One pass submits its candidates
+    concurrently, so without the figure every candidate reads the population as
+    it stood before any of the pass's launches published a seat, and a pass
+    holding one free seat launches every queued request it considers. A caller
+    that launches one request at a time passes nothing.
 
     A physical resource that is already spent must not be asked to carry one
     more worker: the harness retry budget is fixed and reckon passes no retry
@@ -291,7 +316,9 @@ def _refuse_over_concurrency_ceiling(
             str(pointer.get("run_id") or "unknown")
             for pointer in placement_module.roster_occupants(roster_pointers)
         ]
-        reservation_occupancy = len(seat_ids) + max(0, reserve)
+        reservation_occupancy = (
+            len(seat_ids) + max(0, reserve) + max(0, seats_in_flight)
+        )
     bounds = summary.concurrency_bounds(
         backend,
         occupancy=len(occupying),
@@ -328,7 +355,13 @@ def _refuse_over_concurrency_ceiling(
     # the only bound nothing else enforces on the fleet's behalf. It is counted
     # over the host-wide population, because a placed worker of any backend is
     # a step inside the same allocation.
-    _refuse_over_reservation_roster(backend, roster_pointers, project, reserve=reserve)
+    _refuse_over_reservation_roster(
+        backend,
+        roster_pointers,
+        project,
+        reserve=reserve,
+        seats_in_flight=seats_in_flight,
+    )
 
 
 def _refuse_against_the_bookend_reserve(
