@@ -164,9 +164,13 @@ QUEUED_REFUSAL_SCOPE_PREFIX = (
 )
 
 # A scope refusal names both facts the row publishes: the path the live claim
-# covers and the run that holds it, as node.ScopeConflict renders them.
+# covers and the run that holds it, as the claim family renders them. An exact
+# claim says its run conflicts with a live claim; a directory claim says its
+# path overlaps one. Both phrasings are read here, because a claim kind the
+# class walk recognises must also have its holder read, or the row falls back to
+# the anonymous waiting reading and loses the subject of the wait.
 _SCOPE_CLAIM = re.compile(
-    r"conflicts with live claim (?P<path>'[^']*') held by run (?P<run>'[^']*')"
+    r"(?:with|overlapping the) live claim (?P<path>'[^']*') held by run (?P<run>'[^']*')"
 )
 
 
