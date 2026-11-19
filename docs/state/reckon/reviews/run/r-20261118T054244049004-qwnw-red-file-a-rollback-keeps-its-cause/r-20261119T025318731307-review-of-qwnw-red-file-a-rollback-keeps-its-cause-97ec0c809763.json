@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "call_sites": [
+    "reckon/ledger.py:3875 register_member -> write_members",
+    "reckon/ledger.py:2647-2652 write_members version refusal",
+    "reckon/crew/routing.py:3498 load_auxiliary, reckon/crew/routing.py:3545 write_members",
+    "reckon/crew/promotion_records.py:2135 load_auxiliary, reckon/crew/promotion_records.py:2146 write_members",
+    "reckon/crew_run_commands.py:5230 register_member"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:43:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the done_when requires the base run's failing ids logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html, a declared write path; git cat-file -e 97ec0c8:docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html reports the path does not exist at the reviewed head, and the diff carries no docs path, so the node delivered its measurement without the artefact the measure names."
+    },
+    {
+      "file": "gate-head-rollback.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the head file's run as a job on all_debug with its output on shared storage; gate-head.sh in the run directory calls pytest directly with no sbatch, and gate-base-slurm.out:1 shows the slurm attempt ended in a bwrap bind-mount failure, so the recorded green run measured the worker's own login-host interpreter rather than the declared partition job."
+    },
+    {
+      "file": "tests/test_a_rollback_keeps_its_cause.py",
+      "line": "247",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added _roster helper builds an id-keyed view by calling ledger.load_auxiliary itself, while reckon/ledger.py:3465 members() already returns the roster through that same loader; the helper wraps one capability in a second shape rather than calling the owner, which is how a second reader of the roster diverges from the first."
+    },
+    {
+      "file": "tests/test_a_rollback_keeps_its_cause.py",
+      "line": "269",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert _roster(repository)[\"worker-a\"][\"session_id\"] == SESSION sits immediately after _capture_the_session wrote that very SESSION through write_members, so it holds whatever the registration rule does and is not a guard; the guard that does bite is :279, where the same value must survive the later register_member(\"worker-b\")."
+    }
+  ],
+  "findings_note": "",
+  "head_log_revision": "97ec0c8097634e34a730b29cb5f022b2ed87c217",
+  "item_verdicts": {
+    "call_sites": "read the production roster helpers the retargeted cases exercise: register_member's write_members call, the version refusal in write_members, and the routing and promotion callers of load_auxiliary/write_members.",
+    "diff": "read the single commit 97ec0c8 against base 6fa2b17: the module docstring's roster paragraph is rewritten, _roster_at_head is deleted, _capture_the_session moves to load_auxiliary/write_members, and the three roster cases are retargeted onto the store-backed rules with a new stale-view case.",
+    "done_when": "the done_when requires the file green at head as an all_debug job with its output on shared storage, an arm over the importing tests on both revisions, ruff on the changed paths, the base failing ids logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html, and neither assertion deleted nor weakened; the manifest records the green head file (6 passed), both suite arms (58 passed each, EXIT=0) and a red base arm, but the fragment HTML was never written and the head gate ran in place after gate-base-slurm.out:1 shows the all_debug attempt dying at bwrap.",
+    "goal": "the node's goal is to make tests/test_a_rollback_keeps_its_cause.py pass in full on the primary branch; the head file reads 6 passed and the same file against current main's code also reads 6 passed, so the goal's deliverable is met.",
+    "manifest": "read at .../r-20261118T054244049004-qwnw-red-file-a-rollback-keeps-its-cause/manifest.md; it declares status complete, commit 97ec0c8, the named file at 6 passed, suite arms 0 failures on both revisions, negative_control_log neg-control-base.log, and an outside_scope note on the now-unreferenced ledger roster helpers \u2014 but it claims complete while the done_when's evidence fragment is absent.",
+    "write_paths": "the declared scope was reckon, tests, the evidence fragment directory and docs/figures; the delivered diff touches only tests/test_a_rollback_keeps_its_cause.py, inside that scope, and writes nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_rollback_keeps_its_cause.py:268 reddens if a capture writes the committed roster again and :322 reddens if reckon/ledger.py:2650's version refusal is removed, while :269 only round-trips the SESSION value the test itself just wrote.",
+    "evidence": "logs/gate-head-rollback.log:1-6 records 6 passed EXIT=0 at 97ec0c8 and neg-control-base.log records 3 failed EXIT=1 at 6fa2b17, but docs/evidence/fragments are untouched and the head gate ran in place rather than as the all_debug job the done_when names.",
+    "fit": "tests/test_a_rollback_keeps_its_cause.py:247-253 follow the file's own _repository/_git/_capture_the_session helper idiom and its test_a_* naming, with no identifier the repo naming rules forbid.",
+    "goal_fidelity": "tests/test_a_rollback_keeps_its_cause.py:256-324 now reads 6 passed at 97ec0c8, and the same file copied onto current main's tree also reads 6 passed, so the file the goal names passes in full.",
+    "reuse": "the added _roster at tests/test_a_rollback_keeps_its_cause.py:247 re-reads the roster through ledger.load_auxiliary instead of the existing reckon/ledger.py:3465 members() owner, wrapping one capability in a second shape.",
+    "scope_discipline": "git diff 6fa2b17..97ec0c8 changes exactly one path, tests/test_a_rollback_keeps_its_cause.py, which sits inside the declared tests/ scope and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_a_rollback_keeps_its_cause.py pass in full on the primary branch; the file reads 6 passed at reviewed head 97ec0c8 and the same file copied onto current main's code also reads 6 passed, so the named deliverable is met.\nVERDICT done_when: the done_when requires the file green at head as an all_debug job, an arm over the importing tests on both revisions, ruff clean on the changed paths, and the base failing ids logged beside the head run in docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html; the manifest records the green head file, both suite arms at 58 passed EXIT=0, and neg-control-base.log red at 3 failed, but that fragment HTML was never written and gate-head.sh shows the head gate ran in place after gate-base-slurm.out:1 records the all_debug attempt dying in bwrap.\nVERDICT write_paths: the declared scope was reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and docs/figures; git diff 6fa2b17..97ec0c8 touches only tests/test_a_rollback_keeps_its_cause.py, inside it.\nVERDICT manifest: read the run's manifest.md; status complete, commits 97ec0c8, changed_paths naming the one test file, tests naming the pytest gate over that file, baseline_suite and after_suite both 58 passed with 0 failures, negative_control_log neg-control-base.log at 3 failed \u2014 and an outside_scope note on the unreferenced ledger roster helpers.\nVERDICT diff: read commit 97ec0c8 against base 6fa2b17; the roster tests were retargeted onto the store-backed rules (a capture writes no tracked path, a registration writes only the row it names, a stale view is refused by version) and the committed-roster helpers were deleted.\nCALL_SITES: reckon/ledger.py:3875 register_member -> write_members, reckon/ledger.py:2647-2652 write_members version refusal, reckon/crew/routing.py:3498 load_auxiliary, reckon/crew/routing.py:3545 write_members, reckon/crew/promotion_records.py:2135 load_auxiliary, reckon/crew/promotion_records.py:2146 write_members, reckon/crew_run_commands.py:5230 register_member\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_rollback_keeps_its_cause.py:256-324 reads 6 passed at 97ec0c8, and the same file over current main's tree also reads 6 passed.\nSCORE evidence: 9\nJUSTIFICATION evidence: logs/gate-head-rollback.log:5-6 records 6 passed EXIT=0 and neg-control-base.log records 3 failed EXIT=1, but no evidence fragment exists at 97ec0c8 and the head gate was not the all_debug job the done_when names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 6fa2b17..97ec0c8 changes exactly tests/test_a_rollback_keeps_its_cause.py, entirely inside the declared tests/ scope.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_rollback_keeps_its_cause.py:268 reddens if the capture writes the committed roster again and :322 reddens if the version refusal at reckon/ledger.py:2650 is removed, though :269 only round-trips the SESSION value the test itself wrote.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_rollback_keeps_its_cause.py:247-253 keep the file's own helper and test_a_* naming idiom with no forbidden identifier.\nSCORE reuse: 10\nJUSTIFICATION reuse: the added _roster at tests/test_a_rollback_keeps_its_cause.py:247 re-reads the roster itself instead of calling the existing reckon/ledger.py:3465 members() owner.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-rollback-keeps-its-cause.html:1 blocking: the done_when's negative-control fragment, a declared write path, does not exist at 97ec0c8 and no docs path is in the diff.\nFINDING gate-head-rollback.log:1 non-blocking: the head gate ran in place rather than as the all_debug job the done_when names, after gate-base-slurm.out:1 records the slurm attempt dying in bwrap.\nFINDING tests/test_a_rollback_keeps_its_cause.py:247 non-blocking: _roster re-implements reckon/ledger.py:3465 members() as an id-keyed view instead of calling it.\nFINDING tests/test_a_rollback_keeps_its_cause.py:269 non-blocking: the assertion round-trips the SESSION value the test itself wrote through write_members, so it holds whatever the registration rule does; :279 is the assertion that bites.\n",
+  "review_run_id": "r-20261119T025318731307-review-of-qwnw-red-file-a-rollback-keeps-its-cause-97ec0c809763",
+  "reviewed_base_sha": "6fa2b177c511a297d3440956aa64eaa759d4554a",
+  "reviewed_head_sha": "97ec0c8097634e34a730b29cb5f022b2ed87c217",
+  "reviewed_run_id": "r-20261118T054244049004-qwnw-red-file-a-rollback-keeps-its-cause",
+  "reviewer_run_id": "r-20261119T025318731307-review-of-qwnw-red-file-a-rollback-keeps-its-cause-97ec0c809763",
+  "scores": {
+    "durability": 16,
+    "evidence": 9,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 10,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:08:18.556251+00:00",
+  "total": 89
+}
