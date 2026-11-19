@@ -167,15 +167,51 @@ def test_a_merge_only_citation_charges_the_paths_the_merge_brought(
 ) -> None:
     """The paths charged are the merge's first-parent paths, so the fence sees them.
 
-    The run declares a path the merged content does not touch, so the merged
-    path arrives at the boundary guard as the run's own and is named in the
-    refusal. A reading that skipped a merge-only citation entirely refuses with
-    its own message instead, which does not name the path.
+    The merged content changes generated state, a class git cannot reconcile, so
+    the path arrives at the boundary guard as the run's own and is named in the
+    refusal while the run declares an unrelated path. A reading that skipped a
+    merge-only citation entirely refuses with its own message instead, which
+    does not name the path.
     """
     base = _git(repository, "rev-parse", "HEAD")
     run_tree = tmp_path / "scoped-tree"
     _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
     run_id = "r-merge-borne-path"
+    _pointer(repository, run_tree, run_id, base, write_paths=("elsewhere.txt",))
+    _assert_real_home_carries_no_pointer(run_id)
+
+    state = run_tree / "docs" / "state" / PROJECT / "state.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text('{"seed": true}\n', encoding="utf-8")
+    _git(run_tree, "add", str(state.relative_to(run_tree)))
+    _git(run_tree, "commit", "-q", "-m", "feat: the run's own change")
+    own = _git(run_tree, "rev-parse", "HEAD")
+    _git(repository, "merge", "-q", "--no-ff", own, "-m", "Merge the run's change")
+    merge = _git(repository, "rev-parse", "HEAD")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(run_id, gate="passed", commits=[merge], root=repository)
+
+    assert "docs/state/sample/state.json" in str(refusal.value)
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+    _assert_real_home_carries_no_pointer(run_id)
+
+
+def test_a_merge_borne_source_path_needs_no_acceptance(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A declared write path is a hint, so a merge-borne source path lands.
+
+    The run declares a path the merged content does not touch, and the merged
+    path is one a merge reconciles: the promotion records the merge's own
+    reading of the change rather than holding the row for a path a reviewer
+    never touched.
+    """
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = tmp_path / "hinted-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(run_tree), "HEAD")
+    run_id = "r-merge-borne-source"
     _pointer(repository, run_tree, run_id, base, write_paths=("elsewhere.txt",))
     _assert_real_home_carries_no_pointer(run_id)
 
@@ -186,13 +222,12 @@ def test_a_merge_only_citation_charges_the_paths_the_merge_brought(
     _git(repository, "merge", "-q", "--no-ff", own, "-m", "Merge the run's change")
     merge = _git(repository, "rev-parse", "HEAD")
 
-    with pytest.raises(crew.CrewError) as refusal:
-        crew.complete(run_id, gate="passed", commits=[merge], root=repository)
+    stored = crew.complete(run_id, gate="passed", commits=[merge], root=repository)[
+        "record"
+    ]
 
-    assert "in_scope.txt" in str(refusal.value)
-    assert ledger.runs(PROJECT, root=repository) == []
-    assert pointer_path(run_id).is_file()
-    _assert_real_home_carries_no_pointer(run_id)
+    assert stored["changed_lines"] == _numstat(repository, f"{merge}^1", merge)
+    assert not stored.get("scope_acceptances")
 
 
 def test_a_line_added_and_later_removed_counts_nothing(

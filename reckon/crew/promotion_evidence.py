@@ -387,6 +387,25 @@ def _declared_repository_roots(
     )
 
 
+def _integration_brings_the_run(
+    tree: Path, revision: str, run_head: str | None
+) -> bool:
+    """Report whether ``revision`` descends from the run's own head.
+
+    A run's work can reach the record inside an integration merge: a
+    coordinator merges the run's head, and the merge is a later commit whose
+    parent is the run's head rather than a commit inside it. The run's head is
+    therefore behind such a citation, and the scope measurement charges that
+    merge the content it brought relative to its first parent — the run's work.
+    Accepting it here keeps that measurement reachable instead of refusing the
+    citation as an unmerged branch, which is what a commit sharing no ancestry
+    with the run remains.
+    """
+    if not run_head:
+        return False
+    return _revision_is_ancestor(tree, run_head, revision)
+
+
 def _require_commits_beyond_base(
     run_id: str,
     record: Mapping[str, Any],
@@ -404,15 +423,20 @@ def _require_commits_beyond_base(
     declared work records the run as complete while its deliverable exists in
     no commit at all, which the release step then takes with the worktree.
 
-    The comparison is made in the run's own tree, so a citation that resolves
-    to an abbreviated revision still equals the base it names, and a citation
-    that resolves nowhere is left to the guard whose refusal names the
-    repository it consulted rather than answered here with this one. The tree
-    is the one the record names, read the way every other reader reads it: a
-    record that names no readable directory is not measured here rather than
-    measured against whatever repository the promotion happens to run in. A
-    tree git cannot read, or a base that does not resolve in it, leaves the
-    guard silent: an unmeasured citation is not a defect in the citation.
+    The comparison is made in the run's own tree, so a citation that resolves to
+    an abbreviated revision still equals the base it names, and a citation
+    that resolves nowhere is left to the guard whose refusal names the repository it
+    consulted rather than answered here by this guard. The tree is the one the
+    record names, read the way every other reader reads it: a citation that the
+    record's directory cannot measure is not measured here rather than measured
+    against whatever repository the promotion happens to run in. A tree git
+    cannot read, or a base that does not resolve in it, leaves the guard silent:
+    an unmeasured citation is not a defect in the citation.
+
+    A citation the run's own head descends into is the run's work too: an
+    integration merge carries the run's head as a parent, so the merge is a
+    later commit rather than a foreign one, and the scope measurement charges
+    it the content it brought relative to its first parent.
     """
     base = str(record.get("base_sha") or "").strip()
     tree = _record_tree(record)
@@ -446,9 +470,12 @@ def _require_commits_beyond_base(
                 "run. Cite the commit the run committed on top of the base, or "
                 "pass --no-commit '<why>' when it produced none"
             )
+        carries_the_run = _integration_brings_the_run(tree, canonical, canonical_head)
         predates_base = _revision_is_ancestor(tree, canonical, canonical_base)
-        outside_history = canonical_head is not None and not _revision_is_ancestor(
-            tree, canonical, canonical_head
+        outside_history = (
+            canonical_head is not None
+            and not carries_the_run
+            and not _revision_is_ancestor(tree, canonical, canonical_head)
         )
         if (
             predates_base
