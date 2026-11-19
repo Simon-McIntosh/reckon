@@ -8,9 +8,16 @@ the binding, preserving the established patch paths.
 from __future__ import annotations
 
 import sys as _sys
-from importlib import import_module as _import_module
 
 from reckon.crew import _CrewFacade
+from reckon.crew.dispatching import _imports as _imports_concern
+from reckon.crew.dispatching import claims as _claims_concern
+from reckon.crew.dispatching import comparisons as _comparisons_concern
+from reckon.crew.dispatching import fences as _fences_concern
+from reckon.crew.dispatching import launch as _launch_concern
+from reckon.crew.dispatching import preparation as _preparation_concern
+from reckon.crew.dispatching import requests as _requests_concern
+from reckon.crew.dispatching import suite as _suite_concern
 
 _MODULE_EXPORTS = {
     "_imports": [
@@ -631,8 +638,19 @@ _MODULE_EXPORTS = {
     "preparation": ["dispatch"],
     "launch": ["_launch_dispatch", "_SupersededLaunchError", "_refuse_if_superseded"],
 }
-_CONCERN_MODULES = tuple(
-    _import_module(f"{__package__}.dispatching.{name}") for name in _MODULE_EXPORTS
+#: The concern modules, in the order ``_MODULE_EXPORTS`` names them, so the
+#: strict zip below binds each name list to its own module. They are imported
+#: by name rather than resolved from their names: an import a static reader
+#: cannot see is one the reach ratchet cannot hold to an entry point either.
+_CONCERN_MODULES = (
+    _imports_concern,
+    _requests_concern,
+    _fences_concern,
+    _comparisons_concern,
+    _suite_concern,
+    _claims_concern,
+    _preparation_concern,
+    _launch_concern,
 )
 for _module, _names in zip(_CONCERN_MODULES, _MODULE_EXPORTS.values(), strict=True):
     for _name in _names:
