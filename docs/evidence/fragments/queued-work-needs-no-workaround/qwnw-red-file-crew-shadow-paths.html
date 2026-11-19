@@ -15,4 +15,10 @@ EXIT=1</pre>
 5 passed in 22.11s
 EXIT=0</pre>
 <p>Arm over the twenty test files that import the changed module: base <code>1 failed, 139 passed</code> and head <code>1 failed, 139 passed</code>, both <code>EXIT=1</code>, the same id <code>tests/test_a_run_leaves_nothing_behind.py::test_landing_retires_the_entire_run</code> (<code>KeyError: 'steps'</code>) in both — so the change adds no failure against the base. That failure is outside this node's declared red file and is recorded under outside_scope.</p>
+<p>Repair round: primary main at <code>327f97aa</code> reworked the same guard's reachability read, so the landing merged at <code>4046b427</code> keeping both intents — main's worktree-guarded head read, and this branch's shadow exemption — and the file reads <code>5 passed</code>, and <code>EXIT=0</code>, at that merged head (all_debug job 1331300). The arm over the twenty importing test files at the merged head reads <code>1 failed, 139 passed</code>, <code>EXIT=1</code>, the same pre-existing id the base arm carries.</p>
+<pre># merged head run, all_debug job 1331300, revision 4046b427458c34c269e6119810b5e51993999d5b
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_shadow_paths.py
+.....                                                                    [100%]
+5 passed in 23.70s
+EXIT=0</pre>
 </section>
