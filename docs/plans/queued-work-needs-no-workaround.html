@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1009">
+<meta name="plan-version" content="1010">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3096,7 +3096,10 @@
     <div class="r-comment-body"><p>tests/test_a_terminal_worker_exits_within_its_grace.py passes 9/9 at head 4a6768580030748024 as an all_debug job (1330010) with SLURM_JOB_ID absent from the test's environment, EXIT=0, against 1 failed/8 passed at base b24fe95a789c; one cause, verdict product wrong: the spawn guard refused a launch whose pointer still carries the dispatch-time stamp, which is the state a resume is in while its supervisor starts, so no resumed worker was spawned; the guard now refuses only a pointer stamp later than the spec's own, and a regression case pins the admitted arm.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063934993934-qwnw-red-file-crew-at-current-main" data-who="reckon-build" data-when="2026-11-18T18:51:25Z">
-    <div class="r-comment-body"><p>tests/test_crew.py read 5 failed, 186 passed and EXIT=1 at base 8c7ea625 and reads 191 passed and EXIT=0 at the repaired head 091c2cb56a as an all_debug job; the five causes are the fixture (the roster is read through ledger.members rather than a state path the run store no longer writes, and four cases record a stopped worker — both the ended pid primary now writes and the attempt clock and stream this branch ages past the stall window), and the merge with d628c376 also repaired test_dispatch_launches_a_cli_backend_and_records_the_run, red on primary&#x27;s own tree because the live pointer keeps the node&#x27;s body and the channel&#x27;s peer list beside it; no assertion deleted or weakened, and both armed suite arms read 58 passed with EXIT=0.</p></div>
+    <div class="r-comment-body"><p>tests/test_crew.py read 5 failed, 186 passed and EXIT=1 at base 8c7ea625 and reads 191 passed and EXIT=0 at the repaired head 091c2cb56a as an all_debug job; the five causes are the fixture (the roster is read through ledger.members rather than a state path the run store no longer writes, and four cases record a stopped worker — both the ended pid primary now writes and the attempt clock and stream this branch ages past the stall window), and the merge with d628c376 also repaired test_dispatch_launches_a_cli_backend_and_records_the_run, red on primary's own tree because the live pointer keeps the node's body and the channel's peer list beside it; no assertion deleted or weakened, and both armed suite arms read 58 passed with EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063837731055-qwnw-red-file-a-failed-landing-says-whether-its-row-survived" data-who="reckon-build" data-when="2026-11-19T06:54:18Z">
+    <div class="r-comment-body"><p>tests/test_a_failed_landing_says_whether_its_row_survived.py passes in full — the case published the derived index with a read the run store answers, so nothing was published and its own precondition failed; it now publishes through a store-blind read and resolves the crew home inside the test tree, and the file reads 1 failed, 1 passed at base against 2 passed, EXIT=0 at head on all_debug.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
