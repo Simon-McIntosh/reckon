@@ -2451,12 +2451,23 @@ def _manifest_rewritten(
 
 
 def _ledger_landing_word(project: str, row: Mapping[str, Any]) -> str:
-    """A promotion only announces landing once its head reaches primary."""
+    """A promotion only announces landing once its head reaches primary.
+
+    A ledger row names its project and never its checkout, so the ancestry
+    question is asked against the project's registered mount: that is the tree
+    the landing puts the row's head on, and asking it nowhere would word every
+    landed promotion as still awaiting its merge.
+    """
     if not row.get("commits"):
         return "recorded"
+    from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.recovery_classification import _promoted_awaiting_merge
 
-    if _promoted_awaiting_merge({**row, "project": project}, moment=time.time()):
+    record = {**row, "project": project}
+    checkout = project_mount_repository(project)
+    if checkout is not None:
+        record["repo"] = str(checkout)
+    if _promoted_awaiting_merge(record, moment=time.time(), row=row):
         return "complete"
     return "promoted"
 
