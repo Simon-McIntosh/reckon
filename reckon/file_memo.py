@@ -38,6 +38,9 @@ _Identity = _Signature | str
 #: one read would otherwise rebuild the whole document's view on every call.
 _CACHE: OrderedDict[tuple[str, str, Hashable], tuple[Any, ...]] = OrderedDict()
 _LOCK = threading.Lock()
+# The bounded maps a caller holds state in. ``clear`` empties them with the
+# memo, so a test asking for a cold read gets one.
+_MAPS: list[Any] = []
 
 # A read-only region in which a memoised value is shared rather than copied.
 # Within the region each document is stat'ed once, decoded once, and handed to
@@ -464,8 +467,71 @@ def memoized_key[T](kind: str, key: Hashable, compute: Callable[[], T]) -> T:
     return value
 
 
+class BoundedMap[V]:
+    """A bounded, least-recently-used map that shares the memo's lock.
+
+    :func:`memoized` and :func:`memoized_key` answer a value from a key, so a
+    caller whose state has to be read and then replaced had nowhere to keep it
+    but a second cache of its own, with its own bound and its own lock. This is
+    the container for that state: the same lock guards it, the same least
+    recently used entry goes first, and :func:`clear` empties it with the rest
+    of the memo — ``file_memo.clear()`` therefore empties every cache in the
+    process, which is what a test that asks for a cold read means.
+
+    The value is stored and handed back as it is rather than copied: a map
+    holds state its owner replaces, not a derivation a later reader must not
+    alter. A caller that hands what it stores to a reader copies it there.
+    """
+
+    __slots__ = ("_entries", "_limit", "_name")
+
+    def __init__(self, name: str, limit: str | int) -> None:
+        self._name = name
+        self._limit = max(1, int(limit))
+        self._entries: OrderedDict[Hashable, V] = OrderedDict()
+
+    def __len__(self) -> int:
+        with _LOCK:
+            return len(self._entries)
+
+    def get(self, key: Hashable) -> V | None:
+        """The value held for ``key``, marked as the most recently used."""
+        with _LOCK:
+            if key not in self._entries:
+                return None
+            self._entries.move_to_end(key)
+            return self._entries[key]
+
+    def put(self, key: Hashable, value: V) -> None:
+        """Keep ``value`` for ``key``, dropping the oldest entry past the bound."""
+        with _LOCK:
+            self._entries[key] = value
+            self._entries.move_to_end(key)
+            while len(self._entries) > self._limit:
+                self._entries.popitem(last=False)
+
+    def clear(self) -> None:
+        """Empty this map."""
+        with _LOCK:
+            self._entries.clear()
+
+
+def bounded_map[V](name: str, *, limit: str | int) -> BoundedMap[V]:
+    """A bounded map for one kind of state, emptied by :func:`clear`.
+
+    ``limit`` is the most entries this map keeps; the least recently used one
+    goes first, so a process that reads many subjects keeps a fixed number.
+    """
+    helper: BoundedMap[V] = BoundedMap(name, limit)
+    with _LOCK:
+        _MAPS.append(helper)
+    return helper
+
+
 def clear() -> None:
-    """Drop every memoised parse."""
+    """Drop every memoised parse and every bounded map."""
 
     with _LOCK:
         _CACHE.clear()
+        for helper in _MAPS:
+            helper._entries.clear()

@@ -169,11 +169,28 @@ DERIVED_STATE_KEYS = [
     "endpoints",
     "source_format",
     "resource_versions",
+    # The served review block: the sprint surface ranks its priority and its
+    # open findings from it, so it is a derived block the index never carries.
+    "review",
     "blockers",
     "timeline",
     "schedule",
     "milestones",
 ]
+
+#: The served review block: an open finding and the priority it ranks, which
+#: the index never carries and a revalidation therefore has to keep.
+REVIEW = {
+    "findings": [
+        {
+            "id": "r1",
+            "code": "A1",
+            "severity": "warn",
+            "subject": {"kind": "plan", "id": "alpha"},
+        }
+    ],
+    "priority": ["alpha", "beta"],
+}
 
 #: The same rows plus what the index deliberately does not carry: the effective
 #: status each row derives once blockers are known, and the ready set. The plan
@@ -191,6 +208,7 @@ DISCOVERY = {
     "schedule": SCHEDULE_FIRST,
     "ready_set": {"ready": ["beta"], "total": 1},
     "resource_versions": {"project:project": 3},
+    "review": REVIEW,
     "inventory": [
         {
             "slug": "alpha",
@@ -1092,6 +1110,12 @@ def test_a_revalidation_keeps_the_derived_blocks_until_the_merge_replaces_them()
     # a merge that changed nothing.
     assert observed["held"]["schedule"] == SCHEDULE_FIRST
     assert observed["after_merge"]["schedule"] == SCHEDULE_REPLACEMENT
+    # The review block is carried the same way, and its kept value is the one
+    # the discovery served, so the check above cannot pass on an empty block:
+    # the index never carries a review, and one emptied here would leave the
+    # sprint surface with no priority and no findings.
+    assert observed["held"]["review"] == REVIEW
+    assert observed["after_index"]["review"] == REVIEW
 
 
 _STALE_BODY = """

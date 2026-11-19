@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The notice at reckon/crew/dispatching/preparation.py:1581 moves back to stdout and json.loads(result.stdout) raises JSONDecodeError, reddening both cases.",
+      "lines": "tests/test_dispatch_renders_svg_figures.py:37-40,101,172"
+    },
+    {
+      "fails_if": "The print at reckon/crew/dispatching/preparation.py:1581 is deleted: nothing fails, so the notice itself is unguarded.",
+      "lines": "tests/test_dispatch_renders_svg_figures.py:101,172"
+    },
+    {
+      "fails_if": "The argv carries the source path instead of the run-local PNG and the comparison against the path built from crew.run_dir reddens.",
+      "lines": "tests/test_dispatch_renders_svg_figures.py:101-107"
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:21:38Z",
+  "findings": [
+    {
+      "anchor": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-renders-svg-figures.html:19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment claims both arms ran on all_debug per-run scratch trees under the reviewed run's directory, but the head gate tree is /tmp/mcintos-landing-b825e4abe9ed-KyhOZQ/tree per scoped-gate-1795056028404296964.log:3 and no log records the partition, so the cited artefact contradicts the location claim."
+    },
+    {
+      "anchor": "after_suite-1795056267354782819.log:4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports or exercises tests/test_dispatch_renders_svg_figures.py, so its 58 passed matches the baseline by construction and the pair protects nothing this node changed."
+    },
+    {
+      "anchor": "tests/test_dispatch_renders_svg_figures.py:101",
+      "severity": "non-blocking",
+      "text": "non-blocking: tests/test_dispatch_renders_svg_figures.py:101 and :172 guard only that stdout carries a bare JSON document, so deleting the print at reckon/crew/dispatching/preparation.py:1581 leaves all three cases green."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none \u2014 the change is test-side, so no production call site reaches it.",
+    "diff": "pass \u2014 0174d9a2 routes two json.loads call sites through _record; b224a259 adds the fragment.",
+    "done_when": "pass with caveat \u2014 scoped-gate-1795056028404296964.log:1-5 records revision, host, command, 3 passed and EXIT=0; partition and job state are unrecorded.",
+    "goal": "pass \u2014 scoped-gate-1795056028404296964.log:5 records 3 passed at 0174d9a2 for tests/test_dispatch_renders_svg_figures.py.",
+    "manifest": "pass \u2014 manifest.md records both commits, the scoped gate, the base arm and both suite arms at 58 passed EXIT=0.",
+    "write_paths": "pass \u2014 tests/test_dispatch_renders_svg_figures.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-renders-svg-figures.html are both declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief's goal is that tests/test_dispatch_renders_svg_figures.py pass in full; scoped-gate-1795056028404296964.log:5 records '3 passed in 3.00s' at 0174d9a2 and the gate command names that one file.\nVERDICT done_when: the done-when asks the file to pass in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; scoped-gate-1795056028404296964.log:1-5 shows revision 0174d9a2, host 98dci4-clu-3141, the file as sole argument, 3 passed and EXIT=0, but no recorded line states the partition or that SLURM_JOB_ID was unset.\nVERDICT write_paths: the source manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; both paths in the 42fe90d0..b224a259 diff (tests/test_dispatch_renders_svg_figures.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-renders-svg-figures.html) are inside them.\nVERDICT manifest: the source manifest.md records commits 0174d9a2 and b224a259, the scoped gate at 3 passed with EXIT=0, the base arm at 42fe90d0 reading '2 failed, 1 passed in 5.96s' with EXIT=1, host 98dci4-clu-3141, and both suite arms at 58 passed with EXIT=0 in the logs they cite.\nVERDICT diff: read commit by commit from 42fe90d0: 0174d9a2 adds _record(result) at tests/test_dispatch_renders_svg_figures.py:37 and routes the two json.loads calls at :101 and :172 through it with no assertion changed, and b224a259 adds the 22-line evidence fragment, touching no product file.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scoped-gate-1795056028404296964.log:5 records '3 passed' for tests/test_dispatch_renders_svg_figures.py at 0174d9a2, which is the brief's goal met at the node head.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795056028404296964.log:1 records the tested revision and EXIT=0 while no recorded line states either the partition or the job state the done-when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths in the 42fe90d0..b224a259 diff are tests/test_dispatch_renders_svg_figures.py and its fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-renders-svg-figures.html:1, both declared, and no product file changes.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_dispatch_renders_svg_figures.py:101 reddens if the notice at reckon/crew/dispatching/preparation.py:1581 returns to stdout, but nothing fails when that print is deleted outright.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_dispatch_renders_svg_figures.py:37 mirrors the per-file record reader at tests/test_a_jev_hold_queues_for_the_local_lane.py:142 and the comment style beside reckon/crew/dispatching/preparation.py:1576.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over tests/ for a shared CLI-record reader found only per-file inline json.loads(result.stdout) callers such as tests/test_page_paints_from_the_index.py:502, so no owner exists and the addition is this file's own helper.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-dispatch-renders-svg-figures.html:19 non-blocking: the fragment claims both arms ran on all_debug per-run scratch trees under the reviewed run's directory, but the head gate tree is /tmp/mcintos-landing-b825e4abe9ed-KyhOZQ/tree per scoped-gate-1795056028404296964.log:3 and no log records the partition.\nFINDING after_suite-1795056267354782819.log:4 non-blocking: the after_suite arm runs tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports or exercises tests/test_dispatch_renders_svg_figures.py, so its 58 passed matches the baseline by construction and the pair protects nothing this node changed.\nFINDING tests/test_dispatch_renders_svg_figures.py:101 non-blocking: no assertion requires the progress notice at reckon/crew/dispatching/preparation.py:1581 to exist on stderr, so deleting that print leaves all three cases green.",
+  "review_run_id": "r-20261119T030602061851-review-of-qwnw-red-file-dispatch-renders-svg-figures-b224a2597e32",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "b224a2597e32ee8a3044750548cf006913240633",
+  "reviewed_run_id": "r-20261118T062450470645-qwnw-red-file-dispatch-renders-svg-figures",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:57:09.557742+00:00",
+  "total": 112
+}

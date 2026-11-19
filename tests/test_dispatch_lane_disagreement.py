@@ -49,7 +49,13 @@ def _invoke(
 
 
 def _register_member_without_harness(repo: Path) -> None:
-    data, version = ledger.load("proj", repo)
+    # The roster is its own store, paired with ``load_auxiliary``'s version:
+    # ``ledger.write`` writes the run aggregate and ignores its ``members``
+    # projection, so a member appended there never reaches the roster and the
+    # dispatch refuses a member the test just claimed to register. The roster
+    # writer is also the only one that admits a member with no harness, which
+    # is the state this case is about.
+    data, version = ledger.load_auxiliary("proj", repo)
     data["members"].append(
         {
             "id": "worker",
@@ -61,7 +67,7 @@ def _register_member_without_harness(repo: Path) -> None:
             "created": "2026-01-01",
         }
     )
-    ledger.write("proj", data, version, repo)
+    ledger.write_members("proj", data["members"], version, repo)
 
 
 def test_flight_override_and_named_backend_share_the_disagreement_refusal(

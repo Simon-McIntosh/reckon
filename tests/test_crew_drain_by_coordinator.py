@@ -190,11 +190,24 @@ def test_session_drain_cannot_record_a_disposition_on_a_peer(home) -> None:
     assert "closure_disposition" not in crew.read_pointer("r-peer")
 
 
-def test_dispatch_refusal_counts_own_run_and_names_observed_peer(
+def test_dispatch_records_its_own_backlog_and_names_no_peer(
     home, repo, monkeypatch
 ) -> None:
+    """A dispatch is made over its own session's overdue runs, never a peer's.
+
+    The fence used to refuse the dispatch outright and name the peer rows it
+    had observed. It records the overdue runs on the run it writes instead of
+    refusing, and it reads only the asking session's pointers, so a peer's
+    finished run is neither counted, copied nor named there. The drain stays
+    the surface that shows a peer, so this fixture is read back from it as the
+    control: the peer pointer is live and only the fence's scope keeps it out.
+    """
     _own_and_peer(home)
     monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    # The spawn seam is where a real worker would start; the dispatch's record
+    # is what this case studies, so the launch is stubbed to a pid no process
+    # holds.
+    monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
 
     command = CliRunner().invoke(
         cli.main,
@@ -225,12 +238,21 @@ def test_dispatch_refusal_counts_own_run_and_names_observed_peer(
             "alpha",
             "--repo",
             str(repo),
+            # Delivery to a session's follower is a separate gate with its own
+            # refusal; it is waived here so the fence under study is the one
+            # this case reaches.
+            "--no-watch",
         ],
     )
-    payload = json.loads(command.output)
+    # The load notice goes to stderr, so stdout stays the document a caller
+    # reads: the run this dispatch wrote.
+    payload = json.loads(command.stdout)
 
-    assert command.exit_code == 6
-    assert [row["run_id"] for row in payload["runs"]] == ["r-own"]
-    assert [row["run_id"] for row in payload["peer_runs"]] == ["r-peer"]
-    assert "1 unreconciled run(s)" in payload["detail"]
-    assert "r-peer (session peer-session)" in payload["detail"]
+    assert command.exit_code == 0, payload
+    backlog = payload["unreconciled_override"]
+    assert [row["run_id"] for row in backlog["waived_runs"]] == ["r-own"]
+    assert backlog["requested"] is False
+    assert "r-peer" not in command.stdout
+    # The peer's pointer is live and the drain still counts it, so the absence
+    # above is the fence's session scope rather than an empty ledger.
+    assert crew.drain("proj", session="asking-session")["peer_pointers"] == 1

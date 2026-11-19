@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T13:26:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch/arm-import-head.log",
+      "line": "59",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm's capture states EXIT=0 while its own summary line 58 reads \"1 failed, 24 passed\", and the manifest's import_arms.head.exit_status says 1, so the recorded receipt a coordinator cites for the arm disagrees with both."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-fleet-gate-holds-dispatch.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the quoted traceback drops the quotes around the type name, reading \"TypeError: PosixPath object is not subscriptable\" where base-named-file-42fe90d0.log:45 records \"TypeError: 'PosixPath' object is not subscriptable\", so the fragment's quotation is not literal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read both commits from 42fe90d0 to 740b3de0: b2344f8d changes one argument at tests/test_the_fleet_gate_holds_dispatch.py:474 to the dispatch record, and 740b3de0 adds only the ten-line evidence fragment.",
+    "done_when": "The done-when (brief-for-worker.md FENCE \u2014 EVIDENCE) names the file passing at head as an all_debug job with SLURM_JOB_ID unset plus a base run with its failing ids, an importer arm, ruff, commits and the manifest; scoped-gate-1795060415094938282.log:5 runs `env -u SLURM_JOB_ID ... pytest -q tests/test_the_fleet_gate_holds_dispatch.py` and :7 reads \"20 passed\", base-named-file-42fe90d0.log:46-47 reads \"1 failed, 19 passed\" and EXIT=1, and the manifest records the arms and ruff.",
+    "goal": "The node goal (brief-for-worker.md:38) is \"Make tests/test_the_fleet_gate_holds_dispatch.py pass in full on the primary branch\"; the landed change passes the dispatch record at tests/test_the_fleet_gate_holds_dispatch.py:474 and the head gate log reads \"20 passed in 13.64s\" with EXIT=0.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch/manifest.md: it states base 42fe90d0 as 1 failed/19 passed, head b2344f8d as 20 passed, both suite arms 58 passed EXIT=0, and the sibling file red at both revisions under outside_scope, though its import_arms head entry claims exit 1 against an arm log that ends EXIT=0.",
+    "write_paths": "The brief declares reckon, tests and the node's fragment path; the two commits change only tests/test_the_fleet_gate_holds_dispatch.py:474 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-fleet-gate-holds-dispatch.html, both inside that declaration."
+  },
+  "justifications": {
+    "durability": "Reverting tests/test_the_fleet_gate_holds_dispatch.py:474 to the repository path reddens test_completion_and_promotion_continue_during_a_pause with `TypeError: 'PosixPath' object is not subscriptable`, as base-named-file-42fe90d0.log:45 records, and the case's assertions are untouched.",
+    "evidence": "scoped-gate-1795060415094938282.log:7 records \"20 passed\" with EXIT=0 under SLURM_JOB_ID unset at b2344f8d, but arm-import-head.log:59 records EXIT=0 beside its own :58 \"1 failed, 24 passed\", which contradicts the manifest's import_arms exit_status 1.",
+    "fit": "The repaired call site passes the record like every other caller of tests/test_ledger.py:259, and the commit body states the rule the helper keeps.",
+    "goal_fidelity": "tests/test_the_fleet_gate_holds_dispatch.py:474 now passes the record that tests/test_ledger.py:259 requires, and the head gate log records the whole file green at 20 passed.",
+    "reuse": "No definition is added; the change reuses the repository's existing helper tests/test_ledger.py:259, and a search over tests/ for `_commit_work` found five fixture-local copies unchanged by this diff.",
+    "scope_discipline": "The diff touches only tests/test_the_fleet_gate_holds_dispatch.py:474 and the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-fleet-gate-holds-dispatch.html:1-10, both inside the brief's declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal (brief-for-worker.md:38) is \"Make tests/test_the_fleet_gate_holds_dispatch.py pass in full on the primary branch\"; the landed change passes the dispatch record at tests/test_the_fleet_gate_holds_dispatch.py:474 and the head gate log reads \"20 passed in 13.64s\" with EXIT=0.\nVERDICT done_when: The done-when (brief-for-worker.md FENCE \u2014 EVIDENCE) names the file passing at head as an all_debug job with SLURM_JOB_ID unset plus a base run with its failing ids, an importer arm, ruff, commits and the manifest; scoped-gate-1795060415094938282.log:5 runs `env -u SLURM_JOB_ID ... pytest -q tests/test_the_fleet_gate_holds_dispatch.py` and :7 reads \"20 passed\", base-named-file-42fe90d0.log:46-47 reads \"1 failed, 19 passed\" and EXIT=1, and the manifest records the arms and ruff.\nVERDICT write_paths: The brief declares reckon, tests and the node's fragment path; the two commits change only tests/test_the_fleet_gate_holds_dispatch.py:474 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-fleet-gate-holds-dispatch.html, both inside that declaration.\nVERDICT manifest: Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch/manifest.md: it states base 42fe90d0 as 1 failed/19 passed, head b2344f8d as 20 passed, both suite arms 58 passed EXIT=0, and the sibling file red at both revisions under outside_scope, though its import_arms head entry claims exit 1 against an arm log that ends EXIT=0.\nVERDICT diff: Read both commits from 42fe90d0 to 740b3de0: b2344f8d changes one argument at tests/test_the_fleet_gate_holds_dispatch.py:474 to the dispatch record, and 740b3de0 adds only the ten-line evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_fleet_gate_holds_dispatch.py:474 now passes the record that tests/test_ledger.py:259 requires, and the head gate log records the whole file green at 20 passed.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1795060415094938282.log:7 records \"20 passed\" with EXIT=0 under SLURM_JOB_ID unset at b2344f8d, but arm-import-head.log:59 records EXIT=0 beside its own :58 \"1 failed, 24 passed\", which contradicts the manifest's import_arms exit_status 1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches only tests/test_the_fleet_gate_holds_dispatch.py:474 and the fragment docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-fleet-gate-holds-dispatch.html:1-10, both inside the brief's declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: Reverting tests/test_the_fleet_gate_holds_dispatch.py:474 to the repository path reddens test_completion_and_promotion_continue_during_a_pause with `TypeError: 'PosixPath' object is not subscriptable`, as base-named-file-42fe90d0.log:45 records, and the case's assertions are untouched.\nSCORE fit: 19\nJUSTIFICATION fit: The repaired call site passes the record like every other caller of tests/test_ledger.py:259, and the commit body states the rule the helper keeps.\nSCORE reuse: 20\nJUSTIFICATION reuse: No definition is added; the change reuses the repository's existing helper tests/test_ledger.py:259, and a search over tests/ for `_commit_work` found five fixture-local copies unchanged by this diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch/arm-import-head.log:59 non-blocking: the head arm's capture states EXIT=0 while its own summary line 58 reads \"1 failed, 24 passed\", and the manifest's import_arms.head.exit_status says 1, so the recorded receipt a coordinator cites for the arm disagrees with both.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-fleet-gate-holds-dispatch.html:5 non-blocking: the quoted traceback drops the quotes around the type name, reading \"TypeError: PosixPath object is not subscriptable\" where base-named-file-42fe90d0.log:45 records \"TypeError: 'PosixPath' object is not subscriptable\", so the fragment's quotation is not literal.",
+  "review_method": "Read-only review of the reviewed run's brief, manifest, base and head gate logs, and both commits against base 42fe90d0; one read outside the diff (tests/test_ledger.py:259) for the reuse judgement. No suite rerun.",
+  "review_run_id": "r-20261119T042854239726-review-of-qwnw-red-file-the-fleet-gate-holds-dispatch-740b3de095b9",
+  "reviewed_base_sha": "42fe90d0b0a46060bafde2490dda7d4002cda478",
+  "reviewed_head_sha": "740b3de095b9bfaf78ec8d0cd0b28c22a502981e",
+  "reviewed_run_id": "r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "b2344f8d87db5c7aaedcc43903b63d1c7ededa92",
+    "740b3de095b9bfaf78ec8d0cd0b28c22a502981e"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch/after_suite-1795061074739559129.log",
+      "observed_summary": "58 passed in 37.26s",
+      "revision": "b2344f8d87db5c7aaedcc43903b63d1c7ededa92"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062721785842-qwnw-red-file-the-fleet-gate-holds-dispatch/baseline_suite-1795061031816312632.log",
+      "observed_summary": "58 passed in 35.58s",
+      "revision": "42fe90d0b0a46060bafde2490dda7d4002cda478"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T14:00:38.739140+00:00",
+  "total": 111
+}

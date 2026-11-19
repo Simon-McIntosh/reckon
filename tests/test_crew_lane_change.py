@@ -15,6 +15,7 @@ import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
 from reckon import crew, crew_run_commands
 from reckon.crew import recovery
+from reckon.crew.runs import dispatch_field
 
 CONFIG = {
     "default_backend": "alpha",
@@ -191,7 +192,9 @@ def test_redispatch_keeps_the_run_node_and_worktree(
         "lanes": after["lane_changes"],
     }
     assert after["session_id"] == "session-from-alpha"
-    assert "session-from-alpha" in after["argv"]
+    # The live pointer carries no dispatch-time detail; the resumed command is
+    # read from the run's stored detail through the same reader the launch uses.
+    assert "session-from-alpha" in dispatch_field(after, "argv")
     assert (
         subprocess.run(
             ["git", "worktree", "list", "--porcelain"],
@@ -241,7 +244,8 @@ def test_redispatch_continues_a_stream_resolved_session_and_records_its_source(
     assert change["session_id"] == "019ff509-8a60-7723-94fd-65942a6d8faa"
     assert change["session_source"] == "stream"
     assert after["session_id"] == change["session_id"]
-    assert after["argv"][after["argv"].index("resume") + 1] == change["session_id"]
+    resumed = dispatch_field(after, "argv")
+    assert resumed[resumed.index("resume") + 1] == change["session_id"]
 
 
 def test_resume_backend_override_reports_a_cross_harness_fresh_start(

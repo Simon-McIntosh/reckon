@@ -1,0 +1,151 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "promotions.attempts.count(RUN_ID) == 1",
+      "fails_if": "the drain attempts the run more than once while its review is parked, for example by dropping the deferral that keeps a run refused only for its queued review queued",
+      "file": "tests/test_review_promoted_before_its_run.py",
+      "line": 230
+    },
+    {
+      "assertion": "promotions.promoted == [REVIEW_ID, RUN_ID]",
+      "fails_if": "removing the parked-readiness refresh at reckon/crew/promotion_requests.py:1003-1006 leaves the review's stored phase at WAITING, so the review is never promoted and the literal order fails",
+      "file": "tests/test_review_promoted_before_its_run.py",
+      "line": 237
+    },
+    {
+      "assertion": "requests.read_promotion(RUN_ID)[\"phase\"] == requests.PROMOTED",
+      "fails_if": "the queue drops the review's promotion or promotes the licensed run without it; the value is read back from the durable store, not from the test's event",
+      "file": "tests/test_review_promoted_before_its_run.py",
+      "line": 238
+    },
+    {
+      "assertion": "receipt[\"phase\"] == requests.REQUESTED",
+      "fails_if": "the drain promotes or refuses a run whose review's record is unwritten, or leaves the run terminal, changing the stored phase away from the literal REQUESTED",
+      "file": "tests/test_review_promoted_before_its_run.py",
+      "line": 229
+    }
+  ],
+  "assertion_independence": "no assertion compares the code's output with the value the test supplied: the event steers a monkeypatched collaborator, while every expected value is a literal or a call log read from the stub. The limit is that the readiness verdict is a double, so a regression inside _review_self_waits is invisible here; that reader is covered directly at tests/test_waiting_promotion_readiness_precedes_slot_admission.py:29-50, where _park asserts the waiting verdict from a real manifest and record.",
+  "call_sites": [],
+  "call_sites_note": "see item_verdicts.call_sites",
+  "completed_at": "",
+  "derivation_of_added_failures": "suite_evidence.baseline_suite and suite_evidence.after_suite both record failure_count 0 with empty failure_ids and each ran to its summary line, so the after arm adds no failure id over the base arm: added_failure_count 0, added_failure_ids [].",
+  "dispatched_at": "2026-11-19T09:30:58Z",
+  "evidence_limits": [
+    "no suite rerun: the baseline and after arms were read from their completed logs",
+    "the two negative-control logs carry no host, job id or partition line and their scheduler companions are empty, so the all_debug venue and unset SLURM_JOB_ID named by the done_when are not corroborated there",
+    "the manifest records no ruff check or format result for the changed path, so that clause is unrecorded rather than shown",
+    "the gate receipt names ce4dd521f8695cce08763b8cba0d3d4efcd30c26 rather than the reviewed head 7fa0aef176f619df723caf3d325a6e62730d51b6; the head commit is docs-only, so the measured test bytes are identical"
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-promoted-before-its-run.html",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: this line describes both cited runs as separate all_debug jobs submitted with SLURM_JOB_ID unset, but negative-control-base.log and negative-control-head.log carry no host, job id or partition line and the scheduler receipts beside the gate and suite logs are empty, so the venue the done_when names is asserted and not shown; record the submission receipt or a host line beside each quoted run."
+    },
+    {
+      "file": "tests/test_review_promoted_before_its_run.py",
+      "line": "214",
+      "severity": "non-blocking",
+      "text": "non-blocking: the helper replaces reckon.crew.promotion_requests._review_self_waits with its own verdict, so this file no longer touches the production readiness reader and becomes the third local copy of that double after tests/test_waiting_promotion_readiness_precedes_slot_admission.py:170 and tests/test_promotion_queue_drains_at_slot_speed.py:241; fold a shared fixture, or drive readiness from a real record and manifest as that sibling does."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none: the landed change is a test file and an evidence fragment, which no runtime path reaches; the production path the test exercises is the drain at reckon/crew/promotion_requests.py:1003-1014, which the change does not touch.",
+    "diff": "read both commits against 73b9ac21a50d; ce4dd521f869 rewrites the parked-review test (tests/test_review_promoted_before_its_run.py:184-238, kind review-self plus an event-driven readiness double, keeping every prior assertion and adding the attempt count) and 7fa0aef176f6 adds only the 18-line evidence fragment; no production file changed.",
+    "done_when": "the done_when asks for a full-file pass at head on all_debug with SLURM_JOB_ID unset, a base run, a per-cause product-or-test verdict, an arm pair as full-sha JSON, the base negative control beside the head run in the fragment, and clean ruff on the changed paths; the manifest records the gate (5 passed, EXIT=0) at ce4dd521f869 and both arms (58 passed, EXIT=0) at 73b9ac21a50d and ce4dd521f869 with full shas, but records no ruff result and no receipt showing either run was submitted to all_debug with SLURM_JOB_ID unset.",
+    "goal": "the node goal is that tests/test_review_promoted_before_its_run.py pass in full; both landed commits touch only that test file (tests/test_review_promoted_before_its_run.py:184-238) and its evidence fragment, and the scoped gate log reads 5 passed with EXIT=0 at ce4dd521f8695cce08763b8cba0d3d4efcd30c26, so the file passes in full at head.",
+    "manifest": "read in full; status complete, both commit ids, a tests line naming the pytest command, gate and suite JSON at full 40-character revisions, negative_control_log naming negative-control-base.log, and one outside_scope note on RECKON_WORKER_FENCE.",
+    "write_paths": "the declared paths are reckon, tests, the evidence fragment directory and its exact path, and the figure directory; the only two changed paths -- tests/test_review_promoted_before_its_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-promoted-before-its-run.html -- sit inside that scope and nothing else changed."
+  },
+  "justifications": {
+    "durability": "tests/test_review_promoted_before_its_run.py:237 reddens if the parked-readiness refresh at reckon/crew/promotion_requests.py:1003-1006 is removed, but the readiness verdict itself is monkeypatched at line 214, so a regression inside _review_self_waits is invisible to this file.",
+    "evidence": "the completed gate receipt in the source manifest and scoped-gate-1795049969220824104.log read 5 passed with EXIT=0 and went to its summary line, but no artefact records the all_debug submission or an unset SLURM_JOB_ID.",
+    "fit": "the readiness double follows the existing idiom at tests/test_waiting_promotion_readiness_precedes_slot_admission.py:170 and the local-helper style of tests/test_review_promoted_before_its_run.py:36-63, and adds no name the repository naming rules forbid.",
+    "goal_fidelity": "tests/test_review_promoted_before_its_run.py:217-238 passes and its base failure (KeyError: 'run_id') is gone, while the file's other four tests are unchanged.",
+    "reuse": "no shared owner for a parked-review readiness fixture exists; the search over tests found only local copies at tests/test_waiting_promotion_readiness_precedes_slot_admission.py:170 and tests/test_promotion_queue_drains_at_slot_speed.py:241, so the addition follows the local-helper idiom instead of duplicating a product capability whose owner is _review_self_waits at reckon/crew/promotion_requests.py:463.",
+    "scope_discipline": "the diff names only tests/test_review_promoted_before_its_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-promoted-before-its-run.html, both inside the declared write paths, and touches no other path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_review_promoted_before_its_run.py pass in full; both landed commits touch only that test file (tests/test_review_promoted_before_its_run.py:184-238) and its evidence fragment, and the scoped gate log reads 5 passed with EXIT=0 at ce4dd521f8695cce08763b8cba0d3d4efcd30c26, so the file passes in full at head.\nVERDICT done_when: the done_when asks for a full-file pass at head on all_debug with SLURM_JOB_ID unset, a base run, a per-cause product-or-test verdict, an arm pair as full-sha JSON, the base negative control beside the head run in the fragment, and clean ruff on the changed paths; the manifest records the gate (5 passed, EXIT=0) at ce4dd521f869 and both arms (58 passed, EXIT=0) at 73b9ac21a50d and ce4dd521f869 with full shas, but records no ruff result and no receipt showing either run was submitted to all_debug with SLURM_JOB_ID unset.\nVERDICT write_paths: the declared paths are reckon, tests, the evidence fragment directory and its exact path, and the figure directory; the only two changed paths -- tests/test_review_promoted_before_its_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-promoted-before-its-run.html -- sit inside that scope and nothing else changed.\nVERDICT manifest: read in full; status complete, both commit ids, a tests line naming the pytest command, gate and suite JSON at full 40-character revisions, negative_control_log naming negative-control-base.log, and one outside_scope note on RECKON_WORKER_FENCE.\nVERDICT diff: read both commits against 73b9ac21a50d; ce4dd521f869 rewrites the parked-review test (tests/test_review_promoted_before_its_run.py:184-238, kind review-self plus an event-driven readiness double, keeping every prior assertion and adding the attempt count) and 7fa0aef176f6 adds only the 18-line evidence fragment; no production file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_review_promoted_before_its_run.py:217-238 passes and its base failure (KeyError: 'run_id') is gone, while the file's other four tests are unchanged.\nSCORE evidence: 14\nJUSTIFICATION evidence: the completed gate receipt in the source manifest and scoped-gate-1795049969220824104.log read 5 passed with EXIT=0 and went to its summary line, but no artefact records the all_debug submission or an unset SLURM_JOB_ID.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff names only tests/test_review_promoted_before_its_run.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-promoted-before-its-run.html, both inside the declared write paths, and touches no other path.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_review_promoted_before_its_run.py:237 reddens if the parked-readiness refresh at reckon/crew/promotion_requests.py:1003-1006 is removed, but the readiness verdict itself is monkeypatched at line 214, so a regression inside _review_self_waits is invisible to this file.\nSCORE fit: 18\nJUSTIFICATION fit: the readiness double follows the existing idiom at tests/test_waiting_promotion_readiness_precedes_slot_admission.py:170 and the local-helper style of tests/test_review_promoted_before_its_run.py:36-63, and adds no name the repository naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: no shared owner for a parked-review readiness fixture exists; the search over tests found only local copies at tests/test_waiting_promotion_readiness_precedes_slot_admission.py:170 and tests/test_promotion_queue_drains_at_slot_speed.py:241, so the addition follows the local-helper idiom instead of duplicating a product capability whose owner is _review_self_waits at reckon/crew/promotion_requests.py:463.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-review-promoted-before-its-run.html:17 non-blocking: this line describes both cited runs as separate all_debug jobs submitted with SLURM_JOB_ID unset, but negative-control-base.log and negative-control-head.log carry no host, job id or partition line and the scheduler receipts beside the gate and suite logs are empty, so the venue the done_when names is asserted and not shown; record the submission receipt or a host line beside each quoted run.\nFINDING tests/test_review_promoted_before_its_run.py:214 non-blocking: the helper replaces reckon.crew.promotion_requests._review_self_waits with its own verdict, so this file no longer touches the production readiness reader and becomes the third local copy of that double after tests/test_waiting_promotion_readiness_precedes_slot_admission.py:170 and tests/test_promotion_queue_drains_at_slot_speed.py:241; fold a shared fixture, or drive readiness from a real record and manifest as that sibling does.",
+  "reuse_search": {
+    "capabilities": [
+      "parking a review-self promotion request",
+      "doubling review readiness inside a test",
+      "driving the drain to promote a review before the run it licenses"
+    ],
+    "judgement": "_review_self_waits at reckon/crew/promotion_requests.py:463 is the production owner and the test doubles it rather than re-implements it; no shared test fixture owns the double, so the addition follows the local-helper idiom of tests/test_waiting_promotion_readiness_precedes_slot_admission.py:170.",
+    "owners_opened": [
+      "tests/test_waiting_promotion_readiness_precedes_slot_admission.py:29",
+      "tests/test_promotion_queue_drains_at_slot_speed.py:241",
+      "reckon/crew/promotion_requests.py:463"
+    ]
+  },
+  "review_run_id": "r-20261119T012858658759-review-of-qwnw-red-file-review-promoted-before-its-run-7fa0aef176f6",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "7fa0aef176f619df723caf3d325a6e62730d51b6",
+  "reviewed_run_id": "r-20261118T044642992061-qwnw-red-file-review-promoted-before-its-run",
+  "reviewed_worker_commits": [
+    "ce4dd521f8695cce08763b8cba0d3d4efcd30c26",
+    "7fa0aef176f619df723caf3d325a6e62730d51b6"
+  ],
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044642992061-qwnw-red-file-review-promoted-before-its-run/after_suite-1795050081836774946.log",
+      "revision": "ce4dd521f8695cce08763b8cba0d3d4efcd30c26",
+      "summary": "58 passed in 36.53s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044642992061-qwnw-red-file-review-promoted-before-its-run/baseline_suite-1795050006559558378.log",
+      "revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+      "summary": "58 passed in 36.95s"
+    },
+    "gate": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_promoted_before_its_run.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044642992061-qwnw-red-file-review-promoted-before-its-run/scoped-gate-1795049969220824104.log",
+      "revision": "ce4dd521f8695cce08763b8cba0d3d4efcd30c26",
+      "summary": "5 passed in 2.64s"
+    },
+    "negative_control": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_promoted_before_its_run.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_review_promoted_before_its_run.py::test_a_run_whose_review_is_parked_while_its_record_is_written_waits"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044642992061-qwnw-red-file-review-promoted-before-its-run/negative-control-base.log",
+      "revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+      "summary": "1 failed, 4 passed in 9.41s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:07:43.980147+00:00",
+  "total": 106
+}

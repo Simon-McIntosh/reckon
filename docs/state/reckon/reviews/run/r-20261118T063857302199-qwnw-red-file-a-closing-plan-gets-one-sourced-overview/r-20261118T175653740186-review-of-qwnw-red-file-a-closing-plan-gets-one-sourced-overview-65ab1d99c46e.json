@@ -1,0 +1,93 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "def one_row_per_run(landings, **_kwargs) -> list[str]",
+      "fails_if": "the stub no longer accepts the keyword-only plan_slug/project/root that reckon/evidence.py:1083 passes, in which case the case dies with TypeError instead of testing the mutation; the base arm at eae9062c records exactly that failure, so the line guards the regression it repaired.",
+      "file": "tests/test_a_closing_plan_gets_one_sourced_overview.py",
+      "line": 631,
+      "test": "test_control_one_row_per_run_fails_the_attempt_case"
+    },
+    {
+      "assertion": "with pytest.raises(AssertionError): check_one_row_per_landed_node(_soup(checkout))",
+      "fails_if": "check_one_row_per_landed_node stops rejecting the one-row-per-run table the stub renders; the expectation is a raise from a re-parse of the rendered document rather than a value the test supplied, and the fragment reports the mutated table's 4 first cells as ['s1-node', 's1-node', 's1-node', 's2-node'].",
+      "file": "tests/test_a_closing_plan_gets_one_sourced_overview.py",
+      "line": 643,
+      "test": "test_control_one_row_per_run_fails_the_attempt_case"
+    }
+  ],
+  "assertion_independence": "The diff adds no assertion; it widens one stub signature. The assertion the repaired case runs compares a re-parsed document against a required refusal, so it is not an echo of a value the test passed into the code under test, and reverting the signature reddens it as the base log records.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T11:26:07Z",
+  "evidence_limits": [
+    "No suite, gate or probe was re-run during this bounded read-only review; the named-file head and base logs, the two declared-suite logs and the manifest's arm records are read as written.",
+    "The head log's third header line states the partition and the unset SLURM_JOB_ID as a literal the wrapping sbatch script writes, and named-file-head-slurm-1327548.out is empty, so the environment claim rests on that script plus the stream's sbatch-exit=0 record rather than a scheduler-side receipt.",
+    "The mutation probe's output (unmutated passes; mutated 4 rows, check raises) exists only in the reviewed run's stream.jsonl; no log for it was written under the run directory.",
+    "added_failure_count and added_failure_ids are read from the reviewed run's own baseline_suite and after_suite records: both arms 58 passed, EXIT=0, completed true, failure_count 0."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm row records the revision as the 12-character abbreviation c78ef214d0873f52 marked working tree while the pair being promoted lands at 65ab1d99c46e, so a reader cannot tie the measured arm to the promoted head without opening the log."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: the only suite evidence is the two declared-suite rows whose command names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither the changed file nor any of the 18 test files that import reckon.evidence, so those arms could not have failed on this change and the no-added-failure claim is vacuous."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph asserting the control still fires reports a probe whose output is in no log under the run directory, so the claim that the mutation rather than the stub's plumbing raises cannot be re-read from the record."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "answered - none: the change is a test-local stub signature, so no runtime code reaches it.",
+    "diff": "answered - two commits read against eae9062c: one signature line at tests/test_a_closing_plan_gets_one_sourced_overview.py:631 and a new 62-line fragment; no product file is touched.",
+    "done_when": "answered - brief-for-worker.md:375; the head arm's log names revision, tree, partition and command and closes EXIT=0, and the declared suite arms are recorded at both revisions.",
+    "goal": "answered - goal at prompt.txt:38 is a closing-plan overview test file passing in full; the head arm records 19 passed EXIT=0 at c78ef214.",
+    "manifest": "answered - states 19 passed at head, 1 failed/18 passed at base, 58 passed at both suite revisions, EXIT=0, and zero added failures.",
+    "write_paths": "answered - reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround (twice) and docs/figures/...; both delivered paths lie inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal at prompt.txt:38 of the reviewed run (make tests/test_a_closing_plan_gets_one_sourced_overview.py pass in full on the primary branch) and the head arm at named-file-head-c78ef214.log, whose summary line reads 19 passed in 2.42s with EXIT=0 at revision c78ef214d0873f52, so the named file is green in full.\nVERDICT done_when: brief-for-worker.md:375 asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; named-file-head.sbatch unsets the job variables under partition all_debug and named-file-head-c78ef214.log lines 1-5 name the revision, tree, partition and command while its last line reads EXIT=0.\nVERDICT write_paths: the declared paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node fragment, and docs/figures/...; the delivered diff eae9062c..65ab1d99 carries two paths, tests/test_a_closing_plan_gets_one_sourced_overview.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html, both inside that scope.\nVERDICT manifest: read the reviewed run's manifest.md; it records 19 passed at head c78ef214, 1 failed and 18 passed at base eae9062c with the failing id test_control_one_row_per_run_fails_the_attempt_case, both declared-suite arms 58 passed EXIT=0 and zero added failures, and its own rubric lines.\nVERDICT diff: read both commits against eae9062c commit by commit; c78ef214d0 changes exactly one line at tests/test_a_closing_plan_gets_one_sourced_overview.py:631 from def one_row_per_run(landings) to def one_row_per_run(landings, **_kwargs), and 65ab1d99c4 adds the 62-line fragment, with no product file and no assertion changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: named-file-head-c78ef214.log closes 19 passed and EXIT=0 at c78ef214 for tests/test_a_closing_plan_gets_one_sourced_overview.py, so the file the goal names passes in full.\nSCORE evidence: 14\nJUSTIFICATION evidence: named-file-head-c78ef214.log lines 1-5 and its EXIT=0 measure the done_when's head run, but the two declared-suite rows at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html:50-55 name tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, which cannot fail on this change.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat over eae9062c..65ab1d99 lists only tests/test_a_closing_plan_gets_one_sourced_overview.py and the node fragment, both inside the declared write paths, and nothing product-side changes.\nSCORE durability: 18\nJUSTIFICATION durability: putting the old signature back at tests/test_a_closing_plan_gets_one_sourced_overview.py:631 reddens test_control_one_row_per_run_fails_the_attempt_case with TypeError: ...unexpected keyword argument 'plan_slug', which is precisely the base arm's recorded failure.\nSCORE fit: 18\nJUSTIFICATION fit: the widened stub at tests/test_a_closing_plan_gets_one_sourced_overview.py:631 matches the sibling stub at line 686 (landed_only(..., **kwargs)) and the fragment repeats the sibling fragment's section and heading shape, though its arm rows abbreviate the revision to 12 characters.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and a capability search over tests/ for kwargs-tolerant monkeypatch stubs found the convention already owned by tests/test_a_closing_plan_gets_one_sourced_overview.py:686, which the change extends rather than duplicating.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html:48 non-blocking: the head arm row records the revision as the 12-character abbreviation c78ef214d0873f52 marked working tree while the pair being promoted lands at 65ab1d99c46e, so a reader cannot tie the measured arm to the promoted head without opening the log.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html:50 non-blocking: the only suite evidence is the two declared-suite rows whose command names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither the changed file nor any of the 18 test files that import reckon.evidence, so those arms could not have failed on this change and the no-added-failure claim is vacuous.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-closing-plan-gets-one-sourced-overview.html:26 non-blocking: the paragraph asserting the control still fires reports a probe whose output is in no log under the run directory, so the claim that the mutation rather than the stub's plumbing raises cannot be re-read from the record.\n",
+  "reuse_note": "Searched the repository for an existing mechanism that tolerates extra keyword arguments in a monkeypatch stub of a renderer; 832 test files carry the **kwargs / **_kwargs convention, and this file already owns it.",
+  "reuse_search": {
+    "capabilities": [
+      "a monkeypatch stub for an internal renderer that accepts the callee's evolving signature",
+      "a per-arm evidence record rendered as an HTML table inside a plan fragment"
+    ],
+    "judgement": "The change adds no definition: it extends the convention this file already owns at tests/test_a_closing_plan_gets_one_sourced_overview.py:686 (landed_only(plan, source, records, project=\"\", **kwargs)) and the fragment follows the sibling fragment's shape, so nothing is forked or duplicated.",
+    "owners_opened": [
+      "tests/test_a_closing_plan_gets_one_sourced_overview.py:686",
+      "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1"
+    ]
+  },
+  "review_run_id": "r-20261118T175653740186-review-of-qwnw-red-file-a-closing-plan-gets-one-sourced-overview-65ab1d99c46e",
+  "reviewed_base_sha": "eae9062c2dd1e4e7e42907752b0c52bfa6e31319",
+  "reviewed_head_sha": "65ab1d99c46e4cc4e18c0c7fd9911b50efb629bd",
+  "reviewed_run_id": "r-20261118T063857302199-qwnw-red-file-a-closing-plan-gets-one-sourced-overview",
+  "reviewed_worker_commits": [
+    "c78ef214d0873f5283b0f2ded5559e69318984fe",
+    "65ab1d99c46e4cc4e18c0c7fd9911b50efb629bd"
+  ],
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:02:48.232604+00:00",
+  "total": 108
+}

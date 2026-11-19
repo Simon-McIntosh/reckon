@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A watcher carries no session identity — measurement record</title>
+</head>
+<body>
+<h1 id="qwnw-red-file-a-watcher-carries-no-session-identity-h">A watcher carries no session identity</h1>
+
+<p id="qwnw-red-file-a-watcher-carries-no-session-identity-outcome">The node test passed 5/5 at head
+<code>dc243630b3db6b0e11456d43cd12e7626bf87bd9</code> on partition <code>all_debug</code>, with
+<code>SLURM_JOB_ID</code> removed from the environment the test process ran in. The one failing
+case at base was a test-fault: the case spelled out the supervisor's argv from a layout the
+product had already replaced.</p>
+
+<h2 id="qwnw-red-file-a-watcher-carries-no-session-identity-cause">Cause and verdict</h2>
+<table id="qwnw-red-file-a-watcher-carries-no-session-identity-causes">
+<thead>
+<tr><th>Case</th><th>Verdict</th><th>Why</th></tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_the_supervisor_sheds_identity_before_it_starts_the_producer</code></td>
+<td>test wrong</td>
+<td>The supervisor reads <code>project</code> and <code>module_root</code> from
+<code>sys.argv[6]</code> and <code>sys.argv[7]</code>, so the producer argv starts at index 8.
+The case built the older six-index layout, so the supervisor started the environment file's own
+path as the producer and exited non-zero before any environment was measured. The case now takes
+its settings prefix from <code>_watch_producer_argv</code>, the builder the product uses, and
+appends the stub producer. No assertion was deleted or weakened.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="qwnw-red-file-a-watcher-carries-no-session-identity-arms">The two runs</h2>
+<table id="qwnw-red-file-a-watcher-carries-no-session-identity-runs">
+<thead>
+<tr><th>Arm</th><th>Revision</th><th>Result</th><th>Where</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>base (negative control)</td>
+<td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+<td>1 failed, 4 passed — <code>test_the_supervisor_sheds_identity_before_it_starts_the_producer</code>, <code>EXIT=1</code></td>
+<td>scratch checkout under <code>$TMPDIR/base-arm</code>; log in the run directory,
+<code>logs/negative-control-base-node-test.log</code></td>
+</tr>
+<tr>
+<td>head</td>
+<td><code>dc243630b3db6b0e11456d43cd12e7626bf87bd9</code></td>
+<td>5 passed, <code>EXIT=0</code></td>
+<td>batch job on <code>all_debug</code> (host 98dci4-clu-3144), command
+<code>env -u SLURM_JOB_ID -u SLURM_JOBID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_watcher_carries_no_session_identity.py</code>;
+log <code>scoped-gate-1795069529792957789.log</code> in the run directory</td>
+</tr>
+</tbody>
+</table>
+
+<p id="qwnw-red-file-a-watcher-carries-no-session-identity-note">The same gate command without the
+<code>env -u</code> prefix was also run against the full suite this node's write scope resolves
+to, and the suite arms were measured by the run's own composed calls; their figures live in the
+manifest, not here.</p>
+</body>
+</html>

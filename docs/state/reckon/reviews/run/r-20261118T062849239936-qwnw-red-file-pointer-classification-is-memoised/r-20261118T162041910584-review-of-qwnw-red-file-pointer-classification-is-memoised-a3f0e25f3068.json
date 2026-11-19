@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/serve.py:_send_evidence_record",
+    "reckon/mcp.py:_typed_resource_text_and_warning",
+    "reckon/doccheck.py:audit_fragment_ids",
+    "reckon/crew/reports.py:_composed_record_id_findings",
+    "reckon/crew/dispatch_claims.py:_landing_fragment_paths"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T07:57:39Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "the table's all_debug job cells at :41, :45, :49 and :53, and the prose at :22, assert a partition and an unset SLURM_JOB_ID and no reviewed log header records either: scoped-gate-1795009821066711003.log:5 carries the execution command with no env -u SLURM_JOB_ID and its header names a host, not a partition, so the done_when's environment condition is claimed rather than shown."
+    },
+    {
+      "file": "tests/test_pointer_classification_is_memoised.py",
+      "line": "157",
+      "severity": "non-blocking",
+      "text": "the second assert calls == [2] holds whatever the persisted memo does, because reckon/_backends.py:3946 _STREAM_SUMMARIES answers the second read from a process-wide cache: reinstating the regression the file is named for (_read_classification_memo returning {}) leaves the file green, as negative-control-reader-empty.log:5 records, so this file does not guard the memo it is named for."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html",
+      "line": "84",
+      "severity": "non-blocking",
+      "text": "the fragment states that a regression which stopped the memo being written would leave the file green, which is a durability gap it recorded rather than closed; a case opening a second process, or clearing the backend summary between the two classifications, is what would make the memo load-bearing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Commits 71813a39f2 and a3f0e25f3068 add one new 89-line fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html (+89 -0) and touch no source or test file; every element id in it is prefixed with the node id.",
+    "done_when": "The done_when names the file at head as an all_debug job with SLURM_JOB_ID unset on shared storage, with the base arm's failing ids logged beside the head arm in the fragment; scoped-gate-1795009821066711003.log:2-7 records the head arm at a3f0e25f as 10 passed EXIT=0 and the fragment states the base arm has no failing ids, but no log header records the partition or an unset job id.",
+    "goal": "The source node's goal is Make tests/test_pointer_classification_is_memoised.py pass in full on the primary branch; scoped-gate-1795008499215349418.log:7 records 10 passed EXIT=0 for that file at the base 577adbbe, so the delivered fragment records a file that already passed and no source change.",
+    "manifest": "Read the reviewed run's manifest.md; it records both arms as 10 passed EXIT=0 with their log paths, the two persisted-memo mutations that stayed green, negative_control as none with a reason, and baseline_suite/after_suite as 58-passed JSON at full 40-character revisions.",
+    "write_paths": "The reviewed manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, the node's own fragment file and the node's figure directory; the diff's single path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html, inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_pointer_classification_is_memoised.py:157 asserts calls == [2] after the second classification and stays green with _read_classification_memo made to return {} (negative-control-reader-empty.log:5), because reckon/_backends.py:3946 _STREAM_SUMMARIES serves that read.",
+    "evidence": "Both arms carry revision, tree, command and EXIT (scoped-gate-1795009821066711003.log:2-5), but the done_when's all_debug partition and unset SLURM_JOB_ID are asserted at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html:22 and recorded in no log header, and no ruff run appears on the manifest.",
+    "fit": "The fragment follows the sibling shape and node-prefixed ids of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-gate-names-its-arms.html:1-8, but drops that file's verbatim log captures and slurm_job_id header in favour of prose and a table.",
+    "goal_fidelity": "The goal asks that tests/test_pointer_classification_is_memoised.py pass in full, and scoped-gate-1795008499215349418.log:7 records 10 passed EXIT=0 for that file at the base 577adbbe, so the fragment delivers the run the done_when's early-exit branch asks for.",
+    "reuse": "The diff adds no function, class or module, so nothing can duplicate an owner, and the 302 sibling fragments under docs/evidence/fragments/queued-work-needs-no-workaround hold no earlier record for this node.",
+    "scope_discipline": "The only path in 577adbbe..a3f0e25f is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html, inside the declared docs/evidence/fragments/queued-work-needs-no-workaround, and no source or test file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is Make tests/test_pointer_classification_is_memoised.py pass in full on the primary branch; scoped-gate-1795008499215349418.log:7 records 10 passed EXIT=0 at the base 577adbbe.\nVERDICT done_when: the done_when names the head arm as an all_debug job with SLURM_JOB_ID unset on shared storage, with the base arm's failing ids beside it in the fragment; scoped-gate-1795009821066711003.log:2-7 records the head arm at a3f0e25f as 10 passed EXIT=0 and the fragment says the base arm has no failing ids.\nVERDICT write_paths: the reviewed manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff's one path is under the third.\nVERDICT manifest: read; it records both arms as 10 passed EXIT=0, two memo mutations that stayed green, negative_control as none with a reason, and baseline_suite/after_suite as 58-passed JSON at full 40-character revisions.\nVERDICT diff: commits 71813a39f2 and a3f0e25f3068 add one new 89-line fragment and touch no source or test file.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/serve.py:_send_evidence_record, reckon/mcp.py:_typed_resource_text_and_warning, reckon/doccheck.py:audit_fragment_ids, reckon/crew/reports.py:_composed_record_id_findings, reckon/crew/dispatch_claims.py:_landing_fragment_paths\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: scoped-gate-1795008499215349418.log:7 records 10 passed EXIT=0 at 577adbbe.\nSCORE evidence: 13\nJUSTIFICATION evidence: scoped-gate-1795009821066711003.log:2-5 records revision, tree, command and EXIT, but no header records the all_debug partition or an unset job id.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the only diff path is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_pointer_classification_is_memoised.py:157 stays green with _read_classification_memo returning {}, per negative-control-reader-empty.log:5.\nSCORE fit: 15\nJUSTIFICATION fit: the fragment follows qwnw-red-file-a-gate-names-its-arms.html:22-40 in shape but quotes no verbatim log.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and the fragment directory holds no earlier record for this node.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html:41 non-blocking: the all_debug job cells at :41, :45, :49 and :53 assert a partition no reviewed log header records, and scoped-gate-1795009821066711003.log:5 shows the execution command with no env -u SLURM_JOB_ID.\nFINDING tests/test_pointer_classification_is_memoised.py:157 non-blocking: the second assert calls == [2] cannot fail for the persisted memo, because reckon/_backends.py:3946 _STREAM_SUMMARIES serves the read.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-pointer-classification-is-memoised.html:84 non-blocking: the fragment records the memo gap rather than closing it.\n",
+  "review_run_id": "r-20261118T162041910584-review-of-qwnw-red-file-pointer-classification-is-memoised-a3f0e25f3068",
+  "reviewed_base_sha": "577adbbe51728af1e1499236b0ab00dd1b37166a",
+  "reviewed_head_sha": "a3f0e25f30689bb072218c6b236f9dc4745607c7",
+  "reviewed_run_id": "r-20261118T062849239936-qwnw-red-file-pointer-classification-is-memoised",
+  "scores": {
+    "durability": 8,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T08:50:00+00:00",
+  "total": 92
+}

@@ -218,17 +218,22 @@ def resolve_waits(
         for ref in refs
     ]
     if isinstance(pointer, dict):
-        pointer["upstream_obligations"] = list(dict.fromkeys(issues))
+        obligations = list(dict.fromkeys(issues))
         # A request that stays waiting names the run whose work it waits for.
         # The section it waits on can own several runs, and one of them having
         # failed is not the section's end while another is still on its way: a
         # reader that saw only the section's name could not tell the two apart.
-        pointer["upstream_live"] = _live_runs_on(
+        working = _live_runs_on(
             refs,
             live,
             project=owner_project,
             exclude=str(pointer.get("run_id") or ""),
         )
+        # The pointer is this pass's copy of the row, so the obligations land
+        # where the loop that persists them reads them, and a shared view
+        # reaching this writer raises rather than being quietly dropped.
+        pointer["upstream_obligations"] = obligations
+        pointer["upstream_live"] = working
     if ABANDONED in states:
         return BLOCKED_UPSTREAM_PHASE
     if all(state == SATISFIED for state in states):
@@ -344,7 +349,12 @@ def _release_waiters(
         for ref in landed
         if not project or _release_section_key(ref, project) is None
     }
-    pointers = list(live if live is not None else runs.list_live())
+    # A listing hands out the memo's read-only view, and this pass derives a
+    # phase and two obligation fields onto each candidate it releases, so the
+    # candidates are copied first.
+    pointers = [
+        dict(pointer) for pointer in (live if live is not None else runs.list_live())
+    ]
     shared = cache if cache is not None else {}
     promoted: list[str] = []
     blocked: list[str] = []
@@ -538,9 +548,9 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     candidates = [
-        pointer
-        for pointer in live
-        if str(pointer.get("phase") or "") in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE)
+        (row, dict(row))
+        for row in live
+        if str(row.get("phase") or "") in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE)
     ]
     if not candidates:
         return {"promoted": [], "blocked": [], "obligations": []}
@@ -549,7 +559,7 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     derived_cache: dict[tuple[str, str, str, tuple[str, ...], bool], list[str]] = {}
     # One mount-registry read per pass, shared by every ref it resolves.
     mount = _wait_refs._mount_view()
-    for pointer in candidates:
+    for _row, pointer in candidates:
         try:
             _rederive_waits(pointer, cache=derived_cache, live=live, mount=mount)
         except Exception:  # noqa: BLE001, S112 - one unreadable request cannot end the pass
@@ -557,10 +567,15 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     promoted: list[str] = []
     blocked: list[str] = []
     obligations: dict[str, str] = {}
+    # Each candidate is (the caller's row, the copy this pass derives and
+    # stamps); a resolved copy is mirrored onto its row, so a caller reading
+    # its own rows sees the phase the pass recorded, exactly as it did when
+    # the pass wrote the row itself. The copy is what keeps the record a
+    # listing handed out — the memo's view — out of every write here.
     for _round in range(len(candidates) + 1):
         dead = _dead_sections(live)
         changed = False
-        for pointer in candidates:
+        for row, pointer in candidates:
             phase = str(pointer.get("phase") or "")
             if phase not in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE):
                 continue
@@ -593,6 +608,9 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                     return current
 
                 runs._mutate_pointer(run_id, record_issues)
+            row["phase"] = pointer["phase"]
+            row["upstream_obligations"] = issues
+            row["upstream_live"] = working
             if target == phase:
                 # The request holds the phase its waits justify: either they
                 # still wait, or the move could not be written and is retried

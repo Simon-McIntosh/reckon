@@ -47,6 +47,20 @@ def _account_payload(utilisation: float, *, stamp: object) -> dict:
     }
 
 
+def _live_credential(now: datetime) -> dict:
+    """A stored login that is still alive at ``now``.
+
+    The dialect's account read refuses an undeclared or lapsed login before it
+    reaches the transport, so a test that drives the live path through an
+    injected ``fetch`` must supply one; otherwise the read resolves to unknown
+    for a reason the test never named and its answer is never consulted.
+    """
+    return {
+        "accessToken": "live-token",
+        "refreshTokenExpiresAt": int((now + timedelta(days=30)).timestamp()),
+    }
+
+
 def _figures(block: object) -> list[dict]:
     """Every structure in an emitted block that holds a utilisation figure."""
     found: list[dict] = []
@@ -133,6 +147,9 @@ def test_the_probe_entry_point_serves_the_cached_age_and_not_only_the_figure(
     cache = _env_resolved_cache(
         tmp_path, monkeypatch, _account_payload(53.0, stamp=int(stamp.timestamp()))
     )
+    monkeypatch.setattr(
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
 
     def _unavailable(oauth):
         raise OSError("account surface unreachable")
@@ -201,6 +218,12 @@ def test_a_live_reading_is_untouched_by_the_cache_fallback(tmp_path, monkeypatch
             "resets_at": "2026-09-14T20:00:00+00:00",
         },
     }
+    # The live path is the subject here, so the stored login must be alive:
+    # without it the dialect refuses before it consults the injected answer and
+    # the cache serves the figure instead.
+    monkeypatch.setattr(
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
 
     block = _backends.probe_budget(
         backend_name="metered",

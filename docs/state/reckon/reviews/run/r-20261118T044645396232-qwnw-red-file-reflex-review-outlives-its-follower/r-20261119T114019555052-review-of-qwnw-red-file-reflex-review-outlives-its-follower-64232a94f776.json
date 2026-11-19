@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "06ed97e3a38086e2e5feabb18d5965f8ded3886b",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3902 _start_supervisor reads _supervisor_argv at :3944",
+    "reckon/crew/dispatch_launch.py:3946 _spawn_detached_supervisor",
+    "reckon/crew/dispatching/launch.py:309 _create_worktree",
+    "reckon/crew/dispatch.py:645 _CONCERN_MODULES facade forwarding"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:43:08Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044645396232-qwnw-red-file-reflex-review-outlives-its-follower/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded after_suite command names tests/test_reflex_review_outlives_its_follower.py and tests/test_every_shared_home_lock_holds_across_nodes.py, but the log it cites (after_suite-1795087621737380291.log) carries \"# command: env PYTHONPATH=. sh -c '... tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'\" at revision 64232a94f7, so the arm receipt promotion re-runs is not the arm that ran."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044645396232-qwnw-red-file-reflex-review-outlives-its-follower/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's \"arm over the test files that import what you changed\" is still measured on tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, the same population on both sides at 58 passed, so the arm repeats the base and could not redden for either commit the run delivered."
+    }
+  ],
+  "head_log_revision": "64232a94f7768243cfc2ded0b260546749ed2df4",
+  "item_verdicts": {
+    "diff": "read 64232a94f7 alone (93 added, 8 removed, one path) and the cumulative 06ed97e3..64232a94f7 (+100 -4, one path): the gain rewrites the comment at tests/test_reflex_review_outlives_its_follower.py:113-127 to the facade's real forwarding rule, and adds _binding_source/_overridden plus test_the_followers_overrides_land_where_the_launch_reads_them at :323-400.",
+    "done_when": "the done_when asks for the file green at head with SLURM_JOB_ID unset, an arm over the test files that import the change, and a negative control; node-gate-head-64232a94f7.log records revision 64232a94f7, command \"env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_reflex_review_outlives_its_follower.py\", 2 passed 1 skipped, EXIT=0, and I reproduced 2 passed 1 skipped from the head file's own bytes; the arm clause is not met by a discriminating population (both suite arms ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py).",
+    "goal": "the node goal is that tests/test_reflex_review_outlives_its_follower.py pass in full on the primary branch; the gained commit 64232a94f7 does not change that file's pass state (it already read 2 passed 1 skipped at 9de7ad2120) and instead makes its green load-bearing, by executing the follower's own binding block in a default-run test at tests/test_reflex_review_outlives_its_follower.py:350-400.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044645396232-qwnw-red-file-reflex-review-outlives-its-follower/manifest.md: status complete, commits 9de7ad2120 and 64232a94f7, gate 2 passed 1 skipped EXIT=0, negative control 1 failed 2 passed EXIT=1, and both suite arms recorded as 58 passed exit_status 0 with failure_ids [] \u2014 but the after_suite command at manifest.md:21 names tests/test_reflex_review_outlives_its_follower.py while its cited log's header names tests/test_staged_write_inventory.py, and both arms name the same base-population files.",
+    "write_paths": "the reviewed node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround/... and a figures directory; the gained diff 9de7ad2120..64232a94f7 carries only tests/test_reflex_review_outlives_its_follower.py, which is inside tests."
+  },
+  "justifications": {
+    "durability": "tests/test_reflex_review_outlives_its_follower.py:382-389 fails when the follower's argv override is moved back onto the compatibility facade, which I reproduced in a scratch copy of the head file ('-m reckon.crew.supervisor_main' against the sleep argv).",
+    "evidence": "node-gate-head-64232a94f7.log records 2 passed 1 skipped EXIT=0 at 64232a94f7 and node-gate-negative-control-64232a94f7.log reds test_a_reflex_review_supervisor_survives_the_followers_group_in_tree at EXIT=1, but manifest.md:20-21 records two arms whose logs reveal the same base-population population and one whose command disagrees with the log it cites.",
+    "fit": "tests/test_reflex_review_outlives_its_follower.py:323-400 follows the file's existing importlib idiom and module-level constants, ruff check and ruff format --check report the file clean, and it introduces no plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_reflex_review_outlives_its_follower.py:350-400 makes the file's green mean something rather than turning a red file green, and the file already read 2 passed 1 skipped at the base revision 06ed97e3.",
+    "reuse": "the gain defines only _binding_source and _overridden in tests/test_reflex_review_outlives_its_follower.py:328-347 and reuses the module-attribute binding idiom already in the file; a search over reckon/crew for a mechanism that binds an override where its caller reads it found the facade forwarding at reckon/crew.py:36-44 and reckon/crew/dispatch.py:645-680, which the change verifies rather than duplicates.",
+    "scope_discipline": "every changed line is in tests/test_reflex_review_outlives_its_follower.py:113-400, inside the declared tests path, with no product file, plan or state write."
+  },
+  "project": "reckon",
+  "raw_text": "see emission.txt in this run's directory at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T114019555052-review-of-qwnw-red-file-reflex-review-outlives-its-follower-64232a94f776/emission.txt",
+  "review_run_id": "r-20261119T114019555052-review-of-qwnw-red-file-reflex-review-outlives-its-follower-64232a94f776",
+  "reviewed_base_sha": "06ed97e3a38086e2e5feabb18d5965f8ded3886b",
+  "reviewed_gain": "9de7ad212070e2240ad62a57700cc803cd805659..64232a94f7768243cfc2ded0b260546749ed2df4",
+  "reviewed_head_sha": "64232a94f7768243cfc2ded0b260546749ed2df4",
+  "reviewed_run_id": "r-20261118T044645396232-qwnw-red-file-reflex-review-outlives-its-follower",
+  "reviewer_run_id": "r-20261119T114019555052-review-of-qwnw-red-file-reflex-review-outlives-its-follower-64232a94f776",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:07:55.432182+00:00",
+  "total": 101
+}

@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/merge.py:469 _copy_objects",
+    "reckon/crew/merge.py:925 _copy_objects",
+    "reckon/crew/merge.py:1653 _copy_objects",
+    "reckon/crew/pending_landing.py:356 head_on_remote_branch",
+    "reckon/crew/pending_landing.py:1350 head_on_remote_branch",
+    "reckon/crew/promotion.py:785 _primary_branch_revision",
+    "reckon/crew/recovery_review_acceptance.py:289 _names_a_commit",
+    "reckon/crew/reports.py:2058 _revision_is_committed"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:41:14Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044641797653-qwnw-red-file-one-function-resolves-a-citation/manifest.md",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the manifest holds eight lines and omits tests:, test_logs:, baseline_suite:, after_suite:, landing:, artifacts:, evidence_inputs: and outside_scope:, so promotion has no gate command to fill its receipt from and no arm JSON to compare, though the scoped gate (2 passed, EXIT=0) and both 58-passed arms sit in the same run directory."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence points the head run at \"the manifest test_logs\", a line this run's manifest does not have, so a reader following the citation finds nothing to open."
+    }
+  ],
+  "head_log_revision": "dcf706d67d98b3f70f2e647e789f0e4c9aa34c30",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "eight production call sites examined: merge._copy_objects at reckon/crew/merge.py:469, :925 and :1653, merge.head_on_remote_branch at reckon/crew/pending_landing.py:356 and :1350, _primary_branch_revision at reckon/crew/promotion.py:785, _names_a_commit at reckon/crew/recovery_review_acceptance.py:289 and :595, and _revision_is_committed at reckon/crew/reports.py:2058.",
+    "diff": "read commit by commit: 2ac68d54 replaces five hand-rolled peels with the shared resolver (15+/44-), ed49ec95 re-stubs tests/test_a_remote_read_is_bounded.py for the resolver (5+/8-), and 3fb6bf0a with dcf706d add the 32-line fragment quoting the base red run and the head pass.",
+    "done_when": "the done_when asks for the named file green at head with the base run and its failing ids logged beside it, both importer arms as inline JSON at full revisions, ruff reporting nothing new, and the manifest as the record; the gate log, the red base log and a ruff replay of the changed paths answer the first four, and the manifest carries none of the gate, arm or landing lines.",
+    "goal": "the node's goal is that tests/test_one_function_resolves_a_citation.py passes in full; the landed change routes every commit-citation peel through reckon/crew/recovery_review_subject.py:259 _resolve_commit at reckon/crew/merge.py:446 and :1290, reckon/crew/reports.py:1900, reckon/crew/recovery_classification.py:1085 and reckon/crew/recovery_review_acceptance.py:241, and scoped-gate-1795053198076024902.log reads '2 passed' EXIT=0 for that file at dcf706d67d98.",
+    "manifest": "read the 8-line manifest: status complete, four full commit ids and six changed_paths, but no tests:, test_logs:, baseline_suite:, after_suite:, landing:, artifacts: or evidence_inputs: line, so the manifest asserts the work while all its evidence lives in the run directory beside it.",
+    "write_paths": "the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a figure directory; the six files in 73b9ac21a50d..dcf706d67d98 are four modules under reckon/crew, tests/test_a_remote_read_is_bounded.py and the node's fragment, all inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_one_function_resolves_a_citation.py:24 asserts exactly one ^{commit} site under reckon/, so restoring any deleted peel reddens it \u2014 negative-control-base.log shows that set difference \u2014 but the scan keys on the ^{commit} spelling, so a relapse written as cat-file -e stays green.",
+    "evidence": "scoped-gate-1795053198076024902.log reads \"2 passed in 3.51s\" EXIT=0 at dcf706d67d98 and negative-control-base.log reads \"1 failed, 1 passed in 4.80s\" EXIT=1 at 73b9ac21a50d, but the reviewed run's manifest.md carries no tests:, test_logs:, baseline_suite: or after_suite: line, so the gate result cited by docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:26 is recorded beside the record rather than in it.",
+    "fit": "the added call sites use the lazy `from reckon.crew.recovery import _resolve_commit` form already used at reckon/crew/routing.py:811 and reckon/crew/gc.py:934 and introduce no new identifier.",
+    "goal_fidelity": "the five former peel sites now call reckon/crew/recovery_review_subject.py:259 _resolve_commit from reckon/crew/merge.py:446 and :1290, reckon/crew/reports.py:1900, reckon/crew/recovery_classification.py:1085 and reckon/crew/recovery_review_acceptance.py:241, which is the single-site shape tests/test_one_function_resolves_a_citation.py asserts.",
+    "reuse": "the change adds no definition and extends the existing owner reckon/crew/recovery_review_subject.py:259 _resolve_commit (re-exported at reckon/crew/recovery.py:266); a capability search of reckon/ found reckon/interface_counts.py:675 count_revision_cached, a different capability the named test exercises separately.",
+    "scope_discipline": "every one of the six paths in git diff 73b9ac21a50d..dcf706d67d98 lies inside the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround scope, and no figure or extra prose was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_one_function_resolves_a_citation.py passes in full; the landed change routes every commit-citation peel through reckon/crew/recovery_review_subject.py:259 _resolve_commit from reckon/crew/merge.py:446 and :1290, reckon/crew/reports.py:1900, reckon/crew/recovery_classification.py:1085 and reckon/crew/recovery_review_acceptance.py:241, and scoped-gate-1795053198076024902.log reads \"2 passed\" EXIT=0 for that file at dcf706d67d98.\nVERDICT done_when: the done_when asks for the named file green at head, the base run and its failing ids logged beside it, both importer arms as inline JSON at full revisions, ruff reporting nothing new, and the manifest as the record; scoped-gate-1795053198076024902.log (2 passed, EXIT=0) and negative-control-base.log (1 failed, 1 passed, EXIT=1) answer the first two, a ruff replay of the five changed paths shows the same 3 pre-existing findings at base and at head, and the manifest carries none of the gate, arm or landing lines.\nVERDICT write_paths: the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and a figure directory; the six files in 73b9ac21a50d4566b8bc7ec2cf2c49160af28656..dcf706d67d98b3f70f2e647e789f0e4c9aa34c30 are reckon/crew/merge.py, reckon/crew/reports.py, reckon/crew/recovery_classification.py, reckon/crew/recovery_review_acceptance.py, tests/test_a_remote_read_is_bounded.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html, every one inside that fence.\nVERDICT manifest: read the 8-line manifest at the reviewed run directory; it carries status complete, four full commit ids and six changed_paths, but no tests:, test_logs:, baseline_suite:, after_suite:, landing:, artifacts: or evidence_inputs: line.\nVERDICT diff: read commit by commit against 73b9ac21a50d \u2014 2ac68d54 replaces five hand-rolled peels with the shared resolver (+15/-44), ed49ec95 re-stubs tests/test_a_remote_read_is_bounded.py for the resolver (+5/-8), and 3fb6bf0a with dcf706d add the 32-line evidence fragment.\nCALL_SITES: reckon/crew/merge.py:469 _copy_objects, reckon/crew/merge.py:925 _copy_objects, reckon/crew/merge.py:1653 _copy_objects, reckon/crew/pending_landing.py:356 head_on_remote_branch, reckon/crew/pending_landing.py:1350 head_on_remote_branch, reckon/crew/promotion.py:785 _primary_branch_revision, reckon/crew/recovery_review_acceptance.py:289 _names_a_commit, reckon/crew/reports.py:2058 _revision_is_committed\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the five former peel sites now call reckon/crew/recovery_review_subject.py:259 _resolve_commit from reckon/crew/merge.py:446 and :1290, reckon/crew/reports.py:1900, reckon/crew/recovery_classification.py:1085 and reckon/crew/recovery_review_acceptance.py:241, which is the single-site shape tests/test_one_function_resolves_a_citation.py:24 asserts.\nSCORE evidence: 10\nJUSTIFICATION evidence: scoped-gate-1795053198076024902.log reads \"2 passed\" EXIT=0 at dcf706d67d98 and negative-control-base.log reads \"1 failed, 1 passed\" EXIT=1 at 73b9ac21a50d, but the reviewed run's manifest.md carries no tests:, test_logs:, baseline_suite: or after_suite: line, so the gate result cited by docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:26 is not in the record the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 73b9ac21a50d..dcf706d67d98 lies inside the declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround scope, and the fragment is the only prose written.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_function_resolves_a_citation.py:24 asserts exactly one ^{commit} site under reckon/, so restoring any deleted peel reddens it, as negative-control-base.log's set difference shows, but the scan keys on the ^{commit} spelling and a relapse written as cat-file -e at reckon/crew/reports.py:1898 would stay green.\nSCORE fit: 19\nJUSTIFICATION fit: the added call sites use the lazy `from reckon.crew.recovery import _resolve_commit` form already used at reckon/crew/routing.py:811 and reckon/crew/gc.py:934 and introduce no new identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and extends the existing owner reckon/crew/recovery_review_subject.py:259 _resolve_commit, re-exported at reckon/crew/recovery.py:266, and the capability search over reckon/ found only reckon/interface_counts.py:675 count_revision_cached, a different capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044641797653-qwnw-red-file-one-function-resolves-a-citation/manifest.md:1 blocking: the manifest holds eight lines and omits tests:, test_logs:, baseline_suite:, after_suite:, landing:, artifacts:, evidence_inputs: and outside_scope:, so promotion has no gate command to fill its receipt from and no arm JSON to compare, though the scoped gate (2 passed, EXIT=0) and both 58-passed arms sit in the same run directory.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-function-resolves-a-citation.html:26 non-blocking: the sentence points the head run at \"the manifest test_logs\", a line this run's manifest does not have, so a reader following the citation finds nothing to open.",
+  "review_run_id": "r-20261119T021349075766-review-of-qwnw-red-file-one-function-resolves-a-citation-dcf706d67d98",
+  "reviewed_base_sha": "73b9ac21a50d4566b8bc7ec2cf2c49160af28656",
+  "reviewed_head_sha": "dcf706d67d98b3f70f2e647e789f0e4c9aa34c30",
+  "reviewed_run_id": "r-20261118T044641797653-qwnw-red-file-one-function-resolves-a-citation",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T021349075766-review-of-qwnw-red-file-one-function-resolves-a-citation-dcf706d67d98"
+  },
+  "reviewer_run_id": "r-20261119T021349075766-review-of-qwnw-red-file-one-function-resolves-a-citation-dcf706d67d98",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:08:38.707784+00:00",
+  "total": 106
+}

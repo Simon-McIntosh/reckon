@@ -11,7 +11,7 @@ import socket
 import subprocess
 import time
 from contextlib import contextmanager, suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
@@ -781,7 +781,7 @@ def overdue_unreconciled_runs(
 
 def _utc_seconds() -> float:
     """Current time as epoch seconds, matching a file mtime's clock."""
-    return datetime.now(tz=timezone.utc).timestamp()
+    return datetime.now(tz=UTC).timestamp()
 
 
 # A producer that finds its project's seat held by a live producer on another
@@ -1685,7 +1685,15 @@ def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
 
 
 _SNAPSHOT_CACHE: dict[str, tuple[str, dict[str, Any]]] = {}
-_SNAPSHOT_CACHE_LIMIT = 256
+# The cache has to hold every live run of the project at once, or a poll
+# recomputes the runs it just evicted: each recomputation classifies a run from
+# its streams, so a fleet one run over the bound re-reads streams every poll.
+# A snapshot is a small mapping, so the bound sits well above any fleet this
+# process watches and exists only to stop a leak.
+_SNAPSHOT_CACHE_LIMIT = 4096
+# A trim removes this share of the bound, so the directory checks it costs are
+# paid once per that many stores rather than on every store past the bound.
+_SNAPSHOT_CACHE_TRIM = 8
 
 
 def _remember_snapshot(
@@ -1707,11 +1715,20 @@ def _remember_snapshot(
     store[run_id] = (key, snapshot)
     if len(store) <= _SNAPSHOT_CACHE_LIMIT:
         return
+    # Past the bound, runs whose directory has gone are dropped first, then the
+    # oldest entries down to a margin below the bound. The margin is what keeps
+    # this from running on every store: without it each store past the bound
+    # checked every cached run's directory, which on a fleet larger than the
+    # bound was one directory check per pair of runs per poll.
     for rid in list(store):
         if rid != run_id and not runs.run_dir(rid).is_dir():
             del store[rid]
-    while len(store) > _SNAPSHOT_CACHE_LIMIT:
-        store.pop(next(iter(store)))
+    target = _SNAPSHOT_CACHE_LIMIT - _SNAPSHOT_CACHE_LIMIT // _SNAPSHOT_CACHE_TRIM
+    while len(store) > target:
+        oldest = next(iter(store))
+        if oldest == run_id:
+            break
+        store.pop(oldest)
 
 
 def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
@@ -2316,6 +2333,17 @@ def _fleet_counts(
         for snapshot in rows
     )
     buckets = [_bucket_of(state) for state in states]
+    # A row is delivered when its own row word says delivered, and the
+    # classifier's promotion debt reads only the promotable ones. Counting the
+    # fold alone would drop a run whose review is still owed — drawn delivered
+    # while it is classified ``scoring`` — out of every cell, so the state the
+    # pane draws it with counts here, one row once, and the fold adds the
+    # promotable rows the delivered states do not name.
+    delivered_rows = sum(
+        state in FLEET_UNPROMOTED_STATES
+        or str((snapshot.get("delivery") or {}).get("status") or "") == "delivered"
+        for snapshot, state in zip(rows, states, strict=True)
+    )
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states)
         - reviewing
@@ -2325,14 +2353,12 @@ def _fleet_counts(
         # word and the figure cannot disagree if there is one statement of
         # which bucket a state belongs to.
         "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
-        - repairing,
+        "unpromoted": delivered_rows - repairing,
     }
     if any("delivery" in row and row["delivery"] is not None for row in rows):
         from .recovery_classification import delivery_summary
 
         delivery = delivery_summary(rows, pointers=pointers)
-        counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
         counts["oldest_promotion_requested_at"] = delivery[

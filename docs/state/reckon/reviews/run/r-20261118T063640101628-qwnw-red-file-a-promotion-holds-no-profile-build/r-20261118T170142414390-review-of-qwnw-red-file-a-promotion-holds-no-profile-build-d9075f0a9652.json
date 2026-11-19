@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/compliance.py:_dependencies",
+    "reckon/doccheck.py:_composed_record_text",
+    "reckon/evidence.py:evidence_record_plan",
+    "reckon/evidence.py:compose_landed_record"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T00:06:40Z",
+  "finding_count": 3,
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html",
+      "id": "f-qwnw-profile-gatehead",
+      "line": 76,
+      "severity": "non-blocking",
+      "text": "non-blocking: the composed-gate block prints the literal placeholder '<scratch tree>' for both the imported module path and the cwd, and drops the timing, so the lines it quotes cannot be reconciled with scoped-gate-1795020809948380563.log:5-6, which name /tmp/mcintos-landing-19177f2db822-8HVMYR/tree and '4 passed in 4.68s'; an evidence record that does not quote the log it cites loses the one check the file exists to give a reader."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html",
+      "id": "f-qwnw-profile-headisbase",
+      "line": 37,
+      "severity": "non-blocking",
+      "text": "non-blocking: the record states that 'the tree's head revision is the base revision', which is false as a git fact \u2014 the delivered head is d9075f0a96526bd2f6156523169fe71a2ece68b8 and this fragment's own commit moves the tree from ab67be8bb1 \u2014 where the true and sufficient statement is that no reckon/ or tests/ path differs between the two revisions."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html",
+      "id": "f-qwnw-profile-armsunrelated",
+      "line": 85,
+      "severity": "non-blocking",
+      "text": "non-blocking: the two suite arms the record presents measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports anything this node touched (it touched no Python path at all), so the done_when's importer-arm clause holds only because the population is empty; the record says 'because this node adds no test file and deletes none', which does not explain why those two files stand in for an empty population, so a reader cannot tell a chosen arm from a fallback."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5: cb7ba3f8bded0 creates and d9075f0a9652 completes one evidence fragment, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html (+91/-0), with no reckon/ or tests/ path in the diff at all.",
+    "done_when": "the done_when (dispatch-detail.json) requires the full passing run at head, an all_debug job with SLURM_JOB_ID unset and its output on shared storage, plus a base run with failing ids logged in docs/evidence/fragments/queued-work-needs-no-workaround/ with no assertion weakened; head-arm.log and negative-control.log are sbatch --partition all_debug runs with EXIT=0 and EXIT=1, but the gate log, scoped-gate-1795020809948380563.log, was run in a scratch landing tree by crew verify-gate inside the worker's own step and carries no job id or partition pair for the head revision.",
+    "goal": "the source node's goal is 'Make tests/test_a_promotion_holds_no_profile_build.py pass in full on the primary branch' (dispatch-detail.json admit_request.node.goal); I ran the file at this worktree's head, whose product and test content is identical to ab67be8bb1 and d9075f0a for that path, and it reads 4 passed EXIT=0, and the reviewed run's own head-arm.log records the same at ab67be8bb1, so the file passes in full.",
+    "manifest": "read the reviewed manifest; it records status complete, commits cb7ba3f8bded and d9075f0a96526bd2f6156523169fe71a2ece68b8, a scoped gate of 4 passed EXIT=0, arms of 58 passed at each revision, and a mutation control at 3 failed / 1 passed EXIT=1, and every one of those figures reconciles with the log its test_logs line names.",
+    "write_paths": "the source node declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (dispatch-detail.json admit_request.node.write_paths); the one path in ab67be8bb1..d9075f0a, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html, is inside that list and no path outside it is touched."
+  },
+  "justifications": {
+    "durability": "the node adds no assertion and no test (the diff touches no tests/ path), so no test fails if this record regresses; the product guard is tests/test_a_promotion_holds_no_profile_build.py:296 and :334, whose assert profile_calls == [] is independent of the value under test, and the mutation control reddens all three profile cases, but the fragment's own claims are guarded by nothing.",
+    "evidence": "head-arm.log and negative-control.log carry EXIT=0 and EXIT=1 as bare last lines and the failure ids the fragment quotes, but the head gate's log (scoped-gate-1795020809948380563.log:1-6) is an in-step run at /tmp/mcintos-landing-19177f2db822-8HVMYR/tree with no job id or partition, so the done_when's 'as a job on all_debug' clause is shown for the base revision and not for the head.",
+    "fit": "the fragment follows the established fragment shape of its own directory, matching docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-4 in id suffix, heading level and 'What changed' opening, and introduces no name.",
+    "goal_fidelity": "tests/test_a_promotion_holds_no_profile_build.py passes 4/4 at this tree's head and at d9075f0a, and the repair the fragment names at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html:20 is an ancestor of the base (ca8f3f1ac6, e96d03311a and 8cfa7fc9bd are all ancestors of ab67be8bb1; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063640101628-qwnw-red-file-a-promotion-holds-no-profile-build/review-gate.log reads 4 passed EXIT=0).",
+    "reuse": "the change adds no definition at all, and its mechanism is the plan's existing evidence fragment beside the 296 files already in docs/evidence/fragments/queued-work-needs-no-workaround/; the behaviour it records is still owned by reckon/crew/picker/lane_context.py:951 _promotion_fold_inputs and :1018 refresh_run_time_profile, neither of which the diff touches.",
+    "scope_discipline": "the whole diff ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5..d9075f0a96526bd2f6156523169fe71a2ece68b8 is the single declared path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Make tests/test_a_promotion_holds_no_profile_build.py pass in full on the primary branch' (dispatch-detail.json admit_request.node.goal); I ran the file at this worktree's head, whose product and test content is identical to ab67be8bb1 and d9075f0a for that path, and it reads 4 passed EXIT=0, and the reviewed run's own head-arm.log records the same at ab67be8bb1, so the file passes in full.\nVERDICT done_when: the done_when (dispatch-detail.json) requires the full passing run at head, an all_debug job with SLURM_JOB_ID unset and its output on shared storage, plus a base run with failing ids logged in docs/evidence/fragments/queued-work-needs-no-workaround/ with no assertion weakened; head-arm.log and negative-control.log are sbatch --partition all_debug runs with EXIT=0 and EXIT=1, but the gate log, scoped-gate-1795020809948380563.log, was run in a scratch landing tree by crew verify-gate inside the worker's own step and carries no job id or partition pair for the head revision.\nVERDICT write_paths: the source node declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround (dispatch-detail.json admit_request.node.write_paths); the one path in ab67be8bb1..d9075f0a, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html, is inside that list and no path outside it is touched.\nVERDICT manifest: read the reviewed manifest; it records status complete, commits cb7ba3f8bded and d9075f0a96526bd2f6156523169fe71a2ece68b8, a scoped gate of 4 passed EXIT=0, arms of 58 passed at each revision, and a mutation control at 3 failed / 1 passed EXIT=1, and every one of those figures reconciles with the log its test_logs line names.\nVERDICT diff: read both commits against ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5: cb7ba3f8bded0 creates and d9075f0a9652 completes one evidence fragment, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html (+91/-0), with no reckon/ or tests/ path in the diff at all.\nCALL_SITES: reckon/compliance.py:_dependencies, reckon/doccheck.py:_composed_record_text, reckon/evidence.py:evidence_record_plan, reckon/evidence.py:compose_landed_record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_promotion_holds_no_profile_build.py passes 4/4 at this tree's head and at d9075f0a, and the repair the fragment names at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html:20 is an ancestor of the base (ca8f3f1ac6, e96d03311a and 8cfa7fc9bd are all ancestors of ab67be8bb1; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063640101628-qwnw-red-file-a-promotion-holds-no-profile-build/review-gate.log reads 4 passed EXIT=0).\nSCORE evidence: 15\nJUSTIFICATION evidence: head-arm.log and negative-control.log carry EXIT=0 and EXIT=1 as bare last lines and the failure ids the fragment quotes, but the head gate's log (scoped-gate-1795020809948380563.log:1-6) is an in-step run at /tmp/mcintos-landing-19177f2db822-8HVMYR/tree with no job id or partition, so the done_when's 'as a job on all_debug' clause is shown for the base revision and not for the head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5..d9075f0a96526bd2f6156523169fe71a2ece68b8 is the single declared path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html.\nSCORE durability: 10\nJUSTIFICATION durability: the node adds no assertion and no test (the diff touches no tests/ path), so no test fails if this record regresses; the product guard is tests/test_a_promotion_holds_no_profile_build.py:296 and :334, whose assert profile_calls == [] is independent of the value under test, and the mutation control reddens all three profile cases, but the fragment's own claims are guarded by nothing.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the established fragment shape of its own directory, matching docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-clean-landing-releases-its-worktree.html:1-4 in id suffix, heading level and 'What changed' opening, and introduces no name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition at all, and its mechanism is the plan's existing evidence fragment beside the 296 files already in docs/evidence/fragments/queued-work-needs-no-workaround/; the behaviour it records is still owned by reckon/crew/picker/lane_context.py:951 _promotion_fold_inputs and :1018 refresh_run_time_profile, neither of which the diff touches.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html:76 non-blocking: the composed-gate block prints the literal placeholder '<scratch tree>' for both the imported module path and the cwd, and drops the timing, so the lines it quotes cannot be reconciled with scoped-gate-1795020809948380563.log:5-6, which name /tmp/mcintos-landing-19177f2db822-8HVMYR/tree and '4 passed in 4.68s'; an evidence record that does not quote the log it cites loses the one check the file exists to give a reader.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html:37 non-blocking: the record states that 'the tree's head revision is the base revision', which is false as a git fact \u2014 the delivered head is d9075f0a96526bd2f6156523169fe71a2ece68b8 and this fragment's own commit moves the tree from ab67be8bb1 \u2014 where the true and sufficient statement is that no reckon/ or tests/ path differs between the two revisions.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-holds-no-profile-build.html:85 non-blocking: the two suite arms the record presents measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, neither of which imports anything this node touched (it touched no Python path at all), so the done_when's importer-arm clause holds only because the population is empty; the record says 'because this node adds no test file and deletes none', which does not explain why those two files stand in for an empty population, so a reader cannot tell a chosen arm from a fallback.",
+  "review_run_id": "r-20261118T170142414390-review-of-qwnw-red-file-a-promotion-holds-no-profile-build-d9075f0a9652",
+  "reviewed_base_sha": "ab67be8bb1ec8dcd48b5fa5704e5e6b72bbd56a5",
+  "reviewed_head_sha": "d9075f0a96526bd2f6156523169fe71a2ece68b8",
+  "reviewed_run_id": "r-20261118T063640101628-qwnw-red-file-a-promotion-holds-no-profile-build",
+  "rubric": "review",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T00:32:00+00:00",
+  "total": 103
+}
