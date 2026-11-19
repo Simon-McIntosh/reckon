@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="944">
+<meta name="plan-version" content="945">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2904,6 +2904,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063556755299-qwnw-red-file-a-review-duty-reads-the-ledger-once-per-pass" data-who="reckon-build" data-when="2026-11-19T05:50:00.745Z">
     <div class="r-comment-body"><p>tests/test_a_review_duty_reads_the_ledger_once_per_pass.py passes in full at head (3 passed, EXIT=0 on all_debug) after the verdict: product right, test wrong — the control arm patched ledger.run_ids, which no duty path calls since the closure answer moved to open_run_index.has_row, so it counted zero aggregate parses and measured nothing; the arm now patches has_row and answers from membership rebuilt at the committed sources (run_ids(..., use_index=False)), with the count assertion strengthened to at least one parse per delivered run.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062421292771-qwnw-red-file-one-call-lands-a-run" data-who="reckon-build" data-when="2026-11-19T01:58:51.213Z">
+    <div class="r-comment-body"><p>tests/test_one_call_lands_a_run.py passes 5/5 at head 33d2c239810de159377af33f4f5ff44e1aca8a81. At base 42fe90d0b0a46060bafde2490dda7d4002cda478 it read 2 failed, both KeyError: steps. The test was stale against the bounded landing reply: the reply links the full receipt as record_path, and each step assertion now reads that record. No product change.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
