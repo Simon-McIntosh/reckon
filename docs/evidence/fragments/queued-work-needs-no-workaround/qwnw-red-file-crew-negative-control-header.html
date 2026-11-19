@@ -1,0 +1,57 @@
+<section id="qwnw-red-file-crew-negative-control-header-landing">
+  <h2>A control log with no EXIT line is judged by the rule the gate now keeps</h2>
+
+  <p><strong>What changed.</strong> At the base revision
+  <code>b24fe95a789c</code> the node's file ran 1 passed, 1 failed:
+  <code>test_the_refusal_states_the_fact_it_found_absent</code>
+  read <code>DID NOT RAISE CrewError</code>. The case delivered a red log whose
+  only failure record was pytest's own — a <code>FAILED</code> id beside a
+  <code>1 failed, 1 passed</code> summary, with no capture's
+  <code>EXIT=&lt;n&gt;</code> line — and asserted promotion refused it with
+  <code>records no EXIT status</code>.</p>
+
+  <p><strong>Verdict: the test was wrong, and the product was not.</strong> The
+  refusal that case pinned was retired on 8 November by
+  <code>8901431b8a</code> (<em>fix(crew): read a negative control from the
+  runner's own record</em>), which made the failure readable from either record:
+  the shell's status when it was appended, otherwise the runner's
+  <code>FAILED</code> list beside its <code>N failed</code> summary. That commit
+  updated every test encoding the retired refusal — including the identical case
+  in <code>tests/test_control_gate_checks_facts.py</code>, which moved from
+  <code>records no EXIT status</code> to <code>reports no failure</code> — and
+  missed this file. The rule the code keeps is also the one the worker is
+  handed: the prompt gloss test in this same file passes at the same revision,
+  so the refusal text a worker reads and the admission rule agree, and only this
+  case lagged behind.</p>
+
+  <p><strong>The rule it now asserts.</strong> Admission reads two records and
+  either one suffices</p>
+
+  <ul>
+    <li>a log that states the run failed somewhere — a non-zero terminal
+    <code>EXIT=&lt;n&gt;</code>, or the runner's own <code>FAILED</code> ids
+    beside its summary — is admitted when it names a failing test id the head
+    arm does not fail;</li>
+    <li>a log that states no failure in either record is refused, and the
+    refusal names that fact: <code>reports no failure</code>.</li>
+  </ul>
+
+  <p>No assertion was deleted or weakened. The refusal case keeps its three
+  assertions — the declaration, the log path, and the fact the refusal read and
+  found absent — over a fixture whose fact really is absent (a
+  <code>1 passed</code> log with no capture line), and two more pin the wording
+  admission no longer compares (<code>first line</code>,
+  <code>verbatim</code>). A companion case,
+  <code>test_a_runner_recorded_failure_admits_the_control</code> fixes the other
+  direction: the same log shape that used to be refused now promotes, and the
+  verdict row records <code>control_exit_status: None</code>,
+  <code>control_run_failed: True</code> and the added failing id.</p>
+
+  <h3 id="qwnw-red-file-crew-negative-control-header-arms">Arms</h3>
+
+  <table id="qwnw-red-file-crew-negative-control-header-measured">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+  </table>
+</section>
