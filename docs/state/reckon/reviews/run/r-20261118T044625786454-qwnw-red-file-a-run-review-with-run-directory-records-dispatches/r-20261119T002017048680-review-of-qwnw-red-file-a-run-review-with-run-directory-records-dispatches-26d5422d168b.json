@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:1657 compose_landed_record (reads docs/evidence/fragments/<plan>/ by ledger order)",
+    "reckon/evidence.py:1694 fragment_dir (the directory the landed fragment is composed from)",
+    "reckon/crew/dispatch_admission.py:_review_record_directory_grant (the rule the fragment documents)",
+    "reckon/crew/recovery_review_dispatch.py:_review_dispatch_fields (the composer the documented test exercises)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:01:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'was red on the primary branch at the revision this dispatch was composed at' names no revision and cites no log, and the file measures 7 passed / EXIT=0 at the node's own base 5b0a1f537ef9, so a reader cannot tell which revision was red or whether the node's premise ever held; the red claim should name the revision and the log that showed it."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'It passes identically at base 5b0a1f537ef9' is the claim the whole no-code-change landing rests on, yet no run of the named file at base is recorded in test_logs; both base-revision logs are the two-file declared suite, so the central claim is prose rather than a recorded run (independently reproduced here in base-arm-reviewed-file.log)."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Runs table's revision column reads 'the revision its log names' but the fragment names neither the run directory nor the log files, so no row can be resolved to a revision from the artifact alone; the caption promises a caption that every row is a log under the run directory without saying which."
+    }
+  ],
+  "head_log_revision": "26d5422d168bcc9fc34f99cde054f0752aecf1c2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the fragment's only runtime reader, reckon/evidence.py:1657 compose_landed_record, which composes docs/evidence/fragments/<plan>/ bodies through fragment_dir at reckon/evidence.py:1694, and the rule the fragment documents at reckon/crew/dispatch_admission.py:_review_record_directory_grant reached from reckon/crew/recovery_review_dispatch._review_dispatch_fields; no other production path reads a docs fragment.",
+    "call_tests": "no product or test path is touched, so no suite arm can change; both recorded arms read 58 passed / EXIT=0, consistent with a docs-only diff.",
+    "diff": "read all three commits: 0559d9168f creates the 65-line fragment, abe22fd696 adds both suite arms and the sbatch --wrap launch failure, 26d5422d16 replaces the moving head revision literal with 'the revision its log names'; the whole change is 84 added lines in one docs file, no product or test code.",
+    "done_when": "the done_when demands the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset and its output on shared storage; gate-head-run.log carries revision 26d5422d16, slurm_job_id: <unset>, 7 passed and EXIT=0 under the run directory, but its header names no host or partition, so that half of the measure rests on the manifest's claim.",
+    "goal": "the node goal is 'Make tests/test_a_run_review_with_run_directory_records_dispatches.py pass in full on the primary branch'; the delivered fragment says the rule already landed, and the file measures 7 passed / EXIT=0 at base 5b0a1f537ef9 in a scratch extraction and at head 26d5422d16, so the deliverable is met without a code change.",
+    "manifest": "read; status complete, commits 0559d9168f, abe22fd696 and 26d5422d16, changed_paths the one fragment, tests naming the file-level pytest command, test_logs naming the head run, both negative controls, both suite arms and a scoped-gate log, baseline_suite and after_suite each 0 failures at 58 passed, and no log for the base run of the named file despite the landing line claiming it passes at base.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment path; the delivered diff of 5b0a1f537ef9..26d5422d168b touches exactly the one fragment under that directory and nothing else."
+  },
+  "justifications": {
+    "durability": "no assertion is added by this diff; the guard is the pre-existing tests/test_a_run_review_with_run_directory_records_dispatches.py, and the run shows it can fail in both directions (negative-control-widened-grant.log and negative-control-no-grant.log each 1 failed, EXIT=1), so the documented rule is guarded even though the documentation itself cannot regress.",
+    "evidence": "gate-head-run.log names revision 26d5422d16, the tree, the command and slurm_job_id: <unset> and closes with 7 passed / EXIT=0, and both arms (arm-baseline excluded: arm-baseline-suite.log, arm-after-suite.log) read 58 passed / EXIT=0, but the gate log names no host or partition and no log records the named file's base run the landing line rests on.",
+    "fit": "the fragment is a <section> snippet with node-prefixed element ids, matching the sibling docs/evidence/fragments/queued-work-needs-no-workaround/queue-tests-red-on-main.html, and introduces no identifier a naming rule forbids.",
+    "goal_fidelity": "tests/test_a_run_review_with_run_directory_records_dispatches.py passes 7/7 at the node's own base 5b0a1f537ef9 (re-measured from a scratch extraction, log base-arm-reviewed-file.log) and 7 passed EXIT=0 at head in gate-head-run.log, so the goal 'pass in full on the primary branch' holds with no product or test change.",
+    "reuse": "the diff adds no function, class or module; the rule it describes is owned by reckon/crew/dispatch_admission.py:_review_record_directory_grant and already evidenced in docs/evidence/fragments/a-worker-cannot-write-your-home/a-review-record-grant-is-the-reviewed-runs.html, and the fragment restates that prose for another plan rather than forking a mechanism.",
+    "scope_discipline": "git diff --stat 5b0a1f537ef9..26d5422d168b lists one path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html, inside the node's declared docs/evidence/fragments/queued-work-needs-no-workaround scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Make tests/test_a_run_review_with_run_directory_records_dispatches.py pass in full on the primary branch'; the fragment's claim is that the rule already landed, and the file measures 7 passed / EXIT=0 at base 5b0a1f537ef9 in a scratch extraction (base-arm-reviewed-file.log) and at head 26d5422d168b (gate-head-run.log), so the deliverable is met without a code change.\nVERDICT done_when: the done_when demands the named file pass in full at head as a job on all_debug with SLURM_JOB_ID unset and its output on shared storage; gate-head-run.log carries revision 26d5422d168b, tree, command, slurm_job_id: <unset>, 7 passed and EXIT=0 under the run directory, but its header names no host or partition, so that half of the measure rests on the manifest's claim.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment path; git diff --stat 5b0a1f537ef9..26d5422d168b touches the one fragment under that directory and nothing else.\nVERDICT manifest: read; status complete, commits 0559d9168f, abe22fd696 and 26d5422d16, changed_paths the one fragment, tests naming the file-level pytest command, test_logs naming the head run, both negative controls and both suite arms, baseline_suite and after_suite each 58 passed with 0 failures, and no log for the base run of the named file.\nVERDICT diff: read all three commits against base 5b0a1f537ef9 - 0559d9168f creates the 65-line fragment, abe22fd696 adds both suite arms and the sbatch --wrap launch failure, 26d5422d16 replaces the moving head revision literal with 'the revision its log names'; 84 added lines in one docs file, no product or test code.\nCALL_SITES: reckon/evidence.py:1657 compose_landed_record, reckon/evidence.py:1694 fragment_dir, reckon/crew/dispatch_admission.py:_review_record_directory_grant, reckon/crew/recovery_review_dispatch.py:_review_dispatch_fields\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_run_review_with_run_directory_records_dispatches.py measures 7 passed / EXIT=0 at the node's base 5b0a1f537ef9 in base-arm-reviewed-file.log and at head in gate-head-run.log, so the goal holds although nothing was changed to reach it.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head-run.log records 7 passed / EXIT=0 at 26d5422d168b with slurm_job_id unset, but it names no host or partition and no log records the named file's base run the landing line rests on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5b0a1f537ef9..26d5422d168b lists only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html, inside the declared fragment scope.\nSCORE durability: 15\nJUSTIFICATION durability: no assertion is added, and if the grant rule regressed the pre-existing tests/test_a_run_review_with_run_directory_records_dispatches.py reddens as both negative-control logs show (1 failed, EXIT=1).\nSCORE fit: 17\nJUSTIFICATION fit: the fragment is a node-id-prefixed <section> snippet in the style of docs/evidence/fragments/queued-work-needs-no-workaround/queue-tests-red-on-main.html, though its revision column and its unbacked red claim read inconsistently with the rest.\nSCORE reuse: 18\nJUSTIFICATION reuse: the diff adds no function, class or module; the rule is owned by reckon/crew/dispatch_admission.py:_review_record_directory_grant and already documented in docs/evidence/fragments/a-worker-cannot-write-your-home/a-review-record-grant-is-the-reviewed-runs.html, which this fragment restates for another plan rather than extending.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html:6 non-blocking: 'was red on the primary branch at the revision this dispatch was composed at' names no revision and cites no log, and the file measures 7 passed at the node's base 5b0a1f537ef9, so the premise the entry rests on cannot be checked from the artifact.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html:11 non-blocking: 'It passes identically at base 5b0a1f537ef9' is recorded as prose only - no base run of the named file appears in test_logs, both base-revision arms being the two-file declared suite - so the no-code-change landing rests on an unrecorded measurement.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-with-run-directory-records-dispatches.html:46 non-blocking: the Runs table's revision column reads 'the revision its log names' while naming neither the log files nor the run directory, so no row's revision can be resolved from the fragment alone.",
+  "review_run_id": "r-20261119T002017048680-review-of-qwnw-red-file-a-run-review-with-run-directory-records-dispatches-26d5422d168b",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "26d5422d168bcc9fc34f99cde054f0752aecf1c2",
+  "reviewed_run_id": "r-20261118T044625786454-qwnw-red-file-a-run-review-with-run-directory-records-dispatches",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "review",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261119T002017048680-review-of-qwnw-red-file-a-run-review-with-run-directory-records-dispatches-26d5422d168b"
+  },
+  "reviewer_run_id": "r-20261119T002017048680-review-of-qwnw-red-file-a-run-review-with-run-directory-records-dispatches-26d5422d168b",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:23:05.680734+00:00",
+  "total": 103
+}
