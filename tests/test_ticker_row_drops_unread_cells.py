@@ -161,4 +161,3 @@ def test_elapsed_renders_hours_and_minutes_not_a_clock(grid, seconds, expected):
     cell = elapsed_cell(line)
     assert cell.strip() == expected, (seconds, line)
     assert ":" not in cell, (seconds, line)
-
