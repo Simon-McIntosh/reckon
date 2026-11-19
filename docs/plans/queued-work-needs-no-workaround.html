@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="829">
+<meta name="plan-version" content="830">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2556,7 +2556,10 @@
     <div class="r-comment-body"><p>tests/test_waiting_promotion_readiness_precedes_slot_admission.py already passes at base 35fb9f3ae769586b2f364485bf2d6fc31caf87f5, so no product or test change was made and the gate ran green at head 1a202e0916: 4 passed on all_debug with the hundred-request wake reading 0.082924 s and 0.222844 s against its 1.0 s budget, the red cause having been repaired in be128087c1; only the evidence fragment records the measurement</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063926658751-qwnw-red-file-admission-refusal-is-named-at-current-main" data-who="reckon-build" data-when="2026-11-18T18:46:03.802Z">
-    <div class="r-comment-body"><p>tests/test_admission_refusal_is_named.py&#x27;s three red cases now assert `failed`, the rule the classifier keeps at head 10bf54ad — the base run at 8c7ea625 reads 3 failed / 5 passed (EXIT=1) and the head run reads 8 passed (EXIT=0); verdict test wrong, killed since the 77449f4362 landing carried the premature-end reading; no product change, no assertion deleted or loosened.</p></div>
+    <div class="r-comment-body"><p>tests/test_admission_refusal_is_named.py's three red cases now assert `failed`, the rule the classifier keeps at head 10bf54ad — the base run at 8c7ea625 reads 3 failed / 5 passed (EXIT=1) and the head run reads 8 passed (EXIT=0); verdict test wrong, killed since the 77449f4362 landing carried the premature-end reading; no product change, no assertion deleted or loosened.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044644146717-qwnw-red-file-lane-reading-at-dispatch" data-who="reckon-build" data-when="2026-11-19T00:22:52.598Z">
+    <div class="r-comment-body"><p>the held-request case asserts the queued answer instead of the retired exit-75 refusal; the file passes 10 of 10 at 642821cf and failed 1 of 10 at the base revision</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
