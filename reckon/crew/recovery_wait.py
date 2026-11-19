@@ -1677,19 +1677,30 @@ def _newest_stream_last_record_type(record: Mapping[str, Any]) -> str | None:
 
 
 def _tail_record_type(path: Path) -> tuple[str | None, int]:
-    """A stream's last complete record type, and the offset that read reached."""
+    """A stream's last complete record type, and the offset that read reached.
+
+    The last newline's offset is taken from the same chunk that answers the
+    record type, so the common case — a small final record behind any length of
+    stream — is one read of one window rather than two reads of it. A caller
+    asks this per run per snapshot, which makes a duplicated window the cost of
+    the whole fleet's tails.
+    """
     try:
         with path.open("rb") as handle:
             size = handle.seek(0, os.SEEK_END)
-            covered = _last_newline_offset(handle, size)
+            covered: int | None = None
             window = _STREAM_TAIL_BYTES
             while True:
                 start = max(0, size - window)
                 handle.seek(start)
                 chunk = handle.read()
+                if covered is None:
+                    newline = chunk.rfind(b"\n")
+                    if newline >= 0:
+                        covered = start + newline + 1
                 record_type = _last_record_type_in(chunk)
                 if record_type is not None or start == 0:
-                    return record_type, covered
+                    return record_type, covered or 0
                 # Nothing in the chunk read as a record. A chunk beginning at a
                 # record boundary holds only complete lines, so the stream has
                 # no record to read here and reaching further back would answer
@@ -1698,7 +1709,7 @@ def _tail_record_type(path: Path) -> tuple[str | None, int]:
                 # contain.
                 handle.seek(start - 1)
                 if handle.read(1) == b"\n":
-                    return None, covered
+                    return None, covered or 0
                 window *= 4
     except OSError:
         return None, 0
