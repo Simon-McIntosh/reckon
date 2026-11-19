@@ -131,7 +131,16 @@ def test_an_unmeasured_span_marks_the_elapsed_position_once(grid):
     line = plain(grid.render(_event(spend_wall_seconds=None)))
     cell = elapsed_cell(line)
     assert cell.strip() == ticker_module.DIM_MARKER, line
-    assert plain(line).count(ticker_module.DIM_MARKER) == 1, line
+    # The counter block carries one absence of its own: the promotion queue
+    # names an unknown oldest position with the same marker on a row whose
+    # count is zero. That block is held to exactly that one mark and counted
+    # out of the rest of the row, so a second reading of the span — a figure
+    # beside the clause, or any cell outside the counters — is still counted
+    # wherever on the row it lands.
+    counters = line[COUNTER_COLUMN : COUNTER_COLUMN + ticker_module.STATS]
+    assert counters.count(ticker_module.DIM_MARKER) == 1, (line, counters)
+    rest = line[:COUNTER_COLUMN] + line[COUNTER_COLUMN + ticker_module.STATS :]
+    assert rest.count(ticker_module.DIM_MARKER) == 1, (line, rest)
 
 
 @pytest.mark.parametrize(
