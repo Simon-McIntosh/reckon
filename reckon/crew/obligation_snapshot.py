@@ -2056,7 +2056,22 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     findings are the one addition: each names a record the sweep could not
     read, and travels in the duty list so the reader that formats it names the
     path rather than leaving the reader to open the snapshot store.
+
+    The state's pointers are published as this slice's live snapshot for its
+    length, so every per-duty reader below answers from the listing the sweep
+    has already taken. Without that publication each review duty listed the
+    live directory once per duty — twice, through the duty's own read and the
+    review queue it consults — and a sweep cost the number of review duties
+    times the live population, which on a fleet of 200 pointers and 60 review
+    duties was 122 listings and 24,400 copied records for one sweep.
     """
+    module = _derivation_module()
+    with module.live_pointer_snapshot(state.project, pointers=state.pointers.values()):
+        return _payload_for_state(state, session)
+
+
+def _payload_for_state(state: FleetState, session: str) -> dict[str, Any]:
+    """One session's payload, over the live snapshot :func:`payload_for` publishes."""
     module = _derivation_module()
     in_flight = state.reviews_in_flight.get(session, set())
     items: list[dict[str, Any]] = []
