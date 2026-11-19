@@ -14,20 +14,22 @@ same assertions as one that always refuses: the same run promotes when the
 remote read answers promotable, so the refusal is the remote answer and not
 something else about the fixture.
 
-The declared mutation reverts the question to the local checkout: at the base
-revision the run whose commits are only on local ``main`` is promoted, which is
-the red log the manifest names.
+The run only on local ``main`` is no longer a refusal: an implementation the
+primary branch does not carry is landed by acceptance itself, measured at its
+merge candidate, so the arm below reads a promotion and a published head.
 """
 
 from __future__ import annotations
 
 import json
+import shlex
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import ledger
-from reckon.crew import merge, recovery
+from reckon.crew import landing_measure, merge, recovery
 from reckon.crew import recovery_review_acceptance as acceptance
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, crew_home, pointer_path
@@ -122,7 +124,14 @@ def _store_review(*, base: str, head: str) -> None:
     review_module.store_review(record)
 
 
-def _write_run(repository: Path, tmp_path: Path, *, base: str, commit: str) -> None:
+def _write_run(
+    repository: Path,
+    tmp_path: Path,
+    *,
+    base: str,
+    commit: str,
+    worktree: Path | None = None,
+) -> None:
     manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
@@ -140,7 +149,7 @@ def _write_run(repository: Path, tmp_path: Path, *, base: str, commit: str) -> N
             "run_id": RUN_ID,
             "project": PROJECT,
             "repo": str(repository),
-            "worktree": str(repository),
+            "worktree": str(worktree or repository),
             "base_sha": base,
             "launch": "in-harness",
             "role": "implement",
@@ -157,6 +166,25 @@ def _write_run(repository: Path, tmp_path: Path, *, base: str, commit: str) -> N
             },
         },
     )
+
+
+def _local_scheduler(argv, **options):
+    """Run the measure partition's script in this test's allocation.
+
+    Only the scheduler transport is replaced: the archive script, the gate
+    command and the receipt the wrapped script writes are the product's own.
+    """
+    options.pop("check", None)
+    if argv[0] != "sbatch":
+        return subprocess.run(argv, check=False, **options)
+    step = shlex.split(argv[argv.index("--wrap") + 1])
+    script = step[step.index("-c") + 1]
+    destination = Path(step[step.index(">>") + 1])
+    assert destination.is_file() and not destination.is_symlink()
+    completed = subprocess.run(["bash", "-c", script], check=False, **options)
+    with destination.open("a", encoding="utf-8") as stream:
+        stream.write((completed.stdout or "") + (completed.stderr or ""))
+    return subprocess.CompletedProcess(argv, completed.returncode, "12345\n", "")
 
 
 def _sweep() -> dict:
@@ -189,24 +217,34 @@ def _read_as_promotable(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_a_run_only_on_local_main_is_not_promoted(
-    origin_and_repository: tuple[Path, Path], tmp_path: Path
+def test_a_run_only_on_local_main_is_landed_by_acceptance(
+    origin_and_repository: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The measured defect: local ``main`` carries the run, the remote does not."""
-    _origin, repository = origin_and_repository
+    """The measured state: local ``main`` carries the run, the remote does not.
+
+    An implementation the primary branch does not carry is one acceptance
+    lands itself, so the run is measured at its merge candidate and, with the
+    gate it recorded still passing there, promoted, merged and pushed: the
+    remote carries the reviewed head rather than being left behind by a
+    checkout whose own push failed.
+    """
+    monkeypatch.setattr(landing_measure, "_RUN", _local_scheduler)
+    origin, repository = origin_and_repository
     base, commit = _land_run_commit(repository, push=False)
-    _write_run(repository, tmp_path, base=base, commit=commit)
+    worker = tmp_path / "run-worktree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(worker), commit)
+    _write_run(repository, tmp_path, base=base, commit=commit, worktree=worker)
     _store_review(base=base, head=commit)
 
     report = _sweep()
 
-    assert report["accepted"] == [], report
-    refusal = _refusal_for(report)
-    assert refusal["accepted"] is False
-    assert refusal["unmerged_commits"] == [commit]
-    assert commit[:12] in refusal["reason"]
-    assert pointer_path(RUN_ID).is_file()
-    assert ledger.runs(PROJECT, root=repository) == []
+    assert report.get("accepted") == [RUN_ID], report
+    rows = ledger.runs(PROJECT, root=repository)
+    assert rows[0].get("promoted_by") == "review-acceptance"
+    assert not pointer_path(RUN_ID).exists()
+    _git(origin, "merge-base", "--is-ancestor", commit, "refs/heads/main")
 
 
 def test_a_run_whose_commits_are_on_the_remote_is_promoted(
