@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="774">
+<meta name="plan-version" content="775">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2391,7 +2391,10 @@
     <div class="r-comment-body"><p>tests/test_the_fleet_gate_holds_dispatch.py passes 20/20 on all_debug at b2344f8d87 with SLURM unset, and its one base failure was the case passing the repository path where the ledger helper takes the dispatch record; the call site now passes the record and no assertion changed.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T104309372060-qwnw-red-file-the-lander-measures-the-population-at-current-main" data-who="reckon-build" data-when="2026-11-19T03:16:26.845Z">
-    <div class="r-comment-body"><p>tests/test_the_lander_measures_the_population.py reads 25 passed at head 3a3f5f2bbd on all_debug, against 1 failed / 23 passed at base 42fe90d0b0; one cause, judged test-wrong: acf72141c9 replaced the advanced-primary refusal in _verified_measurement with a refreshed measurement at the moved primary, so the case now asserts that the refreshed record names a primary carrying the promotion&#x27;s own commits and that the published candidate merges the case&#x27;s reviewed head onto that primary, while the retained second-move refusal is driven from inside the refresh and read; suite arms over the scoped tests read 58 passed at both revisions, with no failure id.</p></div>
+    <div class="r-comment-body"><p>tests/test_the_lander_measures_the_population.py reads 25 passed at head 3a3f5f2bbd on all_debug, against 1 failed / 23 passed at base 42fe90d0b0; one cause, judged test-wrong: acf72141c9 replaced the advanced-primary refusal in _verified_measurement with a refreshed measurement at the moved primary, so the case now asserts that the refreshed record names a primary carrying the promotion's own commits and that the published candidate merges the case's reviewed head onto that primary, while the retained second-move refusal is driven from inside the refresh and read; suite arms over the scoped tests read 58 passed at both revisions, with no failure id.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063041986934-qwnw-red-file-dispatch-counts-worker-slots" data-who="reckon-build" data-when="2026-11-19T04:33:59.481Z">
+    <div class="r-comment-body"><p>The case required a lane hold to refuse with exit 75 and the lane-paused phase, but a lane hold has stored the request as one queued pointer since 15 November, so the verdict is test wrong and the case now asserts the rule the code keeps: exit 0, ok, queued at position 1, the router gate held at allowance 0 with its detail, and one live pointer at the queued phase carrying the hold. The file moves from 1 failed and 10 passed, EXIT=1, at base 42fe90d to 11 passed, EXIT=0, at head 22a359f, in a job on all_debug; disabling the hold in reckon/crew/dispatching/preparation.py turns the case red with KeyError on the queued key.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
