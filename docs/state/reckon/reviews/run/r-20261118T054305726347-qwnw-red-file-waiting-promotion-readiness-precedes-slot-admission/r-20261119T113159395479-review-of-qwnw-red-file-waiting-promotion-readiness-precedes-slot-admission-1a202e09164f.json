@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/evidence.py:_fragment_href",
+    "reckon/serve.py:2751",
+    "reckon/mcp.py:1344",
+    "reckon/doccheck.py:1971"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T15:43:11Z",
+  "evidence_limits": [
+    "The gate arms read the node's own file: scoped-gate-1795085906696826068.log at 35fb9f3ae769 and scoped-gate-1795086535531217249.log at 1a202e09164f, 4 passed each with EXIT=0.",
+    "The suite arms both ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, two files the node did not touch; their 0 failures say nothing about this node's subject.",
+    "Login-node cold runs of the same base revision show 2 failed of 4 at 2.62 s and 3.03 s against the 1.0 s budget; the passing figures come from all_debug and are a property of that filesystem.",
+    "Read-only review: no test was re-run and no mutation was applied."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: the row labelled \"the node's head\" cites 7ba7a75172c, but the commit that adds that row is 1a202e09164f, so the fragment names a revision that is not the head it landed at, and the head-arm gate that does exist \u2014 scoped-gate-1795086535531217249.log, 4 passed, EXIT=0, 0.082924 s and 0.222844 s \u2014 is recorded only in the manifest and never in the fragment."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html",
+      "line": "67",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment fixes the file's passing on all_debug while its own table records the same base revision failing 2 of 4 cases on a cold login node at 2.6199708618223667 s and 3.0291179167106748 s against the 1.0 s budget, so the file can still read red outside the named venue and the record explains the red run without any assertion or product change that would bound it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054305726347-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the baseline_suite and after_suite arms both invoke tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so the pair is present and green but measures two files unrelated to the node's subject, and the fragment's row at the same path:47-50 repeats that as \"the declared suite's base and after arms\" without saying it covers neither the file nor its importers."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commits 7ba7a75172 and 1a202e09164 against base 35fb9f3ae769; the diff is one new file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html (+71 lines), and no product or test file changed.",
+    "done_when": "the done_when's first branch \u2014 run the file at your base without pulling, and if it already passes, deliver that passing run and stop \u2014 is the branch taken; scoped-gate-1795085906696826068.log (revision 35fb9f3ae769, host 98dci4-clu-3142, 4 passed in 2.02s, EXIT=0) and scoped-gate-1795086535531217249.log (revision 1a202e09164f, 4 passed in 2.16s, EXIT=0) assert it, while the baseline_suite and after_suite arms recorded in the manifest measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, two files the node never touched.",
+    "goal": "the node's goal is to make tests/test_waiting_promotion_readiness_precedes_slot_admission.py pass in full on the primary branch; the manifest's checkpoint and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html:5-11 state no product or test change was needed, and the base gate log shows the file already passing there.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054305726347-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission/manifest.md; it reports status complete, names the gate command, lists four scoped-gate logs and both suite arms as exit 0 with 0 failures, and its checkpoint reads \"no product or test change needed\".",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html, and its figure topic; the single path in the diff is the fragment html, inside the declared fragment directory."
+  },
+  "justifications": {
+    "durability": "the run added no assertion, so the regression guard is the pre-existing tests/test_waiting_promotion_readiness_precedes_slot_admission.py:186 `assert len(observed) == 101` and :203 `assert elapsed < 1.0`, and the latter is met only on the partition the done_when names.",
+    "evidence": "the gate logs carry their revision headers, per-case timing prints and a bare EXIT=0, but the manifest's baseline_suite and after_suite arms at manifest.md:17-18 ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so that half of the done_when measures nothing about this file.",
+    "fit": "the fragment uses a section root with h2/h3 and a table, the same shape as docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html, and its ids are derived from the node id.",
+    "goal_fidelity": "tests/test_waiting_promotion_readiness_precedes_slot_admission.py collects 4 passed at both the base revision 35fb9f3ae769 and the head 1a202e09164f in scoped-gate-1795085906696826068.log and scoped-gate-1795086535531217249.log, which is the goal met with only an evidence fragment landed.",
+    "reuse": "the diff adds no code; the ability to compose and link a landed fragment is owned by reckon/evidence.py:compose_landed_record and reckon/evidence.py:_fragment_href, which the change feeds rather than duplicates.",
+    "scope_discipline": "the diff's only path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html, sits inside the node's declared fragment directory and nothing beyond the evidence record was carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_waiting_promotion_readiness_precedes_slot_admission.py pass in full on the primary branch; the manifest's checkpoint and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html:5-11 state no product or test change was needed, and the base gate log shows the file already passing there.\nVERDICT done_when: the done_when's first branch \u2014 run the file at your base without pulling, and if it already passes, deliver that passing run and stop \u2014 is the branch taken; scoped-gate-1795085906696826068.log (revision 35fb9f3ae769, host 98dci4-clu-3142, 4 passed in 2.02s, EXIT=0) and scoped-gate-1795086535531217249.log (revision 1a202e09164f, 4 passed in 2.16s, EXIT=0) assert it, while the baseline_suite and after_suite arms recorded in the manifest measure tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, two files the node never touched.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html, and its figure topic; the single path in the diff is the fragment html, inside the declared fragment directory.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054305726347-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission/manifest.md; it reports status complete, names the gate command, lists four scoped-gate logs and both suite arms as exit 0 with 0 failures, and its checkpoint reads \"no product or test change needed\".\nVERDICT diff: read commits 7ba7a75172 and 1a202e09164 against base 35fb9f3ae769; the diff is one new file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html (+71 lines), and no product or test file changed.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/evidence.py:_fragment_href, reckon/serve.py:2751, reckon/mcp.py:1344, reckon/doccheck.py:1971\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_waiting_promotion_readiness_precedes_slot_admission.py collects 4 passed at both the base revision 35fb9f3ae769 and the head 1a202e09164f in scoped-gate-1795085906696826068.log and scoped-gate-1795086535531217249.log, which is the goal met with only an evidence fragment landed.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate logs carry their revision headers, per-case timing prints and a bare EXIT=0, but the manifest's baseline_suite and after_suite arms at manifest.md:17-18 ran tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so that half of the done_when measures nothing about this file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's only path, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html, sits inside the node's declared fragment directory and nothing beyond the evidence record was carried.\nSCORE durability: 13\nJUSTIFICATION durability: the run added no assertion, so the regression guard is the pre-existing tests/test_waiting_promotion_readiness_precedes_slot_admission.py:186 `assert len(observed) == 101` and :203 `assert elapsed < 1.0`, and the latter is met only on the partition the done_when names.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment uses a section root with h2/h3 and a table, the same shape as docs/evidence/fragments/queued-work-needs-no-workaround/commit-key-form.html, and its ids are derived from the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no code; the ability to compose and link a landed fragment is owned by reckon/evidence.py:compose_landed_record and reckon/evidence.py:_fragment_href, which the change feeds rather than duplicates.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html:34 non-blocking: the row labelled \"the node's head\" cites 7ba7a75172c, but the commit that adds that row is 1a202e09164f, so the fragment names a revision that is not the head it landed at, and the head-arm gate that does exist \u2014 scoped-gate-1795086535531217249.log, 4 passed, EXIT=0, 0.082924 s and 0.222844 s \u2014 is recorded only in the manifest and never in the fragment.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission.html:67 non-blocking: the fragment fixes the file's passing on all_debug while its own table records the same base revision failing 2 of 4 cases on a cold login node at 2.6199708618223667 s and 3.0291179167106748 s against the 1.0 s budget, so the file can still read red outside the named venue and the record explains the red run without any assertion or product change that would bound it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054305726347-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission/manifest.md:17 non-blocking: the baseline_suite and after_suite arms both invoke tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py, so the pair is present and green but measures two files unrelated to the node's subject, and the fragment's row at the same path:47-50 repeats that as \"the declared suite's base and after arms\" without saying it covers neither the file nor its importers.",
+  "review_run_id": "r-20261119T113159395479-review-of-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission-1a202e09164f",
+  "reviewed_base_sha": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5",
+  "reviewed_head_sha": "1a202e09164fb9a38ce521fa08d2849d2ce56c2d",
+  "reviewed_run_id": "r-20261118T054305726347-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission",
+  "reviewed_worker_commits": [
+    "7ba7a75172c05e0f12022d31671abb5383f866c1",
+    "1a202e09164fb9a38ce521fa08d2849d2ce56c2d"
+  ],
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054305726347-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission/after_suite-1795086589580893708.log",
+      "revision": "1a202e09164fb9a38ce521fa08d2849d2ce56c2d"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054305726347-qwnw-red-file-waiting-promotion-readiness-precedes-slot-admission/baseline_suite-1795086546883233797.log",
+      "revision": "35fb9f3ae769586b2f364485bf2d6fc31caf87f5"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:04:11.361145+00:00",
+  "total": 104
+}
