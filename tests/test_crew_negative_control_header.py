@@ -86,14 +86,14 @@ def test_the_emitted_template_states_the_facts_admission_rule() -> None:
 def test_the_refusal_states_the_fact_it_found_absent(
     repository: Path, tmp_path: Path
 ) -> None:
-    """The guarded thing happens: a log whose run left no exit record."""
+    """The guarded thing happens: a log whose run recorded no failure anywhere."""
     run_id = "r-20260919T120000000000-node-a"
     mutation = "removing the guard turns the fixture red"
     red = tmp_path / "other_failure.log"
-    red.write_text(
-        "FAILED tests/test_other.py - AssertionError\n1 failed, 1 passed\n",
-        encoding="utf-8",
-    )
+    # Neither record a run could have left: no capture's EXIT line, and no
+    # runner output stating that anything failed. Wording alone is what is
+    # left, and wording is the one thing admission does not read.
+    red.write_text("1 passed in 1.21s\n", encoding="utf-8")
     manifest = tmp_path / "manifest.md"
     _write_manifest(manifest, red_log=red)
     _write_pointer(
@@ -117,7 +117,52 @@ def test_the_refusal_states_the_fact_it_found_absent(
     # The detail that was already there survives: which declaration, which log.
     assert mutation in message
     assert str(red) in message
-    # The refusal states the fact it read and found absent — this log carries
-    # no exit record — instead of the first-line wording, which admission no
-    # longer compares.
-    assert "records no EXIT status" in message
+    # The refusal states the fact it read and found absent — this log states
+    # no failure in either record a run writes — instead of the first-line
+    # wording, which admission no longer compares.
+    assert "reports no failure" in message
+    assert "first line" not in message
+    assert "verbatim" not in message
+
+
+# ── The rule the gate keeps: a runner's own record is the failure record ───
+
+
+def test_a_runner_recorded_failure_admits_the_control(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A log with no EXIT line is admitted on the runner's own FAILED record."""
+    run_id = "r-20260919T120100000000-node-a"
+    mutation = "removing the guard turns the fixture red"
+    reddened = "tests/test_guard.py::test_the_guard_refuses"
+    red = tmp_path / "guard_removed.log"
+    red.write_text(
+        f"FAILED {reddened} - AssertionError: the guard admitted the call\n"
+        "1 failed, 4 passed in 0.31s\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "manifest.md"
+    _write_manifest(manifest, red_log=red)
+    _write_pointer(
+        repository,
+        run_id,
+        write_paths=[TEST_PATH],
+        negative_control=mutation,
+        manifest_path=manifest,
+    )
+
+    promoted = _promote(
+        repository,
+        run_id,
+        gate="passed",
+        outcome="the guard landed",
+        review_waiver=REVIEW_WAIVER,
+    )
+
+    control = promoted["negative_control"]
+    assert control["verdict"] == "matched"
+    assert control["declaration"] == mutation
+    # No capture line was written, and the failure came from the runner.
+    assert control["control_exit_status"] is None
+    assert control["control_run_failed"] is True
+    assert control["added_failure_ids"] == [reddened]
