@@ -1,0 +1,16 @@
+<section>
+<h2>One citation, one resolver</h2>
+<p>At base <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code> the named test failed on
+<code>test_only_the_shared_resolver_peels_a_revision_to_a_commit</code>.
+Its set difference named five sites that resolved a revision to a
+commit by hand; all five now delegate to the shared resolver:
+<code>merge._copy_objects</code>, <code>merge.head_on_remote_branch</code>,
+<code>recovery_classification._primary_branch_revision</code>,
+<code>recovery_review_acceptance._names_a_commit</code> and
+<code>reports._revision_is_committed</code>.</p>
+<p>The named file reports one failure and one pass at base, two passes at head.
+Every test file importing the four touched modules, 159 of them, ran at both
+revisions: base 44 failed, 11 errors, 1516 passed; head 43 failed, 11 errors,
+1517 passed. The head failing set is a subset of the base set, so the change
+adds no failure where those modules are reached.</p>
+</section>
