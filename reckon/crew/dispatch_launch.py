@@ -4070,14 +4070,46 @@ class _WorkerPid(int):
     naming neither a code nor a signal. The carrier stays an int because every
     other reader wants only the pid, and it must keep comparing and serialising
     as one.
+
+    The ``Popen`` the pid came from is carried beside it, and for a sharper
+    reason: ``subprocess`` reaps its own child from the handle's finaliser, so a
+    supervisor that kept only the number would lose the wait status the moment
+    the handle was collected — a worker that ended by signal would be recorded
+    as ending by neither code nor signal. Holding the handle keeps the reap
+    where the exit record is composed.
     """
 
     collected_wait_status: int | None
+    process: subprocess.Popen | None
 
-    def __new__(cls, pid: int, collected_wait_status: int | None = None) -> _WorkerPid:
+    def __new__(
+        cls,
+        pid: int,
+        collected_wait_status: int | None = None,
+        process: subprocess.Popen | None = None,
+    ) -> _WorkerPid:
         worker_pid = super().__new__(cls, pid)
         worker_pid.collected_wait_status = collected_wait_status
+        worker_pid.process = process
         return worker_pid
+
+
+def _exit_a_handle_already_collected(pid: int) -> int | None:
+    """The exit a ``Popen`` handle collected in its owner's place.
+
+    ``subprocess.Popen`` calls ``os.waitpid`` for its own child when the handle
+    polls or is finalised, so a wait by pid can find nothing left to collect.
+    The status is not lost by that: the handle holds it, and the carrier this
+    pid was spawned as is the only place the handle survives. A pid with no
+    child the supervisor still holds — one read from the process table rather
+    than spawned here — answers nothing, which is the honest reading for a
+    child somebody else already collected.
+    """
+    process = getattr(pid, "process", None)
+    returncode = getattr(process, "returncode", None)
+    if returncode is None:
+        return None
+    return _wait_status_from_returncode(int(returncode))
 
 
 class _PointerMissingError(CrewError):
@@ -4417,6 +4449,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     return _WorkerPid(
         process.pid,
         None if collected is None else _wait_status_from_returncode(collected),
+        process,
     )
 
 
@@ -5257,7 +5290,7 @@ def _reap_worker_on_its_terminal_manifest(
         try:
             waited_pid, status = os.waitpid(pid, os.WNOHANG)
         except (ChildProcessError, OSError):
-            return None
+            return _exit_a_handle_already_collected(pid)
         if waited_pid == pid:
             return status
         now = time.monotonic()
