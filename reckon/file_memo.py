@@ -370,6 +370,7 @@ def memoized[T](
     variant: Hashable = None,
     mutable: bool = False,
     by_content: bool = False,
+    identity: _Identity | None = None,
 ) -> T:
     """Return ``compute()`` for ``path``, reusing it while the file is unchanged.
 
@@ -381,6 +382,14 @@ def memoized[T](
     byte-identical content at two paths is parsed once. Every caller that does
     not ask for it keeps the stat signature and pays no hash.
 
+    ``identity`` is for a caller that has already observed the file: the stat
+    signature — or the digest, under ``by_content`` — of the bytes its
+    ``compute`` reads. The value is then answered only from what was stored
+    under that identity, and stored only while the file still reports it, so a
+    rename landing between the caller's read and this store leaves nothing
+    behind for the file's next identity to be answered with. A caller that
+    supplies none is stat'ed here.
+
     Inside a :func:`read_only_region` the value is stat'ed and decoded once and
     handed to the caller as a read-only view of it, so mutating what is read is
     refused; ``mutable=True`` asks for a mutable copy at that hand-over, for a
@@ -389,16 +398,18 @@ def memoized[T](
 
     region = _REGION.get()
     if by_content:
-        try:
-            identity: _Identity = content_digest(path)
-        except OSError:
-            return compute()
+        if identity is None:
+            try:
+                identity = content_digest(path)
+            except OSError:
+                return compute()
         key = (kind, f"content:{identity}", variant)
     else:
-        try:
-            identity = file_signature(path)
-        except OSError:
-            return compute()
+        if identity is None:
+            try:
+                identity = file_signature(path)
+            except OSError:
+                return compute()
         key = (kind, os.fspath(path), variant)
     if region is not None and key in region:
         return _handout(region[key], mutable)  # type: ignore[return-value]
@@ -412,6 +423,22 @@ def memoized[T](
                 return _handout(region[key], mutable)  # type: ignore[return-value]
             return copy.deepcopy(value)  # type: ignore[return-value]
     value = compute()
+    try:
+        unchanged = (
+            content_digest(path) == identity
+            if by_content
+            else file_signature(path) == identity
+        )
+    except OSError:
+        unchanged = False
+    if not unchanged:
+        # A write or a rename landed while the value was computed, so what was
+        # computed describes the bytes read at ``identity`` rather than what is
+        # on disk now. It is handed to this caller — computing it again would
+        # only repeat the same race — and stored under neither.
+        if region is not None:
+            return _handout([value, None], mutable)  # type: ignore[return-value]
+        return value
     if region is not None:
         # One stat and one decode for the region: the computed value is stored
         # itself, the region hands a read-only view of it on from here, so a
@@ -425,23 +452,14 @@ def memoized[T](
                 _CACHE.popitem(last=False)
         region[key] = cell
         return _handout(region[key], mutable)  # type: ignore[return-value]
-    try:
-        unchanged = (
-            content_digest(path) == identity
-            if by_content
-            else file_signature(path) == identity
-        )
-    except OSError:
-        unchanged = False
-    if unchanged:
-        # A write that landed mid-parse leaves the entry unstored, so the
-        # next reader parses the new bytes rather than a torn read.
-        stored = copy.deepcopy(value)
-        with _LOCK:
-            _CACHE[key] = (identity, stored, [stored, None])
-            _CACHE.move_to_end(key)
-            while len(_CACHE) > _MAX_ENTRIES:
-                _CACHE.popitem(last=False)
+    # A write that landed mid-parse leaves the entry unstored, so the next
+    # reader parses the new bytes rather than a torn read.
+    stored = copy.deepcopy(value)
+    with _LOCK:
+        _CACHE[key] = (identity, stored, [stored, None])
+        _CACHE.move_to_end(key)
+        while len(_CACHE) > _MAX_ENTRIES:
+            _CACHE.popitem(last=False)
     return value
 
 
