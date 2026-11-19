@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:33:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 283,
+      "severity": "non-blocking",
+      "text": "_read_node_body_file duplicates _read_dispatch_detail_file at reckon/crew/runs.py:190 line for line \u2014 same signature, same read, same empty-on-failure answer \u2014 so the module holds two readers for one kind of body file and a fix to one will not reach the other."
+    },
+    {
+      "file": "tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py",
+      "line": 475,
+      "severity": "non-blocking",
+      "text": "the inline arm is written from runs.node_definition(stored) instead of the node the test declared, so a write-side body loss makes both arms agree and the equality assertions at 479-481 hold; the same shape was repaired at 255."
+    },
+    {
+      "file": "tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py",
+      "line": 382,
+      "severity": "non-blocking",
+      "text": "classify_pointer reads only write_paths, plan and id (reckon/crew/recovery_classification.py:1985, 3287), none of them a moved field, so done-when case (d) cannot redden on a regression in the fields it is cited for."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 292,
+      "severity": "non-blocking",
+      "text": "read_pointer hydrates the node and _mutate_pointer funnels every mutation through it, so every pointer mutation rewrites and fsyncs the whole node.json."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal at dispatch-detail.json is to move peer_channel.peers and the node's peer_scopes, brief, done-when and admission findings off the live pointer into the run directory; reckon/crew/runs.py:292 writes those four fields to node.json and reckon/crew/runs.py:324 drops peer_channel.peers, leaving the peer-channel/peers.json the run already held as the durable copy.\nVERDICT done_when: prompt.txt:297 names cases (a)-(e) in tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py; the gate scoped-gate-1795108151505354124.log records \"66 passed in 38.09s\" and EXIT=0 at 0e7cb6fa, and negative-control-base-tests.log records \"case_a_pointer_bytes=124327\" with 4 failed and EXIT=1 at a7ac07a9, so the budget cases do measure the bytes the done_when bounds.\nVERDICT write_paths: read the thirteen declared paths; all nine files of the diff a7ac07a9..0e7cb6fa lie inside them, though the worker's orientation_write_paths recorded only the node's seven and the six reader files beyond them are declared here and acknowledged in its own manifest.\nVERDICT manifest: read manifest.md; it records status complete, three commits, a baseline_suite of 0 failures at a7ac07a9 and an after_suite of 0 failures at 0e7cb6fa with absolute log paths, and a negative_control_log line carrying the bare path.\nVERDICT diff: read all three commits against a7ac07a9; b1aa95f7ae moves the body and the peer list and rewrites seven readers onto the accessors, 3a98569b routes the two review judges through node_field, and 0e7cb6fa7 restores the node-less refusal at reckon/crew/dispatch_sessions.py:1585.\nCALL_SITES: reckon/crew/runs.py:read_pointer, reckon/crew/runs.py:_write_json, reckon/crew/admission/launching.py:_node_from_pointer, reckon/crew/dispatch_peer.py:_adjacent_live_peers, reckon/crew/dispatch_sessions.py:_recorded_task_node, reckon/crew/dispatching/requests.py:_named_brief, reckon/crew/recovery_review_dispatch.py:_judge_head_move, reckon/crew/recovery_review_dispatch.py:re_review_prediction, reckon/crew/recovery_review_dispatch.py:_queued_pointer_names_directory, reckon/crew/recovery_review_subject.py:_review_reads_a_report, reckon/crew/recovery_review_subject.py:_review_brief_text, reckon/serve.py:_crew_rows\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:292 writes the four node fields into the run's own node.json and reckon/crew/runs.py:324 drops the pointer's peer list, and reckon/crew/runs.py:380's peer_channel_peers has no production caller, so nothing in reckon/ still reads the dropped peer list off a pointer.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795108151505354124.log:7 records \"66 passed in 38.09s\" at 0e7cb6fa with a bare EXIT=0, but the done_when's ruff condition rests on the manifest's per-file counts with no log behind it.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared list, with the six reader edits past the worker's recorded seven (for example reckon/serve.py:938) implied by the move itself.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:475 builds its inline arm from runs.node_definition, and tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:382 compares a classification that reads none of the moved fields, though tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:255 and the refusal case tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:564 were repaired to independent expectations and shown red by repair-round2-control-refusal.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/runs.py:292 follows the merge-on-write idiom at reckon/crew/runs.py:199, and reckon/crew/dispatching/requests.py:393 uses the local-import form already at requests.py:497.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/runs.py:283 _read_node_body_file is a verbatim copy of reckon/crew/runs.py:190 _read_dispatch_detail_file, re-implementing the run-directory body reader rather than extending it.\nFINDING reckon/crew/runs.py:283 non-blocking: _read_node_body_file duplicates _read_dispatch_detail_file at reckon/crew/runs.py:190 line for line \u2014 same signature, same read, same empty-on-failure answer \u2014 so the module now holds two readers for one kind of body file and a fix to one will not reach the other; the splitter below it likewise restates _split_dispatch_detail's merge-on-write for a nested mapping instead of sharing it.\nFINDING tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:475 non-blocking: the arm meant to be the base revision's inline pointer is written from runs.node_definition(stored), so a write-side loss of a body field at _split_node_body makes both arms agree and the equality assertions at :479-:481 hold; commit 0e7cb6fa7 repaired the same shape at :255 by comparing against node.as_dict(), and this site kept the accessor.\nFINDING tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:382 non-blocking: assert at_base == at_head compares two classify_pointer results, and classify_pointer reads only write_paths, plan and id (reckon/crew/recovery_classification.py:1985, :3287), none of them a moved field, so done_when case (d) cannot redden on a regression in the brief, done-when, peer scopes or admission findings it is cited for.\nFINDING reckon/crew/runs.py:292 non-blocking: read_pointer hydrates the node (reckon/crew/runs.py:1914) and _mutate_pointer funnels every mutation through it (reckon/crew/runs.py:557), so every pointer mutation now rewrites and fsyncs the whole node.json because all four fields are always present in the payload it hands _split_node_body.",
+  "review_run_id": "r-20261119T171406372045-review-of-a-live-pointer-carries-no-peer-list-or-node-body-0e7cb6fa7cb5",
+  "reviewed_base_sha": "a7ac07a91d918a57176c0d218abc4ae06e7ebab0",
+  "reviewed_head_sha": "0e7cb6fa7cb5361ca6943fd32882d04295f17016",
+  "reviewed_run_id": "r-20261118T214350094674-a-live-pointer-carries-no-peer-list-or-node-body",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T18:05:00.000000+00:00",
+  "total": 90
+}
