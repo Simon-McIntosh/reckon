@@ -1,0 +1,127 @@
+<section id="qwnw-red-file-a-worktree-release-is-whole-record">
+  <h2>A worktree release is whole</h2>
+
+  <p><strong>What changed.</strong> The named file failed on one case at the base
+  revision: <code>test_no_removal_site_still_deletes_with_git_worktree_remove</code>
+  found <code>landing_measure.py::base_checkout</code>. The product was wrong,
+  not the test. Every other removal site vacates a registered path in one rename
+  onto a trash directory before git is told to forget the tree, because
+  <code>git worktree remove</code> deletes the files while deregistering the
+  tree under a single deadline, and a deadline that expires partway leaves a
+  registered tree holding a fraction of its files. The base checkout was written
+  in October, after that rule was established, and deleted its scratch tree with
+  <code>git worktree remove --force</code> under the measurement's own deadline,
+  then pruned the registration if the call failed — the same defect the rule
+  exists to prevent.</p>
+
+  <p><code>base_checkout</code> now releases through
+  <code>reckon.crew.routing._release_worktree_whole</code>, with
+  <code>run_id="landing-base"</code>. Its tree sits on node-local scratch, so
+  the helper takes the scratch directory as its trash root: the rename stays on
+  the tree's own filesystem instead of crossing onto shared storage, and the
+  scratch directory is deleted whole afterwards. The helper gained the optional
+  <code>reckon</code>-side <code>trash_root</code> argument for exactly that
+  case; the existing fallback to the primary root's trash is unchanged. A
+  release that fails still prunes the registration, as before.</p>
+
+  <p>The file's list of removal sites that must route through the helper now
+  names <code>reckon/crew/landing_measure.py: base_checkout</code>, so a site
+  that stops routing through it is named rather than counted, and a case
+  exercises the release itself: it observes the copy offered to deletion, that
+  the copy sits in the scratch directory the tree was built in, and that the
+  tree is gone from the repository's registration afterwards. No assertion was
+  deleted or weakened; the only test change is that case and the one entry in
+  the callers' map.</p>
+
+  <h3 id="qwnw-red-file-a-worktree-release-is-whole-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-worktree-release-is-whole-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>named file, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>1 failed, 12 passed, <code>EXIT=1</code></td>
+        <td>runs/.../arms/base-named.log</td>
+      </tr>
+      <tr>
+        <td>named file, head</td>
+        <td><code>c257d07f8600f3d2838c4c719941926f3b15202a</code></td>
+        <td>14 passed, <code>EXIT=0</code></td>
+        <td>runs/.../arms/head-named.log</td>
+      </tr>
+      <tr>
+        <td>declared suite, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td>runs/.../baseline_suite-1795069477589418251.log</td>
+      </tr>
+      <tr>
+        <td>declared suite, head</td>
+        <td><code>c257d07f8600f3d2838c4c719941926f3b15202a</code></td>
+        <td>58 passed, <code>EXIT=0</code></td>
+        <td>runs/.../after_suite-1795069520698155147.log</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Both named runs are batch jobs on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> removed from the environment pytest sees, each from
+  an extraction of its revision under the run directory, each naming the tree,
+  the command and the imported module path on its header lines. Every git call
+  the checkout makes is bounded by the same timeout as the measurement, as
+  before.</p>
+
+  <p><code>ruff check</code> and <code>ruff format --check</code> report the
+  same figures at both revisions on the changed paths: seven pre-existing
+  findings in <code>reckon/crew/routing.py</code> (none on a line this change
+  touched) and three files formatted. Nothing was added.</p>
+
+  <h3 id="qwnw-red-file-a-worktree-release-is-whole-control">Negative control</h3>
+
+  <p>The base run of the named file fails one test id,
+  <code>test_no_removal_site_still_deletes_with_git_worktree_remove</code>,
+  naming <code>['landing_measure.py::base_checkout']</code>; the head run of the
+  same file passes all fourteen. The case added here is falsified on its own: a
+  copy of the head tree with <code>git worktree remove --force</code> restored in
+  <code>base_checkout</code> fails three cases — the callers' map (the site no
+  longer calls the original helper), the rule against the git deletion, and the
+  new case, which sees no copy offered (<code>AssertionError: []</code>) —
+  <code>EXIT=1</code>, logged at <code>arms/mutant-new-case.log</code> in the run directory.</p>
+
+  <h3 id="qwnw-red-file-a-worktree-release-is-whole-importers">Importers</h3>
+
+  <p>The 133 test files that import <code>reckon.crew.routing</code> or
+  <code>reckon.crew.landing_measure</code> were run over each revision's own
+  tree in one batch job on <code>all_debug</code>, each arm resolving the module
+  paths it names on its own header lines:</p>
+
+  <table id="qwnw-red-file-a-worktree-release-is-whole-importer-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>importers, base</td>
+        <td><code>b24fe95a789c82cd33f22a912b4dbbf94d5e2193</code></td>
+        <td>43 failed, 1238 passed, <code>EXIT=1</code></td>
+        <td>runs/.../arms/base-importers.log</td>
+      </tr>
+      <tr>
+        <td>importers, head</td>
+        <td><code>c257d07f8600f3d2838c4c719941926f3b15202a</code></td>
+        <td>41 failed, 1241 passed, <code>EXIT=1</code></td>
+        <td>runs/.../arms/head-importers.log</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>No id fails at the head and passes at the base: the head's failure set is a
+  strict subset of the base's. Two ids fail only at the base — the named file's
+  <code>test_no_removal_site_still_deletes_with_git_worktree_remove</code>, and
+  <code>tests/test_crew_routes.py::test_fitting_and_unbounded_backends_dispatch_without_context_refusal</code>,
+  which this change does not touch. The 41 ids common to both arms are the same
+  set on each side, so nothing here introduced them.</p>
+</section>
