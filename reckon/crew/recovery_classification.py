@@ -2324,7 +2324,9 @@ def classify_pointer(
                 "the worker manifest reports completion; this is a measurement "
                 "run, so no review is owed and it is ready for promotion"
             )
-            action = _promotion_command(run_id, record, manifest_commits)
+            action = _promotion_command(
+                run_id, record, manifest_commits, placeholders=True
+            )
         elif _pointer_role(record) == REVIEW_ROLE:
             # A review run's deliverable is the review it wrote for another
             # run, so it is not itself awaiting review. The exemption is the
@@ -2351,7 +2353,9 @@ def classify_pointer(
                 "the worker manifest reports completion and an independent "
                 "parsed review is attached; the run is ready for promotion"
             )
-            action = _promotion_command(run_id, record, manifest_commits)
+            action = _promotion_command(
+                run_id, record, manifest_commits, placeholders=True
+            )
         else:
             classification = "scoring"
             # A review already dispatched stands as this run's review in
@@ -3622,7 +3626,11 @@ def delivery_summary(
 
 
 def _promotion_command(
-    run_id: str, record: Mapping[str, Any], manifest_commits: Sequence[Any]
+    run_id: str,
+    record: Mapping[str, Any],
+    manifest_commits: Sequence[Any],
+    *,
+    placeholders: bool = False,
 ) -> str:
     """The completion command a promotable run is promoted by.
 
@@ -3645,10 +3653,33 @@ def _promotion_command(
     refuses a citation of the base — the base predates the run — so the offer
     names the declaration a commitless run promotes under instead of the
     citation that reproduces the refusal.
+
+    Whether the run changed anything is read from its worktree, not from the
+    prose of its manifest: a delivered report lives outside every repository
+    (under the run's own directory, or beside a store), and naming it in
+    ``changed_paths`` is what a read-only run declares, not evidence against
+    the declaration instead. So the offer states the commitless form when the
+    worktree still sits on its base with no changed path inside the
+    repository, which is the same reading promotion applies.
+
+    A citation offer states the gate verdict its own evidence supports: the
+    run's recorded suite arm when that arm measured the current head, and
+    ``not-run`` otherwise, because asserting ``passed`` from an unmeasured
+    revision would offer a command promotion refuses. Withdrawing the offer
+    entirely would leave the run's commits unoffered, so the citation is kept
+    and the verdict is what narrows.
+
+    ``placeholders`` selects the reader of the commitless declaration. The
+    classifier shows its offer to a coordinator who fills in what the run
+    produced and why it produced no commit, so its reason and outcome are left
+    as placeholders. An obligation's command is replayed verbatim by the tool
+    surface, which carries no placeholder at all, so that surface reads the
+    run's own manifest for the outcome and states the measured reason.
     """
     from .promotion import _promotion_commits
     from .promotion_checks import _fresh_manifest
-    from .promotion_evidence import _run_changed_nothing
+    from .promotion_evidence import _worktree_unchanged_since_base
+    from .promotion_scope import _changed_paths_inside_repository
     from .recovery_review_delivery import _is_review_run
 
     if not completion_offer(record, repair=True):
@@ -3662,24 +3693,47 @@ def _promotion_command(
         _review_tree(record), _promotion_commits(record, manifest_commits)
     )
     base = str(record.get("base_sha") or "").strip()
-    if (
-        not commits or (len(commits) == 1 and base and same_revision(commits[0], base))
-    ) and _run_changed_nothing(record):
-        outcome = str(
-            manifest.get("landing")
-            or manifest.get("checkpoint")
-            or "Completed the run without repository changes."
-        )
+    cites_only_the_base = bool(commits) and (
+        len(commits) == 1 and base and same_revision(commits[0], base)
+    )
+    if cites_only_the_base:
+        # A citation of the base is refused; the commitless declaration is the
+        # only form left, and it is true only of a worktree that still sits on
+        # the base with nothing of the run inside the repository. A run whose
+        # tree moved keeps no offer: a citation of the base would reproduce the
+        # refusal and no commit of its own was recorded to offer instead.
+        if not (
+            _worktree_unchanged_since_base(record)
+            and not _changed_paths_inside_repository(manifest, record)
+        ):
+            return f"reckon crew observe --run {shlex.quote(run_id)}"
+        if placeholders:
+            reason = "'<why the run produced no commit>'"
+            outcome = "'<what the run produced>'"
+        else:
+            reason = shlex.quote(
+                "The run changed no repository file; its worktree still sits "
+                "on its dispatch base."
+            )
+            outcome = shlex.quote(
+                str(
+                    manifest.get("landing")
+                    or manifest.get("checkpoint")
+                    or "Completed the run without repository changes."
+                )
+            )
         return (
-            f"reckon crew complete --run {shlex.quote(run_id)} --gate not-run --wait "
-            f"--no-commit {shlex.quote('The run produced no repository commit.')} "
-            f"--outcome {shlex.quote(outcome)}"
+            f"reckon crew complete --run {shlex.quote(run_id)} --gate not-run "
+            f"--wait --no-commit {reason} --outcome {outcome}"
         )
-    if not completion_offer(record):
-        return f"reckon crew observe --run {shlex.quote(run_id)}"
-    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate passed --wait"
+    if not commits:
+        if not completion_offer(record):
+            return f"reckon crew observe --run {shlex.quote(run_id)}"
+        return f"reckon crew complete --run {shlex.quote(run_id)} --gate passed --wait"
+    verdict = "passed" if completion_offer(record) else "not-run"
+    action = f"reckon crew complete --run {shlex.quote(run_id)} --gate {verdict} --wait"
     for commit in commits:
-        action += f" --commit {commit}"
+        action += f" --commit {shlex.quote(commit)}"
     return action
 
 
