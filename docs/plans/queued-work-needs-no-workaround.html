@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="800">
+<meta name="plan-version" content="801">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2469,7 +2469,10 @@
     <div class="r-comment-body"><p>tests/test_crew_negative_control_header.py read 1 failed / 1 passed at b24fe95 because one case pinned a refusal retired by 8901431b8a, a test wrong rather than a product rule; it now asserts the rule the gate keeps (a runner-recorded FAILED id beside its summary admits a control log with no EXIT line, and a log stating no failure in either record is refused with "reports no failure") and the file passes 3/3 at cf817ac9a168, with both declared-suite arms at 58 passed, 0 failed.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044626803858-qwnw-red-file-a-worker-cannot-remove-another-runs-scratch" data-who="reckon-build" data-when="2026-11-18T23:23:50.069Z">
-    <div class="r-comment-body"><p>The scratch-seal test&#x27;s fixture pinned NODE_TMP_ROOT and the node-tmp runtime carve-outs inside its own tree instead of trusting the host /tmp, so tests/test_a_worker_cannot_remove_another_runs_scratch.py goes 1 failed, 2 passed (base 5b0a1f5) to 3 passed as an all_debug job at 0bb3d508, with no product change, no assertion removed, and the declared negative control still turning the executed refusal red.</p></div>
+    <div class="r-comment-body"><p>The scratch-seal test's fixture pinned NODE_TMP_ROOT and the node-tmp runtime carve-outs inside its own tree instead of trusting the host /tmp, so tests/test_a_worker_cannot_remove_another_runs_scratch.py goes 1 failed, 2 passed (base 5b0a1f5) to 3 passed as an all_debug job at 0bb3d508, with no product change, no assertion removed, and the declared negative control still turning the executed refusal red.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063051175974-qwnw-red-file-dispatch-attaches-the-figures" data-who="reckon-build" data-when="2026-11-19T04:38:16.356Z">
+    <div class="r-comment-body"><p>tests/test_dispatch_attaches_the_figures.py passes 10/10 at head 7a9ec8dc as an all_debug job (job 1329893, EXIT=0) against 1 failed / 9 passed at base 42fe90d0b0 (job 1329791, EXIT=1); one cause, verdict test wrong — test_crew_dispatch_image_reaches_the_argv parsed the payload from Click&#x27;s mixed Result.output while the dispatch document is stdout and the run identity notice goes to stderr, so the test now reads result.stdout and no assertion was deleted or weakened; the declared suite arms read 58 passed EXIT=0 either side</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
