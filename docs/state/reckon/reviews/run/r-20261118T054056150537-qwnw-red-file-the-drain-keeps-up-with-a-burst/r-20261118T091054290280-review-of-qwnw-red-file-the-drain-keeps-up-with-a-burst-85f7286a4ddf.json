@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T09:55:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the <pre> presented as the log's quotation is an edited extract \u2014 it adds a `# gate log: <path>` header line the log does not contain, drops the log's own first line (the srun fence banner) and drops the teardown lines that precede EXIT=0 \u2014 with no ellipsis marking any of it, so a reader reconciling the quotation against the cited log finds text the artefact does not hold and text it does hold missing; the two figures the gate reads (`26 passed`, `EXIT=0`) are verbatim."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the only head gate log names 944700bc04, one commit before the delivered head 85f7286a4ddf, so the plan's \"passes in full at head\" is measured one commit short of the landed head; the fragment's argument at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:30-33 that the two trees hold the same code is sound but is reasoning rather than a run at the revision being promoted."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's all_debug partition is asserted in the prose but evidenced nowhere \u2014 the quoted log header names a host and the srun banner only, and no artefact under the run directory records a partition \u2014 so which allocation the gate ran in cannot be checked from the record."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-drain-keeps-up-with-a-burst.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim that a third run \"in the worker's own worktree, with SLURM_JOB_ID set to a synthetic value\" read 26 passed is supported by no log in the run directory; every gate log present ran in a /tmp/mcintos-landing-* scratch tree, and the only run without `env -u SLURM_JOB_ID` that does exist is scoped-gate-1794990563045934629.log, also in a landing tree."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal, that tests/test_the_drain_keeps_up_with_a_burst.py passes in full on the primary branch, against docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-drain-keeps-up-with-a-burst.html:4-13, which delivers the plan's already-green case (\"a file that already passes when the node starts ... is delivered as such with the passing run\"); the file is green at the base and at the head the log names, so the goal's deliverable is met without a repair.\nVERDICT done_when: the section's done-where names the file passing in full at head as a job on all_debug with SLURM_JOB_ID unset and its output on shared storage; the gate the manifest records ran exactly that file with `env -u SLURM_JOB_ID` and read `26 passed` and `EXIT=0` at f29efdc635 (scoped-gate-1794990782889463007.log:5-9) and at 944700bc04 (scoped-gate-1794992051323565223.log:5-9), but neither log names the partition and neither names the landed head 85f7286a4ddf.\nVERDICT write_paths: read the declared paths (reckon, tests, the plan's evidence-fragment directory, the node's own fragment file, its figure directory) against the diff: the two delivered files both sit under docs/evidence/fragments/queued-work-needs-no-workaround/ and nothing else changed.\nVERDICT manifest: read; it records base and head gate runs at 26 passed and EXIT=0, two suite arms with 0 failures, no negative control because the base has no failing ids, and a rubric line per dimension, and it cites both arm logs as `-armed.log` copies for the srun-banner reason it states under outside_scope.\nVERDICT diff: read the three commits f29efdc635..85f7286a4d commit by commit (3e719f0c2c, 944700bc04, 85f7286a4d); the change is two new HTML evidence fragments, 79 inserted lines and no product, test or plan line, and the last commit only quotes the head log it already cited.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/serve.py:_send_evidence_record, reckon/crew/reports.py:_composed_record_id_findings\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-drain-keeps-up-with-a-burst.html:4-13 states the file passes at the branch head the node started from and the two gate logs cited at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:12-27 bear that out.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:17 matches the done-when command and reads `26 passed` with `EXIT=0` at both revisions, but no log names the all_debug partition the done-when names and none names the landed head 85f7286a4ddf.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-drain-keeps-up-with-a-burst.html and docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html, both inside docs/evidence/fragments/queued-work-needs-no-workaround/ and the second the node's own declared fragment path.\nSCORE durability: 14\nJUSTIFICATION durability: no assertion is added (nothing in product or test changed), so what survives a regression is only reckon/crew/reports.py:2780's duplicate-id check on changed fragments plus the 26 cases the named test file already holds, and the logs are preserved inline at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:12-27 rather than by reference alone.\nSCORE fit: 18\nJUSTIFICATION fit: both fragments follow the file's idiom (a bare <section id> then h2 and prose, as docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-queued-work-shows-where-held-work-shows.html:1 does) and carry no plan or ticket identifier in their names or ids.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no code at all; a search over reckon/ for an existing fragment-authoring or gate-log-quoting helper (reckon/evidence.py, reckon/crew/reports.py, reckon/resources.py) found only the composer at reckon/evidence.py:1657, which reads hand-authored fragments; nothing is duplicated.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:13 non-blocking: the <pre> presented as the log's quotation is an edited extract \u2014 it adds a `# gate log: <path>` header line the log does not contain, drops the log's own first line (the srun fence banner) and drops the teardown lines that precede EXIT=0 \u2014 with no ellipsis marking any of it, so a reader reconciling the quotation against the cited log finds text the artefact does not hold and text it does hold missing; the two figures the gate reads (`26 passed`, `EXIT=0`) are verbatim.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:24 non-blocking: the only head gate log names 944700bc04, one commit before the delivered head 85f7286a4ddf, so the plan's \"passes in full at head\" is measured one commit short of the landed head; the fragment's argument at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:30-33 that the two trees hold the same code is sound but is reasoning rather than a run at the revision being promoted.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/red-file-the-drain-keeps-up-with-a-burst.html:5 non-blocking: the done-when's all_debug partition is asserted in the prose but evidenced nowhere \u2014 the quoted log header names a host and the srun banner only, and no artefact under the run directory records a partition \u2014 so which allocation the gate ran in cannot be checked from the record.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-drain-keeps-up-with-a-burst.html:21 non-blocking: the claim that a third run \"in the worker's own worktree, with SLURM_JOB_ID set to a synthetic value\" read 26 passed is supported by no log in the run directory; every gate log present ran in a /tmp/mcintos-landing-* scratch tree, and the only run without `env -u SLURM_JOB_ID` that does exist is scoped-gate-1794990563045934629.log, also in a landing tree.\n",
+  "review_method": "Read-only review of the reviewed run's manifest, the plan section, the two delivered fragments and the three commits f29efdc635..85f7286a4d, cross-read against the run directory's gate and suite logs; the named suite was not re-run.",
+  "review_run_id": "r-20261118T091054290280-review-of-qwnw-red-file-the-drain-keeps-up-with-a-burst-85f7286a4ddf",
+  "reviewed_base_sha": "f29efdc635a1b578bb4461ff90785d3be848646b",
+  "reviewed_head_sha": "85f7286a4ddf65b63286ae8eadf4a15ea6aabce9",
+  "reviewed_run_id": "r-20261118T054056150537-qwnw-red-file-the-drain-keeps-up-with-a-burst",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:16:02.315466+00:00",
+  "total": 106
+}

@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-18T11:20:00Z",
+  "dispatched_at": "2026-11-18T11:03:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-promotes-what-it-passed.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the head gate ran \"as a job on all_debug\", but scoped-gate-1794998701842505595.log records only revision, host 98dci4-clu-3141, tree and command, so that clause of the done_when cannot be checked against the artifact the fragment cites."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-promotes-what-it-passed.html",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "non-blocking: the row labelled \"the named file, head extraction\" names 93439bb3ad while the reviewed head is ad9aeb0211, so a reader must infer that the evidence commit changed no executable code."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "reading 93439bb3ad (two fixture repairs in tests/test_a_review_promotes_what_it_passed.py) and ad9aeb0211 (the 90-line evidence fragment) against base 2f00851c42 finds two files changed, no product file and no plan file.",
+    "done_when": "the node's FENCE \u2014 EVIDENCE requires the named file to pass in full at head as an all_debug job with SLURM_JOB_ID unset; logs/head-target.log carries revision, tree, command (`env -u SLURM_JOB_ID`) and EXIT=0 headers, scoped-gate-1794998701842505595.log records `7 passed in 1.20s` at 93439bb3ad, and logs/base-target.log records 2 failed, 5 passed, EXIT=1 at 2f00851c42.",
+    "goal": "the goal is \"Make tests/test_a_review_promotes_what_it_passed.py pass in full on the primary branch\" per the reviewed run's dispatch-detail.json, and the head gate log records 7 passed, EXIT=0 for that file at 93439bb3ad while the delivered head ad9aeb0211 adds only the evidence fragment.",
+    "manifest": "the reviewed run's manifest.md records both causes as test-wrong, the named file 7 passed EXIT=0 at 93439bb3ad against 2 failed 5 passed EXIT=1 at 2f00851c42, and both suite arms 58 passed EXIT=0, each of which the cited logs bear out.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, and docs/figures/queued-work-needs-no-workaround, and both diff paths \u2014 tests/test_a_review_promotes_what_it_passed.py and the fragment \u2014 are inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_promotes_what_it_passed.py:289-295 reddens if the scope refusal names the merge-safe neighbour, and logs/base-target.log shows the same case failing with DID NOT RAISE at base when the fixture commits only the merge-safe path.",
+    "evidence": "logs/head-target.log, logs/base-target.log and scoped-gate-1794998701842505595.log each carry a revision header and an EXIT line, and the manifest's baseline_suite/after_suite both read 58 passed EXIT=0, but the all_debug partition the done_when names is evidenced nowhere in the logs the fragment cites.",
+    "fit": "the repair reuses the file's own `_manifest_body`, `_git` and `_write_json` helpers at tests/test_a_review_promotes_what_it_passed.py:257-271 and passes ruff check and ruff format --check.",
+    "goal_fidelity": "the file at tests/test_a_review_promotes_what_it_passed.py:246-297 is green at 93439bb3ad (`7 passed in 1.20s`, EXIT=0), one evidence-only commit behind the reviewed head.",
+    "reuse": "the diff adds no function or module, so nothing is forked; the fixtures are brought to the diff's own product owners \u2014 the scope declaration read through `_shared_write_paths()` and the audit's `manifest_message_finding`.",
+    "scope_discipline": "the diff touches only tests/test_a_review_promotes_what_it_passed.py:122-297 and the one declared evidence fragment, with no product change and no plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Make tests/test_a_review_promotes_what_it_passed.py pass in full on the primary branch\" per the reviewed run's dispatch-detail.json, and the head gate log records 7 passed, EXIT=0 for that file at 93439bb3ad while the delivered head ad9aeb0211 adds only the evidence fragment.\nVERDICT done_when: the node's FENCE \u2014 EVIDENCE requires the named file to pass in full at head as an all_debug job with SLURM_JOB_ID unset; logs/head-target.log carries revision, tree, command (`env -u SLURM_JOB_ID`) and EXIT=0 headers, scoped-gate-1794998701842505595.log records `7 passed in 1.20s` at 93439bb3ad, and logs/base-target.log records 2 failed, 5 passed, EXIT=1 at 2f00851c42.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment, and docs/figures/queued-work-needs-no-workaround, and both diff paths \u2014 tests/test_a_review_promotes_what_it_passed.py and the fragment \u2014 are inside that scope.\nVERDICT manifest: the reviewed run's manifest.md records both causes as test-wrong, the named file 7 passed EXIT=0 at 93439bb3ad against 2 failed 5 passed EXIT=1 at 2f00851c42, and both suite arms 58 passed EXIT=0, each of which the cited logs bear out.\nVERDICT diff: reading 93439bb3ad (two fixture repairs in tests/test_a_review_promotes_what_it_passed.py) and ad9aeb0211 (the 90-line evidence fragment) against base 2f00851c42 finds two files changed, no product file and no plan file.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the file at tests/test_a_review_promotes_what_it_passed.py:246-297 is green at 93439bb3ad (`7 passed in 1.20s`, EXIT=0), one evidence-only commit behind the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-target.log, logs/base-target.log and scoped-gate-1794998701842505595.log each carry a revision header and an EXIT line, and the manifest's baseline_suite/after_suite both read 58 passed EXIT=0, but the all_debug partition the done_when names is evidenced nowhere in the logs the fragment cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_a_review_promotes_what_it_passed.py:122-297 and the one declared evidence fragment, with no product change and no plan edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_promotes_what_it_passed.py:289-295 reddens if the scope refusal names the merge-safe neighbour, and logs/base-target.log shows the same case failing with DID NOT RAISE at base when the fixture commits only the merge-safe path.\nSCORE fit: 19\nJUSTIFICATION fit: the repair reuses the file's own `_manifest_body`, `_git` and `_write_json` helpers at tests/test_a_review_promotes_what_it_passed.py:257-271 and passes ruff check and ruff format --check.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or module, so nothing is forked; the fixtures are brought to the diff's own product owners \u2014 the scope declaration read through `_shared_write_paths()` and the audit's `manifest_message_finding`.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-promotes-what-it-passed.html:37 non-blocking: the fragment says the head gate ran \"as a job on all_debug\", but scoped-gate-1794998701842505595.log records only revision, host 98dci4-clu-3141, tree and command, so that clause of the done_when cannot be checked against the artifact the fragment cites.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-review-promotes-what-it-passed.html:48 non-blocking: the row labelled \"the named file, head extraction\" names 93439bb3ad while the reviewed head is ad9aeb0211, so a reader must infer that the evidence commit changed no executable code.",
+  "review_run_id": "r-20261118T105941283157-review-of-qwnw-red-file-a-review-promotes-what-it-passed-ad9aeb0211fc",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "ad9aeb0211fcdf30290bfb09d96238e6faf2026e",
+  "reviewed_run_id": "r-20261118T062534740033-qwnw-red-file-a-review-promotes-what-it-passed",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:20:00+00:00",
+  "total": 112
+}

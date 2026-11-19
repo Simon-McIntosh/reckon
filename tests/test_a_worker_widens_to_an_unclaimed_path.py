@@ -27,7 +27,10 @@ WAITING_PEER_RUN = "r-20261027T130000000000-self-widen-queued"
 OTHER_RUN = "r-20261027T130000000000-self-widen-other"
 DECLARED = "reckon/crew/claims.py"
 GRANTED = "reckon/crew/dispatch.py"
-PEER_HELD = "reckon/crew/queue_admission.py"
+# A path a claim actually holds: the sharing policy reserves claims for the
+# artifacts git cannot reconcile, and lets two runs edit one source file in
+# their own worktrees. A plan document is the one of those a fixture declares.
+PEER_HELD = "docs/plans/sample.html"
 REASON = "the repair needs the widen command's own module"
 
 

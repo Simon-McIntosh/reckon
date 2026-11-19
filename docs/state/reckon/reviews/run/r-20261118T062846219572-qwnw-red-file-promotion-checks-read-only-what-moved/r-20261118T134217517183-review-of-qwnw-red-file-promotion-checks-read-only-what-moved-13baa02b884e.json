@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:69",
+    "reckon/crew/recovery_review_subject.py:739"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T14:35:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-checks-read-only-what-moved.html",
+      "line": "65",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes the failing argv as `git diff --numstat --no-renames 9a6a97bd\u2026..9a6a97bd\u2026.`, but the log it cites prints `c1b8e164b50288da15162a44a931e3fc586ac596..c1b8e164b50288da15162a44a931e3fc586ac596`, so the artefact's one worked example of the defect names a revision that appears nowhere in its evidence and a reader cannot reconcile the quote with the log."
+    },
+    {
+      "file": "tests/test_promotion_checks_read_only_what_moved.py",
+      "line": "148",
+      "severity": "non-blocking",
+      "text": "non-blocking: nothing asserts the reject direction of the changed line, so relaxing `endpoints < 2` to `< 1` keeps every one of the four tests green while the instrument would stop counting a single-revision working-tree diff at all \u2014 the guard added here only pins the accept direction."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved/scoped-gate-1795008232669814279.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log's header carries revision, host, tree and command and nothing about the scheduler \u2014 its .log.scheduler sidecar is zero bytes \u2014 so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" is a manifest claim with no recorded artefact behind it and a promoter cannot tell that job from the worker's own allocation."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 3d6255122828, c5d9c88a43ab changes only the ten lines of _unbounded_working_tree_reads in tests/test_promotion_checks_read_only_what_moved.py and 13baa02b884e adds only the 69-line evidence fragment, no product source in either.",
+    "done_when": "the done_when asks for a base-first run, a green head run at 4 passed on all_debug with the log on shared storage, a stated cause verdict, no closed assertion, and two suite arms as inline JSON with 40-character revisions; the manifest records the command, the gate log, a base red arm naming its failing test, and both arms at 0 failed, but no artefact records the partition or a job id.",
+    "goal": "the goal is to make tests/test_promotion_checks_read_only_what_moved.py pass in full, and the diff at tests/test_promotion_checks_read_only_what_moved.py:137-148 makes the instrument count the two commits an `A..B` token names, with the gate log scoped-gate-1795008232669814279.log recording \"4 passed\" at that revision.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved/manifest.md, it carries status complete, both commits, the base-red and head-green runs, and baseline_suite/after_suite with completed true, exit_status 0 and zero failing ids on both arms.",
+    "write_paths": "the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both changed paths (tests/test_promotion_checks_read_only_what_moved.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-checks-read-only-what-moved.html) sit inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the reverted `len(revisions) < 2` reddens tests/test_promotion_checks_read_only_what_moved.py:303, as negative-control-base-3d6255122828c0e4a4ef5a2dfb093668da7eb02b.log shows on test_a_full_promotion_reads_no_unbounded_working_tree.",
+    "evidence": "the manifest's gate command matches the log's own `# command:` line and the log ends with \"4 passed\" and EXIT=0, but that gate ran at c5d9c88a43ab rather than the delivered head 13baa02b884e and the empty *.log.scheduler sidecars record no partition for the all_debug clause.",
+    "fit": "the edit keeps the helper's docstring, inline-comment idiom and `_`-prefixed private naming of tests/test_promotion_checks_read_only_what_moved.py:106-151, and the fragment follows the section/table shape of its sibling fragments in docs/evidence/fragments/queued-work-needs-no-workaround.",
+    "goal_fidelity": "tests/test_promotion_checks_read_only_what_moved.py:137-148 makes the range token count as the two endpoints tests/test_promotion_checks_read_only_what_moved.py:148 compares, and the product argv at reckon/crew/promotion_evidence.py:69 is exactly the shape the base log misread.",
+    "reuse": "the diff adds no definition, and the search over reckon/crew for a git-argv read-shape classifier found none \u2014 production emits those argvs at reckon/crew/promotion_evidence.py:69 and reckon/crew/recovery_review_subject.py:739 and classifies them nowhere, so the test helper is the only owner and it is edited in place.",
+    "scope_discipline": "both paths in the 3d6255122828..13baa02b884e diff are inside the manifest's declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround."
+  },
+  "project": "reckon",
+  "raw_text": "<section id=\"review-record\">\n<h2>Independent review \u2014 r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved</h2>\n<p>Run <code>r-20261118T134217517183-review-of-qwnw-red-file-promotion-checks-read-only-what-moved-13baa02b884e</code>\nreviewing <code>r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved</code>\nfrom <code>3d6255122828c0e4a4ef5a2dfb093668da7eb02b</code> to <code>13baa02b884e9402aa6807ef57e6345702dada41</code>.</p>\n\nVERDICT goal: the goal is to make tests/test_promotion_checks_read_only_what_moved.py pass in full, and the diff at tests/test_promotion_checks_read_only_what_moved.py:137-148 makes the instrument count the two commits an `A..B` token names, with the gate log scoped-gate-1795008232669814279.log recording \"4 passed\" at that revision.\n\nVERDICT done_when: the done_when asks for a base-first run, a green head run at 4 passed on all_debug with the log on shared storage, a stated cause verdict, no closed assertion, and two suite arms as inline JSON with 40-character revisions; the manifest records the command, the gate log, a base red arm naming its failing test, and both arms at 0 failed, but no artefact records the partition or a job id.\n\nVERDICT write_paths: the manifest declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both changed paths (tests/test_promotion_checks_read_only_what_moved.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-checks-read-only-what-moved.html) sit inside them.\n\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved/manifest.md, it carries status complete, both commits, the base-red and head-green runs, and baseline_suite/after_suite with completed true, exit_status 0 and zero failing ids on both arms.\n\nVERDICT diff: read commit by commit against 3d6255122828, c5d9c88a43ab changes only the ten lines of _unbounded_working_tree_reads in tests/test_promotion_checks_read_only_what_moved.py and 13baa02b884e adds only the 69-line evidence fragment, no product source in either.\n\nCALL_SITES: reckon/crew/promotion_evidence.py:69, reckon/crew/recovery_review_subject.py:739\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_promotion_checks_read_only_what_moved.py:137-148 makes the range token count as the two endpoints tests/test_promotion_checks_read_only_what_moved.py:148 compares, and the product argv at reckon/crew/promotion_evidence.py:69 is exactly the shape the base log misread.\n\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's gate command matches the log's own `# command:` line and the log ends with \"4 passed\" and EXIT=0, but that gate ran at c5d9c88a43ab rather than the delivered head 13baa02b884e and the empty *.log.scheduler sidecars record no partition for the all_debug clause.\n\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both paths in the 3d6255122828..13baa02b884e diff are inside the manifest's declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround.\n\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the reverted `len(revisions) < 2` reddens tests/test_promotion_checks_read_only_what_moved.py:303, as negative-control-base-3d6255122828c0e4a4ef5a2dfb093668da7eb02b.log shows on test_a_full_promotion_reads_no_unbounded_working_tree.\n\nSCORE fit: 18\nJUSTIFICATION fit: the edit keeps the helper's docstring, inline-comment idiom and `_`-prefixed private naming of tests/test_promotion_checks_read_only_what_moved.py:106-151, and the fragment follows the section/table shape of its sibling fragments in docs/evidence/fragments/queued-work-needs-no-workaround.\n\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and the search over reckon/crew for a git-argv read-shape classifier found none \u2014 production emits those argvs at reckon/crew/promotion_evidence.py:69 and reckon/crew/recovery_review_subject.py:739 and classifies them nowhere, so the test helper is the only owner and it is edited in place.\n\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-checks-read-only-what-moved.html:65 non-blocking: the fragment quotes the failing argv as `git diff --numstat --no-renames 9a6a97bd\u2026..9a6a97bd\u2026.`, but the log it cites prints `c1b8e164b50288da15162a44a931e3fc586ac596..c1b8e164b50288da15162a44a931e3fc586ac596`, so the artefact's one worked example of the defect names a revision that appears nowhere in its evidence and a reader cannot reconcile the quote with the log.\n\nFINDING tests/test_promotion_checks_read_only_what_moved.py:148 non-blocking: nothing asserts the reject direction of the changed line, so relaxing `endpoints < 2` to `< 1` keeps every one of the four tests green while the instrument would stop counting a single-revision working-tree diff at all \u2014 the guard added here only pins the accept direction.\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved/scoped-gate-1795008232669814279.log:1 non-blocking: the log's header carries revision, host, tree and command and nothing about the scheduler \u2014 its .log.scheduler sidecar is zero bytes \u2014 so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" is a manifest claim with no recorded artefact behind it and a promoter cannot tell that job from the worker's own allocation.\n</section>",
+  "review_run_id": "r-20261118T134217517183-review-of-qwnw-red-file-promotion-checks-read-only-what-moved-13baa02b884e",
+  "reviewed_base_sha": "3d6255122828c0e4a4ef5a2dfb093668da7eb02b",
+  "reviewed_head_sha": "13baa02b884e9402aa6807ef57e6345702dada41",
+  "reviewed_run_id": "r-20261118T062846219572-qwnw-red-file-promotion-checks-read-only-what-moved",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:50:24.871602+00:00",
+  "total": 112
+}

@@ -428,16 +428,15 @@ NEGATIVE_CONTROL_DECLARED_RULE = (
     "  This node writes a check, so it declares the mutation that check must\n"
     "  fail against. Apply the declared mutation and keep the log its run\n"
     "  produced: admission is judged on the facts the runner's own output\n"
-    "  records — that the run failed, and that it names at least one failing\n"
-    "  test id the head arm does not fail, falling back to the baseline's\n"
-    "  failing ids only when the manifest records no readable head arm, an arm\n"
-    "  being readable only when it declares its run complete. A terminal\n"
-    "  `EXIT=` line is one way the log shows the run failed and is not required:\n"
-    "  a pytest `FAILED <id>` list beside the runner's `N failed` summary shows\n"
-    "  the same fact when no capture line was appended. Admission is never read\n"
-    "  from the log's wording. The declared string is what you\n"
-    "  apply and what a reader compares the log against, not a string any gate\n"
-    "  matches.\n"
+    "  records — a non-zero `EXIT=` line and at least one failing test id the\n"
+    "  head arm does not fail, falling back to the baseline's failing ids only\n"
+    "  when the manifest records no readable head arm, an arm being readable\n"
+    "  only when it declares its run complete — and never on the log's wording.\n"
+    "  A terminal `EXIT=` line is one way the log shows the run failed and is\n"
+    "  not required: a pytest `FAILED <id>` list beside the runner's `N failed`\n"
+    "  summary shows the same fact when no capture line was appended. The\n"
+    "  declared string is what you apply and what a reader compares the log\n"
+    "  against, not a string any gate matches.\n"
     "  Name that log's path in the `negative_control_log` line. Declared string:\n"
 )
 
@@ -1203,7 +1202,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; its last line is a bare `EXIT=<code>` line, which is where promotion reads the gate's exit status — a log without one leaves the status unread. A gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>
-  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. Admission is judged on the facts the run recorded — that the run failed, read from a non-zero `EXIT=` line when one was captured or from the runner's own `FAILED` ids and `N failed` summary when none was, and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm, an arm being readable only when it declares its run complete — never on the log's wording. A log that carries a capture `EXIT=` line ends with it as a bare line reading `EXIT=` followed by the exit code
+  negative_control_log: <the path alone, and nothing else on this line — no description, note or continuation>. Required when the node's write paths include a test file and its negative_control is not `none: <reason>`. Admission is judged on the facts the run recorded — a non-zero `EXIT=` line and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm, an arm being readable only when it declares its run complete — never on the log's wording, and the `EXIT=` record is one way the run shows it failed rather than the only one: the runner's own `FAILED` ids and `N failed` summary show the same fact when no capture line was appended. A log that carries a capture `EXIT=` line ends with it as a bare line reading `EXIT=` followed by the exit code
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>

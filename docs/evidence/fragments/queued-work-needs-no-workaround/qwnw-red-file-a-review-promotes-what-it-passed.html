@@ -1,0 +1,90 @@
+<section id="qwnw-red-file-a-review-promotes-what-it-passed-landing">
+  <h2>A review-promotion file red on the primary branch passes</h2>
+
+  <p><strong>What was wrong.</strong> At the base revision the file reported
+  <code>2 failed, 5 passed</code>. Both failures were the test encoding rules the
+  crew has since replaced, not a product rule that broke; no product file is
+  changed by this node.</p>
+
+  <p><em>Cause one — the fixture manifest omits a field the audit requires.</em>
+  <code>test_the_manifest_check_accepts_the_review_record_and_its_sibling</code>
+  failed with <code>['messages_received: no delivery receipt was recorded, so
+  the manifest must say `messages_received: none`']</code>. The audit requires
+  that statement of every run whose inbox recorded no delivery, and the review
+  role is not exempt — the sibling cases in the suite already carry it. The
+  fixture's <code>_manifest_body</code> predates that rule and never added the
+  line. Verdict: <strong>test wrong</strong>; the fixture now carries
+  <code>messages_received: none</code>, and the assertion it pins
+  (<code>exit_code == 0</code>, <code>findings == []</code>) is unchanged.</p>
+
+  <p><em>Cause two — the fixture commits a path class promotion now admits.</em>
+  <code>test_a_committed_path_outside_every_declaration_is_still_refused</code>
+  failed with <code>Failed: DID NOT RAISE CrewError</code>. The fixture committed
+  <code>undeclared.txt</code>, a merge-safe source path beside a declaration, and
+  a declared write path became a hint: a source file beside it lands on its own
+  commit because the worktree isolates the edit and the merge reconciles it. Only
+  a class a merge cannot reconcile is refused. Verdict: <strong>test wrong</strong>;
+  the case now commits a generated state file
+  (<code>docs/state/&lt;project&gt;/undeclared.json</code>) beside the merge-safe
+  <code>undeclared.txt</code>, keeps the <code>pytest.raises</code> on the same
+  message, and additionally asserts the refusal names the state file and not its
+  merge-safe neighbour — the narrowed rule stated rather than only accepted.</p>
+
+  <h3 id="qwnw-red-file-a-review-promotes-what-it-passed-measured">Measured</h3>
+
+  <p>Both arms run the named file from an extraction of its own revision, with
+  <code>SLURM_JOB_ID</code> unset. The head gate runs the same file at the head
+  revision as a job on <code>all_debug</code>, with the log under the run
+  directory.</p>
+
+  <table id="qwnw-red-file-a-review-promotes-what-it-passed-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base extraction</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>2 failed, 5 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head extraction</td>
+        <td><code>93439bb3adc498685449b3235afb91d7768b0d9c</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the scoped gate, head on all_debug</td>
+        <td><code>93439bb3adc498685449b3235afb91d7768b0d9c</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>93439bb3adc498685449b3235afb91d7768b0d9c</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The declared suite is the two files the dispatch arms for this node
+  (<code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code>), run by
+  <code>crew suite run --partition all_debug</code> over each arm's own tree: the
+  same file list in both arms, and the same <code>58 passed</code>, so the
+  change adds no failure.</p>
+
+  <h3 id="qwnw-red-file-a-review-promotes-what-it-passed-control">Negative control</h3>
+
+  <p>The base run of the named file, recorded at
+  <code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code>, fails exactly the two
+  cases above, and its own log is the arm the head is measured against:</p>
+
+  <ul>
+    <li><code>test_the_manifest_check_accepts_the_review_record_and_its_sibling</code>
+      — <code>AssertionError: ['messages_received: no delivery receipt was
+      recorded, so the manifest must say `messages_received: none`']</code></li>
+    <li><code>test_a_committed_path_outside_every_declaration_is_still_refused</code>
+      — <code>Failed: DID NOT RAISE CrewError</code></li>
+  </ul>
+
+  <p>The same file at the head revision passes all seven cases. The rule the
+  narrowed case now states is exercised in both directions in that same run: the
+  state file committed outside every declaration is refused by name, and the
+  merge-safe <code>undeclared.txt</code> committed beside it is not named in the
+  refusal, so the acceptance rests on the declaration being a hint rather than on
+  a blanket admission of paths outside it.</p>
+</section>

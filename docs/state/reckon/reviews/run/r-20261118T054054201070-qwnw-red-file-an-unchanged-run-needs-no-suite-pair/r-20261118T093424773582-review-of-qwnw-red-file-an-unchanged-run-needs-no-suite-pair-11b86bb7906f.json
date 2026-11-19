@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:18:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unchanged-run-needs-no-suite-pair.html",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "the head-run figure '7 passed in 1.90s' is the gate at 713780ca27 (scoped-gate-1794992204586208097.log), while the manifest's own gate receipt scoped-gate-1794993470012358321.log at the reviewed head records '7 passed in 2.05s', and the arm summaries '58 passed in 35.45s'/'35.46s' come from earlier arm runs whose manifest-cited logs read 36.47s and 36.85s, so the page's figures do not reconcile with the receipts it points at and the sentence at line 61 claiming the receipt names the revision the figure was measured at is false."
+    },
+    {
+      "file": "tests/test_an_unchanged_run_needs_no_suite_pair.py",
+      "line": "192",
+      "severity": "non-blocking",
+      "text": "assert suite_delta[\"suite_command\"] == \"pytest -q\" compares the receipt against the --gate-command value the test itself passes to the CLI, so the two sides move together and it can only catch a failure to persist that value; it is pre-existing and unchanged by this diff, but it is the one round-trip assertion in the file."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_an_unchanged_run_needs_no_suite_pair.py:207 asserts the commitless guard's own head-and-base message against the sha git reports, so removing _require_worktree_at_its_base in reckon/crew/promotion_evidence.py reddens it, and the _receipt accessor at line 167 raises KeyError if the compact reply loses record_path; the suite_command round-trip at line 192 is weak but pre-existing.",
+    "evidence": "scoped-gate-1794993470012358321.log records 7 passed and EXIT=0 at 11b86bb7906f, negative-control-unchanged-run-base.log records 6 failed and EXIT=1 over base blob a17b42937c1a827af9fa27b14ddcae1170a0939a, and both arm logs record 58 passed with EXIT=0 and empty failure lists; the manifest records no ruff run, so I checked the changed path myself and both the base and head copies report 'All checks passed!' with no format change.",
+    "fit": "the helper sits beside _complete at tests/test_an_unchanged_run_needs_no_suite_pair.py:167 in the same untyped local-helper style, and the fragment keeps the existing section/pre-id convention; the one formatting oddity is the unindented <tr> at line 103 of the fragment.",
+    "goal_fidelity": "tests/test_an_unchanged_run_needs_no_suite_pair.py:207 reads the refusal detail from the persisted receipt and all seven ids pass at 11b86bb7906f; the file is green without deleting an assertion, and the two moved-worktree cases assert the stricter commitless-guard rule that now fires first.",
+    "reuse": "no owner for reading a completion receipt exists in the repository: a search over tests/helpers/ and tests/*.py finds only 27 inline json.loads(Path(json.loads(result.output)[\"record_path\"]).read_text()) expressions and no shared reader, so _receipt replaces six of those and forks no capability.",
+    "scope_discipline": "the diff 3006761c5a82..11b86bb7906f touches only tests/test_an_unchanged_run_needs_no_suite_pair.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unchanged-run-needs-no-suite-pair.html, both inside the node's declared write paths, with no product, plan or state file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_an_unchanged_run_needs_no_suite_pair.py pass in full on the primary branch; the landed file at 11b86bb7906f reads each refusal through the receipt and all seven ids pass in scoped-gate-1794993470012358321.log.\nVERDICT done_when: the done_when asks for a head run as an all_debug job with SLURM_JOB_ID unset, a named verdict per cause, no assertion deleted or weakened, arms recorded as inline JSON with full revisions, a base run with its failing ids beside it, and clean ruff on the changed paths; scoped-gate-1794993470012358321.log (7 passed, EXIT=0), negative-control-unchanged-run-base.log (6 failed, 1 passed, EXIT=1), the two arm JSONs and the fragment carry all but ruff, which the manifest omits and I measured clean myself on both the base and head copies.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the diff 3006761c5a82..11b86bb7906f touches only tests/test_an_unchanged_run_needs_no_suite_pair.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unchanged-run-needs-no-suite-pair.html, both inside them.\nVERDICT manifest: read whole; it declares status complete, four full commit ids, the scoped gate command and log path, both arms as inline JSON with 40-character revisions and empty failure lists, the base-case negative control, and an outside_scope note on the srun notice that prefixes every fenced worker's log.\nVERDICT diff: read commit by commit; 713780ca27 rewrites six stale assertions onto the record_path receipt, d26c79b243 adds the 121-line evidence fragment, 411becb402 moves figure revisions into the receipts, and 11b86bb7906f prefixes the figure anchors; no product file changed and no test function was removed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_an_unchanged_run_needs_no_suite_pair.py:207 reads the refusal detail from the receipt and all seven ids pass at 11b86bb7906f in scoped-gate-1794993470012358321.log.\nSCORE evidence: 17\nJUSTIFICATION evidence: scoped-gate-1794993470012358321.log records 7 passed and EXIT=0 at the reviewed head, negative-control-unchanged-run-base.log records 6 failed and EXIT=1 over the base blob, both arm logs record 58 passed with EXIT=0, and the done_when's ruff item is absent from the manifest though the changed path is clean when measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 3006761c5a82..11b86bb7906f touches exactly the two declared paths tests/test_an_unchanged_run_needs_no_suite_pair.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unchanged-run-needs-no-suite-pair.html.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_unchanged_run_needs_no_suite_pair.py:207 asserts the commitless guard's own message against the sha git reports, so restoring the removed guard in reckon/crew/promotion_evidence.py reddens it, while line 192's suite_command check is a round-trip over the test's own input.\nSCORE fit: 18\nJUSTIFICATION fit: the _receipt helper at tests/test_an_unchanged_run_needs_no_suite_pair.py:167 matches the surrounding untyped local-helper style, and the fragment keeps the sibling section and prefixed-id convention.\nSCORE reuse: 20\nJUSTIFICATION reuse: the page adds one module-local _receipt at tests/test_an_unchanged_run_needs_no_suite_pair.py:167, and a capability search over tests/helpers/ and tests/*.py found 27 inline record_path readers and no shared owner to extend.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-unchanged-run-needs-no-suite-pair.html:55 non-blocking: the head figure '7 passed in 1.90s' and the arm summaries 35.45s/35.46s are earlier runs than the manifest-cited receipts at the reviewed head (2.05s, 36.47s, 36.85s), so the page does not reconcile with the logs it points at.\nFINDING tests/test_an_unchanged_run_needs_no_suite_pair.py:192 non-blocking: suite_command is asserted equal to the --gate-command the test itself passed in, a round-trip that cannot fail on any code change except a failure to persist it; pre-existing and unchanged by this diff.",
+  "review_run_id": "r-20261118T093424773582-review-of-qwnw-red-file-an-unchanged-run-needs-no-suite-pair-11b86bb7906f",
+  "reviewed_base_sha": "3006761c5a82f33fd3ca146373231e809ac00a46",
+  "reviewed_head_sha": "11b86bb7906f9688218e38070a5ecc7a680bae2b",
+  "reviewed_run_id": "r-20261118T054054201070-qwnw-red-file-an-unchanged-run-needs-no-suite-pair",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:51:26.809167+00:00",
+  "total": 111
+}

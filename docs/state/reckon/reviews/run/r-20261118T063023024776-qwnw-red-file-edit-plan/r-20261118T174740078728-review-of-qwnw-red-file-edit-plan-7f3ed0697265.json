@@ -1,0 +1,159 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "assert result[\"error\"] == \"op_error\"",
+      "fails_if": "The whole-map normalisation at reckon/_store.py:3965 stops refusing before the schema pass, so the refusal reads schema_validation again; that is the pre-repair state the base arm records at fb3ec9a1 and that the primary branch's copy of this file still reproduces (AssertionError: assert 'op_error' == 'schema_validation' at tests/test_edit_plan.py:177).",
+      "file": "tests/test_edit_plan.py",
+      "line": 177,
+      "test": "test_set_section_declarations_rejects_unknown_classification"
+    },
+    {
+      "assertion": "assert result[\"detail\"] == (\"section declaration must be one of ['implementable', 'deferred', 'descoped', 'done']; got 'queued'\") \u2014 at :178-181",
+      "fails_if": "The OpError message at reckon/_store.py:3986-3988 loses its accepted-vocabulary framing or its value clause, or the wording changes; the expectation is a literal rather than a variable the test passed in, though its final clause necessarily carries the 'queued' value the test supplied, so it guards the product's rendering and not the classification rule itself.",
+      "file": "tests/test_edit_plan.py",
+      "line": 178,
+      "test": "test_set_section_declarations_rejects_unknown_classification"
+    },
+    {
+      "assertion": "assert result[\"refused_op_index\"] == 0",
+      "fails_if": "reckon/mcp_edit_plan.py:1989 stops copying e.op_index onto the response, or the whole-map OpError stops being raised with an index (reckon/_store.py:5542), in which case the key is absent and the subscript raises.",
+      "file": "tests/test_edit_plan.py",
+      "line": 182,
+      "test": "test_set_section_declarations_rejects_unknown_classification"
+    }
+  ],
+  "assertion_independence": "No assertion compares a value against the same variable the test passed in: line 177 names the product's error kind, line 182 the refusal index, and the detail literal at 178-181 is product-authored with only its final clause echoing the supplied value. Standing down the whole-map normalisation at reckon/_store.py:3965 reddens line 177, which the base arm shows.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/_store.py:3965-3988",
+    "reckon/mcp_edit_plan.py:1540",
+    "reckon/mcp_edit_plan.py:1989",
+    "reckon/mcp.py:225",
+    "reckon/crew/queue_landing.py:1595"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-18T17:50:02Z",
+  "evidence_limits": [
+    "The gate, the base arm and both suite arms were read from the logs the source manifest cites rather than re-run; the one exception is the single case the gate names, run from an archive of the reviewed head under the run scratch and from the primary branch's copy at 64c6a88bd2, and both results agree with the recorded arms.",
+    "No partition receipt exists: every *.log.scheduler beside the four arms is 0 bytes, each log's first line is reckon/nested_launch.py:733's fenced-nested-srun message, and attempt-1-worker.json shows the worker is an srun step of job 1319171, so the all_debug attribution is inferred rather than evidenced.",
+    "The fragment's Measured table cites the 4eaa8308cc arms (scoped-gate-1795012947873099564.log, baseline_suite-1795013125256764727.log, after_suite-1795013168335995218.log) while the manifest records the later pair at fb3ec9a1 and 7f3ed069; all six logs were opened and all are green.",
+    "The suite arm covers only tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py; the node changed no product module, so that pair is the reported population rather than an importer census.",
+    "The record at the canonical path was replaced: the copy delivered there by review run r-20261118T150559576351 was not valid JSON (an invalid \\escape at line 88), so it could not be read by the promotion or manifest checks; it is preserved beside this record as r-20261118T063023024776-qwnw-red-file-edit-plan.json.asdelivered. Both delivered paths carry this same text."
+  ],
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_edit_plan.py",
+      "line": "178",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected detail re-spells the accepted section-declaration vocabulary inline instead of deriving it from SECTION_DECLARATION_ENUM, which reckon/_schema.py:114 owns and reckon/_store.py:3987 renders into the numbered list; it is the second hardcoded copy (the first is tests/test_edit_plan_section_writes.py:182), so a legitimate enum change reddens two cases with no behaviour regression. Fold a derived expectation into this node."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-edit-plan.html",
+      "line": "79",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says both file arms and both suite arms 'ran as their own all_debug jobs' with 'the caller's scheduler variables stripped', but the first line of each of those four logs is reckon/nested_launch.py:733's fenced-nested-srun shim message, attempt-1-worker.json shows the worker itself is an srun step of job 1319171, and every *.log.scheduler receipt beside them is 0 bytes; they ran as steps inside the node's existing all_debug allocation and no receipt records a partition, so the claim should read 'steps on all_debug'. Fold a wording repair into this node."
+    }
+  ],
+  "gate_evidence": {
+    "base_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_edit_plan.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_edit_plan.py::test_set_section_declarations_rejects_unknown_classification"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063023024776-qwnw-red-file-edit-plan/negative-control-1795013069579892337.log",
+      "revision": "fb3ec9a1a4047cb40052991176938311bb70a449"
+    },
+    "head_arm": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_edit_plan.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063023024776-qwnw-red-file-edit-plan/scoped-gate-1795013818299013608.log",
+      "revision": "7f3ed06972659d70c117738baef70d2710604349"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read both commits against the base fb3ec9a1: 4eaa8308cc replaces the schema_validation expectation at tests/test_edit_plan.py:177 with op_error, the exact detail string and refused_op_index 0, leaving the no-write and unchanged-version assertions intact, and 7f3ed069 adds the 106-line evidence fragment; nothing else in the tree changed.",
+    "done_when": "The source done_when (prompt.txt:404) asks for a full pass at head as an all_debug job with SLURM_JOB_ID unset, the base run first with a verdict per cause, no assertion deleted or weakened, an importer arm adding no failure with inline JSON carrying full revisions, a base-run negative control logged in the named fragment, and clean ruff on the changed paths; the manifest records each of those, but the all_debug attribution rests on nested srun steps and no partition receipt.",
+    "goal": "The source goal is that tests/test_edit_plan.py passes in full on the primary branch; at the reviewed head 7f3ed069 the file reads 79 passed with EXIT=0 (scoped-gate-1795013818299013608.log:2 '# revision: 7f3ed06972659d70c117738baef70d2710604349'), and the one change that makes it pass is 4eaa8308cc at tests/test_edit_plan.py:176-184.",
+    "manifest": "Read the source manifest.md; it states status complete, commits 4eaa8308cc and 7f3ed069, the gate as 79 passed EXIT=0 at 7f3ed069 and the negative control as 1 failed/78 passed EXIT=1 at fb3ec9a1, and carries baseline_suite and after_suite as inline JSON at full 40-character revisions with failure_ids empty on both sides.",
+    "write_paths": "The source node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its fragment path; the delivered diff fb3ec9a1..7f3ed069 touches only tests/test_edit_plan.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-edit-plan.html, both inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_edit_plan.py:177 reddens if the whole-map normalisation at reckon/_store.py:3965 falls back to the schema pass, which is exactly the state the base arm records and the primary branch's copy still reproduces, and :182 reddens if the OpError stops carrying op_index; the detail literal at :178-181 echoes the supplied value only in its final clause.",
+    "evidence": "The gate measures the done_when's file pass and both arms are logged with revision headers and bare EXIT= lines, but the 'as an all_debug job with SLURM_JOB_ID unset' half is inferred from a nested srun and no receipt confirms it, so the claim is not fully evidenced.",
+    "fit": "The re-pinned case mirrors the refusal shape the dotted form already pins at tests/test_edit_plan_section_writes.py:178-190, and the fragment carries the meta tags the evidence writer emits; no name or comment in the file carries a plan or ticket identifier.",
+    "goal_fidelity": "The file passes in full at the reviewed head (79 passed, EXIT=0 in scoped-gate-1795013818299013608.log at 7f3ed069), and an independent run of the single case the gate names from an archive of that head passed, so tests/test_edit_plan.py:177-183 delivers the goal.",
+    "reuse": "The diff adds no function, class or module, so nothing can fork an owner; a capability search over reckon/ found the owner at reckon/_store.py:3965-3988 with its enum in reckon/_schema.py:114, plus the collective refusal in reckon/mcp_edit_plan.py:1978-1991.",
+    "scope_discipline": "Both paths in fb3ec9a1..7f3ed069 are inside the declared tests and docs/evidence/fragments/queued-work-needs-no-workaround write paths, and no product file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_edit_plan.py passes in full; it reads 79 passed EXIT=0 at 7f3ed069 (scoped-gate-1795013818299013608.log) and the change is tests/test_edit_plan.py:176-184.\nVERDICT done_when: the done_when asks for a head pass on all_debug with SLURM_JOB_ID unset plus the base run, a cause verdict, no weakened assertion, an importer arm and a logged negative control; the manifest records each and the logs carry their revisions and EXIT lines, but the all_debug attribution is inferred from nested srun steps rather than evidenced by a receipt.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff is inside them.\nVERDICT manifest: read; it reports status complete, 79 passed EXIT=0 at 7f3ed069, 1 failed/78 passed EXIT=1 at fb3ec9a1, and a 58-passed suite pair at both revisions.\nVERDICT diff: read both commits against fb3ec9a1; two files changed, a test expectation re-pinned and an evidence fragment added, both inside the declared scope.\nCALL_SITES: reckon/_store.py:3965-3988, reckon/mcp_edit_plan.py:1540, reckon/mcp_edit_plan.py:1989, reckon/mcp.py:225, reckon/crew/queue_landing.py:1595\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_edit_plan.py reads 79 passed EXIT=0 at 7f3ed069 in scoped-gate-1795013818299013608.log and the change at :176-184 is what makes the case pass.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head and base arms are logged with revision headers and EXIT lines, but the all_debug-job half of the done_when has no receipt and rests on nested srun steps.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff fb3ec9a1..7f3ed069 touches only tests/test_edit_plan.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-edit-plan.html, both declared.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_edit_plan.py:177 reddens if reckon/_store.py:3965 stops normalising the whole map, the state the base arm records.\nSCORE fit: 18\nJUSTIFICATION fit: the case mirrors tests/test_edit_plan_section_writes.py:178-190 and no name carries a plan identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added, and the capability's owner at reckon/_store.py:3965-3988 is what the test exercises.\nFINDING tests/test_edit_plan.py:178 non-blocking: the expected detail hardcodes the vocabulary SECTION_DECLARATION_ENUM owns at reckon/_schema.py:114, the second such copy, so an enum change reddens two cases.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-edit-plan.html:79 non-blocking: the arms are described as their own all_debug jobs, but the logs show nested srun steps and every scheduler receipt is empty.",
+  "reuse_search": {
+    "capabilities": [
+      "whole-map section_declarations normalisation and refusal",
+      "section declaration vocabulary",
+      "OpError to refusal-envelope rendering"
+    ],
+    "judgement": "No definition is added, so nothing can fork an owner; the one duplication the diff introduces is a test-side copy of the enum's rendering, reported as a non-blocking finding rather than scored against reuse.",
+    "owners_opened": [
+      "reckon/_store.py:3965-3988",
+      "reckon/mcp_edit_plan.py:1978-1991",
+      "reckon/_schema.py:114 SECTION_DECLARATION_ENUM",
+      "tests/test_edit_plan_section_writes.py:170-192"
+    ]
+  },
+  "review_run_id": "r-20261118T174740078728-review-of-qwnw-red-file-edit-plan-7f3ed0697265",
+  "reviewed_base_sha": "fb3ec9a1a4047cb40052991176938311bb70a449",
+  "reviewed_head_sha": "7f3ed06972659d70c117738baef70d2710604349",
+  "reviewed_run_id": "r-20261118T063023024776-qwnw-red-file-edit-plan",
+  "reviewed_worker_commits": [
+    "4eaa8308cc9dc11441e813714cfe0f9338957c39",
+    "7f3ed06972659d70c117738baef70d2710604349"
+  ],
+  "scope_provenance": "Base fb3ec9a1 is the source manifest's orientation_base_sha; the two commits on top of it (4eaa8308cc and 7f3ed069) are exactly the worker's change, and the primary branch's copy of tests/test_edit_plan.py is byte-identical to the base version (git diff --stat fb3ec9a1 HEAD -- tests/test_edit_plan.py is empty).",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "assertion_failure_ids": [],
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063023024776-qwnw-red-file-edit-plan/after_suite-1795013825139758790.log",
+      "revision": "7f3ed06972659d70c117738baef70d2710604349"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063023024776-qwnw-red-file-edit-plan/baseline_suite-1795013749917518181.log",
+      "revision": "fb3ec9a1a4047cb40052991176938311bb70a449"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T18:13:30.288474+00:00",
+  "total": 111
+}

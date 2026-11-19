@@ -1283,6 +1283,7 @@ def garbage_collect(
             now=now,
             live_ids=live_ids,
         ) + _run_report_trees(
+            repo_root=repo_root,
             project=project,
             apply=apply,
             now=now,

@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3861",
+    "reckon/crew/promotion.py:958"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:13:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: The table's head rows name c4e92cde for both \"the named file, head\" (line 34) and \"the declared suite arm, after\" (line 40) while the manifest's head logs target-test-head.log and after_suite-arm.log carry a2d09ca8, so a reader auditing the landing against its own head must reconcile two \"head\" revisions the table does not distinguish, even though both runs pass."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062544498000-qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion/target-test-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The gate log's header records revision, host, tree, command, module and cwd but neither the partition nor SLURM_JOB_ID, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" rests on the manifest's artifacts sentence and the run's command history rather than on the log it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read all three commits against base 2f00851c: c4e92cde adds the single \"--wait\" line to the fixture's argv, 40aa8732 adds the 61-line evidence fragment, and a2d09ca8 corrects the mutation control's quoted wait from 30.2s to 30.1s to match mutation-control.log; nothing else is in the two-path range.",
+    "done_when": "The done_when asks for the named file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a base arm, and an armed-suite pair; the manifest records target-test-head.log reading \"2 passed in 1.99s\" with EXIT=0 at a2d09ca8, target-test-base.log reading \"2 failed in 20.65s\" with EXIT=1 at 2f00851c, and baseline_suite-arm.log and after_suite-arm.log each reading \"58 passed\" with EXIT=0.",
+    "goal": "The source node's goal in dispatch-detail.json is \"Make tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py pass in full on the primary branch\"; the landed change adds \"--wait\" to that file's lone crew-complete invocation at tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176, and the head log records both cases passing.",
+    "manifest": "Read; it names three commits and two changed paths, cites the gate log, the base arm, both suite arms and the mutation control with revisions, but its test_logs name a2d09ca8 while the fragment's own head rows at :34 and :40 name c4e92cde.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround with the fragment path named, and the delivered range 2f00851c..a2d09ca8 changes only tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py and that fragment, so every changed path is inside the fence."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, but reinstating the regression is removing the one \"--wait\" line, which is exactly the tree target-test-base.log records as 2 failed with EXIT=1, and the mutation control fails both cases at 30.4s and 30.1s, so the file still reaches the deferral it asserts rather than passing because nothing observable slipped.",
+    "evidence": "target-test-head.log and target-test-base.log carry the full base/head revisions and EXIT lines and both suite arms read 58 passed, but the fragment's head rows at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion.html:34 and :40 name c4e92cde rather than the reviewed head, and no gate-log header names the all_debug partition the done_when requires.",
+    "fit": "the added flag sits in the existing argv list of _promote at tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176 among its neighbours, and the fragment follows the single-section shape of the neighbouring evidence fragments.",
+    "goal_fidelity": "tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176 now passes \"--wait\", so the fixture carries out the promotion it measures, and target-test-head.log records 2 passed with EXIT=0 at the delivered head.",
+    "reuse": "the change adds no definition, reusing the documented \"--wait\" option owned by reckon/crew_run_commands.py:3861 and the fixture's existing helpers; a capability search over tests/ and reckon/crew/ found tests/helpers/git.py's git helper as the only other promotion-driving fixture machinery, which this file already imports.",
+    "scope_discipline": "both changed paths, tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176 and the evidence fragment, lie inside the declared write paths, and no product line, plan or shared state file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal in dispatch-detail.json is \"Make tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py pass in full on the primary branch\"; the landed change adds \"--wait\" to that file's lone crew-complete invocation at tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176, and the head log records both cases passing.\nVERDICT done_when: The done_when asks for the named file passing in full at head as an all_debug job with SLURM_JOB_ID unset, a base arm, and an armed-suite pair; the manifest records target-test-head.log reading \"2 passed in 1.99s\" with EXIT=0 at a2d09ca8, target-test-base.log reading \"2 failed in 20.65s\" with EXIT=1 at 2f00851c, and baseline_suite-arm.log and after_suite-arm.log each reading \"58 passed\" with EXIT=0.\nVERDICT write_paths: The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround with the fragment path named, and the delivered range 2f00851c..a2d09ca8 changes only tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py and that fragment, so every changed path is inside the fence.\nVERDICT manifest: Read; it names three commits and two changed paths, cites the gate log, the base arm, both suite arms and the mutation control with revisions, but its test_logs name a2d09ca8 while the fragment's own head rows at :34 and :40 name c4e92cde.\nVERDICT diff: Read all three commits against base 2f00851c: c4e92cde adds the single \"--wait\" line to the fixture's argv, 40aa8732 adds the 61-line evidence fragment, and a2d09ca8 corrects the mutation control's quoted wait from 30.2s to 30.1s to match mutation-control.log; nothing else is in the two-path range.\nCALL_SITES: reckon/crew_run_commands.py:3861, reckon/crew/promotion.py:958\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176 now passes \"--wait\", so the fixture carries out the promotion it measures, and target-test-head.log records 2 passed with EXIT=0 at the delivered head.\nSCORE evidence: 16\nJUSTIFICATION evidence: target-test-head.log and target-test-base.log carry the full base/head revisions and EXIT lines and both suite arms read 58 passed, but the fragment's head rows at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion.html:34 and :40 name c4e92cde rather than the reviewed head, and no gate-log header names the all_debug partition the done_when requires.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both changed paths, tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176 and the evidence fragment, lie inside the declared write paths, and no product line, plan or shared state file was touched.\nSCORE durability: 18\nJUSTIFICATION durability: the diff adds no assertion, but reinstating the regression is removing the one \"--wait\" line, which is exactly the tree target-test-base.log records as 2 failed with EXIT=1, and the mutation control fails both cases at 30.4s and 30.1s, so the file still reaches the deferral it asserts rather than passing because nothing observable slipped.\nSCORE fit: 18\nJUSTIFICATION fit: the added flag sits in the existing argv list of _promote at tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:176 among its neighbours, and the fragment follows the single-section shape of the neighbouring evidence fragments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition, reusing the documented \"--wait\" option owned by reckon/crew_run_commands.py:3861 and the fixture's existing helpers; a capability search over tests/ and reckon/crew/ found tests/helpers/git.py's git helper as the only other promotion-driving fixture machinery, which this file already imports.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion.html:34 non-blocking: The table's head rows name c4e92cde for both \"the named file, head\" (line 34) and \"the declared suite arm, after\" (line 40) while the manifest's head logs target-test-head.log and after_suite-arm.log carry a2d09ca8, so a reader auditing the landing against its own head must reconcile two \"head\" revisions the table does not distinguish, even though both runs pass.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062544498000-qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion/target-test-head.log:1 non-blocking: The gate log's header records revision, host, tree, command, module and cwd but neither the partition nor SLURM_JOB_ID, so the done_when's \"as a job on all_debug with SLURM_JOB_ID unset\" rests on the manifest's artifacts sentence and the run's command history rather than on the log it cites.",
+  "review_run_id": "r-20261118T112334529185-review-of-qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion-a2d09ca82f3b",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "a2d09ca82f3b20bfd8fd75606fa83034044ab783",
+  "reviewed_run_id": "r-20261118T062544498000-qwnw-red-file-a-promotion-does-not-wait-for-its-worktree-copy-deletion",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:33:19.238137+00:00",
+  "total": 110
+}

@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "conditions_for_failure": "Fails whenever the brief's largest_reach orders by ref alone (a ref-only sort opens with plan-d#s1 at reach zero), drops the unlocks figure or ranks fewer than three entries; the source manifest records that mutation reddening exactly this id and the sort restored before the same file went green.",
+      "independence": "The expected list is written out from the fixture's own wiring, so it is independent of the sort it checks; the payload-side `ranked` values (kind/unlocks) come from the fixture, not from the call under test.",
+      "limit": "It cannot tell a wrong reach computation from a wrong ordering when both would produce the same triple.",
+      "location": "tests/test_one_brief_an_agent_can_act_on.py:466"
+    },
+    {
+      "conditions_for_failure": "Fails if the fixture ceases to hold three ready sections, which is what reverting the added plan-f block does; it is a fixture precondition rather than a product guard.",
+      "independence": "The literal 3 is the fixture's own fact and is compared against a payload-derived list, not against a value the test passed to the code under test.",
+      "limit": "It would still pass if readiness wrongly admitted a section carrying a run, provided three other sections remained ready; the reach expectation at :466 is what catches that.",
+      "location": "tests/test_one_brief_an_agent_can_act_on.py:462"
+    },
+    {
+      "conditions_for_failure": "The ready-sections equality fails if the brief filters, reorders or renames the payload's own rows; both sides derive from the payload the brief is a composition of, which is the property under test.",
+      "independence": "The left side is produced by project_brief and the right by the payload read separately, so a brief that recomputed the figure would diverge.",
+      "limit": "It cannot fail for a defect where the brief and the payload agree because the payload itself is wrong; the payload's correctness is the roadmap's node, not this file's.",
+      "location": "tests/test_one_brief_an_agent_can_act_on.py:441-456"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T15:19:48Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-brief-an-agent-can-act-on.html",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered head-arm rows name revision 0c3ac2aa7cf7ee1d646101df782931b13dd296bf for both the named file (:40) and the declared suite (:46), while the recorded gate logs' own first lines name f080b2a315 (logs/one-brief-head-arm.log and after_suite-1795012118482620410.log, 11 passed and 58 passed, EXIT=0); the table's caption claims each arm is a log whose first lines name the revision, so a reader comparing the fragment to the logs it summarizes finds two revisions for one arm. The code under test is identical at both revisions, so this is a record-accuracy defect, not a result defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Examined: no production module can reach this change \u2014 the diff is a test file and an evidence document. The test drives reckon/project_brief.py:project_brief and reckon/mcp.py:_roadmap, both unchanged by the diff, so there is no production call site to verify.",
+    "diff": "Read both commits against base 23b901694b4bfec73d95be3a082d4c336d9a4101: 0c3ac2aa7cf7ee1d646101df782931b13dd296bf adds RELEASING_AGAIN = \"plan-f\" and its fixture block and rewrites EXPECTED_REACH (17 insertions, 5 deletions), and f080b2a3153108c30873657bc42dc808a8dd8fb6 adds the 68-line evidence fragment; no assertion is deleted or weakened.",
+    "done_when": "The node.done_when requires the named file green as an all_debug job with SLURM_JOB_ID unset, the base arm with its failing ids, and an arm over the importing files: logs/one-brief-head-arm.log reads '11 passed' with EXIT=0, logs/one-brief-base-arm.log reads '1 failed, 10 passed' with id test_every_figure_in_the_brief_equals_its_roadmap_field, and baseline_suite-1795012044341488698.log and after_suite-1795012118482620410.log each read '58 passed' at their own revisions.",
+    "goal": "dispatch-detail.json's node.goal for this run is 'Make tests/test_one_brief_an_agent_can_act_on.py pass in full on the primary branch'; at f080b2a315, the reviewed head, the file reads 11 passed in the run's own head log and in a scratch re-run I made from the reviewed revision.",
+    "manifest": "Read; it states status complete, one cause with the verdict 'test wrong', commits 0c3ac2aa7cf7ee1d646101df782931b13dd296bf and f080b2a3153108c30873657bc42dc808a8dd8fb6, the head/base arms with log paths, both suite arms as completed zero-failure JSON, and negative_control_log naming the base-arm log.",
+    "write_paths": "dispatch-detail.json's node.write_paths lists reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 23b901694b4bfec73d95be3a082d4c336d9a4101..f080b2a3153108c30873657bc42dc808a8dd8fb6 contains only tests/test_one_brief_an_agent_can_act_on.py and the fragment inside that directory."
+  },
+  "justifications": {
+    "durability": "tests/test_one_brief_an_agent_can_act_on.py:466 fails if the brief's reach ordering is replaced by a ref-only sort, as the source manifest records, and it also reddens if readiness wrongly admits the run-carrying head; the count at :462 is only a fixture precondition.",
+    "evidence": "The head log at f080b2a315 and my own scratch run of the named file both read 11 passed with EXIT=0, the base arm reads 1 failed/10 passed with the id, and both suite arms are completed zero-failure runs; the fragment's revision column at :40 and :46 names 0c3ac2aa instead of the f080b2a315 its cited logs carry.",
+    "fit": "tests/test_one_brief_an_agent_can_act_on.py:42 follows the file's RELEASING/INDEPENDENT constant idiom and the added plan reuses the existing _write_plan at :97 and the same section_depends_on shape as plan-e, though the module docstring's 'three-plan chain' is now six plans.",
+    "goal_fidelity": "tests/test_one_brief_an_agent_can_act_on.py:168-182 now writes a section that the payload reports ready, so the named file passes in full (11 passed) at the reviewed head rather than failing 1 of 11 at the base.",
+    "reuse": "No function, class or module is added; the fixture block calls the file's existing _write_plan owner at tests/test_one_brief_an_agent_can_act_on.py:97; the evidence fragment follows the sibling fragments under docs/evidence/fragments/queued-work-needs-no-workaround/ rather than introducing a new record form.",
+    "scope_discipline": "Every path in 23b901694b4bfec73d95be3a082d4c336d9a4101..f080b2a3153108c30873657bc42dc808a8dd8fb6 is inside the declared test and evidence-fragment paths, and no product file is modified at all."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json's node.goal for this run is 'Make tests/test_one_brief_an_agent_can_act_on.py pass in full on the primary branch'; at f080b2a315, the reviewed head, the file reads 11 passed in the run's own head log and in a scratch re-run I made from the reviewed revision.\nVERDICT done_when: the node.done_when requires the named file green as an all_debug job with SLURM_JOB_ID unset, the base arm with its failing ids, and an arm over the importing files: logs/one-brief-head-arm.log reads '11 passed' with EXIT=0, logs/one-brief-base-arm.log reads '1 failed, 10 passed' with id test_every_figure_in_the_brief_equals_its_roadmap_field, and baseline_suite-1795012044341488698.log and after_suite-1795012118482620410.log each read '58 passed' at their own revisions.\nVERDICT write_paths: dispatch-detail.json's node.write_paths lists reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 23b901694b4bfec73d95be3a082d4c336d9a4101..f080b2a3153108c30873657bc42dc808a8dd8fb6 contains only tests/test_one_brief_an_agent_can_act_on.py and the fragment inside that directory.\nVERDICT manifest: read; it states status complete, one cause with the verdict 'test wrong', commits 0c3ac2aa7cf7ee1d646101df782931b13dd296bf and f080b2a3153108c30873657bc42dc808a8dd8fb6, the head/base arms with log paths, both suite arms as completed zero-failure JSON, and negative_control_log naming the source run's base-arm log.\nVERDICT diff: read both commits against base 23b901694b4bfec73d95be3a082d4c336d9a4101: 0c3ac2aa7cf7ee1d646101df782931b13dd296bf adds RELEASING_AGAIN = \"plan-f\" and its fixture block and rewrites EXPECTED_REACH (17 insertions, 5 deletions), and f080b2a3153108c30873657bc42dc808a8dd8fb6 adds the 68-line evidence fragment; no assertion is deleted or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_one_brief_an_agent_can_act_on.py:168-182 now writes a section the payload reports ready, so the named file passes in full (11 passed) at the reviewed head rather than failing 1 of 11 at the base.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head log at f080b2a315 and my own scratch run of the named file both read 11 passed with EXIT=0, the base arm reads 1 failed/10 passed with the id, and both suite arms are completed zero-failure runs; the fragment's revision column at :40 and :46 names 0c3ac2aa instead of the f080b2a315 its cited logs carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 23b901694b4bfec73d95be3a082d4c336d9a4101..f080b2a3153108c30873657bc42dc808a8dd8fb6 is inside the declared test and evidence-fragment paths, and no product file is modified at all.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_brief_an_agent_can_act_on.py:466 fails if the brief's reach ordering is replaced by a ref-only sort, as the source manifest records, and it also reddens if readiness wrongly admits the run-carrying head; the count at :462 is only a fixture precondition.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_one_brief_an_agent_can_act_on.py:42 follows the file's RELEASING/INDEPENDENT constant idiom and the added plan reuses the existing _write_plan at :97 and the same section_depends_on shape as plan-e, though the module docstring's 'three-plan chain' is now six plans.\nSCORE reuse: 20\nJUSTIFICATION reuse: no function, class or module is added; the fixture block calls the file's existing _write_plan owner at tests/test_one_brief_an_agent_can_act_on.py:97; the evidence fragment follows the sibling fragments under docs/evidence/fragments/queued-work-needs-no-workaround/ rather than introducing a new record form.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-one-brief-an-agent-can-act-on.html:40 non-blocking: the delivered head-arm rows name revision 0c3ac2aa7cf7ee1d646101df782931b13dd296bf for both the named file (:40) and the declared suite (:46), while the recorded gate logs' own first lines name f080b2a315 (logs/one-brief-head-arm.log and after_suite-1795012118482620410.log, 11 passed and 58 passed, EXIT=0); the table's caption claims each arm is a log whose first lines name the revision, so a reader comparing the fragment to the logs it summarizes finds two revisions for one arm, and the code under test is identical at both.",
+  "review_method": "Read-only source and recorded-log review; re-ran only the single test file the gate names, in a scratch extraction of the reviewed head under $TMPDIR. No mutation experiment was performed; the source manifest records one.",
+  "review_run_id": "r-20261118T143618936372-review-of-qwnw-red-file-one-brief-an-agent-can-act-on-f080b2a31531",
+  "reviewed_base_sha": "23b901694b4bfec73d95be3a082d4c336d9a4101",
+  "reviewed_head_sha": "f080b2a3153108c30873657bc42dc808a8dd8fb6",
+  "reviewed_run_id": "r-20261118T062913510841-qwnw-red-file-one-brief-an-agent-can-act-on",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "0c3ac2aa7cf7ee1d646101df782931b13dd296bf",
+    "f080b2a3153108c30873657bc42dc808a8dd8fb6"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062913510841-qwnw-red-file-one-brief-an-agent-can-act-on/after_suite-1795012118482620410.log",
+      "observed_summary": "58 passed in 36.41s",
+      "revision": "f080b2a3153108c30873657bc42dc808a8dd8fb6"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062913510841-qwnw-red-file-one-brief-an-agent-can-act-on/baseline_suite-1795012044341488698.log",
+      "observed_summary": "58 passed in 39.29s",
+      "revision": "23b901694b4bfec73d95be3a082d4c336d9a4101"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T15:53:47.748577+00:00",
+  "total": 111
+}

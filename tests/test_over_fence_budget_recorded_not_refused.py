@@ -1,4 +1,4 @@
-"""Long budgets remain visible without blocking dispatch or changing routing."""
+"""An over-fence budget is admitted with a stated reason and refused without one."""
 
 from __future__ import annotations
 
@@ -40,14 +40,7 @@ def _assert_record(pointer, reason):
     assert rebuilt.over_fence_reason == reason
 
 
-@pytest.mark.parametrize("reason", ["", REASON])
-def test_dispatch_accepts_and_records_a_budget_past_the_fence(
-    repository: Path, crew_home: Path, monkeypatch, reason: str
-):
-    monkeypatch.setattr(
-        crew_dispatch_commands, "_model_availability_refusal", lambda *a, **k: None
-    )
-    entry = _entry(time_budget=BUDGET)
+def _dispatch_arguments(entry: dict, repository: Path, reason: str) -> list[str]:
     arguments = [
         "crew",
         "dispatch",
@@ -77,21 +70,46 @@ def test_dispatch_accepts_and_records_a_budget_past_the_fence(
     ]
     if reason:
         arguments += ["--over-fence", reason]
-    result = CliRunner().invoke(cli.main, arguments)
+    return arguments
+
+
+def test_dispatch_accepts_and_records_a_budget_past_the_fence(
+    repository: Path, crew_home: Path, monkeypatch
+):
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_model_availability_refusal", lambda *a, **k: None
+    )
+    entry = _entry(time_budget=BUDGET)
+    result = CliRunner().invoke(
+        cli.main, _dispatch_arguments(entry, repository, REASON)
+    )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.stdout)
     assert payload["ok"] is True, payload
     pointer = runs.read_pointer(payload["run_id"])
-    _assert_record(pointer, reason)
+    _assert_record(pointer, REASON)
 
 
-@pytest.mark.parametrize("reason", ["", REASON])
-def test_batch_queues_and_records_a_budget_past_the_fence(
-    repository: Path, crew_home: Path, reason: str
+def test_dispatch_refuses_a_budget_past_the_fence_with_no_reason(
+    repository: Path, crew_home: Path, monkeypatch
 ):
+    """The fence binds: no reason means the node is refused and named."""
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_model_availability_refusal", lambda *a, **k: None
+    )
     entry = _entry(time_budget=BUDGET)
-    if reason:
-        entry["over_fence_reason"] = reason
+    result = CliRunner().invoke(cli.main, _dispatch_arguments(entry, repository, ""))
+    assert result.exit_code != 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is False, payload
+    assert payload["error"] == "not-dispatchable", payload
+    assert "--over-fence" in payload["detail"], payload
+
+
+def test_batch_queues_and_records_a_budget_past_the_fence(
+    repository: Path, crew_home: Path
+):
+    entry = _entry(time_budget=BUDGET, over_fence_reason=REASON)
     result = dispatch_batch.queue_batch(
         [entry],
         session="coordinator-a",
@@ -101,7 +119,24 @@ def test_batch_queues_and_records_a_budget_past_the_fence(
     assert result["ok"] is True, result
     assert result["queued"] == 1, result
     pointer = runs.read_pointer(result["results"][0]["run_id"])
-    _assert_record(pointer, reason)
+    _assert_record(pointer, REASON)
+
+
+def test_batch_refuses_a_budget_past_the_fence_with_no_reason(
+    repository: Path, crew_home: Path
+):
+    entry = _entry(time_budget=BUDGET)
+    result = dispatch_batch.queue_batch(
+        [entry],
+        session="coordinator-a",
+        config_for=lambda _: _config(),
+        repo_root=repository,
+    )
+    assert result["queued"] == 0, result
+    assert result["refused"] == 1, result
+    detail = result["results"][0]["reason"]
+    assert "exceeds the resolved fence 2h" in detail, detail
+    assert "--over-fence" in detail, detail
 
 
 def test_a_budget_note_is_recomputed_when_the_budget_changes(tmp_path):
@@ -114,6 +149,7 @@ def test_a_budget_note_is_recomputed_when_the_budget_changes(tmp_path):
         id="budget",
         manifest_path=str(tmp_path / "manifest.md"),
     )
+    node.over_fence_reason = REASON
     assert validate_node(node, budget_ceiling="2h").ok
     assert node.over_fence_note
     node.time_budget = "45m"

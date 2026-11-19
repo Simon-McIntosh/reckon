@@ -1709,6 +1709,10 @@ class RunStore:
 
         roots = self._ledger_roots()
         changed = {}
+        # A rebuild records its stamp only once the rows it wrote agree with the
+        # ledger: a refused write leaves the store stale, and a stamp taken
+        # before the write would stop the next read from trying again.
+        rebuilt: dict[str, Any] = {}
         stale: set[str] = set()
         for name, root in roots.items():
             if project is not None and name != project:
@@ -1734,11 +1738,13 @@ class RunStore:
             # check comparing the store with itself, so a ledger that moved
             # would never rebuild the rows it outgrew.
             committed = ledger.run_ids(name, root, use_index=False)
-            self._membership_stamps[name] = stamp
             if indexed != committed:
                 data, _version = ledger.load(name, root, use_index=False)
                 changed[name] = data["runs"]
+                rebuilt[name] = stamp
                 stale |= indexed
+            else:
+                self._membership_stamps[name] = stamp
         if not changed:
             return None
         # The payload is the record, so the rows it replaces are named by id
@@ -1748,10 +1754,13 @@ class RunStore:
             for run_id, record in self._indexed_records(include_archive=True).items()
             if run_id not in stale
         }
-        for rows in changed.values():
+        for name, rows in changed.items():
             for row in rows:
                 run_id, payload, detail = _split_durable(row)
-                records[run_id] = {**payload, **detail}
+                # A run file carries no project: the file it sits in is the
+                # project. The answer declares it here because a rebuild whose
+                # write was refused has no column to read it back from.
+                records[run_id] = {"project": name, **payload, **detail}
         try:
             with self._conn:
                 for name, rows in changed.items():
@@ -1829,6 +1838,8 @@ class RunStore:
                 self._path,
                 exc,
             )
+        else:
+            self._membership_stamps.update(rebuilt)
         return records
 
     def records(self) -> dict[str, dict[str, Any]]:
@@ -1855,7 +1866,10 @@ class RunStore:
             record = records.get(run_id)
             if record is None:
                 return None
-            return _durable_record(self._row_projects().get(run_id) or "", record)
+            return _durable_record(
+                self._row_projects().get(run_id) or str(record.get("project") or ""),
+                record,
+            )
         row = self._conn.execute(
             'SELECT "payload", "project" FROM "runs" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
@@ -1909,7 +1923,7 @@ class RunStore:
             return {
                 run_id: _durable_record(project, record)
                 for run_id, record in records.items()
-                if owners.get(run_id) == project
+                if (owners.get(run_id) or record.get("project")) == project
             }
         rows = self._conn.execute(
             'SELECT "run_id", "payload" FROM "runs" WHERE "project" = ?', (project,)

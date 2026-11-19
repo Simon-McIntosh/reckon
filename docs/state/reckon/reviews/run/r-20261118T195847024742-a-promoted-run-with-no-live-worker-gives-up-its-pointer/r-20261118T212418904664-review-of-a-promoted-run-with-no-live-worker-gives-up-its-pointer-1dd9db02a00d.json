@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/station.py:459 -> pending_landing.retire_promoted_pointers",
+    "reckon/crew/queue_landing.py:1935 -> pending_landing.finish_pending_landings",
+    "reckon/crew_run_commands.py:4083 -> pending_landing.finish_pending_landings",
+    "reckon/crew/pending_landing.py:485 -> release_merged_promotions"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T21:27:54Z",
+  "finding_count": 4,
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-promoted-run-with-no-live-worker-gives-up-its-pointer",
+      "recorded_at": "2026-11-18T21:53:48.101121+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-promoted-run-with-no-live-worker-gives-up-its-pointer",
+      "recorded_at": "2026-11-18T21:53:51.270892+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": 1142,
+      "severity": "blocking",
+      "text": "blocking: _promoted_run_worker_is_live collapses an unknown liveness reading into 'not live', so a promoted pointer that names no process, or a placed run whose scheduler cannot be queried, is released and retired by the release decision at :1302; the section states a record naming no process, or a scheduler that cannot be queried, stays in progress and the run is kept, and this is the case whose mis-handling discards live work."
+    },
+    {
+      "file": "tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py",
+      "line": 186,
+      "severity": "blocking",
+      "text": "blocking: the released tuple includes 'stale-turn', whose fixture at :106 names no process at all, so the fixture encodes the defect as expected behaviour and the done_when's kept case 'a later attempt whose liveness cannot be established' is never built; correcting the code as written reddens this assertion."
+    },
+    {
+      "file": "manifest.md",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "non-blocking: the reviewed run's manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer/manifest.md:5 still reads 'status: in-progress' while its checkpoint at :6 says the manifest is the last write, so a reader that gates on the manifest status sees no finished node even though the gate, both arms and the negative control are all recorded; the word 'complete' is the whole repair."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": 1191,
+      "severity": "non-blocking",
+      "text": "non-blocking: _release_measured_pointer duplicates _release_integrated_pointer at :73 instead of extending it with a workspace-refusal and release hook, and the copy already omits finish_landing and promotion._release_waiters_of_the_landed_section; _measured_workspace_refusal at :1161 likewise re-implements the claim and dirty checks of landed_workspace_refusal at :1106, so the two release paths can drift apart; fold into the next node touching reckon/crew/pending_landing.py."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the single commit 1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0 against 0be7b97a81c3d7771f57391a1991460b9cc44d52; two files change by +393/-19, replacing the marked-attempt skip and the stream-based busy check with a process check, and adding a measurement-run release path beside the integrated one.",
+    "done_when": "the done_when names tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py; the manifest records the scoped gate '59 passed' with EXIT=0 and both suite arms, but the released tuple at tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:186 includes the 'stale-turn' pointer whose fixture at :106 records no process, so the fourth kept case the done_when states is neither built nor asserted.",
+    "goal": "the source node's goal is 'Release every promoted run whose recorded worker process is not alive so that its pointer is retired'; reckon/crew/pending_landing.py:1281 removes the marked-attempt skip and :1317 adds the measurement release, but the liveness gate at :1142 releases a run whose liveness cannot be established, which the node's own section forbids.",
+    "manifest": "read; the source manifest reports commit 1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0 with three released and three kept over a temporary crew home, arms at 58 passed (base) and 59 passed (head) with EXIT=0, and a negative control red at the base revision naming the surviving pointers.",
+    "write_paths": "the source node's node.write_paths declares five paths; the delivered diff touches reckon/crew/pending_landing.py and tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py, both inside that list, and no other path."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:203 fails when the marked-pointer skip is restored, but its :186/:203 pair would also fail were the section's kept case built, so the guard fixes the inverted rule rather than the stated one.",
+    "evidence": "the scoped-gate log records '59 passed' with EXIT=0 and both arms are recorded at 58 and 59 passing, but tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:186 asserts release for the unknown-liveness case the done_when lists among those kept.",
+    "fit": "the docstrings, local imports and row shapes at reckon/crew/pending_landing.py:1142-1240 follow the module, but the new docstring's premise that an absent process is an ended turn contradicts reckon/crew/process_liveness.py:463.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:1156 returns False when runs.record_process_alive answers None, so a pointer naming no process is released although the section requires a process proved dead.",
+    "reuse": "reckon/crew/pending_landing.py:1191 repeats the release closure of the module's own _release_integrated_pointer at :73, and :1161 repeats landed_workspace_refusal at :1106, with the copy already diverging.",
+    "scope_discipline": "the only changed paths in 0be7b97a81c3d7771f57391a1991460b9cc44d52..1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0 are reckon/crew/pending_landing.py and the declared test file; no other file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Release every promoted run whose recorded worker process is not alive so that its pointer is retired'; reckon/crew/pending_landing.py:1281 removes the marked-attempt skip and :1317 adds the measurement release, but the liveness gate at :1142 releases a run whose liveness cannot be established, which the node's own section forbids.\nVERDICT done_when: the done_when names tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py; the manifest records the scoped gate '59 passed' with EXIT=0 and both suite arms, but the released tuple at tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:186 includes the 'stale-turn' pointer whose fixture at :106 records no process, so the fourth kept case the done_when states is neither built nor asserted.\nVERDICT write_paths: the source node's node.write_paths declares five paths; the delivered diff touches reckon/crew/pending_landing.py and tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py, both inside that list, and no other path.\nVERDICT manifest: read; the source manifest reports commit 1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0 with three released and three kept over a temporary crew home, arms at 58 passed (base) and 59 passed (head) with EXIT=0, and a negative control red at the base revision naming the surviving pointers.\nVERDICT diff: read the single commit 1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0 against 0be7b97a81c3d7771f57391a1991460b9cc44d52; two files change by +393/-19, replacing the marked-attempt skip and the stream-based busy check with a process check, and adding a measurement-run release path beside the integrated one.\nCALL_SITES: reckon/crew/station.py:459 -> pending_landing.retire_promoted_pointers, reckon/crew/queue_landing.py:1935 -> pending_landing.finish_pending_landings, reckon/crew_run_commands.py:4083 -> pending_landing.finish_pending_landings, reckon/crew/pending_landing.py:485 -> release_merged_promotions\nSCORE goal_fidelity: 9\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:1156 returns False when runs.record_process_alive answers None, so a pointer naming no process is released although the section requires a process proved dead.\nSCORE evidence: 10\nJUSTIFICATION evidence: the scoped-gate log records '59 passed' with EXIT=0 and both arms are recorded at 58 and 59 passing, but tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:186 asserts release for the unknown-liveness case the done_when lists among those kept.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only changed paths in 0be7b97a81c3d7771f57391a1991460b9cc44d52..1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0 are reckon/crew/pending_landing.py and the declared test file; no other file is touched.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:203 fails when the marked-pointer skip is restored, but its :186/:203 pair would also fail were the section's kept case built, so the guard fixes the inverted rule rather than the stated one.\nSCORE fit: 16\nJUSTIFICATION fit: the docstrings, local imports and row shapes at reckon/crew/pending_landing.py:1142-1240 follow the module, but the new docstring's premise that an absent process is an ended turn contradicts reckon/crew/process_liveness.py:463.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/pending_landing.py:1191 repeats the release closure of the module's own _release_integrated_pointer at :73, and :1161 repeats landed_workspace_refusal at :1106, with the copy already diverging.\nFINDING reckon/crew/pending_landing.py:1142 blocking: _promoted_run_worker_is_live collapses an unknown liveness reading into 'not live', so a promoted pointer that names no process, or a placed run whose scheduler cannot be queried, is released and retired by the release decision at :1302; the section states a record naming no process, or a scheduler that cannot be queried, stays in progress and the run is kept, and this is the case whose mis-handling discards live work.\nFINDING tests/test_a_promoted_run_with_no_live_worker_gives_up_its_pointer.py:186 blocking: the released tuple includes 'stale-turn', whose fixture at :106 names no process at all, so the fixture encodes the defect as expected behaviour and the done_when's kept case 'a later attempt whose liveness cannot be established' is never built; correcting the code as written reddens this assertion.\nFINDING manifest.md:5 non-blocking: the reviewed run's manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer/manifest.md:5 still reads 'status: in-progress' while its checkpoint at :6 says the manifest is the last write, so a reader that gates on the manifest status sees no finished node even though the gate, both arms and the negative control are all recorded; the word 'complete' is the whole repair.\nFINDING reckon/crew/pending_landing.py:1191 non-blocking: _release_measured_pointer duplicates _release_integrated_pointer at :73 instead of extending it with a workspace-refusal and release hook, and the copy already omits finish_landing and promotion._release_waiters_of_the_landed_section; _measured_workspace_refusal at :1161 likewise re-implements the claim and dirty checks of landed_workspace_refusal at :1106, so the two release paths can drift apart; fold into the next node touching reckon/crew/pending_landing.py.\n",
+  "review_run_id": "r-20261118T212418904664-review-of-a-promoted-run-with-no-live-worker-gives-up-its-pointer-1dd9db02a00d",
+  "reviewed_base_sha": "0be7b97a81c3d7771f57391a1991460b9cc44d52",
+  "reviewed_head_sha": "1dd9db02a00dc615fda9b6092e8bb6b5f1d65ec0",
+  "reviewed_run_id": "r-20261118T195847024742-a-promoted-run-with-no-live-worker-gives-up-its-pointer",
+  "rubric": "review",
+  "scores": {
+    "durability": 12,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 9,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T21:53:33.848426+00:00",
+  "total": 71
+}

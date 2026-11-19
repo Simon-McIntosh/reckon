@@ -1,0 +1,35 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:04:50Z",
+  "findings": [
+    {
+      "severity": "non-blocking",
+      "text": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger.html:1 \u2014 the source node's done_when names the negative-control fragment at docs/evidence/fragments/queued-work-needs-no-workaround/red-file-a-reader-builds-no-index-for-a-missing-ledger.html (no qwnw- prefix), and git cat-file -e at 41bdc559 shows no such path exists in the landed tree; the fragment landed at the qwnw- prefixed declared write path, so the content obligation is met but the artefact path the done_when names is not, and a reader following the done_when finds no file. Non-blocking because the declared write path is the fence and carries the fragment."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062540082694-qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger/manifest.md:15 \u2014 the done_when requires that ruff check and ruff format --check report nothing new on the changed paths, and the manifest records no ruff result anywhere and no log in the run directory carries one; the substance holds independently, since ruff check and ruff format --check over the head blob 41bdc559:tests/test_a_reader_builds_no_index_for_a_missing_ledger.py report \"All checks passed!\" and \"1 file already formatted\", but the gate does not measure it and no result is recorded."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_reader_builds_no_index_for_a_missing_ledger.py passes in full at head, and the landed expectation at tests/test_a_reader_builds_no_index_for_a_missing_ledger.py:92-97 and :108-113 now matches what reckon/ledger.py:2592 returns, with the gate log recording 4 passed at 41bdc559.\nVERDICT done_when: the done_when demands a full head pass logged on shared storage, a base run's cause with a product-wrong/test-wrong verdict, both suite arms as inline JSON with full 40-character shas, the base failing ids beside the head run in the fragment, and ruff nothing-new on changed paths; the manifest carries the head gate at 41bdc559 (scoped-gate-1794999419586801331.headed.log:9 \"4 passed in 0.32s\"), the base negative control (negative-control-base.log, 2 failed/2 passed, EXIT=1), and both arms at 58 passed with EXIT=0, but records no ruff result and names a fragment path it did not write.\nVERDICT write_paths: the declared write paths are reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw- prefixed fragment, and docs/figures/queued-work-needs-no-workaround/<node>; git diff 2f00851c42f247cba1c81c80ed0cf7b41045de76 41bdc559cd3d82d4f775c239ec1798750ad926a2 touches exactly tests/test_a_reader_builds_no_index_for_a_missing_ledger.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger.html, both inside.\nVERDICT manifest: read the source manifest; status complete, three commits (2324ca9a132ae90500013b0197aca1040d2e5a69, 52cd094c2804140b5c14d5d0585df0577113ed52, 41bdc559cd3d82d4f775c239ec1798750ad926a2), a landing line stating the test-wrong verdict against base 2f00851c, the tests line naming the pytest command, artifacts citing the 4-passed gate and the 2-of-2 guard-mutation probe, and both suite arms recorded as inline JSON with full revisions.\nVERDICT diff: read the three commits against base 2f00851c commit by commit; 2324ca9a13 adds \"auxiliary_version\": 0 to the two empty-ledger expectations (tests/test_a_reader_builds_no_index_for_a_missing_ledger.py:92-97, :108-113), 52cd094c28 and 41bdc559cd add the 55-line fragment under docs/evidence/fragments/queued-work-needs-no-workaround/, and no product source, plan, state or figure file changes.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the landed expectation at tests/test_a_reader_builds_no_index_for_a_missing_ledger.py:92-97 equals the roster reckon/ledger.py:2592 returns, and scoped-gate-1794999419586801331.headed.log:9 records 4 passed at head 41bdc559.\nSCORE evidence: 15\nJUSTIFICATION evidence: the done_when's pytest measure is recorded at head (4 passed, EXIT=0, scoped-gate-1794999419586801331.headed.log:9) and at base (negative-control-base.log, 2 failed/2 passed, EXIT=1), but the ruff half of the done_when has no recorded result and the gate log's scheduler receipt (scoped-gate-1794999419586801331.log.scheduler) is empty, so the all_debug job claim rests on the manifest alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only tests/test_a_reader_builds_no_index_for_a_missing_ledger.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger.html change between 2f00851c and 41bdc559, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the assertion at tests/test_a_reader_builds_no_index_for_a_missing_ledger.py:92-97 compares ledger.load's return to a literal the test never passes in, so it reddens if reckon/ledger.py:2592 stops emitting auxiliary_version, and guard-mutation-probe.log shows both empty-ledger cases failing on _assert_no_index when _ledger_holds_content is forced True.\nSCORE fit: 17\nJUSTIFICATION fit: the added expectations follow the file's existing dict-literal idiom and are ruff-clean, but the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger.html:24 quotes the head pass at 2324ca9a while the promoted head is 41bdc559, leaving the recorded pass unbound to the revised head it ships with.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and asserts through the owner at reckon/ledger.py:2583-2592, while a capability search over tests/ and reckon/ for an existing empty-ledger no-index assertion (\"wrote an index\", \"builds_no_index\", \"builds_its_index\") returns only this file, so no owner was forked.",
+  "review_method": "Read-only review of the landed diff, the source manifest and the run's recorded gate logs; the only command run against the change was ruff on the head blob of the changed test file, read from git object 41bdc559.",
+  "review_run_id": "r-20261118T110348819639-review-of-qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger-41bdc559cd3d",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "41bdc559cd3d82d4f775c239ec1798750ad926a2",
+  "reviewed_run_id": "r-20261118T062540082694-qwnw-red-file-a-reader-builds-no-index-for-a-missing-ledger",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:22:09.617147+00:00",
+  "total": 109
+}

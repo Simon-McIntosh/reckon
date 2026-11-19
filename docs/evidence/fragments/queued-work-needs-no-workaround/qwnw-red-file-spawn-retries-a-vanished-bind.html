@@ -1,0 +1,102 @@
+<section id="qwnw-red-file-spawn-retries-a-vanished-bind-landing">
+  <h2>A red spawn-retry test file passes: two of its own fixtures were wrong, not the retry</h2>
+
+  <p><strong>What was wrong.</strong> At the base revision
+  <code>00e5bd109e44209141475c852cd5490b8bef9be3</code>,
+  <code>tests/test_spawn_retries_a_vanished_bind.py</code> read 1 failed and 6
+  passed in the worktree; the second cause below surfaced only once the first
+  was repaired and the file was measured as a job on <code>all_debug</code>,
+  where the first head read 2 failed and 5 passed. Both causes are the test's,
+  and neither is the rule the file asserts: the retry of a spawn refused over a
+  vanished protected bind source is present and stays unchanged.
+  <code>reckon/crew/dispatch_launch.py</code> is untouched by this node.</p>
+
+  <p><strong>Cause 1 — a supervisor spec with no run directory.</strong>
+  <code>test_the_supervisor_seam_retries_the_spawn</code> built the spec it
+  hands <code>_supervisor_spawn_worker</code> from the run id, the prompt, log
+  and stderr paths and the plan, and not the run directory, so the seam raised
+  <code>KeyError: 'run_directory'</code> at
+  <code>reckon/crew/dispatch_launch.py:4337</code> before it reached the spawn
+  the case measures. The spec a supervisor receives always names that
+  directory: the launcher writes it
+  (<code>reckon/crew/dispatch_launch.py:3601</code>), the supervisor reads it
+  back from the spec it is handed (<code>:5601</code>), and the sibling seam
+  cases carry it (<code>tests/test_a_concurrent_launch_is_refused.py:509</code>).
+  The case now names it too. Verdict: test wrong.</p>
+
+  <p><strong>Cause 2 — a live stand-in whose life ended inside the startup
+  watch.</strong> The case asserts that nothing was recorded as a launch
+  failure for the refused try. Its second try — the "live" one — was
+  <code>sleep 30</code>, the same length as the test's own
+  <code>dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS</code> (30.0). On a
+  loaded node the child exited at the end of the watch, and the launch read
+  that exit exactly as the product documents it</p>
+
+  <p><q>a child that exits without writing a byte is the launch failure, not a
+  worker that started</q>, appending an entry written as
+  <code>exit_status: 0</code>. The reproduction is deterministic when the
+  stand-in is shortened: with the second try at <code>sleep 5</code>, both
+  refusal parametrizations failed in 12.65s with
+  <code>assert [{'argv': ['bwrap', ...], 'exit_code': 0, 'exit_status': 0}]
+  in (None, [])</code> — the same record the <code>all_debug</code> job
+  produced at the 30-second boundary. The fixture now runs
+  <code>exec sleep 300</code>, so the second try outlives the watch by a margin
+  the host's load cannot close, and <code>exec</code> keeps that sleep on the
+  pid the launch was handed so stopping the test's processes stops it rather
+  than orphaning it. Verdict: test wrong.</p>
+
+  <p>No assertion was deleted or weakened. Four lines name the run directory;
+  seven lines replace the stand-in and say why.</p>
+
+  <h3 id="qwnw-red-file-spawn-retries-a-vanished-bind-measured">Measured</h3>
+
+  <table id="qwnw-red-file-spawn-retries-a-vanished-bind-arms">
+    <caption>Each arm is a log whose first lines name the revision, the tree and
+    the command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>head</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>negative control: the node file at base, in tree</td>
+        <td><code>00e5bd109e44209141475c852cd5490b8bef9be3</code></td>
+        <td>1 failed, 6 passed, <code>EXIT=1</code> —
+        <code>test_the_supervisor_seam_retries_the_spawn - KeyError:
+        'run_directory'</code></td></tr>
+      <tr><td>an <code>all_debug</code> job at the first head, before the
+        fixture repair</td>
+        <td><code>850fff46d167ddd756cdc35265d0578836ea9dc4</code></td>
+        <td>2 failed, 5 passed, <code>EXIT=1</code> — the two bind-refusal
+        cases, each reading
+        <code>{'exit_code': 0, 'exit_status': 0}</code> from the recorded
+        launch failure of the stand-in that had exited at the watch's boundary
+        (<code>all_debug</code> job 1326242)</td></tr>
+      <tr><td>head arm: an <code>all_debug</code> job with
+        <code>SLURM_JOB_ID</code> cleared</td>
+        <td><code>385f3685f40ace77eea98107823eadc22e9a3999</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>scoped gate on <code>all_debug</code></td>
+        <td><code>385f3685f40ace77eea98107823eadc22e9a3999</code></td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, base arm</td>
+        <td><code>00e5bd109e44209141475c852cd5490b8bef9be3</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, after arm</td>
+        <td><code>385f3685f40ace77eea98107823eadc22e9a3999</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The importer arm is the node's own file: no module imports
+  <code>tests/test_spawn_retries_a_vanished_bind.py</code>, and the only other
+  reference to its path is a string entry in
+  <code>tests/test_a_suite_record_is_flat.py</code>. Both arms carry a full
+  40-character revision on their header line, and the head arm adds no failing
+  id over the base arm.</p>
+
+  <p><strong>Outside this node's rule.</strong> The startup watch's own
+  docstring says a child <q>whose own life is exactly the window</q> outlives
+  it. Measured at exactly thirty seconds it does not: the watch polls the child
+  before it tests its deadline, so a child that exits in the window's last poll
+  interval is collected and recorded. The product behaviour is the documented
+  one — a byte-less exit is a launch failure — so the fixture, not the watch,
+  moved; the docstring's boundary claim is recorded here rather than repaired
+  under this node.</p>
+</section>

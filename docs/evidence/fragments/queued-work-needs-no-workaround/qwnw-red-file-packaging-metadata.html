@@ -1,0 +1,105 @@
+<section id="qwnw-red-file-packaging-metadata-landing">
+  <h2>tests/test_packaging_metadata.py is green at the base revision</h2>
+
+  <p><strong>Negative result.</strong> This node was queued for a test file red
+  on the primary branch. The file is not red at the worktree's base revision
+  <code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code>, so there was no cause
+  for a verdict and nothing to repair. Per the section's own rule — a cause that
+  passes when the node starts because an earlier repair reached it is delivered
+  as such with the passing run — the node delivers the passing run and changes
+  no product code and no test.</p>
+
+  <p><strong>Reproduction attempt, at base and without merging anything.</strong>
+  The named file was run first in the worktree at base, unmodified:
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_packaging_metadata.py</code> read <code>3 passed in 9.13s</code>,
+  <code>EXIT=0</code>. There was therefore no failing id to log beside a head
+  run, and no assertion was touched.</p>
+
+  <p><strong>The measure, as a job on all_debug with SLURM_JOB_ID unset.</strong>
+  Each run below was a separate job on partition <code>all_debug</code>, running
+  its literal command under <code>env -u SLURM_JOB_ID</code>:</p>
+
+  <table>
+    <thead>
+      <tr><th>Arm</th><th>Slurm job</th><th>Revision</th><th>Output tail</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td>1325641</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td><code>3 passed in 21.68s</code> / <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td>1325680</td>
+        <td><code>fe93a7abd57960d70e868422a98a93c8a895dd5c</code></td>
+        <td><code>3 passed in 22.71s</code> / <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+<p>The declaring suite's arms were run the same way — the two test files the
+  composed gate resolves for this node, at each arm's own tree, the base arm in
+  a <code>git archive</code> export of
+  <code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code> re-initialised as a
+  repository so the tree-reading tests can run: job <code>1325709</code> read
+  <code>58 passed in 36.30s</code>, <code>EXIT=0</code> at
+  <code>/tmp/qwnw-suite-WDeE8j/tree</code>, and the after arm in the worktree at
+  the run's head read <code>58 passed</code>, <code>EXIT=0</code>. Its job id
+  and revision are the manifest's <code>after_suite</code> fields, because the
+  arm has to run on the commit that carries this paragraph. Both arms are green,
+  so no arm's failure set differs from the other's.</p>
+
+  <p><strong>Negative control, a mutation of this node's own instrument.</strong>
+  The base file is green, so there is no red base run to log; to show the guard
+  can fire, job <code>1325727</code> removed <code>[project.urls]</code> and the
+  <code>classifiers</code> list from <code>pyproject.toml</code> in an otherwise
+  unmodified export of the base revision and ran the same command. It read
+  <code>1 failed, 2 passed</code>, <code>EXIT=1</code>, failing
+  <code>test_built_wheel_carries_discovery_metadata</code> with
+  <code>assert 0 &gt;= 4</code> where the head run fails nothing. The assertion
+  reads the built wheel's <code>METADATA</code>, so this is the field leaving
+  the package, not the declaration being absent from a file the test did not
+  read.</p>
+
+  <p>The three tests are
+  <code>test_built_wheel_carries_discovery_metadata</code>,
+  <code>test_untagged_wheel_version_has_no_local_segment</code> and
+  <code>test_tagged_build_matches_tag</code>; each builds a wheel with
+  <code>uv build</code> on the compute node and reads the built
+  <code>METADATA</code>, so the green run covers the packaging fields in transit
+  rather than only their declaration in <code>pyproject.toml</code>: the wheel
+  carries four <code>Project-URL</code> entries and seven classifiers, and the
+  version carries no local segment.</p>
+
+  <p><strong>Why the earlier red does not reproduce.</strong>
+  <code>pyproject.toml</code> at base already declares the four
+  <code>[project.urls]</code> entries and the seven classifiers the test asks
+  for, and <code>tests/test_packaging_metadata.py</code> was last changed by
+  <code>8b66c233843a2cdf3619bb77b120c7f344c28e53</code>
+  (<em>fix(packaging): omit local build versions</em>, 2026-08-24), which is the
+  repair that reached this file before the node started. Nothing in the file is
+  conditional on the scheduler, on <code>SLURM_JOB_ID</code>, or on a path
+  outside the repository: the two builds are made with <code>uv build</code> in
+  the pytest temporary directory. That is why the run is shown on the compute
+  node as well as the submitting one.</p>
+
+  <p><strong>One instrument check.</strong> The first two jobs submitted through
+  the reckon <code>sbatch</code> shim (1325623, 1325624) failed before user code
+  with <code>bwrap: Can't bind mount /oldroot/tmp/auto3pu0vV on
+  /newroot/tmp/auto3pu0vV: No such file or directory</code>: the shim re-enters
+  the submitting worker's fence at the task boundary, and that fence's recipe
+  binds the submitting node's local <code>/tmp</code> scratch, which does not
+  exist on the allocated compute node. The runs reported here thus went to the
+  site's <code>/usr/bin/sbatch</code> directly, each job making its own
+  <code>TMPDIR</code> after start. The refusal is recorded because it is a
+  harness limitation, not a property of the file under test.</p>
+
+  <h3 id="qwnw-red-file-packaging-metadata-commands">Commands run</h3>
+  <pre><code># both jobs, partition all_debug, output on shared storage
+PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_packaging_metadata.py
+# run under: env -u SLURM_JOB_ID
+</code></pre>
+</section>

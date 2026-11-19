@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:3178",
+    "reckon/crew/runs.py:1130",
+    "reckon/crew/runs.py:1154",
+    "reckon/crew/queue_order.py:555",
+    "reckon/crew/promotion_requests.py:727"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:48:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": 764,
+      "severity": "non-blocking",
+      "text": "reckon/crew/queue_edit.py:764 rewrites the promotion request through read_promotion plus _write_json without the runs._pointer_lock on promotion-request-<run_id> that the owner of that record takes at reckon/crew/promotion_requests.py:397, so a request_promotion racing the raise stores a snapshot taken before this write and the coordinator's priority_override is silently absent from the record the drain ranks."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": 648,
+      "severity": "non-blocking",
+      "text": "reckon/crew/queue_edit.py:648 charges a delivered run's raise to its queued review when one exists, and a review stops holding points the moment it launches (reckon/crew/runs.py:676 reads PRIORITY_HOLDING_PHASES at :592), so in that branch the points return at the review's launch rather than when the run lands or is discarded as section 3 states at docs/plans/a-session-spends-a-priority-budget.html:74; tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py:163 measures the return only in the no-review branch, so the earlier return is unmeasured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/manifest.md:15 states negative_control_log as two comma-joined paths, the first a truncated runs- directory and the second repair-control-baseline.log, which does not exist in the run directory; the red log the note describes is repair-negative-control.log, named in test_logs but not in this field, so a reader or gate taking the field at its word opens nothing, and :18's after_suite revision 93cbdf66fd2e612bafb95e8a2c8c9e296b54c is 38 hex characters against the log header's 93cbdf66fd2e612bafb95e8a2c8c9e296b41b54c, so it resolves to no commit."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261118T105700470613-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-93cbdf66fd2e",
+  "review_text": "VERDICT goal: the node's goal is that a run's priority carries to its review and its promotion, and the diff delivers it at reckon/crew/queue_order.py:326, where _precedence ranks two reviews by the points their own queued record carries, and at reckon/crew/queue_edit.py:587, where reprioritise accepts a delivered run and writes the points onto the run, onto its queued review at :748 and onto its queued promotion request at :761.\nVERDICT done_when: section 3's three bullets are measured by tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py, whose 7 tests cover review order, promotion drain order and the delivered-run charge; the manifest records scoped-gate-1794998924291726900.log at 7 passed in 0.60s with EXIT=0, and the base arm at s3-negative-control-base.log is 3 failed, 2 passed with EXIT=1 naming the review-order, delivered-charge and delivered-carry cases.\nVERDICT write_paths: read the declared paths against git diff 8d870f62..93cbdf66fd; all 11 changed files lie inside them (reckon, tests, skills, docs/_shared/flight.schema.json and docs/evidence/fragments/a-session-spends-a-priority-budget), and the declared docs/figures path carries no file.\nVERDICT manifest: read; it records the 7-passed gate, the 2-failed repair control and 58 passed on each suite arm at its own revision, while its negative_control_log is two comma-joined paths (one truncated, one absent) and its after_suite revision is a truncated sha.\nVERDICT diff: read all six commits a511935220, b9d2c8fe8f, b7884a4b93, b7dd46560d, 637e28986c and 93cbdf66fd against base 8d870f62: the charge and carry code plus its tests, the section evidence, the skill paragraph, the repair, and the schema description moved in step across all three generated surfaces.\nCALL_SITES: reckon/crew_run_commands.py:3178, reckon/crew/runs.py:1130, reckon/crew/runs.py:1154, reckon/crew/queue_order.py:555, reckon/crew/promotion_requests.py:727\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:326 orders two reviews by their points and reckon/crew/queue_edit.py:587 carries a delivered run's raise onto both queued records, though those points return earlier than docs/plans/a-session-spends-a-priority-budget.html:74 states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest records the gate at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/scoped-gate-1794998924291726900.log as 7 passed with EXIT=0, both suite arms at 58 passed, and the red control at 2 failed with EXIT=1 in repair-negative-control.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 8d870f62..93cbdf66fd lies inside the declared write paths, and the schema description moves in step at reckon/schema/flight.yaml, reckon/_flight_schema.py and docs/_shared/flight.schema.json.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py:224 fails at 8 == 4 when the repair at reckon/crew/queue_edit.py:648 is reverted, as repair-negative-control.log records, and :105 fails on the base revision, but :139 and :129 guard behaviour the base revision already had and cannot redden on a regression in this change.\nSCORE fit: 17\nJUSTIFICATION fit: the change keeps the module's idiom of private helpers and deferred imports at reckon/crew/queue_edit.py:648 and names its own constants in reckon/crew/runs.py:609 (PRIORITY_DELIVERED_MARK) beside the phases it extends.\nSCORE reuse: 18\nJUSTIFICATION reuse: the ranking extends the single owner at reckon/crew/queue_order.py:247 (_override) and :326 (_precedence), the budget reader at reckon/crew/runs.py:651 is widened by a parameter rather than duplicated, and the review lookup reuses _resolved_reviewed_run_id at reckon/crew/queue_edit.py:694, with only the two pointer-field writes at :683 and :748 repeated rather than shared.\nFINDING reckon/crew/queue_edit.py:764 non-blocking: the promotion request is rewritten without the lock its owner takes at reckon/crew/promotion_requests.py:397, so a concurrent request_promotion can drop the raise with no error.\nFINDING reckon/crew/queue_edit.py:648 non-blocking: with a queued review the raise is charged there, so its points return when the review launches (reckon/crew/runs.py:676) rather than when the run lands or is discarded as docs/plans/a-session-spends-a-priority-budget.html:74 states.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/manifest.md:15 non-blocking: negative_control_log holds two comma-joined paths, one truncated and one absent, and line 18's after_suite revision is a truncated sha that resolves to no commit.",
+  "reviewed_base_sha": "8d870f62598f1d922ceed7015b570a65c61d8283",
+  "reviewed_head_sha": "93cbdf66fd2e612bafb95e8a2c8c9e296b41b54c",
+  "reviewed_run_id": "r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T14:22:14.118240+00:00",
+  "total": 104,
+  "verdicts": {
+    "diff": "Read all six commits from 8d870f62 to 93cbdf66fd: a511935220 carries the charge and carry code plus the test file, b9d2c8fe8f and b7884a4b93 record the section evidence, b7dd46560d states the rule in the skill, 637e28986c makes one charge, 93cbdf66fd records the repair; the schema description moves in step across docs/_shared/flight.schema.json, reckon/_flight_schema.py and reckon/schema/flight.yaml.",
+    "done_when": "Read section 3's three bullets against tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py, whose 7 tests cover review order, promotion drain order and the delivered-run charge; the manifest records scoped-gate-1794998924291726900.log at 7 passed in 0.60s with EXIT=0, and the base arm I read at s3-negative-control-base.log is 3 failed, 2 passed with EXIT=1 naming the review-order, delivered-charge and delivered-carry cases.",
+    "goal": "The node's goal is that a run's priority carries to its review and its promotion; the diff delivers it at reckon/crew/queue_order.py:326, where _precedence ranks two reviews by the points their own queued record carries, and at reckon/crew/queue_edit.py:587, where reprioritise accepts a delivered run and writes the points onto the run, onto its queued review at :748 and onto its queued promotion request at :761.",
+    "manifest": "Read the manifest: it records 7 passed with EXIT=0 at 637e28986c, the repair control at 2 failed, 5 passed with EXIT=1 quoting assert 8 == 4, and 58 passed on each suite arm at its own revision; its negative_control_log holds two comma-joined paths (one truncated, one absent) and its after_suite revision is a truncated sha, which I record as one finding.",
+    "write_paths": "Read the declared paths against git diff 8d870f62..93cbdf66fd: all 11 changed files lie inside them (reckon, tests, skills, docs/_shared/flight.schema.json and docs/evidence/fragments/a-session-spends-a-priority-budget), and the declared docs/figures path carries no file, which the goal implies nothing of."
+  }
+}

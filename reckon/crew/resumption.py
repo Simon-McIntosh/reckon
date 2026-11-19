@@ -74,6 +74,8 @@ from reckon.crew.dispatch import (
     resume_plan,
 )
 from reckon.crew.node import CrewError
+from reckon.crew.open_run_index import operational_read
+from reckon.crew.open_run_index import pointers as scoped_pointers
 from reckon.crew.process_liveness import _process_start_time as process_start_time
 from reckon.crew.recovery import (
     LAUNCH_WINDOW_SECONDS,  # noqa: F401 -- re-exported: resume doors read it here
@@ -1119,7 +1121,8 @@ def _claimed_write_paths(record: Mapping[str, Any]) -> list[str]:
     run_id = str(record.get("run_id") or "")
     repo = str(record.get("repo") or "")
     claimed: set[str] = set()
-    for other in list_live():
+    snapshot = scoped_pointers()
+    for other in list_live() if snapshot is None else snapshot:
         if str(other.get("run_id") or "") == run_id:
             continue
         if str(other.get("repo") or "") != repo:
@@ -2697,6 +2700,7 @@ def writer_sweep_status(project: str, writer: Any) -> dict[str, Any] | None:
     return read_sweep_status(project).get("writers", {}).get(_writer_key(kind, key))
 
 
+@operational_read(live_reader=lambda: list_live(project=None))
 def sweep(
     project: str,
     *,
@@ -2753,6 +2757,8 @@ def sweep(
     skipped: list[dict[str, Any]] = []
     considered = 0
 
+    if pointers is None:
+        pointers = scoped_pointers(project=project)
     live = list_live(project=project) if pointers is None else pointers
     for pointer in runs._tick_pointers(live):
         # A session-scoped sweep resumes only the runs that session owns: a
@@ -3047,18 +3053,41 @@ def sweep(
     # is idempotent — a plan whose review is stored or in flight is left alone
     # — and it notes the findings a review it composed marked as not changing
     # the plan, so the coordinator is woken only for the ones that would.
+    # The pass also answers whether it has anything new to read: it composes
+    # from the project's plans, its stored plan reviews and its authoring runs,
+    # and those move on the scale of minutes rather than of one tick, so a pass
+    # whose inputs still carry the footprint it last read is left to the pass
+    # that finds one moved, or to the interval. The gate is out here rather than
+    # inside the pass because it decides whether to call the pass at all.
     plan_reviews: dict[str, Any] = {}
+    moment = _now(now).timestamp()
+    gate: dict[str, Any] = {}
     try:
-        plan_reviews = plan_review.compose_owed_plan_reviews(
-            project,
-            config=config,
-            launcher=launch,
-            now_seconds=_now(now).timestamp(),
-            dry_run=dry_run,
-            pointers=live,
+        # A preview that the gate held back would report nothing to preview, so
+        # a dry run always weighs. It records nothing, so it leaves the next
+        # real pass due.
+        gate = (
+            {"due": True, "reason": "a preview weighs whatever changed"}
+            if dry_run
+            else plan_review.owed_plan_review_pass_due(
+                project, now_seconds=moment, pointers=live
+            )
         )
+        if gate.get("due"):
+            plan_reviews = plan_review.compose_owed_plan_reviews(
+                project,
+                config=config,
+                launcher=launch,
+                now_seconds=moment,
+                dry_run=dry_run,
+                pointers=live,
+            )
     except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
         plan_reviews = {"error": str(exc)}
+    if gate.get("due") and not dry_run:
+        plan_review.record_owed_plan_review_pass(
+            project, now_seconds=moment, pointers=live
+        )
 
     report = {
         "project": project,

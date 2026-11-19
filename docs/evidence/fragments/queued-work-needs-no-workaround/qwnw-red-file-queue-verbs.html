@@ -1,0 +1,80 @@
+<section id="qwnw-red-file-queue-verbs-landing">
+  <h3>The queue-verb file passes in full, its over-fence case now recording what a dispatch records</h3>
+  <p><code>tests/test_queue_verbs.py</code> read <code>1 failed, 14 passed</code>
+  at base revision <code>7191ae15e776ab99300334a96cc53c71754c3acf</code>. There
+  is one cause and its verdict is <strong>test wrong</strong>: the case
+  <code>test_an_over_ceiling_edit_is_refused_and_stores_nothing</code> asserted
+  the retired rule that a budget past the resolved time fence is refused. The
+  product retired that rule on 14 November (commit <code>25b85b5769</code>,
+  "record budgets above the time fence") and
+  <code>reckon.crew.node.validate_node</code> now reports nothing for an
+  over-fence budget, setting <code>over_fence_note</code> beside the budget
+  instead of failing <code>bounded</code>. <code>reckon.crew.queue_edit.edit</code>
+  re-judges an edited request with exactly that check, so an edit and a dispatch
+  of the same budget both store the request and record that it is over the
+  fence — and the live rule says so: a node whose declared budget exceeds the
+  fence is dispatched or queued and carries a recorded note, with the reason if
+  one is given.</p>
+  <p>The reproduction, quoted from the base arm's log:</p>
+  <pre id="qwnw-red-file-queue-verbs-repro">FAILED tests/test_queue_verbs.py::test_an_over_ceiling_edit_is_refused_and_stores_nothing - AssertionError: {"changed": ["time_budget"], "done_when": "pytest -q tests/test_queue_verbs.py reports 3 passed.", "ok": true, "phase": "queued", "review_contract_recorded": false, "route": {}, "run_id": "r-queued", "steering_path": "", "steering_sha256": "", "time_budget": "35m", "write_paths": ["reckon/crew/queue_edit.py"]}
+  assert 0 != 0
+   +  where 0 = &lt;Result okay&gt;.exit_code
+1 failed, 14 passed in 1.18s
+EXIT=1</pre>
+  <table id="qwnw-red-file-queue-verbs-causes">
+    <thead><tr><th>Observed failure</th><th>Verdict</th><th>Rule the code keeps</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_an_over_ceiling_edit_is_refused_and_stores_nothing</code>:
+        <code>queue edit --time-budget 35m</code> against a 25m fence exits zero
+        and stores 35m</td>
+        <td>test wrong</td>
+        <td><code>reckon.crew.node.validate_node</code> treats the resolved
+        fence as a sizing reference and sets <code>over_fence_note</code> beside
+        the budget; <code>reckon.crew.queue_edit.edit</code> now persists that
+        note on the request exactly as the queue and dispatch paths store it,
+        and clears it when the budget is edited back within the fence</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>No assertion was deleted or weakened. The case now asserts the stored
+  budget on the request's node (<code>35m</code>), the note
+  <code>budget 35m exceeds the resolved fence 25m</code> that the queue and
+  dispatch paths record for the same budget, and that a second edit down to
+  <code>20m</code> clears the note rather than leaving one describing a budget
+  the request no longer declares. Editing the product was required for the last
+  two points: <code>edit()</code> already recomputed the note on the re-judged
+  node but wrote only the budget field, so an edited request dropped the note a
+  dispatch of the same budget carries. Every other case is unchanged and all
+  fifteen pass.</p>
+  <p>Arms, both as <code>all_debug</code> jobs with <code>SLURM_JOB_ID</code>
+  removed from the measured environment, logs on shared storage under the run
+  directory:
+  <code>env -u SLURM_JOB_ID PYTHONPATH=&lt;tree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python
+  -m pytest -p no:cacheprovider -q tests/test_queue_verbs.py</code>.
+  Base <code>7191ae15e776ab99300334a96cc53c71754c3acf</code> in a scratch tree
+  (job 1326337, <code>logs/base-queue-verbs.log</code>) reads
+  <code>1 failed, 14 passed in 1.18s</code>, <code>EXIT=1</code>; head
+  <code>c88854f81763df3724e6bde1577cb48761c1c1dc</code> in a scratch tree (job
+  1326336, <code>logs/head-queue-verbs.log</code>) reads
+  <code>15 passed in 1.24s</code>, <code>EXIT=0</code>. Both logs name the
+  imported <code>module.__file__</code>, the resolved working directory and the
+  absence of <code>SLURM_JOB_ID</code> in the measured environment. The suite
+  selection this node's write scope resolves to
+  (<code>tests/test_staged_write_inventory.py
+  tests/test_every_shared_home_lock_holds_across_nodes.py</code>) reads
+  <code>58 passed in 35.66s</code>, <code>EXIT=0</code> at base and
+  <code>58 passed in 36.55s</code>, <code>EXIT=0</code> at head, so this change
+  adds no failure. <code>ruff check</code> and <code>ruff format --check</code>
+  report nothing on <code>reckon/crew/queue_edit.py</code> or
+  <code>tests/test_queue_verbs.py</code>.</p>
+  <p id="qwnw-red-file-queue-verbs-control">Negative control: the base arm is
+  the red log named above. Its failing id,
+  <code>test_an_over_ceiling_edit_is_refused_and_stores_nothing</code>, at
+  revision <code>7191ae15e776ab99300334a96cc53c71754c3acf</code> with
+  <code>EXIT=1</code>, does not fail in the head arm, so the case exercises the
+  changed behaviour rather than passing for want of ever reading the failing
+  path.</p>
+  <p>No other failure was observed in the file at either arm. Failures outside
+  this node's declared scope were not triaged here.</p>
+</section>

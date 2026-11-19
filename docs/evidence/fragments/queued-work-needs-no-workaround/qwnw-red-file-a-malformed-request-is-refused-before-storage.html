@@ -1,0 +1,58 @@
+<section id="qwnw-red-file-a-malformed-request-is-refused-before-storage-landing">
+  <h2>A malformed request is refused before storage</h2>
+
+  <p><strong>What changed.</strong> The live view's contract is one
+  declaration, <code>reckon.crew.query.LIVE_FIELD_VOCABULARY</code>, which the
+  view serves from and the MCP pre-flight refuses from. The classification had
+  gained four keys since that declaration was written: <code>delivery</code>,
+  <code>orientation_check</code>, <code>stuck</code> and
+  <code>stuck_reason</code>. The view therefore served them while the
+  pre-flight turned a request for one of them back as an unknown field — a
+  refusal the caller cannot act on, because the view would have answered the
+  request that was just refused.</p>
+
+  <p><strong>The rule kept.</strong> No test assertion was changed or weakened.
+  The file was red and the product rule it states was the stale side, so
+  <code>LIVE_CLASSIFICATION_FIELDS</code> now carries the four names and the
+  declared vocabulary is once again the set a classification produces, field
+  for field.</p>
+
+  <h3 id="qwnw-red-file-a-malformed-request-is-refused-before-storage-reproduced">Reproduced before the repair</h3>
+
+  <p>At the base revision the pre-flight refused each of the four names, while
+  the view served them from a classified row:</p>
+
+  <pre id="qwnw-red-file-a-malformed-request-is-refused-before-storage-probe"><code>stuck -> crew_error
+stuck_reason -> crew_error
+orientation_check -> crew_error
+delivery -> crew_error</code></pre>
+
+  <p>The base arm of the file named one failing id,
+  <code>tests/test_a_malformed_request_is_refused_before_storage.py::test_the_declared_vocabulary_matches_a_classified_pointer</code>,
+  with <code>Extra items in the left set: 'stuck_reason', 'orientation_check',
+  'stuck', 'delivery'</code>.</p>
+
+  <h3 id="qwnw-red-file-a-malformed-request-is-refused-before-storage-measured">Measured</h3>
+
+  <p>Each arm is a log whose first lines name the revision, tree and command
+  and whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-a-malformed-request-is-refused-before-storage-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td>1 failed, 14 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the node's file, head arm, as a job on all_debug</td>
+        <td><code>31780fd944eb2e51b1bfedf75c563391e107f8c3</code></td>
+        <td>15 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, head arm</td>
+        <td><code>31780fd944eb2e51b1bfedf75c563391e107f8c3</code></td>
+        <td>58 passed, <code>EXIT=0</code>; no failure is added against the base
+        arm, and both arms carry the same command</td></tr>
+    </tbody>
+  </table>
+</section>

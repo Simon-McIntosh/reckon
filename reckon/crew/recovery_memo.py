@@ -506,6 +506,12 @@ def _review_annotation_identities(record: Mapping[str, Any]) -> dict[str, str]:
     manifest = directory / review_module._MANIFEST_FILE_NAME
     signature = _file_identity(manifest)
     identities = {str(manifest): signature}
+    if signature == "absent":
+        # A run with no manifest yet has nothing to annotate a review from, and
+        # the read would raise rather than answer: the memo stores only what a
+        # computation returned, so every poll would open the missing file again
+        # and an unchanged run would cost an open instead of a stat.
+        return identities
     try:
         text = file_memo.memoized_key(
             "review_annotation_manifest",

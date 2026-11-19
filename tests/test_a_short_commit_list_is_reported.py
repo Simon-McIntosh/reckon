@@ -324,7 +324,14 @@ def test_a_shortfall_promotion_completes_and_reports_on_the_record(
     )
 
     assert result.exit_code == 0, result.output
-    payload = json.loads(result.output)
+    # --wait answers with the durable completion receipt: the promotion's own
+    # result is written under the path the receipt names, and the receipt is the
+    # row summary that points at it. The report and the promoted row are read
+    # from the result itself, so the assertion is about what the promotion
+    # recorded rather than about a reply shape.
+    receipt = json.loads(result.output)
+    assert receipt["run_id"] == run_id
+    payload = json.loads(Path(receipt["record_path"]).read_text(encoding="utf-8"))
     shortfall = payload["commit_list_shortfall"]
     assert shortfall["presented"] == 1
     assert shortfall["declared"] == 3

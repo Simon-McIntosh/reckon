@@ -630,7 +630,13 @@ def test_a_stale_authored_meta_is_read_through_the_served_figure(
 
 
 def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
-    """Drive `crew complete` through its command line, as a coordinator does."""
+    """Drive `crew complete` through its command line, as a coordinator does.
+
+    The command queues a promotion request and answers with its receipt unless
+    ``--wait`` asks it to carry the promotion out in the call, so the outcome —
+    a guard's refusal, or the ledger row a waiver lands — is only readable by a
+    caller that names the wait.
+    """
     from click.testing import CliRunner
 
     from reckon.cli import main as cli_main
@@ -640,6 +646,7 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -671,7 +678,9 @@ def test_the_cli_flag_promotes_a_landing_that_did_not_move_the_plan(
     run_id = "r-20260918T081300000000-node-a"
     _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
     gate_log = tmp_path / "gate.log"
-    gate_log.write_text("probe check passed\n", encoding="utf-8")
+    # A cited gate log states the command's own status in a terminal EXIT line,
+    # which is the capture convention a passing verdict is read against.
+    gate_log.write_text("probe check passed\nEXIT=0\n", encoding="utf-8")
 
     refused = _invoke_complete_cli(run_id, gate_log)
 

@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:22:56Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "3271",
+      "severity": "non-blocking",
+      "text": "the new guard applies the location rule to the claude MCP record only; the omp writers in the same file, omp_overlay_path at reckon/_backends.py:2002 and _omp_positional_prompt at reckon/_backends.py:2316, still test Path(run_directory).is_dir() alone against the same Path(manifest).parent, so an identical relative-or-empty manifest composition still writes omp-worker-overlay.yml (and a long brief) into the worktree the node was dispatched to."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal (make tests/test_harness_home_is_not_in_the_worktree.py pass in full on the primary branch) against the landed change; reckon/_backends.py:3271-3279 adds the missing is_absolute() clause to the claude worker-mcp.json writer and the named test file is untouched by the diff, so the goal is met by the product change alone.\nVERDICT done_when: read the measure (the named file passing in full as an all_debug job with SLURM_JOB_ID unset, base and head arms as full revisions, a base negative control, ruff clean on the changed paths, and the manifest written in one bounded write); the manifest's tests: line is 'env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_harness_home_is_not_in_the_worktree.py', scoped-gate-1794996266397307300.log records '4 passed in 6.42s' with a bare EXIT=0, and negative-control-base-ef0bce3.log records '2 failed, 2 passed in 5.56s' with EXIT=1; the manifest records no ruff result, and ruff check reports the same 2 pre-existing findings at base and at head over reckon/_backends.py, so nothing new is added but the measure's ruff half is unrecorded.\nVERDICT write_paths: read the declared write paths (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its node file, docs/figures/queued-work-needs-no-workaround/qwnw-red-file-harness-home-is-not-in-the-worktree) and every path in the delivered diff - reckon/_backends.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-harness-home-is-not-in-the-worktree.html - lies inside them, with the fragment directory and file both declared.\nVERDICT manifest: read the reviewed run's manifest.md; it records commits 7e99be4269e0511b4585b99242bef8ad2e600bcf and 52e8a337940e09a386af092f5a4e8535889ccd3c, the four log paths it cites, both suite arms as inline JSON at full 40-character revisions with failure_count 0, and a landing line naming 4 passed at head against 2 failed and 2 passed at base.\nVERDICT diff: read both commits against ef0bce316448244cae55cedef8aca7e1dbc36988 - 7e99be4269 changes nine lines in reckon/_backends.py (one guard clause plus a five-line comment) and 52e8a337940e adds the 79-line evidence fragment - and the delivered diff carries nothing else.\nCALL_SITES: reckon/crew/dispatching/launch.py:752, reckon/crew/dispatch_sessions.py:1463, reckon/crew/dispatch_sessions.py:2000, reckon/crew/resumption.py:689\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3271-3279 is the only product change and the named file's four cases pass in scoped-gate-1794996266397307300.log at revision 7e99be4269.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1794996266397307300.log carries '# revision: 7e99be4269e0511b4585b99242bef8ad2e600bcf' and '4 passed in 6.42s' with a bare EXIT=0, but the manifest records no ruff result and both arm logs carry a header line the manifest itself discloses as hand-prepended under outside_scope.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/_backends.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-harness-home-is-not-in-the-worktree.html, both inside the declared write paths, and edits no plan or state file.\nSCORE durability: 18\nJUSTIFICATION durability: putting back the pre-change guard \u2014 is_dir() without is_absolute() at reckon/_backends.py:3273 \u2014 leaves worker-mcp.json in the worktree and reddens tests/test_harness_home_is_not_in_the_worktree.py:181, as negative-control-base-ef0bce3.log shows by failing when is_absolute() alone distinguished the two revisions.\nSCORE fit: 18\nJUSTIFICATION fit: the added clause restates the guard the same file already applies at reckon/_backends.py:1432-1434 and its comment matches the prose style around it, with ruff format reporting the file already formatted.\nSCORE reuse: 16\nJUSTIFICATION reuse: the diff adds no definition, but the 'a run directory is a location' rule is inlined at reckon/_backends.py:3272 as a second copy of the clause at reckon/_backends.py:1433, and a capability search over reckon/ found no helper owning that predicate to extend.\nFINDING reckon/_backends.py:3271 non-blocking: the new guard applies the location rule to the claude MCP record only, while omp_overlay_path at reckon/_backends.py:2002 and _omp_positional_prompt at reckon/_backends.py:2316 still test Path(run_directory).is_dir() alone against the same Path(manifest).parent, so an identical relative-or-empty manifest composition still writes omp-worker-overlay.yml into the worktree.\n",
+  "review_run_id": "r-20261118T101954364510-review-of-qwnw-red-file-harness-home-is-not-in-the-worktree-52e8a337940e",
+  "reviewed_base_sha": "ef0bce316448244cae55cedef8aca7e1dbc36988",
+  "reviewed_head_sha": "52e8a337940e09a386af092f5a4e8535889ccd3c",
+  "reviewed_run_id": "r-20261118T062430056160-qwnw-red-file-harness-home-is-not-in-the-worktree",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:48:13.980775+00:00",
+  "total": 105
+}

@@ -58,7 +58,10 @@ def test_congested_local_lane_routing(dispatch_repo, tmp_path, monkeypatch, choi
     result = CliRunner().invoke(
         cli.main, [*args, "--no-watch", *(["--local"] if choice == "explicit" else [])]
     )
-    payload = json.loads(result.output.splitlines()[0])
+    # A launched dispatch writes its run id to stderr as a notice, and Click
+    # interleaves the two streams in ``output``; the JSON document is the
+    # first line of stdout on every exit.
+    payload = json.loads(result.stdout.splitlines()[0])
     assert len(calls) == (0 if choice == "explicit" else 1)
     # A congested local lane holds work rather than refusing it: the dispatch
     # is queued, so it exits 0 like a routed dispatch. A picker hold is still a

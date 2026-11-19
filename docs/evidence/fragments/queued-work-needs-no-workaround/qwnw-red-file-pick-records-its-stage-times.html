@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-pick-records-its-stage-times-landing">
+  <h2>A pick record's bound moves with the module that owns it</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_pick_records_its_stage_times.py</code>
+  was red on the primary branch: one of its four cases,
+  <code>test_a_pick_past_the_bound_records_when_it_completes</code>, read
+  <code>assert True is False</code> at its <code>within_bound</code> assertion.
+  The file moved <code>PICKER_DISPATCH_TIMEOUT_SECONDS</code> on
+  <code>reckon.crew.dispatch</code> to a 50&nbsp;ms bound, then required a 250&nbsp;ms
+  pick to record <code>within_bound: false</code>.</p>
+
+  <p><strong>Cause, and which side was wrong: the test.</strong> When the case was
+  written, the picker read the flag's bound by importing
+  <code>reckon.crew.dispatch</code> and taking its module global, so patching that
+  module moved the figure. The dispatcher now resolves the bound per host through
+  <code>picker_dispatch_timeout(config)</code> in
+  <code>reckon.crew.dispatch_picker</code>, which owns the figure;
+  <code>reckon.crew.dispatch</code> only re-exports it through the facade. The
+  patch therefore moved a name nothing reads. Measured directly, with the
+  picker's own resolver:</p>
+
+  <pre id="qwnw-red-file-pick-records-its-stage-times-probe"><code>default bound: 120.0
+after patching dispatch only: 120.0
+after patching dispatch_picker: 0.05</code></pre>
+
+  <p>The product keeps its rule unchanged and still true: the pick's flag and the
+  wait a dispatch applies to that pick both call
+  <code>picker_dispatch_timeout(config)</code> with the same config
+  (<code>reckon/crew/dispatch_picker.py:686</code> for the wait,
+  <code>reckon/crew/picker/__init__.py:134</code> for the flag), so the two cannot
+  drift. Only the test's lever was repointed, at the module that owns the figure,
+  matching the sibling tests that move the same bound. No assertion was deleted or
+  weakened, and the module docstring's stale five-second figure — the shipped
+  bound is 120&nbsp;s — was corrected.</p>
+
+  <h3 id="qwnw-red-file-pick-records-its-stage-times-arms">Measured</h3>
+
+  <p>Both arms run the node's test file as a job on <code>all_debug</code> with
+  <code>SLURM_JOB_ID</code> unset inside the job. Each log's first lines name the
+  revision, tree, command, python, imported module and working directory, and its
+  last line is a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-pick-records-its-stage-times-arm-table">
+    <caption>The base arm is the negative control for the head arm.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base (red, negative control)</td>
+        <td><code>c61cd5f4766676317d1d85959c2983f55f74b41c</code></td>
+        <td><code>pytest -q tests/test_pick_records_its_stage_times.py</code></td>
+        <td><code>1 failed, 3 passed</code>, <code>EXIT=1</code>; failing id
+        <code>tests/test_pick_records_its_stage_times.py::test_a_pick_past_the_bound_records_when_it_completes</code></td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>b87d3dccf534ac679ad75591b02132d77a548256</code></td>
+        <td><code>pytest -q tests/test_pick_records_its_stage_times.py</code></td>
+        <td><code>4 passed</code>, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The base arm runs in a tree extracted at the base revision under
+  <code>$TMPDIR</code>, which is the case the two arms differ in; the head arm runs
+  in the run's own worktree at the commit it names.</p>
+</section>

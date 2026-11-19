@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "335723e1b29db38cdcaa332ee5c1a36e88e01d91",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T09:13:38Z",
+  "findings": [],
+  "head_log_revision": "19779b1e93d274e2e98511e9669d779c6f41bb66",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read the three commits against base 335723e1: e222d2a6 replaces one call argument, 2603507d adds the 59-line fragment, and 19779b1e rewrites the fragment's arm rows to defer to the manifest fields the run records carry.",
+    "done_when": "the done_when measures that file passing in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; scoped-gate-1794985755029444402.log runs that file's own command and reads \"5 passed\" with EXIT=0, and negative-control-1794985967511611115.log reads \"1 failed, 4 passed\" with EXIT=1 at base.",
+    "goal": "the node's goal is that tests/test_the_lane_override_is_explicit_and_recorded.py passes in full at head; the landed change at tests/test_the_lane_override_is_explicit_and_recorded.py:175 passes the dispatch record to ledger_tests._commit_work and the whole file runs green at head.",
+    "manifest": "read at the reviewed run's directory; status complete, commits e222d2a6, 2603507d and 19779b1e, tests the node-file pytest command, baseline_suite 0 failures at 335723e1 and after_suite 0 failures at 19779b1e, both completed true.",
+    "write_paths": "the declared paths are reckon, tests, the fragment directory and its qwnw-red-file-the-lane-override-is-explicit-and-recorded.html; the diff touches tests/test_the_lane_override_is_explicit_and_recorded.py and that one fragment, both inside the fence."
+  },
+  "justifications": {
+    "durability": "restoring _commit_work(repo) at tests/test_the_lane_override_is_explicit_and_recorded.py:175 reddens test_reason_reaches_the_promoted_ledger_row, which negative-control-1794985967511611115.log shows as \"1 failed, 4 passed\" with EXIT=1.",
+    "evidence": "the manifest's tests line names the node file's own pytest command, but its log ran at e222d2a6, one docs-only commit short of the recorded head 19779b1e.",
+    "fit": "the call matches the shipped contract at tests/test_ledger.py:259 and reuses the fixture's own helpers, though docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lane-override-is-explicit-and-recorded.html ends without a final newline.",
+    "goal_fidelity": "tests/test_the_lane_override_is_explicit_and_recorded.py:175 hands _commit_work the record it reads for record[\"worktree\"], and scoped-gate-1794985755029444402.log records \"5 passed\" with EXIT=0.",
+    "reuse": "the diff adds no function, class or module and reuses tests/test_ledger.py:259 _commit_work; the other worktree-committing helpers under tests/ are per-file local variants this instance does not touch.",
+    "scope_discipline": "git diff --stat 335723e1..19779b1e lists only tests/test_the_lane_override_is_explicit_and_recorded.py (+1 -1) and the declared fragment, and no assertion changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_the_lane_override_is_explicit_and_recorded.py passes in full at head; the landed change at tests/test_the_lane_override_is_explicit_and_recorded.py:175 passes the dispatch record to ledger_tests._commit_work and the whole file runs green at head.\nVERDICT done_when: the done_when measures that file passing in full at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage; scoped-gate-1794985755029444402.log runs that file's own command and reads \"5 passed\" with EXIT=0, and negative-control-1794985967511611115.log reads \"1 failed, 4 passed\" with EXIT=1 at base.\nVERDICT write_paths: the declared paths are reckon, tests, the fragment directory and its qwnw-red-file-the-lane-override-is-explicit-and-recorded.html; the diff touches tests/test_the_lane_override_is_explicit_and_recorded.py and that one fragment, both inside the fence.\nVERDICT manifest: read at the reviewed run's directory; status complete, commits e222d2a6, 2603507d and 19779b1e, tests the node-file pytest command, baseline_suite 0 failures at 335723e1 and after_suite 0 failures at 19779b1e, both completed true.\nVERDICT diff: read the three commits against base 335723e1: e222d2a6 replaces one call argument, 2603507d adds the 59-line fragment, and 19779b1e rewrites the fragment's arm rows to defer to the manifest fields the run records carry.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_the_lane_override_is_explicit_and_recorded.py:175 hands _commit_work the record it reads for record[\"worktree\"], and scoped-gate-1794985755029444402.log records \"5 passed\" with EXIT=0.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's tests line names the node file's own pytest command, but its log ran at e222d2a6, one docs-only commit short of the recorded head 19779b1e.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 335723e1..19779b1e lists only tests/test_the_lane_override_is_explicit_and_recorded.py (+1 -1) and the declared fragment, and no assertion changed.\nSCORE durability: 20\nJUSTIFICATION durability: restoring _commit_work(repo) at tests/test_the_lane_override_is_explicit_and_recorded.py:175 reddens test_reason_reaches_the_promoted_ledger_row, which negative-control-1794985967511611115.log shows as \"1 failed, 4 passed\" with EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the call matches the shipped contract at tests/test_ledger.py:259 and reuses the fixture's own helpers, though docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-lane-override-is-explicit-and-recorded.html ends without a final newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and reuses tests/test_ledger.py:259 _commit_work; the other worktree-committing helpers under tests/ are per-file local variants this instance does not touch.\n",
+  "review_run_id": "r-20261118T073156399054-review-of-qwnw-red-file-the-lane-override-is-explicit-and-recorded-19779b1e93d2",
+  "reviewed_base_sha": "335723e1b29db38cdcaa332ee5c1a36e88e01d91",
+  "reviewed_head_sha": "19779b1e93d274e2e98511e9669d779c6f41bb66",
+  "reviewed_run_id": "r-20261118T044619946800-qwnw-red-file-the-lane-override-is-explicit-and-recorded",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T073156399054-review-of-qwnw-red-file-the-lane-override-is-explicit-and-recorded-19779b1e93d2"
+  },
+  "reviewer_run_id": "r-20261118T073156399054-review-of-qwnw-red-file-the-lane-override-is-explicit-and-recorded-19779b1e93d2",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T09:43:20.238224+00:00",
+  "total": 117
+}

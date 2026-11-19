@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite and after_suite each report failure_ids [] and exit_status 0 (baseline_suite-1794990508372285518.log reads 58 passed, after_suite-1794990551448611954.log reads 58 passed), so the head arm adds no failing id over the base",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:_fragment_href",
+    "reckon/evidence.py:_fragment_body_bytes"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T08:39:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scope paragraph names \"the node head 0fc4124926\" for the two suite arms, but the delivered head is 27dd761d and the manifest's after_suite log header records its 58 passed run at 27dd761d, so a reader pairing the fragment with the promoted revision is given a superseded commit."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for the passing run at head as an all_debug job, and this log's header names b99d5f2c, the node base, while the only head run is the landing scoped gate in a /tmp landing tree; the code is identical between the two revisions, so this is a letter-versus-spirit gap rather than a bad measurement, but the committed log cannot itself show the head's content."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence at line 4 calls the base run's empty failing-id set \"the negative control the plan asks for\", which it is not \u2014 a run with no failure cannot show an assertion firing \u2014 and the mutation recorded beside it is the control that does; the overstatement understates the node's own stronger evidence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against b99d5f2c; 0fc4124 adds the base gate log, the mutation log and the fragment (26 lines), and 27dd761d rewrites the mutation log's header and failing-id list (3 lines) and corrects the fragment's scope paragraph (2 lines added, 2 removed), adding no product code and no test.",
+    "done_when": "the done_when's gate exists and is recorded, not claimed \u2014 all_debug job 1325280 with SLURM_JOB_ID unset and output on shared storage, committed at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log:9-10 as \"15 passed\" and EXIT=0, with baselines/after arms as inline JSON carrying full 40-character revisions in the reviewed manifest; the literal negative control (a base run with failing ids) cannot exist because the base is green, and the manifest says so and substitutes a mutation log.",
+    "goal": "the goal is that tests/test_fleet_health.py passes in full on the primary branch; the file reads 15 passed at the node base b99d5f2c (logs/head-all_debug.log:9) and 15 passed at the delivered head 27dd761d (scoped-gate-1794990436829820830.log:264), and git diff b99d5f2c..27dd761d touches nothing under tests/, so the landed state is that state.",
+    "manifest": "read the reviewed run's manifest.md; status complete, commits 0fc4124 and 27dd761d, three changed paths, baseline_suite and after_suite both inline JSON at 58 passed with 0 failures, tests/test_fleet_health.py named as the gate, the mutation log named as negative_control_log, and its quoted 15 passed / EXIT=0 / 5 failed values reconcile with the logs it cites.",
+    "write_paths": "the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat b99d5f2c..27dd761d lists three files, all under the third path, and nothing under reckon/ or tests/."
+  },
+  "justifications": {
+    "durability": "the node's only added assertions are recorded log lines, and the one falsification it carries \u2014 docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-mutation-dstate.log, 5 failed ids against the mutated bin/fleet-health \u2014 is a one-off hand run, so the D-state behaviour is guarded by the existing tests/test_fleet_health.py while the fragment's own revision claim is guarded by nothing.",
+    "evidence": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log:1-10 carries revision, tree, cwd, job, command and EXIT=0, but that all_debug job ran at the base revision rather than the node head and the only head run is the landing scoped gate.",
+    "fit": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health.html:1 is a bare <section id=\"...-record\"> anchor in the same shape as the sibling qwnw-red-file-a-gate-names-its-arms.html:1, and its path is exactly what reckon/evidence.py:_fragment_href resolves for node qwnw-red-file-fleet-health.",
+    "goal_fidelity": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log:9 records \"15 passed\" at b99d5f2c and the landing gate at 27dd761d reads 15 passed, so the named file is green in the delivered tree.",
+    "reuse": "the diff adds no definition \u2014 the fragment is data consumed by reckon/evidence.py:_fragment_body_bytes, which owns fragment composition, and a search over reckon/ for fragment readers found that owner and no second mechanism beside it.",
+    "scope_discipline": "git diff --stat b99d5f2c..27dd761d lists only the three files under docs/evidence/fragments/queued-work-needs-no-workaround, all inside the declared write paths, with no reckon/ or tests/ edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that tests/test_fleet_health.py passes in full on the primary branch; the file reads 15 passed at the node base b99d5f2c (logs/head-all_debug.log:9) and 15 passed at the delivered head 27dd761d (scoped-gate-1794990436829820830.log:264), and git diff b99d5f2c..27dd761d touches nothing under tests/, so the landed state is that state.\nVERDICT done_when: the done_when's gate exists and is recorded, not claimed \u2014 all_debug job 1325280 with SLURM_JOB_ID unset and output on shared storage, committed at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log:9-10 as \"15 passed\" and EXIT=0, with baselines/after arms as inline JSON carrying full 40-character revisions in the reviewed manifest; the literal negative control (a base run with failing ids) cannot exist because the base is green, and the manifest says so and substitutes a mutation log.\nVERDICT write_paths: the declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat b99d5f2c..27dd761d lists three files, all under the third path, and nothing under reckon/ or tests/.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits 0fc4124 and 27dd761d, three changed paths, baseline_suite and after_suite both inline JSON at 58 passed with 0 failures, tests/test_fleet_health.py named as the gate, the mutation log named as negative_control_log, and its quoted 15 passed / EXIT=0 / 5 failed values reconcile with the logs it cites.\nVERDICT diff: read both commits against b99d5f2c; 0fc4124 adds the base gate log, the mutation log and the fragment (26 lines), and 27dd761d rewrites the mutation log's header and failing-id list (3 lines) and corrects the fragment's scope paragraph (2 lines added, 2 removed), adding no product code and no test.\nCALL_SITES: reckon/evidence.py:_fragment_href, reckon/evidence.py:_fragment_body_bytes\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log:9 records \"15 passed\" at b99d5f2c and the landing gate at 27dd761d reads 15 passed, so the named file is green in the delivered tree.\nSCORE evidence: 16\nJUSTIFICATION evidence: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log:1-10 carries revision, tree, cwd, job, command and EXIT=0, but that all_debug job ran at the base revision rather than the node head and the only head run is the landing scoped gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b99d5f2c..27dd761d lists only the three files under docs/evidence/fragments/queued-work-needs-no-workaround, all inside the declared write paths, with no reckon/ or tests/ edit.\nSCORE durability: 15\nJUSTIFICATION durability: the node's only added assertions are recorded log lines, and the one falsification it carries \u2014 docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-mutation-dstate.log, 5 failed ids against the mutated bin/fleet-health \u2014 is a one-off hand run, so the D-state behaviour is guarded by the existing tests/test_fleet_health.py while the fragment's own revision claim is guarded by nothing.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health.html:1 is a bare <section id=\"...-record\"> anchor in the same shape as the sibling qwnw-red-file-a-gate-names-its-arms.html:1, and its path is exactly what reckon/evidence.py:_fragment_href resolves for node qwnw-red-file-fleet-health.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition \u2014 the fragment is data consumed by reckon/evidence.py:_fragment_body_bytes, which owns fragment composition, and a search over reckon/ for fragment readers found that owner and no second mechanism beside it.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health.html:27 non-blocking: the scope paragraph names \"the node head 0fc4124926\" for the two suite arms, but the delivered head is 27dd761d and the manifest's after_suite log header records its 58 passed run at 27dd761d, so a reader pairing the fragment with the promoted revision is given a superseded commit.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health-base-all_debug.log:1 non-blocking: the done_when asks for the passing run at head as an all_debug job, and this log's header names b99d5f2c, the node base, while the only head run is the landing scoped gate in a /tmp landing tree; the code is identical between the two revisions, so this is a letter-versus-spirit gap rather than a bad measurement, but the committed log cannot itself show the head's content.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-fleet-health.html:4 non-blocking: the sentence at line 4 calls the base run's empty failing-id set \"the negative control the plan asks for\", which it is not \u2014 a run with no failure cannot show an assertion firing \u2014 and the mutation recorded beside it is the control that does; the overstatement understates the node's own stronger evidence.",
+  "review_run_id": "r-20261118T083606163628-review-of-qwnw-red-file-fleet-health-27dd761d2f50",
+  "reviewed_base_sha": "b99d5f2c031a0af7252e0b8abbb4185822998851",
+  "reviewed_head_sha": "27dd761d2f50024d2ba36d78f6bf2822a98249a8",
+  "reviewed_run_id": "r-20261118T054042395333-qwnw-red-file-fleet-health",
+  "reviewer_run_id": "r-20261118T083606163628-review-of-qwnw-red-file-fleet-health-27dd761d2f50",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T09:13:09.560868+00:00",
+  "total": 108
+}

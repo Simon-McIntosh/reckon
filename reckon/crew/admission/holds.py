@@ -525,6 +525,7 @@ def _report_queued_failure(pointer: Mapping[str, Any]) -> None:
             previous=None,
             current=str(snapshot["state"]),
             counts=_fleet_counts(snapshots),
+            pointers=live,
         )
         runs._append_watch_lines(runs.watch_stream_path(project), [row])
     except Exception:  # noqa: BLE001 - a report that cannot be written never stops admission

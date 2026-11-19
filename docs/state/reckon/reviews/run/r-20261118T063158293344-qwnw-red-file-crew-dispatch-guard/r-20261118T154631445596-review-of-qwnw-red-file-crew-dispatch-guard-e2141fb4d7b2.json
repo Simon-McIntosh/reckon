@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "list_live rows == [_pointer_shape(record) for record in (owner, accepted)]",
+      "fails_if": "dispatch stops splitting its dispatch-time detail onto a dispatch_detail path, list_live stops returning the pointer as stored, or a pointer value differs from the in-memory record. It does not fail when a name is dropped from runs.DISPATCH_DETAIL_FIELDS, because both sides subtract that same constant.",
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": 251,
+      "test": "test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch"
+    },
+    {
+      "assertion": "detail.get(name) == record.get(name) for each name in runs.DISPATCH_DETAIL_FIELDS",
+      "fails_if": "the detached detail file holds a different value than the in-memory record for a field whose value is not None; for unreconciled_override both sides are None in this fixture, so that key cannot fail.",
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": 255,
+      "test": "test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value the test supplied against the same value returned: the left side of the shape assertion is read back through crew.list_live from the pointer file, and the detail loop reads the run detail JSON written by dispatch and compares it with the in-memory record. The two self-referential spots are the shared DISPATCH_DETAIL_FIELDS constant at line 217 and the None-valued key at line 255, both recorded as findings.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:385 (dispatch)",
+    "reckon/crew/runs.py:1740 (list_live)",
+    "reckon/crew/runs.py:197 (_split_dispatch_detail reached through _write_json at reckon/crew/runs.py:495)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:24:34Z",
+  "evidence_limits": [
+    "No suite arm was re-run during this review; every result cited is read from the reviewed run's own logs.",
+    "scoped-gate-1795015507662184614.log records 14 passed EXIT=0 at e2141fb4d7 but records no partition, so the all_debug requirement in the done_when is read from the manifest claim rather than from the log header.",
+    "The importer arm population is empty because no product file changed; the two test files run at both revisions are not derived from the change."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": "251",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expectation subtracts runs.DISPATCH_DETAIL_FIELDS from the record while the write path at reckon/crew/runs.py:495 subtracts the same constant, so dropping a name from that constant leaves the pointer carrying the field and the expectation moved in step; the removal of that blind spot belongs in a node that can assert the constant's coverage, so a later narrowing of it cannot go green here."
+    },
+    {
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": "255",
+      "severity": "non-blocking",
+      "text": "non-blocking: detail.get(name) == record.get(name) holds for any field whose value is None on both sides, which is the exporter's own case for unreconciled_override in this fixture, so the loop guards five of its six keys and a dispatch that stopped detaching that one would keep the case green."
+    },
+    {
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": "253",
+      "severity": "non-blocking",
+      "text": "non-blocking: the detail file is read by hand through json.loads(Path(record[\"dispatch_detail\"]).read_text(...)) when reckon/crew/runs.py:257 read_dispatch_detail is the module's declared single accessor for a record's detail, so the test duplicates rather than extends the owner and a change to the accessor's merge rule will not reach this line."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dispatch-guard.html",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the runs table names 2a6d1a96 as the head measured at 14 passed while the delivered head is e2141fb4d7 and scoped-gate-1795015507662184614.log records 14 passed at e2141fb4d7, so a reader comparing the evidence to the promoted head cannot tell which commit the green row belongs to."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commits 2a6d1a96 and e2141fb4d7 against base 7d96b815d9 commit by commit; two files changed, the expectation rewrite at tests/test_crew_dispatch_guard.py:207-255 and a 43-line evidence fragment whose runs table names 2a6d1a96 as the head revision while the delivered head is e2141fb4d7, and no product source is touched.",
+    "done_when": "dispatch-detail.json requires the file green at head as an all_debug job, the base run first with a per-cause verdict, no assertion deleted or weakened, both suite arms recorded inline, the base failure logged beside the head in the fragment, and ruff clean on the changed paths; the manifest records head 14 passed EXIT=0 at e2141fb4d7 and base 1 failed 13 passed EXIT=1 at 7d96b815d9, both arms 58 passed EXIT=0, and the fragment carries the base failure with its test-wrong verdict, but the gate log scoped-gate-1795015507662184614.log records no partition, and the importer arm was filled with two test files that import nothing the node changed, since no product file changed at all.",
+    "goal": "the source node's goal is \"Make tests/test_crew_dispatch_guard.py pass in full on the primary branch\", and the landed diff changes only tests/test_crew_dispatch_guard.py:207-255 plus a new evidence fragment, which is what a passing file over an unchanged product tree requires.",
+    "manifest": "read manifest.md; it names commits 2a6d1a960376c9f29db8f075a77557a349497e37 and e2141fb4d7b28fa22ee0150c78e206daa5e07766, states 14 passed EXIT=0 for the named file at head against 1 failed, 13 passed EXIT=1 at base, records both declared suite arms at 58 passed, and names logs/negative-control-base-guard.log as the red control.",
+    "write_paths": "the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both delivered paths, tests/test_crew_dispatch_guard.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dispatch-guard.html, fall inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_dispatch_guard.py:248-251 reddens if dispatch stops moving its detail into the run file, but its exclusion set is read from runs.DISPATCH_DETAIL_FIELDS, so a regression that removes a name from that constant at reckon/crew/runs.py:170-177 moves both sides of the comparison together and leaves the case green.",
+    "evidence": "scoped-gate-1795015507662184614.log records revision e2141fb4d7, tree, command, imported module, resolved cwd and 14 passed EXIT=0, and logs/negative-control-base-guard.log records the base red at 1 failed EXIT=1, but the partition the done_when names is not in either log and the importer arm at baseline_suite-1795015954135057955.log is a population no changed file creates.",
+    "fit": "tests/test_crew_dispatch_guard.py:207 follows the module's existing helper-above-the-test idiom and reuses the runs import already made at line 15, with no name the naming rules forbid.",
+    "goal_fidelity": "tests/test_crew_dispatch_guard.py:248-255 makes the watcher-reuse case compare pointer shape plus detached detail, and scoped-gate-1795015507662184614.log records 14 passed with EXIT=0 at e2141fb4d7.",
+    "reuse": "tests/test_crew_dispatch_guard.py:253 re-reads the run's detail file with json.loads(Path(...)) rather than reckon/crew/runs.py:257's read_dispatch_detail, forking a capability that module already owns and documents as its single accessor for exactly this read.",
+    "scope_discipline": "both landed paths, tests/test_crew_dispatch_guard.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dispatch-guard.html, sit inside the declared write paths, and tests/test_crew_dispatch_guard.py:248-255 carries no change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Make tests/test_crew_dispatch_guard.py pass in full on the primary branch\", and the landed diff changes only tests/test_crew_dispatch_guard.py:207-255 plus a new evidence fragment, which is what a passing file over an unchanged product tree requires.\nVERDICT done_when: dispatch-detail.json requires the file green at head as an all_debug job, the base run first with a per-cause verdict, no assertion deleted or weakened, both suite arms recorded inline, the base failure logged beside the head in the fragment, and ruff clean on the changed paths; the manifest records head 14 passed EXIT=0 at e2141fb4d7 and base 1 failed 13 passed EXIT=1 at 7d96b815d9, both arms 58 passed EXIT=0, and the fragment carries the base failure with its test-wrong verdict, but the gate log scoped-gate-1795015507662184614.log records no partition, and the importer arm was filled with two test files that import nothing the node changed, since no product file changed at all.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround, and both delivered paths, tests/test_crew_dispatch_guard.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dispatch-guard.html, fall inside them.\nVERDICT manifest: read manifest.md; it names commits 2a6d1a960376c9f29db8f075a77557a349497e37 and e2141fb4d7b28fa22ee0150c78e206daa5e07766, states 14 passed EXIT=0 for the named file at head against 1 failed, 13 passed EXIT=1 at base, records both declared suite arms at 58 passed, and names logs/negative-control-base-guard.log as the red control.\nVERDICT diff: read commits 2a6d1a96 and e2141fb4d7 against base 7d96b815d9 commit by commit; two files changed, the expectation rewrite at tests/test_crew_dispatch_guard.py:207-255 and a 43-line evidence fragment whose runs table names 2a6d1a96 as the head revision while the delivered head is e2141fb4d7, and no product source is touched.\nCALL_SITES: reckon/crew/dispatching/preparation.py:385 (dispatch), reckon/crew/runs.py:1740 (list_live), reckon/crew/runs.py:197 (_split_dispatch_detail reached through _write_json at reckon/crew/runs.py:495)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_dispatch_guard.py:248-255 makes the watcher-reuse case compare pointer shape plus detached detail, and scoped-gate-1795015507662184614.log records 14 passed with EXIT=0 at e2141fb4d7.\nSCORE evidence: 16\nJUSTIFICATION evidence: scoped-gate-1795015507662184614.log records revision e2141fb4d7, tree, command, imported module, resolved cwd and 14 passed EXIT=0, and logs/negative-control-base-guard.log records the base red at 1 failed EXIT=1, but the partition the done_when names is not in either log and the importer arm at baseline_suite-1795015954135057955.log is a population no changed file creates.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: both landed paths, tests/test_crew_dispatch_guard.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dispatch-guard.html, sit inside the declared write paths, and tests/test_crew_dispatch_guard.py:248-255 carries no change the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_crew_dispatch_guard.py:248-251 reddens if dispatch stops moving its detail into the run file, but its exclusion set is read from runs.DISPATCH_DETAIL_FIELDS, so a regression that removes a name from that constant at reckon/crew/runs.py:170-177 moves both sides of the comparison together and leaves the case green.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_crew_dispatch_guard.py:207 follows the module's existing helper-above-the-test idiom and reuses the runs import already made at line 15, with no name the naming rules forbid.\nSCORE reuse: 10\nJUSTIFICATION reuse: tests/test_crew_dispatch_guard.py:253 re-reads the run's detail file with json.loads(Path(...)) rather than reckon/crew/runs.py:257's read_dispatch_detail, forking a capability that module already owns and documents as its single accessor for exactly this read.\nFINDING tests/test_crew_dispatch_guard.py:251 non-blocking: the expectation subtracts runs.DISPATCH_DETAIL_FIELDS from the record while the write path at reckon/crew/runs.py:495 subtracts the same constant, so dropping a name from that constant leaves the pointer carrying the field and the expectation moved in step; the removal of that blind spot belongs in a node that can assert the constant's coverage, so a later narrowing of it cannot go green here.\nFINDING tests/test_crew_dispatch_guard.py:255 non-blocking: detail.get(name) == record.get(name) holds for any field whose value is None on both sides, which is the exporter's own case for unreconciled_override in this fixture, so the loop guards five of its six keys and a dispatch that stopped detaching that one would keep the case green.\nFINDING tests/test_crew_dispatch_guard.py:253 non-blocking: the detail file is read by hand through json.loads(Path(record[\"dispatch_detail\"]).read_text(...)) when reckon/crew/runs.py:257 read_dispatch_detail is the module's declared single accessor for a record's detail, so the test duplicates rather than extends the owner and a change to the accessor's merge rule will not reach this line.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-dispatch-guard.html:13 non-blocking: the runs table names 2a6d1a96 as the head measured at 14 passed while the delivered head is e2141fb4d7 and scoped-gate-1795015507662184614.log records 14 passed at e2141fb4d7, so a reader comparing the evidence to the promoted head cannot tell which commit the green row belongs to.",
+  "reuse_search": "Searched reckon/ for an existing reader of a run's dispatch-time detail: reckon/crew/runs.py:257 read_dispatch_detail and :271 dispatch_field are the declared accessors, used by reckon/crew/recovery_review_acceptance.py:628 and reckon/crew/obligations.py:2119. The added loop reads the file directly instead, filed as a finding; _pointer_shape has no public owner, and runs._split_dispatch_detail:197 owns the projection in product code, which the test does not borrow as an oracle.",
+  "review_run_id": "r-20261118T154631445596-review-of-qwnw-red-file-crew-dispatch-guard-e2141fb4d7b2",
+  "reviewed_base_sha": "7d96b815d9cf590aa98251b510a841595cfdbfdc",
+  "reviewed_head_sha": "e2141fb4d7b28fa22ee0150c78e206daa5e07766",
+  "reviewed_run_id": "r-20261118T063158293344-qwnw-red-file-crew-dispatch-guard",
+  "reviewed_worker_commits": [
+    "2a6d1a960376c9f29db8f075a77557a349497e37",
+    "e2141fb4d7b28fa22ee0150c78e206daa5e07766"
+  ],
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "suite_evidence": "baseline_suite and after_suite both record 58 passed EXIT=0 at 7d96b815d9 and e2141fb4d7; the named file reads 14 passed EXIT=0 at head and 1 failed, 13 passed EXIT=1 at base (logs/negative-control-base-guard.log).",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:52:22.308610+00:00",
+  "total": 97
+}

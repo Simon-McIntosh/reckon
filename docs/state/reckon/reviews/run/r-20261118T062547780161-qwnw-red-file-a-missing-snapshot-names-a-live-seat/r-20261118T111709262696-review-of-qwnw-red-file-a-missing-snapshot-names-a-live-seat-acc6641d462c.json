@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite-1794999931940195609.log at 2f00851c42f2 records 58 passed EXIT=0 with no FAILED line and after_suite-1794999974118152925.log at acc6641d46 records the same suite with no FAILED line and EXIT=0, so the run's own baseline_suite and after_suite carry no failure on either side and the set difference is empty (0); the node's own file arm is red at base only in tests/test_a_missing_snapshot_names_a_live_seat.py, which the head arm passes.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:07:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-missing-snapshot-names-a-live-seat.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "the delivered fragment's declared-suite after arm still names revision c2882844aac5 and its own after_suite-1794999726750161590.log, while the manifest's after_suite records the same suite at the delivered head acc6641d462 with after_suite-1794999974118152925.log, so the commit acc6641d46 that says it names the arms' logs at the run's final head leaves the fragment citing an arm one docs commit short of the head a reader has open."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (brief line 38) is to make tests/test_a_missing_snapshot_names_a_live_seat.py pass in full on the primary branch; the landed fix at tests/test_a_missing_snapshot_names_a_live_seat.py:103-121 supplies the live-pointer precondition the hook's silence rule requires, and a fresh run of the file over a git-archive extraction at acc6641d462 gives 8 passed, so the file passes in full at the delivered head.\nVERDICT done_when: the brief's FENCE-EVIDENCE measure is a red base run with its failing ids logged beside the green head arm; base-run-a-missing-snapshot.log records 2 failed, 6 passed, EXIT=1 at 2f00851c42f2 with the two absent-producer ids and their JSONDecodeError, head-run-a-missing-snapshot.log records 8 passed EXIT=0 at 286e72791a, and my own reruns of both arms (extraction at 2f00851c42 \u2192 2 failed, 6 passed; extraction at acc6641d46 \u2192 8 passed) reproduce both arms, so the gate asserts the stated measure.\nVERDICT write_paths: the source manifest's orientation_write_paths declare reckon, tests, the node's evidence-fragment directory and fragment, and a figures directory; the delivered diff is exactly tests/test_a_missing_snapshot_names_a_live_seat.py plus docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-missing-snapshot-names-a-live-seat.html, both inside that fence.\nVERDICT manifest: read; status complete, four commits named, the two arm logs and both declared-suite arms recorded as inline JSON with full 40-character revisions, and every named log I opened exists with the revision, tree and command header and a trailing EXIT= line the manifest quotes.\nVERDICT diff: read all four commits (286e72791a, 63a48565ad, c2882844aa, acc6641d46) against 2f00851c42f2; 98 insertions and 0 deletions across two files, the test change adds one helper and two call lines with no assertion added or weakened, and the three docs commits write and then re-point the fragment's arm table.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1139, reckon/crew/runs.py:pointer_path, reckon/crew/watch_unit.py:249\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_missing_snapshot_names_a_live_seat.py:244 and :258 now write the live pointer before driving the hook, and the file reads 8 passed at acc6641d46 in my own extraction run, with the promotion onto the primary branch still outside the node's reach.\nSCORE evidence: 16\nJUSTIFICATION evidence: base-run-a-missing-snapshot.log names revision 2f00851c42f2, its command and both FAILED ids with EXIT=1, and the manifest's declared-suite arms carry full revisions with EXIT=0, but the manifest's ruff-clean claim cites no log under the run directory and the declared-suite arm it ran (tests/test_staged_write_inventory.py, tests/test_every_shared_home_lock_holds_across_nodes.py) imports nothing this node changed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, tests/test_a_missing_snapshot_names_a_live_seat.py and the qwnw- evidence fragment, are both inside the source manifest's orientation_write_paths and no product module was touched, which matches the recorded finding that the silence rule already existed at base.\nSCORE durability: 18\nJUSTIFICATION durability: the base arm at 2f00851c42f2 reddens on exactly the two cases the change repairs (JSONDecodeError on an empty stdout), so dropping the pointer write at tests/test_a_missing_snapshot_names_a_live_seat.py:244 or :258 reinstates a failure, and the assertions at :242-244 and :256-258 redden if the hook prints a host or the follow remedy instead of the absent-producer sentence.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at tests/test_a_missing_snapshot_names_a_live_seat.py:103 follows the module's own docstringed-helper shape beside _write_seat and _write_session_host, and writes the pointer through reckon/crew/runs.py's own API as other test modules do.\nSCORE reuse: 18\nJUSTIFICATION reuse: no shared test helper writes a live pointer \u2014 a search of tests/helpers/ (git.py, landing_repository.py) and of callers of runs.pointer_path found ~35 inline runs._write_json(runs.pointer_path(...)) sites and no owner to extend, so this helper is a local convenience in the established idiom rather than a fork of an existing mechanism.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-missing-snapshot-names-a-live-seat.html:56 non-blocking: the delivered fragment's declared-suite after arm still names revision c2882844aac5 and the fragment's own after_suite-1794999726750161590.log, while the manifest's after_suite records the same suite at the delivered head acc6641d462 with after_suite-1794999974118152925.log, so the commit acc6641d46 that says it \"names the arms' logs at the run's final head\" leaves the fragment citing an arm one docs commit short of the head a reader has open.",
+  "review_node": "review-of-qwnw-red-file-a-missing-snapshot-names-a-live-seat-acc6641d462c",
+  "review_run_id": "r-20261118T111709262696-review-of-qwnw-red-file-a-missing-snapshot-names-a-live-seat-acc6641d462c",
+  "reviewed_base_sha": "2f00851c42f247cba1c81c80ed0cf7b41045de76",
+  "reviewed_head_sha": "acc6641d462c21a6910fc14aac1e358df55306d1",
+  "reviewed_run_id": "r-20261118T062547780161-qwnw-red-file-a-missing-snapshot-names-a-live-seat",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T111709262696-review-of-qwnw-red-file-a-missing-snapshot-names-a-live-seat-acc6641d462c"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:32:25.988519+00:00",
+  "total": 110
+}

@@ -86,6 +86,29 @@ def _seat(*, stamp: str, lease_host: str = FOREIGN_HOST, lease_age: int = 0) -> 
         os.utime(lease.path, (old, old))
 
 
+def _live_work(run_id: str) -> None:
+    """Record one live pointer so the session holds work of its own.
+
+    The absent-producer line is spoken only for a session that holds unsettled
+    work; a session that dispatched nothing is told nothing, because the remedy
+    would arm a seat nothing is owed to. The seat-lease reading is therefore
+    asserted on the arm that can speak it.
+    """
+    path = runs.pointer_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "project": PROJECT,
+                "session": SESSION,
+                "phase": "working",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def _line(repository: Path) -> str:
     env = dict(os.environ)
     env["PYTHONPATH"] = str(ROOT)
@@ -124,6 +147,14 @@ def test_fresh_host_lease_keeps_quiet_foreign_seat_live(
 def test_stale_or_mismatched_lease_does_not_revive_quiet_seat(
     repository: Path, holder: str, age: int
 ) -> None:
+    """A lapsed or foreign-held lease is no seat, so the reading is absent.
+
+    The session holds work, which is what makes the absent-producer sentence
+    reachable at all, and the line must name the seat as absent and offer the
+    seat remedy rather than this session's follower arming, for a lease this
+    host never renewed.
+    """
+    _live_work("run-quiet-seat")
     _seat(
         stamp=obligation_snapshot.source_code_stamp(), lease_host=holder, lease_age=age
     )
@@ -131,6 +162,7 @@ def test_stale_or_mismatched_lease_does_not_revive_quiet_seat(
     assert watch_unit.live_foreign_seat_host(PROJECT) == ""
     line = _line(repository)
     assert "no producer" in line and ENSURE in line, line
+    assert FOREIGN_HOST not in line and FOLLOW not in line, line
 
 
 @pytest.mark.parametrize("seat_is_current", [True, False])

@@ -1,0 +1,229 @@
+<section id="qwnw-red-file-the-invocation-parser-spells-a-section-landing">
+  <h2>The invocation parser spells a section through the shared core</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_the_invocation_parser_spells_a_section.py</code> failed at the
+  base revision in one test, the census that walks every regular expression
+  under <code>reckon/</code> and requires each section-spelling frame to compose
+  <code>SECTION_NUMBER_PATTERN</code>. Every functional assertion in the file
+  already passed: the invocation expression composes the core, dotted and
+  hyphenated spellings resolve to <code>s5-1</code>, and an alphabetic suffix is
+  rejected. The census failed because three readers that landed after the census
+  (<code>0609e28519</code>, <code>3fa3b7b8e9</code>, <code>0daa5071f8</code>)
+  spelled the number grammar again in their own pattern rather than composing the
+  exported core.</p>
+
+  <p><strong>Causes and verdicts.</strong> Each is a product rule that broke, and
+  each repair is a substitution with no change to the accepted language:</p>
+
+  <ul id="qwnw-red-file-the-invocation-parser-spells-a-section-causes">
+    <li><code>reckon/crew/plan_review.py::_SECTION_REFERENCE</code> — product
+    wrong. It accepted <code>§5.1</code> and <code>s5-1</code> with a literal
+    copy of the number grammar; it now interpolates the core, and its compiled
+    pattern is byte-identical to the base one.</li>
+    <li><code>reckon/crew/plan_review.py::_SECTION_TOKEN</code> — product wrong.
+    <code>^[sS][0-9]+(?:[.-][0-9]+)*$</code> was composed into the core here;
+    the primary branch reached the same rule by deletion in
+    <code>0409b3be</code>, which removes the gate because the parser's own
+    identity derivation already reads every s-prefixed spelling. The merge
+    keeps the deletion, so the module owns no grammar at all.</li>
+    <li><code>reckon/doccheck.py::_DEFERRED_WORK_TERM</code> — product wrong.
+    The prose alternative that reads "carries to §N" matched the number with its
+    own <code>\d+</code>; it now composes the core, so the one grammar decides
+    what a section number is. The only behaviour that moves is the length of a
+    quoted refusal: <code>§5.1</code> is quoted whole instead of as
+    <code>§5</code>. Every group in that pattern stays non-capturing, so
+    <code>re.findall</code> still yields text.</li>
+  </ul>
+
+  <p><strong>The test's own change.</strong> The census's expected set is the
+  whole population of core-composed frames, so it now names the three sites the
+  repair brings into the fold — ten entries, from seven. No assertion was deleted
+  or weakened: the census still requires the core in every frame it finds, still
+  compares the site set exactly, and its filter is unchanged. The test was
+  renamed from <code>…_reports_seven_…</code> to
+  <code>test_widened_census_reports_every_core_composed_expression</code>,
+  because a site count frozen into a name is a figure that goes stale on the next
+  reader; the set below it carries the figure.</p>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-merge">Merge with the primary branch</h3>
+
+  <p>The landing conflicted with <code>c1d038a8</code> in
+  <code>reckon/crew/plan_review.py</code>, the one product file both sides
+  changed. The primary branch reached this node's rule twice. <code>0409b3be</code>
+  removes <code>_SECTION_TOKEN</code> outright — the identity derivation already
+  reads every s-prefixed spelling — and composes the reference scanner from
+  <code>SECTION_NUMBER_PATTERN</code> through the named grammar
+  <code>_SECTION_REFERENCE_GRAMMAR</code>; <code>14444f7a</code> then drops the
+  refusal under the scanner; the section-name check that nothing could reach.
+  The merge takes that side whole, which keeps both intents: no private number
+  grammar in the module, and no unreachable refusal. Both sides' hunks are
+  resolved to the primary branch's text and the file is byte-identical to
+  <code>0409b3be</code>'s successor on main.</p>
+
+  <p>One consequence is on this node's own test. The census reads a
+  <code>re.compile</code> call's first argument, so a grammar held in a named
+  constant became invisible to it — the scanner it had just started covering
+  would have dropped out of the guard silently. The census now resolves one
+  level of module-level string constant, so
+  <code>crew/plan_review.py::_SECTION_REFERENCE</code> stays covered through
+  <code>_SECTION_REFERENCE_GRAMMAR</code>, and
+  <code>crew/reports.py::_PLAN_SECTION_REFERENCE</code>, which compiles the same
+  named grammar, is covered with it. The expected set keeps ten frames:
+  <code>crew/reports.py</code> stands where the removed token gate stood.</p>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-measured">Measured</h3>
+
+  <table id="qwnw-red-file-the-invocation-parser-spells-a-section-arms">
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>tree</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base run of the named file</td>
+        <td><code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code></td>
+        <td>extraction of the base revision under <code>$TMPDIR</code></td>
+        <td>1 failed, 11 passed — <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>head run of the named file, all_debug job 1326112</td>
+        <td><code>7e91f9b4166e55fabdb2a8ae852665849d83281e</code></td>
+        <td>this worktree</td>
+        <td>12 passed — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>scoped gate (all_debug)</td>
+        <td><code>7e91f9b4166e55fabdb2a8ae852665849d83281e</code></td>
+        <td>this worktree</td>
+        <td>0 failures — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>suite baseline arm (all_debug)</td>
+        <td><code>250d9cf3e68ee9d9119f29956780bde9fe480a10</code></td>
+        <td>base tree</td>
+        <td>0 failures — <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>suite after arm (all_debug)</td>
+        <td><code>7e91f9b4166e55fabdb2a8ae852665849d83281e</code></td>
+        <td>this worktree</td>
+        <td>0 failures — <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The head run was submitted with <code>sbatch</code> to the
+  <code>all_debug</code> partition and unsets <code>SLURM_JOB_ID</code> and
+  <code>SLURM_JOB_NAME</code> inside the job, so a test that branches on running
+  under the scheduler sees a plain invocation; its log names the revision, the
+  tree, the imported module's <code>__file__</code>, the resolved working
+  directory and the bare <code>EXIT=</code> line.</p>
+
+  <p><strong>The arm over the importing population.</strong> The 145 test files
+  under <code>tests/</code> whose own import lines name
+  <code>reckon.crew.plan_review</code> or <code>reckon.doccheck</code> — the
+  whole population that imports what this change touches — were run over both
+  arms with one file list, kept at
+  <code>logs/tests-importing-population.txt</code> beside the logs:</p>
+
+  <pre><code>base 250d9cf3: 16 failed, 1254 passed in 652.42s — EXIT=1 (logs/importing-arm-base.log)
+head 7e91f9b4: 12 failed, 1258 passed in 738.35s — EXIT=1 (logs/importing-arm-head.log)</code></pre>
+
+  <p>The head adds no failing id: every failure it reports is present at the
+  base revision, and four ids that fail at base pass at head.</p>
+
+  <pre><code>head only (added): none
+base only: test_a_code_review_reads_its_projects_package.py::test_this_repository_reads_the_same_modules_as_the_reckon_listing
+           test_run_verbs_share_one_identity_grammar.py::test_a_matching_project_is_accepted_and_a_disagreeing_one_refused[gc]
+           test_run_verbs_share_one_identity_grammar.py::test_a_matching_project_is_accepted_and_a_disagreeing_one_refused[gc|shadow|verify-gate]</code></pre>
+
+  <p>The base arm ran in a full extraction of the base revision under
+  <code>$TMPDIR</code>, which carries no git directory; a few ids therefore fail
+  there and not at head. The direction the arm is read for — failures the head
+  adds — is empty.</p>
+
+  <p><strong>The gate over the readers this change touched.</strong> Nine files
+  read 109 passed and <code>EXIT=0</code> at head in 23.16 s
+  (<code>reckon/crew/runs/r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section/logs/readers-gate-head.log</code>,
+  whose header carries the command): the seven <code>test_doccheck_*</code>
+  files, which import <code>reckon.doccheck</code>; the review-scope test, which
+  imports <code>reckon.crew.plan_review</code>; and the named file, whose census
+  parses every module under <code>reckon/</code> including both changed readers.
+  Three files from the earlier ad-hoc run are left out because they import
+  neither module, so a receipt drawn from them would measure nothing the change
+  touches.
+  <code>tests/test_section_spelling_grammars_share_one_core.py</code> is left
+  out of that gate as well: its own census is red at the base revision on the
+  same three readers, so the file belongs to the node that owns it and is named
+  under outside scope. <code>ruff check</code> reports 15 findings on the three changed
+  paths in both arms, and <code>ruff format --check</code> reports all three
+  formatted in both arms, so the change adds none.</p>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-control">Negative control</h3>
+
+  <p>At the base revision the named file fails on one id, quoted from the log's
+  own summary line:</p>
+
+  <pre><code>_________ test_widened_census_reports_seven_core_composed_expressions __________
+…
+    assert "SECTION_NUMBER" in pattern, (path, context, pattern)
+E   AssertionError: (PosixPath(&#x27;…/reckon/doccheck.py&#x27;, &#x27;_DEFERRED_WORK_TERM&#x27;, …&#x27;§\\s*\\d+&#x27;…))
+…
+FAILED tests/test_the_invocation_parser_spells_a_section.py::test_widened_census_reports_seven_core_composed_expressions
+assert 'SECTION_NUMBER' in "'…§\\s*\\d+…'"
+1 failed, 11 passed in 1.09s
+EXIT=1</code></pre>
+
+  <p>The assertion it failed is the census's
+  <code>assert "SECTION_NUMBER" in pattern</code>. The base log is
+  <code>~/.config/reckon/crew/runs/r-20261118T062718719753-qwnw-red-file-the-invocation-parser-spells-a-section/logs/base-run.log</code>;
+  the head log is <code>…/logs/head-run.log</code> beside it.</p>
+
+  <p><strong>The guard fires.</strong> A passing census does not show that the
+  census can refuse, so the predicate was run against a synthesised module root
+  holding one reader that writes the grammar again —
+  <code>_SECTION_WORD_RE = re.compile(r"§\s*\d+")</code> — and it refused by
+  name:</p>
+
+  <pre><code>REFUSED: _SECTION_WORD_RE -&gt; '§\\s*\\d+'</code></pre>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-repair">Repair round</h3>
+
+  <p>Finding <code>fd36f69ebea</code> read the run's tests line and both suite
+  arms as the record of the arm the done-when asks for, and found them naming two
+  census files whose only reckon import is
+  <code>from reckon import interface_counts</code> — a population that imports
+  neither <code>reckon/crew/plan_review.py</code> nor <code>reckon/doccheck.py</code>
+  — so a promotion receipt drawn from that line would measure nothing this change
+  touched, and the four importing files the fragment then named carried no log to
+  re-run.</p>
+
+  <p>The answer is the two arms above: the importing population of 145 files run
+  with one file list at both the base revision and the head, each log naming the
+  revision, the tree and the command and ending in its <code>EXIT=</code> line,
+  and the file list itself kept at
+  <code>logs/tests-importing-population.txt</code>; and the bounded gate over the
+  nine reader tests that ends <code>EXIT=0</code> with 109 passed. The manifest's
+  tests line now
+  names the reader gate, so the receipt it feeds is drawn from a population that
+  reads the changed readers rather than from the census files alone. The two
+  census files remain recorded as the dispatch's declared suite arms, which is
+  what that fence asks for, and the fragment says what each population is.</p>
+
+  <h3 id="qwnw-red-file-the-invocation-parser-spells-a-section-outside">Outside scope</h3>
+
+  <p>Three failures in the wider selection are older than this change and fail
+  identically at the base revision, so none is caused here:
+  <code>tests/test_no_source_names_the_retired_field.py::test_no_reckon_source_names_the_retired_field</code>
+  (a comment in <code>reckon/doccheck.py</code> naming a retired field),
+  <code>tests/test_skill_contracts.py::test_ship_crew_views_match_the_typed_mcp_surface</code>
+  and <code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>.
+  <code>tests/test_section_spelling_grammars_share_one_core.py::test_number_grammar_census_has_six_composed_frames</code>
+  is red in both arms for the same three readers this node repaired — at base it
+  fails on <code>_SECTION_TOKEN</code>'s own copy of the grammar and at head on
+  its enumeration of six composed frames, which the repair makes nine. It is one
+  file per node under §29 and its own node owns that enumeration, so this node
+  reports it rather than editing it.
+  This gate measures only this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>

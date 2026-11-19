@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:3076 owed_plan_review_pass_due in sweep",
+    "reckon/crew/resumption.py:3088 record_owed_plan_review_pass in sweep",
+    "reckon/crew/station.py:460 station tick -> resumption.sweep",
+    "reckon/crew_follow_commands.py:303 follower cadence -> resumption.sweep"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T00:01:06Z",
+  "findings": [
+    {
+      "file": "tests/test_owed_plan_reviews_run_on_change.py",
+      "line": "363",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert delay <= INTERVAL` cannot fail, because the arm runs ten one-second sweeps so any observable delay is at most nine against a sixty-second bound; only total starvation fails it, at :361, so the fragment's 'composed within the interval' claim is not measured."
+    },
+    {
+      "file": "tests/test_owed_plan_reviews_run_on_change.py",
+      "line": "359",
+      "severity": "non-blocking",
+      "text": "non-blocking: `set(gated.passes) <= set(ungated.passes)` holds whatever the gate does, because the ungated arm passes on all ten sweep indices (asserted at :354) and the gated arm can only index the same ten; the assertion cannot detect a pass the base would not have made."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "3087",
+      "severity": "non-blocking",
+      "text": "non-blocking: the pass record is written whenever the gate was due, including after the compose at :3077 raised into the handler at :3085-3086, so a transient failure is not retried until the 60 s interval expires or an input moves, where the ungated sweep retried on the next sweep."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production sites: reckon/crew/resumption.py:3076 and :3088 in sweep's plan-review pass, with reckon/crew/station.py:460 (station tick) and reckon/crew_follow_commands.py:303 (follower cadence) as the sweep callers that reach them.",
+    "diff": "read commit by commit against 6efac997fd: aebadaba56 adds the footprint, due and record helpers to plan_review.py plus the gate block in resumption.py and the 375-line test; 8d97dd966 adds the 51-line evidence fragment.",
+    "done_when": "the fence's measure names tests/test_owed_plan_reviews_run_on_change.py and five assertions; the manifest records head 63 passed EXIT=0 and base 58 passed EXIT=0, and the test does assert at most one pass over 30 quiet sweeps, one per changed input, and one at 60 s.",
+    "goal": "the node's goal is to make the owed-plan-review pass run on input change or after 60 s; reckon/crew/plan_review.py:4801-4949 answers that with a footprint and a 60 s interval, and reckon/crew/resumption.py:3063-3091 gates the single production compose call on it.",
+    "manifest": "read; status complete, commits aebadaba56 and 8d97dd966, changed_paths the four landed files, after_suite and baseline_suite both completed with 0 failures, negative_control_log logs/negative-control-base.log ending EXIT=1.",
+    "write_paths": "the node declared reckon/crew/resumption.py, reckon/crew/plan_review.py, tests/test_owed_plan_reviews_run_on_change.py, the evidence fragment and a figures directory; the diff touches the first four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_owed_plan_reviews_run_on_change.py:154-246 reddens on the base revision (logs/negative-control-base.log, 5 failed), but the parity limb's delay bound at :363 and its pass-subset check at :359 cannot fail as written, so that clause is not guarded.",
+    "evidence": "the manifest records the head arm at 63 passed EXIT=0 (logs/after-suite.log) and the base arm at 58 passed EXIT=0 (logs/baseline-suite.log), and tests/test_owed_plan_reviews_run_on_change.py:154-246 asserts the quiet-sweep, per-input and interval counts the done_when names.",
+    "fit": "the helpers follow plan_review.py's existing private-state idiom (_reflex_state_path at :4553, _record_weighed_edits at :4620) and carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/plan_review.py:4868 owed_plan_review_pass_due answers due on a changed footprint or on the 60 s OWED_PLAN_REVIEW_PASS_SECONDS, and reckon/crew/resumption.py:3076-3090 consults it before composing and records the pass afterwards, which is exactly the goal's change-or-interval rule.",
+    "reuse": "store_stamp (reckon/run_store.py:370) and ledger_generation (reckon/ledger.py:1322) are reused from their owners; a search of 'footprint', 'def .*_due(', 'st_mtime_ns', capabilities.file_stamp and repository_maintenance.maintenance_due found no existing footprint-or-interval gate owner to extend.",
+    "scope_discipline": "git diff 6efac997fd..8d97dd9660 touches only reckon/crew/plan_review.py, reckon/crew/resumption.py, tests/test_owed_plan_reviews_run_on_change.py and the evidence fragment, all within the five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the owed-plan-review pass run on input change or after 60 s; reckon/crew/plan_review.py:4801-4949 answers that with a footprint and a 60 s interval, and reckon/crew/resumption.py:3063-3091 gates the single production compose call on it.\nVERDICT done_when: the fence's measure names tests/test_owed_plan_reviews_run_on_change.py and five assertions; the manifest records head 63 passed EXIT=0 and base 58 passed EXIT=0, and the test does assert at most one pass over 30 quiet sweeps, one per changed input, and one at 60 s.\nVERDICT write_paths: the node declared reckon/crew/resumption.py, reckon/crew/plan_review.py, tests/test_owed_plan_reviews_run_on_change.py, the evidence fragment and a figures directory; the diff touches the first four and nothing else.\nVERDICT manifest: read; status complete, commits aebadaba56 and 8d97dd966, changed_paths the four landed files, after_suite and baseline_suite both completed with 0 failures, negative_control_log logs/negative-control-base.log ending EXIT=1.\nVERDICT diff: read commit by commit against 6efac997fd: aebadaba56 adds the footprint, due and record helpers to plan_review.py plus the gate block in resumption.py and the 375-line test; 8d97dd966 adds the 51-line evidence fragment.\nCALL_SITES: reckon/crew/resumption.py:3076 owed_plan_review_pass_due in sweep, reckon/crew/resumption.py:3088 record_owed_plan_review_pass in sweep, reckon/crew/station.py:460 station tick -> resumption.sweep, reckon/crew_follow_commands.py:303 follower cadence -> resumption.sweep\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:4868 owed_plan_review_pass_due answers due on a changed footprint or on the 60 s OWED_PLAN_REVIEW_PASS_SECONDS, and reckon/crew/resumption.py:3076-3090 consults it before composing and records the pass afterwards, which is exactly the goal's change-or-interval rule.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest records the head arm at 63 passed EXIT=0 (logs/after-suite.log) and the base arm at 58 passed EXIT=0 (logs/baseline-suite.log), and tests/test_owed_plan_reviews_run_on_change.py:154-246 asserts the quiet-sweep, per-input and interval counts the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 6efac997fd..8d97dd9660 touches only reckon/crew/plan_review.py, reckon/crew/resumption.py, tests/test_owed_plan_reviews_run_on_change.py and the evidence fragment, all within the five declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_owed_plan_reviews_run_on_change.py:154-246 reddens on the base revision (logs/negative-control-base.log, 5 failed), but the parity limb's delay bound at :363 and its pass-subset check at :359 cannot fail as written, so that clause is not guarded.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow plan_review.py's existing private-state idiom (_reflex_state_path at :4553, _record_weighed_edits at :4620) and carry no plan, sprint or ticket identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: store_stamp (reckon/run_store.py:370) and ledger_generation (reckon/ledger.py:1322) are reused from their owners; a search of 'footprint', 'def .*_due(', 'st_mtime_ns', capabilities.file_stamp and repository_maintenance.maintenance_due found no existing footprint-or-interval gate owner to extend.\nFINDING tests/test_owed_plan_reviews_run_on_change.py:363 non-blocking: `assert delay <= INTERVAL` cannot fail, because the arm runs ten one-second sweeps so any observable delay is at most nine against a sixty-second bound; only total starvation fails it, at :361, so the fragment's 'composed within the interval' claim is not measured.\nFINDING tests/test_owed_plan_reviews_run_on_change.py:359 non-blocking: `set(gated.passes) <= set(ungated.passes)` holds whatever the gate does, because the ungated arm passes on all ten sweep indices (asserted at :354) and the gated arm can only index the same ten; the assertion cannot detect a pass the base would not have made.\nFINDING reckon/crew/resumption.py:3087 non-blocking: the pass record is written whenever the gate was due, including after the compose at :3077 raised into the handler at :3085-3086, so a transient failure is not retried until the 60 s interval expires or an input moves, where the ungated sweep retried on the next sweep.",
+  "review_run_id": "r-20261118T234507455358-review-of-owed-plan-reviews-run-on-change-8d97dd96605f",
+  "reviewed_base_sha": "6efac997fddbc0cf1a62029ee2a27e66858edd62",
+  "reviewed_head_sha": "8d97dd96605f8e1430a89b2c84cf67b5866fa4c5",
+  "reviewed_run_id": "r-20261118T185404657255-owed-plan-reviews-run-on-change",
+  "reviewer_run_id": "r-20261118T234507455358-review-of-owed-plan-reviews-run-on-change-8d97dd96605f",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T00:19:59.235885+00:00",
+  "total": 103
+}

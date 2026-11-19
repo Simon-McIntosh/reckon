@@ -166,6 +166,12 @@ def _complete(run_id: str, repository: Path):
     )
 
 
+def _receipt(result) -> dict:
+    """The full outcome behind the compact reply the CLI prints."""
+    reply = json.loads(result.output)
+    return json.loads(Path(reply["record_path"]).read_text())
+
+
 def test_decline_only_run_promotes_with_unchanged_suite_delta(
     repository: Path, tmp_path: Path
 ) -> None:
@@ -180,7 +186,7 @@ def test_decline_only_run_promotes_with_unchanged_suite_delta(
     result = _complete(run_id, repository)
 
     assert result.exit_code == 0, result.output
-    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    suite_delta = _receipt(result)["record"]["suite_delta"]
     assert suite_delta["status"] == "unchanged"
     assert suite_delta["added_failure_ids"] == []
     assert suite_delta["suite_command"] == "pytest -q"
@@ -202,8 +208,8 @@ def test_run_with_a_commit_past_base_is_still_refused(
     result = _complete(run_id, repository)
 
     assert result.exit_code != 0
-    assert "baseline_suite" in result.output
-    assert "after_suite" in result.output
+    detail = _receipt(result)["detail"]
+    assert f"worktree is at {moved[:12]} rather than its base {base_sha[:12]}" in detail
     assert pointer_path(run_id).is_file()
 
 
@@ -227,8 +233,9 @@ def test_empty_manifest_with_a_reclaimed_worktree_is_still_refused(
     result = _complete(run_id, repository)
 
     assert result.exit_code != 0
-    assert "baseline_suite" in result.output
-    assert "after_suite" in result.output
+    detail = _receipt(result)["detail"]
+    assert "baseline_suite" in detail
+    assert "after_suite" in detail
     assert pointer_path(run_id).is_file()
 
 
@@ -249,8 +256,9 @@ def test_empty_manifest_with_an_untracked_deliverable_is_still_refused(
     result = _complete(run_id, repository)
 
     assert result.exit_code != 0
-    assert "baseline_suite" in result.output
-    assert "after_suite" in result.output
+    detail = _receipt(result)["detail"]
+    assert "baseline_suite" in detail
+    assert "after_suite" in detail
     assert pointer_path(run_id).is_file()
 
 
@@ -260,7 +268,7 @@ def test_empty_manifest_with_a_moved_worktree_is_still_refused(
     """An empty manifest is contradicted by a worktree whose head moved."""
     run_id = "r-20260930T120200000000-node-a"
     base_sha = _head_sha(repository)
-    _add_commit_past_base(repository)
+    moved = _add_commit_past_base(repository)
     manifest = tmp_path / "empty-manifest.md"
     _write_manifest(manifest)
     _write_pointer(run_id, repository, base_sha=base_sha, manifest_path=str(manifest))
@@ -269,8 +277,8 @@ def test_empty_manifest_with_a_moved_worktree_is_still_refused(
     result = _complete(run_id, repository)
 
     assert result.exit_code != 0
-    assert "baseline_suite" in result.output
-    assert "after_suite" in result.output
+    detail = _receipt(result)["detail"]
+    assert f"worktree is at {moved[:12]} rather than its base {base_sha[:12]}" in detail
     assert pointer_path(run_id).is_file()
 
 
@@ -292,8 +300,9 @@ def test_empty_manifest_with_no_recorded_base_is_still_refused(
     result = _complete(run_id, repository)
 
     assert result.exit_code != 0
-    assert "baseline_suite" in result.output
-    assert "after_suite" in result.output
+    detail = _receipt(result)["detail"]
+    assert "baseline_suite" in detail
+    assert "after_suite" in detail
     assert pointer_path(run_id).is_file()
 
 

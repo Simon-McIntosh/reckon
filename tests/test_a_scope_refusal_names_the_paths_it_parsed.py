@@ -1,25 +1,26 @@
 """A scope refusal names the paths it parsed.
 
-A manifest's list fields are split on commas and newlines. A worker that writes
-several ``changed_paths`` entries separated by spaces gets a value read as a
-*single* item holding internal whitespace, and the write-scope audit then finds
-that one item outside every declared root. Printed among the strays, one joined
-item reads as the several paths it names, and the only sign the audit parsed one
-item is the ``", "`` it joins them with — so the worker reasons the checker must
-be comparing against some other record and goes looking for it.
+A manifest's list fields are split on commas and newlines, and a guarded list
+field — ``changed_paths`` among them — is then read entry by entry: a line whose
+whitespace-separated tokens are each entry-shaped is read as those several
+entries. A worker that writes several ``changed_paths`` entries separated by
+spaces therefore gets the several paths it named, and the write-scope audit
+judges each of them against the declared roots.
 
-The audit names the reading instead: when a stray item's own whitespace-separated
-parts each lie within the declared write scope, it is a space-separated list, and
-one finding names the field, the single item parsed and the comma rule, in place
-of a scope finding for that item. The parse is unchanged, so the space-separated
-value stays a defect the worker fixes. A stray path of a class a merge cannot
-reconcile still draws a scope finding, and every stray path is quoted, so a
-single path can never read as several. A companion source path draws none: the
-declaration is a hint rather than a fence.
+The scope finding names what it judged: a stray path is quoted, so a single path
+can never read as several. A stray path of a class a merge cannot reconcile
+still draws that finding, while a companion source path draws none — the
+declaration is a walk hint rather than a fence, because the worktree isolates
+the edit and the merge reconciles it.
 
-The accepted forms are asserted beside the refusal: the same three paths written
-comma-separated raise no scope finding, and a path outside the declaration that
-is not a joined list is reported as the stray it is.
+The accepted forms are asserted beside the refusals: the same three paths
+written space-separated and comma-separated are read as the same three entries
+and raise no finding, and a merge-unsafe path outside the declaration is
+reported as the stray it is, quoted.
+
+The separation finding in ``_write_scope_findings`` — the one that names a
+joined item and the comma rule — is unreachable from ``changed_paths`` for that
+reason, which the last case pins.
 """
 
 from __future__ import annotations
@@ -92,20 +93,18 @@ def _scope_findings(findings: list[str]) -> list[str]:
     return [line for line in findings if line.startswith(SCOPE_PREFIX)]
 
 
-def test_a_space_separated_changed_paths_is_reported_as_one_joined_item(
+def test_a_space_separated_changed_paths_reads_as_the_paths_it_names(
     tmp_path: Path,
 ) -> None:
-    # The three declared paths written on one line separated by spaces: the value
-    # arrives as one item whose parts are each in scope, so the audit names the
-    # reading rather than raising a scope finding for the item.
+    # The three declared paths written on one line separated by spaces: the entry
+    # reader splits a line of entry-shaped tokens, so the value is read as the
+    # three in-scope entries it names and draws no finding at all.
     audit = _audit(SPACE_SEPARATED, tmp_path)
-    findings = audit["findings"]
 
-    separation = _separation_findings(findings)
-    assert len(separation) == 1, findings
-    assert SPACE_SEPARATED in separation[0]
-    assert _scope_findings(findings) == []
-    assert audit["ok"] is False
+    assert audit["manifest"]["changed_paths"] == list(DECLARED_PATHS)
+    assert _separation_findings(audit["findings"]) == []
+    assert _scope_findings(audit["findings"]) == []
+    assert audit["ok"] is True
 
 
 def test_the_same_paths_comma_separated_draw_no_finding(tmp_path: Path) -> None:

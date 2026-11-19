@@ -1,0 +1,26 @@
+<section id="qwnw-red-file-a-released-review-is-composed-again-runs">
+  <h3>Base and head runs of the composed-review release test</h3>
+  <p>The base run of <code>tests/test_a_released_review_is_composed_again.py</code>
+  and the head run beside it, recorded from the arms at their own revisions. The
+  base run is the negative control: both cases fail at the release, and the head
+  gate passes the file in full.</p>
+  <table id="qwnw-red-file-a-released-review-is-composed-again-runs-table">
+    <thead><tr><th>Run</th><th>Revision</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base arm (<code>baseline_importers-1794999361018529412.log</code>)</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td><pre>FAILED tests/test_a_released_review_is_composed_again.py::test_a_released_composed_review_is_composed_again - AssertionError: assert [] == ['r-20261118T...834106a7c27d']
+FAILED tests/test_a_released_review_is_composed_again.py::test_a_released_review_of_a_gone_run_is_not_composed_again - AssertionError: assert [] == ['r-20261118T...5b9a7e8560bb']
+EXIT=1</pre></td>
+      </tr>
+      <tr>
+        <td>head gate (<code>scoped-gate-1794999041074633324.log</code>)</td>
+        <td><code>e27681fb7237f4712be4a05d7a225b45e05d46a8</code></td>
+        <td><pre>..                                                                       [100%]
+2 passed
+EXIT=0</pre></td>
+      </tr>
+    </tbody>
+  </table>
+</section>

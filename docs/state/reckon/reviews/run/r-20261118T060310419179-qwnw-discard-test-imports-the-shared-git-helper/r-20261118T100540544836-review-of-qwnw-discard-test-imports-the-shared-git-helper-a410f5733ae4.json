@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:37:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment presents the worker-context `git init` refusal as the difference that matters, but the base arm at 97dec20b ran this file with its own wrapper and read 64 passed EXIT=0 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995305861023670.log:5), so the claimed pre-change failure was never observed and the benefit is asserted rather than measured."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: the caption at :46 says each arm is a log whose first lines name revision, tree and command, but the \"the node's file, in place ... 6 passed, EXIT=0\" row has no log in the run directory and no entry in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md:13's test_logs, so that arm's receipt cannot be opened."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: retry_failures reads \"none\" although /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995253430546172.log:5 shows an earlier run of the same base command ending \"62 passed, 2 errors\" EXIT=1 (two setup errors in a scratch tree with no git history), so the record under-reports a discarded arm."
+    }
+  ],
+  "head_log_revision": "723245b8433b27989c801ef87e3d284910a17d9e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read all four commits against 97dec20b -- 22675cab8 is the only code change (the `subprocess` import and the 9-line local `_git` body deleted, the shared import added), a145587 adds the 68-line fragment, and 723245b8 and a410f573 edit only the fragment's wording, with no assertion added, removed or weakened.",
+    "done_when": "prompt.txt:435 requires the file to define no git-running helper of its own, import the shared one, and pass in full at head with its log named in test_logs, and the cited /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/scoped-gate-1794993580684997142.log:7 reads \"64 passed in 36.76s\" and ends EXIT=0 at revision 22675cab8, with the base and after arms both \"64 passed\" EXIT=0 in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995305861023670.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/after_suite-1794995430406405926.log.",
+    "goal": "prompt.txt:38 states the goal as making tests/test_crew_discard_reads_discarded.py call the shared git helper in tests/helpers/git.py in place of its own local copy, and the head blob a410f5733a imports `git` from that module at tests/test_crew_discard_reads_discarded.py:27 with the six fixture call sites at :54-:60 unchanged.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md; status complete, four commits, the three test_logs paths, both arms EXIT=0 with 0 failures, and a `none` negative control with its grep log, but retry_failures at manifest.md:9 reads \"none\" while /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995253430546172.log:5 records the same base command ending \"62 passed, 2 errors\" EXIT=1.",
+    "write_paths": "prompt.txt:99-103 declares tests/test_crew_discard_reads_discarded.py, the fragment path and a figure directory, and `git diff --stat 97dec20b..a410f573` returns exactly that test file at +1/-10 and the new 69-line docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html, with no path outside the declared scope."
+  },
+  "justifications": {
+    "durability": "no assertion in tests/test_crew_discard_reads_discarded.py or in the declared three-file suite fails if the local wrapper returns, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995305861023670.log:5 proves it by passing 64 with the local `_git` still present.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/scoped-gate-1794993580684997142.log:7 records \"64 passed in 36.76s\" with EXIT=0 at 22675cab8, but a discarded base arm at revision 97dec20b (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995253430546172.log:5, \"62 passed, 2 errors\", EXIT=1) is not recorded in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md:9.",
+    "fit": "the import `from tests.helpers.git import git as _git` at tests/test_crew_discard_reads_discarded.py:27 matches the idiom of siblings such as tests/test_a_claim_hold_reads_the_holder_again.py:24 and drops the now-unused `subprocess` import.",
+    "goal_fidelity": "tests/test_crew_discard_reads_discarded.py:27 at a410f5733a imports the owner helper and the file defines no git runner, so prompt.txt:38 is met exactly.",
+    "reuse": "the diff deletes a fork of the capability owned by tests/helpers/git.py:12 and calls that owner, adding no definition of its own.",
+    "scope_discipline": "`git diff --numstat 97dec20b..a410f573` names only tests/test_crew_discard_reads_discarded.py at 1/10 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html at 69/0, both inside prompt.txt:99-103."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 states the goal as making tests/test_crew_discard_reads_discarded.py call the shared git helper in tests/helpers/git.py in place of its own local copy, and the head blob a410f5733a imports `git` from that module at tests/test_crew_discard_reads_discarded.py:27 with the six fixture call sites at :54-:60 unchanged.\nVERDICT done_when: prompt.txt:435 requires the file to define no git-running helper of its own, import the shared one, and pass in full at head with its log named in test_logs, and the cited /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/scoped-gate-1794993580684997142.log:7 reads \"64 passed in 36.76s\" and ends EXIT=0 at revision 22675cab8, with the base and after arms both \"64 passed\" EXIT=0 in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995305861023670.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/after_suite-1794995430406405926.log.\nVERDICT write_paths: prompt.txt:99-103 declares tests/test_crew_discard_reads_discarded.py, the fragment path and a figure directory, and `git diff --stat 97dec20b..a410f573` returns exactly that test file at +1/-10 and the new 69-line docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html, with no path outside the declared scope.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md; status complete, four commits, the three test_logs paths, both arms EXIT=0 with 0 failures, and a `none` negative control with its grep log, but retry_failures at manifest.md:9 reads \"none\" while /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995253430546172.log:5 records the same base command ending \"62 passed, 2 errors\" EXIT=1.\nVERDICT diff: read all four commits against 97dec20b -- 22675cab8 is the only code change (the `subprocess` import and the 9-line local `_git` body deleted, the shared import added), a145587 adds the 68-line fragment, and 723245b8 and a410f573 edit only the fragment's wording, with no assertion added, removed or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_discard_reads_discarded.py:27 at a410f5733a imports the owner helper and the file defines no git runner, so prompt.txt:38 is met exactly.\nSCORE evidence: 14\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/scoped-gate-1794993580684997142.log:7 records \"64 passed in 36.76s\" with EXIT=0 at 22675cab8, but a discarded base arm at revision 97dec20b (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995253430546172.log:5, \"62 passed, 2 errors\", EXIT=1) is not recorded in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md:9.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --numstat 97dec20b..a410f573` names only tests/test_crew_discard_reads_discarded.py at 1/10 and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html at 69/0, both inside prompt.txt:99-103.\nSCORE durability: 6\nJUSTIFICATION durability: no assertion in tests/test_crew_discard_reads_discarded.py or in the declared three-file suite fails if the local wrapper returns, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995305861023670.log:5 proves it by passing 64 with the local `_git` still present.\nSCORE fit: 19\nJUSTIFICATION fit: the import `from tests.helpers.git import git as _git` at tests/test_crew_discard_reads_discarded.py:27 matches the idiom of siblings such as tests/test_a_claim_hold_reads_the_holder_again.py:24 and drops the now-unused `subprocess` import.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff deletes a fork of the capability owned by tests/helpers/git.py:12 and calls that owner, adding no definition of its own.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html:16 non-blocking: the fragment presents the worker-context `git init` refusal as the difference that matters, but the base arm at 97dec20b ran this file with its own wrapper and read 64 passed EXIT=0 (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995305861023670.log:5), so the claimed pre-change failure was never observed and the benefit is asserted rather than measured.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-discard-test-imports-the-shared-git-helper.html:50 non-blocking: the caption at :46 says each arm is a log whose first lines name revision, tree and command, but the \"the node's file, in place ... 6 passed, EXIT=0\" row has no log in the run directory and no entry in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md:13's test_logs, so that arm's receipt cannot be opened.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/manifest.md:9 non-blocking: retry_failures reads \"none\" although /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper/baseline_suite-1794995253430546172.log:5 shows an earlier run of the same base command ending \"62 passed, 2 errors\" EXIT=1 (two setup errors in a scratch tree with no git history), so the record under-reports a discarded arm.\n",
+  "review_run_id": "r-20261118T100540544836-review-of-qwnw-discard-test-imports-the-shared-git-helper-a410f5733ae4",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "a410f5733ae43b5e9473f38f7b25ae6ebf5a9312",
+  "reviewed_run_id": "r-20261118T060310419179-qwnw-discard-test-imports-the-shared-git-helper",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T100540544836-review-of-qwnw-discard-test-imports-the-shared-git-helper-a410f5733ae4"
+  },
+  "scores": {
+    "durability": 6,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:57:49.318765+00:00",
+  "total": 99
+}

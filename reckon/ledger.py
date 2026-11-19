@@ -2528,6 +2528,21 @@ def _selected_rows(data: dict[str, Any], run_ids: set[str] | None) -> dict[str, 
     }
 
 
+def _reader_row(row: Any) -> Any:
+    """One run record as a ledger reader answers it.
+
+    ``store_write`` records what happened at one promotion rather than what
+    the run is, so the store has never held it and a store-backed read has
+    never returned it. The projection is applied on the document path as
+    well, so a reader's row does not gain a field merely because the cache
+    that answered it was absent. The committed file keeps the field for the
+    document readers that write, split and compare it.
+    """
+    if not isinstance(row, Mapping):
+        return row
+    return {name: value for name, value in row.items() if name != "store_write"}
+
+
 def load(
     project: str,
     root: str | Path | None = None,
@@ -2545,6 +2560,12 @@ def load(
     :func:`write`. ``auxiliary_version`` belongs to the projected roster and
     holds; mutations pair the state and version from :func:`load_auxiliary`
     with :func:`write_members` or the hold writer instead.
+
+    A row is the record a reader answers, which is the record the store holds:
+    the promotion's own ``store_write`` is not part of it, and the answer does
+    not gain that field when a document rather than the store answers the
+    read. ``use_index=False`` is the document read, verbatim, for the callers
+    that import, split or compare what was committed.
     """
     data, aggregate_version = _load_file_history(
         project,
@@ -2563,6 +2584,8 @@ def load(
         {"members": data["members"], "holds": data["holds"]},
         aggregate_version,
     )
+    if use_index:
+        data["runs"] = [_reader_row(row) for row in data["runs"]]
     return {
         **data,
         **auxiliary,
@@ -2615,7 +2638,12 @@ def _load_file_history(
             fields=fields,
             activity_since=activity_since,
         )
-        if stored is not None:
+        # The store answers a project's history once it holds a row for that
+        # project. A store opened for the project's mutable state alone holds
+        # none, and no reader unions the aggregate back in afterwards, so an
+        # empty store must fall through to the committed ledger rather than
+        # answer that history as though nothing had ever been promoted.
+        if stored:
             data, version = _aggregate_headers(project, root)
             data["runs"] = sorted(stored, key=promotion_order_key)
             _report_damaged_run_records(project, ())
@@ -4231,7 +4259,11 @@ def read_records(
     selected_ids = None if run_ids is None else {str(run_id) for run_id in run_ids}
     from reckon import run_store
 
-    stored = run_store.store_path().exists()
+    # The store answers a project's history once it holds a row for that
+    # project. A store created for its mutable state alone holds none, and the
+    # committed ledger is still the copy every row of that history came from,
+    # so its existence cannot be what selects the fleet-wide figure population.
+    stored = bool(run_store.stored_run_rows(project, fields=("run_id",)))
     data, version = load(
         project,
         root,

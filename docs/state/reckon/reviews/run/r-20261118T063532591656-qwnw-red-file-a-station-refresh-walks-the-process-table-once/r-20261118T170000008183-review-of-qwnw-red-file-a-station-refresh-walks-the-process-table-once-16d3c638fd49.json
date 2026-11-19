@@ -1,0 +1,108 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [],
+  "assertion_independence": "The delivered diff adds no assertion; the guard is the pre-existing test file, whose fake table at tests/test_a_station_refresh_walks_the_process_table_once.py:352 counts walks independently of the value it compares and is falsified by the recorded base arm rather than by the passing head alone.",
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:2300 -> fleet_state(project, now=instant)",
+    "reckon/crew/station_obligations.py:341 -> obligation_snapshot.fleet_state(project, now=instant)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T23:24:25Z",
+  "evidence_limits": [
+    "No suite or gate rerun was performed during this bounded read-only review; the gate and both suite arms were read from their logs.",
+    "The partition and SLURM_JOB_ID state of the head gate are not recorded in the receipt, so only the manifest's prose states them.",
+    "The importer arms' added-failure count of 0 was recomputed from the FAILED id sets in logs/importer-arm-base.log and logs/importer-arm-head.log, which name revisions 9e1dc0dc and e618bd27c0 rather than the reviewed head."
+  ],
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063532591656-qwnw-red-file-a-station-refresh-walks-the-process-table-once/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the importer arm recorded as inline JSON at both 40-character revisions, but the manifest records only aggregate counts (base 34 failed / 527 passed, head 22 failed / 539 passed), leaving the revisions only in the two logs' headers, so a reader of the record cannot recover the arms without opening the logs."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-station-refresh-walks-the-process-table-once.html",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes its head arm at e618bd27c0ecb655b64771bb0c59a1b3261f1c43 rather than the reviewed head 16d3c638fd49109d0d59f0b7f6402e25ae425e31 it is committed at, so a reader comparing the landed head against its evidence sees a different revision even though the code is identical between the two commits."
+    },
+    {
+      "file": "scoped-gate-1795020082868318172.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate receipt records revision, host, tree, command and exit but neither the partition nor the SLURM_JOB_ID state, so the done_when's all_debug-with-SLURM_JOB_ID-unset clause rests on the manifest's prose rather than on the receipt it names."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites: reckon/crew/obligation_snapshot.py:2300 and reckon/crew/station_obligations.py:341",
+    "diff": "Read both commits against base 9e1dc0dc3e2ce3b478d6d162b32e37d11653c246: e618bd27c0 renames the second same-named _derive_fleet_state builder and repoints the holder at reckon/crew/obligation_snapshot.py:1892-1895, 16d3c638fd adds the 18-line evidence fragment, and no other path changed.",
+    "done_when": "The done_when at the reviewed run's prompt.txt:389 names the file passing in full at head on all_debug with SLURM_JOB_ID unset, the base run quoted with its failing ids, an importer arm as inline JSON at both 40-character revisions, and ruff clean; scoped-gate-1795020082868318172.log records 4 passed EXIT=0 at 16d3c638fd and logs/negative-control-base-test.log records 1 failed 3 passed EXIT=1 at 9e1dc0dc, while the importer arms appear only as counts in manifest.md:19.",
+    "goal": "The source node's goal is to make tests/test_a_station_refresh_walks_the_process_table_once.py pass in full on the primary branch; the diff renames the shadowing builder to _build_fleet_state at reckon/crew/obligation_snapshot.py:1895 and repoints the region holder at :1892 to it, and the test file is unchanged in the delta.",
+    "manifest": "manifest.md:8-19 records commits e618bd27c0 and 16d3c638fd, the head gate log, the base negative-control log, both suite arms at 58 passed and an added-failure count of 0; I read both gate logs and both suite logs and their summaries match the claims.",
+    "write_paths": "The source pointer declares reckon, tests and the node's evidence fragment; the delta 9e1dc0dc..16d3c638fd changes only reckon/crew/obligation_snapshot.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-station-refresh-walks-the-process-table-once.html."
+  },
+  "justifications": {
+    "durability": "tests/test_a_station_refresh_walks_the_process_table_once.py:352 fails whenever two same-named definitions shadow the holder again, which the recorded base arm at 9e1dc0dc proves by failing at 30 walks.",
+    "evidence": "scoped-gate-1795020082868318172.log records 4 passed and EXIT=0 at 16d3c638fd and logs/negative-control-base-test.log records the failing test id and 1 failed 3 passed EXIT=1 at 9e1dc0dc, but manifest.md:19 records the importer arms as counts rather than the inline JSON the done_when names.",
+    "fit": "reckon/crew/obligation_snapshot.py:1895 names the builder beside the holder at :1867 and its docstring states it builds inside the regions fleet_state opened.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1895 now defines _build_fleet_state and :1892 calls it, so the region opened at :1889-1892 is no longer shadowed and the named test file reads 4 passed at head against 1 failed 3 passed at base.",
+    "reuse": "the change adds no new mechanism; it restores the holder at reckon/crew/obligation_snapshot.py:1867 to the existing process_table_walk_once owner at reckon/crew/process_signal.py:309.",
+    "scope_discipline": "git diff 9e1dc0dc..16d3c638fd touches only reckon/crew/obligation_snapshot.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "reuse_search": {
+    "capabilities": [
+      "one process-table listing shared across every liveness read in a pass",
+      "fleet-state derivation and its region composition"
+    ],
+    "judgement": "The repository already owns the one-walk region in process_signal.process_table_walk_once, and the diff adds no new mechanism at all: it restores the holder's reach to that owner by renaming the shadowing builder. No capability is duplicated.",
+    "owners_opened": [
+      "reckon/crew/process_signal.py:309 process_table_walk_once",
+      "reckon/crew/obligation_snapshot.py:1867 the region holder"
+    ]
+  },
+  "review_run_id": "r-20261118T170000008183-review-of-qwnw-red-file-a-station-refresh-walks-the-process-table-once-16d3c638fd49",
+  "review_text_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T170000008183-review-of-qwnw-red-file-a-station-refresh-walks-the-process-table-once-16d3c638fd49/review.txt",
+  "reviewed_base_sha": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246",
+  "reviewed_head_sha": "16d3c638fd49109d0d59f0b7f6402e25ae425e31",
+  "reviewed_run_id": "r-20261118T063532591656-qwnw-red-file-a-station-refresh-walks-the-process-table-once",
+  "reviewed_worker_commits": [
+    "e618bd27c0ecb655b64771bb0c59a1b3261f1c43",
+    "16d3c638fd49109d0d59f0b7f6402e25ae425e31"
+  ],
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063532591656-qwnw-red-file-a-station-refresh-walks-the-process-table-once/after_suite-1795020189026670712.log",
+      "revision": "16d3c638fd49109d0d59f0b7f6402e25ae425e31",
+      "summary": "58 passed in 37.92s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063532591656-qwnw-red-file-a-station-refresh-walks-the-process-table-once/baseline_suite-1795020114045438812.log",
+      "revision": "9e1dc0dc3e2ce3b478d6d162b32e37d11653c246",
+      "summary": "58 passed in 37.28s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T23:54:57.315200+00:00",
+  "total": 113
+}

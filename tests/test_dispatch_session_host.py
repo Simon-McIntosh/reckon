@@ -26,9 +26,14 @@ from reckon import crew
 from reckon.crew import runs, session_host
 
 # The suite suppresses watcher arming by default; these cases decide on the
-# watcher, so they run with arming allowed and register their own watcher
+# harness, so they run with arming allowed and register their own watcher
 # process rather than starting a producer.
 pytestmark = pytest.mark.arms_watch_producer
+
+# The session this process reads as. A request reaches only this process's own
+# host FIFO and is written only for the pair that process is, so a case that
+# expects the host to be asked must name the session the environment declares.
+CLAUDE_SESSION = "claude-session-host-test"
 
 CONFIG = {
     "default_backend": "alpha",
@@ -144,7 +149,7 @@ def _claude_env(monkeypatch, runtime: Path) -> None:
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setenv("RECKON_SESSION_HOST_STATE_DIR", str(runtime / "session-hosts"))
     monkeypatch.setenv("CLAUDE_PID", str(os.getpid()))
-    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "claude-session-host-test")
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", CLAUDE_SESSION)
     monkeypatch.delenv("CODEX_SESSION_ID", raising=False)
     monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
 
@@ -179,8 +184,9 @@ class _StubHost:
 
     It holds the FIFO open read-write, so a dispatch's non-blocking write finds a
     reader and the request is delivered at once. On reading one line it takes a
-    follower registration and keeps it until stopped, which is what the real
-    host does by running ``crew follow`` for the project and session.
+    follower registration, publishes it in the host's census of the children it
+    runs, and keeps both until stopped, which is what the real host does by
+    running ``crew follow`` for the project and session.
     """
 
     def __init__(self, fifo: Path, project: str, session: str) -> None:
@@ -214,6 +220,20 @@ class _StubHost:
             with runs.follower_registration(
                 self.project, self.session, delivery="stream"
             ):
+                # A follower registration alone is not what a dispatch accepts:
+                # the answer is this host's own live child for the pair, which
+                # the host publishes in its census after starting it. Written
+                # under the registration, so a reader that sees the child sees
+                # a live reader behind it.
+                _write_host_record(
+                    [
+                        {
+                            "project": self.project,
+                            "session": self.session,
+                            "pid": os.getpid(),
+                        }
+                    ]
+                )
                 self.stop_requested.wait(30)
         finally:
             os.close(handle)
@@ -246,10 +266,16 @@ def _dry_dispatch(config_home: Path, repo: Path, session: str):
 def test_dispatch_asks_the_session_host_and_is_admitted_by_it(
     isolated_project: tuple[Path, Path], tmp_path: Path, monkeypatch
 ) -> None:
-    """A host on the FIFO attaches the session and the run is admitted."""
+    """A host on the FIFO attaches the session and the run is admitted.
+
+    The session is this process's own, because the FIFO belongs to its host and
+    a request is written only for the pair that host owns: a dispatch naming
+    another session's pair is handed to that session instead of being served
+    from here.
+    """
     config_home, repo = isolated_project
     project = "sample"
-    session = "session-hosted"
+    session = CLAUDE_SESSION
     runtime = tmp_path / "run-runtime"
     runtime.mkdir()
     _claude_env(monkeypatch, runtime)
@@ -268,7 +294,11 @@ def test_dispatch_asks_the_session_host_and_is_admitted_by_it(
         runner.wait(timeout=5)
 
     assert stub.line is not None, "the request must reach the host's FIFO"
-    assert json.loads(stub.line) == {"project": project, "session": session}
+    assert json.loads(stub.line) == {
+        "project": project,
+        "session": session,
+        "owner_checked": True,
+    }, "the request names one pair, marked as the reading host's own"
     assert record["watch"]["session_attached"] is True
     assert record["watch"]["delivery"] == "host"
     assert record["watch"]["arming_line"] == "", "a host-delivered session arms nothing"

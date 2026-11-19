@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T13:21:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-read-only-region-refuses-a-mutation.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the caption claims each arm's log names the revision, tree and command on its first lines, but scoped-gate-1795001797089763600.log, scoped-gate-1795002637982431965.log and negative-control-base-1795001875722260140.log each open with the srun fence notice, and the manifest's artifacts line records that the same notice was hand-removed from the two suite logs \u2014 so two of the four logs were edited after the run and the four arms no longer share one shape a reader can check; the revision headers, pass counts and EXIT lines are intact, and the edit is self-declared, so this does not hold the node, but the record should note the removal beside the table rather than only in the manifest."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the diff touches no file under reckon/, so no production call site can reach it.",
+    "diff": "read both commits against 1766ca118859: 9db9eca304e5 adds three fixture lines and a docstring paragraph explaining them at tests/test_the_read_only_region_refuses_a_mutation.py:191-196 and :219-221, and 38c850dea957 adds the 62-line evidence fragment; no assertion was added, changed or removed.",
+    "done_when": "the done_when asks for the named file passing at head as an all_debug job, each cause carrying a product-or-test verdict, an arm over the importing files adding no failure, and the base run with its failing id recorded under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records the file 5 passed EXIT=0 at head and 4 passed 1 failed EXIT=1 at base, the declared suite 58 passed EXIT=0 at both arms, and the verdict 'the test, not the product', so the gate does assert the measure.",
+    "goal": "the node's goal is that tests/test_the_read_only_region_refuses_a_mutation.py passes in full on the primary branch; the head run at 38c850dea957 reads '5 passed in 0.57s' EXIT=0 (scoped-gate-1795002637982431965.log) and the only code change is the fixture at tests/test_the_read_only_region_refuses_a_mutation.py:219-221.",
+    "manifest": "read; status complete, commits 9db9eca304e5 and 38c850dea957, tests the single-file pytest gate, test_logs naming the scoped gate, the negative-control base arm and both suite arms, baseline_suite and after_suite both exit_status 0 with 0 failures, and an artifacts line disclosing that one srun notice line was hand-removed from each suite log.",
+    "write_paths": "the declared paths were reckon, tests and the fragment directory plus two generated paths; git diff --stat 1766ca118859..38c850dea957 lists only tests/test_the_read_only_region_refuses_a_mutation.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-read-only-region-refuses-a-mutation.html, both inside them."
+  },
+  "justifications": {
+    "durability": "the base arm logged at negative-control-base-1795001875722260140.log fails test_a_fleet_state_derivation_inside_the_region_completes with 'AssertionError: assert set() == {'r-20261016T100000-node-00'}', so removing the three fixture lines at tests/test_the_read_only_region_refuses_a_mutation.py:219-221 reddens the assertion; no new assertion was added: the change is the fixture that makes an existing assertion true.",
+    "evidence": "the manifest records the four arms with revisions and exit codes and the cause verdict 'the test, not the product', but the fragment's caption is contradicted by the logs it cites (see the finding at qwnw-red-file-the-read-only-region-refuses-a-mutation.html:35), so the gate asserts the done_when with one record-shape defect.",
+    "fit": "the fixture follows the idiom of its neighbours, taking git through tests/helpers/git.py and building the tree exactly as tests/test_crew_obligations.py:179 does, and both commit messages carry a conventional subject and a body with no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_the_read_only_region_refuses_a_mutation.py:219-221 commits a file in the retained fixture tree, which is the one precondition `obligations._tree_holds_unmerged_work` (reckon/crew/obligations.py:3564) needs, and the head run reads 5 passed EXIT=0, so the named file passes in full.",
+    "reuse": "the addition defines no new mechanism: it reuses tests/helpers/git.py:git for the commit, and a search of tests/ for 'worktree add', 'worktree_retention' and 'def _git in a helpers module' showed no shared builder for a retained tree holding unmerged work, so the three lines are fixture state rather than a forked capability.",
+    "scope_discipline": "git diff 1766ca118859..38c850dea957 names exactly two paths, tests/test_the_read_only_region_refuses_a_mutation.py (+9 -2) and the evidence fragment (+62), both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_the_read_only_region_refuses_a_mutation.py passes in full on the primary branch; the head run at 38c850dea957 reads 5 passed EXIT=0 (scoped-gate-1795002637982431965.log) and the only code change is the fixture at tests/test_the_read_only_region_refuses_a_mutation.py:219-221.\nVERDICT done_when: the done_when asks for the named file passing at head as an all_debug job, each cause carrying a product-or-test verdict, an arm over the named files adding no failure, and the base run with its failing id recorded under docs/evidence/fragments/queued-work-needs-no-workaround/; the manifest records 5 passed EXIT=0 at head, 4 passed 1 failed EXIT=1 at base, the declared suite 58 passed EXIT=0 at both arms and the verdict 'the test, not the product', so the gate asserts the measure.\nVERDICT write_paths: the declared paths were reckon, tests and the fragment directory plus two generated paths; git diff --stat 1766ca118859..38c850dea957 lists only tests/test_the_read_only_region_refuses_a_mutation.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-read-only-region-refuses-a-mutation.html, both inside them.\nVERDICT manifest: read; status complete, commits 9db9eca304e5 and 38c850dea957, both suite arms 58 passed EXIT=0, the head test log 5 passed EXIT=0, the base arm EXIT=1 failing one id, and it discloses that one srun notice line was hand-removed from each suite log.\nVERDICT diff: read both commits against 1766ca118859; 9db9eca304e5 adds three fixture lines and a docstring paragraph at tests/test_the_read_only_region_refuses_a_mutation.py:191-196 and :219-221, and 38c850dea957 adds the 62-line evidence fragment; no assertion was added, changed or removed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_read_only_region_refuses_a_mutation.py:219-221 commits a file in the retained fixture tree, the one precondition reckon/crew/obligations.py:3564 reads, so the named file passes 5 of 5 at head.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the four arms with revisions and exit codes but the fragment's caption at qwnw-red-file-the-read-only-region-refuses-a-mutation.html:35 is contradicted by the logs it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 1766ca118859..38c850dea957 names exactly the test file and the evidence fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-base-1795001875722260140.log fails test_a_fleet_state_derivation_inside_the_region_completes with 'assert set() == {'r-20261016T100000-node-00'}', so removing the fixture lines at tests/test_the_read_only_region_refuses_a_mutation.py:219-221 reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture takes git through tests/helpers/git.py and builds the tree as tests/test_crew_obligations.py:179 does, and both commit messages carry a conventional subject and a body with no plan identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition defines no mechanism of its own and reuses tests/helpers/git.py:git, and no shared builder for a retained tree holding unmerged work exists in tests/ to fork.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-the-read-only-region-refuses-a-mutation.html:35 non-blocking: the caption claims each arm's log names the revision, tree and command on its first lines, but three of the four cited logs open with the srun fence notice and the manifest records that the same notice was hand-removed from the two suite logs; the measurements survive but two of four logs were edited after the run and the four arms no longer share a shape the table says they do.",
+  "review_run_id": "r-20261118T115257533775-review-of-qwnw-red-file-the-read-only-region-refuses-a-mutation-38c850dea957",
+  "reviewed_base_sha": "1766ca118859247ca28cefa0064b27175002d0ce",
+  "reviewed_head_sha": "38c850dea957317a07258c032c23eb6e0451a516",
+  "reviewed_run_id": "r-20261118T062635643389-qwnw-red-file-the-read-only-region-refuses-a-mutation",
+  "reviewer": {
+    "backend": "omp-local",
+    "effort": "high",
+    "model": "local/deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261118T115257533775-review-of-qwnw-red-file-the-read-only-region-refuses-a-mutation-38c850dea957"
+  },
+  "reviewer_run_id": "r-20261118T115257533775-review-of-qwnw-red-file-the-read-only-region-refuses-a-mutation-38c850dea957",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T13:38:56.409520+00:00",
+  "total": 114
+}

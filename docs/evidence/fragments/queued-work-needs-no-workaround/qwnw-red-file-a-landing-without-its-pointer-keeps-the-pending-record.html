@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record-causes">
+<h2>Two causes, both product</h2>
+<p>The first case was red at base:</p>
+<pre>tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py::test_a_missing_pointer_refuses_without_overwriting_the_record[synchronous]
+tests/test_a_landing_without_its_pointer_keeps_the_pending_record.py::test_a_missing_pointer_refuses_without_overwriting_the_record[queued]
+2 failed, 2 passed</pre>
+<section id="qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record-cause-1">
+<h3>Cause 1 — a refusal filed a completion receipt</h3>
+<p><code>crew complete</code> answers through a per-run reply path that writes
+one completion record under <code>crew/reports/</code> for every named run. The
+live-pointer guard sat inside the member body that path calls, so a landing
+refused for a missing live pointer still left
+<code>crew/reports/completion-&lt;ns&gt;.json</code> behind: the refusal wrote a
+receipt for work it never began, and the test asserts the crew home is
+unchanged afterwards. That is the rule the reply path already states for a run
+directory — a refusal must not create one. The guard now runs over every named
+run before that path is taken, so the crew group's own failure document answers
+the pending record and nothing is written. The in-body check stays for the
+queued replay, where the pointer can go between the two reads.</p>
+</section>
+<section id="qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record-cause-2">
+<h3>Cause 2 — the receipt truncated the record it named</h3>
+<p>The reply path shortened a refusal's detail to 240 characters to keep the
+receipt under 2 kB, and the pending record's path fell past that cut: the answer
+read <code>pending landing record:</code> and then showed only the
+<code>record_path</code> of the completion report beside it. The test asks the
+refusal to name the record a reader must open. Repaired by the same change — the
+refusal no longer travels through the truncating receipt, so the path is whole.</p>
+</section>
+</section>
+<section id="qwnw-red-file-a-landing-without-its-pointer-keeps-the-pending-record-arms">
+<h2>Base arm, head arm, and the arm over the landing path</h2>
+<p>All three ran as their own jobs on all_debug with <code>SLURM_JOB_ID</code>
+unset for the measured process; the logs are under the run directory.</p>
+<pre>base, revision 2f00851c42f247cba1c81c80ed0cf7b41045de76: 2 failed, 2 passed, EXIT=1
+head, revision 4a373aaa29040cb354506cf5f0e5bddfca0c8f21: 4 passed, EXIT=0
+landing-path arm, 11 files, base then head
+  base: 9 failed, 55 passed, EXIT=1
+  head: 7 failed, 57 passed, EXIT=1
+  no failure id at head that is absent at base</pre>
+<p>The seven shared failures are other files' red cases: four in
+<code>test_a_gate_names_its_arms.py</code>, two in
+<code>test_queue_landing.py</code>, one in
+<code>test_crew_tool_carries_the_write_verbs.py</code>. Unchanged by this node
+and reported under <code>outside_scope</code>.</p>
+</section>

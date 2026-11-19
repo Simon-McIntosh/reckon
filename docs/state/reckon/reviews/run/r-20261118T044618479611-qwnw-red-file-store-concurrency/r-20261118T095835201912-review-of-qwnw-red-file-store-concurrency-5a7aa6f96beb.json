@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T10:22:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html",
+      "line": 31,
+      "severity": "non-blocking",
+      "text": "the two mutation runs are recorded only as results (2 failed, EXIT=1; 2 failed, LedgerError) with no log path, unlike the head and negative-control runs, so a reader cannot open what those claims are derived from"
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "the recorded head arm ran at 97dec20b, the node's base, and the after_suite arm at the delivered head 5a7aa6f9 does not include tests/test_store_concurrency.py, so no recorded run of the named file exists at the delivered head; harmless here because both delivered commits touch this fragment alone"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make tests/test_store_concurrency.py pass in full on the primary branch; it already passes at the reviewed base 97dec20b because the repair commit f1ec16ce78 is an ancestor of the reviewed head, and the delivered commits change only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html.\nVERDICT done_when: read in full from the dispatch record; its measure is a job of tests/test_store_concurrency.py on all_debug with SLURM_JOB_ID unset and output on shared storage, recorded in store-concurrency-head.log with revision, tree, command, module.__file__ and cwd and ending EXIT=0 (2 passed, three runs), with a negative control at ddff8e4f carrying both failing ids (store-concurrency-negctl.log, EXIT=1) and both suite arms as inline JSON with 40-character revisions and zero failures.\nVERDICT write_paths: read from the dispatch record (reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its qwnw-red-file-store-concurrency.html, docs/figures/...); the diff touches exactly one path, the fragment, inside the declared evidence directory.\nVERDICT manifest: read the reviewed run's manifest.md; it states status complete, names commits 721fa363 and 5a7aa6f9, records both suite arms as inline JSON with full revisions and zero failures, and names the scoped-gate, head and negative-control logs.\nVERDICT diff: read commit by commit from 97dec20b to 5a7aa6f9; 721fa363 adds the 35-line evidence fragment and 5a7aa6f9 ends the same file with a newline, so one path changed with no product or test source touched.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/doccheck.py:_composed_record_sources\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html:4 records the named file passing three times with EXIT=0 at 97dec20bfb8603ab71c4e9deeefddab685e0a42e, which is the done_when's own already-passes case.\nSCORE evidence: 15\nJUSTIFICATION evidence: store-concurrency-head.log carries revision, tree, command, module.__file__ and cwd and ends in EXIT=0, but the manifest's tests: line names the substitute arm rather than the named file and the head arm predates the delivered head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both commits touch only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html and carry nothing the goal does not imply.\nSCORE durability: 11\nJUSTIFICATION durability: the diff adds no assertion, so the only guard is the pre-existing tests/test_store_concurrency.py:65 and nothing reddens if this fragment regresses.\nSCORE fit: 18\nJUSTIFICATION fit: the section-plus-heading-plus-pre shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html:1-35 matches the sibling red-file fragments that use an h2, unlike the few with id= anchors on their quoted runs.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fragment uses the repository's own docs/evidence/fragments/<plan>/ mechanism that reckon/evidence.py:compose_landed_record reads and adds no competing definition.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html:31 non-blocking: the two mutation runs are recorded only as results with no log path, so a reader cannot open them.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-store-concurrency.html:4 non-blocking: the recorded head arm ran at the base 97dec20b and no arm at the delivered head includes the named file.\n",
+  "review_run_id": "r-20261118T095835201912-review-of-qwnw-red-file-store-concurrency-5a7aa6f96beb",
+  "reviewed_base_sha": "97dec20bfb8603ab71c4e9deeefddab685e0a42e",
+  "reviewed_head_sha": "5a7aa6f96beb8964f666d1bf14f72b54d069aa62",
+  "reviewed_run_id": "r-20261118T044618479611-qwnw-red-file-store-concurrency",
+  "scores": {
+    "durability": 11,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:58:16.863144+00:00",
+  "total": 101
+}

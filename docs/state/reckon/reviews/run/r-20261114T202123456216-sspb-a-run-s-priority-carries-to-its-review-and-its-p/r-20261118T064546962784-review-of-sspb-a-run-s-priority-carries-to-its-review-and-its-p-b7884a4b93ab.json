@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3178 (crew queue reprioritise -> queue_edit.reprioritise)",
+    "reckon/crew/admission/ordering.py:432 (admission_order_details -> queue_order._precedence)",
+    "reckon/crew/promotion_requests.py:972 and :979 (_pending_requests -> fair_queue_order_details -> queue_order._precedence)",
+    "reckon/crew/runs.py:703 (require_priority_budget -> session_priority_in_use -> _holds_priority)",
+    "reckon/crew/recovery_review_dispatch.py:1125 and :1189 (_composed_review_options)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T09:51:21Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab",
+      "recorded_at": "2026-11-18T10:56:14.546781+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "705",
+      "severity": "blocking",
+      "text": "blocking: the carried points are written onto the run's still-queued review while _charge_points marks the delivered run as holding the same points (queue_edit.py:669), so both records count under the one session and a 4-point raise reports 4 for the run plus 4 for its review; reproduced in a scratch tree at b7884a4b93ab with a delivered run, its queued review and its promotion request: session_priority_in_use() read 8 with holders ['r1', 'review-of-r1'] immediately after reprioritise(run, 4), so a session at its budget is refused work it could afford, and after the run lands the review still holds the points the evidence page says returned."
+    },
+    {
+      "file": "tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py",
+      "line": "174",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert result[\"priority\"] == 4 compares the argument the test handed reprioritise against the field reckon/crew/queue_edit.py:626 echoes back unconditionally, so it cannot fail for any change short of altering the return shape; the guards that matter in that test are the budget, promotion-override and drain-order assertions below it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate ran in a scratch tree (/tmp/mcintos-landing-5372a109de75-wU53Ag/tree) but the manifest records no measurement_module or measurement_cwd line and the scoped-gate log's header names neither, so a later reader cannot tell which module the run imported."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; a511935220 carries the code and tests, b9d2c8fe8f and b7884a4b93ab are the section evidence page and b7dd46560d the CLI help and skill text, all inside the declared scope.",
+    "done_when": "the done-when names three behaviours and a negative control; the gate log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/scoped-gate-1794982705627943931.log records \"5 passed in 0.53s\" at b7dd46560df6, and the base arm s3-negative-control-base.log records \"3 failed, 2 passed\" EXIT=1 at 8d870f62598f with the review-order and both delivered-raise cases red.",
+    "goal": "the goal is that a run's priority carries to its review and its promotion; reckon/crew/queue_order.py:333 ranks two reviews by their run's points and reckon/crew/queue_edit.py:587 accepts a delivered run, so both halves of the goal landed.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/manifest.md; it names commits a511935220..b7884a4b93, records the 5-passed gate, the 3-failed base control and both 58-passed suite arms, and states the already-true promotion case in evidence_inputs.",
+    "write_paths": "the manifest declares reckon, tests, docs/evidence/fragments/a-session-spends-a-priority-budget and skills; every one of the 11 paths in 8d870f62598f..b7884a4b93ab lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py:126 fails on any regression of the review ordering (proved by the base control) and :218 fails if the carry stops, but :174 asserts only the value reprioritise echoes back from its own argument (queue_edit.py:626), and no assertion covers the queued-review budget case named in the finding.",
+    "evidence": "the gate log scoped-gate-1794982705627943931.log records 5 passed EXIT=0 at b7dd46560df6 and docs/evidence/fragments/a-session-.../s3.html quotes that summary line, but its MEASURE \"session points in use=0\" after landing holds only because no review was queued in that test, and the manifest's evidence_inputs records that the done-when's named negative-control case (promotion order) was already green at base.",
+    "fit": "reckon/crew/queue_edit.py:639 follows the module's existing private-helper and docstring idiom, the new names are role nouns (_charge_points, _carry_points_to_queued_work, PRIORITY_DELIVERED_MARK at reckon/crew/runs.py:609) and carry no run or plan identifier.",
+    "goal_fidelity": "reckon/crew/queue_order.py:333 orders reviews by their run's points and reckon/crew/queue_edit.py:672 writes a delivered run's raise onto its queued review and promotion request, but the raise charges the same points twice when the review is still queued (see the finding at queue_edit.py:705).",
+    "reuse": "the review ordering reuses queue_order._override and the review composer's existing priority option (reckon/crew/recovery_review_dispatch.py:4006), but reckon/crew/queue_edit.py:705 re-states the priority/priority_override write triple that reckon/crew/dispatching/requests.py:304, reckon/crew/promotion_requests.py:445 and reckon/crew/runs.py:1052 already write inline, rather than extending one writer.",
+    "scope_discipline": "every path in git diff --stat 8d870f62598f..b7884a4b93ab (reckon/crew/queue_edit.py, reckon/crew/queue_order.py, reckon/crew/runs.py, reckon/crew_run_commands.py, the flight schema source and its two generated copies, skills/reckon-build/SKILL.md, the test file and the two evidence pages) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a run's priority carries to its review and its promotion; reckon/crew/queue_order.py:333 ranks two reviews by their run's points and reckon/crew/queue_edit.py:587 accepts a delivered run, so both halves of the goal landed.\nVERDICT done_when: the done-when names three behaviours and a negative control; the gate log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/scoped-gate-1794982705627943931.log records \"5 passed in 0.53s\" at b7dd46560df6, and the base arm s3-negative-control-base.log records \"3 failed, 2 passed\" EXIT=1 at 8d870f62598f with the review-order and both delivered-raise cases red.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/a-session-spends-a-priority-budget and skills; every one of the 11 paths in 8d870f62598f..b7884a4b93ab lies inside them.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/manifest.md; it names commits a511935220..b7884a4b93, records the 5-passed gate, the 3-failed base control and both 58-passed suite arms, and states the already-true promotion case in evidence_inputs.\nVERDICT diff: read commit by commit; a511935220 carries the code and tests, b9d2c8fe8f and b7884a4b93ab are the section evidence page and b7dd46560d the CLI help and skill text, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:3178 (crew queue reprioritise -> queue_edit.reprioritise), reckon/crew/admission/ordering.py:432 (admission_order_details -> queue_order._precedence), reckon/crew/promotion_requests.py:972 and :979 (_pending_requests -> fair_queue_order_details -> queue_order._precedence), reckon/crew/runs.py:703 (require_priority_budget -> session_priority_in_use -> _holds_priority), reckon/crew/recovery_review_dispatch.py:1125 and :1189 (_composed_review_options)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:333 orders reviews by their run's points and reckon/crew/queue_edit.py:672 writes a delivered run's raise onto its queued review and promotion request, but the raise charges the same points twice when the review is still queued (see the finding at queue_edit.py:705).\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate log scoped-gate-1794982705627943931.log records 5 passed EXIT=0 at b7dd46560df6 and docs/evidence/fragments/a-session-.../s3.html quotes that summary line, but its MEASURE \"session points in use=0\" after landing holds only because no review was queued in that test, and the manifest's evidence_inputs records that the done-when's named negative-control case (promotion order) was already green at base.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 8d870f62598f..b7884a4b93ab (reckon/crew/queue_edit.py, reckon/crew/queue_order.py, reckon/crew/runs.py, reckon/crew_run_commands.py, the flight schema source and its two generated copies, skills/reckon-build/SKILL.md, the test file and the two evidence pages) is inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py:126 fails on any regression of the review ordering (proved by the base control) and :218 fails if the carry stops, but :174 asserts only the value reprioritise echoes back from its own argument (queue_edit.py:626), and no assertion covers the queued-review budget case named in the finding.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/queue_edit.py:639 follows the module's existing private-helper and docstring idiom, the new names are role nouns (_charge_points, _carry_points_to_queued_work, PRIORITY_DELIVERED_MARK at reckon/crew/runs.py:609) and carry no run or plan identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: the review ordering reuses queue_order._override and the review composer's existing priority option (reckon/crew/recovery_review_dispatch.py:4006), but reckon/crew/queue_edit.py:705 re-states the priority/priority_override write triple that reckon/crew/dispatching/requests.py:304, reckon/crew/promotion_requests.py:445 and reckon/crew/runs.py:1052 already write inline, rather than extending one writer.\nFINDING reckon/crew/queue_edit.py:705 blocking: the carried points are written onto the run's still-queued review while _charge_points marks the delivered run as holding the same points (queue_edit.py:669), so both records count under the one session and a 4-point raise reports 4 for the run plus 4 for its review; reproduced in a scratch tree at b7884a4b93ab with a delivered run, its queued review and its promotion request: session_priority_in_use() read 8 with holders ['r1', 'review-of-r1'] immediately after reprioritise(run, 4), so a session at its budget is refused work it could afford, and after the run lands the review still holds the points the evidence page says returned.\nFINDING tests/test_a_run_s_priority_carries_to_its_review_and_its_promotion.py:174 non-blocking: assert result[\"priority\"] == 4 compares the argument the test handed reprioritise against the field reckon/crew/queue_edit.py:626 echoes back unconditionally, so it cannot fail for any change short of altering the return shape; the guards that matter in that test are the budget, promotion-override and drain-order assertions below it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p/manifest.md:13 non-blocking: the gate ran in a scratch tree (/tmp/mcintos-landing-5372a109de75-wU53Ag/tree) but the manifest records no measurement_module or measurement_cwd line and the scoped-gate log's header names neither, so a later reader cannot tell which module the run imported.",
+  "review_run_id": "r-20261118T064546962784-review-of-sspb-a-run-s-priority-carries-to-its-review-and-its-p-b7884a4b93ab",
+  "reviewed_base_sha": "8d870f62598f1d922ceed7015b570a65c61d8283",
+  "reviewed_head_sha": "b7884a4b93abdbc93cbbeca7eae275f00a61e7e9",
+  "reviewed_run_id": "r-20261114T202123456216-sspb-a-run-s-priority-carries-to-its-review-and-its-p",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:12:13.327516+00:00",
+  "total": 92
+}

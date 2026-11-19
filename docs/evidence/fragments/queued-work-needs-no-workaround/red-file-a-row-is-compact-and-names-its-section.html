@@ -1,0 +1,82 @@
+<section id="qwnw-red-file-a-row-is-compact-and-names-its-section-landing">
+  <h2>A row is compact and names its section</h2>
+
+  <p><strong>What the node found.</strong> The named file already passes in full
+  at the base revision
+  <code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code>, so the red this node was
+  queued for is no longer in this file at this revision: 18 passed,
+  <code>EXIT=0</code>, run as an <code>all_debug</code> job with
+  <code>SLURM_JOB_ID</code> unset. Nothing in the product or in the test was
+  repaired, and no assertion was touched. The file last moved by
+  <code>dfb4cc1380</code> (<em>serve a runs row whole and carry the live view's
+  mine marker</em>), <code>dd7870373f</code> (<em>cover a view's field vocabulary
+  against empty lists</em>) and <code>81aa5716cc</code> (<em>keep only the runs
+  row's own empty field</em>), which is why the version of this file that failed
+  on the primary branch quoted by the plan is not the one on it now.</p>
+
+  <p>The cases already in the file are the guards the node's goal names, and they
+  are what the negative control below shows firing: all four views
+  (<code>live</code>, <code>runs</code>, <code>obligations</code>,
+  <code>directory</code>) name the section a run was dispatched for in every row;
+  every view accepts <code>fields=["section"]</code>; and a view's field
+  vocabulary is its own rather than the fields its rows happen to hold.</p>
+
+  <h3 id="qwnw-red-file-a-row-is-compact-and-names-its-section-measured">Measured</h3>
+
+  <table id="qwnw-red-file-a-row-is-compact-and-names-its-section-arms">
+    <caption>Each arm is a log whose first lines name its revision and command
+    and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code>,
+          <code>all_debug</code> job 1325804</td>
+        <td>18 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the scoped gate</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>58 passed, 0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>2f00851c42f247cba1c81c80ed0cf7b41045de76</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the negative control</td>
+        <td><code>2f00851c</code>, product mutation, reverted</td>
+        <td>10 failed, 8 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Both suite arms run the same command resolved over the same tree, so the
+  delta is zero added failures — the node's diff is this record alone and touches
+  neither product source nor tests.</p>
+
+  <p><strong>Ruff.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> over the two files this node would have
+  touched (<code>tests/test_a_row_is_compact_and_names_its_section.py</code> and
+  <code>reckon/crew/query.py</code>) report no finding and both already
+  formatted; nothing on a changed path adds a finding.</p>
+
+  <h3 id="qwnw-red-file-a-row-is-compact-and-names-its-section-control">Negative control</h3>
+
+  <p>A passing file on its own says nothing about whether these cases can fail, so
+  the section's own rule was broken on purpose and restored: in
+  <code>reckon/crew/query.py</code>,
+  <code>_canonical_section</code> was made to return its argument verbatim
+  (<code>str(value)</code>) instead of <code>normalize_section(str(value))</code>,
+  so a row would carry the caller's <code>s4</code> rather than the canonical
+  <code>§4</code>. Ten cases turned red — the four
+  <code>test_every_run_view_names_the_section</code> ids, the four
+  <code>test_every_run_view_accepts_the_section_field</code> ids,
+  <code>test_a_runs_row_is_the_fields_it_declares</code> and
+  <code>test_a_narrowed_runs_row_still_answers_the_views_own_filters</code>, each
+  asserting <code>'s4' == '§4'</code> — and the file read
+  <code>10 failed, 8 passed</code>, <code>EXIT=1</code>. The mutation was then
+  reverted with an edit and <code>git status</code> read clean before anything
+  was committed.</p>
+
+  <p>The head arm for that comparison is the declared-suite after arm above,
+  which fails nothing, so the control reddens ten ids the head arm passes and the
+  log is admitted as a control rather than read as a repeat of an existing
+  failure.</p>
+</section>

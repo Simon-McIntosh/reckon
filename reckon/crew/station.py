@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import checkout_trust, flight
+from reckon._timestamps import parse_utc
 from reckon.crew import (
     census,
     dispatch_claims,
@@ -453,6 +454,9 @@ class SweepBeat:
     ) -> None:
         while True:
             try:
+                from reckon.crew.pending_landing import retire_promoted_pointers
+
+                retire_promoted_pointers(project=project, session=session)
                 report = self.sweep(
                     project, session=session, now=moment, writer=dict(SWEEP_WRITER)
                 )
@@ -1252,11 +1256,12 @@ class Station:
         """
         last = self.store.station_value(_FOLLOWER_PRUNE_KEY)
         if last is not None:
-            try:
-                since = moment.timestamp() - datetime.fromisoformat(last).timestamp()
-            except ValueError:
-                since = None
-            if since is not None and since < FOLLOWER_PRUNE_BEAT_SECONDS:
+            previous = parse_utc(last)
+            if (
+                previous is not None
+                and moment.timestamp() - previous.timestamp()
+                < FOLLOWER_PRUNE_BEAT_SECONDS
+            ):
                 return []
         removed: list[dict[str, Any]] = []
         for project in sorted(self.projects()):

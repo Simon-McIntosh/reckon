@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3466-3478 (crew_complete report with detail[:240] truncation and record_path)",
+    "reckon/crew/promotion.py:958 (complete)",
+    "reckon/crew_run_commands.py:3441-3452 (completion receipt capture via _COMPLETION_REPLIES)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T09:55:44Z",
+  "findings": [
+    {
+      "file": "tests/test_passed_verdict_needs_exit_zero.py",
+      "line": "277",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares record[\"gate_check\"][\"exit_status\"] against the exit_status=0 value the test itself passed to _complete_arguments, and :293 does the same with ASSIGNED_COMMAND, so both sides move together and either survives a record that echoes its input without the promotion having compared it; they redden only when the field is dropped or defaulted, which is why durability rests on :240 and :323 instead of on these lines."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commits dddbe4e88901eadb067a7a04a6cf8d43a17ebfa6 (fix(tests): read the completion record a receipt names), 48b5619c83d0efc2cb9c0d6a35a51f03ea9e896f (docs(evidence): record the red file and its repair) and 2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7 (docs(evidence): state the measures without a superseded revision) against 3006761c5a; the test change replaces result.output reads with two helpers that resolve the completion record through the receipt's record_path (tests/test_passed_verdict_needs_exit_zero.py:209-224) leaving every assertion string intact, and the fragments add 13 and 16 lines of evidence prose.",
+    "done_when": "The done_when requires the file to pass in full at head as a job on all_debug with SLURM_JOB_ID unset and its log on shared storage, a base run taken first, a cause with a product-wrong or test-wrong verdict, no assertion deleted or weakened, an importer arm adding no failure, both arms recorded as inline JSON, and a negative control; manifest.md records baseline_suite/after_suite as inline JSON with full 40-character revisions and 0 failures each, base-arm-passed-verdict.log records 7 failed 3 passed EXIT=1 at 3006761c, head-gate-all-debug.log carries \"# env: SLURM_JOB_ID=<unset>\" and EXIT=0, and sacct -j 1325566 shows the gate ran on all_debug COMPLETED, while the importer arm tests/test_a_landing_judges_the_head_by_its_suite.py is recorded in artifacts by log path only.",
+    "goal": "The source node's goal is \"Make tests/test_passed_verdict_needs_exit_zero.py pass in full on the primary branch\"; the head gate log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054052237419-qwnw-red-file-passed-verdict-needs-exit-zero/head-gate-all-debug.log records 10 passed EXIT=0 at 2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7, so the file passes in full at the reviewed head, with the merged-primary state left to the separately dispatched test node.",
+    "manifest": "manifest.md reports status complete, the three commits, a head gate of 10 passed at 2b7c28c9, a base arm of 7 failed and 3 passed, two declared suite arms with 0 failures, and one cause classified test-wrong; its head gate figure agrees with head-gate-all-debug.log and its base figure with base-arm-passed-verdict.log.",
+    "write_paths": "The node declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 3006761c5a82f33fd3ca146373231e809ac00a46..2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7 changes only tests/test_passed_verdict_needs_exit_zero.py and the two fragment files under that directory, so every delivered path is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_passed_verdict_needs_exit_zero.py:240 and :323 assert the full refusal detail read from the record, and the base arm proves those assertions redden when the receipt truncation applies to them (7 failed at 3006761c), so reinstating the pre-fix read reddens the file.",
+    "evidence": "base-arm-passed-verdict.log records \"7 failed, 3 passed\" with EXIT=1 at 3006761c and head-gate-all-debug.log records \"10 passed\" with EXIT=0 at 2b7c28c9, both read from the logs rather than the manifest's account, but the importer arm is named by log path in manifest.md's artifacts rather than recorded as the inline JSON pair the done_when asks for.",
+    "fit": "tests/test_passed_verdict_needs_exit_zero.py:209 and :222 add underscore-prefixed module helpers with docstrings in the same idiom as the module's existing _invoke/_write_pointer helpers, and the fragments follow the section/h2 shape of their directory.",
+    "goal_fidelity": "head-gate-all-debug.log records 10 passed EXIT=0 at 2b7c28c9 for tests/test_passed_verdict_needs_exit_zero.py, which is the goal's deliverable, though the merged-primary arm the goal names is not the tree measured here.",
+    "reuse": "a search of tests/conftest.py, tests/__init__.py and the sibling test files for an existing receipt-to-record helper found no owner for that capability, and the nearest existing form (tests/test_a_clean_landing_releases_its_worktree.py:126) is the same read in-line, so the helper is the first spelling rather than a fork of a shared owner.",
+    "scope_discipline": "git diff 3006761c..2b7c28c9 touches only tests/test_passed_verdict_needs_exit_zero.py and two files under docs/evidence/fragments/queued-work-needs-no-workaround, all of them inside the node's declared write paths, and nothing under reckon/ changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is \"Make tests/test_passed_verdict_needs_exit_zero.py pass in full on the primary branch\"; the head gate log /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054052237419-qwnw-red-file-passed-verdict-needs-exit-zero/head-gate-all-debug.log records 10 passed EXIT=0 at 2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7, so the file passes in full at the reviewed head, with the merged-primary state left to the separately dispatched test node.\nVERDICT done_when: The done_when requires the file to pass in full at head as a job on all_debug with SLURM_JOB_ID unset and its log on shared storage, a base run taken first, a cause with a product-wrong or test-wrong verdict, no assertion deleted or weakened, an importer arm adding no failure, both arms recorded as inline JSON, and a negative control; manifest.md records baseline_suite/after_suite as inline JSON with full 40-character revisions and 0 failures each, base-arm-passed-verdict.log records 7 failed 3 passed EXIT=1 at 3006761c, head-gate-all-debug.log carries \"# env: SLURM_JOB_ID=<unset>\" and EXIT=0, and sacct -j 1325566 shows the gate ran on all_debug COMPLETED, while the importer arm tests/test_a_landing_judges_the_head_by_its_suite.py is recorded in artifacts by log path only.\nVERDICT write_paths: The node declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; git diff --stat 3006761c5a82f33fd3ca146373231e809ac00a46..2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7 changes only tests/test_passed_verdict_needs_exit_zero.py and the two fragment files under that directory, so every delivered path is inside the declared scope.\nVERDICT manifest: manifest.md reports status complete, the three commits, a head gate of 10 passed at 2b7c28c9, a base arm of 7 failed and 3 passed, two declared suite arms with 0 failures, and one cause classified test-wrong; its head gate figure agrees with head-gate-all-debug.log and its base figure with base-arm-passed-verdict.log.\nVERDICT diff: Read commits dddbe4e88901eadb067a7a04a6cf8d43a17ebfa6 (fix(tests): read the completion record a receipt names), 48b5619c83d0efc2cb9c0d6a35a51f03ea9e896f (docs(evidence): record the red file and its repair) and 2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7 (docs(evidence): state the measures without a superseded revision) against 3006761c5a; the test change replaces result.output reads with two helpers that resolve the completion record through the receipt's record_path (tests/test_passed_verdict_needs_exit_zero.py:209-224) leaving every assertion string intact, and the fragments add 13 and 16 lines of evidence prose.\nCALL_SITES: reckon/crew_run_commands.py:3466-3478 (crew_complete report with detail[:240] truncation and record_path), reckon/crew/promotion.py:958 (complete), reckon/crew_run_commands.py:3441-3452 (completion receipt capture via _COMPLETION_REPLIES)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: head-gate-all-debug.log records 10 passed EXIT=0 at 2b7c28c9 for tests/test_passed_verdict_needs_exit_zero.py, which is the goal's deliverable, though the merged-primary arm the goal names is not the tree measured here.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm-passed-verdict.log records \"7 failed, 3 passed\" with EXIT=1 at 3006761c and head-gate-all-debug.log records \"10 passed\" with EXIT=0 at 2b7c28c9, both read from the logs rather than the manifest's account, but the importer arm is named by log path in manifest.md's artifacts rather than recorded as the inline JSON pair the done_when asks for.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 3006761c..2b7c28c9 touches only tests/test_passed_verdict_needs_exit_zero.py and two files under docs/evidence/fragments/queued-work-needs-no-workaround, all of them inside the node's declared write paths, and nothing under reckon/ changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_passed_verdict_needs_exit_zero.py:240 and :323 assert the full refusal detail read from the record, and the base arm proves those assertions redden when the receipt truncation applies to them (7 failed at 3006761c), so reinstating the pre-fix read reddens the file.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_passed_verdict_needs_exit_zero.py:209 and :222 add underscore-prefixed module helpers with docstrings in the same idiom as the module's existing _invoke/_write_pointer helpers, and the fragments follow the section/h2 shape of their directory.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of tests/conftest.py, tests/__init__.py and the sibling test files for an existing receipt-to-record helper found no owner for that capability, and the nearest existing form (tests/test_a_clean_landing_releases_its_worktree.py:126) is the same read in-line, so the helper is the first spelling rather than a fork of a shared owner.\nFINDING tests/test_passed_verdict_needs_exit_zero.py:277 non-blocking: the assertion compares record[\"gate_check\"][\"exit_status\"] against the exit_status=0 value the test itself passed to _complete_arguments, and :293 does the same with ASSIGNED_COMMAND, so both sides move together and either survives a record that echoes its input without the promotion having compared it; they redden only when the field is dropped or defaulted, which is why durability rests on :240 and :323 instead of on these lines.",
+  "review_method": "Read-only review: the reviewed run's manifest, gate and arm logs, and the three delivered commits against the base; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T090715779786-review-of-qwnw-red-file-passed-verdict-needs-exit-zero-2b7c28c9fee2",
+  "reviewed_base_sha": "3006761c5a82f33fd3ca146373231e809ac00a46",
+  "reviewed_head_sha": "2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7",
+  "reviewed_run_id": "r-20261118T054052237419-qwnw-red-file-passed-verdict-needs-exit-zero",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "dddbe4e88901eadb067a7a04a6cf8d43a17ebfa6",
+    "48b5619c83d0efc2cb9c0d6b35a51f03ea9e896f",
+    "2b7c28c9fee2fae549b11cdba4adc90e41e5f0c7"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T10:14:54.288995+00:00",
+  "total": 114
+}

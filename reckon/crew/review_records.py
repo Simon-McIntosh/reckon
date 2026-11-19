@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import file_memo
+from reckon._timestamps import parse_utc
 from reckon.crew import open_run_index
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
 
@@ -1102,18 +1103,13 @@ def _delivery_order(
         stamp = _review.run_id_dispatch_time(str(record.get("review_run_id") or ""))
     moment: datetime | None = None
     if stamp:
-        try:
-            moment = datetime.fromisoformat(stamp)
-        except ValueError:
-            moment = None
+        moment = parse_utc(stamp)
     try:
         modified = Path(path).stat().st_mtime_ns
     except OSError:
         modified = 0
     if moment is None:
         return datetime.min.replace(tzinfo=UTC), modified
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
     return moment, modified
 
 

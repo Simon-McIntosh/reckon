@@ -1,0 +1,73 @@
+<section id="qwnw-red-file-the-pane-speaks-seven-words-landing">
+  <h2>The pane's counter census reads the seven-cell block it prints</h2>
+
+  <p><strong>What changed.</strong>
+  <code>tests/test_the_pane_speaks_seven_words.py</code> pins the counter block's
+  cells against the pane's state words. The block grew a seventh cell when
+  <code>reckon/crew/ticker.py</code> began to tell requested promotions apart
+  from delivered work: <code>_PROMOTION_CELL = "promotion queue"</code>. The cell
+  is a figure printed beside the pane words, like the <code>stuck</code> alarm,
+  not a state word of its own — <code>PANE_STATES["queued"]</code> holds
+  <code>promotion-queued</code>, so a promotion-queued run still reads
+  <code>queued</code> on the transition. The census asserted the six-cell table
+  and failed on the seventh.</p>
+
+  <p><strong>The cause, and its verdict.</strong> The product is right: the cell
+  carries a letter of its own (<code>p</code>), a count field of its own
+  (<code>promotion_queued</code>) and the oldest request's position after an
+  <code>@</code>, and it is pinned by the cases the product's own commit added.
+  The test was wrong: it encoded "only <code>stuck</code> stands beside the pane
+  words", a rule the product no longer keeps. The repair states the rule the
+  pane now keeps — the counter cells are the pane words plus two figures, the
+  stuck alarm and the promotion queue — and pins the cell tuple and the count
+  field exactly, so no assertion is deleted or weakened.</p>
+
+  <h3 id="qwnw-red-file-the-pane-speaks-seven-words-measured">Measured</h3>
+
+  <p>The head run and the negative control are both <code>all_debug</code> jobs
+  whose test process runs with <code>SLURM_JOB_ID</code> unset, and each log
+  opens with the revision, host, tree and command it ran and closes with a bare
+  <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table id="qwnw-red-file-the-pane-speaks-seven-words-arms">
+    <caption>The base run is the negative control and is quoted in full below.
+  Measured 18 November 2026.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, head gate</td>
+        <td><code>b7dcd55e3e</code></td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's file, base (negative control)</td>
+        <td><code>1766ca118859</code></td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>1766ca118859</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>b7dcd55e3e</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>every test file importing <code>reckon.crew.ticker</code> (79 files)</td>
+        <td>base <code>1766ca118859</code> against head <code>b7dcd55e3e</code></td>
+        <td>21 failed, 839 passed at either revision; identical failing ids, 0 added</td></tr>
+    </tbody>
+  </table>
+
+  <p>The gate command, as the log records it:</p>
+  <pre id="qwnw-red-file-the-pane-speaks-seven-words-gate-command">env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_pane_speaks_seven_words.py'</pre>
+  <p>Its log is <code>scoped-gate-1795001661040433791.log</code> in the run
+  directory, and it reads <code>EXIT=0</code> — the head half of this pair.</p>
+
+  <p>The negative control's log is <code>negative-control.log</code> in the run
+  directory. Its failing id and the counter example:</p>
+  <pre id="qwnw-red-file-the-pane-speaks-seven-words-negative-control">FAILED tests/test_the_pane_speaks_seven_words.py::test_counter_labels_and_hues_share_the_pane_words
+E   AssertionError: assert {'delivered',...g', 'working'} &lt;= frozenset({'d...queued', ...})
+E     Extra items in the left set:
+E     'promotion queue'
+1 failed, 2 passed in 0.38s
+EXIT=1</pre>
+
+  <p>The delta arm's logs are <code>ticker-arm-base.log</code> and
+  <code>ticker-arm-head.log</code> in the run directory; the changed file is not
+  itself in that population, because no test imports another test — its own two
+  arms are the gate and the negative control above.</p>
+</section>

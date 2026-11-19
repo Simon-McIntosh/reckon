@@ -134,12 +134,18 @@ def _unbounded_working_tree_reads(calls: list[list[str]]) -> list[list[str]]:
             return True
         if "--cached" in argv:
             return False
+        limit = argv.index("--") if "--" in argv else len(argv)
         revisions = [
-            item
-            for item in argv[index + 1 :]
-            if not item.startswith("-") and item != "--"
+            item for item in argv[index + 1 : limit] if not item.startswith("-")
         ]
-        return len(revisions) < 2
+        # ``A..B`` (and ``A...B``) names two commits in a single token, and git
+        # compares those two trees: it reads no working tree. Counting tokens
+        # instead of endpoints read such a range as one revision and charged a
+        # two-commit diff as a working-tree walk.
+        endpoints = sum(
+            len([part for part in item.split("..") if part]) for item in revisions
+        )
+        return endpoints < 2
 
     return [argv for argv in calls if unbounded(argv)]
 

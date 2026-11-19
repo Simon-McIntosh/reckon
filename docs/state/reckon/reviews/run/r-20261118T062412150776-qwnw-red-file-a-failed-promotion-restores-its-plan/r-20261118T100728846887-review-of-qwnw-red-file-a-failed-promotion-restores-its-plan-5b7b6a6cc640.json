@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/evidence.py:_fragment_href",
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/serve.py:_send_evidence_record"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-18T11:00:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-promotion-restores-its-plan.html",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reprinted base-run command is not the command the run's own log records. The fragment quotes the short form `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_failed_promotion_restores_its_plan.py`, while logs/base-run-test_a_failed_promotion_restores_its_plan.log:3 records an absolute-path invocation (`PYTHONPATH=<worktree> <worktree>/.venv/bin/python -m pytest ...`); the reproduction block therefore does not reconcile with the artifact it quotes and cannot be re-run from the fragment as written."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-promotion-restores-its-plan.html",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the section headed 'Head run as a job on all_debug' quotes revision a4c47928d7a2ae424c0c7eeeab21cd29df7a6e31, not the reviewed head 5b7b6a6cc640a752bc72c8121cbf71ca179ac52d; the head-revision all_debug run exists only in the manifest (scoped-gate-1794994789422148263.log) and is not named in the landed fragment, so a reader of the fragment alone takes an intermediate revision for the measured head."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 733461c8: a4c47928 adds a 32-line fragment with a base-run and a head-run section, 5b7b6a6 rewrites 4 lines and drops 12 of the same file to name the later commit as fragment-only; the net diff is one new 24-line HTML file under docs/evidence/fragments/, with no product source and no test changed.",
+    "done_when": "The done_when requires an all_debug head job with its output on shared storage, two suite arms as inline JSON with full 40-character revisions, a fragment carrying the base run beside the head run, and clean ruff; the arms are recorded at 733461c8 and 5b7b6a6 (58 passed, EXIT=0 each) and the fragment carries the base run, but the done_when names the fragment 'red-file-a-failed-promotion-restores-its-plan.html' while the landed file is 'qwnw-red-file-a-failed-promotion-restores-its-plan.html', the name reckon/evidence.py:866 derives from the node id and the name the declared write paths list.",
+    "goal": "The source node's goal is 'Make tests/test_a_failed_promotion_restores_its_plan.py pass in full on the primary branch'; logs/base-run-test_a_failed_promotion_restores_its_plan.log reports '50 passed in 22.41s' with EXIT=0 at 733461c8 and scoped-gate-1794994789422148263.log reports '50 passed in 13.22s' with EXIT=0 at 5b7b6a6, so the condition holds and the landed change records the measurement rather than repairing code.",
+    "manifest": "Read in full: status complete, two commits, the gate command and three log paths, baseline_suite and after_suite as inline JSON at 733461c8 and 5b7b6a6 with 58 passed and failure_ids [], and artifacts quoting 50 passed / EXIT=0 at both revisions; its evidence_inputs reports that the section's red-file premise does not reproduce.",
+    "write_paths": "The source manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's node fragment and a figures directory; both commits touch only docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-promotion-restores-its-plan.html, inside the declared set."
+  },
+  "justifications": {
+    "durability": "No assertion is added by the diff, so nothing landed here reddens when the fragment's measurements stop being true; the guard that would red on a regression of the underlying behaviour is the pre-existing 50-test tests/test_a_failed_promotion_restores_its_plan.py, which this node neither added nor changed.",
+    "evidence": "The gate is recorded rather than claimed - scoped-gate-1794994789422148263.log opens '# revision: 5b7b6a6cc640...' and closes 'EXIT=0' - yet the landed fragment quotes a pre-head revision at line 16 and a command form its log does not record at line 6.",
+    "fit": "The fragment follows the sibling idiom (section ids prefixed with the node id, h2 heading, prose plus a pre block whose header names revision, host, tree and command and closes with a bare EXIT=) and its filename is the one reckon/evidence.py:866 derives for that node.",
+    "goal_fidelity": "The goal's own condition is met by the recorded runs of tests/test_a_failed_promotion_restores_its_plan.py (50 passed, EXIT=0 at base and head in logs/base-run-test_a_failed_promotion_restores_its_plan.log and scoped-gate-1794994789422148263.log), so the node correctly landed the measurement instead of a repair, but no code change establishes that condition if it regressed.",
+    "reuse": "The diff adds no function, class or module; the capability search over reckon/evidence.py and reckon/crew found the fragment path and composition owners already in evidence.py:_fragment_href and evidence.py:compose_landed_record, which the node consumes and does not re-implement.",
+    "scope_discipline": "git diff 733461c8..5b7b6a6 is a single new file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-promotion-restores-its-plan.html, which is one of the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief's GOAL is 'Make tests/test_a_failed_promotion_restores_its_plan.py pass in full on the primary branch'; logs/base-run-test_a_failed_promotion_restores_its_plan.log reports 50 passed with EXIT=0 at 733461c8 and scoped-gate-1794994789422148263.log reports 50 passed with EXIT=0 at 5b7b6a6, so the condition holds and the landed change records it rather than repairing code.\nVERDICT done_when: the done_when at brief-for-worker.md:436 asks for an all_debug head job on shared storage, two suite arms with full 40-character revisions and a fragment carrying the base run; both arms are recorded at EXIT=0 with 58 passed and the fragment carries the base run, though the done_when names red-file-a-failed-promotion-restores-its-plan.html where the landed file is the node-id-derived qwnw-red-file-a-failed-promotion-restores-its-plan.html.\nVERDICT write_paths: the manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, that directory's node fragment and a figures directory, and both commits touch only docs/evidence/fragments/queued-work-needs.../qwnw-red-file-a-failed-promotion-restores-its-plan.html inside them.\nVERDICT manifest: read in full: status complete, two commits, three log paths, baseline_suite and after_suite at 733461c8 and 5b7b6a6 with 58 passed and failure_ids [], artifacts quoting 50 passed and EXIT=0 at both revisions.\nVERDICT diff: read against base 733461c8 commit by commit: a4c47928 adds the 32-line fragment, 5b7b6a6 rewrites 4 and drops 12 of the same file, netting one new 24-line HTML file under docs/evidence/fragments/, with no product source and no test changed.\nCALL_SITES: reckon/evidence.py:_fragment_href, reckon/evidence.py:compose_landed_record, reckon/serve.py:_send_evidence_record\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the goal's condition is met by the recorded runs of tests/test_a_failed_promotion_restores_its_plan.py at base and head, and no code change establishes it if it regress.\nSCORE evidence: 15\nJUSTIFICATION evidence: scoped-gate-1794994789422148263.log opens '# revision: 5b7b6a6cc640...' and closes 'EXIT=0', yet the fragment at line 16 quotes revision a4c47928 and at line 6 a command its log does not record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 733461c8..5b7b6a6 is the single new file docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-promotion-restores-its-plan.html.\nSCORE durability: 13\nJUSTIFICATION durability: the diff adds no assertion, so nothing here reddens when the measurements go stale; the guard is the pre-existing tests/test_a_failed_promotion_restores_its_plan.py the node neither added nor changed.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment follows the sibling idiom and its name is the one reckon/evidence.py:866 derives for the node.\nSCORE reuse: 20\nJUSTIFICATION reuse: no function, class or module is added; the capability search found the owners at reckon/evidence.py:_fragment_href and reckon/evidence.py:compose_landed_record, which the node consumes.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-promotion-restores-its-plan.html:6 non-blocking: the reprinted base-run command is not the command logs/base-run-test_a_failed_promotion_restores_its_plan.log:3 records, so the reproduction block cannot be reconciled with the artifact it quotes.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-failed-promotion-restores-its-plan.html:16 non-blocking: the 'Head run as a job on all_debug' block quotes revision a4c47928 rather than the reviewed head 5b7b6a6, whose run is recorded only in the manifest.\n",
+  "review_method": "Read-only review of the source brief, manifest, recorded gate and arm logs, and the two commits against base; no suite rerun and no mutation experiment.",
+  "review_run_id": "r-20261118T100728846887-review-of-qwnw-red-file-a-failed-promotion-restores-its-plan-5b7b6a6cc640",
+  "reviewed_base_sha": "733461c8d8d352db23c859392481c65ef7ac73b3",
+  "reviewed_head_sha": "5b7b6a6cc640a752bc72c8121cbf71ca179ac52d",
+  "reviewed_run_id": "r-20261118T062412150776-qwnw-red-file-a-failed-promotion-restores-its-plan",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "a4c47928d7a2ae424c0c7eeeab21cd29df7a6e31",
+    "5b7b6a6cc640a752bc72c8121cbf71ca179ac52d"
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062412150776-qwnw-red-file-a-failed-promotion-restores-its-plan/after-suite-5b7b6a6cc640a752bc72c8121cbf71ca179ac52d.log",
+      "observed_summary": "58 passed in 40.21s",
+      "revision": "5b7b6a6cc640a752bc72c8121cbf71ca179ac52d"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062412150776-qwnw-red-file-a-failed-promotion-restores-its-plan/baseline-suite-733461c8d8d352db23c859392481c65ef7ac73b3.log",
+      "observed_summary": "58 passed in 43.40s",
+      "revision": "733461c8d8d352db23c859392481c65ef7ac73b3"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-18T11:18:01.088306+00:00",
+  "total": 104
+}

@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request-fragment">
+  <h2>One rule chooses the lane for an oversized request</h2>
+
+  <p><strong>What was found.</strong> The dispatch named this file as red on the
+  primary branch. It is not: at the worktree's base revision
+  <code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code>, read in place and
+  without merging or pulling any branch, the file collects and passes fourteen
+  cases in 3.44s at <code>EXIT=0</code>. No cause was repaired because none
+  reproduced, and no product or test line changed. The delivered tree is that
+  base revision, so the node is a measurement and its landing is that passing run.</p>
+
+  <table id="qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request-runs">
+    <caption>The named file and the declared suite, at the delivered head</caption>
+    <thead>
+      <tr><th>Run</th><th>Revision</th><th>Tree</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>named file, in place</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td>the worktree</td>
+        <td>14 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>named file, <code>crew verify-gate --partition all_debug</code></td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td><code>/tmp/mcintos-landing-aec3f07be689-Jf5KJl/tree</code> on
+        <code>98dci4-clu-3144</code></td>
+        <td>14 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>declared suite, baseline arm</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td>scratch tree on <code>all_debug</code></td>
+        <td>0 failed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>declared suite, after arm</td>
+        <td><code>97dec20bfb8603ab71c4e9deeefddab685e0a42e</code></td>
+        <td>scratch tree on <code>all_debug</code></td>
+        <td>0 failed, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request-control">Negative control</h3>
+
+  <p>A green file proves nothing about what it measures, so the rule it is named
+  for was falsified: <code>reckon/crew/picker/snapshot.py</code>'s
+  <code>widest_fitting_candidate</code> was mutated to take the first usable
+  candidate, <code>return usable[0]</code>, in place of
+  <code>min(usable, key=rank)</code>. The same file then reads
+  <code>3 failed, 11 passed</code> at <code>EXIT=1</code>, on the ids that hold
+  the rule:</p>
+
+  <ul>
+    <li><code>test_both_paths_move_the_request_to_the_widest_fitting_lane</code>
+    — <code>assert 'alpha' == 'beta'</code>, the first usable lane answering
+    where the widest must.</li>
+    <li><code>test_the_rule_reads_a_broken_window_as_broken[0]</code> and
+    <code>[not-a-number]</code> — <code>DID NOT RAISE CrewError</code>, because a
+    rule that never ranks never reads a declared window.</li>
+  </ul>
+
+  <p>The mutation was reverted and the tree left clean: <code>git status
+  --porcelain</code> prints nothing and the file's diff is empty. So the base run
+  is not red, and it reads red when the rule it asserts is broken.</p>
+
+  <h3 id="qwnw-red-file-one-rule-chooses-the-lane-for-an-oversized-request-outside">Outside scope</h3>
+
+  <p>Nothing. The node's diff is this fragment alone; no product or test path was
+  edited, so no failure in either arm is attributable to it. This gate measures
+  only this node's own change; verifying the merged result belongs to a
+  separately dispatched test node.</p>
+</section>

@@ -326,13 +326,25 @@ def _precedence(
     now: datetime,
     review: bool,
 ) -> tuple[tuple[int, int], str]:
-    """The urgency classes shared by admission and promotion."""
+    """The urgency classes shared by admission and promotion.
+
+    A review leads every other request, and within its own class the points its
+    run held when it launched order two reviews. The run paid for its place and
+    the review is what lets that run land, so a review of a prioritised run is
+    admitted before an earlier one that nobody placed points on; the points ride
+    the review's own queued record, written by the dispatch that composed it.
+    Below both, ageing sits above priority on purpose, so a spent budget can
+    move work ahead but cannot starve another session.
+    """
+    points = _override(pointer)
     if review:
+        if points is not None:
+            return (0, -points), f"delivered review at priority {points}"
         return (0, 0), "delivered review"
     if _starved(queued_at, now):
         return (1, 0), "ageing"
-    if (priority := _override(pointer)) is not None:
-        return (2, -priority), f"priority override {priority}"
+    if points is not None:
+        return (2, -points), f"priority override {points}"
     return (3, 0), "session fair share; oldest request"
 
 

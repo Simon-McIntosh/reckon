@@ -737,10 +737,7 @@ def _queued_hold(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
     pass's own verdict row and the request's stored hold cannot disagree about
     what holds one request.
     """
-    named = _verdicts.failure_hold(pointer)
-    if named is not None:
-        return named
-    return queue_admission.recorded_pass_hold(pointer)
+    return _verdicts.queued_hold(pointer)
 
 
 def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
@@ -883,7 +880,10 @@ def _live_pointers(project: str) -> list[dict[str, Any]]:
         snapshot = held.get(project)
         if snapshot is not None:
             return list(snapshot)
-    return runs.list_live(project=project)
+    from reckon.crew.open_run_index import pointers
+
+    snapshot = pointers(project=project)
+    return list(snapshot) if snapshot is not None else runs.list_live(project=project)
 
 
 def _recorded_review_dispatch(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
