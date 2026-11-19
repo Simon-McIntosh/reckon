@@ -1,0 +1,27 @@
+<section id="qwnw-red-file-every-ledger-question-reads-the-store-negative-control">
+<h3>Ledger plan selection goes through the plan owner</h3>
+<p><code>ledger.read_records</code> answered a plan-filtered store read from the store's own
+<code>plan</code> column, a value written when the row landed. The row's plan is owned by
+<code>ledger.row_plan</code>, so a row whose owner moved read as belonging to the plan it was
+written under. <code>reckon/run_store.py</code> now exposes <code>PLAN_OWNER_FIELDS</code> and
+<code>plan_owner_rows(project)</code>, a narrow projection of the three owner inputs, and
+<code>ledger.stored_plan_ids(project, plan)</code> selects the stored ids whose owner answers to
+that plan. <code>read_records</code> intersects that set with any id filter and leaves the store's
+<code>plan</code> column to the file index, which cannot outlive its row. Commit
+<code>ffaf0cdda15940a6b47bfc7092c73a90c32565d8</code>.</p>
+<p>The test was right and the product was wrong: the failing assertion named the rule the code
+broke (<q>SQL selection bypassed the shared plan owner</q>) and no assertion was weakened.</p>
+<details><summary>Unmodified-base failing run: 2 failed, 26 passed; EXIT=1</summary><pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_ledger_question_reads_the_store.py
+# SLURM_JOB_ID unset in the measured environment
+FAILED tests/test_every_ledger_question_reads_the_store.py::test_store_selection_uses_the_ledger_plan_owner[False] - AssertionError: SQL selection bypassed the shared plan owner
+FAILED tests/test_every_ledger_question_reads_the_store.py::test_store_selection_uses_the_ledger_plan_owner[True] - AssertionError: SQL selection bypassed the shared plan owner
+2 failed, 26 passed in 3.53s
+EXIT=1</pre></details>
+<details><summary>Head run: 28 passed; EXIT=0, all_debug job 1329373</summary><pre># revision: ffaf0cdda15940a6b47bfc7092c73a90c32565d8
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_ledger_question_reads_the_store.py
+# SLURM_JOB_ID unset in the measured environment
+............................                                             [100%]
+28 passed in 3.58s
+EXIT=0</pre></details>
+</section>
