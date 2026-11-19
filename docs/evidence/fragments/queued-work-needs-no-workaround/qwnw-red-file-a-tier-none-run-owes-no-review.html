@@ -1,0 +1,59 @@
+<section id="qwnw-red-file-a-tier-none-run-owes-no-review-landing">
+  <h2>A tier-none duty keeps its review tier</h2>
+
+  <p><strong>What changed.</strong> The obligations view narrows a delivery row
+  to a fixed field set so a reply stays bounded, and that set dropped
+  <code>review_tier</code>. A run the tier rule exempts therefore read
+  <code>review-ready</code> with no tier beside it, so a reader could not tell
+  it from a run whose review has passed, even though the full row carried the
+  tier and the row's own kind is decided by it. <code>reckon/crew/obligations.py</code>
+  now carries the field on the bounded row.</p>
+
+  <p>Two expectations in <code>tests/test_a_tier_none_run_owes_no_review.py</code>
+  encoded rules the code stopped keeping after they were written, and each is
+  updated to the rule it now asserts. A settlement is offered only from a
+  passing measurement of the current head, so a run that records no gate is
+  offered its observation rather than a promotion the acceptance gate would
+  refuse with <em>the run records no passing gate to re-run at the merged
+  head</em>; what the duty must never name is the review dispatch the tier rule
+  exempted. And the commitless promotion form belongs only to a run that
+  declares no repository change, so the base-citation case now declares none and
+  the expected form carries the wait flag the composer inserts. No assertion was
+  deleted, and the tier-none duty still reads <code>review-ready</code> with
+  <code>review_tier: none</code> while the runtime-source run in the same pass
+  still reads <code>review-missing</code>.</p>
+
+  <h3 id="qwnw-red-file-a-tier-none-run-owes-no-review-arms">Measured</h3>
+
+  <p>Both arms are jobs on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+  unset, each log naming its revision, tree and command on its first lines and
+  ending with a bare <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table id="qwnw-red-file-a-tier-none-run-owes-no-review-table">
+    <caption>The file under test, at the base revision and at the head, then the
+    scoped suite arms.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the file, base arm (negative control)</td>
+        <td><code>eee07f8a5e18a6d5d98b26951db09a1504806918</code></td>
+        <td>2 failed, <code>EXIT=1</code>, ids
+        <code>test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing</code>
+        and
+        <code>test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form</code>,
+        both <code>KeyError: 'review_tier'</code></td></tr>
+      <tr><td>the file, head arm</td>
+        <td><code>b930698b5e105a2d831ea977a0bdf6ed9d434f4c</code></td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, baseline arm</td>
+        <td><code>eee07f8a5e18a6d5d98b26951db09a1504806918</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared suite, after arm</td>
+        <td><code>b930698b5e105a2d831ea977a0bdf6ed9d434f4c</code></td>
+        <td>0 failed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm reproduces the recorded defect and the head arm clears it, so
+  the two failures were the product's: the tier the duty is decided by was
+  absent from every bounded duty row.</p>
+</section>
