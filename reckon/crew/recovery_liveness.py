@@ -1605,6 +1605,24 @@ def _nothing_working_the_run(
     }
 
 
+def _run_home_holds_records(directory: Path) -> bool:
+    """Whether a run's directory already exists and holds something in it.
+
+    A run's directory is its durable home, made when the run is dispatched and
+    removed when the run is discarded. A classification of a pointer is a read,
+    and the two things it may write there — its memo and the launcher-host
+    observation — may not be what brings the home into being. An absent
+    directory and an empty one are both outside a home: filling either would
+    make a discard find a directory to leave its marker in, so a pointer that
+    merely vanished would read as a discard and a run whose home was removed
+    would be resurrected on the next sweep.
+    """
+    try:
+        return any(directory.iterdir())
+    except OSError:
+        return False
+
+
 def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
     """Prove a foreign compute launcher holds no job working this run.
 
@@ -1663,9 +1681,19 @@ def launcher_host_is_gone(record: Mapping[str, Any]) -> bool:
         "relied_on": relied_on,
         "process_gone": gone,
     }
+    directory = _run_directory(record)
+    if not _run_home_holds_records(directory):
+        # The observation is written before it licenses recovery, but it is
+        # evidence a run keeps in its own home. A pointer whose directory is
+        # gone or empty is not that run any more, and writing here would make
+        # the directory its home — leaving, behind a read, a run that never had
+        # a home for a discard to find.
+        return False
     try:
         runs._write_json(
-            _run_directory(record) / "launcher-host-observation.json", observation
+            directory / "launcher-host-observation.json",
+            observation,
+            create_parents=False,
         )
     except OSError:
         return False

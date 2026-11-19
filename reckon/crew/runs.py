@@ -494,8 +494,17 @@ def _stamp_pointer_launch_host(
     return {**payload, "launcher_host": host}
 
 
-def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
-    """Write JSON atomically, so a reader never sees a half-written record."""
+def _write_json(
+    path: Path, payload: Mapping[str, Any], *, create_parents: bool = True
+) -> None:
+    """Write JSON atomically, so a reader never sees a half-written record.
+
+    ``create_parents`` defaults on, which is what a pointer write needs: the
+    live directory is where a dispatch publishes, and ``create_parents=False``
+    is for a caller writing into a run's own directory, which a discard may
+    remove. Materialising that directory would bring a discarded run's home
+    back into being.
+    """
     payload = _stamp_pointer_launch_host(path, payload)
     if path.parent == live_dir() and path.suffix == ".json":
         payload = _without_pointer_omitted_fields(payload)
@@ -507,6 +516,7 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
         sort_keys=True,
         mode=0o600,
         ensure_ascii=True,
+        create_parents=create_parents,
     )
 
 
