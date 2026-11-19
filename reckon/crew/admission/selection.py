@@ -132,9 +132,17 @@ def admit_once(
                 _verdicts._record_readiness_verdicts(
                     result, live=live, lane=lane, config_for=config_for
                 )
-                result["released_plan_review"] = _reviews._release_plan_review_holds(
-                    live, config_for=config_for
+                from ..lead_decisions import release_withdrawn_holds
+
+                result["released_plan_review"] = (
+                    _reviews._release_plan_review_holds(live, config_for=config_for)
                 )
+                try:
+                    result["released_withdrawn"] = release_withdrawn_holds(live)
+                except (OSError, ValueError):
+                    # One unreadable decision record cannot end the pass: the
+                    # requests it holds keep their hold until it reads again.
+                    result["released_withdrawn"] = []
                 result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
             _service._record_stage_reads(result, "wait", wait_reads)
             result["promoted_upstream"] = upstream["promoted"]
