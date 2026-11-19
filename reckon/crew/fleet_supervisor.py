@@ -389,6 +389,9 @@ def sample_interpreter_permissions() -> int:
 
 NODE_DISK_RECORD = "node-disk.json"
 NODE_DISK_ROOT_ENV = "FLEET_NODE_TMP_ROOT"
+# The sampler exports its own pid here, so the reading it publishes names the
+# process that published it and a stale reading can be attributed to one.
+NODE_DISK_SAMPLER_PID_ENV = "FLEET_HEALTH_SAMPLER_PID"
 DEFAULT_NODE_DISK_RESERVE_BYTES = 8 * 1024**3
 DEFAULT_NODE_DISK_SAMPLE_MAX_AGE_SECONDS = 180
 
@@ -420,21 +423,42 @@ def node_disk_sample_max_age_seconds(config: Mapping[str, Any] | None = None) ->
 
 
 class NodeDiskSampleError(ValueError):
-    """A known fleet has no usable current disk reading."""
+    """A known fleet has no usable current disk reading.
 
-    def __init__(self, state: str, reason: str):
+    A stale reading carries the age it read at and the sampler process that
+    published it, because the row raised for it is the only place a reader can
+    learn which process stopped publishing.
+    """
+
+    def __init__(
+        self,
+        state: str,
+        reason: str,
+        *,
+        age_seconds: float = 0,
+        sampler_pid: int | None = None,
+    ):
         super().__init__(reason)
         self.kind = f"node-disk-{state}"
+        self.age_seconds = age_seconds
+        self.sampler_pid = sampler_pid
 
 
 def node_disk_reading_obligation(error: NodeDiskSampleError) -> dict[str, Any]:
     """Keep an unavailable reading distinct from a measured low-space condition."""
+    sampler = (
+        "sampler process unrecorded"
+        if error.sampler_pid is None
+        else f"sampler pid {error.sampler_pid}"
+    )
     return {
         "kind": error.kind,
         "run_id": "",
         "service": "fleet-health",
-        "age_seconds": 0,
-        "reason": f"{error}. Service fleet-health owes the published disk sample",
+        "age_seconds": int(error.age_seconds),
+        "reason": (
+            f"{error}. Service fleet-health ({sampler}) owes the published disk sample"
+        ),
         "next_command": "Restore current disk publication from service fleet-health",
     }
 
@@ -492,7 +516,7 @@ def node_disk_snapshot(mount: Path, *, reserve_bytes: int) -> dict[str, Any]:
     entries, complete = (
         node_disk_largest_entries(mount) if under_reserve else ([], True)
     )
-    return {
+    sample = {
         "utc": datetime.now(UTC).isoformat(),
         "mount": str(mount),
         "total_bytes": stats.f_blocks * block,
@@ -506,6 +530,19 @@ def node_disk_snapshot(mount: Path, *, reserve_bytes: int) -> dict[str, Any]:
         "node": socket.gethostname().split(".")[0],
         "job_id": os.environ.get("SLURM_JOB_ID", ""),
     }
+    sampler_pid = _published_sampler_pid(os.environ)
+    if sampler_pid is not None:
+        sample["sampler_pid"] = sampler_pid
+    return sample
+
+
+def _published_sampler_pid(environ: Mapping[str, str] | None = None) -> int | None:
+    """The sampler process that publishes readings, when it named itself."""
+    environ = os.environ if environ is None else environ
+    raw = str(environ.get(NODE_DISK_SAMPLER_PID_ENV) or "").strip()
+    if not raw.isdigit():
+        return None
+    return int(raw)
 
 
 def node_disk_pressure(sample: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -673,13 +710,18 @@ def reclaim_unowned_scratch(environ: Mapping[str, str] | None = None) -> dict[st
 
 
 def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
-    """Publish one local disk reading and emit the health series' four fields."""
+    """Publish one local disk reading and emit the health series' four fields.
+
+    The reading is published before anything else this pass does. The scratch
+    sweep runs in its own step afterwards (``reclaim_node_scratch``), because it
+    costs tens of seconds under load: inside this step it ran ahead of the
+    reading, outran the sampler's own bound, and left a pass that published
+    nothing at all.
+    """
     environ = os.environ if environ is None else environ
     mount = Path(environ.get(NODE_DISK_ROOT_ENV) or "/tmp")  # noqa: S108 - node-local
-    scratch = reclaim_unowned_scratch(environ)
     try:
         sample = node_disk_snapshot(mount, reserve_bytes=node_disk_reserve_bytes())
-        sample["crew_scratch"] = scratch
         sample["job_id"] = environ.get("SLURM_JOB_ID", "")
         write_json_atomically(state_directory(environ) / NODE_DISK_RECORD, sample)
     except OSError as exc:
@@ -691,6 +733,28 @@ def sample_node_disk(environ: Mapping[str, str] | None = None) -> int:
             for key in ("total_bytes", "used_bytes", "free_bytes", "free_inodes")
         )
     )
+    return 0
+
+
+def reclaim_node_scratch(environ: Mapping[str, str] | None = None) -> int:
+    """Reclaim unowned scratch and record the census on the published reading."""
+    environ = os.environ if environ is None else environ
+    scratch = reclaim_unowned_scratch(environ)
+    path = state_directory(environ) / NODE_DISK_RECORD
+    try:
+        sample = json.loads(path.read_text())
+    except (OSError, ValueError):
+        # No reading was published to annotate; the sweep's own outcome is
+        # reported by the row it wrote, and the pass keeps its next step.
+        return 0
+    if not isinstance(sample, dict):
+        return 0
+    sample["crew_scratch"] = scratch
+    try:
+        write_json_atomically(path, sample)
+    except OSError as exc:
+        log(f"scratch census not recorded: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -747,9 +811,23 @@ def published_node_disk_sample(
     if age < 0:
         raise NodeDiskSampleError("unreadable", f"{target} is dated in the future")
     if age > limit:
+        recorded = sample.get("sampler_pid")
+        sampler_pid = (
+            recorded
+            if isinstance(recorded, int) and not isinstance(recorded, bool)
+            else None
+        )
+        named = (
+            "sampler process unrecorded"
+            if sampler_pid is None
+            else f"published by sampler pid {sampler_pid}"
+        )
         raise NodeDiskSampleError(
             "stale",
-            f"{target} is {age:.1f} seconds old, beyond its {limit}-second freshness limit",
+            f"{target} is {age:.1f} seconds old, beyond its {limit}-second "
+            f"freshness limit ({named})",
+            age_seconds=age,
+            sampler_pid=sampler_pid,
         )
     for key in (
         "total_bytes",
@@ -4267,6 +4345,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     environ = os.environ
     if arguments == ["sample-node-disk"]:
         return sample_node_disk(environ)
+    if arguments == ["reclaim-node-scratch"]:
+        return reclaim_node_scratch(environ)
     if arguments == ["sample-session-scratch"]:
         return sample_session_scratch(environ)
     if arguments == ["check-interpreters"]:

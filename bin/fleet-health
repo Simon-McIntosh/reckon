@@ -29,6 +29,14 @@
 # or command line, so without that table a leak can be measured and not named.
 #
 # One file per job and node; a second copy for the same job and node exits.
+#
+# Each pass publishes the disk reading before it does anything else, the
+# scratch sweep — the pass's most expensive step — runs after the row is
+# written, and every step of a pass is clamped to what is left of the pass
+# bound. Published readings are what the reader's freshness limit measures, so
+# the guarantee is: while the sampler is alive, consecutive readings are
+# separated by the wait plus the pass bound — the wait plus 60 seconds by
+# default, whatever this node's load makes of any individual step.
 set -uo pipefail
 
 self_dir=$(dirname -- "$(readlink -f -- "$0")")
@@ -48,6 +56,23 @@ case "${1:-}" in
 esac
 sleep_secs="${FLEET_SLEEP_SECONDS:-60}"
 snapshot_interval="${FLEET_SNAPSHOT_INTERVAL:-600}"
+# One bound for every step a pass takes, and one for the reading itself, so a
+# pass's worst case is the sum of the bounds rather than whatever a loaded node
+# makes of them. The reading is published before any other step, which is what
+# keeps consecutive readings inside the reader's freshness limit when each other
+# step reaches its bound. Both are overridable so a test can drive a pass at a
+# scale a session can wait for.
+step_bound="${FLEET_STEP_BOUND_SECONDS:-20}"
+disk_bound="${FLEET_DISK_BOUND_SECONDS:-15}"
+# A pass is one bounded unit. Its steps are clamped to what is left of this
+# budget, so the reading a pass publishes is at most this bound plus the wait
+# after the previous one, whatever each step individually would have taken.
+# 90 seconds against a 60-second wait sits inside the 180-second freshness
+# limit the readers apply with room for the row append.
+pass_bound="${FLEET_PASS_BOUND_SECONDS:-90}"
+# Named in the reading, so a reading that goes stale can be attributed to the
+# process that last published one.
+export FLEET_HEALTH_SAMPLER_PID=$$
 
 : "${SLURM_JOB_ID:?fleet-health runs inside the fleet allocation}"
 node=$(hostname -s)
@@ -82,6 +107,18 @@ if [ -z "$cgdir" ]; then
 fi
 
 ms_since() { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
+bounded() {
+    # Run one step under its own bound or what the pass has left, whichever is
+    # shorter. A pass that has spent its budget runs no further step: it reports
+    # the step's unknown value and leaves the rest of the row to the next pass,
+    # which is what keeps the pass, and so the reading, bounded.
+    local want=$1 left
+    shift
+    left=$(( pass_end - $(date +%s) ))
+    [ "$left" -le 0 ] && return 124
+    [ "$left" -lt "$want" ] && want=$left
+    timeout "$want" "$@"
+}
 over_load() { awk -v l="$1" -v t="$2" 'BEGIN { exit !(l > t) }'; }
 
 # Both writers take the file server's record lock, which holds across nodes.
@@ -95,9 +132,15 @@ last_kills=$(awk -F '\t' '
 last_snapshot=0
 count=0
 while :; do
-    session_scratch=$(timeout 20 "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
-    writable_interpreters=$(timeout 20 "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
-    test_sample=$(timeout 20 "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor sample-test-processes) || test_sample=$'unknown\tunknown\t[]'
+    pass_end=$(( $(date +%s) + pass_bound ))
+    # The reading first: every other step below may reach its bound, and a
+    # reading published at the end of that queue is what left this node's
+    # published reading outside its freshness limit under load.
+    disk=$(bounded "$disk_bound" "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-$health_python}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
+    read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
+    session_scratch=$(bounded "$step_bound" "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor sample-session-scratch) || session_scratch=unknown
+    writable_interpreters=$(bounded "$step_bound" "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor check-interpreters) || writable_interpreters=unknown
+    test_sample=$(bounded "$step_bound" "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor sample-test-processes) || test_sample=$'unknown\tunknown\t[]'
     IFS=$'\t' read -r test_trees test_rss test_runs <<< "$test_sample"
     test_rss=${test_rss:-unknown}
     test_runs=${test_runs:-[]}
@@ -117,17 +160,15 @@ while :; do
             kill_rise=$((kills - last_kills))
         fi
     fi
-    t=$(date +%s%N); timeout 10 stat "$HOME" >/dev/null 2>&1 && home=$(ms_since "$t") || home=timeout
-    t=$(date +%s%N); timeout 25 scontrol show slurmd >/dev/null 2>&1 && slurmd=$(ms_since "$t") || slurmd=timeout
-    ping=$(timeout 10 scontrol ping 2>/dev/null | grep -oE 'UP|DOWN' | head -1)
-    tasks=$(timeout 20 ps -L -u "$USER" --no-headers 2>/dev/null | wc -l)
-    table=$(timeout 20 ps -u "$USER" -o pid=,ppid=,comm= 2>/dev/null)
+    t=$(date +%s%N); bounded "$step_bound" stat "$HOME" >/dev/null 2>&1 && home=$(ms_since "$t") || home=timeout
+    t=$(date +%s%N); bounded "$step_bound" scontrol show slurmd >/dev/null 2>&1 && slurmd=$(ms_since "$t") || slurmd=timeout
+    ping=$(bounded "$step_bound" scontrol ping 2>/dev/null | grep -oE 'UP|DOWN' | head -1)
+    tasks=$(bounded "$step_bound" ps -L -u "$USER" --no-headers 2>/dev/null | wc -l)
+    table=$(bounded "$step_bound" ps -u "$USER" -o pid=,ppid=,comm= 2>/dev/null)
     python=$(awk '$3 ~ /^python/' <<<"$table" | wc -l)
     read -r top_n top_pid < <(awk '{print $2}' <<<"$table" | sort | uniq -c | sort -rn | head -1)
     top_args=$(ps -o args= -p "${top_pid:-0}" 2>/dev/null | tr -d '\t\n' | cut -c1-80)
     top="${top_n:-0}:${top_pid:--}:${top_args:--}"
-    disk=$(timeout 15 "${FLEET_DISK_PYTHON:-${RECKON_SHIM_PYTHON:-$health_python}}" -m reckon.crew.fleet_supervisor sample-node-disk) || disk="unknown unknown unknown unknown"
-    read -r disk_total disk_used disk_free disk_inodes <<<"$disk"
     now=$(date -u +%FT%TZ)
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t-\t-\t-\t-\tnode\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$now" \
         "$load1" "$load5" "$running" "$blocked" "$dstate" "$avail" "$swap" \
@@ -165,6 +206,11 @@ while :; do
         printf '%s\n' "$msg" > "$state/notice"
     fi
     [[ "$kills" =~ ^[0-9]+$ ]] && last_kills="$kills"
+    # The scratch sweep is the pass's most expensive step and the one that
+    # outran its bound on a loaded node. It runs here, after the reading and
+    # the row are written, so a pass that spends its whole bound here has
+    # already published.
+    bounded "$step_bound" "${RECKON_SHIM_PYTHON:-$health_python}" -m reckon.crew.fleet_supervisor reclaim-node-scratch >/dev/null 2>&1 || true
     count=$((count + 1))
     [ "$once" -eq 1 ] && break
     [ "$passes" -gt 0 ] && [ "$count" -ge "$passes" ] && break
