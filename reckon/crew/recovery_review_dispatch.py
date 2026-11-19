@@ -37,6 +37,7 @@ from reckon.crew.runs import (
     _mutate_pointer,
     _utc_now,
     list_live,
+    node_field,
     read_pointer,
 )
 from reckon.node_exclusive_lock import LockHeld, exclusive_lock
@@ -4224,7 +4225,7 @@ def _queued_pointer_names_directory(project: str, directory: Path) -> bool:
         return False
     target = Path(directory)
     for pointer in _list_live_records(project=project, phase="queued"):
-        brief = str((pointer.get("node") or {}).get("brief") or "").strip()
+        brief = str(node_field(pointer, "brief") or "").strip()
         if brief and Path(brief).parent == target:
             return True
     return False
