@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:20:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "the fragment says the head arm ran as an all_debug job with SLURM_JOB_ID unset, but scoped-gate-1795096041341223543.log carries no partition, job id or SLURM_JOB_ID header, so the done_when's arm condition is prose a reader cannot check against any captured run."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html",
+      "line": "40",
+      "severity": "non-blocking",
+      "text": "the head row names 3a659a36c4 and :54 names scoped-gate-1795095881801290995.log as the head log, while the reviewed head is 0307748a29 and manifest.md:13 names scoped-gate-1795096041341223543.log at that revision, so the fragment records an arm one docs-only commit behind the head the review read."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062521490110-qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "the artifacts line claims ruff check and ruff format --check report nothing new on the changed path, but no ruff log appears among the test_logs at :13 and no file in the run directory holds that output, so the claim has no receipt behind it."
+    },
+    {
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": "260",
+      "severity": "non-blocking",
+      "text": "asserting ``stored[\"scope_acceptances\"] is None`` states the absence through the ledger's null-fill for an unwritten field (reckon/ledger.py:188), so a schema change that filled an empty list would redden this case without any change to the source-path rule it guards, where ``not stored.get(\"scope_acceptances\")`` would assert the rule itself."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 3a659a36c4 and 3f7d8fe9abfd's sibling commits against be17b57484: the code commit adds --wait at tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:190, reads the reply's record_path at :244-247, and splits the artefact branch assert at :249-255 from the source branch absence at :260, and the second commit adds only the evidence fragment, with no product module touched.",
+    "done_when": "the node's done_when asks the file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no assertion deleted or weakened, an importer arm, and the base red run logged beside the head run in the fragment; manifest.md:7-20 records the single cause as test-wrong, both failure ids, both suite arms at 58 passed with full 40-character revisions, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html:27-54 records the base red arm and its log, while the all_debug and SLURM_JOB_ID condition survives only as prose at :47-49 and no importer arm arises because no product module changed.",
+    "goal": "dispatch-detail.json admit_request.node.goal asks that tests/test_a_stopped_runs_claim_does_not_block_another_landing.py pass in full on the primary branch, and the landed commits repair that file alone so the gate log scoped-gate-1795096041341223543.log reads '10 passed' at 0307748a29; the merge onto primary is promotion's step, not the node's.",
+    "manifest": "read manifest.md in the reviewed run directory: status complete, commits at :7 carrying both plain full ids, test_logs at :13 naming the gate and both control logs, baseline_suite and after_suite carrying full 40-character revisions, and an artifacts line at :20 whose ruff claim no log backs.",
+    "write_paths": "the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and two narrower paths; both changed paths \u2014 tests/test_a_stopped_runs_claim_does_not_block_another_landing.py and the fragment \u2014 sit inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the defect reddens the file: a reply without record_path raises KeyError at tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:245, and recording a source-path acceptance fails the literal at :260, neither assertion comparing against a value the test itself supplied.",
+    "evidence": "the gate measures the named file and the base arm is red at be17b57484 in negative-control-base.log with the two ids, but the all_debug/SLURM_JOB_ID-unset condition rests on prose at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html:47 and the ruff claim at manifest.md:20 cites no log.",
+    "fit": "the receipt read at tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:244 follows the idiom already used at tests/test_a_conflicting_landing_is_repaired.py:140, and --wait sits in the argument list at :190 beside the other options.",
+    "goal_fidelity": "dispatch-detail.json admit_request.node.goal asks only that tests/test_a_stopped_runs_claim_does_not_block_another_landing.py pass in full, and scoped-gate-1795096041341223543.log records '10 passed' at 0307748a29 plus 'EXIT=0'.",
+    "reuse": "the diff adds no function, class or module; a capability search over tests/ for a completion-receipt reader found only per-file inline reads such as tests/test_crew_promotion.py:568 and no shared owner, so nothing is forked.",
+    "scope_discipline": "git diff --stat be17b57484..0307748a29 names only tests/test_a_stopped_runs_claim_does_not_block_another_landing.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json admit_request.node.goal asks that tests/test_a_stopped_runs_claim_does_not_block_another_landing.py pass in full on the primary branch, and scoped-gate-1795096041341223543.log records 10 passed / EXIT=0 at 0307748a29 for exactly that file, the merge onto primary being promotion's step.\nVERDICT done_when: the done_when asks the file green at head as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no assertion deleted or weakened, an importer arm, and the base red run logged in the fragment; manifest.md:7-20 records the cause as test-wrong with both ids and both suite arms at 58 passed with full 40-character revisions, the fragment at :27-45 records the base red arm with its log, and the all_debug/SLURM_JOB_ID condition survives only as prose at :47-49 with no scheduler field in either log.\nVERDICT write_paths: the node declared reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround among five paths, and git diff --stat be17b57484..0307748a29 names only tests/test_a_stopped_runs_claim_does_not_block_another_landing.py and the fragment, both inside them.\nVERDICT manifest: read manifest.md in the reviewed run directory; it reads status complete, carries both plain full commit ids at :7, names the gate and control logs at :13, states the cause verdict as test-wrong, and makes one ruff claim at :20 that no log backs.\nVERDICT diff: read 3a659a36c4 (test repair) and 0307748a29 (evidence fragment) against be17b57484; the code commit adds --wait at tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:190, reads the reply's record_path at :244-247, and splits the artifact assert at :249-255 from the source-path absence at :260, and the second commit adds only the fragment, no product module changing.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scoped-gate-1795096041341223543.log reads 10 passed with EXIT=0 at 0307748a29 for tests/test_a_stopped_runs_claim_does_not_block_another_landing.py, which is the whole of the node's goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: negative-control-base.log records 2 failed / 8 passed / EXIT=1 at be17b57484 with the two named ids, but the all_debug/SLURM_JOB_ID-unset arm condition is only asserted at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html:47 and the ruff claim at manifest.md:20 has no receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat be17b57484..0307748a29 shows two paths, tests/test_a_stopped_runs_claim_does_not_block_another_landing.py and the fragment, and both lie inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the missing record_path reddens tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:245 with KeyError and recording a source-path acceptance reddens the literal at :260, though that literal states the rule through the ledger's null-fill (reckon/ledger.py:188) rather than the rule itself.\nSCORE fit: 19\nJUSTIFICATION fit: the receipt read at tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:244 matches the inline idiom at tests/test_a_conflicting_landing_is_repaired.py:140 and --wait is appended among the other options at :190.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and a capability search over tests/ for a completion-receipt reader found only per-file inline reads such as tests/test_crew_promotion.py:568, no shared owner being forked.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html:47 non-blocking: the fragment states the head arm ran as an all_debug job with SLURM_JOB_ID unset, but scoped-gate-1795096041341223543.log records no partition, job id or SLURM_JOB_ID field.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing.html:40 non-blocking: the head row names 3a659a36c4 and :54 the 3a659a36 log, while the reviewed head is 0307748a29 and manifest.md:13 names the gate log at that revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062521490110-qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing/manifest.md:20 non-blocking: the artifacts line claims ruff check and format --check are clean on the changed path while test_logs at :13 names no ruff log.\nFINDING tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:260 non-blocking: the assertion states the absence through the ledger's null-fill for an unwritten field (reckon/ledger.py:188), so a schema change to an empty list would redden it without any change to the source-path rule.",
+  "review_run_id": "r-20261119T142741692640-review-of-qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing-0307748a291e",
+  "reviewed_base_sha": "be17b57484c74a3432a3d7372aa84da6702ad965",
+  "reviewed_head_sha": "0307748a291ec25c969901a8c0b1ffc0c8c35ad3",
+  "reviewed_run_id": "r-20261118T062521490110-qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062521490110-qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing/after_suite-1795096105773053681.log",
+      "revision": "0307748a291ec25c969901a8c0b1ffc0c8c35ad3",
+      "summary": "58 passed in 35.20s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062521490110-qwnw-red-file-a-stopped-runs-claim-does-not-block-another-landing/baseline_suite-1795096062790435303.log",
+      "revision": "be17b57484c74a3432a3d7372aa84da6702ad965",
+      "summary": "58 passed in 36.50s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:48:51.223931+00:00",
+  "total": 111
+}
