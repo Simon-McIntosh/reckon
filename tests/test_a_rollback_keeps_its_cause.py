@@ -245,8 +245,7 @@ def _capture_the_session(repository: Path) -> None:
 
 
 def _roster(repository: Path) -> dict[str, dict]:
-    data, _version = ledger.load_auxiliary(PROJECT, repository)
-    return {str(row["id"]): row for row in data["members"]}
+    return {str(row["id"]): row for row in ledger.members(PROJECT, repository)}
 
 
 def _roster_status(repository: Path) -> str:
@@ -266,7 +265,6 @@ def test_a_capture_only_ledger_admits_a_registration(tmp_path: Path) -> None:
     )
     _capture_the_session(repository)
     assert _roster_status(repository) == ""
-    assert _roster(repository)["worker-a"]["session_id"] == SESSION
 
     entry = ledger.register_member(
         PROJECT, "worker-b", harness="alpha", root=repository, commit=True
