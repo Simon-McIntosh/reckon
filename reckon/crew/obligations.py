@@ -843,9 +843,16 @@ def live_pointer_snapshot(
     The snapshot is published under :data:`_VIEW_LIVE_POINTERS`, so it lasts
     exactly as long as the block and no later read inherits it.
     """
-    listing = (
-        list(pointers) if pointers is not None else runs.list_live(project=project)
-    )
+    if pointers is not None:
+        listing = list(pointers)
+    else:
+        # An enclosing read scope already holds this pass's population, so the
+        # read that opened it is the view's one read: listing the directory
+        # again here would answer from a second snapshot.
+        from reckon.crew.open_run_index import pointers as held_pointers
+
+        held = held_pointers(project=project)
+        listing = list(held) if held is not None else runs.list_live(project=project)
     published: dict[str, list[dict[str, Any]]] = {}
     for pointer in listing:
         published.setdefault(str(pointer.get("project") or ""), []).append(pointer)
@@ -5261,8 +5268,14 @@ def _obligations_view(
             str(item["kind"]),
         )
     )
+    # Counted over the same population this view derives its rows from, so the
+    # summary and the rows cannot disagree about which runs are live, and the
+    # directory is not listed a second time inside one view. The count reads
+    # through the shared ownerless partition, so a session that owns no row of
+    # its own is still counted.
     unreconciled = runs.unreconciled_for_session(
-        runs.drain_unreconciled_by_session(project), session
+        runs.drain_unreconciled_by_session(project, pointers=live_pointers),
+        session,
     )
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
