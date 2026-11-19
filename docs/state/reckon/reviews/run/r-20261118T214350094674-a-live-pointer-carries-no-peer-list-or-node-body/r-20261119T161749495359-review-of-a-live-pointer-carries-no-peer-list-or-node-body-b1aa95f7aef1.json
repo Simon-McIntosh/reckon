@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:19:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 1786,
+      "severity": "blocking",
+      "text": "_judge_head_move reads node.get(\"done_when\") straight off the pointer record, but the reviewed change moved that field into <run dir>/node.json: list_live returns the slim node and the merge at recovery_review_dispatch.py:4148 ({**lifecycle, **record}) lets the caller's slim node override read_pointer's hydrated one, so the review-need judge sees an empty done-when for every run composed through the sweep; re_review_prediction at :1895 reads it the same way. Both belong on runs.node_field(record, \"done_when\")."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 1585,
+      "severity": "non-blocking",
+      "text": "data = node_definition(record) always returns a dict, so the following `if not isinstance(data, Mapping): raise CrewError(... records no node definition)` can no longer fire; a pointer carrying no node now rebuilds an all-empty TaskNode instead of raising the refusal; the guard should test the mapping it read before hydrating, or node_definition should report an absent node."
+    },
+    {
+      "file": "tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py",
+      "line": 245,
+      "severity": "non-blocking",
+      "text": "assert rebuilt.as_dict() == at_base.as_dict() compares two nodes that both resolve through runs.node_definition, and the \"inline\" arm at :235-:238 is itself built with that accessor, so the pair moves together and cannot redden on a hydration defect; the fixture-anchored asserts at :246-:248 are what guard it. inline.pop(\"node_body\") at :238 also pops a record-level key that is never set, leaving the node-level node_body in the inline arm."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal (prompt.txt:38) is to move peer_channel.peers and the node's peer_scopes, brief, done-when and admission findings off the live pointer into the run directory; reckon/crew/runs.py:292 splits the four body fields into <run dir>/node.json, runs.py:324 drops the peer list, and runs.py:343/:368/:380 hydrate them back for readers.\nVERDICT done_when: the done_when (prompt.txt:297) requires tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py to assert five named cases with a stated base-revision negative control; the manifest records that gate and names its logs.\nVERDICT write_paths: the 13 declared paths (prompt.txt:306-322) cover all nine paths in the delivered diff; dispatch_claims.py, claims.py, the evidence fragment and the figure directory were declared and untouched.\nVERDICT manifest: read; it reports status complete, commit b1aa95f7ae, the scoped gate at EXIT=0 with \"63 passed\", both suite arms at EXIT=0 (\"58 passed\" base, \"63 passed\" head) and negative-control-base-tests.log at EXIT=1 with \"4 failed, 1 passed\".\nVERDICT diff: read a7ac07a9..b1aa95f7 (one commit, b1aa95f7ae); reckon/crew/runs.py +293/-61 holds the split, the stat-identity body cache and the reduction rebuild, seven files change one reader line each, and the 471-line test carries the five cases.\nCALL_SITES: reckon/crew/runs.py:read_pointer, reckon/crew/runs.py:list_live, reckon/crew/admission/launching.py:_node_from_pointer, reckon/crew/dispatch_peer.py:_adjacent_live_peers, reckon/crew/dispatch_sessions.py:_recorded_task_node, reckon/crew/dispatching/requests.py:_named_brief, reckon/crew/recovery_review_dispatch.py:_queued_pointer_names_directory, reckon/crew/recovery_review_dispatch.py:_judge_head_move, reckon/crew/recovery_review_dispatch.py:re_review_prediction, reckon/crew/recovery_review_subject.py:_review_reads_a_report, reckon/crew/recovery_review_subject.py:_review_brief_text, reckon/serve.py:_crew_rows\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:292 and :324 move both bodies out of the pointer and runs.py:343 answers the old shape, but recovery_review_dispatch.py:1786 still reads the moved done-when through the pointer's node.\nSCORE evidence: 19\nJUSTIFICATION evidence: the scoped gate at b1aa95f7 records \"63 passed\" with EXIT=0 and negative-control-base-tests.log at a7ac07a9 records \"case_a_pointer_bytes=124327\", \"case_c_decoded_bytes=490833\" and \"4 failed, 1 passed\", which are the done_when's own two control figures.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is one of the 13 declared in prompt.txt:306-322, and the four declared paths with no change (dispatch_claims.py, claims.py, the evidence fragment, the figure directory) carry no edit.\nSCORE durability: 14\nJUSTIFICATION durability: the pointer-size and decode-bound assertions at tests/test_a_live_pointer_carries_no_peer_list_or_node_body.py:202 and :326 redden on the base arm as recorded, but no assertion covers recovery_review_dispatch.py:1786, and the equality at :245 compares two values that both pass through runs.node_definition.\nSCORE fit: 18\nJUSTIFICATION fit: runs.py:343 copies the read_dispatch_detail/dispatch_field shape already in the same module (runs.py:408) and reckon/crew/dispatching/requests.py:393 keeps the file's existing `from reckon.crew import runs as runs_module` local-import convention.\nSCORE reuse: 20\nJUSTIFICATION reuse: `node_definition` extends the dispatch-detail accessor the module already owns, `_pointer_node_body` at runs.py:1677 reuses the stat-identity cache of `_pointer_text`, `_reduced_object` at runs.py:1582 replaces the previous top-level-only scanner rather than adding a second one, and `peer_channel_peers` at runs.py:380 reads the existing peer registry; the nearest other accessor, queue_view.py:80 `_node_field`, is a private two-line reader for non-body fields, and no owner of the moved body existed before this change.",
+  "review_run_id": "r-20261119T161749495359-review-of-a-live-pointer-carries-no-peer-list-or-node-body-b1aa95f7aef1",
+  "reviewed_base_sha": "a7ac07a91d918a57176c0d218abc4ae06e7ebab0",
+  "reviewed_head_sha": "b1aa95f7aef14fe584cb640e7333fdd77dd64329",
+  "reviewed_run_id": "r-20261118T214350094674-a-live-pointer-carries-no-peer-list-or-node-body",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:50:39.361753+00:00",
+  "total": 103
+}

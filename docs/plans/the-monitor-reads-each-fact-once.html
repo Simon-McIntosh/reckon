@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="515">
+<meta name="plan-version" content="516">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1910,6 +1910,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s101" data-id="c-run-r-20261119T161749495359-review-of-a-live-pointer-carries-no-peer-list-or-node-body-b1aa95f7aef1" data-who="reckon-build" data-when="2026-11-19T16:20:01.521Z">
+    <div class="r-comment-body"><p>Reviewed r-20261118T214350094674-a-live-pointer-carries-no-peer-list-or-node-body at a7ac07a91d918a57176c0d218abc4ae06e7ebab0..b1aa95f7aef14fe584cb640e7333fdd77dd64329 with one parsed record scoring 16/19/18/14/18/20 across goal_fidelity/evidence/scope_discipline/durability/fit/reuse, added_failure_count 0, one blocking finding at reckon/crew/recovery_review_dispatch.py:1786 (the head-move judge still reads the moved done-when through the pointer&#x27;s node) and two non-blocking findings in reckon/crew/dispatch_sessions.py:1585 and the node&#x27;s own test file:245.</p></div>
 </div>
 </section>
 </main>
