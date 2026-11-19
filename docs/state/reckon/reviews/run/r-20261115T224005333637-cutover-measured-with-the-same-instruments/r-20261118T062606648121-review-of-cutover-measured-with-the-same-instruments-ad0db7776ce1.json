@@ -1,0 +1,128 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed node is suite-unarmed (its pointer records suite_gate unarmed and its write paths include no test file), so there is no base/head arm pair; the reviewed manifest names neither baseline_suite nor after_suite and the run adds no test, so no failing test id exists to count",
+  "assertion_audit": [
+    {
+      "assertion": "the drawn bar length is value/top*SPAN from out3/measure.json",
+      "fails_if": "the committed SVG stops matching its source artifact: the recomputation gives 49.7 px for the 481.77 MB/min cutover bar, 434.8 px for the 4215.0 old arm and 262.8 px for the 52.6 % CPU bar, all equal to the SVG's rects; editing a figure in the artifact without regenerating the SVG reddens the reconciliation, not a test",
+      "file": "docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.py",
+      "line": 43
+    },
+    {
+      "assertion": "reads are 24 times the 20 MB/min bound and the cutover buys 8.7 times fewer reads",
+      "fails_if": "out3/measure.json aggregate_mb_per_min stopped being 481.77 or the old arm stopped being 4215.0 (481.77/20 = 24.1, 4215.0/481.77 = 8.75); both reconcile against gate-measure.log:1-390",
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html",
+      "line": 40
+    },
+    {
+      "assertion": "no monitor process was in D state in any of six samples of either station window",
+      "fails_if": "measure.json arms.cutover/cold d_state_hits became non-empty; measure.json records d_state_hits [] for both arms with six samples each, and the old arm records two cxiWaitEventWait hits, so the instrument is shown seeing a D state when one exists",
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html",
+      "line": 40
+    },
+    {
+      "assertion": "the station read 1,880 MB on its opening tick and 331 MB on the next, in 27.5 s",
+      "fails_if": "out3/rows-ticks.jsonl tick 1 rchar stopped being 1,880,434,084 over 81.4 s and tick 2 330,741,341 over 27.466 s; both match the quoted 1,880 MB, 331 MB and 27.5 s",
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": 675
+    },
+    {
+      "assertion": "the fleet appended 3.0 MB/min across 17 of 1,486 files",
+      "fails_if": "out3/fleet-append.json mb_per_min left 2.99 over 61.64 s; the quoted 3.0 MB/min is that figure rounded",
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": 674
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:1767",
+    "reckon/figures.py:figure_rows",
+    "reckon/evidence.py:862"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T22:45:33Z",
+  "evidence_limits": "the windows are this node's own processes over a per-file mirrored scratch home in a private PID namespace, so they do not describe the fleet node's resident monitors; the station ran as an in-process tick loop without duties, reflex or reloader, making its figure a floor; the subscribers read a node-local store, so part of their 159.6 MB/min is /tmp traffic.",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224005333637-cutover-measured-with-the-same-instruments/gate-measure.log",
+      "id": "fa5b72086c4",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log's revision header names ad0db7776c while the measure.json it reprints dates the window at 2026-11-18T05:01:54Z, before that commit was made (05:21:12Z), and the manifest itself names 04fef2631c as the measured tree, so the receipt does not identify the revision its figures were taken at."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html",
+      "id": "f41d3ad91ea",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's fifth condition, every pane showing the RCA \u00a75 rows checked against a recorded hour of today's event log replayed through the station, was not measured by this node \u2014 one transition row in 110 s is recorded and parity is cited from tests/test_the_station_carries_every_row.py over an hour of 2026-10-23 \u2014 so the row evidence does not cover the condition the node's done_when names, though the fragment states the substitution."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "id": "f4822898cc0",
+      "line": "663",
+      "severity": "non-blocking",
+      "text": "non-blocking: the cutover window is appended as an h3 under the \"The per-path census: the run streams are the volume\" h2 at line 444, so the RCA's outline files \u00a712's cutover result under the census chapter rather than as its own chapter."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224005333637-cutover-measured-with-the-same-instruments/manifest.md",
+      "id": "fbf7ddefbde",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: orientation_write_paths lists only the fragment and the figure directory, omitting the declared docs/research/monitor-storage-load-rca.html, so a reader of the manifest alone sees two of three declared paths and the run's completion audit recorded the RCA write as outside declared scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "the single commit ad0db7776c adds 299 lines across the evidence fragment, the figure generator reads-and-cpu-against-the-bound.py, its SVG and the RCA section; the SVG's bar geometry recomputes from out3/measure.json (481.77/4847.25*500 = 49.7 px, 4215.0/4847.25*500 = 434.8 px) and every quoted figure reconciles with the gate logs and out3/rows-ticks.jsonl except the gate log's own revision stamp.",
+    "done_when": "the done_when asks five things over a >=30-live-run window; out3/measure.json records 141 live pointers, reads 481.77 MB/min against the 20 bound, CPU 0.3347 of one core against the 0.05 bound and no D-state hit in six samples of either station window, so four conditions are measured and two fail, while the pane-row condition is answered at docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html:55 by one transition row plus a citation to tests/test_the_station_carries_every_row.py rather than by a replay of an hour of today's event log.",
+    "goal": "the source goal is \"Measure the station cutover against the RCA instruments on the fleet node\"; docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html records three 60 s windows taken with the RCA \u00a72 instruments over 141 live pointers, and states at its instruments'-limits paragraph that they are this node's own processes over a per-file mirrored scratch home rather than the node's resident monitors.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224005333637-cutover-measured-with-the-same-instruments/manifest.md; it reports the three windows, the three gate-log paths, commits: ad0db7776c and five scaffolding-attributed retry failures, names no baseline_suite or after_suite because the run is suite-unarmed, and carries a rubric line per dimension.",
+    "write_paths": "the node declared the fragment, its figure directory and docs/research/monitor-storage-load-rca.html; the four paths in git diff 04fef2631c344cffa6616b48380729d6953ab9e8..ad0db7776ce148a394f3bb2d737ed5056b539b08 all lie inside those three, so the landed change stays in scope even though the manifest's own orientation_write_paths lists two of the three."
+  },
+  "justifications": {
+    "durability": "the diff adds no test, so nothing reddens if a figure quoted in docs/research/monitor-storage-load-rca.html is edited, and the only guard is docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.py, which reproduces the SVG only while out3/measure.json survives.",
+    "evidence": "out3/measure.json and gate-measure.log carry the read, CPU and D-state figures, but the pane-row condition is answered by one row plus a citation at docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html:59, and gate-measure.log:1 stamps revision ad0db7776c on a run out3/measure.json dates at 2026-11-18T05:01:54Z.",
+    "fit": "the fragment follows the sibling idiom of docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-hands-its-freed-memory-back.html, but docs/research/monitor-storage-load-rca.html:663 inserts the cutover window as an h3 under the census h2 at line 444 instead of beside the other chapters.",
+    "goal_fidelity": "docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html records the three windows against the RCA \u00a72 instruments over 141 live pointers and discloses at its limits paragraph that the monitors were launched from this node's fence over a mirrored scratch home.",
+    "reuse": "a search over reckon/ and docs/figures/ found no owner of SVG bar-panel drawing \u2014 reckon/figures.py owns discovery and rasterising (rasterise_svg, figure_rows) and each sibling figure carries its own generator \u2014 so the added script duplicates nothing.",
+    "scope_discipline": "every path in the diff is inside the declared fence, but the manifest's orientation_write_paths omits docs/research/monitor-storage-load-rca.html, which the reviewed run's own completion detail then read as a commit outside declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is \"Measure the station cutover against the RCA instruments on the fleet node\"; docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html records three 60 s windows taken with the RCA \u00a72 instruments over 141 live pointers, and states at its instruments'-limits paragraph that they are this node's own processes over a per-file mirrored scratch home rather than the node's resident monitors.\nVERDICT done_when: the done_when asks five things over a >=30-live-run window; out3/measure.json records 141 live pointers, reads 481.77 MB/min against the 20 bound, CPU 0.3347 of one core against the 0.05 bound and no D-state hit in six samples of either station window, so four conditions are measured and two fail, while the pane-row condition is answered at docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html:55 by one transition row plus a citation to tests/test_the_station_carries_every_row.py rather than by a replay of an hour of today's event log.\nVERDICT write_paths: the node declared the fragment, its figure directory and docs/research/monitor-storage-load-rca.html; the four paths in git diff 04fef2631c344cffa6616b48380729d6953ab9e8..ad0db7776ce148a394f3bb2d737ed5056b539b08 all lie inside those three, so the landed change stays in scope even though the manifest's own orientation_write_paths lists two of the three.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224005333637-cutover-measured-with-the-same-instruments/manifest.md; it reports the three windows, the three gate-log paths, commits: ad0db7776c and five scaffolding-attributed retry failures, names no baseline_suite or after_suite because the run is suite-unarmed, and carries a rubric line per dimension.\nVERDICT diff: the single commit ad0db7776c adds 299 lines across the evidence fragment, the figure generator reads-and-cpu-against-the-bound.py, its SVG and the RCA section; the SVG's bar geometry recomputes from out3/measure.json (481.77/4847.25*500 = 49.7 px, 4215.0/4847.25*500 = 434.8 px) and every quoted figure reconciles with the gate logs and out3/rows-ticks.jsonl except the gate log's own revision stamp.\nCALL_SITES: reckon/serve.py:1767, reckon/figures.py:figure_rows, reckon/evidence.py:862\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html records the three windows against the RCA \u00a72 instruments over 141 live pointers and discloses at its limits paragraph that the monitors were launched from this node's fence over a mirrored scratch home.\nSCORE evidence: 12\nJUSTIFICATION evidence: out3/measure.json and gate-measure.log carry the read, CPU and D-state figures, but the pane-row condition is answered by one row plus a citation at docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html:59, and gate-measure.log:1 stamps revision ad0db7776c on a run out3/measure.json dates at 2026-11-18T05:01:54Z.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared fence, but the manifest's orientation_write_paths omits docs/research/monitor-storage-load-rca.html, which the reviewed run's own completion detail then read as a commit outside declared scope.\nSCORE durability: 10\nJUSTIFICATION durability: the diff adds no test, so nothing reddens if a figure quoted in docs/research/monitor-storage-load-rca.html is edited, and the only guard is docs/figures/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments/reads-and-cpu-against-the-bound.py, which reproduces the SVG only while out3/measure.json survives.\nSCORE fit: 15\nJUSTIFICATION fit: the fragment follows the sibling idiom of docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-hands-its-freed-memory-back.html, but docs/research/monitor-storage-load-rca.html:663 inserts the cutover window as an h3 under the census h2 at line 444 instead of beside the other chapters.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ and docs/figures/ found no owner of SVG bar-panel drawing \u2014 reckon/figures.py owns discovery and rasterising (rasterise_svg, figure_rows) and each sibling figure carries its own generator \u2014 so the added script duplicates nothing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224005333637-cutover-measured-with-the-same-instruments/gate-measure.log:1 non-blocking: the log's revision header names ad0db7776c while the measure.json it reprints dates the window at 2026-11-18T05:01:54Z, before that commit was made (05:21:12Z), and the manifest itself names 04fef2631c as the measured tree, so the receipt does not identify the revision its figures were taken at.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/cutover-measured-with-the-same-instruments.html:55 non-blocking: the done_when's fifth condition, every pane showing the RCA \u00a75 rows checked against a recorded hour of today's event log replayed through the station, was not measured by this node \u2014 one transition row in 110 s is recorded and parity is cited from tests/test_the_station_carries_every_row.py over an hour of 2026-10-23 \u2014 so the row evidence does not cover the condition the node's done_when names, though the fragment states the substitution.\nFINDING docs/research/monitor-storage-load-rca.html:663 non-blocking: the cutover window is appended as an h3 under the \"The per-path census: the run streams are the volume\" h2 at line 444, so the RCA's outline files \u00a712's cutover result under the census chapter rather than as its own chapter.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261115T224005333637-cutover-measured-with-the-same-instruments/manifest.md:2 non-blocking: orientation_write_paths lists only the fragment and the figure directory, omitting the declared docs/research/monitor-storage-load-rca.html, so a reader of the manifest alone sees two of three declared paths and the run's completion audit recorded the RCA write as outside declared scope.",
+  "reuse_search": "searched reckon/ (figures.py, serve.py, evidence.py) and docs/figures/ for an SVG bar-panel renderer by capability; reckon/figures.py owns discovery and rasterising only, and sibling figures carry their own generator, so no owner was found to extend.",
+  "review_run_id": "r-20261118T062606648121-review-of-cutover-measured-with-the-same-instruments-ad0db7776ce1",
+  "reviewed_base_sha": "04fef2631c344cffa6616b48380729d6953ab9e8",
+  "reviewed_head_sha": "ad0db7776ce148a394f3bb2d737ed5056b539b08",
+  "reviewed_run_id": "r-20261115T224005333637-cutover-measured-with-the-same-instruments",
+  "reviewed_worker_commits": [
+    "ad0db7776c"
+  ],
+  "scope_provenance": "declared write paths from the reviewed run's pointer node.write_paths (fragment, figure directory, docs/research/monitor-storage-load-rca.html); diff 04fef2631c344cffa6616b48380729d6953ab9e8..ad0db7776ce148a394f3bb2d737ed5056b539b08 adds four paths, all inside them.",
+  "scores": {
+    "durability": 10,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": null,
+    "baseline_suite": null,
+    "gate_logs_read": [
+      "gate-measure.log",
+      "gate-rows.log",
+      "gate-append.log"
+    ],
+    "reviewed_run_suite_gate": "unarmed"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T22:57:04.492950+00:00",
+  "total": 91
+}
