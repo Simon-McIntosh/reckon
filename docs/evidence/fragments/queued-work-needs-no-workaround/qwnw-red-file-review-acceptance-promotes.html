@@ -1,0 +1,120 @@
+<section id="qwnw-red-file-review-acceptance-promotes-landing">
+  <h2>An unmerged run is read as the role it is</h2>
+
+  <p><strong>What changed.</strong> The acceptance test that proves an unmerged
+  delivery is refused built its subject as an implementing run. Since
+  <code>accept_clean_review</code> gained the automatic-landing path, an
+  implementing run whose commits are missing is routed to a merge candidate and a
+  push, so the case never reached the refusal it asserts and the test was red on
+  the primary branch.</p>
+
+  <p>The test now builds the run with the role that refusal belongs to.
+  <code>_land_unmerged_run</code> takes a <code>role</code> keyword and clears the
+  pointer's own <code>role</code> as well as the manifest's, its harness asserts
+  the role on the pointer the way it already asserted the node, and the unmerged
+  case is written with <code>role="test"</code>. No product code changed.</p>
+
+  <h3 id="qwnw-red-file-review-acceptance-promotes-arms">Arms</h3>
+
+  <p>The node's own test file at the run's base and at its head. The base arm ran
+  in a scratch tree checked out at the base revision; the head arm ran in the
+  landing harness; both command lines are in the logs below.</p>
+
+  <h4 id="qwnw-red-file-review-acceptance-promotes-base">Base, 42fe90d0b0a46060bafde2490dda7d4002cda478</h4>
+  <pre id="qwnw-red-file-review-acceptance-promotes-base-log">
+# revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# host: 98dci4-clu-3143.iter.org
+# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/scratch/base-tree
+# command: env -u SLURM_JOB_ID PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_acceptance_promotes.py
+# module: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/scratch/base-tree/reckon/crew/recovery_review_acceptance.py 
+# cwd: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/scratch/base-tree
+...FE..                                                                  [100%]
+==================================== ERRORS ====================================
+__________ ERROR at teardown of test_an_unmerged_run_is_not_promoted ___________
+
+request = &lt;SubRequest '_fails_on_a_reached_scheduler' for &lt;Function test_an_unmerged_run_is_not_promoted&gt;&gt;
+_refuse_real_scheduler = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/scheduler-shim0/reached.tsv')
+
+    @pytest.fixture(autouse=True)
+    def _fails_on_a_reached_scheduler(request, _refuse_real_scheduler):
+        """Fail the test that reached an allocation verb it did not provide.
+    
+        The guard stub records every reach as it refuses; this reads back the
+        allocation reaches attributed to this test and names the verb and its argv,
+        so a forgotten recording scheduler surfaces as the assertion that names it
+        rather than as a downstream failure. A read-only probe the test made is
+        recorded but does not fail it.
+        """
+        yield
+        log = _refuse_real_scheduler
+        if not log.exists():
+            return
+        reached = reached_allocation_verbs(
+            request.node.nodeid, log.read_text(encoding="utf-8")
+        )
+        if reached:
+&gt;           raise AssertionError(
+                "this test reached a scheduler verb it did not provide: "
+                + "; ".join(reached)
+                + " — provide a recording scheduler on PATH, or place into a held "
+                "reservation, so no real scheduler client is run."
+            )
+E           AssertionError: this test reached a scheduler verb it did not provide: sbatch --wait --parsable --open-mode=append --partition=all_debug --time=00:10:00 --nodes=1 --ntasks=1 --cpus-per-task=8 --mem=32G --output=/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/reckon-home3/crew/runs/r-20261002T120000000000-acceptance-target/review-landing/gate-f9e074b0b26ddd640048d43de7c8c0e1664c3a6d.log.scheduler --error=/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/reckon-home3/crew/runs/r-20261002T120000000000-acceptance-target/review-landing/gate-f9e074b0b26ddd640048d43de7c8c0e1664c3a6d.log.scheduler --chdir=/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/test_an_unmerged_run_is_not_pr0/repository --wrap srun --partition=all_debug --time=00:10:00 --ntasks=1 bash -c 'set -euo pipefail — provide a recording scheduler on PATH, or place into a held reservation, so no real scheduler client is run.
+
+tests/conftest.py:1698: AssertionError
+=================================== FAILURES ===================================
+_____________________ test_an_unmerged_run_is_not_promoted _____________________
+
+repository = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/test_an_unmerged_run_is_not_pr0/repository')
+tmp_path = PosixPath('/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/test_an_unmerged_run_is_not_pr0')
+
+    def test_an_unmerged_run_is_not_promoted(repository: Path, tmp_path: Path) -&gt; None:
+        """A run whose commits are not on the branch yet is not promoted.
+    
+        A run reaches acceptance right after its review, before a coordinator
+        merges it; a gate re-run against a branch that lacks the change would
+        verify the wrong tree and record a promotion whose commits never landed.
+        Acceptance stands down and names the commits it found off the branch.
+        """
+        _base, commit, _worktree = _land_unmerged_run(repository, tmp_path)
+    
+        report = _sweep()
+    
+        assert report["accepted"] == []
+        refusal = next(
+            entry
+            for entry in report["reports"]
+            if entry.get("run_id") == RUN_ID and "accepted" in entry
+        )
+        assert refusal["accepted"] is False
+&gt;       assert commit[:12] in refusal["reason"]
+E       AssertionError: assert 'c085a0d5647d' in 'carries no exit receipt'
+
+tests/test_review_acceptance_promotes.py:313: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted - AssertionError: assert 'c085a0d5647d' in 'carries no exit receipt'
+ERROR tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted - AssertionError: this test reached a scheduler verb it did not provide: sbatch --wait --parsable --open-mode=append --partition=all_debug --time=00:10:00 --nodes=1 --ntasks=1 --cpus-per-task=8 --mem=32G --output=/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/reckon-home3/crew/runs/r-20261002T120000000000-acceptance-target/review-landing/gate-f9e074b0b26ddd640048d43de7c8c0e1664c3a6d.log.scheduler --error=/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/reckon-home3/crew/runs/r-20261002T120000000000-acceptance-target/review-landing/gate-f9e074b0b26ddd640048d43de7c8c0e1664c3a6d.log.scheduler --chdir=/tmp/reckon-crew-scratch/r-20261118T054337166646-qwnw-red-file-review-acceptance-promotes/pytest-of-mcintos/pytest-0/test_an_unmerged_run_is_not_pr0/repository --wrap srun --partition=all_debug --time=00:10:00 --ntasks=1 bash -c 'set -euo pipefail — provide a recording scheduler on PATH, or place into a held reservation, so no real scheduler client is run.
+1 failed, 5 passed, 1 error in 6.85s
+EXIT=1
+</pre>
+
+  <p>Failing ids at the base: <code>test_an_unmerged_run_is_not_promoted</code>.
+  The failure line carries the assertion the test now satisfies, and the error is
+  the conftest guard that fires when a test reaches a scheduler verb it did not
+  provide — the implementing run's walk to a merge candidate and a push, not the
+  refusal the case is about.</p>
+
+  <h4 id="qwnw-red-file-review-acceptance-promotes-head">Head, 10cc142b46a0e2c7b29fd0982785e23f4117ff7f</h4>
+  <pre id="qwnw-red-file-review-acceptance-promotes-head-log">
+# revision: 10cc142b46a0e2c7b29fd0982785e23f4117ff7f
+# host: 98dci4-clu-3142.iter.org
+# tree: /tmp/mcintos-landing-579e2ba8d42f-5HnO8U/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_review_acceptance_promotes.py'
+......                                                                   [100%]
+6 passed in 3.17s
+EXIT=0
+</pre>
+
+  <p>Six cases pass at the head and the file's scoped gate exits zero. The
+  declared suite for this project is unchanged and passes at both revisions.</p>
+</section>
