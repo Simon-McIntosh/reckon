@@ -1,20 +1,29 @@
 <section id="qwnw-red-file-a-discard-never-reads-promoted-base-and-head">
 <h2>A recorded promotion reads promoted only once its head is landed</h2>
-<p>Base revision <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code> ran the file as a job on all_debug over an extraction of that revision: one failure, <code>test_a_recorded_promotion_reads_promoted</code>, <code>EXIT=1</code>. Head revision <code>0b6e221a9362b625be11c3d250af9340263e4889</code> ran the same file through the scoped gate on all_debug: <code>4 passed</code>, <code>EXIT=0</code>.</p>
 <p><strong>Cause and verdict: test wrong.</strong> The case wrote a ledger row naming no checkout (<code>{"run_id": …, "commits": ["HEAD"]}</code>), so no primary branch could be asked whether the delivered head had reached it. The departure word reads such a row as delivered (<code>complete</code>) rather than promoted, failing closed by design — the rule <code>tests/test_crew_discard_reads_discarded.py</code> already pins, that a row whose head no branch carries is a landing still owed. The case predates that rule and asserted the older one, that the case's row alone settles the run as promoted. The repair promotes the fixture into a real checkout whose primary branch carries the head. The assertion is unchanged, and so is the bar for reading a departure promoted rather than withdrawn or discarded.</p>
-<pre># base arm — revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
-# host: 98dci4-clu-3142.iter.org
-# tree: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044631088399-qwnw-red-file-a-discard-never-reads-promoted/base-arm/tree
+<p>Both arms are batch jobs on <code>all_debug</code>, and each log carries the job and partition it ran on in its own header, so the clause rests on the job's record rather than on this prose. The base arm is job 1331418: <code>1 failed, 3 passed</code>, <code>EXIT=1</code>, failing id <code>test_a_recorded_promotion_reads_promoted</code>. The head arm is job 1331419: <code>4 passed</code>, <code>EXIT=0</code>. <code>sacct</code> records both as <code>COMPLETED</code> on partition <code>all_debug</code> at node <code>98dci4-clu-3144</code>. The promotion gate's own run of the same command at the head is scoped-gate-1795102749073214877, whose JSON records <code>"partition": "all_debug"</code> and <code>"revision": "a4e606c835fe7ebc4ffb5d55d147891f942d080f"</code>, and whose log ends <code>EXIT=0</code>.</p>
+<pre># base arm — log arm/base.log
+# arm: base
+# revision: 5b0a1f537ef9bbca90907bd16f663732db844fb0
+# job: 1331418 partition: all_debug node: 98dci4-clu-3144.iter.org
+# tree: …/r-20261118T044631088399-qwnw-red-file-a-discard-never-reads-promoted/arm/base/tree
 # command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_discard_never_reads_promoted.py
 .F..                                                                      [100%]
 FAILED tests/test_a_discard_never_reads_promoted.py::test_a_recorded_promotion_reads_promoted - AssertionError: assert 'complete' == 'promoted'
-1 failed, 3 passed in 1.34s
+1 failed, 3 passed in 1.49s
 EXIT=1</pre>
-<pre># head arm — revision: 0b6e221a9362b625be11c3d250af9340263e4889
-# host: 98dci4-clu-3141.iter.org
-# tree: /tmp/mcintos-landing-daf305c7501a-mPK6hZ/tree
-# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_discard_never_reads_promoted.py'
+<pre># head arm — log arm/head.log
+# arm: head
+# revision: a4e606c835fe7ebc4ffb5d55d147891f942d080f
+# job: 1331419 partition: all_debug node: 98dci4-clu-3144.iter.org
+# tree: …/r-20261118T044631088399-qwnw-red-file-a-discard-never-reads-promoted/arm/head/tree
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_discard_never_reads_promoted.py
 ....                                                                      [100%]
-4 passed in 0.77s
+4 passed in 1.81s
 EXIT=0</pre>
+<pre># sacct -j 1331418,1331419 — the receipt for both arms
+     JobID                    JobName  Partition               NodeList      State ExitCode
+   1331418         departure-arm-base  all_debug        98dci4-clu-3144  COMPLETED      0:0
+   1331419         departure-arm-head  all_debug        98dci4-clu-3144  COMPLETED      0:0</pre>
+<p>The landed checkout and the promoted row the case builds now live once, in <code>tests/helpers/landing_repository.py</code>, beside the other fixtures a second test builds rather than copies; both departure modules import them, so the git setup has one owner.</p>
 </section>
