@@ -1,0 +1,17 @@
+<section id="qwnw-red-file-run-scope-measure-nets-churn-causes">
+<h3>Two failing ids, one cause</h3>
+<p>Base arm at <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>:</p>
+<pre>2 failed, 1 passed in 3.59s
+FAILED tests/test_run_scope_measure_nets_churn.py::test_a_merge_only_citation_charges_the_content_the_merge_brought
+FAILED tests/test_run_scope_measure_nets_churn.py::test_a_merge_only_citation_charges_the_paths_the_merge_brought
+EXIT=1</pre>
+<p>Both were refused as an unmerged citation:</p>
+<pre>reckon.crew.CrewError: run cites bc195a6c8964, which is not a commit this run made
+beyond its base e0ab799bb714: ... belongs to an unmerged branch or predates the run.</pre>
+<p><strong>Verdict: the product was wrong.</strong> The guard refused a merge that
+carries the run head, so the merge-only measurement never ran. A citation the run head descends into is now accepted.</p>
+<p>Head <code>784dcda3f72ab66707156da8f22cba1674e27c05</code>, the named file as an
+<code>all_debug</code> job: <code>4 passed in 2.20s</code>, <code>EXIT=0</code>.</p>
+<p>Logs: <code>arm-base-target.log</code> and
+<code>scoped-gate-1795054334811684200.log</code> under the run directory.</p>
+</section>
