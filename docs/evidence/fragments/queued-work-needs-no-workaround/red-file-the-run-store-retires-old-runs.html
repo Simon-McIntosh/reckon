@@ -101,5 +101,23 @@ FAILED tests/test_the_run_store_retires_old_runs.py::test_a_ledger_whose_documen
 EXIT=1
 </pre>
 
+<h2 id="qwnw-red-file-the-run-store-retires-old-runs-merge">Merge of main at e414191b693f49a507f3e5ef49102933e57160db — 4bcc5c704221183b1a824fc3d2078b8941c3ae31</h2>
+
+<p>
+<code>main</code>'s 693f3f4ccb reached the same two conclusions independently, so both sides add the
+same skip in the same place. The merge keeps one skip, one committed-membership read and this
+node's per-project stamp — and moves the stamp to after the rows are written, because main's
+<code>test_rebuild_failure_still_answers_from_files</code> shows a stamp taken before a refused write
+stops the next read from retrying, which answered <code>get_detail</code> with nothing.
+</p>
+
+<pre id="qwnw-red-file-the-run-store-retires-old-runs-merge-log"># revision: 4bcc5c704221183b1a824fc3d2078b8941c3ae31
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py
+19 passed in 4.67s
+EXIT=0
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_run_store_retires_old_runs.py tests/test_ledger_files_and_index_agree.py
+124 passed in 9.41s
+</pre>
+
 </body>
 </html>
