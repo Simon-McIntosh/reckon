@@ -1,0 +1,19 @@
+<section id="qwnw-red-file-roster-loss-guard-landing">
+  <h2>The roster-loss guard's file went green on the writer's own reader</h2>
+  <p><strong>What changed</strong>: no product code, only
+  <code>tests/test_roster_loss_guard.py</code>.</p>
+<p><strong>Verdict: the test was wrong.</strong> <code>register_member</code> writes the run store and no committed path, and <code>load()</code> overlays that roster and marks the payload with <code>auxiliary_version</code>, which the writer deliberately preserves instead of writing it back. The committed aggregate keeps the roster copy the writer judges, and the reader the writer documents for a caller that means to change it is <code>load_aggregate()</code>.</p>
+<p>The fixture had seeded a collection the guard never read: the six refusal cases read <em>DID NOT RAISE LedgerError</em>, the two granted removals changed nothing, and the isolation case died reading an aggregate the fixture never wrote. Read through <code>load_aggregate()</code> the guard fires, refusing a write that drops <code>clive-2</code> and honouring <code>allow_member_removal=True</code>; the store's own <code>write_members</code>, which the idle reaper reaches, keeps the same refusal. No assertion was deleted or weakened.</p>
+<h3 id="qwnw-red-file-roster-loss-guard-arms">Measured</h3>
+<p>Base run at <code>5417b373ff9230f07c1c8f403632835808fffc15</code>: 9 failed, 5 passed, EXIT=1. Head run at <code>60ebc2ac8f3f1373cd8964b5f0e17e4421437092</code>: 14 passed, EXIT=0. A mutation at head where the drop comparison returns no ids: 7 failed, 7 passed, EXIT=1.</p>
+<pre id="qwnw-red-file-roster-loss-guard-base-failures">FAILED tests/test_roster_loss_guard.py::test_a_write_that_drops_every_member_is_refused
+FAILED tests/test_roster_loss_guard.py::test_a_write_that_drops_one_member_is_refused
+FAILED tests/test_roster_loss_guard.py::test_the_refusal_names_only_the_members_actually_dropped
+FAILED tests/test_roster_loss_guard.py::test_a_write_that_drops_two_and_adds_one_is_refused
+FAILED tests/test_roster_loss_guard.py::test_a_same_count_write_that_swaps_a_member_is_refused
+FAILED tests/test_roster_loss_guard.py::test_a_write_omitting_the_members_key_entirely_is_refused
+FAILED tests/test_roster_loss_guard.py::test_an_intended_removal_succeeds_with_the_flag
+FAILED tests/test_roster_loss_guard.py::test_an_intended_removal_of_every_member_succeeds_with_the_flag
+FAILED tests/test_roster_loss_guard.py::test_the_refused_write_leaves_the_temp_ledger_byte_identical
+</pre>
+</section>
