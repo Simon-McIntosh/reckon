@@ -1026,6 +1026,23 @@ def _reask_off_unreasoned_reserved_lane(
     }
 
 
+def backend_dialect(backend: Mapping[str, Any]) -> Any | None:
+    """The dialect a backend's declared command names, or ``None`` when it names none.
+
+    Every rule that reads a backend's lane asks this question first, and each
+    falls back differently -- to the launch kind, to the family, or to no
+    dialect at all -- so what counts as a command naming no dialect is stated
+    here once. One reading keeps a candidate's lane and an exclusion's lane the
+    same reading.
+    """
+    from reckon import _backends
+
+    try:
+        return _backends.dialect_for(backend)
+    except _backends.BackendError:
+        return None
+
+
 def lane_family(
     config: Mapping[str, Any],
     name: str,
@@ -1036,8 +1053,8 @@ def lane_family(
     A candidate's lane is the local marker, the backend's resolved dialect, or --
     when its command names no dialect -- its launch kind. The local marker is the
     backend the configuration names as its ``local_backend``; every other backend
-    is read through :func:`reckon._backends.dialect_for` on the backend mapping
-    handed in, which a caller may pass already resolved against a role overlay.
+    is read through :func:`backend_dialect` on the backend mapping handed in,
+    which a caller may pass already resolved against a role overlay.
     One owner for the derivation so a candidate's lane and an exclusion's lane are
     the same reading, never a backend's declared ``lane`` key, which a
     configuration need not set.
@@ -1048,30 +1065,23 @@ def lane_family(
         backend = (config.get("backends") or {}).get(name)
     if not isinstance(backend, Mapping):
         return name
-    from reckon import _backends
-
-    try:
-        return _backends.dialect_for(backend).name
-    except _backends.BackendError:
-        return str(backend.get("launch") or name)
+    dialect = backend_dialect(backend)
+    if dialect is not None:
+        return dialect.name
+    return str(backend.get("launch") or name)
 
 
 def reservation_family(
     config: Mapping[str, Any], name: str, backend: Mapping[str, Any] | None = None
 ) -> str:
     """The policy family, retaining a local wrapper's harness reservation."""
-    from reckon import _backends
-
     settings = (
-        backend
-        if backend is not None
-        else (config.get("backends") or {}).get(name, {})
+        backend if backend is not None else (config.get("backends") or {}).get(name, {})
     )
-    try:
-        dialect = _backends.dialect_for(settings)
-    except _backends.BackendError:
-        return lane_family(config, name, backend)
-    return dialect.name if dialect.name == "claude" else lane_family(config, name, backend)
+    dialect = backend_dialect(settings)
+    if dialect is not None and dialect.name == "claude":
+        return "claude"
+    return lane_family(config, name, backend)
 
 
 def _lane_backend_names(config: Mapping[str, Any], lane: str) -> set[str]:
