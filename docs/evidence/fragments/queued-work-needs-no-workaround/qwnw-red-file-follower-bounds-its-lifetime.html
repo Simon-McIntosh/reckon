@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Follower-bounds test: base red, head green</title>
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<h1 id="qwnw-red-file-follower-bounds-its-lifetime-title">tests/test_follower_bounds_its_lifetime.py — the two follower-admission cases were red at base and each arm's revision</h1>
+
+<p id="qwnw-red-file-follower-bounds-its-lifetime-outcome">
+Base <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>: 2 failed, 3 passed,
+<code>EXIT=1</code>. Head <code>55bdc82b264df34ab53b80549f0eeb0189ec54d4</code>:
+5 passed, <code>EXIT=0</code>. Both runs are jobs on <code>all_debug</code> with
+the slurm job id unset for the test process. Verdict: test wrong; no product
+source changed.
+</p>
+
+<h2 id="qwnw-red-file-follower-bounds-its-lifetime-cause">Cause</h2>
+
+<p id="qwnw-red-file-follower-bounds-its-lifetime-cause-body">
+The dispatch command documents stdout as the channel carrying its result
+document and writes the notice naming the run it created to stderr
+(<code>reckon/crew/dispatching/preparation.py</code>), so a refusal's stdout
+must stay one JSON document. Since click 8.2, <code>CliRunner.output</code>
+mixes stdout and stderr in write order, so both cases decoded the stderr
+notice as a prefix of the document and <code>json.loads</code> raised
+<code>JSONDecodeError: Expecting value: line 1 column 1 (char 0)</code>.
+Both cases now read <code>result.stdout</code>, the channel the command
+documents; no assertion or field check is removed.
+</p>
+
+<h2 id="qwnw-red-file-follower-bounds-its-lifetime-arms">Arms</h2>
+
+<table id="qwnw-red-file-follower-bounds-its-lifetime-arms-table">
+<thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>base, target file</td><td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td><td>2 failed, 3 passed, <code>EXIT=1</code></td></tr>
+<tr><td>head, target file</td><td><code>55bdc82b264df34ab53b80549f0eeb0189ec54d4</code></td><td>5 passed, <code>EXIT=0</code></td></tr>
+<tr><td>base, declared suite</td><td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td><td>58 passed, <code>EXIT=0</code></td></tr>
+<tr><td>head, declared suite</td><td><code>55bdc82b264df34ab53b80549f0eeb0189ec54d4</code></td><td>58 passed, <code>EXIT=0</code></td></tr>
+</tbody>
+</table>
+
+<p id="qwnw-red-file-follower-bounds-its-lifetime-logs">
+Logs: base <code>base-run.log</code> (job 1329319, module
+<code>.../base-clone/reckon/__init__.py</code>), head <code>head-run.log</code>
+(job 1329249), suite base <code>suite-base.log</code> (job 1329324), suite head
+<code>suite-head.log</code> (job 1329277), all under the run directory
+<code>r-20261118T062436654326-qwnw-red-file-follower-bounds-its-lifetime</code>.
+The base tree is a detached clone at the base revision, so the inventory suite
+reads real git state; the earlier base-suite arm run in a git-less archive
+reported two scaffolding failures, which this tree removes.
+</p>
+</body>
+</html>
