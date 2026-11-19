@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1027">
+<meta name="plan-version" content="1028">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3144,7 +3144,10 @@
     <div class="r-comment-body"><p>tests/test_append_run_writes_one_run_file.py passes in full at head (17 passed, EXIT=0, all_debug job 1330975 with SLURM_JOB_ID unset) with both base failures repaired as test-wrong: the byte-scan test now stores a row for the project first so it measures an ordinary append instead of the store's first-row import, and the failed-insert test now asserts the store refusal that takes the run file back and writes its lagging run file by hand; no assertion deleted or weakened and no product source changed.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063921898506-qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main" data-who="reckon-build" data-when="2026-11-19T20:12:19.657Z">
-    <div class="r-comment-body"><p>The parked-claim landing file&#x27;s four failing ids were the completion reply&#x27;s bounded summary read as the promotion record; the case now reads the receipt named by record_path and keeps every assertion, going from 4 failed/2 passed at base 28fbf2bc2fe2 to 6 passed as all_debug job at head 2647edddb9, with the armed suite arms at 58 passed on both revisions.</p></div>
+    <div class="r-comment-body"><p>The parked-claim landing file's four failing ids were the completion reply's bounded summary read as the promotion record; the case now reads the receipt named by record_path and keeps every assertion, going from 4 failed/2 passed at base 28fbf2bc2fe2 to 6 passed as all_debug job at head 2647edddb9, with the armed suite arms at 58 passed on both revisions.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063553111104-qwnw-red-file-a-review-that-never-launched-is-not-running" data-who="reckon-build" data-when="2026-11-19T11:34:05.284Z">
+    <div class="r-comment-body"><p>An in-harness pointer is dated from its claim only when the claim names its holder, so a review that never launched reads launch-failed from its claim or creation past the 900 s bound while a pointer whose liveness belongs to the calling harness stays running and is never released. tests/test_a_review_that_never_launched_is_not_running.py reads 6 passed EXIT=0 at head b3a5862829a5 where the same file reads 1 failed, 5 passed EXIT=1 at d9b857e053a7, the failing id being test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running; over the 149 test files that import the changed module the base arm&#x27;s 39 failing ids and the after arm&#x27;s 38 differ by exactly that one id, with none added.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
