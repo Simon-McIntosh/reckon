@@ -3710,7 +3710,7 @@ def _complete_store_from_ledger(project: str, root: str | Path | None) -> None:
 
     if not _ledger_holds_content(project, root):
         return
-    if run_store.stored_run_rows(project, fields=("run_id",)):
+    if run_store.stored_run_exists(project):
         return
     run_store.import_ledger(project, root=root)
 
@@ -4263,7 +4263,7 @@ def read_records(
     # project. A store created for its mutable state alone holds none, and the
     # committed ledger is still the copy every row of that history came from,
     # so its existence cannot be what selects the fleet-wide figure population.
-    stored = bool(run_store.stored_run_rows(project, fields=("run_id",)))
+    stored = run_store.stored_run_exists(project)
     data, version = load(
         project,
         root,

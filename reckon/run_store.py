@@ -899,6 +899,41 @@ def stored_run_rows(
         connection.close()
 
 
+def stored_run_exists(project: str, *, path: str | Path | None = None) -> bool:
+    """Whether the store holds any row for a project, reading one row.
+
+    A reader asking whether a project's history is answered by the store rather
+    than by the committed ledger asks for a boolean, and this answers that
+    question at the store's own cost: one indexed row whether the project holds
+    a single run or twenty thousand. :func:`stored_run_rows` answers a
+    membership question with the whole membership, which is the right read for
+    a caller that will use every id and the wrong one for this question.
+
+    The retired rows count, exactly as they do for the read whose selection
+    this decides: an archive holding every row of a project is a store that
+    holds the project's history. Absent and empty both answer false.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.exists():
+        return False
+    connection = _open_readonly(target)
+    try:
+        if not _refuse_owed_migration(connection, target):
+            return False
+        for schema in _read_attached_tables(connection, target):
+            found = connection.execute(
+                f'SELECT 1 FROM "{schema}".runs WHERE project = ? LIMIT 1',  # noqa: S608 - fixed schema name
+                (project,),
+            ).fetchone()
+            if found is not None:
+                return True
+        return False
+    except sqlite3.Error as error:
+        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
+    finally:
+        connection.close()
+
+
 def project_snapshot(project: str) -> dict[str, Any]:
     """Read complete history, mutable state and revisions in one snapshot.
 
