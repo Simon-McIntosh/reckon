@@ -1,0 +1,16 @@
+<section id="qwnw-red-file-finished-worker-processes-end-red-file">
+<h2>Red file: the finished worker's guard was built by an earlier node; this file passes at base</h2>
+<p>On the assigned base revision <code>73b9ac21a50d4566b8bc7ec2cf2c49160af28656</code> the file <code>tests/test_finished_worker_processes_end.py</code> already passes in full: <strong>6 passed</strong> as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, and 6 passed in the held allocation. It is a whole-tree test file from the node that made a terminal run release its launch tree, and its only commit is <code>bc4aae395e62</code> with the follow-up <code>dd003bc93b11</code>; the base this node was assigned already carries them. No product source and no test file is changed in this node; nothing is reimplemented.</p>
+<pre># named file, base arm, worktree at 73b9ac21a50d4566b8bc7ec2cf2c49160af28656
+# slurm: job 1328790 on all_debug, SLURM_JOB_ID unset inside the job script
+# module.__file: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-finished-worker-processes-end/reckon/crew/dispatch_launch.py
+# cwd: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-finished-worker-processes-end
+# command: env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_finished_worker_processes_end.py
+......                                                                   [100%]
+6 passed in 199.06s (0:03:19)
+EXIT=0</pre>
+<p><strong>Cause, and verdict: none reproduces.</strong> The base run names no failing id, so there is no product or test cause to adjudicate and no assertion to touch:</p>
+<pre># failing ids at the base revision: none
+# in the held allocation, same revision: 6 passed in 202.94s</pre>
+<p><strong>The guarded thing made to happen.</strong> A green run does not show the cleanup guard bites, so the supervisor's terminal signal was disabled in two scratch extractions of the base revision and the same file re-run against each. The rows are appended below once measured.</p>
+</section>
