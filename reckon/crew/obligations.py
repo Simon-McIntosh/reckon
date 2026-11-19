@@ -2924,8 +2924,14 @@ def _review_duty_item(
             "--reason 'The delivery is ready to land.'"
         )
     elif recovery._is_review_run(pointer):
+        # A reviewer's record is its own deliverable, and a clean delivery is
+        # left to the automatic promoter that lands it: only a refusal is the
+        # coordinator's decision. A reviewer whose delivery is still coming or
+        # cannot be read is neither, and the closure counts its pointer as
+        # unreconciled for as long as it stands — so suppressing those too left
+        # a counted run listed nowhere, the drift this view exists to prevent.
         state, reason, _record = acceptance.review_self_state(pointer)
-        if state != acceptance.REVIEW_SELF_REFUSED:
+        if state == acceptance.REVIEW_SELF_READY:
             return None
         item["reason"] = reason
     elif item["kind"] in {"review-ready", "promotable-stale"}:
@@ -5215,7 +5221,9 @@ def _obligations_view(
             str(item["kind"]),
         )
     )
-    unreconciled = runs.drain_unreconciled_by_session(project).get(session, 0)
+    unreconciled = runs.unreconciled_for_session(
+        runs.drain_unreconciled_by_session(project), session
+    )
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
     sections = run_section_index([pointers.values()])
