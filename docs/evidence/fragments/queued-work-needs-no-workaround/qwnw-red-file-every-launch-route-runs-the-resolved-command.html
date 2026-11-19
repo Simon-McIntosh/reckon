@@ -1,0 +1,75 @@
+<section id="qwnw-red-file-every-launch-route-runs-the-resolved-command-landing">
+  <h2>Every launch route runs the resolved command</h2>
+
+  <p><strong>What changed.</strong> One cause, and the test was the half that
+  was wrong. <code>reckon crew dispatch</code> writes the created run's identity
+  to stderr as soon as its claim is published, deliberately, so a caller
+  interrupted during the launch keeps the run's name while stdout stays the one
+  final JSON document. The case read the first line of the combined output,
+  which is that notice rather than the document, and raised
+  <code>json.decoder.JSONDecodeError</code> before either assertion it exists
+  for. It now reads <code>result.stdout</code>: the same document, on the stream
+  the product states it is on. No assertion was deleted or weakened — the
+  <code>"No such file or directory"</code> reading of the whole output and the
+  argv assertion that the declared stub's absolute path reached the launch are
+  both unchanged.</p>
+
+  <p>The product was confirmed correct rather than repaired. The reported argv
+  carries <code>&lt;backend-bin&gt;/codex</code>, the absolute path resolved
+  through the layer's declared search path while the launching PATH omits that
+  directory, and the second case's lane probe passes at the base revision
+  unchanged. The notice is written with <code>file=sys.stderr, flush=True</code>
+  in <code>reckon/crew/dispatching/preparation.py</code>, a deliberate product
+  rule, so the output shape this case asserted was the stale half.</p>
+
+  <h3 id="qwnw-red-file-every-launch-route-runs-the-resolved-command-arms">Measured</h3>
+
+  <p>All four arms are one job on <code>all_debug</code> (1329657), each log on
+  shared storage whose first lines name the revision, tree, command and the
+  module the run imported, and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>. Both file arms run the measured command with
+  <code>SLURM_JOB_ID</code> unset, and the base tree is a checkout of the base
+  revision rather than a copy of a working tree.</p>
+
+  <table id="qwnw-red-file-every-launch-route-runs-the-resolved-command-arm-rows">
+    <caption>Arms of the node gate. The census pair is the project's armed
+    suite as the template resolves over this node's write scope.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base arm</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head arm</td>
+        <td><code>65efa64e1511906a107324afb02788b9cb88ea23</code></td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed census suite, base arm</td>
+        <td><code>42fe90d0b0a46060bafde2490dda7d4002cda478</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the armed census suite, after arm</td>
+        <td><code>65efa64e1511906a107324afb02788b9cb88ea23</code></td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The delta is one test id fixed and none added; the census pair reads the
+  same 58 passes at both revisions.</p>
+
+  <h3 id="qwnw-red-file-every-launch-route-runs-the-resolved-command-control">Negative control</h3>
+
+  <p>The base run of the named file fails exactly
+  <code>test_a_dispatch_runs_the_backend_command_it_resolved</code>, while the
+  sibling probe case passes there. The failure is the notice read as the
+  document: <code>json.decoder.JSONDecodeError: Expecting value: line 1 column 1
+  (char 0)</code> against a first line reading
+  <code>reckon: created run &lt;run-id&gt;</code>. The log is
+  <code>base-gate.log</code> in the run directory, ending
+  <code>EXIT=1</code>.</p>
+
+  <p>Lint is unchanged by this node: <code>ruff check</code> reports one
+  pre-existing <code>F401</code> on the unused <code>reckon.flight</code> import
+  at both revisions, and <code>ruff format --check</code> reports the same two
+  pre-existing spots at both — the pair of blank lines before
+  <code>PROBE_REPORT</code> and the wrapped <code>_request_lane_availability</code>
+  call. Neither finding sits in a line this node writes, and neither was added
+  by it.</p>
+</section>
