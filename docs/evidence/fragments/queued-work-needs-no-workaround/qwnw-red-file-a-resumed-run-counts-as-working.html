@@ -11,7 +11,7 @@
   treated as unpromoted. The delivered-awaiting-review population is now counted
   with the delivered one, so the figure keeps the meaning its docstring states:
   delivered work waiting on a gate, the review included. No assertion in the
-  node's test file was deleted or weakened.
+  node's test file was deleted or weakened.</p>
 
   <p><strong>The cause.</strong> The test file landed on 29 September
   (<code>9bf9d9eb9e</code>) and the evidence-only count was introduced by
@@ -89,4 +89,28 @@
     after the change, so the exit status alone says nothing; the delta is read
     from the failing ids, where head carries no id the base arm did not.</li>
   </ul>
+
+  <h3 id="qwnw-red-file-a-resumed-run-counts-as-working-repair">Repair round</h3>
+
+  <p>The landing merged primary main at <code>83c5ba60e2</code> and conflicted
+  on <code>reckon/crew/recovery_watch.py</code>. The primary's own
+  <code>67d2d6890d</code> counts a delivered row once, from the state the pane
+  draws it with, and lets the promotion fold supply only the queue figures; that
+  rule already counts the <code>scoring</code> row this node added. The conflict
+  therefore resolves to the primary's count and this node's override is dropped
+  rather than stacked, so no row is counted twice. The merge head
+  <code>0588a18c8a</code> differs from primary by this fragment alone.</p>
+
+  <p>At the merge head the node's gate reads 5 passed, <code>EXIT=0</code>; the
+  declared suite reads 58 passed, <code>EXIT=0</code>; the importer arm reads 17
+  failed, 801 passed, <code>EXIT=1</code>. Four ids appear there that the base
+  arm does not fail, and they are load-sensitive producer and classification
+  cases rather than this change: at the same revision
+  <code>tests/test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing</code>
+  passed twice and failed twice in four runs on the primary extraction alone,
+  with the host at load average 35 on 8 cores. The gate job was submitted
+  <code>all_debug</code> twice and sat <code>PENDING</code> for 25 minutes
+  without starting, so the merge-head gate figure is the in-place run with
+  <code>SLURM_JOB_ID</code> unset recorded in
+  <code>verify/merge-head-run.log</code>.</p>
 </section>
