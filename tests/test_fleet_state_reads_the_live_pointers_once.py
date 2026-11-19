@@ -212,8 +212,15 @@ class _DecodeCounter:
 
 
 @contextmanager
-def _base_reads(project: str) -> Iterator[list[dict[str, Any]]]:
-    """The base revision's read pattern: every reader lists for itself."""
+def _base_reads(
+    project: str | None = None, *, pointers: Any = None
+) -> Iterator[list[dict[str, Any]]]:
+    """The base revision's read pattern: every reader lists for itself.
+
+    A slice now offers its own population to this publication; the base
+    revision published nothing, so the offer is dropped and each reader lists
+    the directory for itself, exactly as before.
+    """
     yield runs.list_live(project=project)
 
 
