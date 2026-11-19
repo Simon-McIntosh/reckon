@@ -104,6 +104,19 @@ count and the bounded lane-rate read — read 6 failed and 38 passed at base
 failure was added.
 </p>
 
+<p id="qwnw-red-file-a-derivation-builds-the-ledger-index-once--wider-arm">
+The wider arm over every obligation, fleet-state and ledger test file reads 34
+failed and 543 passed at base against 29 failed and 548 passed at head: the
+head adds no failing id and drops five. Three of those are this node's cases.
+The other two — <code>test_the_ledger_leaves_git.py::test_no_ledger_document_is_tracked
+</code> and <code>test_a_batch_decodes_the_ledger_index_once.py::test_the_base_revision_writes_the_same_per_entry_results</code>
+— are scaffolding:
+each runs a git command against the arm's own tree, and the base arm is a
+<code>git archive</code> extraction with no repository, so
+<code>git ls-files</code> answers empty and <code>git archive &lt;sha&gt;</code>
+exits 128 before any code under test runs.
+</p>
+
 </article>
 </body>
 </html>
