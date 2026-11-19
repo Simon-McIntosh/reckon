@@ -38,6 +38,7 @@ from reckon import _store, file_memo, flight, ledger, review_tiers
 from reckon._timestamps import parse_utc
 from reckon.crew import (
     budget_reset,
+    obligation_snapshot,
     queue_admission,
     recovery,
     recovery_classification,
@@ -201,7 +202,7 @@ DUTY_ROW_FIELDS = (
     # text quotes.
     "review_owner",
     "reflex_window_seconds",
-    # An overdue remedy's time-dependent intervals; see refresh_overdue_remedy.
+    # An overdue remedy's time-dependent intervals; see obligation_snapshot.refresh_overdue_remedy.
     "overdue_remedy",
     "refused_at",
     "queued_at",
@@ -1266,19 +1267,6 @@ def _iso(instant: datetime) -> str:
     return instant.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _age_of_instant(value: Any, *, now: datetime) -> int:
-    """The non-negative age in seconds of one stored instant."""
-    stamp = parse_utc(value)
-    if stamp is None:
-        return 0
-    return max(0, int((now - stamp).total_seconds()))
-
-
-def _overdue_figure(seconds: int) -> str:
-    """How an overdue interval is printed in a duty's remedy text."""
-    return f"{max(0, int(seconds)) // 60}m {max(0, int(seconds)) % 60}s"
-
-
 def _overdue_remedy(
     project: str,
     pointer: Mapping[str, Any],
@@ -1312,50 +1300,10 @@ def _overdue_remedy(
     return remedy
 
 
-def _render_overdue_remedy(
-    remedy: Mapping[str, Any], *, age: int, now: datetime
-) -> str:
-    """Compose an overdue duty's text from its intervals at one clock reading."""
-    figure = _overdue_figure(int(age))
-    stage = str(remedy.get("stage") or "")
-    if stage:
-        stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
-        text = (
-            f"review overdue by {figure}: the station's tick has run "
-            f"{_overdue_figure(stage_age)} in its {stage} stage, which holds "
-            "the reflex's sweep"
-        )
-        dispatch = str(remedy.get("dispatch") or "")
-        if dispatch:
-            return f"{text}; dispatch the review now with: {dispatch}"
-        return f"{text}; dispatch the review for session {remedy.get('session')!r} now"
-    return (
-        f"review overdue by {figure}: session {remedy.get('session')!r} "
-        "has an armed follower, but its reflex has not dispatched this "
-        "run's review; inspect the follower's review pass"
-    )
-
-
-def refresh_overdue_remedy(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
-    """One duty row whose time-dependent remedy text is composed at ``now``.
-
-    A published snapshot stores a duty's age as the instant it is measured
-    from, and the reader turns it back into seconds against its own clock. The
-    remedy text beside it was composed once, at the writer's instant, so without
-    this the figure it prints stays at the value the snapshot was written with
-    while ``age_seconds`` grows — a stuck clock beside a moving one. The row
-    carries the intervals the figure is built from, so the text is composed
-    here at the reading instant, from the same refreshed age the row shows.
-    """
-    refreshed = dict(row)
-    remedy = refreshed.get("overdue_remedy")
-    if not isinstance(remedy, Mapping):
-        return refreshed
-    age = refreshed.get("age_seconds")
-    if isinstance(age, bool) or not isinstance(age, int):
-        return refreshed
-    refreshed["next_command"] = _render_overdue_remedy(remedy, age=age, now=now)
-    return refreshed
+# The reader composes an overdue duty's text for a snapshot row, so the reader
+# is where the render lives and this module composes through its copy.
+_render_overdue_remedy = obligation_snapshot._render_overdue_remedy
+_overdue_figure = obligation_snapshot._overdue_figure
 
 
 def _reflex_review_command(
