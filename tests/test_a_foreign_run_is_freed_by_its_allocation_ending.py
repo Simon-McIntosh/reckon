@@ -106,7 +106,9 @@ def _foreign_pointer(directory: Path, **overrides) -> dict:
     # launcher-host observation into that home, and it may not be the write that
     # brings the home into being, so the home is set up here rather than made
     # empty.
-    (directory / "stream.jsonl").write_text('{"type":"turn.started"}\n', encoding="utf-8")
+    (directory / "stream.jsonl").write_text(
+        '{"type":"turn.started"}\n', encoding="utf-8"
+    )
     runs._write_json(runs.pointer_path(RUN_ID), record)
     return record
 
