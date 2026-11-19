@@ -83,6 +83,13 @@
       "finding": "done_when-1",
       "reason": "the finding itself states the base behaviour that fails the third assertion: the base row carries age_seconds 0 and an empty run_id, so it names neither the sampler nor the reading's age. The node's negative-control arm records that failure beside the freshness one",
       "when": "2026-11-19T19:12:51.770004+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-2",
+      "reason": "the provenance is what the closing step lacked when this fault was traced, it is written by the same step, and the fourth case asserts it separately. One node keeps the fix for 136 false failures out of a second review round",
+      "when": "2026-11-19T19:12:58.697637+00:00"
     }
   ],
   "responses": {
@@ -106,6 +113,12 @@
       "by": "",
       "reason": "both halves are one fault seen from the sampler and from the reader: a reading that outruns its limit, and the row that reading produces. They share the reader and one test file, and splitting them leaves every session's stop hook held through a second review round",
       "when": "2026-11-19T19:12:45.366919+00:00"
+    },
+    "single_goal-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "the provenance is what the closing step lacked when this fault was traced, it is written by the same step, and the fourth case asserts it separately. One node keeps the fix for 136 false failures out of a second review round",
+      "when": "2026-11-19T19:12:58.697637+00:00"
     },
     "wiring-1": {
       "action": "acted",
