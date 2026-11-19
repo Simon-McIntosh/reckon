@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="892">
+<meta name="plan-version" content="893">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2746,6 +2746,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062519086204-qwnw-red-file-a-sweep-failure-is-an-obligation" data-who="reckon-build" data-when="2026-11-19T13:29:52.165Z">
     <div class="r-comment-body"><p>A retained station sweep-failure duty was compared whole-row against its own stored form, so the age the read derives from the stored raise instant made the equality fail 20 seconds after the duty was raised; the file now compares the duty with ages removed and asserts the retained age grew, reading 2 passed EXIT=0 at head 7d70e13ef20010c2ef7bebe6c4720e18a5577d53 on all_debug with SLURM_JOB_ID unset against 2 failed EXIT=1 at base be17b57484c74a3432a3d7372aa84da6702ad965, with no assertion deleted or weakened.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044650649792-qwnw-red-file-the-run-store-retires-old-runs" data-who="reckon-build" data-when="2026-11-18T09:12:18Z">
+    <div class="r-comment-body"><p>fix(store): the store&#x27;s refresh compares its rows with the committed ledger instead of with its own answer, skips a project whose ledger holds no documents so an absent mount cannot empty its cached history, and reads that membership through ledger.run_ids(use_index=False) rather than a second reader. tests/test_the_run_store_retires_old_runs.py: 19 passed at the merge head 4bcc5c7042 (and at the pre-merge head ac1a9e2ec7); 1 failed, 17 passed at base 97dec20b (assert 7 == 19).</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
