@@ -1,0 +1,46 @@
+<section id="qwnw-red-file-ticker-row-drops-unread-cells-fragment">
+<h3>The unmeasured-span row is held to one marker outside the counter block</h3>
+<p>The named file fails at the base revision on one case, and the cause is the
+test rather than the product. The row prints the absence marker twice on the
+fixture: the elapsed cell prints it for an unmeasured span, and the promotion
+counter prints the same glyph for a queue whose oldest position is unknown
+(<code>0p@ –</code>), a rule the row has carried since the promotion counter
+gained its position suffix and which three other tests pin. The case asserted
+one marker across the whole row, which was true before that suffix existed.</p>
+<p>The case now holds the counter block to exactly one mark and counts the rest
+of the row apart from it, so a second reading of the span still fails wherever
+it lands outside the counters — which is where the run's own rate cell used to
+sit. No assertion was deleted, and the case is stronger than before because the
+counter block's own single mark is now also asserted.</p>
+<h4>Base run — <code>tests/test_ticker_row_drops_unread…</code></h4>
+<pre># revision: 2437205f9a762420c943f3c0b0312ded03f7395f
+# tree: /tmp/reckon-crew-scratch/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/ticker-base-bUSOBG
+# command: env PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/ticker-base-bUSOBG /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ticker_row_drops_unread_cells.py
+# module.__file__: /tmp/reckon-crew-scratch/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/ticker-base-bUSOBG/reckon/crew/ticker.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T062625552198-qwnw-red-file-ticker-row-drops-unread-cells/ticker-base-bUSOBG
+.....F.......                                                            [100%]
+E       AssertionError: 14:00:00  review     n-row-drops-cells                    new → working           –   3w  0r  1h  7d  0q  0p@ –  0s               dsv4.1-fl…  xhigh
+E       assert 2 == 1
+ E        +  where 2 = &lt;built-in method count of str object at 0x7f0ec61cc450&gt;('–')
+FAILED tests/test_ticker_row_drops_unread_cells.py::test_an_unmeasured_span_marks_the_elapsed_position_once
+1 failed, 12 passed in 0.42s
+EXIT=1</pre>
+<h4>Head run — all_debug job, <code>SLURM_JOB_ID</code> unset</h4>
+<pre>srun: task re-enters the worker fence; absolute scheduler paths bypass this guard.
+# revision: 672fb6eb58ff8832b1d7dc395daf72d28c6f1337
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-8e1ced4e7cb9-rY501a/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ticker_row_drops_unread_cells.py'
+.............                                                            [100%]
+13 passed in 0.35s
+…cleanup listing of the landing tree elided; the log ends on its receipt…
+EXIT=0</pre>
+<h4>Mutation controls</h4>
+<p>Both halves of the assertion were made to fire. Making the trailing rate
+cell print the marker without a backend — the shape the case was written to
+catch — failed the outside-the-counters count with <code>2 == 1</code> and the
+row text <code>… –              –  dsv4.1-fl…  xhigh</code>. Adding a second
+marker to the promotion cell failed the counter-block count with the block
+text <code> 3w  0r  1h  7d  0q  0p@ ––  0</code>. Both mutations were reverted
+before the measured commit.</p>
+</section>
