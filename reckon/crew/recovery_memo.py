@@ -669,15 +669,34 @@ def _read_review_once(
     reports to the next reader, and two readers that miss at once -- the review
     reflex on its own thread beside the tick -- cannot race on the cache's own
     structure.
+
+    The files the answer was read past travel with it. A reader meets a record
+    mid-write by skipping it, and a held answer serves the next reader without
+    that read: the file is still unreadable, so the findings the read collected
+    are noted again wherever the answer is served, into whatever region is open
+    then. Without them a later derivation of the same fleet reports no finding
+    at all and its duties disagree with the ones a sweep of the same files
+    publishes.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
         return reader()
     digest = _classification_key(_review_read_inputs(record, tree=tree))
-    return file_memo.memoized_key(
-        "stored_review_answer", (project, run_id, *selector, digest), reader
+
+    def read_carrying_findings() -> tuple[Any, tuple[dict[str, str], ...]]:
+        with collect_read_failures() as read_failures:
+            answer = reader()
+        return answer, tuple(dict(entry) for entry in read_failures)
+
+    answer, findings = file_memo.memoized_key(
+        "stored_review_answer",
+        (project, run_id, *selector, digest),
+        read_carrying_findings,
     )
+    for finding in findings:
+        note_read_failure(finding)
+    return answer
 
 
 # Tokens a terminal message carries that belong to the run rather than to the
@@ -996,6 +1015,8 @@ from .review_records import (  # noqa: E402
     _record_identity,
     _store_paths,
     _tick_store,
+    collect_read_failures,
+    note_read_failure,
     review_run_record_names,
     review_store_tick,
 )
