@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8">
+<title>Budget readings decode the ledger once</title></head>
+<body>
+<section id="qwnw-rfbrdl-once">
+<h2>Budget readings decode the ledger once</h2>
+<p>The memo behind <code>budget.latest_recorded</code> keyed its readings on the ledger document stamps while the read answers from the run store, so a store write that advanced no generation served a stale reading. The key now carries <code>run_store.change_token()</code>.</p>
+<h3 id="qwnw-rfbrdl-once-base">Base arm, the node test file at 6fa2b177</h3>
+<pre>
+3 failed, 8 passed in 1.72s
+FAILED tests/test_budget_readings_decode_the_ledger_once.py::test_generation_change_invalidates_an_in_place_edit - assert 25 == 45
+FAILED tests/test_budget_readings_decode_the_ledger_once.py::test_a_run_added_without_a_generation_bump_is_seen - assert first == external
+FAILED tests/test_budget_readings_decode_the_ledger_once.py::test_an_aggregate_change_without_a_generation_bump_is_seen - assert first == aggregate
+EXIT=1
+</pre>
+<p>Log: base-node-test.log in the run directory.</p>
+<h3 id="qwnw-rfbrdl-once-head">Head arm, 1a51a431, as a job on all_debug</h3>
+<pre>
+11 passed in 0.84s
+EXIT=0
+</pre>
+<p>Log: scoped-gate-1795052749803567273.log in the run directory.</p>
+<h3 id="qwnw-rfbrdl-once-control">The store token is what makes the two store-write cases pass</h3>
+<p>With <code>run_store.change_token()</code> removed from the memo key and nothing else changed, the two tests that write history into the store fail again:</p>
+<pre>
+2 failed, 9 passed in 3.49s
+FAILED tests/test_budget_readings_decode_the_ledger_once.py::test_a_run_added_without_a_generation_bump_is_seen - assert first == external
+FAILED tests/test_budget_readings_decode_the_ledger_once.py::test_an_amended_row_without_a_generation_bump_is_seen - assert 25 == 50
+</pre>
+<h3 id="qwnw-rfbrdl-once-arms">Suites</h3>
+<pre>
+baseline 6fa2b177 exit 0 tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+after 1a51a431 exit 0 tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
+</pre>
+</section>
+</body>
+</html>
