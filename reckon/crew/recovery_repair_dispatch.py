@@ -93,6 +93,7 @@ def dispatch_merge_repair(
         and pending is not None
         and not pending.get("merge_conflict")
         and project
+        and not record.get("landing_group")
         and pending_landing._promoted_row(project, run_id) is not None
     )
     if refusal and not first_round:
