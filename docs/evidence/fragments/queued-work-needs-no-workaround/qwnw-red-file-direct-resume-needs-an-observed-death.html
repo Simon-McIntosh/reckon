@@ -1,0 +1,86 @@
+<section id="qwnw-red-file-direct-resume-needs-an-observed-death-record">
+  <h2>One red test file on the primary branch: a direct resume waits for an observed death</h2>
+
+  <p><strong>What changed.</strong> One assertion in
+  <code>tests/test_direct_resume_needs_an_observed_death.py</code> failed at the
+  assigned base revision <code>05b3eea9c31c</code>: the lane-change preview case
+  compared the pointer's stored content against the fixture's in-memory record
+  and read <code>argv</code> and <code>launcher_host</code> as missing. One
+  cause, and the test was wrong; no product line changed; no assertion was
+  deleted or weakened. The file now reads <code>9 passed</code> at head
+  <code>57506aa3d9df</code>.</p>
+
+  <h3 id="qwnw-red-file-direct-resume-needs-an-observed-death-cause">Cause and verdict</h3>
+
+  <p><strong>Verdict: test wrong.</strong> A live pointer write moves the
+  dispatch-time detail — <code>argv</code>, <code>picker_selection</code>,
+  <code>admit_request</code>, <code>competence</code>,
+  <code>peer_scopes</code>, <code>unreconciled_override</code> — into the run's
+  own <code>dispatch-detail.json</code> and replaces it on the pointer with that
+  file's path (<code>runs._split_dispatch_detail</code>, called from
+  <code>runs._write_json</code> for every live-pointer write, and also stamping
+  the launch host). The case built its <code>before</code> from what the
+  <code>_lane_pointer</code> fixture returned, which is the record before that
+  split, and compared it with <code>runs.read_pointer</code>'s reading of the
+  file — a different shape of the same run. The rule the case states, that a
+  <code>--print-only</code> lane change records no move, was never broken: the
+  preview returns before the mutation block, and the stored pointer is
+  byte-identical across the call. The case now takes both sides through the same
+  accessor, so it still fails if the preview writes.</p>
+
+  <p><strong>Reproduction, quoted from the base, before any edit, at
+  <code>05b3eea9c31c</code>:</strong></p>
+
+  <pre id="qwnw-red-file-direct-resume-needs-an-observed-death-repro">
+FAILED tests/test_direct_resume_needs_an_observed_death.py::test_a_lane_change_preview_of_an_observed_death_reports_without_writing - AssertionError: assert {'attempt': 1...0+00:00', ...} == {'run_id': 'r...id-tree', ...}
+E       AssertionError: assert {'attempt': 1...0+00:00', ...} == {'run_id': 'r...id-tree', ...}
+E         Omitting 22 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'dispatch_detail': '.../config/crew/runs/r-observed-dead-pid/dispatch-detail.json'}
+E         Right contains 1 more item:
+E         {'argv': ['codex', 'exec']}
+1 failed, 8 passed in 2.26s
+EXIT=1
+</pre>
+
+  <p>The head arm runs the same command with the same environment, and reads
+  <code>9 passed</code>, <code>EXIT=0</code>.</p>
+
+  <h3 id="qwnw-red-file-direct-resume-needs-an-observed-death-arms">Arms</h3>
+
+  <p>The base arm was extracted from the base revision into the run's scratch
+  root and run there; the head arm ran as the node's worker gate on the
+  <code>all_debug</code> partition, in a scratch tree the harness created from
+  the committed revision, with <code>env -u SLURM_JOB_ID -u SLURM_JOBID</code>
+  in the command itself, because a batch job sets <code>SLURM_JOB_ID</code> for
+  the command it wraps (measured with a probe job, <code>JOBID=1331652</code>).
+  Each log's first lines name the revision, the tree and the command, and its
+  last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="qwnw-red-file-direct-resume-needs-an-observed-death-arm-table">
+    <caption>The base arm is the negative control and carries the head arm's
+    command.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base (negative control)</td>
+        <td><code>05b3eea9c31c28dc8b95c3d4f6be20db5e2de16b</code></td>
+        <td><code>1 failed, 8 passed</code>, <code>EXIT=1</code></td>
+      </tr>
+      <tr>
+        <td>head (node gate, <code>all_debug</code>)</td>
+        <td><code>57506aa3d9dfc2747182287baa5740e642b07eb4</code></td>
+        <td><code>9 passed</code>, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="qwnw-red-file-direct-resume-needs-an-observed-death-suite">Suite arms</h3>
+
+  <p>The declared suite, resolved over each arm's own tree, ran
+  <code>tests/test_staged_write_inventory.py</code> and
+  <code>tests/test_every_shared_home_lock_holds_across_nodes.py</code> on
+  <code>all_debug</code>: <code>0 failed</code> at
+  <code>05b3eea9c31c</code> and <code>0 failed</code> at
+  <code>57506aa3d9df</code>.</p>
+</section>
