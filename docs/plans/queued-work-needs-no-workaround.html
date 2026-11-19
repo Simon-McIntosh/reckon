@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="922">
+<meta name="plan-version" content="923">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2838,6 +2838,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063914724272-qwnw-red-file-a-batch-decodes-the-ledger-index-once" data-who="reckon-build" data-when="2026-11-18T17:43:41.002Z">
     <div class="r-comment-body"><p>In the ledger read pass a plan-filtered read now slices its rows from the same unfiltered payload the pass already holds instead of decoding the index a second time (reckon/ledger.py, _payload_slot and _plan_slice), so tests/test_a_batch_decodes_the_ledger_index_once.py passes in full — 4 passed / EXIT=0 in all_debug job 1327638 against 1 failed / EXIT=1 at base bc7b7bec — and a ten-entry batch over three plans costs 1 index payload decode where it cost 2.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063609964162-qwnw-red-file-a-repair-round-grants-its-scope" data-who="reckon-build" data-when="2026-11-19T05:56:31.714Z">
+    <div class="r-comment-body"><p>tests/test_a_repair_round_grants_its_scope.py passes 5/5 at head 4417044 on all_debug; its base b24fe95 failed 1 of 4 (test_a_repair_round_grants_its_scope.py::test_a_peer_held_path_is_not_granted_and_the_advice_names_the_peer) because source paths are shared by default since 471bf98366 — verdict: test wrong; refusal case moved to an unmergeable path, shared-source case added, no assertion weakened</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
