@@ -860,6 +860,26 @@ def _stored_commits(request: Mapping[str, Any], result: Mapping[str, Any]) -> li
     return []
 
 
+def _location_commits(result: Mapping[str, Any]) -> list[str]:
+    """Commits from a run document the promotion names as its write location.
+
+    Only a run file is a document. A retired ledger names the store, a
+    database, and a checkout may no longer keep the file at all, so a location
+    that does not decode as one object is answered as no commit rather than
+    failing the request.
+    """
+    location = str((result.get("ledger") or {}).get("path") or "")
+    if not location:
+        return []
+    try:
+        document = json.loads(Path(location).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return []
+    if not isinstance(document, Mapping):
+        return []
+    return [str(commit) for commit in document.get("commits") or ()]
+
+
 def _promoted_commits(
     request: Mapping[str, Any], result: Mapping[str, Any]
 ) -> list[str]:
@@ -867,7 +887,10 @@ def _promoted_commits(
     commits = _declared_commits(result)
     if commits:
         return commits
-    return _stored_commits(request, result)
+    commits = _stored_commits(request, result)
+    if commits:
+        return commits
+    return _location_commits(result)
 
 
 def _raising_site(exc: BaseException) -> str:
