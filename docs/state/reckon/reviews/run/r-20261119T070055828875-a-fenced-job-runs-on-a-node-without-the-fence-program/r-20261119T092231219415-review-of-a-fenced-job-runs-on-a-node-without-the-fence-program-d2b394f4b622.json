@@ -1,0 +1,196 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Read from the reviewed run's own baseline_suite and after_suite logs (68 passed / 74 passed with EXIT=0 and no FAILED lines at either revision), so the failing-id sets are both empty and their difference is empty. The importer arm's base and head id files diff identical (9 failed each). The instrument is shown able to see a failure present: negative-control-base.log, produced by the same runner on the same test file, records 6 FAILED ids and EXIT=1, so the empty failure list is a measured zero rather than a silent one.",
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "recipe[\"carried_program\"] == {\"path\": str(program), \"checksum\": digest, \"source\": ..., \"version\": ...}",
+      "fails_if": "Dropping carried_program from the recipe (KeyError), omitting source/version, or failing to strip the value fails; the path and checksum sides are the values the test itself handed to compose, so they hold for any pass-through and would not redden a stuck resolver or a dropped sha256: prefix.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "independent": false,
+      "line": 474
+    },
+    {
+      "assertion": "_mount_index(argv, \"--ro-bind\", program.parent) > _mount_index(argv, \"--bind\", case[\"run\"])",
+      "fails_if": "Deleting the carried-directory seal makes _mount_index raise 'no --ro-bind of ... in argv', so the ordering guard reddens on exactly the mounted-grant regression it was added for.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "independent": true,
+      "line": 483
+    },
+    {
+      "assertion": "result.returncode == 0 and marker.exists()",
+      "fails_if": "Removing the carried substitution leaves the task refusing with NOT_STARTED and the marker unwritten.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "independent": true,
+      "line": 505
+    },
+    {
+      "assertion": "recorded in result.stderr and sha256(program bytes) in result.stderr and not marker.exists()",
+      "fails_if": "Removing the digest comparison runs the task (entrypoint 0, marker written) and prints no checksums; the recorded 64-zero digest and the file's own digest are two independently derived values.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "independent": true,
+      "line": 538
+    },
+    {
+      "assertion": "str(absent) in result.stderr and not marker.exists()",
+      "fails_if": "Falling back to a path search or refusing without naming the carried location leaves the marker written or the path absent from the message.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "independent": true,
+      "line": 560
+    },
+    {
+      "assertion": "result.returncode == 0 and \"Read-only file system\" in result.stderr and program.read_bytes() == original",
+      "fails_if": "Removing the carried-directory seal lets the task replace the program (exit 9) and create a sibling directory (exit 8); the bytes are compared against a snapshot read before the task ran.",
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "independent": true,
+      "line": 587
+    }
+  ],
+  "assertion_independence": "One assertion is not independent of its input: tests/test_a_job_fence_starts_on_any_node.py:474 compares the recipe's path and checksum against the same values the test passed to compose, so it is a pass-through check rather than a resolution check. The durability of this change does not rest on it \u2014 :483, :538, :560 and :587 each name the regression they redden on. No added assertion covers the sha256: prefix handling that _checksum_text and the bootstrap's _checksum exist for.",
+  "call_sites": [
+    "reckon/_backends.py:3336 launch_plan -> fence_argv(config=fence_config)",
+    "reckon/nested_launch.py:789 _task_command under sbatch --wrap",
+    "reckon/nested_launch.py:795 _task_command under srun",
+    "reckon/nested_launch.py:803 _task_command for a submitted script"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:10:59Z",
+  "evidence_limits": [
+    "No suite re-run: the recorded completed arms and their EXIT=0 summary lines were read instead.",
+    "No scheduler job re-run: the two receipts under measure-run/ were read; the betelgeuse job's system_fence_program=false is what shows only the carried copy could have fenced it.",
+    "The s14 negative control names a betelgeuse job at the base revision; only a local pytest base arm exists, so the base job refusal is inferred from section s12's landed behaviour.",
+    "The carried program's flight key is not declared in reckon/schema/flight.yaml, so strict flight validation refuses it today; see the outside_scope entry in the reviewed manifest and the finding below."
+  ],
+  "finding_dispositions": [],
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "126",
+      "severity": "non-blocking",
+      "text": "non-blocking: carried_fence_program resolves its flight path with an inline home-relative rule that duplicates the module's existing owner _resolve_declared_path at reckon/_worker_fence.py:1263 instead of calling it; the two disagree on the ~user form, which Path.expanduser resolves and the new rule treats as relative, so two flight keys written with the same path syntax resolve to different locations \u2014 fold the call into _resolve_declared_path."
+    },
+    {
+      "file": "tests/test_a_job_fence_starts_on_any_node.py",
+      "line": "474",
+      "severity": "non-blocking",
+      "text": "non-blocking: the equality assertion compares the recipe's path, checksum, source and version against the same values the test handed to compose through _carried_recipe, so it holds for any pass-through and would survive a resolver regression; the guard that carries this test is the mount-order assertion at :483, and a case supplying a sha256:-prefixed checksum and a ~/-relative path would give the assertion an independent side."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "88",
+      "severity": "non-blocking",
+      "text": "non-blocking: _checksum_text's documented purpose \u2014 accepting the sha256:-prefixed spelling beside bare hex \u2014 is asserted by no added case; every new test supplies a bare digest, so replacing the prefix strip with plain str() leaves the suite green, and the mirrored _checksum at reckon/nested_launch.py:531 is equally unexercised in the prefixed spelling."
+    },
+    {
+      "file": "reckon/schema/flight.yaml",
+      "line": "240",
+      "severity": "non-blocking",
+      "text": "non-blocking: the flight schema declares no top-level fence_program key, so reckon flight --check in strict mode refuses the composition this node makes runnable and the deliverable's 'a location the flight settings name' has no declared home; the reviewed manifest declares this under outside_scope, and declaring it means editing the LinkML source and regenerating reckon/_flight_schema.py in a follow-up node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/negative-control-base.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: s14's done_when asks for the base-revision negative control to be the betelgeuse job refusing with s12's message; the record substitutes a local pytest arm (6 failed at 57235c8, EXIT=1), so the base behaviour on a node holding no fence program is inherited from section s12 rather than measured for this section."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 57235c8: one commit, three files, +310/-7, adding the fence_program flight reader and carried-directory seal in reckon/_worker_fence.py, the carried-program checksum bootstrap in reckon/nested_launch.py, and six new cases in tests/test_a_job_fence_starts_on_any_node.py.",
+    "done_when": "The done_when names a recipe-carries-location-and-checksum test, a matching-file-starts-the-task test, a mismatch-refuses-naming-both-checksums test, one betelgeuse and one all_debug job, and a base-revision negative control; tests/test_a_job_fence_starts_on_any_node.py:469-587 supplies the three test cases, measure-run/betelgeuse-report.json and measure-run/all_debug-report.json are the two jobs (1330559, 1330558), and negative-control-base.log records 6 failed at 57235c8 \u2014 the job-side base arm is therefore substituted by the local test arm, not measured as a job.",
+    "goal": "PLAN s14 (docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:132-134) requires a fence program carried on shared storage, named by the flight settings with source, version and checksum, verified before use, refused when absent or mismatched, and unwritable by a fenced worker or job; reckon/nested_launch.py:519-566 substitutes the carried path only after the dispatcher's path fails and verifies sha256 first, and reckon/_worker_fence.py:2186-2195 seals the carried directory last.",
+    "manifest": "The source manifest reads status complete with commits [\"d2b394f4b6226a54b282ed129b11338d8030c173\"], the scoped gate command against tests/test_a_job_fence_starts_on_any_node.py, baseline_suite 57235c8 and after_suite d2b394f4b6 both completed with 0 failures, negative_control_log negative-control-base.log, and the flight-schema gap declared under outside_scope.",
+    "write_paths": "The single commit d2b394f4b6 touches only reckon/_worker_fence.py, reckon/nested_launch.py and tests/test_a_job_fence_starts_on_any_node.py, all inside the five declared write paths; the declared evidence fragment and figure paths were left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_job_fence_starts_on_any_node.py:483 reddens if the carried-directory --ro-bind is dropped, :538 reddens if the digest comparison is removed, :519 reddens if the absent-file refusal falls through to a search, and :587 reddens if the seal is removed \u2014 but the sha256: prefix handling in reckon/_worker_fence.py:88 is asserted by no added case.",
+    "evidence": "The gate names tests/test_a_job_fence_starts_on_any_node.py and both suite logs record completed arms with EXIT=0 (68 passed base, 74 passed head), negative-control-base.log records 6 failing ids absent at head, and the two scheduler receipts carry node, job id and the four measured facts; the s14 base-revision job arm is substituted by the reviewed run's local test arm.",
+    "fit": "reckon/_worker_fence.py:85-129 and the bootstrap in reckon/nested_launch.py:519-566 follow the module's existing BackendError, Mapping-guard and field-name idioms, and FENCE_PROGRAM_KEY/FENCE_PROGRAM_KEY naming matches PROTECTED_PATHS_KEY at :1168.",
+    "goal_fidelity": "reckon/nested_launch.py:519-566 runs the carried copy only after the dispatcher's program fails and only on a verified digest, and reckon/_worker_fence.py:2186-2195 seals its directory after every grant, matching every clause of the s14 deliverable.",
+    "reuse": "reckon/_worker_fence.py:126-129 re-implements the home-relative flight-path rule that reckon/_worker_fence.py:1263 _resolve_declared_path already owns, so the module now holds two resolvers that disagree on the ~user form.",
+    "scope_discipline": "git diff 57235c8..d2b394f4b6 is confined to the three declared product and test paths and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/a-worker-or-its-job-cannot-overwrite-shared-files.html:132-134 (s14) asks for a fence program carried on shared storage at a flight-named location with source, version and checksum, verified before use and refused when absent or mismatched; reckon/nested_launch.py:519-566 substitutes the carried path only after the dispatcher's path fails and verifies sha256 first, and reckon/_worker_fence.py:2186-2195 seals its directory after every grant.\nVERDICT done_when: the done_when names three recipe/starts/refuses test cases, one betelgeuse job beside one all_debug job, and a base-revision negative control; tests/test_a_job_fence_starts_on_any_node.py:469-587 supplies the cases, measure-run/betelgeuse-report.json (job 1330559, system_fence_program=false) and measure-run/all_debug-report.json (job 1330558) supply the jobs, and negative-control-base.log records 6 failed at 57235c8 \u2014 the job-side base arm is substituted by that local test arm.\nVERDICT write_paths: the single commit d2b394f4b6 touches reckon/_worker_fence.py, reckon/nested_launch.py and tests/test_a_job_fence_starts_on_any_node.py, all three inside the five declared write paths; the declared evidence fragment and figure paths were left unused.\nVERDICT manifest: read; it records status complete, commits [\"d2b394f4b6226a54b282ed129b11338d8030c173\"], the scoped gate against tests/test_a_job_fence_starts_on_any_node.py, baseline_suite 57235c8 and after_suite d2b394f4b6 completed with 0 failures, negative_control_log negative-control-base.log, and the flight-schema gap under outside_scope.\nVERDICT diff: read commit by commit against 57235c8 \u2014 one commit, three files, +310/-7: the fence_program flight reader and carried-directory seal in reckon/_worker_fence.py, the carried-program checksum bootstrap in reckon/nested_launch.py, and six new cases in the test file.\nCALL_SITES: reckon/_backends.py:3336, reckon/nested_launch.py:789, reckon/nested_launch.py:795, reckon/nested_launch.py:803\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:519-566 runs the carried copy only when the dispatcher's program cannot run and only after its digest matches, and reckon/_worker_fence.py:2186-2195 seals the directory last, so every clause of s14's deliverable is implemented and measured.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_job_fence_starts_on_any_node.py is the named gate and both suite logs record 68 and 74 passed with EXIT=0, while the s14 base-revision job control is present only as the local arm in negative-control-base.log:1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 57235c8b2555ac3c25bd007c0ccecca87413a1e4..d2b394f4b6226a54b282ed129b11338d8030c173 changes only the three declared product and test paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_job_fence_starts_on_any_node.py:483 fails when the carried-directory seal is removed and :538 fails when the digest comparison is removed, but no case exercises the sha256: prefix rule at reckon/_worker_fence.py:88.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_worker_fence.py:85-129 uses the module's existing BackendError, Mapping guard and FENCE key-constant idiom established at :1168, and the bootstrap follows the surrounding template style at reckon/nested_launch.py:502.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/_worker_fence.py:126 re-implements the home-relative flight-path rule owned by _resolve_declared_path at reckon/_worker_fence.py:1263 without calling or extending it.\nFINDING reckon/_worker_fence.py:126 non-blocking: carried_fence_program duplicates _resolve_declared_path's home-relative resolution inline and the two disagree on the ~user form, so two flight keys written in the same syntax resolve differently; fold it into the owner.\nFINDING tests/test_a_job_fence_starts_on_any_node.py:474 non-blocking: the equality assertion compares the recipe against the same path and checksum the test passed to compose, so it holds for any pass-through and does not redden a resolver regression.\nFINDING reckon/_worker_fence.py:88 non-blocking: the sha256: prefix handling that _checksum_text exists for, and its mirror at reckon/nested_launch.py:531, are asserted by no case; every added test supplies a bare hex digest.\nFINDING reckon/schema/flight.yaml:240 non-blocking: no top-level fence_program key is declared, so strict flight validation refuses the composition this node enables; the manifest declares the gap under outside_scope.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/negative-control-base.log:1 non-blocking: s14's base-revision negative control names a betelgeuse job; only a local pytest base arm exists, so the base job refusal is inherited from s12 rather than measured here.\n",
+  "reuse_search": {
+    "capabilities": [
+      "reading a flight-key path setting",
+      "normalising a recorded checksum",
+      "streaming a file digest",
+      "sealing a directory against a writable grant"
+    ],
+    "judgement": "No owner exists for a checksummed carried artifact named by a flight key, and the bootstrap's _checksum/_digest must be stdlib-only because they are exec'd from a string and cannot import reckon, so that mirror is forced. Path resolution does have an owner in the same module, and carried_fence_program re-implements it inline instead of calling it.",
+    "owners_opened": [
+      "reckon/_worker_fence.py:1263 (_resolve_declared_path, flight path resolution)",
+      "reckon/_worker_fence.py:1201 (_named_protected_paths, protected set from a home)",
+      "reckon/git_dates.py:75 (checksum of a record's core fields)",
+      "reckon/serve.py:503 (sha256 comparison of a payload)"
+    ]
+  },
+  "review_run_id": "r-20261119T092231219415-review-of-a-fenced-job-runs-on-a-node-without-the-fence-program-d2b394f4b622",
+  "reviewed_base_sha": "57235c8b2555ac3c25bd007c0ccecca87413a1e4",
+  "reviewed_head_sha": "d2b394f4b6226a54b282ed129b11338d8030c173",
+  "reviewed_run_id": "r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program",
+  "reviewed_worker_commits": [
+    "d2b394f4b6226a54b282ed129b11338d8030c173"
+  ],
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_job_fence_starts_on_any_node.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/after_suite-1795079570053131941.log",
+      "revision": "d2b394f4b6226a54b282ed129b11338d8030c173",
+      "summary": "74 passed, 2 skipped in 36.90s"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_job_fence_starts_on_any_node.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/baseline_suite-1795079526886071549.log",
+      "revision": "57235c8b2555ac3c25bd007c0ccecca87413a1e4",
+      "summary": "68 passed, 2 skipped in 36.85s"
+    },
+    "importer_arm": {
+      "added_failure_ids": [],
+      "base_ids_file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/importer-base.ids",
+      "failure_count": 9,
+      "head_ids_file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/importer-head.ids",
+      "identical": true
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "failing_ids_absent_at_head": [
+        "test_recipe_carries_the_configured_location_checksum_and_provenance",
+        "test_carried_program_without_a_checksum_refuses_composition",
+        "test_matching_carried_program_starts_the_task_with_an_empty_search_path",
+        "test_a_carried_checksum_mismatch_refuses_before_the_task",
+        "test_an_absent_carried_program_refuses_before_the_task",
+        "test_the_carried_program_and_its_directory_are_not_writable"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/negative-control-base.log",
+      "summary": "6 failed, 10 passed, 2 skipped in 2.18s"
+    },
+    "scoped_gate": {
+      "exit_status": 0,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261119T070055828875-a-fenced-job-runs-on-a-node-without-the-fence-program/scoped-gate-1795079469695194185.log",
+      "revision": "d2b394f4b6226a54b282ed129b11338d8030c173",
+      "summary": "74 passed, 2 skipped in 37.03s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:24:25.387147+00:00",
+  "total": 92
+}
