@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="691">
+<meta name="plan-version" content="692">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2143,6 +2143,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063643919650-qwnw-red-file-a-promotion-finishes-past-a-station-resume" data-who="reckon-build" data-when="2026-11-18T16:19:59.780Z">
     <div class="r-comment-body"><p>no product or test change was needed — tests/test_a_promotion_finishes_past_a_station_resume.py already passes in full at base ab67be8bb1ec (2 passed, EXIT=0) on all_debug with SLURM_JOB_ID unset; the one commit adds the evidence fragment recording the green arms and the mutation arm (1 failed, 1 passed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T054233608999-qwnw-red-file-queue-ordering-reads-history-once" data-who="reckon-build" data-when="2026-11-19T00:36:28.589Z">
+    <div class="r-comment-body"><p>The file already passes at the base revision: the repair (272a3bc0e7) is an ancestor of 6fa2b177c5, so base and head are one tree and this node changes only its evidence fragment. The check ran as an all_debug job with the scheduler id unset and reports 3 passed in 9.72s, EXIT=0; both suite arms report 58 passed at the base revision; the composed worker gate cannot run on this allocation because its task&#x27;s fence re-entry fails with bwrap.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
