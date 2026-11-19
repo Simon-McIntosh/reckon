@@ -24,6 +24,7 @@ from .recovery_liveness import (
     ATTEMPT_RECORD_NAME,
     EXIT_RECORD_NAME,
     WORKER_RECORD_NAME,
+    _run_home_holds_records,
 )
 
 
@@ -179,11 +180,9 @@ def _write_classification_memo(
     """Persist one run's memo in its directory, atomically and best-effort.
 
     The memo is a cache written by a read, so it never brings a run's home into
-    being: a directory that is absent or empty is not yet the run's home, and a
-    memo written into it would make it one — leaving a run directory behind a
-    pointer that never had any, which a discard then finds a marker's place in,
-    reading a deliberate discard for a pointer that only ever vanished. A
-    directory that already holds the run's records is left to keep its memo.
+    being: :func:`_run_home_holds_records` is the one rule for that, shared
+    with the launcher observation the same read may write. A directory that
+    already holds the run's records is left to keep its memo.
 
     Every reader of the live fleet shares these files, so the write lands
     through a rename: a reader either sees the previous memo or this one, never
@@ -193,7 +192,7 @@ def _write_classification_memo(
     path = _classification_memo_path(record)
     if path is None:
         return
-    if not path.parent.is_dir() or not any(path.parent.iterdir()):
+    if not _run_home_holds_records(path.parent):
         return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
