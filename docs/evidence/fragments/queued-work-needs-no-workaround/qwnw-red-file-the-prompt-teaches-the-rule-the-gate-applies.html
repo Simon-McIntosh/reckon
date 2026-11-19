@@ -1,0 +1,22 @@
+<section id="qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-landing">
+<h2>The prompt-contract file was already green at the base revision</h2>
+<p><code>tests/test_the_prompt_teaches_the_rule_the_gate_applies.py</code> passes in full at base <code>28fbf2bc2fe2b27addcf04248210222f2115c1ee</code>, so this node changes no source and no test. The file arrived green: the repair that made it true landed before the first run, as <code>3137d29618</code> (judge the control log by the facts the prompt teaches, which added the test beside the fix) and <code>e35585e5ae</code> (state the arm fallback in the prompt contract). The manifest declares no negative control; the base run has zero failing ids, and the passing run is delivered as §29 asks for a file another node's repair already reached.</p>
+<table id="qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-measures">
+<thead><tr><th>Measure on all_debug</th><th>Base <code>28fbf2bc2fe2</code></th><th>Head <code>28fbf2bc2fe2</code></th></tr></thead>
+<tbody>
+<tr><td>The named file</td><td>6 passed in 0.33s; 0 failing ids; EXIT=0</td><td>6 passed in 0.33s; EXIT=0 (job 1319168, node <code>98dci4-clu-3141</code>)</td></tr>
+<tr><td>Armed suite (<code>test_staged_write_inventory</code> + <code>test_every_shared_home_lock_holds_across_nodes</code>)</td><td>58 passed in 36.20s; 0 failures; EXIT=0</td><td>58 passed in 35.93s; 0 failures; EXIT=0</td></tr>
+</tbody></table>
+<p>The base gate log's own header reads <code># revision: 28fbf2bc2fe2b27addcf04248210222f2115c1ee</code>, and the module under test resolved to the scratch tree's <code>reckon/crew/prompts.py</code>, which is the file the cases read through <code>compose_prompt</code>.</p>
+<h3 id="qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies-negative-control">Mutation that makes the guarded cases fail</h3>
+<p>Since the base run has no failing ids to log beside it, the check was falsified directly: in a scratch copy of the tree the declaration rule's facts sentence, and the manifest gloss's, were reverted to the old wording (<q>the log's first line must repeat the declared string verbatim</q>). All six cases fail and the run exits non-zero, so the file is not vacuous.</p>
+<pre>FAILED tests/test_the_prompt_teaches_the_rule_the_gate_applies.py::test_the_declaration_block_states_the_facts_the_gate_reads
+FAILED tests/test_the_prompt_teaches_the_rule_the_gate_applies.py::test_the_manifest_log_line_states_the_facts_the_gate_reads
+FAILED tests/test_the_prompt_teaches_the_rule_the_gate_applies.py::test_the_declaration_block_no_longer_asks_for_a_verbatim_first_line
+FAILED tests/test_the_prompt_teaches_the_rule_the_gate_applies.py::test_the_manifest_log_line_no_longer_asks_for_a_verbatim_first_line
+FAILED tests/test_the_prompt_teaches_the_rule_the_gate_applies.py::test_both_sites_state_which_arm_decides_the_control
+FAILED tests/test_the_prompt_teaches_the_rule_the_gate_applies.py::test_the_declaration_is_still_shown_as_what_the_worker_applies
+6 failed in 0.84s
+EXIT=1</pre>
+<p>Gate, suite-arm and mutation logs are held beside the run manifest under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T054310379573-qwnw-red-file-the-prompt-teaches-the-rule-the-gate-applies</code>. No Python path changed, so there is no new ruff finding and no figure to draw.</p>
+</section>
