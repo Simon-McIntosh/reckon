@@ -60,9 +60,7 @@ def _promoted_conflict(deliver):
     assert record["merge_conflict"]["paths"] == [SOURCE]
     assert repaired["worktree"].is_dir()
     assert git(repaired["worktree"], "rev-parse", "HEAD") == repaired["head"]
-    assert "second delivered" not in git(
-        repaired["origin"], "show", "main:" + SOURCE
-    )
+    assert "second delivered" not in git(repaired["origin"], "show", "main:" + SOURCE)
     repaired["conflict_head"] = repaired["head"]
     return repaired
 
