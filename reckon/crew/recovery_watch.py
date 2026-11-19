@@ -2332,7 +2332,15 @@ def _fleet_counts(
         from .recovery_classification import delivery_summary
 
         delivery = delivery_summary(rows, pointers=pointers)
-        counts["unpromoted"] = delivery["delivered"]
+        # A run whose manifest reports completion and whose review is missing
+        # or in flight is delivered work too: the review is its gate, so it
+        # carries no promotion evidence to read a delivery status from and the
+        # evidence count alone would report it as nothing waiting. It is
+        # counted with the delivered population its state already sits in.
+        awaiting_review = sum(
+            str(row.get("classification") or "") == "scoring" for row in rows
+        )
+        counts["unpromoted"] = delivery["delivered"] + awaiting_review
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
         counts["oldest_promotion_requested_at"] = delivery[
