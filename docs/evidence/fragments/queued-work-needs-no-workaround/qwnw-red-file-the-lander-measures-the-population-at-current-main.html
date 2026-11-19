@@ -1,0 +1,24 @@
+<section id="qwnw-red-file-the-lander-measures-the-population-at-current-main-record">
+<h2>Cause and verdict</h2>
+<h3 id="qwnw-red-file-the-lander-measures-the-population-at-current-main-cause">Cause</h3>
+<p>One case was red at <code>42fe90d0b0</code>: <code>test_primary_advance_after_measurement_refuses_the_promotion</code> read <code>promoted</code> where it expected <code>promotion-refused</code>. The file passed in full at <code>2a417e6d71</code>, the earlier repair's head (24 passed). The rule that case asserted was replaced afterwards by commit <code>acf72141c9</code>, which removed the <code>_verified_measurement</code> refusal for an advanced primary and substituted a fresh measurement at the advanced primary, keeping only a refusal for a primary that moves again while that refresh is taken.</p>
+<h3 id="qwnw-red-file-the-lander-measures-the-population-at-current-main-verdict">Verdict</h3>
+<p><strong>Test wrong.</strong> The promotion's kept rule is that a moved product is measured again rather than held, which is this file's own subject: the population is measured at current main. The case now asserts that the refreshed record names a primary carrying the promotion's own commits, that the published candidate is the merge of that primary with the reviewed head, and that this candidate is what the local branch and the advertised branch carry. The retained second-move refusal is driven from inside the refresh's own measurement and reads <code>the primary moved again</code>.</p>
+<h3 id="qwnw-red-file-the-lander-measures-the-population-at-current-main-base">Base arm</h3>
+<pre># revision: 42fe90d0b0a46060bafde2490dda7d4002cda478
+# command: PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_lander_measures_the_population.py
+1 failed, 23 passed
+FAILED tests/test_the_lander_measures_the_population.py::test_primary_advance_after_measurement_refuses_the_promotion
+EXIT=1</pre>
+<h3 id="qwnw-red-file-the-lander-measures-the-population-at-current-main-head">Head arm</h3>
+<pre># revision: 3a3f5f2bbd74bcd371a9bdd004e91f1ad5813e79
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_lander_measures_the_population.py
+25 passed
+EXIT=0</pre>
+<h3 id="qwnw-red-file-the-lander-measures-the-population-at-current-main-negative-control">Negative control</h3>
+<p>The base log repeats the failing id the head arm does not fail. At the base revision: <code>assert promoted == promotion-refused</code>, 1 failed, 23 passed, EXIT=1.</p>
+<h3 id="qwnw-red-file-the-lander-measures-the-population-at-current-main-importers">Importer population</h3>
+<p>No test file imports the changed module, so the importing arm is empty by measurement rather than by absence of an instrument: <code>importer_population([tests/test_the_lander_measures_the_population.py], .)</code> answers <code>()</code> because a changed test file is covered by the suite pair, while the same reader over a control module (<code>reckon/crew/queue_landing.py</code>) names 39 importing test files.</p>
+<h3 id="qwnw-red-file-the-lander-measures-the-population-at-current-main-suite">Suite arms</h3>
+<p>The two arms over this node's declared scope passed. Suite arms passed at base and head with no failure id.</p>
+</section>
