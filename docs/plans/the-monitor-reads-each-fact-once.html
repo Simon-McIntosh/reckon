@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="523">
+<meta name="plan-version" content="524">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1927,7 +1927,10 @@ staged paths.</p>
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
 </div>
 <div class="r-comment" data-section="s103" data-id="c-run-r-20261119T221013227007-review-of-a-memoised-pointer-record-reverifies-its-identity-32afa7130ba0" data-who="reckon-build" data-when="2026-11-19T22:12:09.747Z">
-    <div class="r-comment-body"><p>Independent review of r-20261119T194721356715-a-memoised-pointer-record-reverifies-its-identity at eed783c7..32afa71 scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 20 (total 114) with two non-blocking findings at tests/test_a_memoised_pointer_record_reverifies_its_identity.py:109 and reckon/file_memo.py:414; record filed at the head-keyed review-record path and accepted by crew check --review. Added failures: 0, derived from the reviewed run&#x27;s own arms (baseline_suite 58 passed EXIT=0 at eed783c, 0 failing ids; after_suite 61 passed EXIT=0 at e7e7835, 0 failing ids).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261119T194721356715-a-memoised-pointer-record-reverifies-its-identity at eed783c7..32afa71 scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 20 (total 114) with two non-blocking findings at tests/test_a_memoised_pointer_record_reverifies_its_identity.py:109 and reckon/file_memo.py:414; record filed at the head-keyed review-record path and accepted by crew check --review. Added failures: 0, derived from the reviewed run's own arms (baseline_suite 58 passed EXIT=0 at eed783c, 0 failing ids; after_suite 61 passed EXIT=0 at e7e7835, 0 failing ids).</p></div>
+</div>
+<div class="r-comment" data-section="s102" data-id="c-run-r-20261119T145852346953-an-obligation-sweep-lists-live-pointers-once" data-who="reckon-build" data-when="2026-11-19T19:57:41.700Z">
+    <div class="r-comment-body"><p>One obligation-snapshot sweep now publishes the live pointers its derivation already holds for the length of each session&#x27;s slice, so every per-duty reader answers from that listing: a sweep over 200 live pointers with 60 delivered runs owing a review across three sessions lists the live directory 2 times and copies 400 records, against 122 listings and 24,400 records for the base read pattern, and every session&#x27;s published obligations are identical under both patterns.</p></div>
 </div>
 </section>
 </main>
