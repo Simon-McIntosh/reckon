@@ -133,7 +133,11 @@ class World:
 
     def point_the_fence(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Point the fence's node-local seams at this world's directories."""
+        shm = self.root / "shm"
+        shm.mkdir(exist_ok=True)
+        self.shm = shm
         monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", self.node_tmp)
+        monkeypatch.setattr(_worker_fence, "NODE_SHM_ROOT", shm)
         monkeypatch.setenv(
             "RECKON_WORKER_SCRATCH_ROOT", str(self.root / "crew-scratch")
         )
@@ -199,15 +203,11 @@ def test_the_composed_fence_mounts_the_filesystem_read_only(
     world = World(tmp_path)
     world.point_the_fence(monkeypatch)
     argv = world.argv()
-    assert argv[:7] == [
-        "bwrap",
-        "--ro-bind",
-        "/",
-        "/",
-        "--dev",
-        "/dev",
-        "--unshare-pid",
-    ]
+    assert argv[:6] == ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev"]
+    # The fresh devtmpfs brings an empty /dev/shm of its own, so a worker
+    # would lose the node's shared memory; the fixture's own shm directory
+    # stands where the node's would and must be mounted back read-only.
+    assert argv[6:8] == ["--ro-bind", str(world.shm)]
     assert "--dev-bind" not in argv
     root_at = argv.index("--ro-bind")
     for handed in (world.worktree, world.run, world.scratch, world.grant):
@@ -363,15 +363,8 @@ def test_the_command_the_dispatch_composes_is_the_read_only_fence(
         fence=True,
         fence_home=str(world.home),
     )
-    assert plan.argv[:7] == [
-        "bwrap",
-        "--ro-bind",
-        "/",
-        "/",
-        "--dev",
-        "/dev",
-        "--unshare-pid",
-    ]
+    assert plan.argv[:6] == ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev"]
+    assert plan.argv[6] == "--ro-bind"
     separator = plan.argv.index("--")
     assert plan.argv[separator + 1] == "claude"
     assert _bind_index(plan.argv, "--bind", world.grant) > 0

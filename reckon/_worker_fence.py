@@ -1616,6 +1616,12 @@ def worker_scratch_seal_root(
 # temporary files sit on this node-local root shared by one uid.
 NODE_TMP_ROOT = Path("/tmp")  # noqa: S108 - the node's own tmp, never shared
 
+# The node's shared-memory directory. The fence mounts a fresh devtmpfs over
+# /dev so a worker's writes to the device nodes work, and that devtmpfs brings
+# an empty /dev/shm of its own; this path is mounted back read-only so a
+# worker sees the node's shared memory rather than a private empty one.
+NODE_SHM_ROOT = Path("/dev/shm")  # noqa: S108 - not a temporary directory
+
 # The marker directory codex's linux sandbox creates beneath its temp root —
 # the node's own ``/tmp`` when ``TMPDIR`` is not set — to hold the synthetic
 # bubblewrap mount targets and their registry lock. Named once so the runtime
@@ -2097,10 +2103,20 @@ def fence_argv(
         "/",
         "/",
         # The read-only root carries the node's device nodes read-only, and
-        # tools that allocate a pty or write a shared-memory segment need the
-        # writable devtmpfs beneath /dev. It exposes no file of the host's.
+        # opening one for writing on a read-only mount is refused, so a
+        # redirect to /dev/null fails: a worker's own first command would die.
+        # A fresh devtmpfs restores the nodes without exposing a host file.
         "--dev",
         "/dev",
+        # That devtmpfs brings its own empty /dev/shm, which hides the node's
+        # shared-memory directory from the worker. The host's is mounted back
+        # read-only, so everything there reads as the rest of the filesystem
+        # does and a grant is still what makes any of it writable.
+        *(
+            ["--ro-bind", str(NODE_SHM_ROOT), str(NODE_SHM_ROOT)]
+            if NODE_SHM_ROOT.is_dir()
+            else []
+        ),
         *PID_NAMESPACE_ARGS,
     ]
     for source, destination in binds:
