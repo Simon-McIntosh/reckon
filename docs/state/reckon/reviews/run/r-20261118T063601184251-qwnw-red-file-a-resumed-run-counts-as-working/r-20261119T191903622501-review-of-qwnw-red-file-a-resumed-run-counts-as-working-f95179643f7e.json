@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:fleet_summary",
+    "reckon/crew/recovery_watch.py:_session_fleet_counts",
+    "reckon/crew/admission/holds.py:527",
+    "reckon/crew/runs.py:5294"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T20:37:16Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-qwnw-red-file-a-resumed-run-counts-as-working-f95179643f7e",
+      "recorded_at": "2026-11-19T21:21:23.855415+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html",
+      "id": "f82364d5b98",
+      "line": 105,
+      "severity": "blocking",
+      "text": "the done_when requires the importer arm to add no failure against the base, and the record shows four ids added there: comm of verify/imp-base-failed.txt against verify/imp-head-merge-failed.txt yields 4 ids the base arm does not fail (test_a_classification_reads_only_new_stream_lines::test_two_configured_ticks_over_an_unchanged_store_decode_no_document, two test_a_crashed_producer_is_restarted cases, test_producer_takes_new_code::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing), and the fragment accounts for only the last of them, so a promotion reading this node sees the arm's measure unmet."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html",
+      "id": "fe24515a971",
+      "line": 110,
+      "severity": "non-blocking",
+      "text": "the flakiness relief that would satisfy the importer arm exists only as prose: the claim that the producer case passed twice and failed twice in four runs on the primary extraction alone, and the load average it cites, have no log under the run's verify directory, so a reader cannot re-read the measurement that carries the whole arm."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "id": "f766adc7211",
+      "line": 2356,
+      "severity": "non-blocking",
+      "text": "no test distinguishes the merge resolution from the node's dropped override: tests/test_a_resumed_run_counts_as_working.py:236 reads counts[\"unpromoted\"] == 1 at both 0cb37bf4 (verify/head-run.log) and 0588a18c8a (verify/merge-head-run.log), so reinstating the awaiting_review sum beside delivered_rows would redden nothing and the one-row-once property the merge chose is carried only by the comment above it."
+    },
+    {
+      "file": "verify/merge-head-slurm.log",
+      "id": "f93d226861b",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "disclosed in the manifest and the fragment rather than concealed, but the file is empty, as is verify/merge-head2-slurm.log, so the done_when's requirement that the file passes as a job on all_debug has no artefact at any revision, and the recorded gate figure is the in-place run the fragment names at line 115."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_resumed_run_counts_as_working.py:236 asserts counts[\"unpromoted\"] == 1 and reddens on the pre-merge fold-only count (prior review's verify/base-run.log read assert 0 == 1), but it passes on both sides of this delta (verify/head-run.log at 0cb37bf4 and verify/merge-head-run.log at 0588a18c), so nothing fails if the dropped override is reinstated beside delivered_rows at reckon/crew/recovery_watch.py:2356.",
+    "evidence": "the node gate is recorded at 0588a18c8a (verify/merge-head-run.log, 5 passed EXIT=0) and the declared suite at f95179643f7ed325aefebfe201d5c32de7f469a3 (verify/suite-head-final.log, 58 passed EXIT=0), but verify/merge-head-slurm.log and verify/merge-head2-slurm.log are zero bytes so no all_debug job log exists, and the importer arm in the fragment at line 105 lands 4 added failure ids with no measured relief.",
+    "fit": "the resolution leaves reckon/crew/recovery_watch.py:2341-2356 in the primary's own idiom, introduces no new name and carries the rule in the comment above delivered_rows, and the fragment addition follows the section's existing h3/p structure.",
+    "goal_fidelity": "the node's goal is tests/test_a_resumed_run_counts_as_working.py passing at head, and the merge head 0588a18c8a reads 5 passed EXIT=0 in verify/merge-head-run.log while git diff 83c5ba60e2 0588a18c leaves recovery_watch.py identical to the primary, so the conflict resolution keeps the rule and its test green.",
+    "reuse": "the delta removes a duplicate rather than adding one: the awaiting_review sum this run had added to _fleet_counts is gone and the delivered reading stays with delivery_summary at reckon/crew/recovery_classification.py:3568, whose queue figures the merge feeds, matching the primary's 67d2d6890d rule.",
+    "scope_discipline": "the node-owned delta 0cb37bf4..f9517964 is the merge resolution in reckon/crew/recovery_watch.py and the evidence fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html, both inside the declared write paths, and the remaining 440 paths in the diff are the primary branch arriving through merge 0588a18c8a, not authored here."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261119T191903622501-review-of-qwnw-red-file-a-resumed-run-counts-as-working-f95179643f7e",
+  "review_text": "VERDICT goal: the node's goal is tests/test_a_resumed_run_counts_as_working.py passing in full at head, and the gain since review keeps it so: verify/merge-head-run.log and verify/merge-head-slurm-job.log both read # revision=0588a18c8a... with 5 passed EXIT=0, and the review base is git diff 83c5ba60e2 0588a18c, which leaves reckon/crew/recovery_watch.py at the primary's text.\nVERDICT done_when: the gate the done_when names is recorded at the merge head 0588a18c8a (verify/merge-head-run.log, 5 passed EXIT=0) and the declared suite pair at f95179643f (verify/suite-base.log 2 failed 56 passed EXIT=1 against verify/suite-head-final.log 58 passed EXIT=0), but the all_debug job clause has no log because verify/merge-head-slurm.log and verify/merge-head2-slurm.log are empty, and the importer arm at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html:105 adds 4 ids the base arm does not fail.\nVERDICT write_paths: the delta's two node-authored commits touch only reckon/crew/recovery_watch.py and the fragment under docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-resumed-run-counts-as-working.html, both inside the declared paths, with the merge's 440 other paths being the primary branch.\nVERDICT manifest: read at the reviewed run directory; it records commits 46c40734ea, 0cb37bf4fe, 0588a18c8a and f95179643f, the base and head suite JSON, the node gate log path and its own account of the PENDING job substitution.\nVERDICT diff: read commit by commit over 0cb37bf4..f9517964; the merge 0588a18c8a resolves the recovery_watch conflict to the primary's delivered_rows count, and f95179643f adds the repair-round prose to the fragment, 25 lines in one file.\nCALL_SITES: reckon/crew/recovery_watch.py:fleet_summary, reckon/crew/recovery_watch.py:_session_fleet_counts, reckon/crew/admission/holds.py:527, reckon/crew/runs.py:5294",
+  "reviewed_base_sha": "0cb37bf4feabaf9835b4a02c30c246f9ee46029f",
+  "reviewed_head_sha": "f95179643f7ed325aefebfe201d5c32de7f469a3",
+  "reviewed_run_id": "r-20261118T063601184251-qwnw-red-file-a-resumed-run-counts-as-working",
+  "reviewer_run_id": "r-20261119T191903622501-review-of-qwnw-red-file-a-resumed-run-counts-as-working-f95179643f7e",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T21:19:08.650631+00:00",
+  "total": 98
+}
