@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="493">
+<meta name="plan-version" content="494">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1860,6 +1860,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s98" data-id="c-run-r-20261118T223733645223-review-of-plan-resolution-reads-the-directory-once-per-change-a0352ad3d94d" data-who="reckon-build" data-when="2026-11-18T23:14:41.927Z">
     <div class="r-comment-body"><p>review of a0352ad3d94d4717f9dae336d13c04aecfc692f7 against base 4dd916ef308f57b97a58e5406a5ef12f2e7f5508 scores 77/120 (goal_fidelity 12, evidence 12, scope_discipline 20, durability 11, fit 18, reuse 4), with 1 blocking finding at reckon/resources.py:854 and 3 non-blocking findings; the blocking one shows a sibling rewritten in place resolving at head where base refused.</p></div>
+</div>
+<div class="r-comment" data-section="s100" data-id="c-run-r-20261118T234507455358-review-of-owed-plan-reviews-run-on-change-8d97dd96605f" data-who="reckon-build" data-when="2026-11-19T00:01:32.612Z">
+    <div class="r-comment-body"><p>An independent review of run r-20261118T185404657255-owed-plan-reviews-run-on-change at head 8d97dd96605f8e1430a89b2c84cf67b5866fa4c5 scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 14, fit 18, reuse 15 (total 103), with three non-blocking findings — the parity limb&#x27;s delay bound at tests/test_owed_plan_reviews_run_on_change.py:363 and its pass-subset check at :359 cannot fail as written, and reckon/crew/resumption.py:3087 records the pass even when the compose at :3077 raised, delaying a retry by the 60 s interval where the base retried on the next sweep.</p></div>
 </div>
 </section>
 </main>
