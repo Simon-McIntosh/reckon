@@ -30,12 +30,19 @@ EXIT=1
 EXIT=0
 </pre>
 <h3>Arms over the importing test files</h3>
-<p>The two runs cover the 159 test files that import one of the four touched modules.</p>
+<p>Each run covers the same 159 test files that import one of the four touched modules.</p>
 <pre>
 base revision 73b9ac21a50d4566b8bc7ec2cf2c49160af28656
      44 failed, 11 errors, 1516 passed, EXIT=1
 head revision 2ac68d544b115c94b0631ee19706740c4a70b074
+     46 failed, 11 errors, 1514 passed, EXIT=1
+head revision ed49ec95b67179b7df65433119f69f736920525f
      43 failed, 11 errors, 1517 passed, EXIT=1
 </pre>
-<p>The head failing set is a strict subset of the base set, so no failure is added.</p>
+<p>At 2ac68d54 the head arm adds three ids over base, all of them
+<code>test_failed_port_22_fetch_retries_over_443</code> on its three parameters: that test drove the
+<code>cat-file</code> probe the change removed, so commit ed49ec95 repoints it at the shared resolver.
+At ed49ec95, against the base run at 73b9ac21, the head set is a strict subset: the one id the
+base run fails and no head run repeats is a lock-age test.
+</p>
 </section>
