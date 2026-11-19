@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:01:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-cannot-remove-a-siblings-record.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment reports that the three declared negative controls fired - the grant control failing with \"removing a sibling run's record exited zero\", and the paths and filing controls failing the delivery tests - but names no log for those runs, and the reviewed manifest's test_logs lists only base-gate.log, head-gate.log, baseline-suite.log and after-suite.log, so the refusals are claims rather than receipts a reader can open."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-cannot-remove-a-siblings-record.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm receipt head-gate.log runs at f2dc5ca8fd605e8e0c73a2a83a21a8ad318a15f8, one docs-only commit short of the reviewed head 5b03bb98c1de42bc895769da302e03c0dd5779b4, so no green run is recorded at the revision being reviewed; the delta touches only this fragment, but a reader comparing revisions has to reconstruct that fact instead of reading it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044624587031-qwnw-red-file-a-run-review-cannot-remove-a-siblings-record/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite both run tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py - the two files the scoped gate resolved for this node - and neither imports nor contains anything the diff changed, so the 58-passed pair carries no failure signal about this change; the arm the measure actually rests on is the node's own file, logged in base-gate.log and head-gate.log."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that tests/test_a_run_review_cannot_remove_a_siblings_record.py passes in full on the primary branch; f2dc5ca8fd repairs only that file's fixture, and head-gate.log records 7 passed with EXIT=0 at the resulting tree.\nVERDICT done_when: the measure requires the file green as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, a base-first red arm with its failing ids logged beside the head run in the evidence fragment, a dependent-arm suite pair in inline JSON with 40-character revisions, and ruff clean on the changed paths; head-gate.log (7 passed, EXIT=0), base-gate.log (1 failed 6 passed, EXIT=1, failing id test_a_fenced_review_removes_no_siblings_record), the two suite logs, the fragment and the manifest's suite JSON satisfy each clause, with the head-arm revision and the suite pair's coverage recorded as findings.\nVERDICT write_paths: the node declared reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround, its fragment and the figure path; the diff's two paths - tests/test_a_run_review_cannot_remove_a_siblings_record.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-cannot-remove-a-siblings-record.html - are both inside that scope.\nVERDICT manifest: the reviewed manifest.md states status complete, both commit ids, the four gate logs, the base arm as its negative control log, and baseline_suite/after_suite as inline JSON carrying full 40-character revisions; its landing line records 1 failed / 6 passed at base against 7 passed at head.\nVERDICT diff: read commit by commit from 5b0a1f537ef9bbca90907bd16f663732db844fb0: f2dc5ca8fd adds Store.scratch, pins _worker_fence.NODE_TMP_ROOT and node_tmp_runtime_paths inside the fixture's own tree at tests/test_a_run_review_cannot_remove_a_siblings_record.py:107-133, and restores the rubric and pointers keywords the file's two drifted negative controls patch at :198 and :217; 5b03bb98c1 adds the six-line evidence fragment; no assertion is deleted or weakened.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_run_review_cannot_remove_a_siblings_record.py:125-133 pins the node tmp inside the tree the fixture owns, which is what turns the executed case from red in base-gate.log to green in head-gate.log.\nSCORE evidence: 16\nJUSTIFICATION evidence: both gate logs sit on shared storage with a header naming revision, tree and command and a terminal EXIT line, but head-gate.log:1 runs at f2dc5ca8fd rather than the reviewed head and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044624587031-qwnw-red-file-a-run-review-cannot-remove-a-siblings-record/manifest.md:15 measures two files the diff does not touch.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff spans only tests/test_a_run_review_cannot_remove_a_siblings_record.py and the declared evidence fragment, 30 insertions and 4 deletions, with no product source changed.\nSCORE durability: 17\nJUSTIFICATION durability: base-gate.log shows the guard fires - the executed case reddens with \"assert 'own-record-write-ok' in '' at tests/test_a_run_review_cannot_remove_a_siblings_record.py:352\" when the fixture repair is absent - but the diff adds no assertion, so nothing would fail if the pinned node tmp later became a silent no-op.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_run_review_cannot_remove_a_siblings_record.py:125-133 reproduces the pinning idiom of tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176 and tests/test_fenced_worker_tmp_is_its_scratch.py:240-246 without inventing a second one.\nSCORE reuse: 20\nJUSTIFICATION reuse: no helper is added and no capability is forked; the change reuses _worker_fence.NODE_TMP_ROOT at reckon/_worker_fence.py:1608 and the two stub signatures now match their owners at reckon/crew/review.py:3749 and reckon/crew/recovery_review_delivery.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-cannot-remove-a-siblings-record.html:5 non-blocking: the three negative-control refusals are reported with no log named and no control log in the manifest's test_logs, so they are claims rather than receipts.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-run-review-cannot-remove-a-siblings-record.html:4 non-blocking: the head arm runs at f2dc5ca8fd, one docs-only commit short of the reviewed head 5b03bb98c1de42bc895769da302e03c0dd5779b4, so no green run is recorded at the revision under review.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T044624587031-qwnw-red-file-a-run-review-cannot-remove-a-siblings-record/manifest.md:15 non-blocking: the two suite arms cover files the diff does not change, so the 58-passed pair adds no failure signal about this change.",
+  "review_method": "Read the node goal, done_when, write_paths and role from dispatch-detail.json; the reviewed manifest.md; base-gate.log, head-gate.log, baseline-suite.log and after-suite.log; the two-commit diff 5b0a1f53..5b03bb98 commit by commit; and the production seams the changed fixture stubs (reckon/crew/review.py:3749 run_review_record_paths, reckon/crew/recovery_review_delivery.py:51 _review_store_record_paths, reckon/_worker_fence.py:1608 NODE_TMP_ROOT) plus the sibling fixture that owns the node-tmp pinning pattern (tests/test_a_worker_cannot_remove_another_runs_reports.py:170-176). Re-verified that ruff check and ruff format --check report nothing on the changed test file at the reviewed head. The landed change is a test fixture plus an evidence fragment, so no runtime code reaches it and CALL_SITES names none.",
+  "review_run_id": "r-20261119T001602481237-review-of-qwnw-red-file-a-run-review-cannot-remove-a-siblings-record-5b03bb98c1de",
+  "reviewed_base_sha": "5b0a1f537ef9bbca90907bd16f663732db844fb0",
+  "reviewed_head_sha": "5b03bb98c1de42bc895769da302e03c0dd5779b4",
+  "reviewed_run_id": "r-20261118T044624587031-qwnw-red-file-a-run-review-cannot-remove-a-siblings-record",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "source_commits": [
+    "f2dc5ca8fd605e8e0c73a2a83a21a8ad318a15f8",
+    "5b03bb98c1de42bc895769da302e03c0dd5779b4"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:26:24.622427+00:00",
+  "total": 109
+}
