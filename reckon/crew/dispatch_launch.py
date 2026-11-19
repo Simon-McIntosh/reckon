@@ -4344,11 +4344,36 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
             current = read_pointer(run_id)
             current_attempt = int(current.get("attempt") or 1)
             spawning_attempt = int(spec.get("attempt") or current_attempt)
+            # The pointer names the attempt the run's newest launch published,
+            # and its ``attempt_started_at`` is that launch's own instant. A
+            # pointer stamp later than this spec's belongs to a launch made
+            # after this one was built, so this supervisor is superseded.
+            # An earlier stamp is the identity a launch published before this
+            # one took the pointer's own attempt number: a resume starts its
+            # supervisor before it rewrites the pointer, so the pointer still
+            # carries the dispatch-time stamp while that supervisor runs, and
+            # the launch now holding the run's attempt supersedes it. Comparing
+            # the two stamps for difference rather than order refused every
+            # such launch, leaving the run unlaunchable.
+            current_started_ns = _iso_stamp_to_ns(
+                str(current.get("attempt_started_at") or "")
+            )
+            spawning_started_ns = _iso_stamp_to_ns(
+                str(spec.get("attempt_started_at") or "")
+            )
+            if current_started_ns is not None and spawning_started_ns is not None:
+                superseded = current_started_ns > spawning_started_ns
+            else:
+                # An unreadable stamp cannot be placed in order, so a pointer
+                # naming a different instant is still taken as another launch's
+                # identity rather than this one's.
+                superseded = bool(
+                    current.get("attempt_started_at")
+                    and spec.get("attempt_started_at")
+                    and current["attempt_started_at"] != spec["attempt_started_at"]
+                )
             if current.get("phase") == "queued" or (
-                current_attempt >= spawning_attempt
-                and current.get("attempt_started_at")
-                and spec.get("attempt_started_at")
-                and current["attempt_started_at"] != spec["attempt_started_at"]
+                current_attempt >= spawning_attempt and superseded
             ):
                 raise _SupersededSupervisorError(
                     f"run {run_id!r} no longer names this supervisor's launch attempt"
