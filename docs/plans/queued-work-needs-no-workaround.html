@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="855">
+<meta name="plan-version" content="856">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2635,6 +2635,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062620664997-qwnw-red-file-worktree-held-names-an-existing-tree" data-who="reckon-build" data-when="2026-11-19T13:32:05.223Z">
     <div class="r-comment-body"><p>The held-tree file now gives each retained tree work a reader would otherwise hold, so the deleted case is decided by presence and the released case by its release record: at base be17b574 the file read 1 failed, 2 passed (test_a_promoted_run_whose_tree_remains_is_held), and at head it reads 3 passed as an all_debug job; verdict: the test encoded the pre-c778aaa1f6 rule, no product rule repaired and no assertion removed or weakened.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T044630008674-qwnw-red-file-a-lane-family-has-one-owner" data-who="reckon-build" data-when="2026-11-18T23:26:54.434Z">
+    <div class="r-comment-body"><p>Repaired the lane-family consolidation so the node&#x27;s test file passes: backend_dialect in reckon/crew/dispatch_picker.py is now the one reading of a backend&#x27;s dialect that lane_family, reservation_family and the picker snapshot&#x27;s local-wrapper check all call, so the snapshot no longer holds a derivation of its own; tests/test_a_lane_family_has_one_owner.py reads 6 passed at head against 1 failed and 5 passed at base, the scoped all_debug gate reads 64 passed EXIT=0, and the declared suite arms read 58 passed each at base 5b0a1f53 and head 695d78b6, and the importer arm over the 33 test files that import the changed module reads 3 failed and 291 passed at head against 4 failed and 290 passed at base with the same three pre-existing ids.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
