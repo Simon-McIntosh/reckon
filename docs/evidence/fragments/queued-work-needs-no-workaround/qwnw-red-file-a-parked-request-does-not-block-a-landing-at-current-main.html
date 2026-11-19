@@ -31,26 +31,26 @@ EXIT=1
 
 <h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-head-gate">Head gate: an all_debug job with SLURM_JOB_ID unset</h4>
 <pre>
-# revision: c61492e34156f0c1ff22bf3e31cc05c350c48ff2
+# revision: 656144883dee332fa9bb68dca8c3552bebac3f1e
 # host: 98dci4-clu-3141.iter.org
 # partition: all_debug
 # command: env PYTHONPATH=. sh -c 'env -u SLURM_JOB_ID PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_parked_request_does_not_block_a_landing.py'
 ......                                                                   [100%]
-6 passed in 3.10s
+6 passed in 3.21s
 EXIT=0
 </pre>
-<p>The job's own log is <code>scoped-gate-1795120063211370980.log</code> beside the run's manifest.</p>
+<p>The job's own log is <code>scoped-gate-1795120261692806654.log</code> beside the run's manifest. The same command also passed at <code>c61492e341</code> (6 passed, <code>EXIT=0</code>, log <code>scoped-gate-1795120063211370980.log</code>), the commit that carries the repair.</p>
 
 <h4 id="qwnw-red-file-a-parked-request-does-not-block-a-landing-at-current-main-arms">Armed suite arms: no failure added</h4>
 <pre>
-# baseline at 28fbf2bc2fe2b27addcf04248210222f2115c1ee, all_debug job on 98dci4-clu-3142
-# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
-58 passed in 35.15s
+# baseline at 28fbf2bc2fe2b27addcf04248210222f2115c1ee, all_debug job on 98dci4-clu-3141
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'
+58 passed in 35.06s
 EXIT=0
 
-# head at c61492e34156f0c1ff22bf3e31cc05c350c48ff2, all_debug job on 98dci4-clu-3141
-# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py
-58 passed in 35.90s
+# head at 656144883dee332fa9bb68dca8c3552bebac3f1e, all_debug job on 98dci4-clu-3141
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'
+58 passed in 38.20s
 EXIT=0
 </pre>
 <p>The node's change is confined to <code>tests/test_a_parked_request_does_not_block_a_landing.py</code>; no product module is touched, so the arm over the files that import what it changed is the gate itself, where 4 failing ids before the change become none after it.</p>
