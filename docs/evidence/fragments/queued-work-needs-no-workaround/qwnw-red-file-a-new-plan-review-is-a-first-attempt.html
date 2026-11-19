@@ -1,0 +1,102 @@
+<section id="qwnw-red-file-a-new-plan-review-is-a-first-attempt-landing">
+  <h2>A composed plan review is a first attempt, not a redispatch</h2>
+
+  <p><strong>What changed.</strong> Only
+  <code>tests/test_a_new_plan_review_is_a_first_attempt.py</code>. The product
+  tree is untouched: both causes below are a test that encoded a rule the code
+  no longer keeps, and each is stated here against the rule the code now
+  asserts.</p>
+
+  <p><strong>Cause 1 — a composed review's node id carries its rubric (test
+  wrong).</strong> The file named the node <code>plan-review-of-fixture</code>
+  and expected the design review — the rubric <code>crew review --plan</code>
+  defaults to — to dispatch under it. <code>_plan_review_node_id</code> in
+  <code>reckon/crew/recovery_review_subject.py</code> appends
+  <code>PLAN_REVIEW_RUBRIC_SUFFIX</code> (<code>-design</code>) for that rubric,
+  so the design review composed under
+  <code>plan-review-of-fixture-design</code> and the file's pointer assertion
+  failed on the id before reaching its subject. The rule is stated and guarded
+  by <code>tests/test_a_design_and_a_content_review_run_together.py</code>: the
+  design rubric names itself after the plan so two reviews of one plan can run
+  together, while the content rubric keeps the bare id every store reader
+  carries. The constant is now composed from
+  <code>PLAN_REVIEW_NODE_PREFIX</code> and the suffix rather than written out,
+  so the id the cases seed is the id the composer builds.</p>
+
+  <p><strong>Cause 2 — a launch numbers an attempt from the run store (test
+  wrong).</strong> The helper seeded the prior completed run through the ledger
+  envelope and asserted it there through <code>ledger.runs()</code>.
+  <code>dispatch()</code> numbers a node's attempt through
+  <code>preparation._committed_node_runs</code>, which answers from the run
+  store whenever a store exists and returns nothing for a node it holds no row
+  for; it deliberately does not fall back to the ledger, and
+  <code>tests/test_a_launch_reads_only_its_own_rows_from_the_store.py</code>
+  guards that with <code>test_a_node_with_no_stored_row_reads_nothing</code>. A
+  store created for mutable state holds no runs, so the ledger-seeded row was
+  invisible and every case read attempt 1. The helper now seeds through
+  <code>run_store.append</code>, the seam a promotion commits a run's row to,
+  and its positive control reads the rows through
+  <code>preparation._committed_node_runs</code> — the reader dispatch itself
+  uses.</p>
+
+  <p>No assertion is deleted or weakened. The positive control still states the
+  precondition, reads it where the launch reads it, and fails loudly when a
+  seeding did nothing.</p>
+
+  <h3 id="qwnw-red-file-a-new-plan-review-is-a-first-attempts-arms">Measured</h3>
+
+  <table id="qwnw-red-file-a-new-plan-review-is-a-first-attempt-arms">
+    <caption>Each arm is a log whose header lines name the revision, the tree
+    and the command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the named file, base</td>
+        <td><code>6aa1f4dc01</code>, extraction</td>
+        <td>3 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the named file, head</td>
+        <td><code>8e0f2fb9f2</code>, <code>all_debug</code> job on
+        <code>98dci4-clu-3141</code></td>
+        <td><strong>3 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, base arm</td>
+        <td><code>6aa1f4dc01</code>, <code>all_debug</code> job</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, after arm</td>
+        <td><code>8e0f2fb9f2</code>, <code>all_debug</code> job</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>neighbour arm, base</td>
+        <td><code>6aa1f4dc01</code>, extraction</td>
+        <td>44 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>neighbour arm, head</td>
+        <td><code>8e0f2fb9f2</code>, worktree, five files</td>
+        <td>44 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the negative control</td>
+        <td><code>8e0f2fb9f2</code>, worktree</td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The neighbour arm is the five files that exercise, through their front
+  doors, the modules this test drives:
+  <code>test_a_design_and_a_content_review_run_together.py</code> (the rubric
+  suffix and the compose), <code>test_review_plan_command.py</code>,
+  <code>test_dispatch_reads_only_its_node_runs.py</code> and
+  <code>test_a_launch_reads_only_its_own_rows_from_the_store.py</code> (the run
+  store's authority over a node's rows), and
+  <code>test_a_queued_request_is_stamped_at_queue_time.py</code>. It reads 44
+  passed at both revisions, so it adds no failure against the base.</p>
+
+  <h3 id="qwnw-red-file-a-new-plan-review-is-a-first-attempt-control">Negative control</h3>
+
+  <p>The file's declared control: with the marker stripped from the composed
+  review's dispatch options — the compose as it stood before it carried one —
+  the second review records attempt 2 and a redispatch lineage. Stripping it in
+  <code>_composed_review_options</code> turns the two plan-review cases red
+  while the third, which expects a redispatch for any other node, still passes:
+  2 failed, 1 passed, <code>EXIT=1</code>. The first case fails on
+  <code>assert 2 == 1</code> — the defect in one line — and the second on the
+  options it captured carrying no <code>fresh_review</code>.</p>
+
+  <h3 id="qwnw-red-file-a-new-plan-review-is-a-first-attempt-outside">Outside scope</h3>
+
+  <p>None found: no product change and no failure outside this file.</p>
+</section>
