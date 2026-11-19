@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="495">
+<meta name="plan-version" content="496">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1856,7 +1856,7 @@ staged paths.</p>
     <div class="r-comment-body"><p>Independent review of run r-20261118T185308531119-the-review-reflex-recomposes-only-on-change over the three commits gained since df52b278f758 (c128bcb775, 104161b18b, d238c29ffc): parsed, six dimensions scored goal_fidelity 15, evidence 16, scope_discipline 20, durability 18, fit 17, reuse 16, zero added failures derived from the run's own arms (58 passed at 96e3c4b8, 62 passed at d238c29ffc), three non-blocking findings and no blocking one: the claim exclusion and the minute bound both carry a red arm (EXIT=1 with the failing id), while lane-paused and roster-full refusals are still composed on every sweep.</p></div>
 </div>
 <div class="r-comment" data-section="s95" data-id="c-run-r-20261118T185308531119-the-review-reflex-recomposes-only-on-change" data-who="reckon-build" data-when="2026-11-18T19:22:00Z">
-    <div class="r-comment-body"><p>The review reflex composes a dispatch for an awaiting run only when the run&#x27;s pointer, its review records or its lanes&#x27; published admission changed since the same-second composition that refused it — and never longer than a minute — while a refusal that names another run&#x27;s claim is never remembered; 50 delivered runs against a lane refusing every dispatch compose 50 on the first sweep, 0 on the second, and 50 again once the lane is admitted, exactly 1 when one run&#x27;s review record lands, 50 again on the sweep after another run&#x27;s claim is released, and 50 again on the first sweep past the minute with nothing else changed, where the base revision composes 50 on the second sweep and 50 in the record case.</p></div>
+    <div class="r-comment-body"><p>The review reflex composes a dispatch for an awaiting run only when the run's pointer, its review records or its lanes' published admission changed since the same-second composition that refused it — and never longer than a minute — while a refusal that names another run's claim is never remembered; 50 delivered runs against a lane refusing every dispatch compose 50 on the first sweep, 0 on the second, and 50 again once the lane is admitted, exactly 1 when one run's review record lands, 50 again on the sweep after another run's claim is released, and 50 again on the first sweep past the minute with nothing else changed, where the base revision composes 50 on the second sweep and 50 in the record case.</p></div>
 </div>
 <div class="r-comment" data-section="s96" data-id="c-run-r-20261118T200331029792-review-of-an-unchanged-live-listing-decodes-nothing-19e85cef66b1" data-who="reckon-build" data-when="2026-11-18T20:09:22.658Z">
     <div class="r-comment-body"><p>Reviewed r-20261118T185352919071-an-unchanged-live-listing-decodes-nothing at 96e3c4b8a3957e2624866e0dc773042892239333..19e85cef66b1599f2d175f34bd62b4f1639651a8: the decoded-record cache at reckon/crew/runs.py:1482 meets the goal and is read through both readers, the gate asserts the done_when with a base red control quoted, scope is the two declared files; scores goal_fidelity 20, evidence 16, scope_discipline 19, durability 19, fit 16, reuse 5 (total 95), three non-blocking findings — the file_memo capability is duplicated, the unchanged listing still pays a deepcopy per record (measured 1.7-2.0x the decode it replaces), and one assertion compares two listings to each other.</p></div>
@@ -1866,6 +1866,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s100" data-id="c-run-r-20261118T234507455358-review-of-owed-plan-reviews-run-on-change-8d97dd96605f" data-who="reckon-build" data-when="2026-11-19T00:01:32.612Z">
     <div class="r-comment-body"><p>An independent review of run r-20261118T185404657255-owed-plan-reviews-run-on-change at head 8d97dd96605f8e1430a89b2c84cf67b5866fa4c5 scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 14, fit 18, reuse 15 (total 103), with three non-blocking findings — the parity limb's delay bound at tests/test_owed_plan_reviews_run_on_change.py:363 and its pass-subset check at :359 cannot fail as written, and reckon/crew/resumption.py:3087 records the pass even when the compose at :3077 raised, delaying a retry by the 60 s interval where the base retried on the next sweep.</p></div>
+</div>
+<div class="r-comment" data-section="s100" data-id="c-run-r-20261118T185404657255-owed-plan-reviews-run-on-change" data-who="reckon-build" data-when="2026-11-18T21:58:08.322Z">
+    <div class="r-comment-body"><p>The owed-plan-review pass runs when its inputs move or sixty seconds after its last run instead of on every sweep — a footprint of the plans, the review store and the authoring runs is compared with the pass&#x27;s recorded footprint in plan-review-reflex/&lt;project&gt;.pass.json; measured, thirty quiet sweeps run the pass once, each of the three inputs moving costs exactly one more pass, and the interval expiring with nothing changed costs exactly one pass at sixty seconds.</p></div>
 </div>
 </section>
 </main>
