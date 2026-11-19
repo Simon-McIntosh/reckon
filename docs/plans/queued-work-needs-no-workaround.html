@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="946">
+<meta name="plan-version" content="947">
 <meta name="plan-modified" content="2026-11-19">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -2910,6 +2910,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261118T062607467681-qwnw-red-file-a-discarded-request-stays-discarded" data-who="reckon-build" data-when="2026-11-19T02:44:24Z">
     <div class="r-comment-body"><p>A discard now lands while its launch is still composing — promotion.discard refuses only for a live pointer pid or an attempt naming a live supervisor, and supervised_launch refuses a launch whose discard record exists — so the pass can no longer write the request back; tests/test_a_discarded_request_stays_discarded.py reads 9 passed at head where the base reads 2 failed, 7 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261118T063145125197-qwnw-red-file-crew-ephemeral-members" data-who="reckon-build" data-when="2026-11-19T05:37:52.785Z">
+    <div class="r-comment-body"><p>tests/test_crew_ephemeral_members.py reads the roster from its store instead of the retired committed crew.json and passes 1 of 1 at head 0fe1ea662f as an all_debug job against EXIT=1 with one failing id at base b24fe95a78; the single cause is the test, not the product: registration is a store-only transaction that writes no docs/state/&lt;project&gt;/crew.json, and the case&#x27;s byte snapshot of that retired path raised FileNotFoundError before any dispatch assertion; no assertion was deleted or weakened.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261116T071443137816-review-of-qwnw-s30-b6b497202926" data-who="reckon-build" data-when="2026-11-16T07:22:12Z">
     <div class="r-comment-body"><p>Reviewed base 3030c590873cf8f00c302299ab6c7729cb505734 and head b6b49720292648ef69158ca8e5d842c58f3ab911: scores 20/19/20/20/20/20; zero added failures; one non-blocking receipt-binding caveat and no blocking finding.</p></div>
