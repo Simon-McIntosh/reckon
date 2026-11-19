@@ -1,0 +1,45 @@
+<section id="qwnw-red-file-receipt-names-the-rolled-back-row-landing">
+  <h2>A red-file receipt already implemented the rollback wording</h2>
+
+  <p><strong>What was red.</strong> Nothing at the base revision
+  <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>. The named file
+  <code>tests/test_receipt_names_the_rolled_back_row.py</code> ran
+  <code>3 passed in 1.97s</code> with <code>EXIT=0</code> as its own
+  <code>all_debug</code> job (Slurm <code>1329533</code>,
+  <code>COMPLETED 0:0</code>), <code>SLURM_JOB_ID</code> unset, before any
+  merge, pull or edit in the assigned worktree (<code>git status --porcelain</code>
+  empty). The implementation predates this node:
+  <code>73cb04f97e</code> and <code>d9999edebf</code> carry the receipt branch and
+  the per-run run-file follow-through.</p>
+
+  <p><strong>Why the green run is not vacuous.</strong> The head log's
+  <code># module:</code> line resolves
+  <code>reckon/__init__.py</code> inside this worktree, so that tree is what the
+  run imported. The guard was shown to fire: a copy of the base tree in the
+  run's <code>$TMPDIR</code> scratch had
+  <code>_ledger_row_was_rolled_back</code> return <code>False</code>, and the
+  first case then failed with
+  <code>assert 'was written and has been rolled back' in "... is already
+  written; do not re-promote")</code> — <code>1 failed, 2 passed</code>,
+  <code>EXIT=1</code>. That reproduces the defect the file pins from the code
+  under test, so the base pass is the implemented rule, not an unexercised
+  branch.</p>
+
+  <h3 id="qwnw-red-file-receipt-names-the-rolled-back-row-measured">Measured</h3>
+
+  <ul>
+    <li>Head arm, <code>gate-head.log</code> in the run directory:
+      <code>3 passed in 1.97s</code>, <code>EXIT=0</code>, revision
+      <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>.</li>
+    <li>Negative control, <code>negative-control.log</code> in the run
+      directory: <code>1 failed, 2 passed in 2.10s</code>, <code>EXIT=1</code>,
+      failure <code>test_rolled_back_row_receipt_names_re_promotion_as_the_recovery</code>.</li>
+    <li>An arm over the base tree that imports what changed (nothing here)
+      is the same run: the file passes before and after this node's
+      documentation-only change.</li>
+  </ul>
+
+  <p>By the brief's first instruction, a base run that already passes is the
+  deliverable passing run, so this node changes no product source and no test
+  and writes only this fragment.</p>
+</section>
