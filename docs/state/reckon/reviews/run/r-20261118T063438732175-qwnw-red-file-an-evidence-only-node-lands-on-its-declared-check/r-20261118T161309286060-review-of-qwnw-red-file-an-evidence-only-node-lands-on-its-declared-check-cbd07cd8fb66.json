@@ -1,0 +1,160 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assertion": "receipt = json.loads(result.output); landed = json.loads(Path(receipt['record_path']).read_text())",
+      "fails_if": "Restoring the reply's inline record parse makes this a KeyError on 'record_path'; the base arm's own run reproduces exactly that class of failure ('KeyError: record' at base line 143).",
+      "file": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py",
+      "line": 150,
+      "test": "test_an_evidence_only_node_lands_on_its_declared_check"
+    },
+    {
+      "assertion": "record['gate'] == 'passed'",
+      "fails_if": "The promotion records any verdict other than passed for a gate-exit-0 evidence-only run.",
+      "file": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py",
+      "line": 153,
+      "test": "test_an_evidence_only_node_lands_on_its_declared_check"
+    },
+    {
+      "assertion": "record['gate_check']['command'] == _declared_check()",
+      "fails_if": "The record drops gate_check.command or normalises it; it does not fail on a defect in the check the helper builds, because both sides come from that helper.",
+      "file": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py",
+      "line": 154,
+      "test": "test_an_evidence_only_node_lands_on_its_declared_check"
+    },
+    {
+      "assertion": "record['gate_check']['exit_status'] == 0",
+      "fails_if": "The record carries the wrong exit status or omits the field for a gate the command exited 0 on.",
+      "file": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py",
+      "line": 155,
+      "test": "test_an_evidence_only_node_lands_on_its_declared_check"
+    },
+    {
+      "assertion": "record['negative_control']['reason'] == 'node-writes-no-test-path'",
+      "fails_if": "An evidence-only node is exempted under a different reason, or the exemption stops naming one.",
+      "file": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py",
+      "line": 157,
+      "test": "test_an_evidence_only_node_lands_on_its_declared_check"
+    },
+    {
+      "assertion": "result.exit_code != 0 and \"gate 'passed'\" in result.output",
+      "fails_if": "A run whose declared check exited 1 is admitted as landed, or the refusal stops naming the unmet gate.",
+      "file": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py",
+      "line": 163,
+      "test": "test_the_same_node_beside_a_failing_check_is_refused"
+    }
+  ],
+  "assertion_independence": "No added assertion is tautological: :151 reddens when the reply's inline record parse is restored, and :155/:157 compare against literals. Line :154 compares the landed command against the same helper output the test supplied, so it is a round-trip guard only.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:main",
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew_run_commands.py:3483",
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/pending_landing.py:_record_path"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T12:04:04Z",
+  "evidence_limits": [
+    "The base population arm's scratch tree is deleted, so its measured revision rests on the manifest's inline JSON rather than a surviving tree.",
+    "No mutation was applied during this read-only review; each added assertion is judged by the code change that would redden it."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check.html",
+      "line": "76",
+      "severity": "non-blocking",
+      "text": "non-blocking: The fragment asserts 'the population of files importing what it changed is empty and there is no wider arm to take', while the manifest records a ten-file population arm at 60ecc274 and cbd07cd8fb whose failure-id sets compare equal; the arm the done_when requires is absent from the fragment's table and contradicted by its own prose, so the plan-facing record understates the evidence the run took."
+    },
+    {
+      "file": "population-base-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The population arms' log headers name revisions 5aa8d6ca (base) and af388c4708 (head) while the manifest's inline JSON claims 60ecc274 and cbd07cd8fb for the same arms, and the base scratch tree (/tmp/reckon-crew-scratch/.../base-tree-6zxXfo) is deleted, so the base arm's measured revision is asserted rather than evidenced; the identical 54-id failure sets still support the equality claim."
+    },
+    {
+      "file": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py",
+      "line": "154",
+      "severity": "non-blocking",
+      "text": "non-blocking: The added assertion compares the landed gate_check.command against _declared_check(), the same text the test hands to the command, so it holds for any echo of its input and a defect inside the check's own construction moves both sides; it guards field round-trip only, not that the declared check is what the gate ran, which the refusal case at :161 carries."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "The three commits against 60ecc274 change two files, +100/-4: af388c4708 and cbd07cd8fb add the 84-line evidence fragment, and 5aa8d6ca87 extracts _declared_check(), redirects the case to receipt['record_path'] and adds three assertions, none removed.",
+    "done_when": "The source done_when names the file as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no weakened assertion and an importer arm at both revisions; head-arm-final.sbatch declares --partition=all_debug and env -u SLURM_JOB_ID, head-arm-final.log records '2 passed'/EXIT=0, base-arm-named-file.log records '1 failed, 1 passed'/EXIT=1 on the same id, and the manifest's artifacts line carries the population arms",
+    "goal": "The source node's goal is that tests/test_an_evidence_only_node_lands_on_its_declared_check.py passes in full; the case at cbd07cd8fb:137-158 now reads the completion reply's record_path and the landed receipt there, and re-running that file in the reviewed worktree printed '2 passed'.",
+    "manifest": "The reviewed manifest.md reads status: complete, names commits 5aa8d6ca87/af388c4708/cbd07cd8fb, and records head-arm-final.log 2 passed EXIT=0, base-arm-named-file.log 1 failed 1 passed EXIT=1, the scoped gate 58 passed EXIT=0 and both suite arms 58 passed EXIT=0, which I confirmed in each log.",
+    "write_paths": "The source pointer's node.write_paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two paths in 60ecc274..cbd07cd8fb are tests/test_an_evidence_only_node_lands_on_its_declared_check.py and that fragment file, both inside the declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py:151 reddens with the restored reply parse \u2014 base-arm-named-file.log quotes 'KeyError: record' at line 143 of the base file \u2014 but :154 compares the landed row against the same helper output handed to the command.",
+    "evidence": "head-arm-final.sbatch and head-arm-final.log show the gate as all_debug job 1327158 with env -u SLURM_JOB_ID printing '2 passed'/EXIT=0, but population-base-arm.log:1 names revision 5aa8d6ca where the manifest's inline JSON claims 60ecc274 for that arm.",
+    "fit": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py:100 follows the module's private-helper idiom and :150-151 reads the receipt at record_path as tests/test_a_finished_pending_landing_retires_its_run.py does.",
+    "goal_fidelity": "tests/test_an_evidence_only_node_lands_on_its_declared_check.py:151-158 passes in full at cbd07cd8fb \u2014 I re-ran the named file there and saw '2 passed in 1.50s' \u2014 with only the promotion to the primary branch outstanding.",
+    "reuse": "The only added definition is the test-local _declared_check() at tests/test_an_evidence_only_node_lands_on_its_declared_check.py:100; a search of tests/ for a shared builder of a --gate-command string found 42 files passing it inline and no owner, and no production module was added.",
+    "scope_discipline": "git diff 60ecc274..cbd07cd8fb touches only tests/test_an_evidence_only_node_lands_on_its_declared_check.py and the declared fragment under docs/evidence/fragments/queued-work-needs-no-workaround, with no module under reckon/ changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is that tests/test_an_evidence_only_node_lands_on_its_declared_check.py passes in full; the case at cbd07cd8fb:137-158 now reads the completion reply's record_path and the landed receipt there, and re-running that file in the reviewed worktree printed '2 passed'.\nVERDICT done_when: The source done_when names the file as an all_debug job with SLURM_JOB_ID unset, a verdict per cause, no weakened assertion and an importer arm at both revisions; head-arm-final.sbatch declares --partition=all_debug and env -u SLURM_JOB_ID, head-arm-final.log records '2 passed'/EXIT=0, base-arm-named-file.log records '1 failed, 1 passed'/EXIT=1 on the same id, and the manifest's artifacts line carries the population arms\nVERDICT write_paths: The source pointer's node.write_paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the two paths in 60ecc274..cbd07cd8fb are tests/test_an_evidence_only_node_lands_on_its_declared_check.py and that fragment file, both inside the declared paths.\nVERDICT manifest: The reviewed manifest.md reads status: complete, names commits 5aa8d6ca87/af388c4708/cbd07cd8fb, and records head-arm-final.log 2 passed EXIT=0, base-arm-named-file.log 1 failed 1 passed EXIT=1, the scoped gate 58 passed EXIT=0 and both suite arms 58 passed EXIT=0, which I confirmed in each log.\nVERDICT diff: The three commits against 60ecc274 change two files, +100/-4: af388c4708 and cbd07cd8fb add the 84-line evidence fragment, and 5aa8d6ca87 extracts _declared_check(), redirects the case to receipt['record_path'] and adds three assertions, none removed.\nCALL_SITES: reckon/cli.py:main, reckon/crew_run_commands.py:crew_complete, reckon/crew_run_commands.py:3483, reckon/crew/promotion.py:complete, reckon/crew/pending_landing.py:_record_path\nSCORE goal_fidelity: 19\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 16\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: tests/test_an_evidence_only_node_lands_on_its_declared_check.py:151-158 passes in full at cbd07cd8fb \u2014 I re-ran the named file there and saw '2 passed in 1.50s' \u2014 with only the promotion to the primary branch outstanding.\nJUSTIFICATION evidence: head-arm-final.sbatch and head-arm-final.log show the gate as all_debug job 1327158 with env -u SLURM_JOB_ID printing '2 passed'/EXIT=0, but population-base-arm.log:1 names revision 5aa8d6ca where the manifest's inline JSON claims 60ecc274 for that arm.\nJUSTIFICATION scope_discipline: git diff 60ecc274..cbd07cd8fb touches only tests/test_an_evidence_only_node_lands_on_its_declared_check.py and the declared fragment under docs/evidence/fragments/queued-work-needs-no-workaround, with no module under reckon/ changed.\nJUSTIFICATION durability: tests/test_an_evidence_only_node_lands_on_its_declared_check.py:151 reddens with the restored reply parse \u2014 base-arm-named-file.log quotes 'KeyError: record' at line 143 of the base file \u2014 but :154 compares the landed row against the same helper output handed to the command.\nJUSTIFICATION fit: tests/test_an_evidence_only_node_lands_on_its_declared_check.py:100 follows the module's private-helper idiom and :150-151 reads the receipt at record_path as tests/test_a_finished_pending_landing_retires_its_run.py does.\nJUSTIFICATION reuse: The only added definition is the test-local _declared_check() at tests/test_an_evidence_only_node_lands_on_its_declared_check.py:100; a search of tests/ for a shared builder of a --gate-command string found 42 files passing it inline and no owner, and no production module was added.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check.html:76 non-blocking: The fragment asserts 'the population of files importing what it changed is empty and there is no wider arm to take', while the manifest records a ten-file population arm at 60ecc274 and cbd07cd8fb whose failure-id sets compare equal; the arm the done_when requires is absent from the fragment's table and contradicted by its own prose, so the plan-facing record understates the evidence the run took.\nFINDING population-base-arm.log:1 non-blocking: The population arms' log headers name revisions 5aa8d6ca (base) and af388c4708 (head) while the manifest's inline JSON claims 60ecc274 and cbd07cd8fb for the same arms, and the base scratch tree (/tmp/reckon-crew-scratch/.../base-tree-6zxXfo) is deleted, so the base arm's measured revision is asserted rather than evidenced; the identical 54-id failure sets still support the equality claim.\nFINDING tests/test_an_evidence_only_node_lands_on_its_declared_check.py:154 non-blocking: The added assertion compares the landed gate_check.command against _declared_check(), the same text the test hands to the command, so it holds for any echo of its input and a defect inside the check's own construction moves both sides; it guards field round-trip only, not that the declared check is what the gate ran, which the refusal case at :161 carries.",
+  "reuse_search": {
+    "capabilities": [
+      "declared-check command construction for a promotion case",
+      "reading a landed receipt at the reply's record_path"
+    ],
+    "judgement": "42 test files pass --gate-command inline and no shared builder exists, so _declared_check() extracts this file's own text rather than forking an owner; the record_path read repeats an established test idiom and no production module was added.",
+    "owners_opened": [
+      "tests/test_a_finished_pending_landing_retires_its_run.py (reads receipt at record_path)",
+      "reckon/crew_run_commands.py:3483 (the reply at record_path)",
+      "reckon/crew/pending_landing.py:278 (_record_path)"
+    ]
+  },
+  "review_run_id": "r-20261118T161309286060-review-of-qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check-cbd07cd8fb66",
+  "reviewed_base_sha": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+  "reviewed_head_sha": "cbd07cd8fb667dc2447cc4693b955e28b6187015",
+  "reviewed_run_id": "r-20261118T063438732175-qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check",
+  "reviewed_worker_commits": [
+    "5aa8d6ca872ff3f096f6a532a77602f40725bb59",
+    "af388c4708173d5849d219571e8b1fe717fa188e",
+    "cbd07cd8fb667dc2447cc4693b955e28b6187015"
+  ],
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063438732175-qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check/after_suite-1795017382819626509.log",
+      "revision": "cbd07cd8fb667dc2447cc4693b955e28b6187015",
+      "sha256": "8b9fe6860b2d26a9dde9eda18789516d5b461b468729ae0acd8898adce42e5e5",
+      "summary": "58 passed in 36.41s"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063438732175-qwnw-red-file-an-evidence-only-node-lands-on-its-declared-check/baseline_suite-1795017308571873635.log",
+      "revision": "60ecc274f1bf7008b09057c6a5252423deb4cfe5",
+      "sha256": "906369f59ac5f37056a95a7cd11c246f909b9ca486e38a2173fcd4d5c20b2b77",
+      "summary": "58 passed in 36.62s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T12:55:03.927481+00:00",
+  "total": 109
+}
