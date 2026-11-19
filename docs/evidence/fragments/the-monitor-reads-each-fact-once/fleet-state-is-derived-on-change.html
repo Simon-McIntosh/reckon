@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fleet state derived on change or at the interval</title>
+</head>
+<body>
+<h1>Fleet state derived on change or at the interval</h1>
+
+<p>The station's per-project refresh called <code>obligation_snapshot.fleet_state</code>
+on every tick whose transitions moved, and on a 60 s floor otherwise. A live
+pointer, a run manifest and a plan are the three inputs a derivation is built
+from, and a derivation is a 22.5% share of a tick. The gate now reads those
+three inputs cheaply: the pointer's stored signature, one <code>file_memo</code>
+signature per manifest and one per plan.</p>
+
+<h2 id="fleet-state-is-derived-on-change-measure">Measure</h2>
+<p>Thirty quiet ticks of one second each cost one derivation at head and one at
+base — the base already gates on its 60 s floor — so the count at base is not
+where the defect shows. What the base does not do is derive on an input's
+change: after a live pointer was rewritten at base the next tick derived the
+fleet state 0 times and published nothing new until the interval expired. At
+head each of the three inputs moving costs exactly one derivation on its own
+tick, an unmoved tick costs none, and the obligations a tick publishes equal the
+locked derivation instant, where a no-refresh answer can be up to sixty seconds
+old. Every tick's stored payload identity equals the ungated answer's.</p>
+</body>
+</html>
