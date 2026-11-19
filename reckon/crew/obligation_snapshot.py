@@ -186,6 +186,22 @@ def _read_deferral(path: Path) -> dict[str, Any]:
     return record if isinstance(record, dict) else {}
 
 
+def _carried_deferral(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The deferral a live pointer or a promoted record carries, or None.
+
+    A live run keeps its deferral beside its closure disposition, under the
+    ``acknowledgement`` field; a run already promoted has no pointer, so the
+    deferral is a file of its own whose top level *is* the deferral, carrying
+    ``reason`` and ``until`` with the run and project it names.
+    """
+    recorded = record.get("acknowledgement")
+    if isinstance(recorded, Mapping):
+        return recorded
+    if record.get("until") or record.get("until_condition"):
+        return record
+    return None
+
+
 def deferrals_recorded(project: str) -> bool:
     """Whether any run of this project carries a recorded deferral.
 
@@ -198,7 +214,7 @@ def deferrals_recorded(project: str) -> bool:
     """
     for path in _deferral_files():
         record = _read_deferral(path)
-        if not record or not record.get("acknowledgement"):
+        if not record or _carried_deferral(record) is None:
             continue
         if str(record.get("project") or project) != project:
             continue
@@ -355,35 +371,27 @@ def station_runtime_candidate(
 ) -> tuple[Path | None, str]:
     """The node's station root and which candidate produced it.
 
-    The order is the store's own -- this node's runtime directory, then the
-    per-user runtime directory, then ``TMPDIR`` -- restated here: the prompt
-    hook loads this module by file path and cannot reach ``reckon.crew``.
+    Resolved by :func:`reckon.node_runtime.runtime_root_candidate`, which the
+    station's store and the dispatch that asks a session host read too. It is
+    stated outside the crew package because the prompt hook loads this module
+    by file path and cannot reach ``reckon.crew``.
     """
-    env = os.environ if environ is None else environ
-    runtime = str(env.get("XDG_RUNTIME_DIR") or "").strip()
-    if runtime:
-        return Path(runtime), "runtime-directory"
-    run_user = (
-        Path(run_user_root)
-        if run_user_root is not None
-        else Path("/run/user/" + str(os.getuid()))
+    from reckon import node_runtime
+
+    return node_runtime.runtime_root_candidate(
+        environ=environ, run_user_root=run_user_root
     )
-    if run_user.is_dir():
-        return run_user, "per-user-runtime"
-    scratch = str(env.get("TMPDIR") or "").strip()
-    if scratch:
-        return Path(scratch), "scratch"
-    return None, "none"
 
 
 STATION_SNAPSHOT_NAME = "station-snapshot.json"
 STATION_HEARTBEAT_NAME = "station-heartbeat.json"
-STATION_DATABASE_NAME = "station.sqlite3"
 
 
 def station_database_name() -> str:
-    """The store's own file name, restated for the same reason."""
-    return STATION_DATABASE_NAME
+    """The store's own file name, read from the one definition of it."""
+    from reckon import node_runtime
+
+    return node_runtime.STATION_DATABASE_NAME
 
 
 # A heartbeat older than this is reported stale rather than trusted: the

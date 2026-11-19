@@ -202,7 +202,7 @@ DUTY_ROW_FIELDS = (
     # text quotes.
     "review_owner",
     "reflex_window_seconds",
-    # An overdue remedy's time-dependent intervals; see refresh_overdue_remedy.
+    # An overdue remedy's time-dependent intervals; see obligation_snapshot.refresh_overdue_remedy.
     "overdue_remedy",
     "refused_at",
     "queued_at",
@@ -1295,8 +1295,6 @@ def _overdue_remedy(
 # is where the render lives and this module composes through its copy.
 _render_overdue_remedy = obligation_snapshot._render_overdue_remedy
 _overdue_figure = obligation_snapshot._overdue_figure
-_age_of_instant = obligation_snapshot._age_of_instant
-refresh_overdue_remedy = obligation_snapshot.refresh_overdue_remedy
 
 
 def _reflex_review_command(

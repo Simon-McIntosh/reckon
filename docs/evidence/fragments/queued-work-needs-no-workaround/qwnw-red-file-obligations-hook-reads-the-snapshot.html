@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Obligations hook reads the snapshot — evidence</title>
+<meta name="docs-project" content="reckon">
+<style>
+
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 62rem; padding: 0 1rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #bbb; padding: .4rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; }
+  code { background: #f5f5f5; padding: .1rem .25rem; }
+</style>
+</head>
+<body>
+<h1>Obligations hook reads the snapshot</h1>
+<p>Node <code>qwnw-red-file-obligations-hook-reads-the-snapshot</code>. The done-when
+is <code>tests/test_obligations_hook_reads_the_snapshot.py</code> passing in full at
+head: a fresh snapshot's checklist is rendered by the prompt hook without loading
+the crew facade or the derivation modules it imports.</p>
+
+<h2>Base run: the two failing ids</h2>
+<p>At base revision <code>42fe90d0b0a46060bafde2490dda7d4002cda478</code>, over an
+extraction of that revision with the node file as its only selection, the run was
+<strong>2 failed, 7 passed</strong> (<code>EXIT=1</code>):</p>
+<table>
+<tr><th>Failing id</th><th>Failure</th></tr>
+<tr><td><code>test_the_prompt_path_loads_no_derivation_module</code></td>
+<td><code>AssertionError</code>: the hook's interpreter loaded
+<code>['reckon._backends', 'reckon._plan_html', 'reckon.ledger']</code></td></tr>
+<tr><td><code>test_each_not_fresh_reason_speaks_once_and_leaves_the_snapshot_alone</code></td>
+<td><code>json.decoder.JSONDecodeError</code>: the hook printed nothing for the
+absent-producer case, so stdout was empty</td></tr>
+</table>
+
+<h2>Each cause with its verdict</h2>
+<table>
+<tr><th>Cause</th><th>Verdict</th><th>Repair</th></tr>
+<tr><td><code>station_runtime_candidate</code> resolved the station directory
+through the station store, which imports the crew facade</td>
+<td>product wrong</td>
+<td>the candidate order moved to a stdlib-only module outside the package, read
+by the store, the dispatch and the hook's reader alike</td></tr>
+<tr><td><code>reapply_acknowledgements</code> imported the derivation for every
+fresh snapshot, whether or not a deferral was recorded</td>
+<td>product wrong</td>
+<td>a cheap file read of the recorded deferrals answers it first; the derivation
+is imported only when one is in force. A promoted run's deferral, whose file's
+top level <em>is</em> the deferral, is now recognised beside a live pointer's</td></tr>
+<tr><td><code>_row_with_age</code> re-rendered an overdue duty's remedy through
+the derivation</td><td>product wrong</td>
+<td>the render lives with the reader that refreshes the row's age, and the
+derivation composes through it</td></tr>
+<tr><td>the absent-producer case published no live run, so the hook stayed
+silent by its own rule</td><td>test wrong</td>
+<td>the case now holds a live run, matching the rule the code keeps: a session
+holding no unsettled pointer hears nothing</td></tr>
+</table>
+
+<h2>Head run</h2>
+<p>At head, as a job on <code>all_debug</code> with <code>SLURM_JOB_ID</code>
+unset inside the job: <strong>9 passed</strong>, <code>EXIT=0</code>.</p>
+
+<h2>Repair round</h2>
+<p>The reviewer's blocking finding on the deferral reader is answered by the
+promoted-record shape above, with a test that fails when the detector is narrowed
+back to the live-pointer shape alone. The two alias exports left behind by the
+render move are gone, and the candidate order is stated once.</p>
+</body>
+</html>

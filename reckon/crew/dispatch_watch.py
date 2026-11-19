@@ -24,6 +24,7 @@ from typing import (
 )
 from reckon import (
     _store,
+    node_runtime,
 )
 from reckon.crew.node import (
     CrewError,
@@ -596,21 +597,9 @@ def session_host_runtime_candidate(
     values, exactly as ``reckon.host.host_facts`` does; the defaults are the
     process's own environment and the node's per-user runtime directory.
     """
-    env = os.environ if environ is None else environ
-    runtime = str(env.get("XDG_RUNTIME_DIR") or "").strip()
-    if runtime:
-        return Path(runtime), "runtime-directory"
-    run_user = (
-        Path(run_user_root)
-        if run_user_root is not None
-        else Path(f"/run/user/{os.getuid()}")
+    return node_runtime.runtime_root_candidate(
+        environ=environ, run_user_root=run_user_root
     )
-    if run_user.is_dir():
-        return run_user, "per-user-runtime"
-    scratch = str(env.get("TMPDIR") or "").strip()
-    if scratch:
-        return Path(scratch), "scratch"
-    return None, "none"
 
 
 def session_host_runtime_root(
