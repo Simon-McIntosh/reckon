@@ -1,0 +1,101 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [],
+  "assertion_independence": "The diff adds no assertion: all three commits touch one evidence fragment and no Python, so there is no assertion whose two sides could move together. The fragment's three rows are prose claims about existing logs; none is asserted by any test.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T16:22:38Z",
+  "evidence_limits": [
+    "The review is a reading of the recorded artefacts; no suite was re-run and no mutation was applied, per the review bound.",
+    "The all_debug clause of the done_when's measure was corroborated with `sacct -j 1331236,1331278`, which shows both COMPLETED on partition all_debug with ExitCode 0:0; the run logs themselves carry no partition header line.",
+    "The added-failure figures come from the reviewed run's own baseline_suite and after_suite logs, both of which end with a bare EXIT=0 and report 58 passed."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: commit 7de9f7b6e9 renamed the table's second column from `revision` to `failed` at line 24 but left the base-run row's 40-character sha 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061 in that column at line 28, so the fragment's only table reports a commit id under a failure-count heading and a reader cannot tell which rows' second cell is a count."
+    },
+    {
+      "file": "manifest.md",
+      "line": "tests",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's `tests:` line names the armed scoped gate over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the gate the done_when names, tests/test_crew_member_reaping.py, so promotion's receipt re-runs a suite that does not execute the node's own measure and the named-file run survives only in test_logs."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The change adds no runtime code and edits only an evidence fragment under docs/evidence/, so no production call site can reach it; the landed file is unreferenced by any module and is served only as a static document fragment.",
+    "diff": "Read all three commits against 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061: 9fa06aa2 adds the 46-line fragment, 0b4644e4 rewrites its arm rows to name the armed suite's own counts, and 7de9f7b6e9 relabels the table's second column revision->failed, which left the base-run row's sha 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061 under the `failed` heading at line 28.",
+    "done_when": "The done_when requires the named file passing at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, and both armed arms recorded as inline JSON with 40-character revisions; the manifest carries baseline_suite at 7c481b65f22d and after_suite at 7de9f7b6e9, each completed true with failure_count 0 and ids [], sacct shows jobs 1331236 and 1331278 COMPLETED on all_debug with exit 0:0, and logs/base-run.sh unsets SLURM_JOB_ID at line 15 before pytest runs, but the manifest's `tests` command does not name the measured file.",
+    "goal": "The node's goal is `Make tests/test_crew_member_reaping.py pass in full on the primary branch`; logs/base-run.log records `1 passed in 1.01s` with EXIT=0 at 7c481b65f22d and logs/head-run.log records `1 passed in 2.63s` with EXIT=0 at 7de9f7b6e9, and the diff adds only the evidence fragment; plan \u00a729's deliverable permits a file another node's repair already made green to be delivered with the passing run, which is exactly what landed.",
+    "manifest": "manifest.md states status complete, the three commits 9fa06aa2/0b4644e4/7de9f7b6e9, one changed path, both armed arms with revision, exit_status, completed true, failure_count 0 and failure_ids [], the base and head run logs, and a checkpoint claiming the manifest audit is clean; its negative_control_log reads `none` with the reason that the named file is green at base, which matches logs/base-run.log.",
+    "write_paths": "The source pointer declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and two files beneath it as write paths, and the single changed path in 7c481b65f22d..7de9f7b6e9, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html, is inside the third of those."
+  },
+  "justifications": {
+    "durability": "The diff adds no assertion at all \u2014 every figure in qwnw-red-file-crew-member-reaping.html:24-40 is prose about logs \u2014 and the mislabelled cell at line 28 is a drift nothing caught.",
+    "evidence": "manifest.md's `tests:` line names the armed scoped gate over tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the measured tests/test_crew_member_reaping.py, so the promoted receipt re-runs a measure the done_when does not name.",
+    "fit": "qwnw-red-file-crew-member-reaping.html:1-3 follows the section-plus-table shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-merged-section-still-declared-open-is-an-obligation-codex.html:1-11 and names no forbidden identifier.",
+    "goal_fidelity": "logs/head-run.log records 1 passed EXIT=0 for tests/test_crew_member_reaping.py at 7de9f7b6e983, and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html:4-10 delivers that passing run as plan \u00a729 permits.",
+    "reuse": "The diff adds no function, class or module, so there is no capability to fork; a search of docs/evidence found no generator for these fragments, which are hand-authored HTML.",
+    "scope_discipline": "The whole diff is one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html, inside the declared docs/evidence/fragments/queued-work-needs-no-workaround path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is `Make tests/test_crew_member_reaping.py pass in full on the primary branch`; logs/base-run.log records `1 passed in 1.01s` with EXIT=0 at 7c481b65f22d and logs/head-run.log records `1 passed in 2.63s` with EXIT=0 at 7de9f7b6e9, and the diff adds only the evidence fragment.\nVERDICT done_when: The done_when requires the named file passing at head as an all_debug job with SLURM_JOB_ID unset and its output on shared storage, plus both arms as inline JSON with 40-character revisions; the arms are recorded completed with failure_count 0 and sacct confirms jobs 1331236 and 1331278 ran on all_debug, but manifest.md's `tests:` line names the armed scoped gate rather than tests/test_crew_member_reaping.py.\nVERDICT write_paths: The source pointer declares reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround; the single changed path docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html is inside them.\nVERDICT manifest: manifest.md records status complete, commits 9fa06aa2/0b4644e4/7de9f7b6e9, both armed arms with completed true and failure_count 0, and the base and head run logs, all of which reconcile with the logs on disk.\nVERDICT diff: Read 9fa06aa227132252fc791e5899627517b2f6fa38, 0b4644e4645bd5ad1b0feb8397e960e522d3c272f and 7de9f7b6e983aa324600780926acad181375b61e against 7c481b65f22d; they add and then reword one evidence fragment, and 7de9f7b6e9's column rename leaves the base-run row's sha under the `failed` heading at line 28.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: logs/head-run.log records 1 passed EXIT=0 for tests/test_crew_member_reaping.py at 7de9f7b6e983, and qwnw-red-file-crew-member-reaping.html:4-10 delivers that passing run as plan section 29 permits.\nSCORE evidence: 15\nJUSTIFICATION evidence: manifest.md's `tests:` line names tests/test_staged_write_inventory.py and tests/test_every_shared_home_lock_holds_across_nodes.py rather than the measured tests/test_crew_member_reaping.py, so promotion's receipt re-runs a measure the done_when does not name.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html, inside the declared docs/evidence/fragments/queued-work-needs-no-workaround path.\nSCORE durability: 8\nJUSTIFICATION durability: the diff adds no assertion at all, every figure in qwnw-red-file-crew-member-reaping.html:24-40 being prose about logs, and the mislabelled cell at line 28 is drift nothing caught.\nSCORE fit: 17\nJUSTIFICATION fit: qwnw-red-file-crew-member-reaping.html:1-23 follows the section-plus-table shape of docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-merged-section-still-declared-open-is-an-obligation-codex.html:1-14 and names no forbidden identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, and a search of docs/evidence found no generator owning fragment composition, so there is no capability to fork.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-member-reaping.html:28 non-blocking: commit 7de9f7b6e9 renamed the second column to `failed` at line 24 but left the base-run row's sha 7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061 in that column, so the table reports a commit id as a failure count.\nFINDING manifest.md:tests non-blocking: the manifest's `tests:` line names the armed scoped gate rather than the done_when's named file, so promotion's receipt re-runs a suite that does not execute the node's own measure and the named-file run survives only in test_logs.",
+  "reuse_search": {
+    "capabilities": [
+      "evidence fragment layout",
+      "arm table with revision and result columns"
+    ],
+    "judgement": "The landed fragment adds prose and a table in the same hand-authored shape its siblings use; no module or template owns fragment composition, so there is nothing to extend.",
+    "owners_opened": [
+      "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-merged-section-still-declared-open-is-an-obligation-codex.html:1-17",
+      "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-crew-view-serves-every-view-head.html:1"
+    ]
+  },
+  "review_run_id": "r-20261119T145921771810-review-of-qwnw-red-file-crew-member-reaping-7de9f7b6e983",
+  "reviewed_base_sha": "7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061",
+  "reviewed_head_sha": "7de9f7b6e983aa324600780926acad181375b61e",
+  "reviewed_run_id": "r-20261118T063141366062-qwnw-red-file-crew-member-reaping",
+  "reviewed_worker_commits": [
+    "9fa06aa227132252fc791e5899627517b2f6fa38",
+    "0b4644e4645bd5ad1b0feb8397d60e522d3c272f",
+    "7de9f7b6e983aa324600780926acad181375b61e"
+  ],
+  "scores": {
+    "durability": 8,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063141366062-qwnw-red-file-crew-member-reaping/after_suite-1795100013772034566.log",
+      "revision": "7de9f7b6e983aa324600780926acad181375b61e",
+      "summary": "58 passed in 35.47s"
+    },
+    "baseline_suite": {
+      "command": "env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py'",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T063141366062-qwnw-red-file-crew-member-reaping/baseline_suite-1795099938600048379.log",
+      "revision": "7c481b65f22d8bb7d27b8f9ce15d52a57f7a7061",
+      "summary": "58 passed in 36.60s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T16:51:00.660358+00:00",
+  "total": 98
+}
