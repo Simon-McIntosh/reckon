@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:2751",
+    "reckon/mcp.py:1344",
+    "reckon/doccheck.py:1972"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T17:02:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261118T062842884752-qwnw-red-file-promotion-queue-drains-at-slot-speed/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The reviewed run's baseline_suite value ends mid-string at '{\"revision\": \"84df41f817943ad9f228ac90491b8faf87dbd2c1\", \"command\": \"PYTHONPATH=. .venv 2>/dev/null; true' with no closing brace, and the manifest carries no after_suite line at all, so the done_when clause requiring both arms recorded as inline JSON with full 40-character revisions is unmet; the facts survive only in the arm logs baseline_suite-1795076626750022632.log and after_suite-1795076702037084818.log (58 passed, EXIT=0 at each arm)."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-queue-drains-at-slot-speed.html",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "The twenty-run gap probe and the pinned runs at lines 20-38 come from a probe the fragment itself states is 'not committed', so the central negative result (the 2.06 s red was scheduler contention, not the queue) cannot be re-run or checked against the instrument that days later still has no file; the fragment's only reproducible artefacts are the red run and the green gate."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-queue-drains-at-slot-speed.html",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "The fragment claims the red and every later green ran under 'the same tree and the same command', but the red run at lines 10-11 is recorded as 'PYTHONPATH=. timeout 600 .venv/bin/python -m pytest ... | tail -40' and the head gate that passed ran 'env PYTHONPATH=. sh -c PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_promotion_queue_drains_at_slot_speed.py' on host 98dci4-clu-3141 in tree /tmp/mcintos-landing-375cee6d8b21-7qufkl/tree, so the identity the fragment leans on is not what its own records show."
+    }
+  ],
+  "notes": "Scores are the node's own work: the goal is met (4 passed at head) and the change is scoped to a single declared evidence path, but evidence is held back by the truncated cross-arm record and the uncommitted probe that carries the negative result. added_failure_count is derived from the reviewed run's own gate logs: baseline_suite-1795076626750022632.log reads '58 passed in 41.90s' with EXIT=0 and after_suite-1795076702037084818.log reads '58 passed in 42.42s' with EXIT=0, neither holding a FAILED id, so base and head failure sets are identical and empty.",
+  "project": "reckon",
+  "review_run_id": "r-20261119T083001638711-review-of-qwnw-red-file-promotion-queue-drains-at-slot-speed-7b8b23e6bbf0",
+  "reviewed_base_sha": "84df41f817943ad9f228ac90491b8faf87dbd2c1",
+  "reviewed_commits": [
+    "7b8b23e6bbf0a90209c22e6e97f21551a9a7f4f9"
+  ],
+  "reviewed_head_sha": "7b8b23e6bbf0a90209c22e6e97f21551a9a7f4f9",
+  "reviewed_node": "qwnw-red-file-promotion-queue-drains-at-slot-speed",
+  "reviewed_run_id": "r-20261118T062842884752-qwnw-red-file-promotion-queue-drains-at-slot-speed",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T17:28:31.366983+00:00",
+  "total": 103,
+  "verdicts": {
+    "diff": "Read the single commit 7b8b23e6 against base 84df41f8: one new 46-line evidence fragment headed 'A negative result' that transcribes its red base run, a temporary twenty-run gap probe, three pinned-run gaps and a verdict that no product rule broke; no Python, test or product line changes.",
+    "done_when": "The done_when's head gate on all_debug and the base negative control are recorded (4 passed EXIT=0; F... / 1 failed, 3 passed with the failing id in the fragment), but its clause requiring both suite arms as inline JSON with full revisions is unmet: manifest.md:15 truncates baseline_suite and has no after_suite, and the all_debug venue and SLURM_JOB_ID-unset condition appear only in the manifest's landing prose, not in any gate header.",
+    "goal": "The node goal is to make tests/test_promotion_queue_drains_at_slot_speed.py pass in full on the primary branch; the head gate at 7b8b23e6 records the named file 4 passed in 19.52s with EXIT=0 in scoped-gate-1795076562573550534.log, and the landed diff is only the evidence fragment, so the goal is met by a passing run rather than by a repair.",
+    "manifest": "Read the reviewed run's manifest.md (15 lines, status complete, commits 7b8b23e6bbf0a90209c22e6e97f21551a9a7f4f9, the literal gate command and scoped-gate log); it states 4 passed at base and head and names measurement_module /tmp/mcintos-landing-375cee6d8b21-7qufkl/tree/reckon/crew/promotion_requests.py, but its baseline_suite is truncated JSON and after_suite is absent.",
+    "write_paths": "The declared paths are reckon, tests and docs/evidence/fragments/queued-work-needs-no-workaround plus the node's fragment and figure; the delivered diff at 84df41f8..7b8b23e6 touches exactly one file, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-promotion-queue-drains-at-slot-speed.html, inside the declared scope with no out-of-scope edit."
+  }
+}
