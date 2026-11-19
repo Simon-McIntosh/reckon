@@ -1,0 +1,120 @@
+<section id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-landing">
+  <h2>One fleet-state derivation decodes each live pointer once</h2>
+
+  <p><strong>What was wrong.</strong> A derivation lists the project's live
+  directory once, and the review-dispatch fields and the delivery reading then
+  asked for one run by id through <code>runs.read_pointer</code>, which decoded
+  that run's document again. One sweep over 300 pointers decoded every document
+  three times: 900 decodes, measured at
+  <code>23b901694b4bfec73d95be3a082d4c336d9a4101</code>.</p>
+
+  <p><strong>What changed, at the merged head.</strong> The listing and the
+  by-id read now meet at the same memo. <code>runs._pointer_record</code>
+  fetches a pointer's text only when its stat identity has moved and decodes it
+  through <code>file_memo.memoized</code>, the repository's one owner of
+  parse-per-identity; <code>runs.read_pointer</code> reads through that same
+  function, so a document an earlier listing decoded is answered without
+  reading the file. A derivation therefore reaches each pointer file once,
+  whether it walked the directory or looked a derivation's run up by id, and
+  the count is the population's own: 300 decodes for 300 pointers.</p>
+
+  <p><strong>One rule for the copy.</strong>
+  <code>runs._pointer_as_read</code> is the one place a by-id read becomes the
+  caller's record: it deep-copies and removes the station's pid where the record
+  names it. Deep is load-bearing, not tidier. The memo hands out one shallow
+  copy of a document whose nested values are frozen for the region it was
+  decoded in, so a shallow copy gives the caller nested dispatch options and
+  section records it cannot write — and, where the freeze does not apply, nested
+  values that are the memo's own, so a stamp would reach every later listing.
+  The station-pid removal lives there too, so the single read is the place that
+  answers both.</p>
+
+  <p><strong>The population this node first added is gone.</strong> The merge of
+  primary <code>a61f278b06</code> brought the memo and the held listing, so
+  <code>published_pointers</code> had become a second owner of the same answer —
+  and a worse one: it stat'ed each pointer afresh at publish time, pairing a
+  rewritten file with the older listed content. It is deleted, and
+  <code>obligations.live_pointer_snapshot</code> no longer opens it; the
+  derivation keeps its own listing under <code>_VIEW_LIVE_POINTERS</code>, which
+  is what the guards measure.</p>
+
+  <p><strong>The merge with primary <code>03d91dda</code>.</strong> Primary had
+  widened the by-id read with a third rule: the node's body now lives in the
+  run's own file once it has been moved there, so a record whose
+  <code>node</code> is a mapping has its definition hydrated on read, while a
+  listing still returns the slim record it decoded. The one conflict was
+  <code>read_pointer</code>, where this node had gathered the rules into
+  <code>_pointer_as_read</code> and primary had written them in place. Both
+  survive: the helper now deep-copies, hydrates the definition, then drops the
+  station's pid — hydration where primary put it, before the pid strip — and
+  <code>read_pointer</code> is again that one call. Neither side's rule was
+  dropped and no conflict marker was committed.</p>
+
+  <p><strong>What the merge costs a pre-move pointer.</strong> A pointer written
+  before the body moved names no body file, so hydrating its definition re-reads
+  that pointer's text: once as the reduced record every listing decodes, once
+  for the body fields the reduction dropped. That second read is the pre-move
+  pointer's own one-off and is charged only when a reader asks for the body,
+  which the by-id read does; a pointer written now names
+  <code>node.node_body</code>, so its definition is hydrated from the run's own
+  file and its pointer text is read and decoded once. The arms below measure the
+  current shape: the fixture's pointers name their body file, as the writer
+  produces them, and one derivation still decodes 300 documents for 300
+  pointers.</p>
+
+  <h3 id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-measured">Measured</h3>
+
+  <table id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-arms">
+    <caption>Each arm is a log whose first lines name the revision, tree and
+    command; each last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's file, base arm</td>
+        <td><code>23b901694b4b</code>, extraction</td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code> — 900 decodes for 300 pointers</td></tr>
+      <tr><td>the node's file, durability repair head</td>
+        <td><code>442cb3178b</code>, worktree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the node's file, final head (primary
+        <code>03d91dda</code> merged)</td>
+        <td><code>3f576e4b76</code>, worktree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>primary's live-pointer shape test, final head</td>
+        <td><code>3f576e4b76</code>, worktree</td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the declared suite, final head</td>
+        <td><code>3f576e4b76</code>, worktree</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>the by-id copy guard, with
+        <code>_pointer_as_read</code> reverted to the shallow
+        <code>dict(data)</code></td>
+        <td><code>442cb3178b</code> plus that one-line revert</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base arm's failure is the file's own assertion, quoted from its
+  <code>base-arm-test-fleet-state.log</code>:</p>
+
+  <pre>FAILED tests/test_fleet_state_reads_the_live_pointers_once.py::test_one_derivation_lists_the_live_directory_once - AssertionError: one derivation decoded 900 pointers for a fleet of 300
+assert 900 &lt;= 300
+1 failed, 1 passed in 68.99s (0:01:08)
+EXIT=1</pre>
+
+  <h3 id="qwnw-red-file-fleet-state-reads-the-live-pointers-once-control">Negative control</h3>
+
+  <p>The guard the merge's copy rule rests on is
+  <code>test_a_by_id_read_is_the_callers_own</code>: it writes a nested field of
+  the record it read and then requires the file's bytes, a later listing and a
+  second read to all still hold the record as written. With the deep copy
+  reverted to the shallow <code>dict(data)</code>, that case goes red and the
+  other two stay green:</p>
+
+  <pre>FAILED tests/test_fleet_state_reads_the_live_pointers_once.py::test_a_by_id_read_is_the_callers_own - TypeError: a document handed out inside a read-only region is read-only
+1 failed, 2 passed in 80.68s (0:01:20)
+EXIT=1</pre>
+
+  <p>The log is
+  <code>repair-round-shallow-copy-negative-control.log</code> in the run
+  directory; the revert was restored before the head run above.</p>
+</section>

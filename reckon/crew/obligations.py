@@ -864,6 +864,8 @@ def live_pointer_snapshot(
     # holding a pass whose pointers have gone. A reader below fills it in for
     # this listing; it outlives nothing.
     reviews_token = _VIEW_REVIEWS_IN_FLIGHT.set(None)
+    # A reader that asks for one run by id answers from the memo the listing
+    # filled: a pointer whose stat identity has not moved is decoded once.
     try:
         yield listing
     finally:

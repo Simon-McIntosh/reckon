@@ -1657,7 +1657,7 @@ def _pointer_text(path: Path) -> str:
         with _POINTER_TEXT_LOCK:
             _POINTER_TEXT.pop(key, None)
         raise
-    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    identity = _pointer_identity(info)
     with _POINTER_TEXT_LOCK:
         kept = _POINTER_TEXT.get(key)
     if kept is not None and kept[0] == identity:
@@ -1834,7 +1834,7 @@ def station_pid_on_this_host() -> int | None:
         info = path.stat()
     except OSError:
         return None
-    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    identity = _pointer_identity(info)
     key = str(path)
     with _STATION_PID_LOCK:
         kept = _STATION_PID.get(key)
@@ -1876,17 +1876,61 @@ def pid_belongs_to_the_station(pid: object) -> bool:
     return station is not None and station == pid
 
 
-def read_pointer(run_id: str) -> dict[str, Any]:
-    """Read one run's live pointer, or say which run is unknown.
+def _pointer_identity(info: os.stat_result) -> tuple[int, int, int, int]:
+    """The identity a pointer's bytes are recognised by when it is read again.
+
+    The inode, size and both change stamps: a writer that replaces a pointer
+    moves them, so a value kept under one identity is the file's content until
+    the file moves.
+    """
+    return (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _pointer_as_read(data: Mapping[str, Any]) -> dict[str, Any]:
+    """The record a by-id read answers with, holding no station pid.
+
+    The node's body now lives in the run's own file once it has been moved
+    there, and this is the reader every caller that changes a pointer takes, so
+    the definition is hydrated here: those callers read one shape whichever way
+    the pointer was written, while a listing still returns the slim record it
+    decoded because every fleet-state derivation pays for what it lists.
 
     A record naming this host's station names no process of the run. Every
     launch made from inside the station's own long-lived process is recorded
     through a seam that may hand back the launcher, so the pointer can carry the
     station's pid where the supervisor's belongs; read as written, that pid
     makes ``crew stop``, ``crew discard`` and every liveness reading aim at the
-    process that holds every session's claims. The pid is therefore dropped from
-    this reading — the one reader every one of those callers takes — and the
-    record is left on disk for whatever watchdog wrote it.
+    process that holds every session's claims. An attempt record read as naming
+    no process points at nothing the reading host issued, so the process table
+    probe has no pid of this host's to answer for.
+
+    This reader's callers change what they read — a resume marks its own
+    pointer, an admission pass rewrites one — so the copy is deep and taken
+    here, once for the one run asked about, rather than being charged to every
+    pointer of every pass that only reads the listing. Deep because what those
+    callers change is nested: the dispatch options and the section records
+    inside the document are shared by a shallow copy with the memoised view
+    every later listing reads, and a shallow stamp would reach it.
+    """
+    record = copy.deepcopy(data)
+    if isinstance(record.get("node"), Mapping):
+        record["node"] = node_definition(record)
+    if not pid_belongs_to_the_station(record.get("pid")):
+        return record
+    record.pop("pid", None)
+    record.pop("pid_start_time", None)
+    return record
+
+
+def read_pointer(run_id: str) -> dict[str, Any]:
+    """Read one run's live pointer, or say which run is unknown.
+
+    The document is decoded only when its stat identity has moved: a listing
+    that finds every pointer where its previous pass left it decodes none, and
+    a by-id read of a pointer an earlier listing decoded answers from the same
+    memo without reading the file. The record carries no station pid for the
+    reason :func:`_pointer_as_read` states, and it is left on disk for whatever
+    watchdog wrote it.
     """
     path = pointer_path(run_id)
     try:
@@ -1899,31 +1943,7 @@ def read_pointer(run_id: str) -> dict[str, Any]:
         ) from exc
     if not isinstance(data, dict):
         raise CrewError(f"live pointer for {run_id!r} does not hold an object")
-    # This reader's callers change what they read — a resume marks its own
-    # pointer, an admission pass rewrites one — so the copy is taken here, once
-    # for the one run asked about, rather than being charged to every pointer of
-    # every pass that only reads the listing.
-    record = copy.deepcopy(data)
-    # The node's body lives in the run's own file once it has been moved there,
-    # and this is the reader every caller that changes a pointer takes. The
-    # definition is hydrated here, once for the one run asked about, so those
-    # callers read one shape whichever way the pointer was written; a listing
-    # still returns the slim record it decoded, because every fleet-state
-    # derivation pays for what it lists.
-    if isinstance(record.get("node"), Mapping):
-        record["node"] = node_definition(record)
-    if pid_belongs_to_the_station(record.get("pid")):
-        # Read as naming no process of the run: the station is not one, and a
-        # reader that treats it as one signals or refuses on the node's own
-        # station. An attempt record read as naming no process, pointing at
-        # nothing the reading host issued, so the process table probe has no
-        # pid of this host's to answer for.
-        record = {
-            name: value
-            for name, value in record.items()
-            if name not in ("pid", "pid_start_time")
-        }
-    return record
+    return _pointer_as_read(data)
 
 
 def recorded_dispatch_overrides(record: Mapping[str, Any]) -> tuple[str, ...]:
