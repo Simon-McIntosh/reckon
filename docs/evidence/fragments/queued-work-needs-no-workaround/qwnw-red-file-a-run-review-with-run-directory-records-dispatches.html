@@ -6,12 +6,12 @@
   was red on the primary branch at the revision this dispatch was composed at.
   It was not red at the head of this worktree: the rule it asserts had already
   landed, and the file passes at the base revision without a code change. The
-  delivered run is the file itself at this node's head
-  <code>0559d9168f5c98f3f0c5b3e7660a88065720653d</code>, as a job on
-  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset: 7 passed,
+  delivered run is the file itself at this node's head as the run stood, as a
+  job on <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset: 7 passed,
   <code>EXIT=0</code>. It passes identically at base
   <code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code>, before any change this
-  node made.</p>
+  node made. The revision a run measured is the one its own log names, because
+  it moves with every later commit to this record.</p>
 
   <p><strong>The rule.</strong> A run review delivers its record inside the
   reviewed run's <code>review-records/</code> directory, and
@@ -43,16 +43,16 @@
     <tbody>
       <tr><td>the declared file, job on <code>all_debug</code> with
         <code>SLURM_JOB_ID</code> unset</td>
-        <td><code>0559d9168f5c98f3f0c5b3e7660a88065720653d</code></td>
+        <td>the revision its log names</td>
         <td>7 passed, <code>EXIT=0</code></td></tr>
       <tr><td>negative control: the widened grant any existing run's record
         directory is admitted</td>
-        <td><code>0559d9168f5c98f3f0c5b3e7660a88065720653d</code></td>
+        <td>the revision its log names</td>
         <td>1 failed, 6 passed, <code>EXIT=1</code>;
         <code>test_review_cannot_declare_another_runs_record_directory</code></td></tr>
         <tr><td>negative control: the grant withdrawn for the reviewed run
         itself</td>
-        <td><code>0559d9168f5c98f3f0c5b3e7660a88065720653d</code></td>
+        <td>the revision its log names</td>
         <td>1 failed, 6 passed, <code>EXIT=1</code>;
         <code>test_composed_run_review_records_pass_scope_and_match_the_fence</code></td></tr>
       <tr><td>declared suite, base arm in a scratch extraction of the base
@@ -60,7 +60,7 @@
         <td><code>5b0a1f537ef9bbca90907bd16f663732db844fb0</code></td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
       <tr><td>declared suite, head arm in the worktree</td>
-        <td><code>0559d9168f5c98f3f0c5b3e7660a88065720653d</code></td>
+        <td>the revision its log names</td>
         <td>58 passed, <code>EXIT=0</code></td></tr>
     </tbody>
   </table>
