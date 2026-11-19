@@ -283,18 +283,23 @@ reckon crew budget --list [--group <group>] [--pretty]
 reckon crew check --manifest --run <id>    reckon crew check --review (--run <id> | --record <path>)
 reckon crew census [--apply]    # Lists reckon processes whose recorded owner is dead; with --apply, stops exactly those, printing each.
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
+reckon crew decision record --record <file>    # records one question for the lead with its owning session, recommendation and the work it holds; read them back through `crew(view="decisions")`
+reckon crew declare-gate --run <id> [--project <project>] [--command "<suite command>"] [--partition <partition>]    # names the suite command and partition a run's own gate arms ran with, when they differ from the project's armed command
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --regenerate-path <path> --input <path> --compares-with <measurement> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
 reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
 reckon crew follow --project <project>    reckon crew gc
 reckon crew gate (--pause <reason> | --open) [--pretty]    # prints the shared gate document before and after the change
+reckon crew hold --run <id> --reason <why>    # holds a delivered run out of automatic promotion and landing; `reckon crew release --run <id> --reason <why>` hands it back to the lander
 reckon crew member add    reckon crew member list --project <project>
 reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
+reckon crew promotions [--window <seconds>] [--pretty]    # reports the promotion queue's waiting count, oldest wait and drain rate, so a coordinator can tell whether it is draining
 reckon crew queue edit --run <id> [--brief <file>] [--done-when <measure>] [--write-path <path>] [--time-budget <duration>] [--backend <backend>] [--model <model>] [--project <project>] [--pretty]
 reckon crew queue reprioritise --run <id> --priority <integer> [--reason <why>] [--project <project>] [--pretty]
 reckon crew queue drop --run <id> [--reason <why>] [--project <project>] [--pretty]
+reckon crew record-merge --run <id> --merge <sha> --reason <why>    # records the primary-branch commit that carries a run's reviewed head because a hand merged it rather than the landing pass
 reckon crew recover    reckon crew resume --run <id> --backend <backend> --model <model> --reason <text>
 reckon crew repair --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew repair --review --run <id> --record <path> --set <field=value> --reason <text>
