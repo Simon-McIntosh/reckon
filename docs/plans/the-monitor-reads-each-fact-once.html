@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="502">
+<meta name="plan-version" content="503">
 <meta name="plan-modified" content="2026-11-19">
 </head>
 <body>
@@ -1882,6 +1882,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261118T185401794543-fleet-state-is-derived-on-change" data-who="reckon-build" data-when="2026-11-19T05:28:59.698Z">
     <div class="r-comment-body"><p>Each project's fleet-state derivation now reruns only when one of its inputs moved, or when the 60 s interval expires: the gate reads the live pointer's stored signature, one file_memo signature per run's manifest and one per plan, so thirty quiet one-second ticks derive 1 time, a moved pointer, manifest or plan each derive exactly 1 on its own tick, and the base arm derives 0 on the tick after a pointer move, holding the previous answer until the interval expired.</p></div>
+</div>
+<div class="r-comment" data-section="s97" data-id="c-run-r-20261119T065306517553-review-of-budget-and-picker-history-read-what-changed-08cf09dc1d2c" data-who="reckon-build" data-when="2026-11-19T09:41:15.246Z">
+    <div class="r-comment-body"><p>Reviewed 4dd916ef30..08cf09dc1d (4 files, +522 -8) and recorded a parsed verdict — goal_fidelity 18, evidence 18, scope_discipline 14, durability 17, fit 16, reuse 5 — with added_failure_count 0 from the run&#x27;s own arms (base 58 passed EXIT=0 at 4dd916ef30, after 61 passed EXIT=0 at 08cf09dc1d) and three non-blocking findings: a bespoke bounded memo duplicating reckon/file_memo.py:445, that cache mutated without the lock file_memo holds, and no assertion comparing the new rows with the load() answer they replaced.</p></div>
 </div>
 </section>
 </main>
