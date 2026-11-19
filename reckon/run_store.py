@@ -899,6 +899,56 @@ def stored_run_rows(
         connection.close()
 
 
+#: The fields :func:`reckon.ledger.row_plan` reads to name a row's plan. A
+#: reader asking which stored rows a plan owns needs these three and no others.
+PLAN_OWNER_FIELDS = ("plan", "impl_move", "node_definition")
+
+
+def plan_owner_rows(
+    project: str, *, path: str | Path | None = None
+) -> list[tuple[str, dict[str, Any]]] | None:
+    """Each stored row's run id beside the fields that decide its plan.
+
+    The ``plan`` column is the answer :func:`reckon.ledger.row_plan` gave when
+    the row was written. A rotation washes wide detail out of the store
+    afterwards, and the node definition a brief-carried row's plan is read from
+    is detail, so the column can outlive the evidence it was derived from. A
+    reader that asks which rows a plan owns therefore asks that owner about
+    every row the store holds, which needs nothing but the three fields it
+    reads.
+
+    The projection is taken in SQL — each encoded row is searched for those
+    keys rather than decoded whole — and the answer keeps the order a stored
+    read answers. None means the store is absent, exactly as
+    :func:`stored_run_rows` reports an absent store.
+    """
+    target = store_path() if path is None else Path(path)
+    if not target.exists():
+        return None
+    connection = _open_readonly(target)
+    try:
+        if not _refuse_owed_migration(connection, target):
+            return []
+        projections = []
+        for run_id, payload, detail in _record_rows(
+            connection,
+            schemas=_read_attached_tables(connection, target),
+            project=project,
+            fields=PLAN_OWNER_FIELDS,
+        ):
+            projections.append(
+                (
+                    str(run_id),
+                    {**json.loads(payload), **(json.loads(detail) if detail else {})},
+                )
+            )
+        return projections
+    except sqlite3.Error as error:
+        raise _unreadable(target, f"{type(error).__name__}: {error}") from error
+    finally:
+        connection.close()
+
+
 def project_snapshot(project: str) -> dict[str, Any]:
     """Read complete history, mutable state and revisions in one snapshot.
 
