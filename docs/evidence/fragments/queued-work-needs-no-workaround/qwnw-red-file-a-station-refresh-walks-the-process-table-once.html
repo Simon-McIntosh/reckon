@@ -1,0 +1,18 @@
+<section id="qwnw-red-file-a-station-refresh-walks-the-process-table-once-refresh-region">
+<h2>One refresh, one walk of the process table</h2>
+<p><code>fleet_state</code> declares a process-table region so a refresh that outlasts a beat costs one listing of <code>/proc</code> rather than one per live pointer. The module carried two functions named <code>_derive_fleet_state</code>: the region holder at line 1867 and the body that builds the state at line 1895. The body is the later definition, so importing the module replaced the holder with it and the region was never opened. The body is now <code>_build_fleet_state</code> and the holder calls it.</p>
+<p>Base revision <code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code>, same test file, extracted tree:</p>
+<pre># revision: 9e1dc0dc3e2ce3b478d6d162b32e37d11653c246 (base, extracted from the worktree)
+# tree: /tmp/reckon-crew-scratch/r-20261118T063532591656-.../base-tree-1795018547
+# command: cd $BASE &amp;&amp; PYTHONPATH=$BASE /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_station_refresh_walks_the_process_table_once.py
+FAILED tests/test_a_station_refresh_walks_the_process_table_once.py::test_one_refresh_walks_the_table_once - AssertionError: one refresh over 30 live pointers walked the process table 30 times (1 per pointer)
+1 failed, 3 passed in 1.83s
+EXIT=1</pre>
+<p>Head revision <code>e618bd27c0ecb655b64771bb0c59a1b3261f1c43</code>, as a job on all_debug with <code>SLURM_JOB_ID</code> unset and its log on shared storage:</p>
+<pre># revision: e618bd27c0ecb655b64771bb0c59a1b3261f1c43
+# host: 98dci4-clu-3141.iter.org
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_station_refresh_walks_the_process_table_once.py'
+4 passed in 1.17s
+EXIT=0</pre>
+<p>The head run is the scoped gate log <code>scoped-gate-1795018572555528278.log</code>; the base run is <code>logs/negative-control-base-test.log</code>, and both sit in the run directory.</p>
+</section>

@@ -1,0 +1,43 @@
+<section id="qwnw-red-file-crew-dispatch-guard-red-file-passes-at-head">
+<h2>tests/test_crew_dispatch_guard.py: one red case on the primary branch, cause test-wrong</h2>
+<p>At base <code>7d96b815d9cf590aa98251b510a841595cfdbfdc</code> the file reads 1 failed, 0 errors, 13 passed. The single failing id is <code>tests/test_crew_dispatch_guard.py::test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch</code>. At head <code>2a6d1a960376c9f29db8f075a77557a349497e37</code> the file reads 14 passed, EXIT=0, as an all_debug job.</p>
+<p><strong>Reproduction, quoted from the base run.</strong> The guard compared <code>crew.list_live</code> rows against the in-memory record <code>crew.dispatch</code> returns. <code>list_live</code> returns each live pointer as stored, so the row carries the dispatch-detail file's path where the record carries the fields themselves. A structural walk of each row against its dispatch record named exactly five keys the record holds and the pointer does not, on both runs — <code>argv</code>, <code>competence</code>, <code>peer_scopes</code>, <code>picker_selection</code>, <code>unreconciled_override</code> — and no value differed.</p>
+<pre>FAILED tests/test_crew_dispatch_guard.py::test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch - assert [{'admitted_f...spatch', ...}] == [{'admitted_f...spatch', ...}]
+1 failed, 13 passed in 27.82s
+EXIT=1</pre>
+<p><strong>Verdict: test wrong.</strong> The pointer-shape split is the product's deliberate one (<code>runs.DISPATCH_DETAIL_FIELDS</code>), so no product rule broke; the expectation still assumed the pre-split pointer. It now derives the pointer shape through <code>runs.DISPATCH_DETAIL_FIELDS</code> rather than a literal copy of it, and holds the detached detail to the value the record concluded, so a field cannot silently vanish from the pointer without the case turning red. No assertion was deleted or weakened.</p>
+</section>
+
+<section id="qwnw-red-file-crew-dispatch-guard-runs">
+<h2>Runs</h2>
+<table>
+<thead><tr><th>arm</th><th>revision</th><th>measurement</th></thead>
+<tbody>
+<tr><td>base, named file</td><td><code>7d96b815d9cf590aa98251b510a841595cfdbfdc</code></td><td>1 failed, 13 passed, EXIT=1 (negative-control-base-guard.log)</td></tr>
+<tr><td>head, named file, all_debug</td><td><code>2a6d1a960376c9f29db8f075a77557a349497e37</code></td><td>14 passed, EXIT=0</td></tr>
+<tr><td>base, declared suite</td><td><code>7d96b815d9cf590aa98251b510a841595cfdbfdc</code></td><td>58 passed, EXIT=0</td></tr>
+<tr><td>after, declared suite</td><td><code>2a6d1a960376c9f29db8f075a77557a349497e37</code></td><td>58 passed, EXIT=0</td></tr>
+</tbody>
+</table>
+<p>No product source changed, so no test file imports anything this node altered; the declared suite arms above are the whole arm population, and both read 58 passed, so the change adds no failure.</p>
+</section>
+
+<section id="qwnw-red-file-crew-dispatch-guard-logs">
+<h2>Log headers</h2>
+<pre># head, named file
+# revision: 2a6d1a960376c9f29db8f075a77557a349497e37
+# host: 98dci4-clu-3141.iter.org
+# tree: /tmp/mcintos-landing-342255cb3638-udURfY/tree
+# command: env PYTHONPATH=. sh -c 'PYTHONPATH=. .venv/bin/python -c "import os, reckon.crew.runs as m; print(m.__file__); print(os.getcwd())"; PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_dispatch_guard.py'
+/tmp/mcintos-landing-342255cb3638-udURfY/tree/reckon/crew/runs.py
+/tmp/mcintos-landing-342255cb3638-udURfY/tree
+14 passed in 18.72s
+EXIT=0</pre>
+<pre># base, named file (negative control)
+# revision: 7d96b815d9cf590aa98251b510a841595cfdbfdc (base test file, product tree unchanged)
+# permission: the node's own scratch tree under TMPDIR
+# command: PYTHONPATH=&lt;worktree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_dispatch_guard.py
+FAILED tests/test_crew_dispatch_guard.py::test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch
+1 failed, 13 passed in 27.82s
+EXIT=1</pre>
+</section>

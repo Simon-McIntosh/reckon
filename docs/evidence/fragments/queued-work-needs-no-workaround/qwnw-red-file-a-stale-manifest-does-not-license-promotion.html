@@ -1,0 +1,55 @@
+<section id="qwnw-red-file-a-stale-manifest-does-not-license-promotion-red-file">
+  <h2>A stale manifest does not license promotion: the fixture committed in the wrong tree</h2>
+
+  <p><strong>What was wrong.</strong> At the base revision
+  <code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code> the file
+  <code>tests/test_a_stale_manifest_does_not_license_promotion.py</code> failed
+  one of its four cases:
+  <code>test_a_manifest_newer_than_the_attempt_licenses_promotion</code>. Its
+  fixture committed the run's declared work with
+  <code>_commit_work(repo)</code>, which writes and commits in the repository
+  the run was dispatched from. Dispatch creates the worker's own detached
+  worktree, and <code>record["worktree"]</code> names it. Promotion reads a
+  citation against the tree its record names
+  (<code>_require_commits_beyond_base</code> in
+  <code>reckon/crew/promotion_evidence.py</code>), so a commit on the dispatch
+  repository's branch was outside the run's history and was refused before the
+  review gate that case exercises.</p>
+
+  <p><strong>Verdict: test wrong.</strong> The guard is the rule the product
+  keeps: a run's work is what it committed on its own history, and a citation
+  of a commit the run's tree does not carry is refused. The fixture was the
+  only thing that ignored that; the repair commits the work where a worker
+  commits it, in <code>record["worktree"]</code>. No assertion was changed,
+  deleted or weakened, and no product file changed.</p>
+
+  <h3>Negative control: the base run, with its failing id</h3>
+
+  <pre># revision: 9e1dc0dc3e2ce3b478d6d162b32e37d11653c246
+# tree: /tmp/reckon-crew-scratch/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/tree-base
+# command: PYTHONPATH=/tmp/reckon-crew-scratch/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/tree-base /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/8e41a6d3-d0e0-4927-afd1-771942ebfe6a/qwnw-red-file-a-stale-manifest-does-not-license-promotion/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stale_manifest_does_not_license_promotion.py
+# module: /tmp/reckon-crew-scratch/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/tree-base/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/tree-base
+...F                                                                     [100%]
+FAILED tests/test_a_stale_manifest_does_not_license_promotion.py::test_a_manifest_newer_than_the_attempt_licenses_promotion - reckon.crew.CrewError: run 'r-20261118T162620928811-node-a' cites 6a904c07ef643a0bbf41e6d51bf26652222631b3, which is not a commit this run made beyond its base f59b745a7c3288e38bddb6db64c105313c1ca313: the run's work is what it committed on its own history, so this citation belongs to an unmerged branch or predates the run.
+1 failed, 3 passed in 5.91s
+EXIT=1</pre>
+
+  <h3>Head run</h3>
+
+  <pre># revision: 48622e7da308341ca726d6084057b497bebec860
+# tree: /tmp/reckon-crew-scratch/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/tree-head
+# command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stale_manifest_does_not_license_promotion.py
+# module: /tmp/reckon-crew-scratch/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/tree-head/reckon/__init__.py
+# cwd: /tmp/reckon-crew-scratch/r-20261118T063540530210-qwnw-red-file-a-stale-manifest-does-not-license-promotion/tree-head
+....                                                                     [100%]
+4 passed in 6.70s
+EXIT=0</pre>
+
+  <p>The scoped gate for the same file ran as a submitted job on
+  <code>all_debug</code>, revision
+  <code>48622e7da308341ca726d6084057b497bebec860</code>: 4 passed, EXIT=0. The
+  declared suite pair read 58 passed at the base revision
+  <code>9e1dc0dc3e2ce3b478d6d162b32e37d11653c246</code> and 58 passed at the
+  head, with no added failure.</p>
+</section>
