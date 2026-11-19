@@ -1,0 +1,67 @@
+<section id="qwnw-red-file-ticker-shows-the-lane-mean-fragment">
+  <h2>The blank lane cell's marker assertion was scoped to the whole row</h2>
+
+  <p><strong>What was red.</strong> At base revision
+  <code>be17b57484c74a3432a3d7372aa84da6702ad965</code>,
+  <code>tests/test_ticker_shows_the_lane_mean.py</code> ran
+  <code>1 failed, 10 passed</code>. One id failed:
+  <code>test_a_backend_without_a_lane_document_leaves_the_cell_blank</code>.
+  Its third assertion searched the whole rendered row for the shared absence
+  marker:</p>
+
+  <pre><code>assert ticker_module.DIM_MARKER not in line, line</code></pre>
+
+  <p>The rendered row it read:</p>
+
+  <pre><code>14:45:37  implement  n-mean-cell                          new → working         57m   3w  0r  1h  7d  0q  0p@ –  0s               dsv4.1-fl…  xhigh</code></pre>
+
+  <p><strong>Cause and verdict: test wrong.</strong> The assertion answered a
+  rule about the rate cell — that a row whose backend declares no lane document
+  leaves that cell blank rather than printing the absence marker — but checked
+  it against the whole row. The test was written on 2026-10-13
+  (<code>deefbd21fe</code>) and passed then. On 2026-11-17 the promotion
+  counter began printing the same absence marker for an unknown promotion
+  position (<code>130499dbb3</code>, line adding
+  <code>f"@{str(position) if position is not None else DIM_MARKER:&nbsp;&gt;{STAT_DIGITS}}"</code>),
+  in a cell that has nothing to do with the lane. The product is correct: the
+  promotion cell is deliberately telling a reader that the promoted position is
+  not measured, and the lane cell is still blank in that row. The assertion was
+  empty of the claim it intended once another cell shared its vocabulary.</p>
+
+  <p><strong>Repair.</strong> The marker assertion now reads the same fixed
+  column the test's other assertions read:</p>
+
+  <pre><code>assert ticker_module.DIM_MARKER not in _rate_cell(line), line</code></pre>
+
+  <p>Nothing is weakened or deleted. The assertion was not vacuous at the same
+  slice before the fix: the sibling case
+  <code>test_a_declared_document_with_no_figure_shows_the_absence_marker</code>
+  asserts <code>_rate_cell(line)</code> equals the marker and the unit at this
+  exact geometry, and still passes. So the slice sees the marker when a
+  declared document yields no figure, and it sees blank when the backend
+  declared no document at all.</p>
+
+  <h3 id="qwnw-red-file-ticker-shows-the-lane-mean-arms">Arms</h3>
+
+  <table id="qwnw-red-file-ticker-shows-the-lane-mean-arm-table">
+    <caption>Each arm is a log whose header names the revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base run, named check</td>
+        <td><code>be17b57484</code></td>
+        <td>1 failed, 10 passed, <code>EXIT=1</code>; failing id
+        <code>test_a_backend_without_a_lane_document_leaves_the_cell_blank</code></td></tr>
+      <tr><td>head run, named check, all_debug job</td>
+        <td><code>c996f10ea8</code></td>
+        <td>11 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The base log is
+  <code>negative-control-base-run.log</code> in the run directory; the head log
+  is <code>scoped-gate-1795095868923876570.log</code> there. The head command
+  was handed to
+  <code>crew verify-gate --partition all_debug</code> as
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ticker_shows_the_lane_mean.py</code>.</p>
+</section>
