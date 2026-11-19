@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-19T10:12:50Z",
+  "findings": [
+    {
+      "file": "tests/test_a_new_plan_review_is_a_first_attempt.py",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "PLAN_REVIEW_NODE recomposes the plan-review node id as f\"{PLAN_REVIEW_NODE_PREFIX}{PLAN_SLUG}{PLAN_REVIEW_RUBRIC_SUFFIX}\" instead of calling the owner of that composition, _plan_review_node_id at reckon/crew/recovery_review_subject.py:1251-1262; the added definition duplicates the owner's design-rubric branch rather than wrapping it, so a change to the owner's composition reddens this file again on the same precondition that produced the original red, while calling the owner keeps the seeded prior row matched to the composer by construction."
+    },
+    {
+      "file": "docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-new-plan-review-is-a-first-attempt.html",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "The base-arm row gives only counts and EXIT=1, but the done_when asks for the base run with its failing ids logged beside the head run in this fragment; the three ids exist only in base-run-named-file.log at the run directory, so a reader of the delivered evidence cannot see which cases the repair turned green."
+    },
+    {
+      "file": "manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "The reviewed manifest's artifacts line records the neighbour arm as prose naming neighbour-arm-base.log and neighbour-arm-head.log (44 passed each) rather than as the inline JSON with full 40-character revisions the done_when requires, and it records no ruff check or format result although the done_when asks ruff to report nothing new on the changed paths; both checks hold (ruff reports All checks passed and 1 file already formatted on the reviewed file), but neither is recorded where the done_when asks for it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is \"Make tests/test_a_new_plan_review_is_a_first_attempt.py pass in full on the primary branch\"; the landed change is confined to that file's node-id constant and its prior-row seeding (tests/test_a_new_plan_review_is_a_first_attempt.py:53,126-149), and a git-archive extraction of e466a454 run with its own reckon module path returned 3 passed, EXIT=0.\nVERDICT done_when: The measure asks for the named file green at head as an all_debug job with SLURM_JOB_ID unset, a base run carrying its failing ids, a neighbour arm recorded as inline JSON at full 40-character revisions, a negative control, ruff clean on the changed paths and a manifest written once; scoped-gate-1795082318233483362.log records 3 passed EXIT=0 at e466a45476 on 98dci4-clu-3141, base-run-named-file.log records 3 failed EXIT=1 at 6aa1f4dc01, baseline_suite-1795082336407264218.log and after_suite-1795082379361628887.log record 58 passed at their own full revisions, negative-control-marker-stripped.log records 2 failed, 1 passed EXIT=1, but the neighbour arm named by the measure is recorded only as prose in manifest.md:19 and no ruff result is recorded at all.\nVERDICT write_paths: The source manifest declares reckon, tests, docs/evidence/fragments/queued-work-needs-no-workaround and its named file, and docs/figures/queued-work-needs-no-workaround/<node>; git diff 6aa1f4dc01a82e21903d93f997a3effb094ca1b8..e466a45476806c1b030a2f45da3459a6d05926af changes exactly tests/test_a_new_plan_review_is_a_first_attempt.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-new-plan-review-is-a-first-attempt.html, both inside them.\nVERDICT manifest: Read the reviewed run's manifest.md; it records status complete, commits 8e0f2fb9f209b1b016524896f4426c721eeba0e1 and e466a45476806c1b030a2f45da3459a6d05926af, both armed arms completed with zero failures, the two causes stated as test-wrong with the rules they now assert, and the negative control; it records no ruff result, and its artifacts line (manifest.md:19) states the neighbour arm as prose rather than inline JSON.\nVERDICT diff: Read both commits against 6aa1f4dc01a82e21903d93f997a3effb094ca1b8: 8e0f2fb9f2 replaces the ledger seeding in _commit_prior_row with reckon.run_store.append and reads the seeded rows back through reckon.crew.dispatching.preparation._committed_node_runs (tests/test_a_new_plan_review_is_a_first_attempt.py:115-149), composes PLAN_REVIEW_NODE from the product constants (:53) and updates the module docstring; e466a454 adds the 102-line evidence fragment; no product file changes, and the diff contains no deleted assertion.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The named file passes in full at the delivered head (tests/test_a_new_plan_review_is_a_first_attempt.py:178-323, reproduced 3 passed at e466a454), leaving only the landing on the primary branch to promotion.\nSCORE evidence: 14\nJUSTIFICATION evidence: scoped-gate-1795082318233483362.log records 3 passed and EXIT=0 at e466a45476806c1b030a2f45da3459a6d05926af and I reproduced it, but manifest.md:19 states the neighbour arm as prose and records no ruff result, and the fragment at docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-new-plan-review-is-a-first-attempt.html:53 omits the base run's failing ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both paths in git diff 6aa1f4dc01..e466a45476 \u2014 tests/test_a_new_plan_review_is_a_first_attempt.py and the evidence fragment \u2014 lie inside the declared write paths, and no product file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_new_plan_review_is_a_first_attempt.py:146-149 seeds through run_store.append and reads back through preparation._committed_node_runs, the reader dispatch uses, so reinstating the visible defect (ledger-only seeding, or a launch reading a store row it cannot see) reddens the precondition, and the base arm records exactly that state as 3 failed.\nSCORE fit: 16\nJUSTIFICATION fit: The file's imports, docstring and case layout follow the surrounding test idiom, and using preparation._committed_node_runs mirrors tests/test_dispatch_reads_only_its_node_runs.py:70, though tests/test_a_new_plan_review_is_a_first_attempt.py:53 re-expresses a product composition rule rather than calling its owner.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_new_plan_review_is_a_first_attempt.py:53 duplicates the design-rubric branch of _plan_review_node_id at reckon/crew/recovery_review_subject.py:1251-1262 instead of extending or calling that owner, while the seeding helper itself correctly extends reckon/run_store.py:1417 append.\nFINDING tests/test_a_new_plan_review_is_a_first_attempt.py:53 non-blocking: PLAN_REVIEW_NODE recomposes the plan-review node id from PLAN_REVIEW_NODE_PREFIX and PLAN_REVIEW_RUBRIC_SUFFIX instead of calling _plan_review_node_id at reckon/crew/recovery_review_subject.py:1251, duplicating the owner's design-rubric branch so a change to that composition reddens this file again on the precondition that produced the original red.\nFINDING docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-red-file-a-new-plan-review-is-a-first-attempt.html:53 non-blocking: the base-arm row gives counts and EXIT=1 but none of the three failing ids the done_when asks to be logged beside the head run, so the delivered evidence does not show which cases the repair turned green without opening base-run-named-file.log.\nFINDING manifest.md:19 non-blocking: the artifacts line records the neighbour arm as prose naming its two logs rather than the inline JSON with full 40-character revisions the done_when asks for, and the manifest carries no ruff check or format result on the changed paths although the done_when requires one.\n",
+  "review_run_id": "r-20261119T100332614313-review-of-qwnw-red-file-a-new-plan-review-is-a-first-attempt-e466a4547680",
+  "reviewed_base_sha": "6aa1f4dc01a82e21903d93f997a3effb094ca1b8",
+  "reviewed_head_sha": "e466a45476806c1b030a2f45da3459a6d05926af",
+  "reviewed_run_id": "r-20261118T054249388314-qwnw-red-file-a-new-plan-review-is-a-first-attempt",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-19T10:26:02.374849+00:00",
+  "total": 94
+}
