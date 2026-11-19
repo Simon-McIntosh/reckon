@@ -2333,6 +2333,17 @@ def _fleet_counts(
         for snapshot in rows
     )
     buckets = [_bucket_of(state) for state in states]
+    # A row is delivered when its own row word says delivered, and the
+    # classifier's promotion debt reads only the promotable ones. Counting the
+    # fold alone would drop a run whose review is still owed — drawn delivered
+    # while it is classified ``scoring`` — out of every cell, so the state the
+    # pane draws it with counts here, one row once, and the fold adds the
+    # promotable rows the delivered states do not name.
+    delivered_rows = sum(
+        state in FLEET_UNPROMOTED_STATES
+        or str((snapshot.get("delivery") or {}).get("status") or "") == "delivered"
+        for snapshot, state in zip(rows, states, strict=True)
+    )
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states)
         - reviewing
@@ -2342,14 +2353,12 @@ def _fleet_counts(
         # word and the figure cannot disagree if there is one statement of
         # which bucket a state belongs to.
         "blocked": sum(bucket == _HELP_CELL for bucket in buckets),
-        "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states)
-        - repairing,
+        "unpromoted": delivered_rows - repairing,
     }
     if any("delivery" in row and row["delivery"] is not None for row in rows):
         from .recovery_classification import delivery_summary
 
         delivery = delivery_summary(rows, pointers=pointers)
-        counts["unpromoted"] = delivery["delivered"]
         counts["promotion_queued"] = delivery["promotion_queued"]
         counts["oldest_promotion_position"] = delivery["oldest_promotion_position"]
         counts["oldest_promotion_requested_at"] = delivery[
