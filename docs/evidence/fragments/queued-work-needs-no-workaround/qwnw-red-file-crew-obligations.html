@@ -1,0 +1,66 @@
+<section id="qwnw-red-file-crew-obligations-red-file">
+  <h3>The red file: <code>tests/test_crew_obligations.py</code></h3>
+  <p>At the base <code>42fe90d0b0</code> the file reports
+  <code>2 failed, 7 passed</code> and exits 1; at head
+  <code>d1c5907a0e</code> it reports
+  <code>9 passed</code> and exits 0. Both readings are jobs on
+  <code>all_debug</code> with <code>SLURM_JOB_ID</code> unset, and each
+  writes its log under the run directory on shared storage.</p>
+<table id="qwnw-red-file-crew-obligations-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Summary</th><th>Exit</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, <code>all_debug</code> job</td>
+        <td><code>42fe90d0b0</code></td>
+        <td><code>2 failed, 7 passed in 10.5s</code></td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td>head, <code>all_debug</code> job</td>
+        <td><code>d1c5907a0e</code></td>
+        <td><code>9 passed in 4.04s</code></td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>baseline arm, two importing files</td>
+        <td><code>42fe90d0b0</code></td>
+        <td><code>2 failed, 56 passed in 26.7s</code></td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td>after arm, same two files</td>
+        <td><code>d1c5907a0e</code></td>
+        <td><code>58 passed in 38.3s</code></td>
+        <td>0</td>
+      </tr>
+    </tbody>
+  </table>
+<p>The negative control is the base run above; its two failing ids are
+  exactly the ids the head run passes. The four log files sit beside each
+  other in the run directory on shared storage, and the baseline arm's two
+  failed ids live in <code>tests/test_staged_write_inventory.py</code>.</p>
+<ul id="qwnw-red-file-crew-obligations-base-ids">
+<li><code>test_every_session_duty_has_identity_age_and_its_exact_next_command</code></li>
+<li><code>test_obligations_reads_scoring_without_observing_or_dispatching</code></li>
+</ul>
+<p>Four causes, all of them the test rather than the product:</p>
+  <ul id="qwnw-red-file-crew-obligations-causes">
+    <li>the retained-tree fixture created a clean tree at <code>HEAD</code>;
+    a retained tree is a duty only while it carries a commit the primary
+    refs do not reach, so the fixture now commits one;</li>
+    <li>a duty built from a live pointer composes its command through the
+    one promotion composer, which offers observation when the pointer
+    carries no recorded gate, so the two promotable rows assert that
+    command;</li>
+    <li>the drain figure comes from the per-session reader the view calls,
+    and the summary carries the delivery figures beside its three
+    counts;</li>
+    <li>the mtime snapshot left out three config-home caches a read fills
+    in the ordinary course of answering; every evidence file below the
+    roots is still asserted untouched.</li>
+  </ul>
+  <p>No assertion was deleted or weakened; each changed assertion re-states
+  the rule the code keeps.</p>
+</section>
